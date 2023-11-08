@@ -554,6 +554,40 @@ Open up your browser to the URL above.
 
   MaybePauseForUser();
 
+  std::cout << "\nNow we'll track camera broadcasting. The default URL should "
+            << "mean no camera positions are broadcast. Confirming now...\n\n";
+  if (meshcat->GetTrackedCameraPose() != std::nullopt) {
+    std::cout << "   !!! ERROR !!! Tracked camera pose reported!\n";
+  } else {
+    std::cout << "   Confirmed!\n\n";
+    std::cout << "Now open a new browser window and paste the following URL:\n"
+              << "    " << meshcat->web_url() << "?broadcast_camera=on\n"
+              <<"After it's loaded";
+    MaybePauseForUser();
+    if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+      std::cout << "\n   !!! ERROR !!! No camera positions has been reported\n";
+    } else {
+      std::cout << "The new session has successfully broadcast its camera "
+                << "position to Drake. Now open a third window and use the "
+                << "broadcasting URL again. You should see a warning message "
+                << "about too many broadcasters\n\n";
+      MaybePauseForUser();
+
+      std::cout << "\nFinally, close the second and third broadcasting "
+                << "windows. We should no longer have any tracked camera pose. "
+                << "Close the windows and";
+      MaybePauseForUser();
+
+      if (meshcat->GetTrackedCameraPose() != std::nullopt) {
+        std::cout << "   !!! ERROR !!! Tracked camera pose reported!\n";
+      } else {
+        std::cout << "   Confirmed!\n\n";
+      }
+    }
+  }
+
+  MaybePauseForUser();
+
   std::cout << "Exiting..." << std::endl;
   return 0;
 }

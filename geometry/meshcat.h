@@ -505,31 +505,30 @@ class Meshcat {
   void SetCameraPose(const Eigen::Vector3d& camera_in_world,
                      const Eigen::Vector3d& target_in_world);
 
-  /** If camera tracking is enabled, the %Meshcat instance will track the
-   position and orientation of the in-browser camera and make it available
-   from GetTrackedCameraPose().
+  /** Returns the most recently broadcast camera pose.
 
-   This comes with some caveats:
+   A meshcat browser session can be configured to broadcast its camera pose.
+   It is enabled by appending a url parameter. For example, if the url for the
+   meshcat server is:
 
-     - If there are multiple browsers connected to the same meshcat server,
-       they will fight each other; the last client to move its camera will
-       be the reported pose. If tracking the camera, it is best to use only a
-       single browser window.
-     - This setting is *not* persisted in a static html version of the session.
-     - It will only work with perspective cameras; if the camera is
-       orthographic, GetTrackedCameraPose() will persist in broadcasting the
-       last known perspective camera's transform.
-  */
-  void SetCameraTracking(bool on);
+       http://localhost:7000
 
-  /** Returns the most recent tracked camera position. The identity transform is
-   returned if:
+   A particular browser can be configured to broadcast its camera pose back to
+   Drake by supplying the following url:
 
-     - SetCameraTracking() has been disabled, or
-     - SetCameraTracking() has been enabled, but we haven't received pose
-       information from meshcat yet.
+       http://localhost:7000/?broadcast_camera=on
+
+   Do not use the same broadcasting URL on multiple browsers at the same time.
+   The broadcast camera data will interfere with each other. If you require
+   multiple browsers viewing the same meshcat instance, make sure the remaining
+   windows use the non-broadcasting url.
+
+   std::nullopt is returned if:
+
+     - No meshcat session has broadcast its camera pose.
+     - The meshcat session that last broadcast its pose is no longer connected.
    */
-  math::RigidTransformd GetTrackedCameraPose() const;
+  std::optional<math::RigidTransformd> GetTrackedCameraPose() const;
 
   // TODO(SeanCurtis-TRI): Consider the API:
   //  void SetCameraPose(const RigidTransformd& X_WC, bool target_distance = 1);

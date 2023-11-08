@@ -280,9 +280,9 @@ class ModelVisualizer:
         # Add a model that will provide rgbd pose sliders automatically when we
         # add JointSliders later on.
         if self._show_rgbd_sensor:
-            self._builder.parser().AddModels(url=(
+            rgbd_sensor_model_instance = self._builder.parser().AddModels(url=(
                 "package://drake/bindings/pydrake/visualization/"
-                "_camera_rig.sdf"))
+                "_camera_rig.sdf"))[0]
 
         self._builder.plant().Finalize()
 
@@ -314,7 +314,6 @@ class ModelVisualizer:
 
         # Add a render camera so we can show role=perception images.
         if self._show_rgbd_sensor:
-            self._meshcat.SetCameraTracking(on=True)
             camera_config = CameraConfig(width=1440, height=1080)
             camera_config.name = "preview"
             camera_config.X_PB.base_frame = "_camera_rig::_floating_camera"
@@ -364,7 +363,8 @@ class ModelVisualizer:
 
         if self._show_rgbd_sensor:
             self._camera_body = (self._diagram.plant().
-                                 GetBodyByName("_floating_camera"))
+                                 GetBodyByName("_floating_camera",
+                                               rgbd_sensor_model_instance))
 
         # We don't just test 'position' because NumPy does weird things with
         # the truth values of arrays.
@@ -511,14 +511,15 @@ class ModelVisualizer:
                         # us. So, *always* grab the current camera position
                         # and set it in the state before pulling q.
                         X_WC = self._meshcat.GetTrackedCameraPose()
-                        self._diagram.plant().SetFreeBodyPose(
-                            plant_context, self._camera_body, X_WC)
-                        # Now only render if the plant's state has changed.
-                        curr_q = plant.GetPositions(plant_context)
-                        if last_q is None or (curr_q != last_q).any():
-                            self._diagram.GetOutputPort("preview_image").Eval(
-                                self._context)
-                            last_q = curr_q
+                        if X_WC is not None:
+                            self._diagram.plant().SetFreeBodyPose(
+                                plant_context, self._camera_body, X_WC)
+                            # Now only render if the plant's state has changed.
+                            curr_q = plant.GetPositions(plant_context)
+                            if last_q is None or (curr_q != last_q).any():
+                                self._diagram.GetOutputPort("preview_image").Eval(
+                                    self._context)
+                                last_q = curr_q
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
