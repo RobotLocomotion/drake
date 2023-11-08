@@ -109,47 +109,46 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
   ApproximateConvexCoverFromCliqueCoverOptions(
       const CoverageCheckerBase* coverage_checker,
       const PointSamplerBase* point_sampler,
-      const ConvexSetFromCliqueBuilderBase* set_builder,
       const AdjacencyMatrixBuilderBase* adjacency_matrix_builder,
-      const MaxCliqueOptions& max_clique_options,
-      int num_sampled_points,
-      int minimum_clique_size = 3,
-      int num_threads = -1);
+      const ConvexSetFromCliqueBuilderBase* set_builder,
+      const MaxCliqueOptions& max_clique_options, int num_sampled_points,
+      int minimum_clique_size = 3, int num_threads = -1);
 
-  const CoverageCheckerBase* coverage_checker() const {
+  [[nodiscard]] const CoverageCheckerBase* coverage_checker() const {
     return coverage_checker_;
   }
 
-  const PointSamplerBase* point_sampler() const { return point_sampler_; }
+  [[nodiscard]] const PointSamplerBase* point_sampler() const {
+    return point_sampler_;
+  }
 
-  const AdjacencyMatrixBuilderBase* adjacency_matrix_builder const {
+  [[nodiscard]] const AdjacencyMatrixBuilderBase* adjacency_matrix_builder()
+      const {
     return adjacency_matrix_builder_;
   }
 
-  const ConvexSetFromCliqueBuilderBase* set_builder() const {
+  [[nodiscard]] const ConvexSetFromCliqueBuilderBase* set_builder() const {
     return set_builder_;
   }
 
-  const MaxCliqueOptions max_clique_options() const {
+  [[nodiscard]] const MaxCliqueOptions max_clique_options() const {
     return max_clique_options_;
   }
 
-  int num_sampled_points() const { return num_sampled_points_;}
+  [[nodiscard]] int num_sampled_points() const { return num_sampled_points_; }
 
-  int minimum_clique_size() const { return minimum_clique_size_; }
+  [[nodiscard]] int minimum_clique_size() const { return minimum_clique_size_; }
 
-  int num_threads() const { return num_threads_; }
-
-
+  [[nodiscard]] int num_threads() const { return num_threads_; }
 
  private:
   const CoverageCheckerBase* coverage_checker_;
 
   const PointSamplerBase* point_sampler_;
 
-  const ConvexSetFromCliqueBuilderBase* set_builder_;
-
   const AdjacencyMatrixBuilderBase* adjacency_matrix_builder_;
+
+  const ConvexSetFromCliqueBuilderBase* set_builder_;
 
   const MaxCliqueOptions max_clique_options_;
 
