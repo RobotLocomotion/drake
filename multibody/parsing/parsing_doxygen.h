@@ -179,6 +179,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_linear_bushing_rpy
 - @ref tag_drake_member
 - @ref tag_drake_mesh_resolution_hint
+- @ref tag_drake_mimic
 - @ref tag_drake_mu_dynamic
 - @ref tag_drake_mu_static
 - @ref tag_drake_parent
@@ -674,6 +675,22 @@ limits, smaller values will select shorter edge lengths and a finer mesh, larger
 values will select longer edge lengths and a coarser mesh.
 
 @see @ref tag_drake_proximity_properties, @ref hug_properties
+
+@subsection tag_drake_mimic drake:mimic
+
+- SDFormat path: `//model/joint/drake:mimic`
+- URDF path: unsupported
+- Syntax: Attributes `joint` (string), `multiplier` (double) and `offset` (double).
+
+@subsubsection tag_drake_mimic_semantics Semantics
+
+This is an SDFormat specific custom tag that has identical semantics to the URDF
+specific <mimic> tag. When specified, a coupler constraint will be added to the
+plant that constrains the joint to follow the joint specified in the `joint` attribute.
+Attributes `multiplier` is the gear ratio between the two joints and `offset` is a
+fixed offset between the joints' zero positions.
+
+@see @ref mbp_constraints, drake::multibody::MultibodyPlant::AddCouplerConstraint()
 
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 
