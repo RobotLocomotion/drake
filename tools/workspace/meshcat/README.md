@@ -11,11 +11,3 @@ Required:
   - drake/geometry:meshcat_manual_test
     - Run `bazel run //geometry:meshcat_manual_test` and then follow the
       instructions on your console.
-  - model visualizer with camera control.
-    - Run
-      `bazel run //tools:model_visualizer -- \`
-      `--show_rgbd_sensor \`
-      `package://drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf`
-    - Confirm that a rendered image window also appears.
-    - Manipulate the meshcat viewport and confirm that the rendered image camera
-      view changes correspondingly.
