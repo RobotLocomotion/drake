@@ -178,17 +178,17 @@ systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
 
 template <typename T>
 void DeformableModel<T>::AddExternalForce(
-    std::unique_ptr<ExternalForceField<T>> external_force) {
+    std::unique_ptr<ForceDensityField<T>> force_density) {
   this->ThrowIfSystemResourcesDeclared(__func__);
-  external_forces_.emplace_back(std::move(external_force));
+  force_densities_.push_back(std::move(force_density));
 }
 
 template <typename T>
-const std::vector<const ExternalForceField<T>*>&
+const std::vector<const ForceDensityField<T>*>&
 DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
   this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
-  return body_index_to_external_forces_[GetBodyIndex(id)];
+  return body_index_to_force_densities_[GetBodyIndex(id)];
 }
 
 template <typename T>
@@ -346,10 +346,10 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   }
 
   /* Add user defined external forces to each body. */
-  body_index_to_external_forces_.resize(num_bodies());
+  body_index_to_force_densities_.resize(num_bodies());
   for (int i = 0; i < num_bodies(); ++i) {
-    for (int j = 0; j < ssize(external_forces_); ++j) {
-      body_index_to_external_forces_[i].emplace_back(external_forces_[j].get());
+    for (int j = 0; j < ssize(force_densities_); ++j) {
+      body_index_to_force_densities_[i].push_back(force_densities_[j].get());
     }
   }
 
@@ -360,16 +360,16 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
     auto gravity_force =
         std::make_unique<GravityForceField<T>>(gravity, density);
     DeformableBodyIndex index = body_id_to_index_.at(deformable_id);
-    body_index_to_external_forces_[index].emplace_back(gravity_force.get());
+    body_index_to_force_densities_[index].emplace_back(gravity_force.get());
     AddExternalForce(std::move(gravity_force));
   }
   body_id_to_density_prefinalize_.clear();
 
-  /* Declare cache entries and input ports for external forces that need them.
-   */
-  for (std::unique_ptr<ExternalForceField<T>>& external_force :
-       external_forces_) {
-    external_force->DeclareSystemResources(plant_);
+  /* Declare cache entries and input ports for force density fields that need
+   them. */
+  for (std::unique_ptr<ForceDensityField<T>>& force_density :
+       force_densities_) {
+    force_density->DeclareSystemResources(plant_);
   }
 }
 

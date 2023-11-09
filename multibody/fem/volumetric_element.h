@@ -61,8 +61,8 @@ struct VolumetricElementData {
   Vector<T, num_dofs> element_q0;
   Vector<T, num_dofs> element_v;
   Vector<T, num_dofs> element_a;
-  /* The current locations of the quadrature points. */
-  std::array<Vector<T, 3>, num_quadrature_points> quadrature_locations;
+  /* The current locations of the quadrature points in the world frame. */
+  std::array<Vector<T, 3>, num_quadrature_points> quadrature_positions;
   typename ConstitutiveModelType::Data deformation_gradient_data;
   /* The elastic energy density evaluated at quadrature points. Note that this
    is energy per unit of "reference" volume. */
@@ -405,7 +405,7 @@ class VolumetricElement
     const auto& element_q_reshaped =
         Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_q.data(),
                                                          3, num_nodes);
-    data.quadrature_locations =
+    data.quadrature_positions =
         isoparametric_element_.template InterpolateNodalValues<3>(
             element_q_reshaped);
 
@@ -421,18 +421,18 @@ class VolumetricElement
     return data;
   }
 
-  void DoAddScaledExternalForce(
+  void DoAddScaledExternalForces(
       const Data& data, const T& scale,
       const multibody::internal::ForceDensityEvaluator<T>& force_density,
       EigenPtr<Vector<T, num_dofs>> result) const {
     const std::array<Vector<T, 3>, num_quadrature_points>&
-        quadrature_locations = data.quadrature_locations;
+        quadrature_positions = data.quadrature_positions;
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
     for (int q = 0; q < num_quadrature_points; ++q) {
       for (int n = 0; n < num_nodes; ++n) {
         result->template segment<3>(3 * n) +=
-            scale * force_density.EvaluateAt(quadrature_locations[q]) *
+            scale * force_density.EvaluateAt(quadrature_positions[q]) *
             reference_volume_[q] * S[q](n);
       }
     }

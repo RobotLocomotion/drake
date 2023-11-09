@@ -25,10 +25,10 @@ drake_cc_package_library(
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
-        ":external_force_field",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
         ":force_density_evaluator",
+        ":force_density_field",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
@@ -301,12 +301,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "external_force_field",
+    name = "force_density_field",
     srcs = [
-        "external_force_field.cc",
+        "force_density_field.cc",
     ],
     hdrs = [
-        "external_force_field.h",
+        "force_density_field.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -325,7 +325,7 @@ drake_cc_library(
         "force_density_evaluator.h",
     ],
     deps = [
-        ":external_force_field",
+        ":force_density_field",
         "//common:default_scalars",
         "//common:essential",
         "//systems/framework:context",

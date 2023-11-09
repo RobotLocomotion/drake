@@ -6,7 +6,7 @@ namespace internal {
 
 template <typename T>
 ForceDensityEvaluator<T>::ForceDensityEvaluator(
-    const ExternalForceField<T>* force_field,
+    const ForceDensityField<T>* force_field,
     const systems::Context<T>* plant_context)
     : force_field_(force_field), plant_context_(plant_context) {
   DRAKE_DEMAND(force_field_ != nullptr);

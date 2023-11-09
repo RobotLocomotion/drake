@@ -78,13 +78,15 @@ class FemState {
 #ifndef DRAKE_DOXYGEN_CXX
   /* Getter and setter for the external force density field evaluators. The
    external forces are always evaluated explicitly in the FEM model,
-   regardless of the time steppin scheme used. */
+   regardless of the time stepping scheme used. That is, force fields are
+   evaluated at the current states (including rigid and deformable states as
+   well as inputs) of the owning MultibodyPlant. */
   const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
   GetExternalForces() const;
 
   void SetExternalForces(
       std::vector<multibody::internal::ForceDensityEvaluator<T>>
-          external_forces);
+          force_densities);
 #endif
 
   /** Returns the number of degrees of freedom in the FEM model and state. */
@@ -124,7 +126,7 @@ class FemState {
   copyable_unique_ptr<systems::Context<T>> owned_context_{nullptr};
   /* Referenced context that contains the FEM states and data. */
   const systems::Context<T>* context_{nullptr};
-  std::vector<multibody::internal::ForceDensityEvaluator<T>> external_forces_;
+  std::vector<multibody::internal::ForceDensityEvaluator<T>> force_densities_;
 };
 
 }  // namespace fem

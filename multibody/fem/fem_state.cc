@@ -74,14 +74,14 @@ void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
 template <typename T>
 const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
 FemState<T>::GetExternalForces() const {
-  return external_forces_;
+  return force_densities_;
 }
 
 template <typename T>
 void FemState<T>::SetExternalForces(
     std::vector<multibody::internal::ForceDensityEvaluator<T>>
-        external_forces) {
-  external_forces_ = std::move(external_forces);
+        force_densities) {
+  force_densities_ = std::move(force_densities);
 }
 
 template <typename T>

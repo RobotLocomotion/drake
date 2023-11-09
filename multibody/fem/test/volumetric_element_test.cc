@@ -349,7 +349,7 @@ TEST_F(VolumetricElementTest, MassMatrixSumUpToTotalMass) {
   EXPECT_NEAR(mass_matrix_sum, total_mass * kSpatialDimension, kEpsilon);
 }
 
-/* Tests that when applying the gravity external force field, the result agrees
+/* Tests that when applying the gravity force density field, the result agrees
  with analytic solution. */
 TEST_F(VolumetricElementTest, ExternalForce) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
@@ -367,7 +367,7 @@ TEST_F(VolumetricElementTest, ExternalForce) {
 
   VectorX<AD> gravity_force = VectorX<AD>::Zero(kNumDofs);
   const AD scale = 1.0;
-  element().AddScaledExternalForce(data, scale, evaluator, &gravity_force);
+  element().AddScaledExternalForces(data, scale, evaluator, &gravity_force);
   Vector3<AD> total_force = Vector3<AD>::Zero();
   for (int i = 0; i < kNumNodes; ++i) {
     total_force += gravity_force.segment<3>(3 * i);
