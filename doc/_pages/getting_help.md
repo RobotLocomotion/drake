@@ -39,7 +39,7 @@ If you wish to contribute a patch, please see how to [submit a pull request](/de
 When reporting an issue, please consider providing the following information
 (``helper command in monospace``):
 
-* Operating system (e.g., Ubuntu Focal 20.04 or macOS Monterey)
+* Operating system (e.g., Ubuntu Focal 20.04 or macOS Ventura)
 * Installation method (e.g., pip, apt, binary tar.gz, docker image, or
   rebuilding from source)
 * Language you are using (C++ or [Python](/python_bindings.html))
