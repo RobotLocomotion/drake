@@ -1,0 +1,16 @@
+directives:
+- add_model:
+    name: panda
+    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+- add_weld:
+    parent: world
+    child: panda::panda_link0
+- add_model:
+    name: panda_hand
+    file: package://drake/manipulation/models/franka_description/urdf/panda_hand.urdf
+- add_weld:
+    parent: panda::panda_link8
+    child: panda_hand::panda_hand
+    X_PC:
+      translation: [0, 0, 0]
+      rotation: !Rpy { deg: [0, 0, -45] }

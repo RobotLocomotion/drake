@@ -53,6 +53,9 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
       simulation_plant.GetModelInstanceByName(arm_info.model_name);
 
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  plant->mutable_gravity_field().set_gravity_vector(
+      simulation_plant.gravity_field().gravity_vector());
+
   Parser parser(plant.get());
   const auto models = parser.AddModels(arm_info.model_path);
   DRAKE_DEMAND(models.size() == 1);
@@ -90,9 +93,9 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     std::vector<BodyIndex> sim_gripper_body_indices =
         simulation_plant.GetBodyIndices(gripper_info->model_instance);
 
-    const std::string gripper_body_name = gripper_info->child_frame_name;
+    const std::string gripper_inboard_name = gripper_info->child_frame_name;
     const Frame<double>& G = simulation_plant.GetFrameByName(
-        gripper_body_name, gripper_info->model_instance);
+        gripper_inboard_name, gripper_info->model_instance);
 
     // TODO(sam-creasey) We actually want all kinematic children from the
     // gripper body, but there doesn't seem to be an existing way to do that
@@ -115,7 +118,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
 
     // Add surrogate composite body.
     const RigidBody<double>& C =
-        plant->AddRigidBody(gripper_body_name, arm_model_index, M_CGo_G);
+        plant->AddRigidBody(gripper_inboard_name, arm_model_index, M_CGo_G);
 
     // Make sure that the gripper is attached to the same location (and arm
     // frame) in the controller plant as it is in the simulation plant.
@@ -129,12 +132,12 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
         plant->GetFrameByName(gripper_grand_parent_frame_name, arm_model_index);
     log()->trace("    gripper_grand_parent_frame: {}",
                  gripper_grand_parent_frame.scoped_name());
-    const RigidTransform<double> gripper_X_PpP =
-        sim_gripper_parent_frame.GetFixedPoseInBodyFrame();
-    const RigidTransform<double> gripper_X_PpC =
-        gripper_X_PpP * gripper_info->X_PC;
-    plant->WeldFrames(gripper_grand_parent_frame, C.body_frame(),
-                      gripper_X_PpC);
+    const Frame<double>& sim_gripper_grand_parent_frame =
+        simulation_plant.GetFrameByName(gripper_grand_parent_frame_name,
+                                        sim_arm_model_index);
+    const RigidTransform<double> X_PpC = simulation_plant.CalcRelativeTransform(
+        *sim_context, sim_gripper_grand_parent_frame, G);
+    plant->WeldFrames(gripper_grand_parent_frame, C.body_frame(), X_PpC);
 
     // Add the grasp frame, F, to the plant if present.
     if (simulation_plant.HasFrameNamed("grasp_frame",
