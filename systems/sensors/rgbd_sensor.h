@@ -39,15 +39,12 @@ namespace sensors {
 
  This class uses the following frames:
 
-   - W - world frame
-   - C - color camera frame, used for both color and label cameras to guarantee
-     perfect registration between color and label images.
-   - D - depth camera frame
-   - B - sensor body frame. Approximately, the frame of the "physical" sensor
-     that contains the color, depth, and label cameras. The contained cameras
-     are rigidly fixed to B and X_WB is what is used to pose the sensor in the
-     world (or, alternatively, X_PB where P is some parent frame for which X_WP
-     is known).
+   - W - world frame.
+   - P - the parent frame.
+   - B - sensor body frame. Approximately, the frame of the "physical" sensor.
+   - C - color camera frame. Used for both color and label cameras to guarantee
+         perfect registration between color and label images.
+   - D - depth camera frame.
 
  By default, frames B, C, and D are coincident and aligned. These can be
  changed using the `camera_poses` constructor parameter. Frames C and D are
@@ -59,6 +56,20 @@ namespace sensors {
  frame: look in the +Bz direction with the +By direction pointing down in the
  image. Only if the depth or color frames are re-oriented relative to the body
  does further reasoning need to be applied.
+
+ The frames relate as follows:
+
+   - X_WP - The pose of the parent frame in the world. This value is acquired
+            from SceneGraph via the `geometry_query` input port.
+   - X_PB - The sensor body is rigidly affixed to the parent frame. As the
+            parent frame moves, so moves the sensor. The initial value is set
+            at construction, but it is a parameter of the sensor system and
+            can be modified in the Context as with other parameters. See
+            X_PB() and SetX_PB().
+   - X_BC - The color (and label) cameras are rigidly affixed to the sensor
+            body. This pose is immutably defined at construction.
+   - X_BD - The depth camera is likewise rigidly affixed to the sensor body.
+            This pose is immutably defined at construction.
 
  Output port image formats:
 
@@ -175,6 +186,14 @@ class RgbdSensor final : public LeafSystem<double> {
    the current time). */
   const OutputPort<double>& image_time_output_port() const;
 
+  /** Retrieves the pose of the sensor body in the parent frame. */
+  const math::RigidTransformd& X_PB(const Context<double>& context) const;
+
+  /** The pose of the sensor body in the parent frame is a system parameter.
+   It is stored in the context and can be edited. */
+  void SetX_PB(Context<double>* context,
+               const math::RigidTransformd& X_PB) const;
+
  private:
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
@@ -211,8 +230,9 @@ class RgbdSensor final : public LeafSystem<double> {
   // The camera specifications for color/label and depth.
   const geometry::render::ColorRenderCamera color_camera_;
   const geometry::render::DepthRenderCamera depth_camera_;
-  // The position of the camera's B frame relative to its parent frame P.
-  const math::RigidTransformd X_PB_;
+
+  // The index of the X_PB parameter in the context.
+  int X_PB_index_{};
 };
 
 }  // namespace sensors

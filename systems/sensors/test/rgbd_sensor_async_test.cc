@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/rgbd_sensor_async.h"
 
+#include <functional>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -45,7 +47,11 @@ class SimpleRenderEngine final : public DummyRenderEngine {
       ImageTraits<PixelType::kDepth16U>::kTooFar;
   static const RenderLabel& kClearLabel;
 
-  SimpleRenderEngine() { this->set_force_accept(true); }
+  SimpleRenderEngine(std::function<void(const RigidTransform<double>&)>
+                         viewpoint_callback = nullptr)
+      : viewpoint_callback_(std::move(viewpoint_callback)) {
+    this->set_force_accept(true);
+  }
 
  private:
   std::unique_ptr<RenderEngine> DoClone() const final {
@@ -72,6 +78,14 @@ class SimpleRenderEngine final : public DummyRenderEngine {
     *output = ImageLabel16I(camera.core().intrinsics().width(),
                             camera.core().intrinsics().height(), kClearLabel);
   }
+
+  void UpdateViewpoint(const RigidTransform<double>& X_WC) override {
+    if (viewpoint_callback_) {
+      viewpoint_callback_(X_WC);
+    }
+  }
+
+  std::function<void(const RigidTransform<double>&)> viewpoint_callback_;
 };
 
 const RenderLabel& SimpleRenderEngine::kClearLabel = RenderLabel::kEmpty;
@@ -180,7 +194,10 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
                             render_label_image);
 
   EXPECT_EQ(dut.parent_id(), parent_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(dut.X_PB().GetAsMatrix34(), X_PB.GetAsMatrix34());
+#pragma GCC diagnostic pop
   EXPECT_EQ(dut.fps(), fps);
   EXPECT_EQ(dut.capture_offset(), capture_offset);
   EXPECT_EQ(dut.output_delay(), output_delay);
@@ -199,7 +216,58 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
   simulator.Initialize();
 }
 
-// Confirm that we fail-fast when geometry changes post-initialze.
+TEST_F(RgbdSensorAsyncTest, PoseInParentParameter) {
+  DiagramBuilder<double> builder;
+
+  // Add scene graph and renderer we can query later.
+  auto* scene_graph = builder.AddSystem<SceneGraph<double>>();
+  // We'll capture the camera pose passed to the render engine in X_WC_passed.
+  RigidTransform<double> X_WC_passed;
+  auto render_engine_unique = std::make_unique<SimpleRenderEngine>(
+      [&X_WC_passed](const RigidTransform<double>& X_WC) {
+        X_WC_passed = X_WC;
+      });
+  scene_graph->AddRenderer(kRendererName, std::move(render_engine_unique));
+
+  // Add RgbdSensorAsync.
+  const FrameId parent_id = SceneGraph<double>::world_frame_id();
+  const RigidTransform<double> X_PB_initial(Eigen::Vector3d(1, 2, 3));
+  const double fps = 4;                   // FPS is irrelevant.
+  const double capture_offset = 0;        // First tick happens at t = 0.
+  const double output_delay = 0.001;      // Small tock.
+  const bool render_label_image = false;  // We'll omit label for simplicity.
+  const auto* dut = builder.AddSystem<RgbdSensorAsync>(
+      scene_graph, parent_id, X_PB_initial, fps, capture_offset, output_delay,
+      color_camera_, depth_camera_, render_label_image);
+  builder.Connect(scene_graph->get_query_output_port(), dut->get_input_port());
+
+  Simulator<double> simulator(builder.Build());
+
+  auto& dut_context =
+      dut->GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+
+  // The construction parameter comes back in the default context.
+  EXPECT_EQ(dut->X_PB(dut_context).GetAsMatrix34(),
+            X_PB_initial.GetAsMatrix34());
+
+  // Setting the pose works (we can write and then read it).
+  const RigidTransform<double> X_PB_new(X_PB_initial.translation() +
+                                        Eigen::Vector3d(2, 4, 6));
+  dut->SetX_PB(&dut_context, X_PB_new);
+  EXPECT_EQ(dut->X_PB(dut_context).GetAsMatrix34(), X_PB_new.GetAsMatrix34());
+
+  // Confirm the worker renderer gets the current parameter value.
+  // Before we start, our record of the passed X_WC should be the identity.
+  DRAKE_DEMAND(X_WC_passed.IsExactlyIdentity());
+
+  // Advance to *just* beyond to tock event, so we know that the rendering
+  // work thread has been properly evaluated. We should have passed X_PB_new.
+  simulator.AdvanceTo(output_delay + 0.01);
+
+  EXPECT_EQ(X_WC_passed.GetAsMatrix34(), X_PB_new.GetAsMatrix34());
+}
+
+// Confirm that we fail-fast when geometry changes post-initialize.
 TEST_F(RgbdSensorAsyncTest, GeometryVersionFailFast) {
   // Prepare a full simulation.
   DiagramBuilder<double> builder;
