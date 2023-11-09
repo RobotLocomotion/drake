@@ -101,6 +101,12 @@ class TestSensors(unittest.TestCase):
             self.assertIsNotNone(t.ChannelType)
             self.assertIn(t.kPixelFormat, mut.PixelFormat.__members__.values())
 
+        # Smoke test the pixel scalars.
+        mut.PixelScalar.k8U
+        mut.PixelScalar.k16I
+        mut.PixelScalar.k16U
+        mut.PixelScalar.k32F
+
     def test_image_types(self):
         # Test instantiations of Image<>.
         for pixel_type, image_type_alias in (
@@ -516,6 +522,11 @@ class TestSensors(unittest.TestCase):
         dut.label_image_output_port()
         dut.body_pose_in_world_output_port()
         dut.image_time_output_port()
+
+    def test_image_file_format(self):
+        mut.ImageFileFormat.kJpeg
+        mut.ImageFileFormat.kPng
+        mut.ImageFileFormat.kTiff
 
     def test_image_writer(self):
         writer = mut.ImageWriter()
