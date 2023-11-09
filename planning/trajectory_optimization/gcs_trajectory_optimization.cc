@@ -222,6 +222,62 @@ void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
   }
 }
 
+void Subgraph::AddPathContinuityConstraints(int continuity_order) {
+  if (continuity_order == 0) {
+    throw std::runtime_error(
+        "Path continuity is enforced by default. Choose a higher order.");
+  }
+  if (continuity_order < 1) {
+    throw std::runtime_error("Order must be greater than or equal to 1.");
+  }
+
+  if (order_ < continuity_order) {
+    throw std::runtime_error(
+        "Cannot add continuity constraint of order greater than the set "
+        "order.");
+  }
+
+  // The continuity on derivatives of r(s) will be enforced between the last
+  // control point of the u set and the first control point of the v set in an
+  // edge. urdot_control.col(order-continuity_order) - vrdot_control.col(0) = 0,
+  // The latter can be achieved by getting the control point matrix M.
+  // A = [M.col(order - continuity_order).T, -M.col(0).T],
+  // x = [u_controls.row(i); v_controls.row(i)].
+  // Ax = 0,
+
+  SparseMatrix<double> Mu_transpose =
+      r_trajectory_.AsLinearInControlPoints(continuity_order)
+          .col(order_ - continuity_order)
+          .transpose();
+
+  SparseMatrix<double> Mv_transpose =
+      r_trajectory_.AsLinearInControlPoints(continuity_order)
+          .col(0)
+          .transpose();
+
+  // Concatenate Mu_transpose and Mv_transpose.
+  // A = [Mu.T, - Mv.T]
+
+  // The A matrix will have one row since sparsity allows us to enforce the
+  // continuity in each dimension. The number of columns matches the number of
+  // control points for one row of r_u(s) and r_v(s).
+  SparseMatrix<double> A(1, 2 * (order_ + 1));
+  A.leftCols(order_ + 1) = Mu_transpose;
+  A.rightCols(order_ + 1) = -Mv_transpose;
+
+  const auto continuity_constraint =
+      std::make_shared<LinearEqualityConstraint>(A, VectorXd::Zero(1));
+
+  for (int i = 0; i < num_positions(); ++i) {
+    for (Edge* edge : edges_) {
+      // Add continuity constraints.
+      edge->AddConstraint(Binding<LinearEqualityConstraint>(
+          continuity_constraint, {GetControlPoints(edge->u()).row(i),
+                                  GetControlPoints(edge->v()).row(i)}));
+    }
+  }
+}
+
 Eigen::Map<const MatrixX<symbolic::Variable>> Subgraph::GetControlPoints(
     const geometry::optimization::GraphOfConvexSets::Vertex& v) const {
   DRAKE_DEMAND(v.x().size() == num_positions() * (order_ + 1) + 1);
@@ -426,6 +482,65 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
   }
 }
 
+void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
+  if (continuity_order == 0) {
+    throw std::runtime_error(
+        "Path continuity is enforced by default. Choose a higher order.");
+  }
+  if (continuity_order < 1) {
+    throw std::runtime_error("Order must be greater than or equal to 1.");
+  }
+
+  if (from_subgraph_order_ < continuity_order ||
+      to_subgraph_order_ < continuity_order) {
+    throw std::runtime_error(
+        "Cannot add continuity constraint to a subgraph edge where both "
+        "subgraphs order are not greater than or equal to the requested "
+        "continuity order.");
+  }
+
+  // The continuity on derivatives of r(s) will be enforced between the last
+  // control point of the u set and the first control point of the v set in an
+  // edge. urdot_control.col(order-continuity_order) - vrdot_control.col(0) = 0,
+  // The latter can be achieved by getting the control point matrix M.
+  // A = [M.col(from_subgraph_order - continuity_order).T, -M.col(0).T],
+  // x = [u_controls.row(i); v_controls.row(i)].
+  // Ax = 0,
+
+  SparseMatrix<double> Mu_transpose =
+      ur_trajectory_.AsLinearInControlPoints(continuity_order)
+          .col(from_subgraph_order_ - continuity_order)
+          .transpose();
+
+  SparseMatrix<double> Mv_transpose =
+      vr_trajectory_.AsLinearInControlPoints(continuity_order)
+          .col(0)
+          .transpose();
+
+  // Concatenate Mu_transpose and Mv_transpose.
+  // A = [Mu.T, - Mv.T]
+
+  // The A matrix will have one row since sparsity allows us to enforce the
+  // continuity in each dimension. The number of columns matches the number of
+  // control points for one row of r_u(s) and r_v(s).
+  SparseMatrix<double> A(1,
+                         (from_subgraph_order_ + 1) + (to_subgraph_order_ + 1));
+  A.leftCols(from_subgraph_order_ + 1) = Mu_transpose;
+  A.rightCols(to_subgraph_order_ + 1) = -Mv_transpose;
+
+  const auto continuity_constraint =
+      std::make_shared<LinearEqualityConstraint>(A, VectorXd::Zero(1));
+
+  for (int i = 0; i < num_positions(); ++i) {
+    for (Edge* edge : edges_) {
+      // Add continuity constraints.
+      edge->AddConstraint(Binding<LinearEqualityConstraint>(
+          continuity_constraint,
+          {GetControlPointsU(*edge).row(i), GetControlPointsV(*edge).row(i)}));
+    }
+  }
+}
+
 Eigen::Map<const MatrixX<symbolic::Variable>>
 EdgesBetweenSubgraphs::GetControlPointsU(
     const geometry::optimization::GraphOfConvexSets::Edge& e) const {
@@ -487,6 +602,14 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
       subgraph->AddVelocityBounds(lb, ub);
     }
   }
+
+  // Add global continuity constraints to the subgraph.
+  for (int continuity_order : global_continuity_constraints_) {
+    if (order >= continuity_order) {
+      subgraph->AddPathContinuityConstraints(continuity_order);
+    }
+  }
+
   return *subgraphs_.emplace_back(subgraph);
 }
 
@@ -513,8 +636,18 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace) {
-  return *subgraph_edges_.emplace_back(
-      new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this));
+  EdgesBetweenSubgraphs* subgraph_edge =
+      new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this);
+
+  // Add global continuity constraints to the edges between subgraphs.
+  for (int continuity_order : global_continuity_constraints_) {
+    if (subgraph_edge->from_subgraph_order_ >= continuity_order &&
+        subgraph_edge->to_subgraph_order_ >= continuity_order) {
+      subgraph_edge->AddPathContinuityConstraints(continuity_order);
+    }
+  }
+
+  return *subgraph_edges_.emplace_back(subgraph_edge);
 }
 
 void GcsTrajectoryOptimization::AddTimeCost(double weight) {
@@ -554,6 +687,33 @@ void GcsTrajectoryOptimization::AddVelocityBounds(
     }
   }
   global_velocity_bounds_.push_back({lb, ub});
+}
+
+void GcsTrajectoryOptimization::AddPathContinuityConstraints(
+    int continuity_order) {
+  if (continuity_order == 0) {
+    throw std::runtime_error(
+        "Path continuity is enforced by default. Choose a higher order.");
+  }
+  if (continuity_order < 1) {
+    throw std::runtime_error("Order must be greater than or equal to 1.");
+  }
+  // Add continuity constraints to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    if (subgraph->order() >= continuity_order) {
+      subgraph->AddPathContinuityConstraints(continuity_order);
+    }
+  }
+  // Add continuity constraints to the edges between subgraphs.
+  for (std::unique_ptr<EdgesBetweenSubgraphs>& subgraph_edge :
+       subgraph_edges_) {
+    if (subgraph_edge->from_subgraph_order_ >= continuity_order &&
+        subgraph_edge->to_subgraph_order_ >= continuity_order) {
+      subgraph_edge->AddPathContinuityConstraints(continuity_order);
+    }
+  }
+
+  global_continuity_constraints_.push_back(continuity_order);
 }
 
 std::pair<CompositeTrajectory<double>, solvers::MathematicalProgramResult>
@@ -714,6 +874,30 @@ double GcsTrajectoryOptimization::EstimateComplexity() const {
     }
   }
   return result;
+}
+
+trajectories::CompositeTrajectory<double>
+GcsTrajectoryOptimization::NormalizeSegmentTimes(
+    const trajectories::CompositeTrajectory<double>& trajectory) {
+  std::vector<copyable_unique_ptr<Trajectory<double>>> normalized_bezier_curves;
+
+  double start_time = trajectory.start_time();
+  for (int i = 0; i < trajectory.get_number_of_segments(); ++i) {
+    // Create a new BezierCurve with the same control points, but with a
+    // duration of one second.
+    if (const BezierCurve<double>* gcs_segment =
+            dynamic_cast<const BezierCurve<double>*>(&trajectory.segment(i))) {
+      normalized_bezier_curves.emplace_back(
+          std::make_unique<BezierCurve<double>>(start_time, start_time + 1.0,
+                                                gcs_segment->control_points()));
+      start_time += 1.0;
+    } else {
+      throw std::runtime_error(
+          "All segments in the gcs trajectory must be of type "
+          "BezierCurve<double>.");
+    }
+  }
+  return CompositeTrajectory<double>(normalized_bezier_curves);
 }
 
 }  // namespace trajectory_optimization
