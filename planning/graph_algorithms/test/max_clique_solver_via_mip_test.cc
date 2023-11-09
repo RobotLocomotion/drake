@@ -114,6 +114,29 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, ButterflyGraph) {
   TestMaxCliqueViaMip(internal::ButterflyGraph(), 3, possible_solutions);
 }
 
+GTEST_TEST(MaxCliqueSolverViaMipTest, ButteryflyWithSelfLoops) {
+  // The max clique should not change if we allow self loops in the adjacency.
+  // We test that here.
+  Eigen::SparseMatrix<bool> graph_no_loops = internal::ButterflyGraph();
+  std::vector<Triplet<bool>> triplets_identity;
+  for (int i = 0; i < graph_no_loops.rows(); ++i) {
+    triplets_identity.push_back(Triplet<bool>(i, i, 1));
+  }
+  Eigen::SparseMatrix<bool> identity(graph_no_loops.rows(),
+                                     graph_no_loops.rows());
+  identity.setFromTriplets(triplets_identity.begin(), triplets_identity.end());
+
+  Eigen::SparseMatrix<bool> graph = graph_no_loops + identity;
+  VectorX<bool> solution1(5);
+  VectorX<bool> solution2(5);
+  // The largest cliques are (0,1,2) and (2,3,4).
+  solution1 << true, true, true, false, false;
+  solution2 << false, false, true, true, true;
+
+  std::vector<VectorX<bool>> possible_solutions{solution1, solution2};
+  TestMaxCliqueViaMip(graph, 3, possible_solutions);
+}
+
 GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
   // The Petersen graph has a clique number of size 2, so all edges are possible
   // solutions.

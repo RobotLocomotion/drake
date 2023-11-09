@@ -1,8 +1,6 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 
 #include <memory>
-#include <optional>
-#include <utility>
 #include <vector>
 
 #include "drake/common/ssize.h"
@@ -33,13 +31,19 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
   // Reserve the number of non-zero elements in the complement adjacency matrix
   const int num_zero_in_adjacency =
       adjacency_matrix.rows() * adjacency_matrix.rows() -
-      adjacency_matrix.rows() - adjacency_matrix.nonZeros();
+      adjacency_matrix.nonZeros();
+  const int num_zero_on_diagonal =
+      adjacency_matrix.rows() -
+      adjacency_matrix.diagonal().template cast<int>().sum();
+  const int num_expected_constraints =
+      num_zero_in_adjacency - num_zero_on_diagonal;
+
   // Each zero element of the adjacency matrix corresponds to two
   // non-zero entries in the constraint matrix. However, the constraint from
   // adjacency(i,j) = 0 is the same constraint required by adjacency(j,i) = 0,
   // and so we only need to add constraints from the upper triangular part.
   // Therefore, we need exactly num_zero_in_adjacency triplets.
-  A_constraint_triplets.reserve(num_zero_in_adjacency);
+  A_constraint_triplets.reserve(num_expected_constraints);
   int count = 0;
   // TODO(Alexandre.Amice) if performance becomes an issue for large graphs,
   // consider doing this step in parallel.
@@ -52,7 +56,7 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
       }
     }
   }
-  DRAKE_DEMAND(ssize(A_constraint_triplets) == num_zero_in_adjacency);
+  DRAKE_DEMAND(ssize(A_constraint_triplets) == num_expected_constraints);
   SparseMatrix<double> A(count, x.rows());
   A.setFromTriplets(A_constraint_triplets.begin(), A_constraint_triplets.end());
   prog.AddLinearConstraint(A, Eigen::VectorXd::Zero(A.rows()),
