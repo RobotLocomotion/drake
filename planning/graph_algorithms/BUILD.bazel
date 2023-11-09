@@ -18,23 +18,32 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":graph_algorithms_internal",
-        ":max_clique",
+        ":max_clique_solver_base",
+        ":max_clique_solver_via_mip",
     ],
 )
 
 drake_cc_library(
-    name = "max_clique",
-    srcs = ["max_clique.cc"],
+    name = "max_clique_solver_base",
+    srcs = ["max_clique_solver_base.cc"],
     hdrs = [
-        "max_clique.h",
+        "max_clique_solver_base.h",
     ],
     deps = [
-        ":graph_algorithms_internal",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "max_clique_solver_via_mip",
+    srcs = ["max_clique_solver_via_mip.cc"],
+    hdrs = ["max_clique_solver_via_mip.h"],
+    deps = [
+        ":max_clique_solver_base",
         "//solvers:choose_best_solver",
-        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
-        "//solvers:mosek_solver",
         "//solvers:solve",
     ],
 )
@@ -66,13 +75,15 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "max_clique_test",
-    srcs = ["test/max_clique_test.cc"],
+    name = "max_clique_via_mip_test",
+    srcs = ["test/max_clique_solver_via_mip_test.cc"],
     deps = [
         ":common_graphs",
-        ":max_clique",
+        ":max_clique_solver_via_mip",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 

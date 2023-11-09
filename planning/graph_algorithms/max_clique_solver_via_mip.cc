@@ -1,4 +1,4 @@
-#include "drake/planning/graph_algorithms/max_clique.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 
 #include <memory>
 #include <optional>
@@ -6,25 +6,23 @@
 #include <vector>
 
 #include "drake/common/ssize.h"
-#include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
 #include "drake/solvers/choose_best_solver.h"
-#include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
 using Eigen::SparseMatrix;
 
+// MaxCliqueSolverViaMip::MaxCliqueSolverViaMip()
+//    : initial_guess_{std::nullopt}, solver_options_{solvers::SolverOptions()}
+//    {}
+
 MaxCliqueSolverViaMip::MaxCliqueSolverViaMip(
     const std::optional<Eigen::VectorXd>& initial_guess,
     const solvers::SolverOptions& solver_options)
     : initial_guess_{initial_guess}, solver_options_{solver_options} {}
 
-MaxCliqueOptions::MaxCliqueOptions(const MaxCliqueSolverBase* m_solver)
-    : solver{const_cast<MaxCliqueSolverBase*>(std::move(m_solver))} {}
-
-VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
+VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
   const int n = adjacency_matrix.rows();
 
@@ -48,7 +46,7 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
   A_constraint_triplets.reserve(num_zero_in_adjacency);
   int count = 0;
   // TODO(Alexandre.Amice) if performance becomes an issue for large graphs,
-  // consider doing step in parallel.
+  // consider doing this step in parallel.
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
       if (!adjacency_matrix.coeff(i, j)) {
@@ -87,13 +85,6 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
   return result.GetSolution(x).unaryExpr([](double elt) {
     return elt >= 0.5;
   });
-}
-
-VectorX<bool> CalcMaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
-                            const MaxCliqueOptions& options) {
-  DRAKE_THROW_UNLESS(adjacency_matrix.rows() == adjacency_matrix.cols());
-  DRAKE_THROW_UNLESS(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
-  return options.solver->SolveMaxClique(adjacency_matrix);
 }
 
 }  // namespace graph_algorithms
