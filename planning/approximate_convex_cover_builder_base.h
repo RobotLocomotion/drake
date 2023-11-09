@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/planning/graph_algorithms/max_clique.h"
@@ -22,7 +23,13 @@ class CoverageCheckerBase {
    * Check that the current sets provide sufficient coverage.
    */
   virtual bool CheckCoverage(
-      const std::vector<ConvexSet>& current_sets) const = 0;
+      const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
+
+  /**
+   * Check that the current sets provide sufficient coverage.
+   */
+  virtual bool CheckCoverage(
+      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
   virtual ~CoverageCheckerBase() {}
 
@@ -83,8 +90,8 @@ class ConvexSetFromCliqueBuilderBase {
   /**
    * Given a set of points, build a convex set.
    */
-  virtual ConvexSet BuildConvexSet(
-      const Eigen::Ref<const Eigen::MatrixXd>& clique) const = 0;
+  virtual std::unique_ptr<ConvexSet> BuildConvexSet(
+      const Eigen::Ref<const Eigen::MatrixXd>& clique_points) const = 0;
 
   virtual ~ConvexSetFromCliqueBuilderBase() {}
 
@@ -159,7 +166,7 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
   const int num_threads_;
 };
 
-std::vector<ConvexSet> ApproximateConvexCoverFromCliqueCover(
+std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
     const ApproximateConvexCoverFromCliqueCoverOptions& options);
 
 }  // namespace planning
