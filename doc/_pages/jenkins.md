@@ -128,7 +128,7 @@ more of these commands:
 
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-packaging please``
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-monterey-unprovisioned-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-bazel-experimental-packaging please``
 * ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
@@ -153,7 +153,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-wheel-experimental-release``
-* ``@drake-jenkins-bot mac-arm-monterey-unprovisioned-clang-wheel-experimental-release``
+* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-wheel-experimental-release``
 * ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-wheel-experimental-release``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
