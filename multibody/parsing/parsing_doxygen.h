@@ -166,6 +166,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_child
 - @ref tag_drake_collision_filter_group
 - @ref tag_drake_compliant_hydroelastic
+- @ref tag_drake_controller_gains
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
 - @ref tag_drake_diffuse_map
@@ -457,6 +458,24 @@ If present, this element sets the compliance type of the element being defined
 to be compliant, as opposed to rigid, in hydroelastic contact models.
 
 @see @ref tag_drake_proximity_properties, @ref creating_hydro_reps
+
+@subsection tag_drake_controller_gains drake:controller_gains
+
+- SDFormat path: `//model/joint/drake:controller_gains`
+- URDF path: `/robot/joint/actuator/drake:controller_gains`
+- Syntax: Two attributes `p` (proportional gain) containing a positive floating
+          point value and `d` (derivative gain) containing a non-negative
+          floating point value.
+
+@subsection tag_drake_controller_gains_semantics Semantics
+
+If present, this element provides proportional and derivative gains for a low
+level PD controller for the drake::multibody::JointActuator associated with the
+drake::multibody::Joint the element is defined under. It is stored in a
+drake::multibody::PdControllerGains object in the
+drake::multibody::JointActuator class. Both attributes `p` and `d` are required.
+
+@see @ref mbp_actuation, @ref pd_controlled_joint_actuator
 
 @subsection tag_drake_damping drake:damping
 
