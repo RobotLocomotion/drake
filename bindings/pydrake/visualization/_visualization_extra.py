@@ -10,9 +10,6 @@ from ._plotting import (
     plot_sublevelset_quadratic,
 )
 from ._video import (
-    ColorizeDepthImage,
-    ColorizeLabelImage,
-    ConcatenateImages,
     VideoWriter,
 )
 

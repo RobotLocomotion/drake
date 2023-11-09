@@ -14,7 +14,7 @@ from pydrake.math import (
 )
 
 
-class TestVisualization(unittest.TestCase):
+class TestSliders(unittest.TestCase):
 
     def test_meshcat_pose_sliders(self):
         # Construct a sliders system, using every available option.
