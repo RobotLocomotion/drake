@@ -13,10 +13,6 @@ namespace planning {
 namespace graph_algorithms {
 using Eigen::SparseMatrix;
 
-// MaxCliqueSolverViaMip::MaxCliqueSolverViaMip()
-//    : initial_guess_{std::nullopt}, solver_options_{solvers::SolverOptions()}
-//    {}
-
 MaxCliqueSolverViaMip::MaxCliqueSolverViaMip(
     const std::optional<Eigen::VectorXd>& initial_guess,
     const solvers::SolverOptions& solver_options)
@@ -71,7 +67,7 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
     // TODO(Alexandre.Amice) update the error message if other max clique
     // solvers based become available.
     throw std::runtime_error(
-        "CalcMaxClique: There is no solver available that can solve the "
+        "SolveMaxClique: There is no solver available that can solve the "
         "mixed-integer version of maximum clique. Please check "
         "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
         "details about supported mixed integer solvers and how to enable "
