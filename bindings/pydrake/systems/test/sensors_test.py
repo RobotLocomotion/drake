@@ -473,6 +473,10 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(sensor.parent_frame_id(), parent_id)
             check_ports(sensor)
 
+        # Test reposing the camera; simply use the last camera constructed.
+        sensor.SetPoseInParent(context=sensor.CreateDefaultContext(),
+                               X_PB=RigidTransform(p=[1, 2, 3]))
+
         # Test discrete camera. We'll simply use the last sensor constructed.
 
         period = mut.RgbdSensorDiscrete.kDefaultPeriod

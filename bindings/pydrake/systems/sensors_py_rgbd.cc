@@ -100,7 +100,9 @@ void DefineSensorsRgbd(py::module m) {
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
       .def("parent_frame_id", &RgbdSensor::parent_frame_id,
-          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc)
+      .def("SetPoseInParent", &RgbdSensor::SetPoseInParent, py::arg("context"),
+          py::arg("X_PB"), doc.RgbdSensor.SetPoseInParent.doc);
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(

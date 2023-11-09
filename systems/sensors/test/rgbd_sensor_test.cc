@@ -250,7 +250,8 @@ class RgbdSensorTest : public ::testing::Test {
 
     // Confirm the pose used by the renderer is the expected X_WC pose. We do
     // this by invoking a render (the dummy render engine will cache the last
-    // call to UpdateViewpoint()).
+    // call to UpdateViewpoint()). This only tests the color rendering. We're
+    // assuming if it's correct for color, then depth and label will be ok.
     if (pre_render_callback) pre_render_callback();
     sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
     EXPECT_TRUE(
@@ -313,6 +314,15 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
       ValidateConstruction(scene_graph_->world_frame_id(), X_WC_expected));
   EXPECT_EQ(sensor_->image_time_output_port().Eval(*sensor_context_),
             Vector1d{22.2});
+
+  // Now confirm we can change its pose in the parent frame and see it percolate
+  // through.
+  const RigidTransformd X_WB_new(RollPitchYawd(0.5, 0.75, 1.0),
+                                 Vector3d(-1, 0, 1));
+  sensor_->SetPoseInParent(sensor_context_, X_WB_new);
+  const RigidTransformd X_WC_new_expected = X_WB_new * X_BC;
+  EXPECT_TRUE(
+      ValidateConstruction(scene_graph_->world_frame_id(), X_WC_new_expected));
 }
 
 // Similar to the AnchoredCamera test -- but, in this case, the reported pose

@@ -29,10 +29,11 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        DepthRenderCamera depth_camera)
     : parent_frame_id_(parent_id),
       color_camera_(std::move(color_camera)),
-      depth_camera_(std::move(depth_camera)),
-      X_PB_(X_PB) {
+      depth_camera_(std::move(depth_camera)) {
   const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
   const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
+
+  X_PB_index_ = this->DeclareAbstractParameter(Value<RigidTransformd>(X_PB));
 
   query_object_input_port_ = &this->DeclareAbstractInputPort(
       "geometry_query", Value<geometry::QueryObject<double>>{});
@@ -103,17 +104,24 @@ const OutputPort<double>& RgbdSensor::image_time_output_port() const {
   return *image_time_output_port_;
 }
 
+void RgbdSensor::SetPoseInParent(Context<double>* context,
+                                 const math::RigidTransformd& X_PB) const {
+  context->get_mutable_parameters()
+      .template get_mutable_abstract_parameter<RigidTransformd>(X_PB_index_) =
+      X_PB;
+}
+
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderColorImage(color_camera_, parent_frame_id_, X_PB_,
+  query_object.RenderColorImage(color_camera_, parent_frame_id_, X_PB(context),
                                 color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderDepthImage(depth_camera_, parent_frame_id_, X_PB_,
+  query_object.RenderDepthImage(depth_camera_, parent_frame_id_, X_PB(context),
                                 depth_image);
 }
 
@@ -127,7 +135,7 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderLabelImage(color_camera_, parent_frame_id_, X_PB_,
+  query_object.RenderLabelImage(color_camera_, parent_frame_id_, X_PB(context),
                                 label_image);
 }
 
@@ -135,16 +143,21 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
                           RigidTransformd* X_WB) const {
   DRAKE_DEMAND(X_WB != nullptr);
   if (parent_frame_id_ == SceneGraph<double>::world_frame_id()) {
-    *X_WB = X_PB_;
+    *X_WB = X_PB(context);
   } else {
     const QueryObject<double>& query_object = get_query_object(context);
-    *X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
+    *X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB(context);
   }
 }
 
 void RgbdSensor::CalcImageTime(const Context<double>& context,
                                BasicVector<double>* output) const {
   output->SetFromVector(Vector1d{context.get_time()});
+}
+
+const RigidTransformd& RgbdSensor::X_PB(const Context<double>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<RigidTransformd>(X_PB_index_);
 }
 
 }  // namespace sensors

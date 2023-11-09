@@ -175,6 +175,11 @@ class RgbdSensor final : public LeafSystem<double> {
    the current time). */
   const OutputPort<double>& image_time_output_port() const;
 
+  /** The pose of the sensor body in the parent frame is a system parameter.
+   It is stored in the context and can be edited. */
+  void SetPoseInParent(Context<double>* context,
+                       const math::RigidTransformd& X_PB) const;
+
  private:
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
@@ -188,6 +193,8 @@ class RgbdSensor final : public LeafSystem<double> {
   void CalcX_WB(const Context<double>& context,
                 math::RigidTransformd* X_WB) const;
   void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
+
+  const math::RigidTransformd& X_PB(const Context<double>& context) const;
 
   // Extract the query object from the given context (via the appropriate input
   // port.
@@ -211,8 +218,9 @@ class RgbdSensor final : public LeafSystem<double> {
   // The camera specifications for color/label and depth.
   const geometry::render::ColorRenderCamera color_camera_;
   const geometry::render::DepthRenderCamera depth_camera_;
-  // The position of the camera's B frame relative to its parent frame P.
-  const math::RigidTransformd X_PB_;
+
+  // The index of the X_PB parameter in the context.
+  int X_PB_index_{};
 };
 
 }  // namespace sensors

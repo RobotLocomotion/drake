@@ -42,9 +42,6 @@ drake_pybind_library(
         "visualization_py.h",
     ],
     package_info = PACKAGE_INFO,
-    py_data = [
-        "_camera_rig.sdf",
-    ],
     py_deps = [
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/planning",
@@ -124,14 +121,6 @@ install_files(
         "bin/run_installed_meldis.py": "meldis",
         "bin/run_installed_model_visualizer.py": "model_visualizer",
     },
-)
-
-install_files(
-    name = "install_models",
-    dest = "share/drake/bindings/pydrake/visualization",
-    files = [
-        "_camera_rig.sdf",
-    ],
 )
 
 PY_LIBRARIES = [
