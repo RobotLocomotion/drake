@@ -2,9 +2,10 @@
 
 #include <vector>
 #include <queue>
+#include <memory>
 
 #include "drake/geometry/optimization/convex_set.h"
-#include "drake/planning/graph_algorithms/max_clique.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 
 namespace drake {
 namespace planning {
@@ -149,13 +150,13 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
   [[nodiscard]] int num_threads() const { return num_threads_; }
 
  private:
-  const CoverageCheckerBase* coverage_checker_;
+  const std::unique_ptr<CoverageCheckerBase> coverage_checker_;
 
-  const PointSamplerBase* point_sampler_;
+  const std::unique_ptr<PointSamplerBase> point_sampler_;
 
-  const AdjacencyMatrixBuilderBase* adjacency_matrix_builder_;
+  const std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder_;
 
-  const ConvexSetFromCliqueBuilderBase* set_builder_;
+  const std::unique_ptr<ConvexSetFromCliqueBuilderBase> set_builder_;
 
   const MaxCliqueOptions max_clique_options_;
 
