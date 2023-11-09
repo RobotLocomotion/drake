@@ -34,10 +34,11 @@ class MaxCliqueSolverViaMip final : public MaxCliqueSolverBase {
   MaxCliqueSolverViaMip(const std::optional<Eigen::VectorXd>& initial_guess,
                         const solvers::SolverOptions& solver_options);
 
-  //  VectorX<bool> SolveMaxClique(
-  //      const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
+  void set_solver_options(const solvers::SolverOptions& solver_options) {
+    solver_options_ = solver_options;
+  }
 
-  [[nodiscard]] solvers::SolverOptions solver_options() const {
+  [[nodiscard]] solvers::SolverOptions get_solver_options() const {
     return solver_options_;
   }
 
