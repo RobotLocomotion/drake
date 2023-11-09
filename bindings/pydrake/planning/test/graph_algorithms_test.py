@@ -3,7 +3,8 @@ import scipy.sparse as sp
 import unittest
 
 import pydrake.planning as mut
-from pydrake.solvers import SolverOptions, CommonSolverOption
+from pydrake.solvers import (SolverOptions, CommonSolverOption,
+                             MosekSolver, GurobiSolver)
 from pydrake.common.test_utilities import numpy_compare
 
 
@@ -78,6 +79,10 @@ class TestGraphAlgorithms(unittest.TestCase):
         self.assertFalse(solver.get_solver_options().get_print_to_console())
 
         # Test solve max clique
-        max_clique = solver.SolveMaxClique(graph)
-        # Butteryfly graph has a max clique of 3.
-        self.assertEqual(max_clique.sum(), 3)
+        def GurobiOrMosekSolverAvailable():
+            return (MosekSolver().available() and MosekSolver().enabled()) or (
+                    GurobiSolver().available() and GurobiSolver().enabled())
+        if GurobiOrMosekSolverAvailable():
+            max_clique = solver.SolveMaxClique(graph)
+            # Butteryfly graph has a max clique of 3.
+            self.assertEqual(max_clique.sum(), 3)
