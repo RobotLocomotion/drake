@@ -38,6 +38,7 @@ drake_pybind_library(
         "planning_py_collision_checker_interface_types.cc",
         "planning_py_robot_diagram.cc",
         "planning_py_trajectory_optimization.cc",
+        "planning_py_graph_algorithms.cc",
         "planning_py_visibility_graph.cc",
     ],
     package_info = PACKAGE_INFO,

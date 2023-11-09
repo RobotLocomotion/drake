@@ -34,7 +34,6 @@ drake_cc_library(
         "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
-        ":max_stable_set",
         "//solvers:mosek_solver",
         "//solvers:solve",
     ],
