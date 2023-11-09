@@ -180,7 +180,7 @@ template <typename T>
 void DeformableModel<T>::AddExternalForce(
     std::unique_ptr<ExternalForceField<T>> external_force) {
   this->ThrowIfSystemResourcesDeclared(__func__);
-  external_forces_.emplace_back(std::move(external_force));
+  external_forces_.push_back(std::move(external_force));
 }
 
 template <typename T>
@@ -349,7 +349,7 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   body_index_to_external_forces_.resize(num_bodies());
   for (int i = 0; i < num_bodies(); ++i) {
     for (int j = 0; j < ssize(external_forces_); ++j) {
-      body_index_to_external_forces_[i].emplace_back(external_forces_[j].get());
+      body_index_to_external_forces_[i].push_back(external_forces_[j].get());
     }
   }
 

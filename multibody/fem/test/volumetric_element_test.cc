@@ -367,7 +367,7 @@ TEST_F(VolumetricElementTest, ExternalForce) {
 
   VectorX<AD> gravity_force = VectorX<AD>::Zero(kNumDofs);
   const AD scale = 1.0;
-  element().AddScaledExternalForce(data, scale, evaluator, &gravity_force);
+  element().AddScaledExternalForces(data, scale, evaluator, &gravity_force);
   Vector3<AD> total_force = Vector3<AD>::Zero();
   for (int i = 0; i < kNumNodes; ++i) {
     total_force += gravity_force.segment<3>(3 * i);

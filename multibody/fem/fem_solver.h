@@ -53,6 +53,8 @@ class FemSolver {
    solver converges or -1 if the solver fails to converge.
    @pre All entries in `nonparticipating_vertices` are in
    [0, prev_state.num_nodes()).
+   @note External forces are always evaluated explicitly at the previous time
+   step regardless of the time integration scheme used.
    @throws std::exception if the input `prev_state` is incompatible with the FEM
    model solved by this solver. */
   int AdvanceOneTimeStep(

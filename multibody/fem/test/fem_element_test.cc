@@ -159,16 +159,16 @@ TEST_F(FemElementTest, MassMatrix) {
 }
 
 TEST_F(FemElementTest, ExternalForce) {
-  auto f = [](const Vector3<T>& p_WQ) {
-    return 2.7 * p_WQ;
-  };
-  ExplicitForceField<T> explicit_force_field(f);
+  const T mass_density = 2.7;
+  const Vector3<T> g(0, 0, -9.81);
+  const Vector3<T> f = g * mass_density;
+  GravityForceField<T> gravity_field(g, mass_density);
   /* The explicit force field doesn't depend on Context, but a Context is needed
    for a ForceDensityEvaluator. So we create a dummy Context that's unused. */
   MultibodyPlant<T> plant(0.01);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
-  multibody::internal::ForceDensityEvaluator<T> evaluator(&explicit_force_field,
+  multibody::internal::ForceDensityEvaluator<T> evaluator(&gravity_field,
                                                           context.get());
 
   Vector<T, kNumDofs> external_force =
@@ -176,11 +176,10 @@ TEST_F(FemElementTest, ExternalForce) {
   const Vector<T, kNumDofs> old_external_force = external_force;
   const T scale = 3.14;
   const Data& data = EvalElementData();
-  element_.AddScaledExternalForce(data, scale, evaluator, &external_force);
+  element_.AddScaledExternalForces(data, scale, evaluator, &external_force);
   for (int i = 0; i < kNumNodes; ++i) {
-    const Vector3<T> node_q = data.element_q.template segment<3>(3 * i);
     EXPECT_EQ(external_force.segment<3>(3 * i),
-              old_external_force.segment<3>(3 * i) + scale * f(node_q));
+              old_external_force.segment<3>(3 * i) + scale * f);
   }
 }
 

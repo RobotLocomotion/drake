@@ -33,7 +33,6 @@ class ForceDensityEvaluator {
     return force_field_->EvaluateAt(*plant_context_, p_WQ);
   }
 
-  /* Compares two evaluators for equality. */
   template <typename U>
   friend bool operator==(const ForceDensityEvaluator<U>& lhs,
                          const ForceDensityEvaluator<U>& rhs);
@@ -43,6 +42,7 @@ class ForceDensityEvaluator {
   const systems::Context<T>* plant_context_{nullptr};
 };
 
+/* Compares two evaluators for equality. Used for unit tests. */
 template <typename T>
 bool operator==(const ForceDensityEvaluator<T>& lhs,
                 const ForceDensityEvaluator<T>& rhs) {

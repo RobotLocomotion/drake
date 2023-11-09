@@ -90,8 +90,8 @@ class FemModelImpl : public FemModel<typename Element::T> {
       elements_[e].CalcInverseDynamics(element_data[e], &element_residual);
       /* The -fₑₓₜ term. */
       for (const auto& f : force_densities) {
-        elements_[e].AddScaledExternalForce(element_data[e], -1.0, f,
-                                            &element_residual);
+        elements_[e].AddScaledExternalForces(element_data[e], -1.0, f,
+                                             &element_residual);
       }
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();

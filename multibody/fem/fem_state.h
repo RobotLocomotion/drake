@@ -78,7 +78,9 @@ class FemState {
 #ifndef DRAKE_DOXYGEN_CXX
   /* Getter and setter for the external force density field evaluators. The
    external forces are always evaluated explicitly in the FEM model,
-   regardless of the time steppin scheme used. */
+   regardless of the time stepping scheme used. That is, force fields are
+   evaluated at the current states (including rigid and deformable states as
+   well as inputs) of the owning MultibodyPlant. */
   const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
   GetExternalForces() const;
 

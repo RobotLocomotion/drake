@@ -146,6 +146,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            owning this deformable model. */
   void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force);
 
+  // TODO(xuchenhan-tri): We should allow instrospecting external forces
+  // pre-finalize. Currently we add gravity forces at finalize time (instead of
+  // immediately after a deformable body is registered) because when gravity is
+  // modified via MbP's API, there's no easy way to propagate that information
+  // to deformable models.
   /** Returns the external forces acting on the deformable body with the given
    `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
@@ -274,9 +279,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
-  /*The collection all external forces, indexed by
-   `body_index_to_external_forces_`. */
+  /*The collection all external forces. */
   std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
+  /* body_index_to_external_forces_[i] is the collection of pointers to external
+   forces applied to body i. */
   std::vector<std::vector<const ExternalForceField<T>*>>
       body_index_to_external_forces_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>

@@ -29,8 +29,13 @@ class ExternalForceField {
  public:
   virtual ~ExternalForceField() = default;
 
+  // TODO(xuchenhan-tri): Switch the force density measure to the more intuitive
+  // force per current configuration volume. This will make gravity field
+  // implementation slightly more cumbersome.
   /** Evaluates the force density [N/m³] with the given `context` of the
-   owning MultibodyPlant and a position in world, `p_WQ`. */
+   owning MultibodyPlant and a position in world, `p_WQ`.
+   @note this returns the force per unit of _reference_ configuration volume
+   instead of force per unit of _current_ configuration volume. */
   Vector3<T> EvaluateAt(const systems::Context<T>& context,
                         const Vector3<T>& p_WQ) const {
     return DoEvaluateAt(context, p_WQ);
@@ -137,31 +142,6 @@ class ExternalForceField {
   }
 
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
-};
-
-/** A constant external force field that has an explicit functional form. */
-template <typename T>
-class ExplicitForceField final : public ExternalForceField<T> {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExplicitForceField)
-
-  /** Constructs an explicit external force field that has an explicit
-   functional form described by the given input `field` */
-  explicit ExplicitForceField(
-      std::function<Vector3<T>(const Vector3<T>&)> field)
-      : field_(std::move(field)) {}
-
- private:
-  Vector3<T> DoEvaluateAt(const systems::Context<T>&,
-                          const Vector3<T>& p_WQ) const final {
-    return field_(p_WQ);
-  };
-
-  std::unique_ptr<ExternalForceField<T>> DoClone() const final {
-    return std::make_unique<ExplicitForceField<T>>(*this);
-  }
-
-  std::function<Vector3<T>(const Vector3<T>&)> field_;
 };
 
 /** A uniform gravitational external force field for a uniform density object.
