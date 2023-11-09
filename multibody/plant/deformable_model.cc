@@ -178,13 +178,13 @@ systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
 
 template <typename T>
 void DeformableModel<T>::AddExternalForce(
-    std::unique_ptr<ExternalForceField<T>> external_force) {
+    std::unique_ptr<ForceDensityField<T>> external_force) {
   this->ThrowIfSystemResourcesDeclared(__func__);
-  external_forces_.emplace_back(std::move(external_force));
+  external_forces_.push_back(std::move(external_force));
 }
 
 template <typename T>
-const std::vector<const ExternalForceField<T>*>&
+const std::vector<const ForceDensityField<T>*>&
 DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
   this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
@@ -349,7 +349,7 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   body_index_to_external_forces_.resize(num_bodies());
   for (int i = 0; i < num_bodies(); ++i) {
     for (int j = 0; j < ssize(external_forces_); ++j) {
-      body_index_to_external_forces_[i].emplace_back(external_forces_[j].get());
+      body_index_to_external_forces_[i].push_back(external_forces_[j].get());
     }
   }
 
@@ -367,7 +367,7 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
 
   /* Declare cache entries and input ports for external forces that need them.
    */
-  for (std::unique_ptr<ExternalForceField<T>>& external_force :
+  for (std::unique_ptr<ForceDensityField<T>>& external_force :
        external_forces_) {
     external_force->DeclareSystemResources(plant_);
   }

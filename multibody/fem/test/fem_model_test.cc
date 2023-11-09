@@ -86,7 +86,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
   model.CalcResidual(*fem_state, &residual);
 
   /* Since DummyElement adds the external force density directly to the
-   residual (see DummyElement::DoAddScaledExternalForce for detail), we expect
+   residual (see DummyElement::DoAddScaledExternalForces for detail), we expect
    the difference between inverse dynamics force and the residual to be equal
    to the gravity force density. */
   VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
@@ -96,6 +96,68 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
       LinearDummyElement::inverse_dynamics_force();
   for (int i = 0; i < model.num_nodes(); ++i) {
     expected_residual.segment<3>(3 * i) -= gravity_vector * mass_density;
+  }
+
+  EXPECT_TRUE(CompareMatrices(expected_residual, residual));
+}
+
+/* Similar to CalcResidualWithContextDependenetExternalForce, but focuses on
+ testing the data flow from context to residual when the force density field
+ depends on the context. */
+GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
+  LinearDummyModel model;
+  LinearDummyModel::DummyBuilder builder(&model);
+  builder.AddElementWithDistinctNodes();
+  builder.Build();
+  unique_ptr<FemState<double>> fem_state = model.MakeFemState();
+
+  /* A force field where the magnitude of the force density depends on time. */
+  class TimeScaledForceDensityField final : public ForceDensityField<double> {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField)
+
+    /* Constructs a force field that implements the test force f = time *
+     unit_vector`,· where `time` is the time currently stored in the MbP's
+     context  */
+    explicit TimeScaledForceDensityField(const Vector3d unit_vector)
+        : unit_vector_(unit_vector) {}
+
+   private:
+    Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
+                                 const Vector3<double>&) const final {
+      return context.get_time() * unit_vector_;
+    };
+
+    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+      return std::make_unique<TimeScaledForceDensityField>(*this);
+    }
+
+    Vector3d unit_vector_;
+  };
+
+  const Vector3d unit_vector = Vector3d(1, 2, 3).normalized();
+  TimeScaledForceDensityField force_field(unit_vector);
+
+  MultibodyPlant<double> plant(0.01);
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  const double kTime = 1.23;
+  context->SetTime(kTime);
+  std::vector<multibody::internal::ForceDensityEvaluator<double>> evaluators;
+  evaluators.emplace_back(&force_field, context.get());
+  fem_state->SetExternalForces(std::move(evaluators));
+
+  VectorXd residual(model.num_dofs());
+  model.CalcResidual(*fem_state, &residual);
+
+  /* Since DummyElement adds the external force density directly to the
+   residual (see DummyElement::DoAddScaledExternalForces for detail), we expect
+   the difference between inverse dynamics force and the residual to be equal
+   to the force density. */
+  VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
+  expected_residual += LinearDummyElement::inverse_dynamics_force();
+  for (int i = 0; i < model.num_nodes(); ++i) {
+    expected_residual.segment<3>(3 * i) -= kTime * unit_vector;
   }
 
   EXPECT_TRUE(CompareMatrices(expected_residual, residual));

@@ -331,11 +331,35 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
 }
 
 TEST_F(DeformableModelTest, ExternalForces) {
+  /* A user defined force density field. */
+  class ConstantForceDensityField final : public ForceDensityField<double> {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField)
+
+    /* Constructs an force density field that has the functional form given by
+     input `field` */
+    explicit ConstantForceDensityField(
+        std::function<Vector3<double>(const Vector3<double>&)> field)
+        : field_(std::move(field)) {}
+
+   private:
+    Vector3<double> DoEvaluateAt(const systems::Context<double>&,
+                                 const Vector3<double>& p_WQ) const final {
+      return field_(p_WQ);
+    };
+
+    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+      return std::make_unique<ConstantForceDensityField>(*this);
+    }
+
+    std::function<Vector3<double>(const Vector3<double>&)> field_;
+  };
+
   auto force_field = [](const Vector3d& x) {
     return 3.14 * x;
   };
   deformable_model_ptr_->AddExternalForce(
-      std::make_unique<ExplicitForceField<double>>(force_field));
+      std::make_unique<ConstantForceDensityField>(force_field));
   constexpr double kRezHint = 0.5;
   DeformableBodyId body_id = RegisterSphere(kRezHint);
   /* Pre-finalize calls to GetExternalForces are not allowed. */
@@ -351,7 +375,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
   /* Post-finalize calls to AddExternalForce are not allowed. */
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->AddExternalForce(
-          std::make_unique<ExplicitForceField<double>>(force_field)),
+          std::make_unique<ConstantForceDensityField>(force_field)),
       ".*AddExternalForce.*after system resources have been declared.*");
 
   DeformableBodyId fake_id = DeformableBodyId::get_new_id();
@@ -359,11 +383,11 @@ TEST_F(DeformableModelTest, ExternalForces) {
       deformable_model_ptr_->GetExternalForces(fake_id),
       fmt::format(".*No.*id.*{}.*registered.*", fake_id));
 
-  const std::vector<const ExternalForceField<double>*>& external_forces =
+  const std::vector<const ForceDensityField<double>*>& external_forces =
       deformable_model_ptr_->GetExternalForces(body_id);
   for (const auto* force : external_forces) {
     const auto* g = dynamic_cast<const GravityForceField<double>*>(force);
-    const auto* f = dynamic_cast<const ExplicitForceField<double>*>(force);
+    const auto* f = dynamic_cast<const ConstantForceDensityField*>(force);
     /* We know two external forces are added to the deformable body, one is
      gravity (added automatically), the other is the explicit force defined
      above. */

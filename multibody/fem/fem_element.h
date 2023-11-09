@@ -9,7 +9,7 @@
 #include "drake/multibody/fem/damping_model.h"
 #include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fem/fem_state.h"
-#include "drake/multibody/plant/external_force_field.h"
+#include "drake/multibody/plant/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -190,8 +190,8 @@ class FemElement {
                                                                     M);
   }
 
-  /* Accumulates the external force besides gravity of this element given the
-   `data` and the `force_density_field`.
+  /* Accumulates external forces for this element given the `data` and the
+   `force_density_field`.
    @param[in] data  The FEM data to evaluate the external force.
    @param[in] scale  The scaling factor applied to the external force.
    @param[in] force_density_field  Evaluates the force density at a given
@@ -199,12 +199,12 @@ class FemElement {
    @param[in, out] external_force  The vector to which the scaled external force
    will be added.
    @pre external_force != nullptr */
-  void AddScaledExternalForce(
+  void AddScaledExternalForces(
       const Data& data, const T& scale,
       const multibody::internal::ForceDensityEvaluator<T>& force_density,
       EigenPtr<Vector<T, num_dofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
-    static_cast<const DerivedElement*>(this)->DoAddScaledExternalForce(
+    static_cast<const DerivedElement*>(this)->DoAddScaledExternalForces(
         data, scale, force_density, external_force);
   }
 
@@ -292,13 +292,13 @@ class FemElement {
   }
 
   /* `DerivedElement` must provide an implementation for
-   `DoAddScaledExternalForce()` to provide external forces besides gravity that
-   is up-to-date given the data and the external force field. The caller
+   `DoAddScaledExternalForces()` to accumulate external forces to this element
+   that is up-to-date given the data and the force density evaluator. The caller
    guarantees that the output pointer is non-null; the implementation in the
    derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
-   for `DoAddScaledExternalForce()`. */
-  void DoAddScaledExternalForce(
+   for `DoAddScaledExternalForces()`. */
+  void DoAddScaledExternalForces(
       const Data&, const T&,
       const multibody::internal::ForceDensityEvaluator<T>&,
       EigenPtr<Vector<T, num_dofs>>) const {

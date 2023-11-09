@@ -71,16 +71,13 @@ class FemStateTest : public ::testing::Test {
             .cache_index();
 
     /* Set up a few external forces and their evaluators for testing. */
-    auto f1 = [](const Vector3<T>& x) {
-      return 3.14 * x;
-    };
-    auto f2 = [](const Vector3<T>& x) {
-      return 2.7 * x;
-    };
+    const T mass_density = 2.7;
+    const Vector3<T> g1(0, 0, -9.81);
+    const Vector3<T> g2(0, 0, -10.0);
     external_forces_.emplace_back(
-        std::make_unique<ExplicitForceField<T>>(std::move(f1)));
+        std::make_unique<GravityForceField<T>>(g1, mass_density));
     external_forces_.emplace_back(
-        std::make_unique<ExplicitForceField<T>>(std::move(f2)));
+        std::make_unique<GravityForceField<T>>(g2, mass_density));
     MultibodyPlant<T> plant(0.01);
     plant.Finalize();
     plant_context_ = plant.CreateDefaultContext();
@@ -88,10 +85,6 @@ class FemStateTest : public ::testing::Test {
                                            plant_context_.get());
     force_density_evaluators_.emplace_back(external_forces_[1].get(),
                                            plant_context_.get());
-  }
-
-  void AddExternalForcesToState(FemState<T>* state) {
-    state->SetExternalForces(force_density_evaluators_);
   }
 
   /* Checks that `clone` is a deep copy of `state`. */
@@ -115,7 +108,7 @@ class FemStateTest : public ::testing::Test {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   systems::CacheIndex cache_index_;
   std::vector<ForceDensityEvaluator<T>> force_density_evaluators_;
-  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
+  std::vector<std::unique_ptr<ForceDensityField<T>>> external_forces_;
   std::unique_ptr<systems::Context<T>> plant_context_;
 };
 
@@ -170,7 +163,7 @@ TYPED_TEST(FemStateTest, SetStates) {
 TYPED_TEST(FemStateTest, SetExternalForces) {
   using T = TypeParam;
   FemState<T> state(this->fem_state_system_.get());
-  this->AddExternalForcesToState(&state);
+  state.SetExternalForces(this->force_density_evaluators_);
   EXPECT_EQ(state.GetExternalForces(), this->force_density_evaluators_);
 }
 
@@ -195,7 +188,7 @@ TYPED_TEST(FemStateTest, Clone) {
   /* Owned context version. */
   {
     FemState<T> state(this->fem_state_system_.get());
-    this->AddExternalForcesToState(&state);
+    state.SetExternalForces(this->force_density_evaluators_);
     std::unique_ptr<FemState<T>> clone = state.Clone();
     this->VerifyIsClone(state, *clone);
   }
@@ -203,7 +196,7 @@ TYPED_TEST(FemStateTest, Clone) {
   {
     auto context = this->fem_state_system_->CreateDefaultContext();
     FemState<T> state(this->fem_state_system_.get(), context.get());
-    this->AddExternalForcesToState(&state);
+    state.SetExternalForces(this->force_density_evaluators_);
     std::unique_ptr<FemState<T>> clone = state.Clone();
     this->VerifyIsClone(state, *clone);
   }
