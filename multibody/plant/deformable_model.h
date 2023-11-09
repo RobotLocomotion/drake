@@ -12,7 +12,7 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/external_force_field.h"
+#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/tree/body.h"
 
@@ -144,14 +144,19 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    all deformable bodies.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model. */
-  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force);
+  void AddExternalForce(std::unique_ptr<ForceDensityField<T>> external_force);
 
-  /** Returns the external forces acting on the deformable body with the given
-   `id`.
+  // TODO(xuchenhan-tri): We should allow instrospecting external forces
+  // pre-finalize. Currently we add gravity forces at finalize time (instead of
+  // immediately after a deformable body is registered) because when gravity is
+  // modified via MbP's API, there's no easy way to propagate that information
+  // to deformable models.
+  /** Returns the force density fields acting on the deformable body with the
+   given `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
    or if no deformable body with the given `id` has been registered in this
    model. */
-  const std::vector<const ExternalForceField<T>*>& GetExternalForces(
+  const std::vector<const ForceDensityField<T>*>& GetExternalForces(
       DeformableBodyId id) const;
 
   /** Returns the FemModel for the body with `id`.
@@ -274,11 +279,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
-  /*The collection all external forces, indexed by
-   `body_index_to_external_forces_`. */
-  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
-  std::vector<std::vector<const ExternalForceField<T>*>>
-      body_index_to_external_forces_;
+  /*The collection all external forces. */
+  std::vector<std::unique_ptr<ForceDensityField<T>>> force_densities_;
+  /* body_index_to_force_densities_[i] is the collection of pointers to external
+   forces applied to body i. */
+  std::vector<std::vector<const ForceDensityField<T>*>>
+      body_index_to_force_densities_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
   /* Only used pre-finalize. Empty post-finalize. */

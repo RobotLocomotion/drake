@@ -17,27 +17,32 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
-/** The %ExternalForceField class is an abstract base class that represents a
+/** The %ForceDensityField class is an abstract base class that represents a
  force density field affecting deformable bodies in a MultibodyPlant. The
  force field is described by the member function `EvaluateAt` which takes as
  input a position in the world frame and returns the force density from the
- external force field at the given location, with unit [N/m³]. The force density
+ force density field at the given location, with unit [N/m³]. The force density
  function can depend on other Context-dependent parameters.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-class ExternalForceField {
+class ForceDensityField {
  public:
-  virtual ~ExternalForceField() = default;
+  virtual ~ForceDensityField() = default;
 
+  // TODO(xuchenhan-tri): Switch the force density measure to the more intuitive
+  // force per current configuration volume. This will make gravity field
+  // implementation slightly more cumbersome.
   /** Evaluates the force density [N/m³] with the given `context` of the
-   owning MultibodyPlant and a position in world, `p_WQ`. */
+   owning MultibodyPlant and a position in world, `p_WQ`.
+   @note this returns the force per unit of _reference_ configuration volume
+   instead of force per unit of _current_ configuration volume. */
   Vector3<T> EvaluateAt(const systems::Context<T>& context,
                         const Vector3<T>& p_WQ) const {
     return DoEvaluateAt(context, p_WQ);
   }
 
-  /** Returns an identical copy of `this` ExternalForceField. */
-  std::unique_ptr<ExternalForceField<T>> Clone() const { return DoClone(); }
+  /** Returns an identical copy of `this` ForceDensityField. */
+  std::unique_ptr<ForceDensityField<T>> Clone() const { return DoClone(); }
 
   /** Returns true iff `this` external force is owned by a MultibodyPlant. */
   bool has_parent_system() const { return tree_system_ != nullptr; }
@@ -52,9 +57,9 @@ class ExternalForceField {
 #ifndef DRAKE_DOXYGEN_CXX
   /* (Internal use only) Declares internal::MultibodyTreeSystem cache
    entries/parameters/input ports at Finalize() time. This is useful if the
-   external force is context-dependent. For example, the external force field
+   external force is context-dependent. For example, the force density field
    can be turned on/off depending on an external input from another System, the
-   particular external force field subclass can open an input port to the owning
+   particular force density field subclass can open an input port to the owning
    MultibodyTreeSystem to receive the signal. This class holds on to a pointer
    to the given `tree_system` and thus `tree_system` must outlive `this` object.
    @param[in] tree_system A mutable pointer to the owning system.
@@ -63,7 +68,7 @@ class ExternalForceField {
    @note You can only invoke this function if you have a definition of
          MultibodyPlant available. That is, you must include
         `drake/multibody/plant/multibody_plant.h` in the translation unit that
-         invokes this function; external_force_field.h cannot do that for you.
+         invokes this function; force_density_field.h cannot do that for you.
    @pre tree_system != nullptr. */
   template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
   void DeclareSystemResources(internal::MultibodyTreeSystem<T>* tree_system) {
@@ -84,9 +89,9 @@ class ExternalForceField {
 #endif
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField)
 
-  ExternalForceField() = default;
+  ForceDensityField() = default;
 
   /** Derived classes must override this function to implement the NVI
    EvaluateAt(). */
@@ -95,7 +100,7 @@ class ExternalForceField {
 
   /** Derived classes must override this function to implement the NVI
    Clone(). */
-  virtual std::unique_ptr<ExternalForceField<T>> DoClone() const = 0;
+  virtual std::unique_ptr<ForceDensityField<T>> DoClone() const = 0;
 
   /** NVI implementations for declaring system resources. Defaults to no-op.
    Derived classes should override the default implementation if the external
@@ -139,40 +144,15 @@ class ExternalForceField {
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
 };
 
-/** A constant external force field that has an explicit functional form. */
-template <typename T>
-class ExplicitForceField final : public ExternalForceField<T> {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExplicitForceField)
-
-  /** Constructs an explicit external force field that has an explicit
-   functional form described by the given input `field` */
-  explicit ExplicitForceField(
-      std::function<Vector3<T>(const Vector3<T>&)> field)
-      : field_(std::move(field)) {}
-
- private:
-  Vector3<T> DoEvaluateAt(const systems::Context<T>&,
-                          const Vector3<T>& p_WQ) const final {
-    return field_(p_WQ);
-  };
-
-  std::unique_ptr<ExternalForceField<T>> DoClone() const final {
-    return std::make_unique<ExplicitForceField<T>>(*this);
-  }
-
-  std::function<Vector3<T>(const Vector3<T>&)> field_;
-};
-
-/** A uniform gravitational external force field for a uniform density object.
+/** A uniform gravitational force density field for a uniform density object.
  The force density f [N/m³] is given by the product of mass density
  ρ [kg/m³] and gravity vector g [m/s²]. */
 template <typename T>
-class GravityForceField : public ExternalForceField<T> {
+class GravityForceField : public ForceDensityField<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GravityForceField)
 
-  /** Constructs a uniform gravitational external force field for a uniform
+  /** Constructs a uniform gravitational force density field for a uniform
   density object. with the given `gravity_vector` [m/s²] and `mass_density`
   [kg/m³]. */
   GravityForceField(const Vector3<T>& gravity_vector, const T& mass_density)
@@ -184,7 +164,7 @@ class GravityForceField : public ExternalForceField<T> {
     return force_density_;
   };
 
-  std::unique_ptr<ExternalForceField<T>> DoClone() const final {
+  std::unique_ptr<ForceDensityField<T>> DoClone() const final {
     return std::make_unique<GravityForceField<T>>(*this);
   }
 
@@ -196,4 +176,4 @@ class GravityForceField : public ExternalForceField<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ExternalForceField)
+    class ::drake::multibody::ForceDensityField)

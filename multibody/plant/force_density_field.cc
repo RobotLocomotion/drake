@@ -1,10 +1,10 @@
-#include "drake/multibody/plant/external_force_field.h"
+#include "drake/multibody/plant/force_density_field.h"
 
 namespace drake {
 namespace multibody {
 
 template <typename T>
-systems::CacheEntry& ExternalForceField<T>::DeclareCacheEntry(
+systems::CacheEntry& ForceDensityField<T>::DeclareCacheEntry(
     internal::MultibodyTreeSystem<T>* plant, std::string description,
     systems::ValueProducer value_producer,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
@@ -14,7 +14,7 @@ systems::CacheEntry& ExternalForceField<T>::DeclareCacheEntry(
 }
 
 template <typename T>
-systems::InputPort<T>& ExternalForceField<T>::DeclareAbstractInputPort(
+systems::InputPort<T>& ForceDensityField<T>::DeclareAbstractInputPort(
     internal::MultibodyTreeSystem<T>* plant, std::string name,
     const AbstractValue& model_value) {
   return internal::MultibodyTreeSystemElementAttorney<
@@ -22,7 +22,7 @@ systems::InputPort<T>& ExternalForceField<T>::DeclareAbstractInputPort(
 }
 
 template <typename T>
-systems::InputPort<T>& ExternalForceField<T>::DeclareVectorInputPort(
+systems::InputPort<T>& ForceDensityField<T>::DeclareVectorInputPort(
     internal::MultibodyTreeSystem<T>* plant, std::string name,
     const systems::BasicVector<T>& model_vector) {
   return internal::MultibodyTreeSystemElementAttorney<
@@ -33,4 +33,4 @@ systems::InputPort<T>& ExternalForceField<T>::DeclareVectorInputPort(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ExternalForceField)
+    class ::drake::multibody::ForceDensityField)
