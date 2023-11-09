@@ -93,4 +93,12 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "graph_algorithms_test",
+    deps = [
+        ":planning",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
 add_lint_tests_pydrake()

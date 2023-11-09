@@ -61,18 +61,18 @@ class MaxCliqueSolverViaMip final : public MaxCliqueSolverBase {
   VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
 
-  solvers::SolverOptions solver_options() const { return solver_options_; }
+  [[nodiscard]] solvers::SolverOptions solver_options() const { return solver_options_; }
 
   void set_initial_guess(
       const Eigen::Ref<const Eigen::VectorXd>& initial_guess) {
     initial_guess_ = initial_guess;
   }
 
-  std::optional<Eigen::VectorXd> get_initial_guess() const {
+  [[nodiscard]] std::optional<Eigen::VectorXd> get_initial_guess() const {
     return initial_guess_;
   }
 
-  solvers::SolverOptions* get_solver_options() { return &solver_options_; }
+  [[nodiscard]] solvers::SolverOptions* get_solver_options() { return &solver_options_; }
 
  private:
   /** Initial guess to the MIP for solving max clique. */
