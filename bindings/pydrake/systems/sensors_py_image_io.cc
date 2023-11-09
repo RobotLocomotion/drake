@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
+#include "drake/systems/sensors/image_file_format.h"
 #include "drake/systems/sensors/image_writer.h"
 
 namespace drake {
@@ -12,6 +13,13 @@ void DefineSensorsImageIo(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+
+  {
+    py::enum_<ImageFileFormat>(m, "ImageFileFormat")
+        .value("kJpeg", ImageFileFormat::kJpeg)
+        .value("kPng", ImageFileFormat::kPng)
+        .value("kTiff", ImageFileFormat::kTiff);
+  }
 
   {
     using Class = ImageWriter;
