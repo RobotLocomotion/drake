@@ -1,4 +1,4 @@
-#include "drake/planning/graph_algorithms/max_clique.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 
 #include <exception>
 #include <optional>
@@ -8,6 +8,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace planning {
@@ -24,14 +26,13 @@ void TestMaxCliqueViaMip(
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
   MaxCliqueSolverViaMip solver{};
-  MaxCliqueOptions options(&solver);
 
   // If mixed integer solver is available, find the max clique.
   if ((solvers::MosekSolver::is_available() &&
        solvers::MosekSolver::is_enabled()) ||
       (solvers::GurobiSolver::is_available() &&
        solvers::GurobiSolver::is_enabled())) {
-    VectorX<bool> max_clique_inds = CalcMaxClique(adjacency_matrix, options);
+    VectorX<bool> max_clique_inds = solver.SolveMaxClique(adjacency_matrix);
     EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
     bool solution_match_found = false;
     for (const auto& possible_solution : possible_solutions) {
@@ -43,7 +44,7 @@ void TestMaxCliqueViaMip(
     }
     EXPECT_TRUE(solution_match_found);
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(CalcMaxClique(adjacency_matrix, options),
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.SolveMaxClique(adjacency_matrix),
                                 ".*There is no solver available.*");
   }
 }
@@ -56,13 +57,13 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructor) {
 
   // Test the constructor with only the solver id passed.
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
-  solvers::SolverOptions options;
+  solvers::SolverOptions options{};
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
   MaxCliqueSolverViaMip solver2{initial_guess, options};
   EXPECT_TRUE(solver2.get_initial_guess().has_value());
   EXPECT_TRUE(
       CompareMatrices(solver2.get_initial_guess().value(), initial_guess));
-  EXPECT_TRUE(solver2.get_solver_options()->get_print_to_console());
+  EXPECT_TRUE(solver2.solver_options().get_print_to_console());
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
@@ -117,8 +118,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSquare) {
   Eigen::SparseMatrix<bool> graph(3, 2);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
-  MaxCliqueOptions options(&solver);
-  EXPECT_THROW(CalcMaxClique(graph, options), std::runtime_error);
+  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
@@ -128,8 +128,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
   Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
-  MaxCliqueOptions options(&solver);
-  EXPECT_THROW(CalcMaxClique(graph, options), std::runtime_error);
+  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
 }
 
 }  // namespace
