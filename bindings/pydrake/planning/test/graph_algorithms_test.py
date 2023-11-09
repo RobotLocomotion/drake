@@ -20,7 +20,7 @@ class TestGraphAlgorithms(unittest.TestCase):
             [0, 0, 1, 1, 0],
         ]).astype(bool)
         assert np.all(adjacency == adjacency.T)
-        return sp.csc_matrix(adjacency)
+        return sp.csc_matrix(adjacency, shape=(5,5))
 
     def test_max_clique_solver_base_subclassable(self):
         class DummyMaxCliqueSolver(mut.MaxCliqueSolverBase):

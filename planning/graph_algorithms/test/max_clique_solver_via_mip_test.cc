@@ -126,7 +126,8 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, ButteryflyWithSelfLoops) {
                                      graph_no_loops.rows());
   identity.setFromTriplets(triplets_identity.begin(), triplets_identity.end());
 
-  Eigen::SparseMatrix<bool> graph = graph_no_loops + identity;
+  Eigen::SparseMatrix<bool> graph =
+      (graph_no_loops + identity).template cast<bool>();
   VectorX<bool> solution1(5);
   VectorX<bool> solution2(5);
   // The largest cliques are (0,1,2) and (2,3,4).
