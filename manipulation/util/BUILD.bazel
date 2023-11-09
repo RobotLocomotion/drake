@@ -207,6 +207,8 @@ drake_cc_googletest(
     name = "make_arm_controller_model_test",
     data = [
         ":test/iiwa7_wsg.dmd.yaml",
+        ":test/panda_and_hand.dmd.yaml",
+        "//manipulation/models/franka_description:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
