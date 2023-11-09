@@ -19,8 +19,13 @@ class TestGraphAlgorithms(unittest.TestCase):
             [0, 0, 1, 0, 1],
             [0, 0, 1, 1, 0],
         ]).astype(bool)
+        data = np.ones(12).astype(bool)
+        indices = [1, 2, 0, 2, 0, 1, 3, 4, 2, 4, 2, 3]
+        indptr = [0, 2, 4, 8, 10, 12]
+        sparse = sp.csc_matrix([data, indices, indptr], shape=(5, 5))
+        assert np.all(sparse.todense() == adjacency)
         assert np.all(adjacency == adjacency.T)
-        return sp.csc_matrix(adjacency, shape=(5,5))
+        return sparse
 
     def test_max_clique_solver_base_subclassable(self):
         class DummyMaxCliqueSolver(mut.MaxCliqueSolverBase):
