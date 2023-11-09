@@ -129,15 +129,15 @@ class SnapshotSensor final : public Diagram<double> {
     geometry_version_ = scene_graph->model_inspector().geometry_version();
     DiagramBuilder<double> builder;
     auto* chef = builder.AddNamedSystem<QueryObjectChef>("chef", scene_graph);
-    auto* rgbd = builder.AddNamedSystem<RgbdSensor>("camera", parent_id, X_PB,
-                                                    color_camera, depth_camera);
-    builder.Connect(*chef, *rgbd);
+    rgbd_ = builder.AddNamedSystem<RgbdSensor>("camera", parent_id, X_PB,
+                                               color_camera, depth_camera);
+    builder.Connect(*chef, *rgbd_);
     for (InputPortIndex i{0}; i < chef->num_input_ports(); ++i) {
       const auto& input_port = chef->get_input_port(i);
       builder.ExportInput(input_port, input_port.get_name());
     }
-    for (OutputPortIndex i{0}; i < rgbd->num_output_ports(); ++i) {
-      const auto& output_port = rgbd->get_output_port(i);
+    for (OutputPortIndex i{0}; i < rgbd_->num_output_ports(); ++i) {
+      const auto& output_port = rgbd_->get_output_port(i);
       builder.ExportOutput(output_port, output_port.get_name());
     }
     builder.BuildInto(this);
@@ -146,8 +146,17 @@ class SnapshotSensor final : public Diagram<double> {
   /* Returns the version as of when this sensor was created. */
   const GeometryVersion& geometry_version() const { return geometry_version_; }
 
+  /* Sets the pose of the underlying RgbdSensor with respect to its parent
+  frame. */
+  void SetPoseInParent(Context<double>* context,
+                       const RigidTransformd& X_PB) const {
+    auto& rgbd_context = this->GetMutableSubsystemContext(*rgbd_, context);
+    rgbd_->SetPoseInParent(&rgbd_context, X_PB);
+  }
+
  private:
   GeometryVersion geometry_version_;
+  RgbdSensor* rgbd_{};
 };
 
 /* The results of camera rendering. */
@@ -187,6 +196,12 @@ class Worker {
   not been called since the most recent Finish), returns a default-constructed
   value (i.e., with nullptr for the images). */
   RenderedImages Finish();
+
+  /* Sets the pose of the underlying RgbdSensor with respect to its parent
+  frame. */
+  void SetPoseInParent(const RigidTransformd& X_PB) const {
+    sensor_->SetPoseInParent(sensor_context_.get(), X_PB);
+  }
 
  private:
   const std::shared_ptr<const SnapshotSensor> sensor_;
@@ -237,6 +252,8 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
   // TODO(jwnimmer-tri) Check that the render engine named by either of the two
   // cameras is not the (known non-threadsafe) VTK engine.
 
+  X_PB_index_ = this->DeclareAbstractParameter(Value(X_PB));
+
   // Input.
   DeclareAbstractInputPort("geometry_query", Value<QueryObject<double>>{});
 
@@ -263,6 +280,19 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
   }
   DeclareAbstractOutputPort("body_pose_in_world", &Self::CalcX_WB, state);
   DeclareVectorOutputPort("image_time", 1, &Self::CalcImageTime, state);
+}
+
+const RigidTransformd& RgbdSensorAsync::GetPoseInParent(
+    const Context<double>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<RigidTransformd>(X_PB_index_);
+}
+
+void RgbdSensorAsync::SetPoseInParent(Context<double>* context,
+                                      const math::RigidTransformd& X_PB) const {
+  context->get_mutable_parameters()
+      .template get_mutable_abstract_parameter<RigidTransformd>(X_PB_index_) =
+      X_PB;
 }
 
 const OutputPort<double>& RgbdSensorAsync::color_image_output_port() const {
@@ -336,7 +366,8 @@ EventStatus RgbdSensorAsync::Initialize(const Context<double>& context,
   // job during initialization is to reset the nested system and any prior
   // output.
   auto sensor = std::make_shared<const SnapshotSensor>(
-      scene_graph_, parent_id_, X_PB_, std::move(*color), std::move(*depth));
+      scene_graph_, parent_id_, GetPoseInParent(context), std::move(*color),
+      std::move(*depth));
   next_state.worker =
       std::make_shared<Worker>(std::move(sensor), color_camera_.has_value(),
                                depth_camera_.has_value(), render_label_image_);
@@ -363,6 +394,11 @@ void RgbdSensorAsync::CalcTick(const Context<double>& context,
   } else {
     next_state.worker = prior_state.worker;
   }
+
+  // Always pull the freshest camera pose when starting a tick.
+  next_state.worker->SetPoseInParent(
+      context.get_parameters().get_abstract_parameter<RigidTransformd>(
+          X_PB_index_));
 
   // Start the worker on its next task.
   next_state.worker->Start(context.get_time(), query);

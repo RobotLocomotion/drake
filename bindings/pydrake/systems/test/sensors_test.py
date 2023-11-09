@@ -473,6 +473,13 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(sensor.parent_frame_id(), parent_id)
             check_ports(sensor)
 
+        # Test reposing the camera; simply use the last camera constructed.
+        sensor.SetPoseInParent(context=sensor.CreateDefaultContext(),
+                               X_PB=RigidTransform(p=[1, 2, 3]))
+        self.assertIsInstance(
+            sensor.GetPoseInParent(context=sensor.CreateDefaultContext()),
+            RigidTransform)
+
         # Test discrete camera. We'll simply use the last sensor constructed.
 
         period = mut.RgbdSensorDiscrete.kDefaultPeriod
@@ -510,7 +517,6 @@ class TestSensors(unittest.TestCase):
                                   depth_camera=depth_camera,
                                   render_label_image=True)
         dut.parent_id()
-        dut.X_PB()
         dut.fps()
         dut.capture_offset()
         dut.output_delay()
@@ -522,6 +528,15 @@ class TestSensors(unittest.TestCase):
         dut.label_image_output_port()
         dut.body_pose_in_world_output_port()
         dut.image_time_output_port()
+
+        with catch_drake_warnings(expected_count=1):
+            dut.X_PB()        
+        # Test reposing the camera.
+        dut.SetPoseInParent(context=dut.CreateDefaultContext(),
+                            X_PB=RigidTransform(p=[1, 2, 3]))
+        self.assertIsInstance(
+            dut.GetPoseInParent(context=dut.CreateDefaultContext()),
+            RigidTransform)
 
     def test_image_file_format(self):
         mut.ImageFileFormat.kJpeg
