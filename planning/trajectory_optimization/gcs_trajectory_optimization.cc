@@ -22,6 +22,9 @@ namespace trajectory_optimization {
 using Subgraph = GcsTrajectoryOptimization::Subgraph;
 using EdgesBetweenSubgraphs = GcsTrajectoryOptimization::EdgesBetweenSubgraphs;
 
+using drake::solvers::MathematicalProgram;
+using drake::solvers::Solve;
+using drake::solvers::VectorXDecisionVariable;
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
@@ -59,7 +62,8 @@ Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
-    GcsTrajectoryOptimization* traj_opt)
+    GcsTrajectoryOptimization* traj_opt,
+    std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
@@ -68,17 +72,30 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
+  if (edge_offsets.has_value()) {
+    DRAKE_THROW_UNLESS(edge_offsets.value().size() ==
+                       edges_between_regions.size());
+  }
+
   // Make sure all regions have the same ambient dimension.
   for (const std::unique_ptr<ConvexSet>& region : regions_) {
     DRAKE_THROW_UNLESS(region != nullptr);
     DRAKE_THROW_UNLESS(region->ambient_dimension() == num_positions());
   }
+
+  // If there are any unbounded revolute joints, make sure the convexity radius
+  // is respected.
+  if (unbounded_revolute_joints().size() > 0) {
+    RespectsConvexityRadius(regions_);
+  }
+
   // Make time scaling set once to avoid many allocations when adding the
   // vertices to GCS.
   const HPolyhedron time_scaling_set =
       HPolyhedron::MakeBox(Vector1d(h_min), Vector1d(h_max));
 
   // Add Regions with time scaling set.
+  Eigen::VectorXd this_edge_offset = Eigen::VectorXd::Zero(num_positions());
   for (size_t i = 0; i < regions_.size(); ++i) {
     ConvexSets vertex_set;
     // Assign each control point to a separate set.
@@ -97,8 +114,6 @@ Subgraph::Subgraph(
   r_trajectory_ =
       BezierCurve<double>(0, 1, MatrixXd::Zero(num_positions(), order + 1));
 
-  // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) = 0, via Ax =
-  // 0, A = [I, -I], x = [u_controls.col(order); v_controls.col(0)].
   Eigen::SparseMatrix<double> A(num_positions(), 2 * num_positions());
   std::vector<Eigen::Triplet<double>> tripletList;
   tripletList.reserve(2 * num_positions());
@@ -107,20 +122,20 @@ Subgraph::Subgraph(
     tripletList.push_back(Eigen::Triplet<double>(i, num_positions() + i, -1.0));
   }
   A.setFromTriplets(tripletList.begin(), tripletList.end());
-  const auto path_continuity_constraint =
-      std::make_shared<LinearEqualityConstraint>(
-          A, VectorXd::Zero(num_positions()));
-
-  // Connect vertices with edges.
-  for (const auto& [u_index, v_index] : edges_between_regions) {
+  for (size_t idx = 0; idx < edges_between_regions.size(); ++idx) {
     // Add edge.
-    Vertex* u = vertices_[u_index];
-    Vertex* v = vertices_[v_index];
+    Vertex* u = vertices_[edges_between_regions[idx].first];
+    Vertex* v = vertices_[edges_between_regions[idx].second];
     Edge* uv_edge = traj_opt_.AddEdge(u, v);
 
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
+    if (edge_offsets.has_value() && !edge_offsets.value().empty()) {
+      this_edge_offset = edge_offsets.value()[idx];
+    }
+    const auto path_continuity_constraint =
+        std::make_shared<LinearEqualityConstraint>(A, this_edge_offset);
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
         {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
@@ -128,6 +143,53 @@ Subgraph::Subgraph(
 }
 
 Subgraph::~Subgraph() = default;
+
+const std::pair<double, double> GcsTrajectoryOptimization::GetLowerUpperBound(
+    const ConvexSet& region, int dimension) const {
+  DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
+  MathematicalProgram prog;
+  VectorXDecisionVariable x =
+      prog.NewContinuousVariables(region.ambient_dimension());
+  VectorXDecisionVariable y =
+      prog.NewContinuousVariables(region.ambient_dimension());
+  VectorXDecisionVariable z =
+      prog.NewContinuousVariables(region.ambient_dimension());
+  prog.AddLinearConstraint(x == y - z);
+  region.AddPointInSetConstraints(&prog, y);
+  region.AddPointInSetConstraints(&prog, z);
+  VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
+  objective_vector[dimension] = 1;
+  prog.AddLinearCost(objective_vector, x);
+
+  auto result = Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "GcsTrajectoryOptimization: Failed to compute upper and lower bounds "
+        "of a convex set!");
+  }
+
+  return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
+}
+
+void Subgraph::RespectsConvexityRadius(
+    const geometry::optimization::ConvexSets& regions) const {
+  // For each dimension corresponding to an unbounded revolute joint, make sure
+  // each region respects the convexity radius.
+  for (size_t i = 0; i < regions.size(); ++i) {
+    for (const size_t& j : unbounded_revolute_joints()) {
+      auto [min_value, max_value] =
+          traj_opt_.GetLowerUpperBound(*regions[i], j);
+      if (max_value - min_value >= M_PI) {
+        // The set is wider than the convexity radius, and can't be used with
+        // wraparound edges.
+        throw std::runtime_error(fmt::format(
+            "GcsTrajectoryOptimization: Region at index {} is wider than pi "
+            "along dimension {}, so it doesn't respect the convexity radius!",
+            i, j));
+      }
+    }
+  }
+}
 
 void Subgraph::AddTimeCost(double weight) {
   // The time cost is the sum of duration variables ∑ hᵢ
@@ -456,9 +518,18 @@ symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
   return e.xv()(e.xv().size() - 1);
 }
 
-GcsTrajectoryOptimization::GcsTrajectoryOptimization(int num_positions)
-    : num_positions_(num_positions) {
+GcsTrajectoryOptimization::GcsTrajectoryOptimization(
+    int num_positions, const std::vector<size_t>& unbounded_revolute_joints)
+    : num_positions_(num_positions),
+      unbounded_revolute_joints_(unbounded_revolute_joints) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
+  for (size_t i = 0; i < unbounded_revolute_joints_.size(); ++i) {
+    // Make sure the unbounded revolute joints point to valid indices.
+    DRAKE_THROW_UNLESS(unbounded_revolute_joints_[i] < size_t(num_positions));
+  }
+  std::unordered_set<size_t> comparison(unbounded_revolute_joints_.begin(),
+                                        unbounded_revolute_joints_.end());
+  DRAKE_THROW_UNLESS(comparison.size() == unbounded_revolute_joints_.size());
 }
 
 GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
@@ -466,12 +537,18 @@ GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
 Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-    double h_min, double h_max, std::string name) {
+    double h_min, double h_max, std::string name,
+    std::optional<std::vector<Eigen::VectorXd>> edge_offsets) {
+  if (edge_offsets.has_value()) {
+    DRAKE_THROW_UNLESS(edge_offsets.value().size() ==
+                       edges_between_regions.size());
+  }
   if (name.empty()) {
     name = fmt::format("Subgraph{}", subgraphs_.size());
   }
-  Subgraph* subgraph = new Subgraph(regions, edges_between_regions, order,
-                                    h_min, h_max, std::move(name), this);
+  Subgraph* subgraph =
+      new Subgraph(regions, edges_between_regions, order, h_min, h_max,
+                   std::move(name), this, edge_offsets);
 
   // Add global costs to the subgraph.
   for (double weight : global_time_costs_) {
@@ -494,20 +571,62 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 int order, double h_min,
                                                 double h_max,
                                                 std::string name) {
-  // TODO(wrangelvid): This is O(n^2) and can be improved.
+  DRAKE_DEMAND(regions.size() > 0);
+  const int dimension = regions[0]->ambient_dimension();
+
   std::vector<std::pair<int, int>> edges_between_regions;
+  std::vector<std::vector<std::pair<double, double>>> region_lower_upper_bounds;
+  for (size_t i = 0; i < regions.size(); ++i) {
+    region_lower_upper_bounds.emplace_back(
+        std::vector<std::pair<double, double>>());
+    for (const size_t& k : unbounded_revolute_joints()) {
+      region_lower_upper_bounds[i].emplace_back(
+          GetLowerUpperBound(*regions[i], k));
+    }
+  }
+  std::vector<VectorXd> edge_offsets;
+  VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (size_t i = 0; i < regions.size(); ++i) {
     for (size_t j = i + 1; j < regions.size(); ++j) {
-      if (regions[i]->IntersectsWith(*regions[j])) {
+      offset.setZero();
+
+      // First, we compute what the offset would be if the sets were to overlap.
+      for (const size_t& k : unbounded_revolute_joints()) {
+        if (region_lower_upper_bounds[j][k].first <
+            region_lower_upper_bounds[i][k].first) {
+          offset[k] = 2 * M_PI *
+                      static_cast<int>((region_lower_upper_bounds[i][k].second -
+                                        region_lower_upper_bounds[j][k].first) /
+                                       (2 * M_PI));
+        } else {
+          offset[k] = -2 * M_PI *
+                      static_cast<int>((region_lower_upper_bounds[j][k].second -
+                                        region_lower_upper_bounds[i][k].first) /
+                                       (2 * M_PI));
+        }
+      }
+
+      // Now that we know the offset, we actually check if the sets intersect.
+      MathematicalProgram prog;
+      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
+      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
+      prog.AddLinearConstraint(x - y == offset);
+      regions[i]->AddPointInSetConstraints(&prog, x);
+      regions[j]->AddPointInSetConstraints(&prog, y);
+      const auto result = Solve(prog);
+      if (result.is_success()) {
         // Regions are overlapping, add edge.
         edges_between_regions.emplace_back(i, j);
+        edge_offsets.emplace_back(offset);
         edges_between_regions.emplace_back(j, i);
+        edge_offsets.emplace_back(-offset);
       }
     }
   }
 
-  return GcsTrajectoryOptimization::AddRegions(
-      regions, edges_between_regions, order, h_min, h_max, std::move(name));
+  return GcsTrajectoryOptimization::AddRegions(regions, edges_between_regions,
+                                               order, h_min, h_max,
+                                               std::move(name), edge_offsets);
 }
 
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(

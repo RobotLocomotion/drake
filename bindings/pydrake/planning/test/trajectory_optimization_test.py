@@ -506,3 +506,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                   show_slack=True,
                                   precision=3,
                                   scientific=False), str)
+
+        gcs_wraparound = GcsTrajectoryOptimization(
+            num_positions=1, unbounded_revolute_joints=[0])
+        self.assertEqual(len(gcs_wraparound.unbounded_revolute_joints()), 1)

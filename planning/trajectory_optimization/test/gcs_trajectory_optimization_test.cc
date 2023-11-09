@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -942,6 +943,241 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
+  const double tol = 1e-7;
+
+  Eigen::Matrix<double, 1, 2> points1, points2, points3;
+  points1 << 0, 2.4;
+  VPolytope v1(points1);
+  points2 << 2.39, 4.78;
+  VPolytope v2(points2);
+  points3 << 4.78, 7.17;
+  VPolytope v3(points3);
+
+  Vector1d start(1.0), goal(6.0);
+  EXPECT_TRUE(v1.PointInSet(start, tol));
+  EXPECT_TRUE(v3.PointInSet(goal, tol));
+
+  const double expected_cost_wraparound = 2.0 * M_PI - 6.0 + 1.0;
+  const double expected_cost_no_wraparound = 6.0 - 1.0;
+  EXPECT_TRUE(expected_cost_wraparound < expected_cost_no_wraparound);
+
+  std::vector<size_t> unbounded_revolute_joints = {0};
+
+  // Check multiple permutations to make sure the ordering of which set is
+  // "wrapped around" does not affect the algorithm. std::vector<ConvexSets>
+  std::vector<ConvexSets> permutations = {
+      MakeConvexSets(v1, v2, v3), MakeConvexSets(v1, v3, v2),
+      MakeConvexSets(v2, v1, v3), MakeConvexSets(v2, v3, v1),
+      MakeConvexSets(v3, v1, v2), MakeConvexSets(v3, v2, v1)};
+  for (const auto& convexsets : permutations) {
+    GcsTrajectoryOptimization gcs1(1, unbounded_revolute_joints);
+    auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
+
+    auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
+    auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+    gcs1.AddEdges(source1, regions1);
+    gcs1.AddEdges(regions1, target1);
+
+    // 3 sets fully connected implies 3 bidirectional edges implies 6 edges
+    // The start and goal are each connected to one set, so 8 total.
+    EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 8);
+
+    regions1.AddPathLengthCost(1);
+
+    auto [traj1, result1] = gcs1.SolvePath(source1, target1);
+    EXPECT_TRUE(result1.is_success());
+    EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_wraparound, tol);
+    EXPECT_EQ(traj1.get_number_of_segments(), 2);
+    EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
+    EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
+  }
+
+  // Now no wraparound
+  GcsTrajectoryOptimization gcs2(1);
+  auto& regions2 = gcs2.AddRegions(MakeConvexSets(v1, v2, v3), 1, 0.01, 1, "");
+
+  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs2.AddEdges(source2, regions2);
+  gcs2.AddEdges(regions2, target2);
+
+  // 3 sets connected in a chain implies 2 bidirectional edges implies 4 edges
+  // The start and goal are each connected to one set, so 6 total.
+  EXPECT_EQ(gcs2.graph_of_convex_sets().Edges().size(), 6);
+
+  regions2.AddPathLengthCost(1);
+
+  auto [traj2, result2] = gcs2.SolvePath(source2, target2);
+  EXPECT_TRUE(result2.is_success());
+  EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_no_wraparound, tol);
+  EXPECT_EQ(traj2.get_number_of_segments(), 3);
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
+  if (!GurobiOrMosekSolverAvailable()) {
+    // These test cases are too large for free solvers such as CSDP.
+    return;
+  }
+  const double tol = 1e-7;
+
+  ConvexSets sets;
+  Eigen::Matrix<double, 2, 4> points;
+  // clang-format off
+  points << 0, 0,   2.4, 2.4,
+            0, 2.4, 0,   2.4;
+  // clang-format on
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      Eigen::MatrixXd new_points = points;
+      new_points = new_points.colwise() + i * Eigen::Vector2d{2.39, 0};
+      new_points = new_points.colwise() + j * Eigen::Vector2d{0, 2.39};
+      sets.emplace_back(copyable_unique_ptr(VPolytope(new_points)));
+    }
+  }
+
+  Vector2d start(1.0, 1.0), goal(6.0, 6.0);
+  EXPECT_TRUE(sets[0]->PointInSet(start, tol));
+  EXPECT_TRUE(sets[8]->PointInSet(goal, tol));
+
+  const double dist_long_way = 5.0;
+  const double dist_shortcut = 1.0 + (2.0 * M_PI - 6.0);
+  const double expected_cost_both_wraparound = sqrt(2) * dist_shortcut;
+  const double expected_cost_one_wraparound =
+      sqrt((dist_long_way * dist_long_way) + (dist_shortcut * dist_shortcut));
+  const double expected_cost_no_wraparound = sqrt(2) * dist_long_way;
+  EXPECT_TRUE(expected_cost_both_wraparound < expected_cost_one_wraparound);
+  EXPECT_TRUE(expected_cost_one_wraparound < expected_cost_no_wraparound);
+
+  std::vector<size_t> unbounded_revolute_joints;
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 100;
+
+  // No wraparound
+
+  GcsTrajectoryOptimization gcs1(2, unbounded_revolute_joints);
+  auto& regions1 = gcs1.AddRegions(sets, 1, 0.01, 1, "");
+
+  auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs1.AddEdges(source1, regions1);
+  gcs1.AddEdges(regions1, target1);
+
+  // 9 sets connected in a grid implies 12 bidirectional edges implies 24 edges
+  // Edges crossing the corners gives us 8 more bidirectional edges (16 edges)
+  // The start and goal are each connected to one set, so 42 total.
+  EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 42);
+
+  regions1.AddPathLengthCost(1);
+
+  auto [traj1, result1] = gcs1.SolvePath(source1, target1, options);
+  EXPECT_TRUE(result1.is_success());
+  EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_no_wraparound, tol);
+  EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
+
+  // One wraparound
+  unbounded_revolute_joints.emplace_back(0);
+
+  GcsTrajectoryOptimization gcs2(2, unbounded_revolute_joints);
+  auto& regions2 = gcs2.AddRegions(sets, 1, 0.01, 1, "");
+
+  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs2.AddEdges(source2, regions2);
+  gcs2.AddEdges(regions2, target2);
+
+  // We've added 3 new edges wrapping around along the rows, and also
+  // 4 new edges crossing the rows, so 14 new directional edges.
+  EXPECT_EQ(gcs2.graph_of_convex_sets().Edges().size(), 56);
+
+  regions2.AddPathLengthCost(1);
+
+  auto [traj2, result2] = gcs2.SolvePath(source2, target2, options);
+  EXPECT_TRUE(result2.is_success());
+  EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_one_wraparound, tol);
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
+
+  // Both wraparound
+  unbounded_revolute_joints.emplace_back(1);
+
+  GcsTrajectoryOptimization gcs3(2, unbounded_revolute_joints);
+  auto& regions3 = gcs3.AddRegions(sets, 1, 0.01, 1, "");
+
+  auto& source3 = gcs3.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target3 = gcs3.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs3.AddEdges(source3, regions3);
+  gcs3.AddEdges(regions3, target3);
+
+  // We've added 3 new edges wrapping around along the columns, and also
+  // 4 new edges crossing the columns, and finally 2 more edges connecting
+  // the opposite corners (e.g. top-left to bottom-right), so 18 new
+  // directional edges.
+  EXPECT_EQ(gcs3.graph_of_convex_sets().Edges().size(), 74);
+
+  regions3.AddPathLengthCost(1);
+
+  auto [traj3, result3] = gcs3.SolvePath(source3, target3, options);
+  EXPECT_TRUE(result3.is_success());
+  EXPECT_NEAR(result3.get_optimal_cost(), expected_cost_both_wraparound, tol);
+  EXPECT_TRUE(CompareMatrices(traj3.value(traj3.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj3.value(traj3.end_time()), goal, 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
+  // 1D example
+  Eigen::Matrix<double, 1, 2> points;
+  points << 0, 4;
+  const VPolytope v(points);
+  std::vector<size_t> unbounded_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, unbounded_revolute_joints);
+  EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), 1), std::exception);
+  const std::vector<std::pair<int, int>> edges;
+  EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), edges, 1), std::exception);
+
+  // 2D example
+  Eigen::Matrix<double, 2, 4> points_new;
+  // clang-format off
+  points_new << 0, 0, 2, 2,
+                0, 4, 0, 4;
+  // clang-format on
+  const VPolytope w(points_new);
+  std::vector<size_t> unbounded_revolute_joints1 = {0};
+  std::vector<size_t> unbounded_revolute_joints2 = {1};
+  std::vector<size_t> unbounded_revolute_joints3 = {0, 1};
+  GcsTrajectoryOptimization gcs0(2);
+  GcsTrajectoryOptimization gcs1(2, unbounded_revolute_joints1);
+  GcsTrajectoryOptimization gcs2(2, unbounded_revolute_joints2);
+  GcsTrajectoryOptimization gcs3(2, unbounded_revolute_joints3);
+  DRAKE_EXPECT_NO_THROW(gcs0.AddRegions(MakeConvexSets(w), 1));
+  DRAKE_EXPECT_NO_THROW(gcs1.AddRegions(MakeConvexSets(w), 1));
+  EXPECT_THROW(gcs2.AddRegions(MakeConvexSets(w), 1), std::exception);
+  EXPECT_THROW(gcs3.AddRegions(MakeConvexSets(w), 1), std::exception);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, misc_wrapround_interface) {
+  Eigen::Matrix<double, 1, 2> points;
+  points << 0, 2;
+  const VPolytope v(points);
+  std::vector<size_t> unbounded_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, unbounded_revolute_joints);
+  EXPECT_EQ(gcs.unbounded_revolute_joints().size(),
+            unbounded_revolute_joints.size());
+  EXPECT_EQ(gcs.unbounded_revolute_joints()[0], unbounded_revolute_joints[0]);
+
+  unbounded_revolute_joints.emplace_back(0);
+  EXPECT_THROW(GcsTrajectoryOptimization(1, unbounded_revolute_joints),
+               std::exception);
 }
 
 }  // namespace

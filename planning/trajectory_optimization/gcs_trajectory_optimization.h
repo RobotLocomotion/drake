@@ -47,8 +47,14 @@ class GcsTrajectoryOptimization final {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GcsTrajectoryOptimization);
 
   /** Constructs the motion planning problem.
-  @param num_positions is the dimension of the configuration space. */
-  explicit GcsTrajectoryOptimization(int num_positions);
+  @param num_positions is the dimension of the configuration space.
+  @param unbounded_revolute_joints is a list of indices corresponding to
+  revolute joints which don't have joint limits, and hence "wrap around" at 2pi.
+  unbounded_revolute_joints must not have repeated values.
+  */
+  explicit GcsTrajectoryOptimization(
+      int num_positions, const std::vector<size_t>& unbounded_revolute_joints =
+                             std::vector<size_t>());
 
   ~GcsTrajectoryOptimization();
 
@@ -129,10 +135,21 @@ class GcsTrajectoryOptimization final {
     Subgraph(const geometry::optimization::ConvexSets& regions,
              const std::vector<std::pair<int, int>>& regions_to_connect,
              int order, double h_min, double h_max, std::string name,
-             GcsTrajectoryOptimization* traj_opt);
+             GcsTrajectoryOptimization* traj_opt,
+             std::optional<std::vector<Eigen::VectorXd>> edge_offsets);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
+
+    /* Convenience accessor, for brevity. */
+    const std::vector<size_t>& unbounded_revolute_joints() const {
+      return traj_opt_.unbounded_revolute_joints();
+    }
+
+    /* Throw an error if any convex set in regions violates the convexity
+     * radius. */
+    void RespectsConvexityRadius(
+        const geometry::optimization::ConvexSets& regions) const;
 
     /* Extracts the control points variables from a vertex. */
     Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPoints(
@@ -231,6 +248,12 @@ class GcsTrajectoryOptimization final {
   /** Returns the number of position variables. */
   int num_positions() const { return num_positions_; }
 
+  /** Returns a list of indices corresponding to revolute joints which don't
+   * have joint limits. */
+  const std::vector<size_t>& unbounded_revolute_joints() {
+    return unbounded_revolute_joints_;
+  }
+
   /** Returns a Graphviz string describing the graph vertices and edges.  If
   `results` is supplied, then the graph will be annotated with the solution
   values.
@@ -251,7 +274,9 @@ class GcsTrajectoryOptimization final {
 
   /** Creates a Subgraph with the given regions and indices.
   @param regions represent the valid set a control point can be in. We retain a
-  copy of the regions since other functions may access them.
+  copy of the regions since other functions may access them. If any of the
+  positions represent revolute joints without limits, each region have a maximum
+  width of strictly less than pi along dimensions corresponding to those joints.
   @param edges_between_regions is a list of pairs of indices into the regions
   vector. For each pair representing an edge between two regions, an edge is
   added within the subgraph. Note that the edges are directed so (i,j) will only
@@ -265,17 +290,24 @@ class GcsTrajectoryOptimization final {
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
   @param name is the name of the subgraph. A default name will be provided.
+  @param edge_offsets is an optional list of edge offsets, which must be the
+  same length as edges_between_regions. Each entry is a displacement that is
+  applied to the first convex set, so as to make it intersect with the second
+  convex set.
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 0, double h_max = 20, std::string name = "");
+      double h_min = 0, double h_max = 20, std::string name = "",
+      std::optional<std::vector<Eigen::VectorXd>> edge_offsets = std::nullopt);
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
   intersections.
   @param regions represent the valid set a control point can be in. We retain a
-  copy of the regions since other functions may access them.
+  copy of the regions since other functions may access them. If any of the
+  positions represent revolute joints without limits, each region have a maximum
+  width of strictly less than pi along dimensions corresponding to those joints.
   @param order is the order of the Bézier curve.
   @param h_min is the minimum duration to spend in a region (seconds) if that
   region is visited on the optimal path. Some cost and constraints are only
@@ -416,6 +448,10 @@ class GcsTrajectoryOptimization final {
 
  private:
   const int num_positions_;
+  const std::vector<size_t> unbounded_revolute_joints_;
+
+  const std::pair<double, double> GetLowerUpperBound(
+      const geometry::optimization::ConvexSet& region, int dimension) const;
 
   // Adds a Edge to gcs_ with the name "{u.name} -> {v.name}".
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
