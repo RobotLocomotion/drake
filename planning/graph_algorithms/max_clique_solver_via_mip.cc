@@ -66,9 +66,9 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
 
   solvers::MathematicalProgramResult result;
   std::unique_ptr<solvers::SolverInterface> solver;
+  std::optional<solvers::SolverId> solver_id;
   try {
-    solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
-    solver = solvers::MakeSolver(solver_id);
+    solver_id = solvers::ChooseBestSolver(prog);
   } catch (const std::exception&) {
     // TODO(Alexandre.Amice) update the error message if other max clique
     // solvers based become available.
@@ -79,6 +79,7 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
         "details about supported mixed integer solvers and how to enable "
         "them.");
   }
+  solver = solvers::MakeSolver(solver_id.value());
   solver->Solve(prog, initial_guess_, solver_options_, &result);
   DRAKE_DEMAND(result.is_success());
 

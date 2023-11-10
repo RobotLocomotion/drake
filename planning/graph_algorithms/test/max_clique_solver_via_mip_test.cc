@@ -153,7 +153,9 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSquare) {
   Eigen::SparseMatrix<bool> graph(3, 2);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
-  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
+  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // marked as nodiscard.
+  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
@@ -163,7 +165,9 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
   Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
-  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
+  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // marked as nodiscard.
+  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, InitialGuessWrongSize) {
@@ -173,7 +177,9 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, InitialGuessWrongSize) {
   MaxCliqueSolverViaMip solver{};
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
   solver.SetInitialGuess(initial_guess);
-  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
+  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // marked as nodiscard.
+  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
 }
 
 }  // namespace
