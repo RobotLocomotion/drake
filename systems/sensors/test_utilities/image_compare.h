@@ -21,8 +21,15 @@ template <PixelType kPixelType>
 ::testing::AssertionResult LoadImage(const std::filesystem::path& filename,
                                      Image<kPixelType>* image);
 
-// TODO(jwnimmer-tri) Add a helper function to stash an image into the
-// $TEST_UNDECLARED_OUTPUTS_DIR for offline inspection.
+/** Saves the PNG or TIFF image to `$TEST_UNDECLARED_OUTPUTS_DIR/{filename}`.
+TODO(jwnimmer-tri): the following pixel types are *NOT* supported:
+- SaveUndeclaredOutputImage<PixelType::kRgb8U>
+- SaveUndeclaredOutputImage<PixelType::kBgr8U>
+- SaveUndeclaredOutputImage<PixelType::kBgra8U>
+*/
+template <PixelType kPixelType>
+void SaveUndeclaredOutputImage(const Image<kPixelType>& image,
+                               const std::filesystem::path& filename);
 
 }  // namespace sensors
 }  // namespace systems

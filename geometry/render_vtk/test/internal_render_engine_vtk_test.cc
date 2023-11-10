@@ -28,6 +28,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_writer.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
 
 /* Note: enabling this causes failures with two tests. Try running as:
@@ -251,6 +252,23 @@ class RenderEngineVtkTest : public ::testing::Test {
         geometry_id_(GeometryId::get_new_id()) {}
 
  protected:
+  // Return the filename to save for the given image_type (color, depth, or
+  // label).  It uses the current test name, and `save_counter_`, but does not
+  // make any modifications.  Many tests render all three images via Render(),
+  // this keeps their names consistent in the TEST_UNDECLARED_OUTPUTS_DIR.
+  std::string RenderFilename(const std::string& image_type) const {
+    DRAKE_DEMAND(image_type == "color" || image_type == "depth" ||
+                 image_type == "label");
+    const std::string extension = (image_type == "depth") ? "tiff" : "png";
+    /* Create: {test_name}_{image_type}_{XYZW}.{extension}
+      NOTE: save_counter_ is reset for every test case, {2:0>4} says to zero-pad
+      to four digits, `4` total digits should be more than enough. */
+    return fmt::format(
+        "{0}_{1}_{2:0>4}.{3}",
+        ::testing::UnitTest::GetInstance()->current_test_info()->name(),
+        image_type, save_counter_, extension);
+  }
+
   // Method to allow the normal case (render with the built-in renderer against
   // the default camera) to the member images with default window visibility.
   // This interface allows that to be completely reconfigured by the calling
@@ -269,8 +287,14 @@ class RenderEngineVtkTest : public ::testing::Test {
     ImageDepth32F* depth = depth_out ? depth_out : &depth_;
     ImageLabel16I* label = label_out ? label_out : &label_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
+    SaveUndeclaredOutputImage(*color, RenderFilename("color"));
     EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
+    SaveUndeclaredOutputImage(*depth, RenderFilename("depth"));
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
+    SaveUndeclaredOutputImage(*label, RenderFilename("label"));
+
+    IncreaseSaveCounter();
+
     if (FLAGS_sleep > 0) sleep(FLAGS_sleep);
   }
 
@@ -521,6 +545,15 @@ class RenderEngineVtkTest : public ::testing::Test {
         << "Label at: " << inlier << " for test: " << name;
   }
 
+  // Most tests use Render() directly, which also calls this method.  For tests
+  // that manually control rendering, they should call this method in between
+  // different image renderings (where applicable).  Render() will export the
+  // color, depth, and label images with the same `save_counter_` value, and
+  // increase it once at the end of the method -- manual tests should obey the
+  // same pattern of exporting each (color, depth, label) frame with the same
+  // `save_counter_`.
+  void IncreaseSaveCounter() { ++save_counter_; }
+
   RgbaColor expected_color_{kDefaultVisualColor, 255};
   RgbaColor expected_outlier_color_{kDefaultVisualColor, 255};
   float expected_outlier_depth_{3.f};
@@ -541,6 +574,11 @@ class RenderEngineVtkTest : public ::testing::Test {
   ImageLabel16I label_;
   RigidTransformd X_WC_;
   GeometryId geometry_id_;
+
+  // Used to create unique identifiers per-test to save test renders to
+  // TEST_UNDECLARED_OUTPUTS_DIRECTORY.
+  // See also: Render() and IncreaseSaveCounter().
+  int save_counter_{0};
 
   // The pose of the sphere created in PopulateSphereTest().
   unordered_map<GeometryId, RigidTransformd> X_WV_;
@@ -642,6 +680,9 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
     renderer_->UpdateViewpoint(X_WR);
     ImageRgba8U color(intrinsics.width(), intrinsics.height());
     renderer_->RenderColorImage(camera, &color);
+
+    SaveUndeclaredOutputImage(color, RenderFilename("color"));
+    IncreaseSaveCounter();
 
     int actual_horizon{0};
     // This test is looking for the *first* row that isn't exactly sky color.
@@ -772,6 +813,9 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
   const auto& intrinsics = camera.core().intrinsics();
   ImageRgba8U color(intrinsics.width(), intrinsics.height());
   renderer.RenderColorImage(camera, &color);
+
+  SaveUndeclaredOutputImage(color, RenderFilename("color"));
+  IncreaseSaveCounter();
 
   // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
   // *not* use the OpenGL drivers and, empirically, it has shown a different
@@ -1025,6 +1069,9 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
       {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
   renderer_->RenderColorImage(camera, &image);
 
+  SaveUndeclaredOutputImage(image, RenderFilename("color"));
+  IncreaseSaveCounter();
+
   ImageRgba8U expected_image;
   const std::string ref_filename = FindResourceOrThrow(
       "drake/geometry/render/test/fully_textured_pyramid_rendered.png");
@@ -1249,6 +1296,9 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
     PerceptionProperties props = simple_material(true);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uchar_texture);
+
+    SaveUndeclaredOutputImage(color_uchar_texture, RenderFilename("color"));
+    IncreaseSaveCounter();
   }
 
   // Render a box with an uint16-channel PNG texture.
@@ -1262,6 +1312,9 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
     props.UpdateProperty("phong", "diffuse_map", file_path);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uint16_texture);
+
+    SaveUndeclaredOutputImage(color_uint16_texture, RenderFilename("color"));
+    IncreaseSaveCounter();
   }
 
   EXPECT_EQ(color_uchar_texture, color_uint16_texture);
@@ -1720,6 +1773,9 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
 
       EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
 
+      SaveUndeclaredOutputImage(image, RenderFilename("color"));
+      IncreaseSaveCounter();
+
       // We test the images by looking at the colors along a row on the bottom
       // of the image and near the middle of the image. We won't do the top
       // because in view B, the clipped plane reveals the background color.
@@ -1865,6 +1921,9 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
         SCOPED_TRACE(renderer_ptr == clone_vtk ? "Cloned" : "Original");
         EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
 
+        SaveUndeclaredOutputImage(image, RenderFilename("color"));
+        IncreaseSaveCounter();
+
         const RgbaColor test_color(image.at(cx, cy));
         EXPECT_TRUE(IsColorNear(test_color, config.expected_color))
             << "  test color: " << test_color << "\n"
@@ -1902,6 +1961,9 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
   InitializeRenderer(X_WR, true /* add terrain */, &renderer);
 
   EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
+
+  SaveUndeclaredOutputImage(image, RenderFilename("color"));
+  IncreaseSaveCounter();
 
   const RgbaColor test_color(image.at(cx, cy));
   const Rgba terrain_rgba(kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b);
@@ -2051,6 +2113,9 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
     }
     EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
 
+    SaveUndeclaredOutputImage(image, RenderFilename("color"));
+    IncreaseSaveCounter();
+
     // We're using a rather loose pixel tolerance to accommodate vagaries
     // of CI. The value of 20 is required by focal; we can shrink it when we
     // eliminate focal. 10 should be more than enough.
@@ -2094,6 +2159,9 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     const int cy = image.height() / 2;
 
     renderer->RenderColorImage(camera, &image);
+
+    SaveUndeclaredOutputImage(image, RenderFilename("color"));
+    IncreaseSaveCounter();
 
     const RgbaColor sampled_color(image.at(cx, cy));
     EXPECT_EQ(IsColorNear(sampled_color, default_color_), matches_default)
@@ -2271,6 +2339,11 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
   renderer_->RenderDepthImage(ref_depth_camera, &ref_depth);
   renderer_->RenderLabelImage(ref_color_camera, &ref_label);
 
+  SaveUndeclaredOutputImage(ref_color, RenderFilename("color"));
+  SaveUndeclaredOutputImage(ref_depth, RenderFilename("depth"));
+  SaveUndeclaredOutputImage(ref_label, RenderFilename("label"));
+  IncreaseSaveCounter();
+
   // Confirm all edges were found, the box is square and centered in the
   // image.
   const Vector4<int> ref_box_edges = FindBoxEdges(ref_depth);
@@ -2320,6 +2393,11 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderColorImage(color_camera, &color);
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
+
+    SaveUndeclaredOutputImage(color, RenderFilename("color"));
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    SaveUndeclaredOutputImage(label, RenderFilename("label"));
+    IncreaseSaveCounter();
 
     // We expect the following effects based on the change in intrinsics.
     //
@@ -2379,6 +2457,11 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
 
+    SaveUndeclaredOutputImage(color, RenderFilename("color"));
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    SaveUndeclaredOutputImage(label, RenderFilename("label"));
+    IncreaseSaveCounter();
+
     SCOPED_TRACE("Far plane in front of scene");
     VerifyUniformColor(kBgColor, 255u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
@@ -2403,6 +2486,11 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
 
+    SaveUndeclaredOutputImage(color, RenderFilename("color"));
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    SaveUndeclaredOutputImage(label, RenderFilename("label"));
+    IncreaseSaveCounter();
+
     SCOPED_TRACE("Near plane beyond scene");
     VerifyUniformColor(kBgColor, 255u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
@@ -2419,6 +2507,9 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    IncreaseSaveCounter();
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
@@ -2438,6 +2529,9 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    IncreaseSaveCounter();
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
@@ -2460,6 +2554,9 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+
+    SaveUndeclaredOutputImage(depth, RenderFilename("depth"));
+    IncreaseSaveCounter();
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
