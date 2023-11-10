@@ -1,0 +1,7 @@
+py_binary(
+    name = "repro",
+    srcs = ["repro.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
