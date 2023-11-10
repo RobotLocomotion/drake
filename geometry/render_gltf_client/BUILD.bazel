@@ -378,4 +378,24 @@ drake_cc_googletest(
     ],
 )
 
+filegroup(
+    name = "all_gltfs_and_images",
+    testonly = True,
+    srcs = glob([
+        "test/*.gltf",
+        "test/*.png",
+        "test/*.tiff",
+    ]),
+)
+
+drake_py_unittest(
+    name = "file_size_test",
+    data = [
+        ":all_gltfs_and_images",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 add_lint_tests()
