@@ -809,25 +809,31 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
-        prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
+        dense1 = prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
                                  vars=x)
-        c1 = prog.AddLinearConstraint(A=A_sparse,
+        # Ensure that the dense version of the binding has been called.
+        self.assertTrue(dense1.evaluator().is_dense_A_constructed())
+
+        sparse1 = prog.AddLinearConstraint(A=A_sparse,
                                       lb=np.zeros(2),
                                       ub=np.ones(2),
                                       vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c1.evaluator().is_dense_A_constructed())
+        self.assertFalse(sparse1.evaluator().is_dense_A_constructed())
         prog.AddLinearConstraint(a=[1, 1], lb=0, ub=0, vars=x)
         prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
         prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
         prog.AddLinearConstraint(f=(x[0] == 0))
 
-        prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
+        dense2 = prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
                                          vars=x)
-        c2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
+        # Ensure that the dense version of the binding has been called.
+        self.assertTrue(dense2.evaluator().is_dense_A_constructed())
+
+        sparse2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
                                               vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c2.evaluator().is_dense_A_constructed())
+        self.assertFalse(sparse2.evaluator().is_dense_A_constructed())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
