@@ -36,8 +36,7 @@ void TestMaxCliqueViaMip(
     EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
     bool solution_match_found = false;
     for (const auto& possible_solution : possible_solutions) {
-      if (CompareMatrices(max_clique_inds.cast<int>(),
-                          possible_solution.cast<int>())) {
+      if (max_clique_inds.cast<int>() == possible_solution.cast<int>()) {
         solution_match_found = true;
         break;
       }
@@ -49,40 +48,33 @@ void TestMaxCliqueViaMip(
   }
 }
 
-GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructor) {
-  // Test the default constructor.
-  MaxCliqueSolverViaMip solver1{};
-  EXPECT_EQ(solver1.get_initial_guess(), std::nullopt);
-  EXPECT_EQ(solver1.get_solver_options(), solvers::SolverOptions());
-
-  // Test the constructor with only the solver id passed.
-  const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
-  solvers::SolverOptions options{};
-  options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
-  MaxCliqueSolverViaMip solver2{initial_guess, options};
-  EXPECT_TRUE(solver2.get_initial_guess().has_value());
-  EXPECT_TRUE(
-      CompareMatrices(solver2.get_initial_guess().value(), initial_guess));
-  EXPECT_TRUE(solver2.get_solver_options().get_print_to_console());
-}
-
-GTEST_TEST(MaxCliqueSolverViaMipTest, TestSettersAndGetters) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructorSettersAndGetters) {
   // Test the default constructor.
   MaxCliqueSolverViaMip solver{};
-  EXPECT_EQ(solver.get_initial_guess(), std::nullopt);
-  EXPECT_EQ(solver.get_solver_options(), solvers::SolverOptions());
+  EXPECT_EQ(solver.GetInitialGuess(), std::nullopt);
+  EXPECT_EQ(solver.GetSolverOptions(), solvers::SolverOptions());
 
+  // Ensure we can set an initial guess.
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
+  solver.SetInitialGuess(initial_guess);
+  EXPECT_TRUE(solver.GetInitialGuess().has_value());
+  EXPECT_TRUE(CompareMatrices(solver.GetInitialGuess().value(), initial_guess));
+
+  // Ensure that we can make the initial guess optional.
+  solver.SetInitialGuess(std::nullopt);
+  EXPECT_FALSE(solver.GetInitialGuess().has_value());
+
   solvers::SolverOptions options{};
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
+  solver.SetSolverOptions(options);
+  EXPECT_TRUE(solver.GetSolverOptions().get_print_to_console());
 
-  solver.set_initial_guess(initial_guess);
-  EXPECT_TRUE(solver.get_initial_guess().has_value());
+  // Test the constructor with the initial guess and solver options passed.
+  MaxCliqueSolverViaMip solver2{initial_guess, options};
+  EXPECT_TRUE(solver2.GetInitialGuess().has_value());
   EXPECT_TRUE(
-      CompareMatrices(solver.get_initial_guess().value(), initial_guess));
-
-  solver.set_solver_options(options);
-  EXPECT_TRUE(solver.get_solver_options().get_print_to_console());
+      CompareMatrices(solver2.GetInitialGuess().value(), initial_guess));
+  EXPECT_TRUE(solver2.GetSolverOptions().get_print_to_console());
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
@@ -171,6 +163,16 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
   Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
+  EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
+}
+
+GTEST_TEST(MaxCliqueSolverViaMipTest, InitialGuessWrongSize) {
+  std::vector<Triplet<bool>> triplets;
+  Eigen::SparseMatrix<bool> graph(3, 3);
+  graph.setFromTriplets(triplets.begin(), triplets.end());
+  MaxCliqueSolverViaMip solver{};
+  const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
+  solver.SetInitialGuess(initial_guess);
   EXPECT_THROW(solver.SolveMaxClique(graph), std::runtime_error);
 }
 

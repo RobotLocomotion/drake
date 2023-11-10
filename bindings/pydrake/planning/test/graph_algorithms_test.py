@@ -1,11 +1,17 @@
+import unittest
+
 import numpy as np
 import scipy.sparse as sp
-import unittest
 
 import pydrake.planning as mut
 from pydrake.solvers import (SolverOptions, CommonSolverOption,
                              MosekSolver, GurobiSolver)
 from pydrake.common.test_utilities import numpy_compare
+
+
+def GurobiOrMosekSolverAvailable():
+    return (MosekSolver().available() and MosekSolver().enabled()) or (
+            GurobiSolver().available() and GurobiSolver().enabled())
 
 
 class TestGraphAlgorithms(unittest.TestCase):
@@ -46,14 +52,14 @@ class TestGraphAlgorithms(unittest.TestCase):
             np.ones(graph.shape[0])
         )
 
-    def test_max_clique_via_mip_methods(self):
+    def test_max_clique_solver_via_mip_methods(self):
         graph = self._butteryfly_graph()
 
         # Test the default constructor.
         solver_default = mut.MaxCliqueSolverViaMip()
-        self.assertIsNone(solver_default.get_initial_guess())
+        self.assertIsNone(solver_default.GetInitialGuess())
         self.assertFalse(
-            solver_default.get_solver_options().get_print_to_console())
+            solver_default.GetSolverOptions().get_print_to_console())
 
         # Test the argument constructor.
         solver_options = SolverOptions()
@@ -61,27 +67,24 @@ class TestGraphAlgorithms(unittest.TestCase):
         initial_guess = np.ones(graph.shape[0])
         solver = mut.MaxCliqueSolverViaMip(solver_options=solver_options,
                                            initial_guess=initial_guess)
-        # Test the getters
+        # Test the getters.
         numpy_compare.assert_equal(
-            solver.get_initial_guess(), initial_guess
+            solver.GetInitialGuess(), initial_guess
         )
-        self.assertTrue(solver.get_solver_options().get_print_to_console())
+        self.assertTrue(solver.GetSolverOptions().get_print_to_console())
 
-        # Test the setters
+        # Test the setters.
         new_guess = np.zeros(graph.shape[0])
-        solver.set_initial_guess(initial_guess=new_guess)
+        solver.SetInitialGuess(initial_guess=new_guess)
         numpy_compare.assert_equal(
-            solver.get_initial_guess(), new_guess
+            solver.GetInitialGuess(), new_guess
         )
 
         new_options = SolverOptions()
-        solver.set_solver_options(solver_options=new_options)
-        self.assertFalse(solver.get_solver_options().get_print_to_console())
+        solver.SetSolverOptions(solver_options=new_options)
+        self.assertFalse(solver.GetSolverOptions().get_print_to_console())
 
-        # Test solve max clique
-        def GurobiOrMosekSolverAvailable():
-            return (MosekSolver().available() and MosekSolver().enabled()) or (
-                    GurobiSolver().available() and GurobiSolver().enabled())
+        # Test solve max clique.
         if GurobiOrMosekSolverAvailable():
             max_clique = solver.SolveMaxClique(graph)
             # Butteryfly graph has a max clique of 3.

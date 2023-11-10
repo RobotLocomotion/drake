@@ -1,5 +1,7 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 
+#include "drake/common/drake_throw.h"
+
 namespace drake {
 namespace planning {
 namespace graph_algorithms {

@@ -39,14 +39,14 @@ void DefinePlanningGraphAlgorithms(py::module m) {
                  const solvers::SolverOptions&>(),
             py::arg("initial_guess"), py::arg("solver_options"),
             cls_doc.ctor.doc)
-        .def("set_solver_options", &MaxCliqueSolverViaMip::set_solver_options,
-            py::arg("solver_options"), cls_doc.set_solver_options.doc)
-        .def("get_solver_options", &MaxCliqueSolverViaMip::get_solver_options,
-            cls_doc.get_solver_options.doc)
-        .def("set_initial_guess", &MaxCliqueSolverViaMip::set_initial_guess,
-            py::arg("initial_guess"), cls_doc.set_initial_guess.doc)
-        .def("get_initial_guess", &MaxCliqueSolverViaMip::get_initial_guess,
-            cls_doc.get_initial_guess.doc);
+        .def("SetSolverOptions", &MaxCliqueSolverViaMip::SetSolverOptions,
+            py::arg("solver_options"), cls_doc.SetSolverOptions.doc)
+        .def("GetSolverOptions", &MaxCliqueSolverViaMip::GetSolverOptions,
+            cls_doc.GetSolverOptions.doc)
+        .def("SetInitialGuess", &MaxCliqueSolverViaMip::SetInitialGuess,
+            py::arg("initial_guess"), cls_doc.SetInitialGuess.doc)
+        .def("GetInitialGuess", &MaxCliqueSolverViaMip::GetInitialGuess,
+            cls_doc.GetInitialGuess.doc);
   }
 }
 

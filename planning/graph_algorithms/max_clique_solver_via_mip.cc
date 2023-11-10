@@ -19,6 +19,8 @@ MaxCliqueSolverViaMip::MaxCliqueSolverViaMip(
 VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
   const int n = adjacency_matrix.rows();
+  DRAKE_THROW_UNLESS(!initial_guess_.has_value() ||
+                     initial_guess_.value().rows() == n);
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewBinaryVariables(adjacency_matrix.cols(), "x");
@@ -78,7 +80,7 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
         "them.");
   }
   solver->Solve(prog, initial_guess_, solver_options_, &result);
-  DRAKE_ASSERT(result.is_success());
+  DRAKE_DEMAND(result.is_success());
 
   // Manually cast the return to a boolean to avoid round off errors from the
   // MIP solver.
