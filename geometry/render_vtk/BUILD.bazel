@@ -116,15 +116,6 @@ drake_cc_library(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
-    args = select({
-        # Most test cases do not render correctly on macOS arm64 CI. Instead of
-        # trying to select the few that randomly happen to pass, we'll skip all
-        # of them. TODO(#19424) Re-enable the tests.
-        "@platforms//cpu:arm64": [
-            "--gtest_filter=-*",
-        ],
-        "//conditions:default": [],
-    }),
     data = [
         "//geometry:environment_maps",
         "//geometry/render:test_models",
