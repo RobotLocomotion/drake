@@ -168,7 +168,7 @@ class TestIntegration(unittest.TestCase):
 
     @staticmethod
     def _traverse_and_mutate(gltf, entry):
-        """Walk the tree rooted at `entry` and replace entries found in
+        """Walks the tree rooted at `entry` and replace entries found in
         _REPLACED with the explicit tree referenced."""
         entry_type = type(entry)
         if entry_type == dict:
@@ -224,7 +224,7 @@ class TestIntegration(unittest.TestCase):
 
     @staticmethod
     def _save_to_outputs(source_file, prefix=''):
-        """Write the given source file to the undeclared outputs (if defined).
+        """Writes the given source file to the undeclared outputs (if defined).
         If written, the files will be found in:
         bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs  # noqa
         """
@@ -327,3 +327,17 @@ class TestIntegration(unittest.TestCase):
                 ground_truth_gltf = json.load(g)
             with self.subTest(gltf_path=os.path.basename(gltf_path)):
                 self._check_one_gltf(gltf, ground_truth_gltf)
+
+    def test_gltf_file_size(self):
+        """Ensures the size of the pre-generated glTF references is reasonable.
+        This test guards the developers from accidentally committing large glTF
+        files when updating them.
+        """
+        MAXIMUM_FILE_SIZE = 50000  # 50KB.
+        for image_type in ["color", "depth", "label"]:
+            with self.subTest(image_type=image_type):
+                gltf = self.runfiles.Rlocation(
+                    "drake/geometry/render_gltf_client/test/"
+                    f"test_{image_type}_scene.gltf"
+                )
+                self.assertLess(os.path.getsize(gltf), MAXIMUM_FILE_SIZE)
