@@ -728,6 +728,91 @@ GTEST_TEST(ParseExponentialConeConstraints, Test) {
   EXPECT_TRUE(CompareMatrices(Eigen::Map<Eigen::Vector3d>(b.data()),
                               Eigen::Vector3d(3, 2, 1)));
 }
+
+GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
+  // Test parsing prog.positive_semidefinite_constraints.
+  MathematicalProgram prog;
+  const auto X = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  const auto Y = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(Y);
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  std::vector<int> psd_cone_length;
+  ParsePositiveSemidefiniteConstraints(prog, &A_triplets, &b, &A_row_count,
+                                       &psd_cone_length);
+  EXPECT_EQ(psd_cone_length, std::vector<int>({3, 2}));
+  // We add 3 * (3+1) / 2 = 6 rows in A for "X is psd", and 2 * (2+1) / 2 = 3
+  // rows in A for "Y is psd".
+  EXPECT_EQ(A_row_count, 3 * (3 + 1) / 2 + 2 * (2 + 1) / 2);
+  const double sqrt2 = std::sqrt(2);
+  Eigen::SparseMatrix<double> A(A_row_count, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::MatrixXd A_expected(9, 9);
+  A_expected.setZero();
+  A_expected(0, 0) = -1;
+  A_expected(1, 1) = -sqrt2;
+  A_expected(2, 2) = -sqrt2;
+  A_expected(3, 3) = -1;
+  A_expected(4, 4) = -sqrt2;
+  A_expected(5, 5) = -1;
+  A_expected(6, 6) = -1;
+  A_expected(7, 7) = -sqrt2;
+  A_expected(8, 8) = -1;
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  EXPECT_EQ(b.size(), 9);
+  for (int i = 0; i < 9; ++i) {
+    EXPECT_EQ(b[i], 0);
+  }
+}
+
+GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestLmi) {
+  // Test parsing prog.linear_matrix_inequality_constraints.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  auto symmetrize_matrix = [](const Eigen::Ref<const Eigen::MatrixXd>& A) {
+    return (A + A.transpose()) / 2;
+  };
+
+  const auto lmi_constraint = prog.AddLinearMatrixInequalityConstraint(
+      {symmetrize_matrix(
+           (Eigen::Matrix3d() << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished()),
+       symmetrize_matrix(
+           (Eigen::Matrix3d() << 1, 3, 5, 7, 9, 2, 4, 6, 8).finished()),
+       symmetrize_matrix(
+           (Eigen::Matrix3d() << -1, -2, 3, 4, 5, -6, -7, -8, 9).finished()),
+       Eigen::Matrix3d::Identity()},
+      x);
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  std::vector<int> psd_cone_length;
+  ParsePositiveSemidefiniteConstraints(prog, &A_triplets, &b, &A_row_count,
+                                       &psd_cone_length);
+  EXPECT_EQ(A_row_count, 3 * (3 + 1) / 2);
+  EXPECT_EQ(psd_cone_length, std::vector<int>({3}));
+  Eigen::SparseMatrix<double> A(6, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::MatrixXd A_expected(6, prog.num_vars());
+  const std::vector<Eigen::MatrixXd> F = lmi_constraint.evaluator()->F();
+  const double sqrt2 = std::sqrt(2);
+  // clang-format off
+  A_expected << -F[1](0, 0), -F[2](0, 0), -F[3](0, 0),
+                -sqrt2 * F[1](1, 0),-sqrt2 * F[2](1, 0), -sqrt2 * F[3](1, 0),
+                -sqrt2 * F[1](2, 0),-sqrt2 * F[2](2, 0), -sqrt2 * F[3](2, 0),
+                -F[1](1, 1), -F[2](1, 1), -F[3](1, 1),
+                -sqrt2 * F[1](2, 1),-sqrt2 * F[2](2, 1), -sqrt2 * F[3](2, 1),
+                -F[1](2, 2), -F[2](2, 2), -F[3](2, 2);
+  // clang-format on
+  Vector6d b_expected;
+  b_expected << F[0](0, 0), sqrt2 * F[0](1, 0), sqrt2 * F[0](2, 0), F[0](1, 1),
+      sqrt2 * F[0](2, 1), F[0](2, 2);
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected, 1E-12));
+  EXPECT_EQ(b.size(), 6);
+  EXPECT_TRUE(
+      CompareMatrices(Eigen::Map<Vector6d>(b.data()), b_expected, 1E-12));
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

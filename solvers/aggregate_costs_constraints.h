@@ -279,6 +279,29 @@ void ParseExponentialConeConstraints(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count);
+
+// This function parses prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints() into SCS/Clarabel format.
+// A * x + s = b
+// s in K
+// Note that SCS/Clarabel solver defines its psd cone with a √2 scaling on the
+// off-diagonal terms in the positive semidefinite matrix. Refer to
+// https://github.com/cvxgrp/scs for an explanation.
+// @param[in/out] A_triplets The triplets on the non-zero entries in A.
+// prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints() will be appended to A_triplets.
+// @param[in/out] b THe righthand side of A*x+s=b.
+// prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints() will be appended to b.
+// @param[in/out] A_row_count The number of rows in A before and after calling
+// this function.
+// @param[out] psd_cone_length The length of all the psd cones from
+// prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints().
+void ParsePositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, std::vector<int>* psd_cone_length);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
