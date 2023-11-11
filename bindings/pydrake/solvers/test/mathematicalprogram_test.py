@@ -802,18 +802,17 @@ class TestMathematicalProgram(unittest.TestCase):
         lb = [0., 0.]
         ub = [1., 1.]
 
-        A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1, 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 2))
-
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
+
+        A_dense = np.eye(2)
         dense1 = prog.AddLinearConstraint(
-            A=np.eye(2), lb=np.zeros(2), ub=np.ones(2), vars=x)
+            A=A_dense, lb=np.zeros(2), ub=np.ones(2), vars=x)
         # Ensure that the dense version of the binding has been called.
         self.assertTrue(dense1.evaluator().is_dense_A_constructed())
 
+        A_sparse = scipy.sparse.csc_matrix(A_dense)
         sparse1 = prog.AddLinearConstraint(
             A=A_sparse, lb=np.zeros(2), ub=np.ones(2), vars=x)
         # Ensure that the sparse version of the binding has been called.
@@ -824,7 +823,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(f=(x[0] == 0))
 
         dense2 = prog.AddLinearEqualityConstraint(
-            Aeq=np.eye(2), beq=np.zeros(2), vars=x)
+            Aeq=A_dense, beq=np.zeros(2), vars=x)
         # Ensure that the dense version of the binding has been called.
         self.assertTrue(dense2.evaluator().is_dense_A_constructed())
 
