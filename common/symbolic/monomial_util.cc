@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/ssize.h"
 
 namespace drake {
 namespace symbolic {
@@ -11,6 +12,49 @@ Eigen::Matrix<Monomial, Eigen::Dynamic, 1> MonomialBasis(const Variables& vars,
                                                          const int degree) {
   return internal::ComputeMonomialBasis<Eigen::Dynamic>(
       vars, degree, internal::DegreeType::kAny);
+}
+
+VectorX<Monomial> MonomialBasis(
+    const std::unordered_map<Variables, int>& vars_degree) {
+  // First we generate the monomials for each (vars, degree) pair.
+  std::vector<VectorX<Monomial>> monomial_basis_each_vars;
+  for (const auto& [vars, degree] : vars_degree) {
+    monomial_basis_each_vars.push_back(MonomialBasis(vars, degree));
+  }
+  // Now we collect all the possible combinations of the monomials. Namely for
+  // each i, we take an arbitrary element from monomial_basis_each_vars[i],
+  // and multiply these elements together. We insert the multiplied new
+  // monomial into `monomials`.
+  std::vector<Monomial> monomials;
+  monomials.reserve(std::accumulate(
+      monomial_basis_each_vars.begin(), monomial_basis_each_vars.end(), 1,
+      [](int prod, const VectorX<Monomial>& monomial_vec) {
+        return prod * (monomial_vec.rows());
+      }));
+  int monomials_count = 0;
+  for (const auto& monomial_vec : monomial_basis_each_vars) {
+    // When monomials is empty, just append monomial_vec to monomials.
+    if (monomials_count == 0) {
+      monomials.insert(monomials.begin(), monomial_vec.data(),
+                       monomial_vec.data() + monomial_vec.rows());
+    } else {
+      for (int i = 0; i < monomials_count; ++i) {
+        // Multiply monomials[i] with monomial_vec[j] for each i and j, except
+        // when monomial_vec[j] is 1 (when monomial_vec[j] = 1, multiplying
+        // monomials[i] with monomial_vec[j] is just monomials[i], which is
+        // already in monomials.
+        for (int j = 0; j < monomial_vec.rows(); ++j) {
+          if (monomial_vec(j).total_degree() != 0) {
+            monomials.push_back(monomials[i] * monomial_vec(j));
+          }
+        }
+      }
+    }
+    monomials_count = ssize(monomials);
+  }
+  std::sort(monomials.begin(), monomials.end(),
+            GradedReverseLexOrder<std::less<Variable>>());
+  return Eigen::Map<VectorX<Monomial>>(monomials.data(), monomials.size());
 }
 
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(

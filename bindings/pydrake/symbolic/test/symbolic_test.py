@@ -1208,6 +1208,9 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(basis2.size, 20)
         self.assertEqual(basis3.size, 20)
         self.assertEqual(basis4.size, 20)
+        basis5 = sym.MonomialBasis(
+            vars_degree={sym.Variables([x]): 2, sym.Variables([y]): 1})
+        self.assertEqual(basis5.size, 6)
 
     def test_even_degree_monomial_basis(self):
         vars = sym.Variables([x, y])
