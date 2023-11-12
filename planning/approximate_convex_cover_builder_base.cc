@@ -20,30 +20,39 @@ using Eigen::Triplet;
 using geometry::optimization::ConvexSet;
 using graph_algorithms::MaxCliqueSolverBase;
 
-
- ApproximateConvexCoverFromCliqueCoverOptions::
+ApproximateConvexCoverFromCliqueCoverOptions::
     ApproximateConvexCoverFromCliqueCoverOptions(
         std::unique_ptr<CoverageCheckerBase> coverage_checker,
         std::unique_ptr<PointSamplerBase> point_sampler,
-        std::unique_ptr<AdjacencyMatrixBuilderBase>
-            adjacency_matrix_builder,
-        std::unique_ptr<MaxCliqueSolverBase>
-            max_clique_solver,
-        std::unique_ptr<ConvexSetFromCliqueBuilderBase> set_builder,
-        int num_sampled_points, int minimum_clique_size, int num_threads)
+        std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
+        std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
+        std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>
+            set_builder,
+        int num_sampled_points, int minimum_clique_size)
     : coverage_checker_(std::move(coverage_checker)),
       point_sampler_(std::move(point_sampler)),
       adjacency_matrix_builder_(std::move(adjacency_matrix_builder)),
       max_clique_solver_(std::move(max_clique_solver)),
-      set_builder_(std::move(set_builder)),
+      set_builders_(std::move(set_builder)),
       num_sampled_points_(num_sampled_points),
-      minimum_clique_size_(minimum_clique_size),
-      num_threads_(num_threads){};
+      minimum_clique_size_(minimum_clique_size) {
+  DRAKE_THROW_UNLESS(set_builders_.size() > 0);
+};
 
- namespace {
+const std::vector<const ConvexSetFromCliqueBuilderBase*>
+ApproximateConvexCoverFromCliqueCoverOptions::GetSetBuilders() const {
+  std::vector<const ConvexSetFromCliqueBuilderBase*> ret;
+  ret.reserve(set_builders_.size());
+  for (const auto& elt : set_builders_) {
+    ret.push_back(elt.get());
+  }
+  return ret;
+}
+
+namespace {
 // Sets all the value of the rows and columns in mat to false for which
 // mask(i) is true.
- void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
+void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
                              SparseMatrix<bool>* mat) {
   for (int j = 0; j < mat->outerSize(); ++j) {
     if (mask[j]) {
@@ -60,9 +69,8 @@ using graph_algorithms::MaxCliqueSolverBase;
  * Computes the largest clique in the graph represented by @p adjacency_matrix
  * and adds this largest clique to @p computed_cliques. This clique is then
  * removed from the adjacency matrix, and a new maximal clique is computed.
- This
- * process is completed until no clique of size @p minimum_clique can be
- found.
+ * This process is completed until no clique of size @p minimum_clique can be
+ * found.
  * At this point, set the value of @p clique_cover_computed to true.
  *
  * This method is intended to be used only in
@@ -80,7 +88,7 @@ using graph_algorithms::MaxCliqueSolverBase;
  * @p clique_cover_computed must be set to true on the exit of this method,
  * otherwise ApproximateConvexCoverFromCliqueCover will loop forever.
  */
- void ComputeGreedyTruncatedCliqueCover(
+void ComputeGreedyTruncatedCliqueCover(
     const int minimum_clique_size,
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
     SparseMatrix<bool>* adjacency_matrix,
@@ -120,7 +128,7 @@ using graph_algorithms::MaxCliqueSolverBase;
  * as other worker threads will be asynchronously pulling off of this queue to
  * build convex sets in ApproximateConvexCoverFromCliqueCover.
  */
- std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
+std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
     const ConvexSetFromCliqueBuilderBase* set_builder,
     std::queue<VectorX<bool>>* computed_cliques,
@@ -155,7 +163,7 @@ using graph_algorithms::MaxCliqueSolverBase;
   return ret;
 }
 
- int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
+int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
     const int num_vertices, const int minimum_clique_size) {
   // From "Restricted greedy clique decompositions and greedy clique
   // decompositions of K 4-free graphs" by Sean McGuinness, we have that the
@@ -173,13 +181,12 @@ using graph_algorithms::MaxCliqueSolverBase;
 
 }  // namespace
 
- std::vector<std::unique_ptr<ConvexSet>>
- ApproximateConvexCoverFromCliqueCover(
+std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
     const ApproximateConvexCoverFromCliqueCoverOptions& options) {
-  const int num_threads =
-      options.num_threads() < 1
-          ? static_cast<int>(std::thread::hardware_concurrency())
-          : options.num_threads();
+  //  const int num_threads =
+  //      options.num_threads() < 1
+  //          ? static_cast<int>(std::thread::hardware_concurrency())
+  //          : options.num_threads();
   //  bool parallelize = options.num_threads() == 1;
 
   // The computed cliques from the max clique solver. These will get pulled off
@@ -207,8 +214,9 @@ using graph_algorithms::MaxCliqueSolverBase;
     Eigen::SparseMatrix<bool> adjacency_matrix =
         options.adjacency_matrix_builder()->BuildAdjacencyMatrix(points);
 
-    // Typically we won't get this worst case number of new cliques, so we only
-    // reserve half of the worst case.
+    // Reserve more space in for the newly built sets. Typically, we won't get
+    // this worst case number of new cliques, so we only reserve half of the
+    // worst case.
     built_sets.reserve(
         built_sets.size() +
         ComputeMaxNumberOfCliquesInGreedyCliqueCover(
@@ -217,8 +225,7 @@ using graph_algorithms::MaxCliqueSolverBase;
 
     // Compute truncated clique cover.
     std::thread clique_cover_thread{[&options, &adjacency_matrix,
-                                     &computed_cliques,
-                                     &computed_cliques_mutex,
+                                     &computed_cliques, &computed_cliques_mutex,
                                      &computed_clique_condition_variable,
                                      &stop_workers]() {
       ComputeGreedyTruncatedCliqueCover(
@@ -230,13 +237,13 @@ using graph_algorithms::MaxCliqueSolverBase;
     // Build convex sets.
     std::vector<std::future<std::queue<std::unique_ptr<ConvexSet>>>>
         build_sets_future;
-    const int num_set_builders{std::max(1, num_threads - 1)};
-    build_sets_future.reserve(num_set_builders);
-    for (int i = 0; i < num_set_builders; ++i) {
-      build_sets_future.emplace_back(std::async(
-          std::launch::async, SetBuilderWorker, points, options.set_builder(),
-          &computed_cliques, &computed_cliques_mutex,
-          &computed_clique_condition_variable, &stop_workers));
+    build_sets_future.reserve(options.num_set_builders());
+    for (int i = 0; i < options.num_set_builders(); ++i) {
+      build_sets_future.emplace_back(
+          std::async(std::launch::async, SetBuilderWorker, points,
+                     options.get_set_builder(i), &computed_cliques,
+                     &computed_cliques_mutex,
+                     &computed_clique_condition_variable, &stop_workers));
     }
 
     // The clique cover and the convex sets are computed asynchronously. Wait

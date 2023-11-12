@@ -35,11 +35,10 @@ class CoverageCheckerBase {
   virtual bool CheckCoverage(
       const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
-   virtual bool CheckCoverage(
+  virtual bool CheckCoverage(
       const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
   virtual ~CoverageCheckerBase() {}
-
 
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
@@ -110,26 +109,19 @@ class ConvexSetFromCliqueBuilderBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSetFromCliqueBuilderBase);
 };
 /**
+ * TODO Fill in this constructor
  *
- * @param checker
- * @param points
- * @param options
- * @param minimum_clique_size
- * @param parallelize
- * @return
+ * Throw if set_builder is empty.
  */
 class ApproximateConvexCoverFromCliqueCoverOptions {
  public:
   ApproximateConvexCoverFromCliqueCoverOptions(
       std::unique_ptr<CoverageCheckerBase> coverage_checker,
       std::unique_ptr<PointSamplerBase> point_sampler,
-      std::unique_ptr<AdjacencyMatrixBuilderBase>
-          adjacency_matrix_builder,
-      std::unique_ptr<MaxCliqueSolverBase>
-          max_clique_solver,
-      std::unique_ptr<ConvexSetFromCliqueBuilderBase> set_builder,
-      int num_sampled_points, int minimum_clique_size = 3,
-      int num_threads = -1);
+      std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
+      std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
+      std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builder,
+      int num_sampled_points, int minimum_clique_size = 3);
 
   [[nodiscard]] const CoverageCheckerBase* coverage_checker() const {
     return coverage_checker_.get();
@@ -144,20 +136,20 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
     return adjacency_matrix_builder_.get();
   }
 
-  [[nodiscard]] const MaxCliqueSolverBase* max_clique_solver()
-      const {
+  [[nodiscard]] const MaxCliqueSolverBase* max_clique_solver() const {
     return max_clique_solver_.get();
-  }
-
-  [[nodiscard]] const ConvexSetFromCliqueBuilderBase* set_builder() const {
-    return set_builder_.get();
   }
 
   [[nodiscard]] int num_sampled_points() const { return num_sampled_points_; }
 
   [[nodiscard]] int minimum_clique_size() const { return minimum_clique_size_; }
 
-  [[nodiscard]] int num_threads() const { return num_threads_; }
+  [[nodiscard]] int num_set_builders() const { return set_builders_.size(); }
+
+  [[nodiscard]] const ConvexSetFromCliqueBuilderBase* get_set_builder(
+      int i) const {
+    return set_builders_.at(i).get();
+  }
 
  private:
   const std::unique_ptr<CoverageCheckerBase> coverage_checker_;
@@ -168,27 +160,13 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
 
   const std::unique_ptr<MaxCliqueSolverBase> max_clique_solver_;
 
-  const std::unique_ptr<ConvexSetFromCliqueBuilderBase> set_builder_;
+  const std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>
+      set_builders_;
 
   const int num_sampled_points_;
 
   const int minimum_clique_size_;
-
-  const int num_threads_;
 };
-
-//class DummyClass {
-//  DummyClass() = default;
-//};
-//
-//class Tmp {
-// public:
-//  Tmp(std::unique_ptr<DummyClass> dummy);
-//
-// private:
-//  const std::unique_ptr<DummyClass> dummy_;
-//
-//};
 
 std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
     const ApproximateConvexCoverFromCliqueCoverOptions& options);
