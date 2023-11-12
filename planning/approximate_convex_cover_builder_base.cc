@@ -18,28 +18,32 @@ namespace planning {
 using Eigen::SparseMatrix;
 using Eigen::Triplet;
 using geometry::optimization::ConvexSet;
+using graph_algorithms::MaxCliqueSolverBase;
 
-ApproximateConvexCoverFromCliqueCoverOptions::
+
+ ApproximateConvexCoverFromCliqueCoverOptions::
     ApproximateConvexCoverFromCliqueCoverOptions(
-        const CoverageCheckerBase* coverage_checker,
-        const PointSamplerBase* point_sampler,
-        const AdjacencyMatrixBuilderBase* adjacency_matrix_builder,
-        const ConvexSetFromCliqueBuilderBase* set_builder,
-        const MaxCliqueOptions& max_clique_options, int num_sampled_points,
-        int minimum_clique_size, int num_threads)
-    : coverage_checker_(coverage_checker),
-      point_sampler_(point_sampler),
-      adjacency_matrix_builder_(adjacency_matrix_builder),
-      set_builder_(set_builder),
-      max_clique_options_(max_clique_options),
+        std::unique_ptr<CoverageCheckerBase> coverage_checker,
+        std::unique_ptr<PointSamplerBase> point_sampler,
+        std::unique_ptr<AdjacencyMatrixBuilderBase>
+            adjacency_matrix_builder,
+        std::unique_ptr<MaxCliqueSolverBase>
+            max_clique_solver,
+        std::unique_ptr<ConvexSetFromCliqueBuilderBase> set_builder,
+        int num_sampled_points, int minimum_clique_size, int num_threads)
+    : coverage_checker_(std::move(coverage_checker)),
+      point_sampler_(std::move(point_sampler)),
+      adjacency_matrix_builder_(std::move(adjacency_matrix_builder)),
+      max_clique_solver_(std::move(max_clique_solver)),
+      set_builder_(std::move(set_builder)),
       num_sampled_points_(num_sampled_points),
       minimum_clique_size_(minimum_clique_size),
       num_threads_(num_threads){};
 
-namespace {
-// Sets all the value of the rows and columns in mat to false for which mask(i)
-// is true.
-void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
+ namespace {
+// Sets all the value of the rows and columns in mat to false for which
+// mask(i) is true.
+ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
                              SparseMatrix<bool>* mat) {
   for (int j = 0; j < mat->outerSize(); ++j) {
     if (mask[j]) {
@@ -55,8 +59,10 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
 /*
  * Computes the largest clique in the graph represented by @p adjacency_matrix
  * and adds this largest clique to @p computed_cliques. This clique is then
- * removed from the adjacency matrix, and a new maximal clique is computed. This
- * process is completed until no clique of size @p minimum_clique can be found.
+ * removed from the adjacency matrix, and a new maximal clique is computed.
+ This
+ * process is completed until no clique of size @p minimum_clique can be
+ found.
  * At this point, set the value of @p clique_cover_computed to true.
  *
  * This method is intended to be used only in
@@ -67,14 +73,16 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
  * as other worker threads will be asynchronously pulling off of this queue to
  * build convex sets in ApproximateConvexCoverFromCliqueCover.
  *
- * 2. The adjacency matrix will be mutated by this method and be mostly useless
+ * 2. The adjacency matrix will be mutated by this method and be mostly
+ useless
  * after this method is called.
  *
  * @p clique_cover_computed must be set to true on the exit of this method,
  * otherwise ApproximateConvexCoverFromCliqueCover will loop forever.
  */
-void ComputeGreedyTruncatedCliqueCover(
-    const int minimum_clique_size, const MaxCliqueOptions& max_clique_options,
+ void ComputeGreedyTruncatedCliqueCover(
+    const int minimum_clique_size,
+    const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
     SparseMatrix<bool>* adjacency_matrix,
     std::queue<VectorX<bool>>* computed_cliques,
     std::mutex* computed_cliques_mutex,
@@ -84,7 +92,7 @@ void ComputeGreedyTruncatedCliqueCover(
   std::unique_lock<std::mutex> lock(*computed_cliques_mutex);
   while (last_clique_size > minimum_clique_size) {
     const VectorX<bool> max_clique =
-        graph_algorithms::CalcMaxClique(*adjacency_matrix, max_clique_options);
+        max_clique_solver.SolveMaxClique(*adjacency_matrix);
     lock.lock();
     computed_cliques->push(max_clique);
     lock.unlock();
@@ -99,7 +107,8 @@ void ComputeGreedyTruncatedCliqueCover(
 
 /*
  * Pulls cliques from @p computed_cliques and constructs convex sets using @p
- * points contained in the clique by calling @set_builder BuildConvexSet method.
+ * points contained in the clique by calling @set_builder BuildConvexSet
+ method.
  *
  * This process continues until @p clique_cover_complete gets set to true.
  *
@@ -111,7 +120,7 @@ void ComputeGreedyTruncatedCliqueCover(
  * as other worker threads will be asynchronously pulling off of this queue to
  * build convex sets in ApproximateConvexCoverFromCliqueCover.
  */
-std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
+ std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
     const ConvexSetFromCliqueBuilderBase* set_builder,
     std::queue<VectorX<bool>>* computed_cliques,
@@ -146,7 +155,7 @@ std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
   return ret;
 }
 
-int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
+ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
     const int num_vertices, const int minimum_clique_size) {
   // From "Restricted greedy clique decompositions and greedy clique
   // decompositions of K 4-free graphs" by Sean McGuinness, we have that the
@@ -164,7 +173,8 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 
 }  // namespace
 
-std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
+ std::vector<std::unique_ptr<ConvexSet>>
+ ApproximateConvexCoverFromCliqueCover(
     const ApproximateConvexCoverFromCliqueCoverOptions& options) {
   const int num_threads =
       options.num_threads() < 1
@@ -207,11 +217,12 @@ std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
 
     // Compute truncated clique cover.
     std::thread clique_cover_thread{[&options, &adjacency_matrix,
-                                     &computed_cliques, &computed_cliques_mutex,
+                                     &computed_cliques,
+                                     &computed_cliques_mutex,
                                      &computed_clique_condition_variable,
                                      &stop_workers]() {
       ComputeGreedyTruncatedCliqueCover(
-          options.minimum_clique_size(), options.max_clique_options(),
+          options.minimum_clique_size(), *options.max_clique_solver(),
           &adjacency_matrix, &computed_cliques, &computed_cliques_mutex,
           &computed_clique_condition_variable, &stop_workers);
     }};
