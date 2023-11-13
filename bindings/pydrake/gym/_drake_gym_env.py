@@ -60,7 +60,7 @@ class DrakeGymEnv(gym.Env):
                 infinity.
             reward: The reward can be specified in one of two
                 ways: (1) by passing a callable with the signature
-                ``value = reward(context)`` or (2) by passing a scalar
+                ``value = reward(system, context)`` or (2) by passing a scalar
                 vector-valued output port of ``simulator``'s system.
             action_port_id: The ID of an input port of ``simulator``'s system
                 compatible with the ``action_space``.  Each Env *must* have an
