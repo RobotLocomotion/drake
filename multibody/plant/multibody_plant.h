@@ -1529,6 +1529,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
+  /// (is_discrete() == false)
+  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddCouplerConstraint(const Joint<T>& joint0,
                                              const Joint<T>& joint1,
                                              double gear_ratio,
@@ -1574,6 +1579,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
+  /// (is_discrete() == false)
+  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddDistanceConstraint(
       const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
       const Vector3<double>& p_BQ, double distance,
@@ -1592,6 +1602,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
+  /// (is_discrete() == false)
+  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddBallConstraint(const Body<T>& body_A,
                                           const Vector3<double>& p_AP,
                                           const Body<T>& body_B,
@@ -1609,6 +1624,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
+  /// (is_discrete() == false)
+  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddWeldConstraint(
       const Body<T>& body_A, const math::RigidTransform<double>& X_AP,
       const Body<T>& body_B, const math::RigidTransform<double>& X_BQ);

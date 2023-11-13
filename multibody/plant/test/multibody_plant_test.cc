@@ -3886,6 +3886,8 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
       body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
   MultibodyConstraintId ball_id = plant.AddBallConstraint(
       body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+      body_A, RigidTransformd(), body_B, RigidTransformd());
 
   plant.Finalize();
 
@@ -3895,26 +3897,31 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
 
   // Set all constraints to inactive.
   plant.SetConstraintActiveStatus(context.get(), coupler_id, false);
   plant.SetConstraintActiveStatus(context.get(), distance_id, false);
   plant.SetConstraintActiveStatus(context.get(), ball_id, false);
+  plant.SetConstraintActiveStatus(context.get(), weld_id, false);
 
   // Verify all constraints are inactive in the context.
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, coupler_id));
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, weld_id));
 
   // Set all constraints to back to active.
   plant.SetConstraintActiveStatus(context.get(), coupler_id, true);
   plant.SetConstraintActiveStatus(context.get(), distance_id, true);
   plant.SetConstraintActiveStatus(context.get(), ball_id, true);
+  plant.SetConstraintActiveStatus(context.get(), weld_id, true);
 
   // Verify all constraints are active in the context.
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
 }
 
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
