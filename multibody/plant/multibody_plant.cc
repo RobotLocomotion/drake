@@ -598,6 +598,17 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
         "MultibodyPlant models.");
   }
 
+  // TAMSI does not support ball constraints. For all other solvers, we let
+  // the discrete update manager throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support weld constraints. Use "
+        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
+        "SAP solver instead. For other solvers, refer to "
+        "DiscreteContactSolver.");
+  }
+
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
 
@@ -3101,6 +3112,9 @@ void MultibodyPlant<T>::DeclareParameters() {
     constraint_active_status_map[id] = true;
   }
   for (const auto& [id, spec] : ball_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : weld_constraints_specs_) {
     constraint_active_status_map[id] = true;
   }
 

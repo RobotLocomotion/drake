@@ -393,14 +393,16 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
       "A_B", body_A, RigidTransformd::Identity(), body_B,
       RigidTransformd::Identity(), Vector3d::UnitZ());
 
-  // Add one coupler constraint, one distance constraint, and one ball
-  // constraint.
+  // Add one coupler constraint, one distance constraint, one ball
+  // constraint and one weld constraint.
   MultibodyConstraintId coupler_constraint_id =
       plant.AddCouplerConstraint(world_A, A_B, 1.2);
   MultibodyConstraintId distance_constraint_id = plant.AddDistanceConstraint(
       body_A, Vector3d::Zero(), body_B, Vector3d(1.0, 2.0, 3.0), 1.0);
   MultibodyConstraintId ball_constraint_id = plant.AddBallConstraint(
       body_A, Vector3d::Zero(), body_B, Vector3d::Zero());
+  MultibodyConstraintId weld_constraint_id = plant.AddWeldConstraint(
+      body_A, RigidTransformd(), body_B, RigidTransformd());
 
   // Finalize and set the manager/driver.
   plant.Finalize();
@@ -422,22 +424,23 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
     const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
     // Verify number of constraints when all are active. There is no contact
-    // so we expect one coupler constraint, one distance constraint and one
-    // ball constraint.
-    EXPECT_EQ(problem.num_constraints(), 3);
+    // so we expect one coupler constraint, one distance constraint one
+    // ball constraint and one weld constraint.
+    EXPECT_EQ(problem.num_constraints(), 4);
     EXPECT_EQ(problem.num_constraint_equations(),
               1 /* coupler constraint */ + 1 /* distance constraint */ +
-                  3 /* ball constraint */);
+                  3 /* ball constraint */ + 6 /* weld constraint*/);
     // TODO(joemasterjohn): When these constraints become first class citizens,
     // verify the constraints via type casts rather than just looking at the
     // number of constraint equations as a proxy.
     EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
     EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 1);
     EXPECT_EQ(problem.get_constraint(2).num_constraint_equations(), 3);
+    EXPECT_EQ(problem.get_constraint(3).num_constraint_equations(), 6);
   }
 
-  // Set the distance and ball constraint to inactive and verify that only the
-  // coupler constraint shows up in the problem.
+  // Set the distance and ball constraints to inactive and verify that only the
+  // coupler and weld constraints show up in the problem.
   {
     plant.SetConstraintActiveStatus(context.get(), distance_constraint_id,
                                     false);
@@ -448,16 +451,19 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
     const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
     // Verify number of constraints when only the coupler constraint is active.
-    EXPECT_EQ(problem.num_constraints(), 1);
-    EXPECT_EQ(problem.num_constraint_equations(), 1 /* coupler constraint */);
+    EXPECT_EQ(problem.num_constraints(), 2);
+    EXPECT_EQ(problem.num_constraint_equations(),
+              1 /* coupler constraint */ + 6 /* weld constraint */);
     EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
+    EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 6);
   }
 
-  // Now disable the coupler constraint and verify that the problem has 0
-  // constraints.
+  // Now disable the coupler and weld constraints and verify that the problem
+  // has 0 constraints.
   {
     plant.SetConstraintActiveStatus(context.get(), coupler_constraint_id,
                                     false);
+    plant.SetConstraintActiveStatus(context.get(), weld_constraint_id, false);
 
     const ContactProblemCache<double>& problem_cache =
         SapDriverTest::EvalContactProblemCache(sap_driver, *context);
@@ -474,6 +480,7 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
                                     true);
     plant.SetConstraintActiveStatus(context.get(), ball_constraint_id, true);
     plant.SetConstraintActiveStatus(context.get(), coupler_constraint_id, true);
+    plant.SetConstraintActiveStatus(context.get(), weld_constraint_id, true);
 
     const ContactProblemCache<double>& problem_cache =
         SapDriverTest::EvalContactProblemCache(sap_driver, *context);
@@ -482,16 +489,17 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
     // Verify number of constraints when all are active. There is no contact
     // so we expect one coupler constraint, one distance constraint and one
     // ball constraint.
-    EXPECT_EQ(problem.num_constraints(), 3);
+    EXPECT_EQ(problem.num_constraints(), 4);
     EXPECT_EQ(problem.num_constraint_equations(),
               1 /* coupler constraint */ + 1 /* distance constraint */ +
-                  3 /* ball constraint */);
+                  3 /* ball constraint */ + 6 /* weld constraint */);
     // TODO(joemasterjohn): When these constraints become first class citizens,
     // verify the constraints via type casts rather than just looking at the
     // number of constraint equations as a proxy.
     EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
     EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 1);
     EXPECT_EQ(problem.get_constraint(2).num_constraint_equations(), 3);
+    EXPECT_EQ(problem.get_constraint(3).num_constraint_equations(), 6);
   }
 }
 
