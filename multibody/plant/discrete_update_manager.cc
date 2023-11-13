@@ -430,13 +430,16 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
   cache_entry_value.mark_out_of_date();
   InputPortForces<T>& forces =
       cache_entry_value.template GetMutableValueOrThrow<InputPortForces<T>>();
+  const InputPortForces<T> old_forces(forces);
   CalcInputPortForces(context, &forces);
   cache_entry_value.mark_up_to_date();
 
-  // Initiate a value modification event.
-  const systems::DependencyTracker& tracker =
-      context.get_tracker(discrete_input_forces_cache_entry.ticket());
-  tracker.NoteValueChange(context.start_new_change_event());
+  if (old_forces != forces) {
+    // Initiate a value modification event.
+    const systems::DependencyTracker& tracker =
+        context.get_tracker(discrete_input_forces_cache_entry.ticket());
+    tracker.NoteValueChange(context.start_new_change_event());
+  }
 }
 
 template <typename T>
