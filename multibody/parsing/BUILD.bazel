@@ -456,6 +456,7 @@ drake_cc_googletest(
     name = "process_model_directives_test",
     data = [
         ":process_model_directives_test_models",
+        "//manipulation/util:panda_arm_and_hand_test_model",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [

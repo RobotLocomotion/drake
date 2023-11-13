@@ -398,6 +398,25 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
         R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
+// Ensure that we incorporate weld offsets into produces model info.
+GTEST_TEST(ProcessModelDirectivesTest, WeldOffset) {
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      "drake/manipulation/util/test/panda_arm_and_hand.dmd.yaml"));
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(directives, make_parser(&plant).get());
+
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "panda");
+  EXPECT_TRUE(added_models[0].X_PC.IsExactlyIdentity());
+
+  EXPECT_EQ(added_models[1].model_name, "panda_hand");
+  const math::RigidTransformd panda_hand_X_PC_expected(
+      math::RollPitchYawd(0, 0, -45 * M_PI / 180),
+      Eigen::Vector3d(0, 0, 0));
+  EXPECT_TRUE(added_models[1].X_PC.IsExactlyEqualTo(panda_hand_X_PC_expected));
+}
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

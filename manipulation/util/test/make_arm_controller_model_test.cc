@@ -296,43 +296,6 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
                        *sim_plant_context);
 }
 
-/* Creates a Panda arm and a Panda hand. Prior to #20513, this test would
-  fail.
-*/
-TEST_F(MakeArmControllerModelTest, LoadPandaAndHandFromDirectives) {
-  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
-      "drake/manipulation/util/test/panda_and_hand.dmd.yaml"));
-  Parser parser{sim_plant_};
-  std::vector<ModelInstanceInfo> models_from_directives =
-      multibody::parsing::ProcessModelDirectives(directives, &parser);
-
-  sim_plant_->Finalize();
-  ASSERT_GT(sim_plant_->num_multibody_states(), 0);
-
-  // Query the ModelInstanceInfo(s) from the directives.
-  ModelInstanceInfo panda_info;
-  ModelInstanceInfo panda_hand_info;
-  for (const ModelInstanceInfo& model_info : models_from_directives) {
-    if (model_info.model_name == "panda") {
-      panda_info = model_info;
-    } else if (model_info.model_name == "panda_hand") {
-      panda_hand_info = model_info;
-    }
-  }
-
-  MultibodyPlant<double>* control_plant =
-      SharedPointerSystem<double>::AddToBuilder(
-          &builder_,
-          MakeArmControllerModel(*sim_plant_, panda_info, panda_hand_info));
-  ASSERT_NE(control_plant, nullptr);
-
-  std::unique_ptr<Context<double>> sim_plant_context =
-      sim_plant_->CreateDefaultContext();
-
-  CompareInertialTerms(*sim_plant_, panda_info.model_instance, *control_plant,
-                       *sim_plant_context);
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace manipulation
