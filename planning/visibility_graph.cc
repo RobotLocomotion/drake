@@ -1,16 +1,16 @@
 #include "drake/planning/visibility_graph.h"
 
+#include <algorithm>
 #include <iterator>
 #include <vector>
 
-#include <common_robotics_utilities/openmp_helpers.hpp>
+#include <common_robotics_utilities/parallelism.hpp>
 
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
-
-using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
-using common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild;
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::DynamicParallelForLoop;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForLoop;
+using common_robotics_utilities::parallelism::ThreadWorkRange;
 
 namespace drake {
 namespace planning {
@@ -110,45 +110,60 @@ class EdgesIterator {
 
 Eigen::SparseMatrix<bool> VisibilityGraph(
     const CollisionChecker& checker,
-    const Eigen::Ref<const Eigen::MatrixXd>& points, const bool parallelize) {
+    const Eigen::Ref<const Eigen::MatrixXd>& points,
+    const Parallelism parallelize) {
   DRAKE_THROW_UNLESS(checker.plant().num_positions() == points.rows());
 
   const int num_points = points.cols();
-  const int num_threads_to_use = (IsOmpEnabledInBuild() && parallelize)
-                                     ? checker.num_allocated_contexts()
-                                     : 1;
+  const int num_threads_to_use =
+      checker.SupportsParallelChecking()
+          ? std::min(parallelize.num_threads(),
+                     checker.num_allocated_contexts())
+          : 1;
   drake::log()->debug("Generating VisibilityGraph using {} threads",
                       num_threads_to_use);
 
   // Choose std::vector<uint8_t> as a thread-safe data structure for the
   // parallel evaluations.
   std::vector<uint8_t> points_free(num_points, 0x00);
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(num_threads_to_use) schedule(static)
-#endif
-  for (int i = 0; i < num_points; ++i) {
-    points_free[i] = static_cast<uint8_t>(checker.CheckConfigCollisionFree(
-        points.col(i), GetContextOmpThreadNum()));
-  }
+
+  const auto point_check_thread_work = [&](const ThreadWorkRange& work_range) {
+    const int thread_num = work_range.GetThreadNum();
+    for (int i = static_cast<int>(work_range.GetRangeStart());
+         i < static_cast<int>(work_range.GetRangeEnd()); ++i) {
+      points_free[i] = static_cast<uint8_t>(
+          checker.CheckConfigCollisionFree(points.col(i), thread_num));
+    }
+  };
+
+  StaticParallelForLoop(DegreeOfParallelism(num_threads_to_use), 0, num_points,
+                        point_check_thread_work,
+                        ParallelForBackend::BEST_AVAILABLE);
 
   // Choose std::vector as a thread-safe data structure for the parallel
   // evaluations.
   std::vector<std::vector<int>> edges(num_points);
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(num_threads_to_use) schedule(dynamic)
-#endif
-  for (int i = 0; i < num_points; ++i) {
-    if (points_free[i] > 0) {
-      edges[i].push_back(i);
-      for (int j = i + 1; j < num_points; ++j) {
-        if (points_free[j] > 0 &&
-            checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
-                                           GetContextOmpThreadNum())) {
-          edges[i].push_back(j);
+
+  const auto edge_check_thread_work = [&](const ThreadWorkRange& work_range) {
+    const int thread_num = work_range.GetThreadNum();
+    for (int i = static_cast<int>(work_range.GetRangeStart());
+         i < static_cast<int>(work_range.GetRangeEnd()); ++i) {
+      if (points_free[i] > 0) {
+        edges[i].push_back(i);
+        for (int j = i + 1; j < num_points; ++j) {
+          if (points_free[j] > 0 &&
+              checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
+                                             thread_num)) {
+            edges[i].push_back(j);
+          }
         }
       }
     }
-  }
+  };
+
+  DynamicParallelForLoop(DegreeOfParallelism(num_threads_to_use), 0, num_points,
+                         edge_check_thread_work,
+                         ParallelForBackend::BEST_AVAILABLE);
 
   // Convert edges into the SparseMatrix format, using a custom iterator to
   // avoid explicitly copying the data into a list of Eigen::Triplet.
