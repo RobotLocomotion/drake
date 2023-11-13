@@ -34,15 +34,17 @@ VectorX<Monomial> MonomialBasis(
   // Insert the 1 monomial
   monomials.emplace_back();
   for (const auto& monomial_vec : monomial_basis_each_vars) {
-    int monomials_count = ssize(monomials);
+    const int monomials_count = ssize(monomials);
+    // The last element of monomial_vec should be 1.
+    DRAKE_ASSERT(monomial_vec[monomial_vec.rows() - 1].total_degree() == 0);
     // Insert the whole monomial_vec besides the 1 monomial which is at the end.
-    monomials.insert(monomials.end(), monomial_vec.begin(),
-                     --monomial_vec.end());
+    monomials.insert(monomials.end(), monomial_vec.data(),
+                     monomial_vec.data() + monomial_vec.rows() - 1);
     // Start at 1 since monomials(0) is the 1 monomial, which we have already
     // considered in the previous line.
     for (int i = 1; i < monomials_count; ++i) {
-       // Stop before the 1 monomial at the end of monomial_vec.
-      for(int j = 0; j < monomial_vec.rows()-1; ++j) {
+      // Stop before the 1 monomial at the end of monomial_vec.
+      for (int j = 0; j < monomial_vec.rows() - 1; ++j) {
         monomials.push_back(monomials.at(i) * monomial_vec(j));
       }
     }
