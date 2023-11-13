@@ -108,15 +108,12 @@ namespace planning {
    `std::this_thread::get_id()`)
 
  To determine the greatest implicit context parallelism that can be achieved in
- an OpenMP-parallelized operation, `GetNumberOfThreads(Parallelism parallelize)`
+ a parallelized operation, `GetNumberOfThreads(Parallelism parallelize)`
  returns the lesser of the provided `parallelism` and the supported implicit
  context parallelism.
 
- <!-- TODO(calderpg-tri) Update once GetNumberOfThreads behavior is no longer
-      dependent on OpenMP being available. -->
-
- <!-- TODO(calderpg, rick-poyner) Add parallel for-loop examples once drakelint
-      supports OpenMP pragmas in docs.  -->
+ <!-- TODO(calderpg-tri, rick-poyner) Add parallel for-loop examples once
+      drakelint supports OpenMP pragmas in docs.  -->
 
  @anchor ccb_explicit_contexts
  <h5>Explicit Context Parallelism</h5>
