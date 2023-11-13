@@ -222,6 +222,7 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
  * the maximal degree of these variables in the monomial. Namely the summation
  * of the degree of each variable in `vars` is no larger than `degree`.
  * @pre The variables in `variables_degree` don't overlap.
+ * @pre The degree in `variables_degree` are non-negative.
  */
 [[nodiscard]] VectorX<Monomial> MonomialBasis(
     const std::unordered_map<Variables, int>& variables_degree);
