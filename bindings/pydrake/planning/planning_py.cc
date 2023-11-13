@@ -24,6 +24,7 @@ and/or trajectories of dynamical systems.
   internal::DefinePlanningRobotDiagram(m);
   internal::DefinePlanningCollisionCheckerInterfaceTypes(m);
   internal::DefinePlanningCollisionChecker(m);
+  internal::DefinePlanningGraphAlgorithms(m);
   internal::DefinePlanningTrajectoryOptimization(m);
   internal::DefinePlanningVisibilityGraph(m);
 }
