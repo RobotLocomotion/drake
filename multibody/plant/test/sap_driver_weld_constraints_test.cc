@@ -310,6 +310,18 @@ GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
   EXPECT_THROW(plant.get_distance_constraint_specs(weld_id), std::exception);
 }
 
+GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.AddWeldConstraint(bodyA, RigidTransformd(),
+                                                      bodyB, RigidTransformd()),
+                              ".*TAMSI does not support weld constraints.*");
+}
+
 GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =

@@ -593,7 +593,13 @@ void SapDriver<T>::AddWeldConstraints(
 
   const Frame<T>& frame_W = plant().world_frame();
 
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
   for (const auto& [id, spec] : manager().weld_constraints_specs()) {
+    // skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
+
     const Body<T>& body_A = plant().get_body(spec.body_A);
     const Body<T>& body_B = plant().get_body(spec.body_B);
 
