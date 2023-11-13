@@ -19,7 +19,7 @@ class MultibodyPlant;
 
 /** The %ForceDensityField class is an abstract base class that represents a
  force density field affecting deformable bodies in a MultibodyPlant. The
- force field is described by the member function `EvaluateAt` which takes as
+ force field is described by the member function EvaluateAt() which takes as
  input a position in the world frame and returns the force density from the
  force density field at the given location, with unit [N/m³]. The force density
  function can depend on other Context-dependent parameters.
@@ -35,7 +35,9 @@ class ForceDensityField {
   /** Evaluates the force density [N/m³] with the given `context` of the
    owning MultibodyPlant and a position in world, `p_WQ`.
    @note this returns the force per unit of _reference_ configuration volume
-   instead of force per unit of _current_ configuration volume. */
+   (where the reference undeformed configuration is defined by the input mesh
+   provided by the user) instead of force per unit of _current_ (deformed)
+   configuration volume. */
   Vector3<T> EvaluateAt(const systems::Context<T>& context,
                         const Vector3<T>& p_WQ) const {
     return DoEvaluateAt(context, p_WQ);
@@ -47,8 +49,9 @@ class ForceDensityField {
   /** Returns true iff `this` external force is owned by a MultibodyPlant. */
   bool has_parent_system() const { return tree_system_ != nullptr; }
 
-  /** Returns the owning %MultibodyPlant %LeafSystem. If none exists (i.e.
-   has_parent_system() returns false), throws an std::exception. */
+  /** Returns the owning %MultibodyPlant %LeafSystem.
+   @throws std::exception if `this` force density field is not owned by any
+   system. */
   const systems::LeafSystem<T>& parent_system_or_throw() const {
     DRAKE_THROW_UNLESS(tree_system_ != nullptr);
     return *tree_system_;
@@ -57,10 +60,10 @@ class ForceDensityField {
 #ifndef DRAKE_DOXYGEN_CXX
   /* (Internal use only) Declares internal::MultibodyTreeSystem cache
    entries/parameters/input ports at Finalize() time. This is useful if the
-   external force is context-dependent. For example, the force density field
+   external force is context-dependent. For example, if the force density field
    can be turned on/off depending on an external input from another System, the
    particular force density field subclass can open an input port to the owning
-   MultibodyTreeSystem to receive the signal. This class holds on to a pointer
+   MultibodyTreeSystem to receive the signal. This class holds onto a pointer
    to the given `tree_system` and thus `tree_system` must outlive `this` object.
    @param[in] tree_system A mutable pointer to the owning system.
    @throws std::exception if the `tree_system` does not belong to a
@@ -93,8 +96,8 @@ class ForceDensityField {
 
   ForceDensityField() = default;
 
-  /** Derived classes must override this function to implement the NVI
-   EvaluateAt(). */
+  /** Derived classes must override this function to provide a threadsafe
+   implemention to the NVI EvaluateAt(). */
   virtual Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
                                   const Vector3<T>& p_WQ) const = 0;
 

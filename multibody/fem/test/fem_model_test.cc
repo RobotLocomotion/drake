@@ -101,7 +101,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
   EXPECT_TRUE(CompareMatrices(expected_residual, residual));
 }
 
-/* Similar to CalcResidualWithContextDependenetExternalForce, but focuses on
+/* Similar to CalcResidualWithExternalForce, but focuses on
  testing the data flow from context to residual when the force density field
  depends on the context. */
 GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
@@ -141,26 +141,29 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   MultibodyPlant<double> plant(0.01);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
+  VectorXd residual_without_external_force(model.num_dofs());
+  model.CalcResidual(*fem_state, &residual_without_external_force);
+  /* We evaluate the residual at two different times and verifies that the ratio
+   between the external forces would be equal to the ratio of times. */
   const double kTime = 1.23;
   context->SetTime(kTime);
   std::vector<multibody::internal::ForceDensityEvaluator<double>> evaluators;
   evaluators.emplace_back(&force_field, context.get());
-  fem_state->SetExternalForces(std::move(evaluators));
-
+  fem_state->SetExternalForces(evaluators);
   VectorXd residual(model.num_dofs());
   model.CalcResidual(*fem_state, &residual);
+  const VectorXd external_force = residual - residual_without_external_force;
 
-  /* Since DummyElement adds the external force density directly to the
-   residual (see DummyElement::DoAddScaledExternalForces for detail), we expect
-   the difference between inverse dynamics force and the residual to be equal
-   to the force density. */
-  VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
-  expected_residual += LinearDummyElement::inverse_dynamics_force();
-  for (int i = 0; i < model.num_nodes(); ++i) {
-    expected_residual.segment<3>(3 * i) -= kTime * unit_vector;
-  }
+  context->SetTime(2.0 * kTime);
+  evaluators.clear();
+  evaluators.emplace_back(&force_field, context.get());
+  fem_state->SetExternalForces(evaluators);
+  VectorXd residual2(model.num_dofs());
+  model.CalcResidual(*fem_state, &residual2);
+  const VectorXd external_force2 = residual2 - residual_without_external_force;
 
-  EXPECT_TRUE(CompareMatrices(expected_residual, residual));
+  EXPECT_TRUE(CompareMatrices(2.0 * external_force, external_force2,
+                              4.0 * std::numeric_limits<double>::epsilon()));
 }
 
 GTEST_TEST(FemModelTest, CalcTangentMatrix) {

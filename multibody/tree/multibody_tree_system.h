@@ -566,8 +566,7 @@ class MultibodyTreeSystemElementAttorney {
   template <typename U>
   friend class drake::multibody::MultibodyElement;
 
-  template <typename U>
-  friend class drake::multibody::ForceDensityField;
+  friend class drake::multibody::ForceDensityField<T>;
 
   static systems::NumericParameterIndex DeclareNumericParameter(
       MultibodyTreeSystem<T>* tree_system,

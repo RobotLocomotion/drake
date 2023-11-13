@@ -143,7 +143,7 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     *M += scale * mass_matrix();
   }
 
-  /* Implements FemElement::AddScaledExternalForces(). Here we add the force
+  /* Implements FemElement::DoAddScaledExternalForces(). Here we add the force
    density directly to the nodes. Even though this is unphysical (the units
    don't match), this gives us an easy way to test APIs without introducing
    extra complexities. */

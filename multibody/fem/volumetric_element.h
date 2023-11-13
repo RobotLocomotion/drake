@@ -430,10 +430,11 @@ class VolumetricElement
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
     for (int q = 0; q < num_quadrature_points; ++q) {
+      const Vector3<T> scaled_force =
+          scale * force_density.EvaluateAt(quadrature_positions[q]) *
+          reference_volume_[q];
       for (int n = 0; n < num_nodes; ++n) {
-        result->template segment<3>(3 * n) +=
-            scale * force_density.EvaluateAt(quadrature_positions[q]) *
-            reference_volume_[q] * S[q](n);
+        result->template segment<3>(3 * n) += scaled_force * S[q](n);
       }
     }
   }

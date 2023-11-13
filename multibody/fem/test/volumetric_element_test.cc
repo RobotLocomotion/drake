@@ -358,7 +358,8 @@ TEST_F(VolumetricElementTest, ExternalForce) {
   Vector3<AD> gravity_vector(0, 0, -9.81);
   GravityForceField<AD> gravity_field(gravity_vector, mass_density);
   /* The gravity force field doesn't depend on Context, but a Context is needed
-   for a ForceDensityEvaluator. So we create a dummy Context that's unused. */
+   for a ForceDensityEvaluator. So we create a dummy Context that's otherwise
+   unused. */
   MultibodyPlant<AD> plant(0.01);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
