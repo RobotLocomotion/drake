@@ -627,7 +627,7 @@ void ParseExponentialConeConstraints(
 }
 
 void ParsePositiveSemidefiniteConstraints(
-    const MathematicalProgram& prog,
+    const MathematicalProgram& prog, bool upper_triangular,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length) {
   DRAKE_ASSERT(ssize(*b) == *A_row_count);
@@ -648,15 +648,15 @@ void ParsePositiveSemidefiniteConstraints(
     // A * x + s = 0
     // s in positive semidefinite cone.
     // where A is a diagonal matrix, with its diagonal entries being the stacked
-    // column vector of the lower triangular part of matrix
+    // column vector of the lower/upper triangular part of matrix
     // ⎡ -1 -√2 -√2 ... -√2⎤
     // ⎢-√2  -1 -√2 ... -√2⎥
     // ⎢-√2 -√2  -1 ... -√2⎥
     // ⎢    ...            ⎥
     // ⎣-√2 -√2 -√2 ...  -1⎦
     // The √2 scaling factor in the off-diagonal entries are required by SCS and
-    // Clarabel, as it uses only the lower triangular part of the symmetric
-    // matrix, as explained in
+    // Clarabel, as it uses only the lower triangular part (for SCS), or upper
+    // triangular part (for Clarabel) of the symmetric matrix, as explained in
     // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
     // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp.
     // x is the stacked column vector of the lower triangular part of the
@@ -667,15 +667,14 @@ void ParsePositiveSemidefiniteConstraints(
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
     b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
     for (int j = 0; j < X_rows; ++j) {
-      A_triplets->emplace_back(
-          *A_row_count + x_index_count,
-          prog.FindDecisionVariableIndex(flat_X(j * X_rows + j)), -1);
-      b->push_back(0);
-      ++x_index_count;
-      for (int i = j + 1; i < X_rows; ++i) {
+      const int i_start = upper_triangular ? 0 : j;
+      const int i_end = upper_triangular ? j + 1 : X_rows;
+      for (int i = i_start; i < i_end; ++i) {
+        const double scale_factor = i == j ? 1 : sqrt2;
         A_triplets->emplace_back(
             *A_row_count + x_index_count,
-            prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)), -sqrt2);
+            prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)),
+            -scale_factor);
         b->push_back(0);
         ++x_index_count;
       }
@@ -690,7 +689,7 @@ void ParsePositiveSemidefiniteConstraints(
     // We convert this to SCS/Clarabel form as
     // A_cone * x + s = b_cone
     // s in SCS/Clarabel positive semidefinite cone.
-    // where
+    // For SCS, it uses the lower triangular of the symmetric psd matrix, hence
     //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
     //              ⎢√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)⎥
     //   A_cone = - ⎢√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)⎥,
@@ -702,10 +701,25 @@ void ParsePositiveSemidefiniteConstraints(
     //   b_cone =   ⎢√2F₀(2, 0)⎥,
     //              ⎢   ...    ⎥
     //              ⎣  F₀(m, m)⎦
-    // and
+    // For Clarabel, it uses the upper triangular of the symmetric psd matrix,
+    // hence
+    //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
+    //              ⎢√2F₁(0, 1) √2F₂(0, 1) ... √2Fₙ(0, 1)⎥
+    //   A_cone = - ⎢√2F₁(1, 1) √2F₂(1, 1) ... √2Fₙ(1, 1)⎥,
+    //              ⎢            ...                     ⎥
+    //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
+    //
+    //              ⎡  F₀(0, 0)⎤
+    //              ⎢√2F₀(0, 1)⎥
+    //   b_cone =   ⎢√2F₀(1, 1)⎥,
+    //              ⎢   ...    ⎥
+    //              ⎣  F₀(m, m)⎦
+    // For both SCS and Clarabel, we have
     //   x = [x₁; x₂; ... ; xₙ].
     // As explained above, the off-diagonal rows are scaled by √2. Please refer
     // to https://github.com/cvxgrp/scs about the scaling factor √2.
+    // Note that since all F matrices are symmetric, we don't need to
+    // differentiate between lower triangular or upper triangular version.
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
     const VectorXDecisionVariable& x = lmi_constraint.variables();
     const int F_rows = lmi_constraint.evaluator()->matrix_rows();
@@ -713,7 +727,9 @@ void ParsePositiveSemidefiniteConstraints(
     int A_cone_row_count = 0;
     b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
     for (int j = 0; j < F_rows; ++j) {
-      for (int i = j; i < F_rows; ++i) {
+      const int i_start = upper_triangular ? 0 : j;
+      const int i_end = upper_triangular ? j + 1 : F_rows;
+      for (int i = i_start; i < i_end; ++i) {
         const double scale_factor = i == j ? 1 : sqrt2;
         for (int k = 1; k < static_cast<int>(F.size()); ++k) {
           A_triplets->emplace_back(*A_row_count + A_cone_row_count,
