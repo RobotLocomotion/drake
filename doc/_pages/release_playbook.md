@@ -123,13 +123,15 @@ the main body of the document:
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
-   1. Open the following five Jenkins jobs (e.g., each in its own
+   1. Open the following seven Jenkins jobs (e.g., each in its own
       new browser tab):
-      - [Linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS x86 Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-release/)
-      - [macOS arm Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
+      - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-release/)
+      - [macOS x86 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-release/)
+      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
       - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-packaging/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-packaging/)
+      - [macOS x86 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-bazel-staging-packaging/)
+      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-bazel-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -138,18 +140,19 @@ the main body of the document:
       - If you mistakenly provide the "v" in "release_version", your build will
         appear to work, but actually fail 5-6 minutes later.
    5. Click "Build"; each build will take around an hour, give or take.
-   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the linux
+   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the Linux
       job will produce multiple `.whl` files (in the same job).
    7. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
-      tag the release until all five builds have succeeded.
+      tag the release until all seven builds have succeeded.
 3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
    sure that the nightly build git sha from the prior steps matches the
    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
    them all. There is also a dummy date 2099-12-31 that should also be changed.
+   Also replace ``VERSION`` in the tarball name with the appropriate ``1.N.0``.
    1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
-      the upcoming v1.N.0 and YYYYMMDD.
+      the upcoming v1.N.0.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
