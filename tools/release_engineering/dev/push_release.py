@@ -52,11 +52,11 @@ class _Artifact:
 
 class _Manifest:
     """
-    Regex matching a tarball, e.g. 'drake-19990101-mac-arm64.tar.gz'.
+    Regex matching a tarball, e.g. 'drake-0.1.0-mac-arm64.tar.gz'.
     """
     RE_TAR = re.compile(
         r'^drake-'
-        r'(?P<id>[0-9]{8})-'
+        r'(?P<id>[0-9.]+)-'
         r'(?P<platform>\w+)'
         r'(-(?P<arch>\w+))?.'
         r'(?P<ext>tar.[gx]z)$')
@@ -339,17 +339,7 @@ def _push_tar(state: _State):
     """
     version = state.options.source_version
     for tar in state.find_artifacts(_Manifest.RE_TAR):
-        # TODO(mwoehlke-kitware):
-        # Eventually, the tarballs should use the version number and not the
-        # build date in their name, and we won't need this renaming logic. At
-        # that time, the code below should become:
-        #   state.push_artifact(tar, _AWS_BUCKET, f'drake/release/{tar.name}')
-        if tar.arch is None:
-            variant = tar.platform
-        else:
-            variant = f'{tar.platform}-{tar.arch}'
-        dest_name = f'drake-{version}-{variant}.{tar.ext}'
-        state.push_artifact(tar, _AWS_BUCKET, f'drake/release/{dest_name}')
+        state.push_artifact(tar, _AWS_BUCKET, f'drake/release/{tar.name}')
 
     dest_name = f'drake-{version}-src.tar.gz'
 
