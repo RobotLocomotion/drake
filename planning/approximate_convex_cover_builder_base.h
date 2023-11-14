@@ -23,17 +23,17 @@ class CoverageCheckerBase {
   /**
    * Check that the current sets provide sufficient coverage.
    */
-  virtual bool CheckCoverage(
-      const std::vector<ConvexSet>& current_sets) const = 0;
+//  virtual bool CheckCoverage(
+//      const std::vector<ConvexSet>& current_sets) const = 0;
+//
+//  /**
+//   * Check that the current sets provide sufficient coverage.
+//   */
+//  virtual bool CheckCoverage(
+//      const std::queue<ConvexSet>& current_sets) const = 0;
 
-  /**
-   * Check that the current sets provide sufficient coverage.
-   */
-  virtual bool CheckCoverage(
-      const std::queue<ConvexSet>& current_sets) const = 0;
-
-  virtual bool CheckCoverage(
-      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
+//  virtual bool CheckCoverage(
+//      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
   virtual bool CheckCoverage(
       const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
@@ -44,7 +44,8 @@ class CoverageCheckerBase {
   // We put the copy/move/assignment constructors as protected to avoid copy
   // slicing. The inherited final subclasses should put them in public
   // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
+  // TODO(Alexandre.Amice) decide what to do about copy/move/assign.
+//  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
 };
 
 /**
@@ -58,7 +59,7 @@ class PointSamplerBase {
    * matrix where each column represents an underlying point.
    * @param num_threads the number of threads used to sample points.
    */
-  virtual Eigen::MatrixXd SamplePoints(int num_points) const = 0;
+  virtual Eigen::MatrixXd SamplePoints(int num_points) = 0;
 
   virtual ~PointSamplerBase() {}
 
@@ -77,7 +78,7 @@ class AdjacencyMatrixBuilderBase {
    * @param points to be used as the vertices of the graph.
    */
   virtual Eigen::SparseMatrix<bool>& BuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points) const = 0;
+      const Eigen::Ref<const Eigen::MatrixXd>& points) = 0;
 
   virtual ~AdjacencyMatrixBuilderBase() {}
 
@@ -98,7 +99,7 @@ class ConvexSetFromCliqueBuilderBase {
    * Given a set of points, build a convex set.
    */
   virtual std::unique_ptr<ConvexSet> BuildConvexSet(
-      const Eigen::Ref<const Eigen::MatrixXd>& clique_points) const = 0;
+      const Eigen::Ref<const Eigen::MatrixXd>& clique_points) = 0;
 
   virtual ~ConvexSetFromCliqueBuilderBase() {}
 
@@ -127,7 +128,8 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
     return coverage_checker_.get();
   }
 
-  [[nodiscard]] const PointSamplerBase* point_sampler() const {
+  [[nodiscard]] const PointSamplerBase*
+  point_sampler() const {
     return point_sampler_.get();
   }
 
@@ -152,24 +154,31 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
   }
 
  private:
-  const std::unique_ptr<CoverageCheckerBase> coverage_checker_;
+  std::unique_ptr<CoverageCheckerBase> coverage_checker_;
 
-  const std::unique_ptr<PointSamplerBase> point_sampler_;
+  std::unique_ptr<PointSamplerBase> point_sampler_;
 
-  const std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder_;
+  std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder_;
 
-  const std::unique_ptr<MaxCliqueSolverBase> max_clique_solver_;
+  std::unique_ptr<MaxCliqueSolverBase> max_clique_solver_;
 
-  const std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>
-      set_builders_;
+  std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders_;
 
   const int num_sampled_points_;
 
   const int minimum_clique_size_;
 };
 
+//std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
+//    const ApproximateConvexCoverFromCliqueCoverOptions& options);
+
 std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
-    const ApproximateConvexCoverFromCliqueCoverOptions& options);
+    std::unique_ptr<CoverageCheckerBase> coverage_checker,
+    std::unique_ptr<PointSamplerBase> point_sampler,
+    std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
+    std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
+    std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders,
+    int num_sampled_points, int minimum_clique_size = 3);
 
 }  // namespace planning
 }  // namespace drake

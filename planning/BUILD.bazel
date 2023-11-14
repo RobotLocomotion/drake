@@ -224,6 +224,28 @@ drake_cc_library(
 
 )
 
+drake_cc_library(
+    name = "iris_from_clique_cover",
+    srcs = ["iris_from_clique_cover.cc"],
+    hdrs = ["iris_from_clique_cover.h"],
+    interface_deps = [
+        ":approximate_convex_cover_builder_base"
+    ]
+)
+
+drake_cc_library(
+    name = "bernoulli_test_cover_checker",
+    srcs = ["bernoulli_test_cover_checker.cc"],
+    hdrs = ["bernoulli_test_cover_checker.h"],
+    interface_deps = [
+        ":collision_checker",
+        ":approximate_convex_cover_builder_base"
+    ]
+
+)
+
+
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
