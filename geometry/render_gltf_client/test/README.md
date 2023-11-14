@@ -160,17 +160,17 @@ bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs
 #### Updating reference glTF files for the tests
 
 If a meaningful change has been made to VTK or how Drake uses VTK, the reference
-glTF files will probably no longer be a valid reference.  The simplest way to
-update the reference files is to look at the test results (located in the
-path above), manually inspect and confirm the differences between the old and
-the new glTF files, and then simply update the reference glTF files to the new
-files created by the failed test.
+glTF files will probably no longer be valid.  In this case, the test will fail.
+Manually inspect the test results (located in the path above), and confirm that
+the generated glTF is what you would expect based on the underlying changes. If
+so, you will derive the new reference glTF from the generated glTF file.
 
-**Note** To avoid committing large glTF files, be sure to delete the entire
-`buffers` entry which contains texture data and bloats the file size.  That
-field is not used at all in the glTF test.  By deleting the entry, it also means
-you can't do a visual inspection of how the old and new glTF files are rendered
-but you can look at the content of the files directly instead.
+**Note** To avoid committing large glTF files, do not simply copy the generated
+glTF file over the old reference file. Ihstead, be sure to delete the entire
+`buffers` entry which contains texture and geometry data and bloats the file
+size.  That field is not used at all in the glTF test.  It does mean you cannot
+load the reference glTF in a glTF viewer, but you can always rely on the test's
+output files for that.
 
 ## Prototyping your own Server
 If everything is running as expected, then you can begin changing the
