@@ -2428,10 +2428,14 @@ class TestPlant(unittest.TestCase):
         # Add ball and distance constraints.
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
+        X_AP = RigidTransform_[float](p_AP)
+        X_BQ = RigidTransform_[float](p_BQ)
         distance_id = plant.AddDistanceConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
         ball_id = plant.AddBallConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+        weld_id = plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
 
         Parser(plant).AddModelsFromUrl(
             "package://drake/manipulation/models/"
@@ -2457,6 +2461,8 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=distance_id))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to inactive.
         plant.SetConstraintActiveStatus(
@@ -2465,6 +2471,8 @@ class TestPlant(unittest.TestCase):
             context=context, id=distance_id, status=False)
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=False)
+        plant.SetConstraintActiveStatus(
+            context=context, id=weld_id, status=False)
 
         # Verify all constraints are inactive in the context.
         self.assertFalse(
@@ -2473,6 +2481,8 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=distance_id))
         self.assertFalse(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
+        self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to back to active.
         plant.SetConstraintActiveStatus(
@@ -2481,6 +2491,8 @@ class TestPlant(unittest.TestCase):
             context=context, id=distance_id, status=True)
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=True)
+        plant.SetConstraintActiveStatus(
+            context=context, id=weld_id, status=True)
 
         # Verify all constraints are active in the context.
         self.assertTrue(
@@ -2489,6 +2501,8 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=distance_id))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
     @numpy_compare.check_all_types
     def test_weld_constraint_api(self, T):

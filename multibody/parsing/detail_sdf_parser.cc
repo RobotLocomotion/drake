@@ -473,6 +473,34 @@ void AddJointActuatorFromSpecification(
           .set_default_gear_ratio(
               joint_spec.Element()->Get<double>("drake:gear_ratio"));
     }
+
+    // Parse and add the optional drake:controller_gains parameter.
+    if (joint_spec.Element()->HasElement("drake:controller_gains")) {
+      sdf::ElementPtr controller_gains =
+          joint_spec.Element()->GetElement("drake:controller_gains");
+
+      const bool has_p = controller_gains->HasAttribute("p");
+      const bool has_d = controller_gains->HasAttribute("d");
+
+      if (!has_p) {
+        std::string message =
+            "<drake:controller_gains>: Unable to find the 'p' attribute.";
+        diagnostic.Error(controller_gains, std::move(message));
+      }
+      if (!has_d) {
+        std::string message =
+            "<drake:controller_gains>: Unable to find the 'd' attribute.";
+        diagnostic.Error(controller_gains, std::move(message));
+      }
+
+      if (has_p && has_d) {
+        const double p = controller_gains->Get<double>("p");
+        const double d = controller_gains->Get<double>("d");
+
+        plant->get_mutable_joint_actuator(actuator.index())
+            .set_controller_gains({p, d});
+      }
+    }
   }
   if (joint_spec.Axis(1) != nullptr) {
     std::string message = fmt::format(
@@ -646,6 +674,8 @@ bool AddJointFromSpecification(
     "child",
     "drake:rotor_inertia",
     "drake:gear_ratio",
+    "drake:controller_gains",
+    "drake:mimic",
     "parent",
     "pose",
     "screw_thread_pitch"};
@@ -863,6 +893,97 @@ bool AddJointFromSpecification(
     }
   }
   joint_types->insert(joint_spec.Type());
+  return true;
+}
+
+// Helper method to parse a custom drake:mimic tag.
+bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
+                   const sdf::Joint& joint_spec,
+                   ModelInstanceIndex model_instance,
+                   MultibodyPlant<double>* plant) {
+  if (!joint_spec.Element()->HasElement("drake:mimic")) return true;
+
+  if (!plant->is_discrete() ||
+      plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
+    diagnostic.Warning(
+        joint_spec.Element(),
+        fmt::format("Joint '{}' specifies a drake:mimic element that will be "
+                    "ignored. Mimic elements are currently only supported by "
+                    "MultibodyPlant with a discrete time step and using "
+                    "DiscreteContactSolver::kSap.",
+                    joint_spec.Name()));
+    return true;
+  }
+
+  sdf::ElementPtr mimic_node = joint_spec.Element()->GetElement("drake:mimic");
+
+  if (!mimic_node->HasAttribute("joint")) {
+    diagnostic.Error(
+        mimic_node, fmt::format("Joint '{}' drake:mimic element is missing the "
+                                "required 'joint' attribute.",
+                                joint_spec.Name()));
+    return false;
+  }
+
+  const std::string joint_to_mimic = mimic_node->Get<std::string>("joint");
+
+  if (!plant->HasJointNamed(joint_to_mimic, model_instance)) {
+    diagnostic.Error(
+        mimic_node,
+        fmt::format("Joint '{}' drake:mimic element specifies joint '{}' which"
+                    " does not exist.",
+                    joint_spec.Name(), joint_to_mimic));
+    return false;
+  }
+
+  if (joint_to_mimic == joint_spec.Name()) {
+    diagnostic.Error(mimic_node,
+                     fmt::format("Joint '{}' drake:mimic element specifies "
+                                 "joint '{}'. Joints cannot mimic themselves.",
+                                 joint_spec.Name(), joint_to_mimic));
+    return false;
+  }
+
+  if (!mimic_node->HasAttribute("multiplier")) {
+    diagnostic.Error(
+        mimic_node, fmt::format("Joint '{}' drake:mimic element is missing the "
+                                "required 'multiplier' attribute.",
+                                joint_spec.Name()));
+    return false;
+  }
+
+  if (!mimic_node->HasAttribute("offset")) {
+    diagnostic.Error(
+        mimic_node, fmt::format("Joint '{}' drake:mimic element is missing the "
+                                "required 'offset' attribute.",
+                                joint_spec.Name()));
+    return false;
+  }
+
+  const double gear_ratio = mimic_node->Get<double>("multiplier");
+  const double offset = mimic_node->Get<double>("offset");
+
+  const Joint<double>& joint0 =
+      plant->GetJointByName(joint_spec.Name(), model_instance);
+  const Joint<double>& joint1 =
+      plant->GetJointByName(joint_to_mimic, model_instance);
+
+  if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
+    // The URDF documentation is ambiguous as to whether multi-dof joints
+    // are supported by the mimic tag (which the drake:mimic tag is analogous
+    // to). So we only raise a warning, not an error.
+    diagnostic.Warning(
+        mimic_node,
+        fmt::format("Drake only supports the drake:mimic element for "
+                    "single-dof joints. The joint '{}' (with {} "
+                    "dofs) is attempting to mimic joint '{}' (with "
+                    "{} dofs). The drake:mimic element will be ignored.",
+                    joint0.name(), joint0.num_velocities(), joint_to_mimic,
+                    joint1.num_velocities()));
+  } else {
+    plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
+  }
+
   return true;
 }
 
@@ -1603,6 +1724,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       }
   }
 
+  // Parse drake:mimic elements only after all joints have been added.
+  for (uint64_t joint_index = 0; joint_index < model.JointCount();
+       ++joint_index) {
+    // Get a pointer to the SDF joint, and the joint axis information.
+    const sdf::Joint& joint = *model.JointByIndex(joint_index);
+    if (!ParseMimicTag(diagnostic, joint, model_instance, plant)) {
+      return {};
+    }
+  }
+
   drake::log()->trace("sdf_parser: Add explicit frames");
   // Add frames at root-level of <model>.
   for (uint64_t frame_index = 0; frame_index < model.FrameCount();
@@ -2161,6 +2292,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
           workspace.plant, &joint_types, false)) {
           return {};
         }
+    }
+
+    // Parse drake:mimic elements only after all joints have been added.
+    for (uint64_t joint_index = 0; joint_index < world.JointCount();
+         ++joint_index) {
+      // Get a pointer to the SDF joint, and the joint axis information.
+      const sdf::Joint& joint = *world.JointByIndex(joint_index);
+      if (!ParseMimicTag(diagnostic, joint, world_model_instance(),
+                         workspace.plant)) {
+        return {};
+      }
     }
 
     for (sdf::JointType joint_type : joint_types) {

@@ -205,7 +205,7 @@ GTEST_TEST(IrisTest, BoundingRegion) {
   EXPECT_TRUE(region_w_bounding.PointInSet(Vector2d(0.99, 0)));
 
   // Points inside obstacles should be excluded from both regions.
-  EXPECT_FALSE(region.PointInSet(Vector2d(0.1, 0.5)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.11, 0.51)));
   EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(0.11, 0.51)));
 }
 

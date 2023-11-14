@@ -55,13 +55,6 @@ namespace {
 
 namespace fs = std::filesystem;
 
-// Data to pass through the reification process.
-struct RegistrationData {
-  const GeometryId id;
-  const RigidTransformd& X_WG;
-  const PerceptionProperties& properties;
-};
-
 // A shader program that handles lighting computations. All shaders for color
 // images should derive from *this* class. Depth and label do not need lighting.
 class LightingShader : public ShaderProgram {

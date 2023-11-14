@@ -44,17 +44,25 @@ pf = mut.PixelFormat
 # Available image / pixel types.
 pixel_types = [
     pt.kRgba8U,
+    pt.kRgb8U,
+    pt.kBgra8U,
+    pt.kBgr8U,
     pt.kDepth16U,
     pt.kDepth32F,
     pt.kLabel16I,
+    pt.kGrey8U,
 ]
 
 # Convenience aliases.
 image_type_aliases = [
     mut.ImageRgba8U,
+    mut.ImageRgb8U,
+    mut.ImageBgra8U,
+    mut.ImageBgr8U,
     mut.ImageDepth16U,
     mut.ImageDepth32F,
     mut.ImageLabel16I,
+    mut.ImageGrey8U,
 ]
 
 
@@ -65,7 +73,7 @@ class TestSensors(unittest.TestCase):
         self.assertSetEqual(
             set(pixel_types), set(mut.PixelType.__members__.values()))
 
-        # Test instantiations of ImageTraits<>.
+        # Spot-check specific instantiations of ImageTraits<>.
         t = mut.ImageTraits[pt.kRgba8U]
         self.assertEqual(t.kNumChannels, 4)
         self.assertEqual(t.ChannelType, np.uint8)
@@ -85,6 +93,19 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(t.kNumChannels, 1)
         self.assertEqual(t.ChannelType, np.int16)
         self.assertEqual(t.kPixelFormat, pf.kLabel)
+
+        # Smoke test all instantiations of ImageTraits<>.
+        for pixel_type in pixel_types:
+            t = mut.ImageTraits[pixel_type]
+            self.assertGreaterEqual(t.kNumChannels, 1)
+            self.assertIsNotNone(t.ChannelType)
+            self.assertIn(t.kPixelFormat, mut.PixelFormat.__members__.values())
+
+        # Smoke test the pixel scalars.
+        mut.PixelScalar.k8U
+        mut.PixelScalar.k16I
+        mut.PixelScalar.k16U
+        mut.PixelScalar.k32F
 
     def test_image_types(self):
         # Test instantiations of Image<>.
@@ -335,9 +356,13 @@ class TestSensors(unittest.TestCase):
                 self.assertEqual(image.height, 1)
                 expected_format = {
                     pt.kRgba8U: lcmt_image.PIXEL_FORMAT_RGBA,
+                    pt.kRgb8U: lcmt_image.PIXEL_FORMAT_RGB,
+                    pt.kBgra8U: lcmt_image.PIXEL_FORMAT_BGRA,
+                    pt.kBgr8U: lcmt_image.PIXEL_FORMAT_BGR,
                     pt.kDepth16U: lcmt_image.PIXEL_FORMAT_DEPTH,
                     pt.kDepth32F: lcmt_image.PIXEL_FORMAT_DEPTH,
                     pt.kLabel16I: lcmt_image.PIXEL_FORMAT_LABEL,
+                    pt.kGrey8U: lcmt_image.PIXEL_FORMAT_GRAY,
                 }[pixel_type]
                 self.assertEqual(image.pixel_format, expected_format)
 
@@ -497,6 +522,11 @@ class TestSensors(unittest.TestCase):
         dut.label_image_output_port()
         dut.body_pose_in_world_output_port()
         dut.image_time_output_port()
+
+    def test_image_file_format(self):
+        mut.ImageFileFormat.kJpeg
+        mut.ImageFileFormat.kPng
+        mut.ImageFileFormat.kTiff
 
     def test_image_writer(self):
         writer = mut.ImageWriter()

@@ -29,19 +29,19 @@ void DefineSensorsLcm(py::module m);
 /* Defines bindings per sensors_py_rgbd.cc. */
 void DefineSensorsRgbd(py::module m);
 
-/* PixelTypeList defines the subset of enumerated PixelType values that will be
-bound in pydrake. If you change this, then you'll also need to change the
-`pixel_type_names` list within the DefineSensorsImage() function. */
+/* PixelTypeList provides all of the enumerated PixelType values. */
 template <typename T, T kPixelType>
 using PixelTypeConstant = std::integral_constant<T, kPixelType>;
 template <typename T, T... kPixelTypes>
 using PixelTypeConstantPack =
     type_pack<type_pack<PixelTypeConstant<T, kPixelTypes>>...>;
 using PixelTypeList = PixelTypeConstantPack<systems::sensors::PixelType,
-    systems::sensors::PixelType::kRgba8U,
+    systems::sensors::PixelType::kRgba8U, systems::sensors::PixelType::kRgb8U,
+    systems::sensors::PixelType::kBgra8U, systems::sensors::PixelType::kBgr8U,
     systems::sensors::PixelType::kDepth16U,
     systems::sensors::PixelType::kDepth32F,
-    systems::sensors::PixelType::kLabel16I>;
+    systems::sensors::PixelType::kLabel16I,
+    systems::sensors::PixelType::kGrey8U>;
 
 }  // namespace internal
 }  // namespace pydrake

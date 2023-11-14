@@ -20,6 +20,9 @@ void DefinePlanningCollisionChecker(py::module m);
 /* Defines bindings per planning_py_collision_checker_interface_types.cc. */
 void DefinePlanningCollisionCheckerInterfaceTypes(py::module m);
 
+/* Defines bindings per planning_py_graph_algorithms.cc. */
+void DefinePlanningGraphAlgorithms(py::module m);
+
 /* Defines bindings per planning_py_robot_diagram.cc. */
 void DefinePlanningRobotDiagram(py::module m);
 

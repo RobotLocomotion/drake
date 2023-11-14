@@ -396,6 +396,23 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
                            "'nonexistent' which does not exist."));
 }
 
+TEST_F(UrdfParserTest, MimicSameJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic joint='joint'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' mimic element specifies joint "
+                           "'joint'. Joints cannot mimic themselves."));
+}
+
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -906,10 +923,44 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 
   // Revolute joint with mimic
-  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_with_mimic"));
-  // TODO(russt): Test coupler constraint properties once constraint getters are
-  // provided by MultibodyPlant (currently a TODO in multibody_plant.h).
-  EXPECT_EQ(plant_.num_constraints(), 1);
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName("revolute_joint_with_mimic_forward_reference"));
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName("revolute_joint_with_mimic_backward_reference"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_to_mimic"));
+
+  const Joint<double>& joint_with_mimic_forward_reference =
+      plant_.GetJointByName("revolute_joint_with_mimic_forward_reference");
+  const Joint<double>& joint_with_mimic_backward_reference =
+      plant_.GetJointByName("revolute_joint_with_mimic_backward_reference");
+  const Joint<double>& joint_to_mimic =
+      plant_.GetJointByName("revolute_joint_to_mimic");
+
+  EXPECT_EQ(plant_.num_constraints(), 2);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 2);
+
+  // Use the fact that we know the order the <mimic> tags are parsed and there
+  // for the order the constraints are created to check the correct constraint.
+  std::vector<internal::CouplerConstraintSpec> specs;
+  for (const auto& item : plant_.get_coupler_constraint_specs()) {
+    specs.push_back(item.second);
+  }
+  std::sort(specs.begin(), specs.end(),
+            [](const auto& specA, const auto& specB) {
+              return specA.id < specB.id;
+            });
+
+  EXPECT_EQ(specs[0].joint0_index, joint_with_mimic_forward_reference.index());
+  EXPECT_EQ(specs[0].joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(specs[0].gear_ratio, 1.23);
+  EXPECT_EQ(specs[0].offset, 4.56);
+
+  EXPECT_EQ(specs[1].joint0_index, joint_with_mimic_backward_reference.index());
+  EXPECT_EQ(specs[1].joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(specs[1].gear_ratio, 6.54);
+  EXPECT_EQ(specs[1].offset, 3.21);
 }
 
 // Custom planar joints were not necessary, but long supported. See #18730.
@@ -1598,6 +1649,83 @@ TEST_F(ReflectedInertiaTest, GearRatioNoValue) {
 TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
   ProvokeError("<drake:gear_ratio value='1 2 3'/>", "",
                ".*Expected single value.*value.*");
+}
+
+class ControllerGainsTest : public UrdfParserTest {
+ public:
+  void VerifyParameters(const std::string& controller_gains_text,
+                        double expected_p, double expected_d) {
+    std::string text = fmt::format(kTestString, controller_gains_text);
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+
+    const JointActuator<double>& actuator =
+        plant_.GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.get_controller_gains().p, expected_p);
+    EXPECT_EQ(actuator.get_controller_gains().d, expected_d);
+  }
+
+  void ProvokeError(const std::string& controller_gains_text,
+                    const std::string& error_pattern) {
+    std::string text = fmt::format(kTestString, controller_gains_text);
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  // Common URDF string with format options for the custom tag with two
+  // attributes.
+  static constexpr const char* kTestString = R"""(
+    <robot name='reflected_inertia_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <transmission>
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name='revolute_AB'>
+          <hardwareInterface>PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name='revolute_AB'>
+          {0}
+        </actuator>
+      </transmission>
+    </robot>)""";
+};
+
+TEST_F(ControllerGainsTest, Both) {
+  // Test successful parsing of both parameters.
+  VerifyParameters("<drake:controller_gains p='10000' d='100'/>", 10000, 100);
+}
+
+TEST_F(ControllerGainsTest, MissingP) {
+  ProvokeError(
+      "<drake:controller_gains d='100'/>",
+      ".*joint actuator revolute_AB's drake:controller_gains does not have a"
+      " \'p\' attribute!");
+}
+
+TEST_F(ControllerGainsTest, MissingD) {
+  ProvokeError(
+      "<drake:controller_gains p='10000'/>",
+      ".*joint actuator revolute_AB's drake:controller_gains does not have a"
+      " \'d\' attribute!");
+}
+
+TEST_F(ControllerGainsTest, PTooManyValues) {
+  ProvokeError("<drake:controller_gains p='1 2 3' d='100'/>",
+               ".*Expected single value for attribute 'p'.*");
+}
+
+TEST_F(ControllerGainsTest, DTooManyValues) {
+  ProvokeError("<drake:controller_gains p='10000' d='1 2 3'/>",
+               ".*Expected single value for attribute 'd'.*");
 }
 
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
