@@ -47,13 +47,14 @@ class GcsTrajectoryOptimization final {
 
   /** Constructs the motion planning problem.
   @param num_positions is the dimension of the configuration space.
-  @param unbounded_revolute_joints is a list of indices corresponding to
-  revolute joints which don't have joint limits, and hence "wrap around" at 2pi.
-  unbounded_revolute_joints must not have repeated values.
+  @param continuous_joints is a list of indices corresponding to
+  continuous joints, i.e., revolute joints which don't have any joint limits,
+  and hence "wrap around" at 2pi. Each entry in continuous_joints must be less
+  than num_positions, and there must be no repeated values.
   */
   explicit GcsTrajectoryOptimization(
-      int num_positions, const std::vector<size_t>& unbounded_revolute_joints =
-                             std::vector<size_t>());
+      int num_positions,
+      const std::vector<size_t>& continuous_joints = std::vector<size_t>());
 
   ~GcsTrajectoryOptimization();
 
@@ -157,8 +158,8 @@ class GcsTrajectoryOptimization final {
     int num_positions() const { return traj_opt_.num_positions(); }
 
     /* Convenience accessor, for brevity. */
-    const std::vector<size_t>& unbounded_revolute_joints() const {
-      return traj_opt_.unbounded_revolute_joints();
+    const std::vector<size_t>& continuous_joints() const {
+      return traj_opt_.continuous_joints();
     }
 
     /* Throw an error if any convex set in regions violates the convexity
@@ -282,9 +283,7 @@ class GcsTrajectoryOptimization final {
 
   /** Returns a list of indices corresponding to revolute joints which don't
    * have joint limits. */
-  const std::vector<size_t>& unbounded_revolute_joints() {
-    return unbounded_revolute_joints_;
-  }
+  const std::vector<size_t>& continuous_joints() { return continuous_joints_; }
 
   /** Returns a Graphviz string describing the graph vertices and edges.  If
   `results` is supplied, then the graph will be annotated with the solution
@@ -506,7 +505,7 @@ class GcsTrajectoryOptimization final {
 
  private:
   const int num_positions_;
-  const std::vector<size_t> unbounded_revolute_joints_;
+  const std::vector<size_t> continuous_joints_;
 
   const std::pair<double, double> GetLowerUpperBound(
       const geometry::optimization::ConvexSet& region, int dimension) const;

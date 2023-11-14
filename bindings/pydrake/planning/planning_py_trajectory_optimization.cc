@@ -395,11 +395,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<size_t>&>(),
             py::arg("num_positions"),
-            py::arg("unbounded_revolute_joints") = std::vector<size_t>(),
+            py::arg("continuous_joints") = std::vector<size_t>(),
             cls_doc.ctor.doc)
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
-        .def("unbounded_revolute_joints", &Class::unbounded_revolute_joints,
-            cls_doc.unbounded_revolute_joints.doc)
+        .def("continuous_joints", &Class::continuous_joints,
+            cls_doc.continuous_joints.doc)
         .def("GetGraphvizString", &Class::GetGraphvizString,
             py::arg("result") = std::nullopt, py::arg("show_slack") = true,
             py::arg("precision") = 3, py::arg("scientific") = false,

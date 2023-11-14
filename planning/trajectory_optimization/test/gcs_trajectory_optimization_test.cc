@@ -1096,7 +1096,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
   const double expected_cost_no_wraparound = 6.0 - 1.0;
   EXPECT_TRUE(expected_cost_wraparound < expected_cost_no_wraparound);
 
-  std::vector<size_t> unbounded_revolute_joints = {0};
+  std::vector<size_t> continuous_joints = {0};
 
   // Check multiple permutations to make sure the ordering of which set is
   // "wrapped around" does not affect the algorithm. std::vector<ConvexSets>
@@ -1105,7 +1105,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
       MakeConvexSets(v2, v1, v3), MakeConvexSets(v2, v3, v1),
       MakeConvexSets(v3, v1, v2), MakeConvexSets(v3, v2, v1)};
   for (const auto& convexsets : permutations) {
-    GcsTrajectoryOptimization gcs1(1, unbounded_revolute_joints);
+    GcsTrajectoryOptimization gcs1(1, continuous_joints);
     auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
 
     auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
@@ -1187,13 +1187,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   EXPECT_TRUE(expected_cost_both_wraparound < expected_cost_one_wraparound);
   EXPECT_TRUE(expected_cost_one_wraparound < expected_cost_no_wraparound);
 
-  std::vector<size_t> unbounded_revolute_joints;
+  std::vector<size_t> continuous_joints;
   GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 100;
 
   // No wraparound
 
-  GcsTrajectoryOptimization gcs1(2, unbounded_revolute_joints);
+  GcsTrajectoryOptimization gcs1(2, continuous_joints);
   auto& regions1 = gcs1.AddRegions(sets, 1, 0.01, 1, "");
 
   auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
@@ -1216,9 +1216,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
 
   // One wraparound
-  unbounded_revolute_joints.emplace_back(0);
+  continuous_joints.emplace_back(0);
 
-  GcsTrajectoryOptimization gcs2(2, unbounded_revolute_joints);
+  GcsTrajectoryOptimization gcs2(2, continuous_joints);
   auto& regions2 = gcs2.AddRegions(sets, 1, 0.01, 1, "");
 
   auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
@@ -1240,9 +1240,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
 
   // Both wraparound
-  unbounded_revolute_joints.emplace_back(1);
+  continuous_joints.emplace_back(1);
 
-  GcsTrajectoryOptimization gcs3(2, unbounded_revolute_joints);
+  GcsTrajectoryOptimization gcs3(2, continuous_joints);
   auto& regions3 = gcs3.AddRegions(sets, 1, 0.01, 1, "");
 
   auto& source3 = gcs3.AddRegions(MakeConvexSets(Point(start)), 0);
@@ -1271,8 +1271,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 4;
   const VPolytope v(points);
-  std::vector<size_t> unbounded_revolute_joints = {0};
-  GcsTrajectoryOptimization gcs(1, unbounded_revolute_joints);
+  std::vector<size_t> continuous_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_joints);
   EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), 1), std::exception);
   const std::vector<std::pair<int, int>> edges;
   EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), edges, 1), std::exception);
@@ -1284,32 +1284,30 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
                 0, 4, 0, 4;
   // clang-format on
   const VPolytope w(points_new);
-  std::vector<size_t> unbounded_revolute_joints1 = {0};
-  std::vector<size_t> unbounded_revolute_joints2 = {1};
-  std::vector<size_t> unbounded_revolute_joints3 = {0, 1};
+  std::vector<size_t> continuous_joints1 = {0};
+  std::vector<size_t> continuous_joints2 = {1};
+  std::vector<size_t> continuous_joints3 = {0, 1};
   GcsTrajectoryOptimization gcs0(2);
-  GcsTrajectoryOptimization gcs1(2, unbounded_revolute_joints1);
-  GcsTrajectoryOptimization gcs2(2, unbounded_revolute_joints2);
-  GcsTrajectoryOptimization gcs3(2, unbounded_revolute_joints3);
+  GcsTrajectoryOptimization gcs1(2, continuous_joints1);
+  GcsTrajectoryOptimization gcs2(2, continuous_joints2);
+  GcsTrajectoryOptimization gcs3(2, continuous_joints3);
   DRAKE_EXPECT_NO_THROW(gcs0.AddRegions(MakeConvexSets(w), 1));
   DRAKE_EXPECT_NO_THROW(gcs1.AddRegions(MakeConvexSets(w), 1));
   EXPECT_THROW(gcs2.AddRegions(MakeConvexSets(w), 1), std::exception);
   EXPECT_THROW(gcs3.AddRegions(MakeConvexSets(w), 1), std::exception);
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, misc_wrapround_interface) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, misc_continuous_interface) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 2;
   const VPolytope v(points);
-  std::vector<size_t> unbounded_revolute_joints = {0};
-  GcsTrajectoryOptimization gcs(1, unbounded_revolute_joints);
-  EXPECT_EQ(gcs.unbounded_revolute_joints().size(),
-            unbounded_revolute_joints.size());
-  EXPECT_EQ(gcs.unbounded_revolute_joints()[0], unbounded_revolute_joints[0]);
+  std::vector<size_t> continuous_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_joints);
+  EXPECT_EQ(gcs.continuous_joints().size(), continuous_joints.size());
+  EXPECT_EQ(gcs.continuous_joints()[0], continuous_joints[0]);
 
-  unbounded_revolute_joints.emplace_back(0);
-  EXPECT_THROW(GcsTrajectoryOptimization(1, unbounded_revolute_joints),
-               std::exception);
+  continuous_joints.emplace_back(0);
+  EXPECT_THROW(GcsTrajectoryOptimization(1, continuous_joints), std::exception);
 }
 
 }  // namespace

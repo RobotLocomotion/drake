@@ -85,7 +85,7 @@ Subgraph::Subgraph(
 
   // If there are any unbounded revolute joints, make sure the convexity radius
   // is respected.
-  if (unbounded_revolute_joints().size() > 0) {
+  if (continuous_joints().size() > 0) {
     RespectsConvexityRadius(regions_);
   }
 
@@ -176,7 +176,7 @@ void Subgraph::RespectsConvexityRadius(
   // For each dimension corresponding to an unbounded revolute joint, make sure
   // each region respects the convexity radius.
   for (size_t i = 0; i < regions.size(); ++i) {
-    for (const size_t& j : unbounded_revolute_joints()) {
+    for (const size_t& j : continuous_joints()) {
       auto [min_value, max_value] =
           traj_opt_.GetLowerUpperBound(*regions[i], j);
       if (max_value - min_value >= M_PI) {
@@ -634,17 +634,16 @@ symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
 }
 
 GcsTrajectoryOptimization::GcsTrajectoryOptimization(
-    int num_positions, const std::vector<size_t>& unbounded_revolute_joints)
-    : num_positions_(num_positions),
-      unbounded_revolute_joints_(unbounded_revolute_joints) {
+    int num_positions, const std::vector<size_t>& continuous_joints)
+    : num_positions_(num_positions), continuous_joints_(continuous_joints) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
-  for (size_t i = 0; i < unbounded_revolute_joints_.size(); ++i) {
+  for (size_t i = 0; i < continuous_joints_.size(); ++i) {
     // Make sure the unbounded revolute joints point to valid indices.
-    DRAKE_THROW_UNLESS(unbounded_revolute_joints_[i] < size_t(num_positions));
+    DRAKE_THROW_UNLESS(continuous_joints_[i] < size_t(num_positions));
   }
-  std::unordered_set<size_t> comparison(unbounded_revolute_joints_.begin(),
-                                        unbounded_revolute_joints_.end());
-  DRAKE_THROW_UNLESS(comparison.size() == unbounded_revolute_joints_.size());
+  std::unordered_set<size_t> comparison(continuous_joints_.begin(),
+                                        continuous_joints_.end());
+  DRAKE_THROW_UNLESS(comparison.size() == continuous_joints_.size());
 }
 
 GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
@@ -702,7 +701,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   for (size_t i = 0; i < regions.size(); ++i) {
     region_lower_upper_bounds.emplace_back(
         std::vector<std::pair<double, double>>());
-    for (const size_t& k : unbounded_revolute_joints()) {
+    for (const size_t& k : continuous_joints()) {
       region_lower_upper_bounds[i].emplace_back(
           GetLowerUpperBound(*regions[i], k));
     }
@@ -714,7 +713,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
       offset.setZero();
 
       // First, we compute what the offset would be if the sets were to overlap.
-      for (const size_t& k : unbounded_revolute_joints()) {
+      for (const size_t& k : continuous_joints()) {
         if (region_lower_upper_bounds[j][k].first <
             region_lower_upper_bounds[i][k].first) {
           offset[k] = 2 * M_PI *
