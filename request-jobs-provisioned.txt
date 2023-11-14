@@ -12,9 +12,15 @@
 @drake-jenkins-bot linux-focal-gcc-cmake-experimental-everything-debug please
 @drake-jenkins-bot linux-focal-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-focal-gcc-cmake-experimental-release please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-coverage please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-coverage please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-thread-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-undefined-behavior-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-valgrind-memcheck please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-debug please
@@ -22,6 +28,8 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-valgrind-memcheck please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-debug please
@@ -36,6 +44,9 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-valgrind-memcheck please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-thread-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-undefined-behavior-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-valgrind-memcheck please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-coverage please
@@ -55,12 +66,6 @@
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-mosek-release please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-snopt-debug please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-snopt-release please
-@drake-jenkins-bot mac-arm-monterey-clang-bazel-experimental-debug please
-@drake-jenkins-bot mac-arm-monterey-clang-bazel-experimental-everything-address-sanitizer please
-@drake-jenkins-bot mac-arm-monterey-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot mac-arm-monterey-clang-bazel-experimental-release please
-@drake-jenkins-bot mac-arm-monterey-clang-cmake-experimental-everything-release please
-@drake-jenkins-bot mac-arm-monterey-clang-cmake-experimental-release please
 @drake-jenkins-bot mac-arm-ventura-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot mac-arm-ventura-clang-bazel-experimental-release please
 @drake-jenkins-bot mac-arm-ventura-clang-cmake-experimental-everything-release please
