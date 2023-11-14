@@ -280,6 +280,9 @@ void ParseExponentialConeConstraints(
 // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
 // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp/ for
 // an explanation.
+// @param[in] upper_triangular Whether we use the upper triangular or lower
+// triangular part of the symmetric matrix. SCS uses the lower triangular part,
+// and Clarabel uses the upper triangular part.
 // @param[in/out] A_triplets The triplets on the non-zero entries in A.
 // prog.positive_semidefinite_constraints() and
 // prog.linear_matrix_inequality_constraints() will be appended to A_triplets.
@@ -292,7 +295,7 @@ void ParseExponentialConeConstraints(
 // prog.positive_semidefinite_constraints() and
 // prog.linear_matrix_inequality_constraints().
 void ParsePositiveSemidefiniteConstraints(
-    const MathematicalProgram& prog,
+    const MathematicalProgram& prog, bool upper_triangular,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length);
 }  // namespace internal

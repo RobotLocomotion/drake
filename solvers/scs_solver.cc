@@ -647,7 +647,8 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   // Parse PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint.
   std::vector<int> psd_cone_length;
   internal::ParsePositiveSemidefiniteConstraints(
-      prog, &A_triplets, &b, &A_row_count, &psd_cone_length);
+      prog, false /* upper_triangular = false */, &A_triplets, &b, &A_row_count,
+      &psd_cone_length);
   // Set the psd cone length in the SCS cone.
   cone->ssize = psd_cone_length.size();
   // This scs_calloc doesn't need to accompany a ScopeExit since cone->s will be
