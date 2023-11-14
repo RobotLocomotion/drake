@@ -150,7 +150,7 @@ TYPED_TEST_SUITE_P(MeshTypeSpatialInertaTest);
  CalcSpatialInertia(TriangleSurfaceMesh). However, this function *does* have the
  following administrative responsibilities:
 
-   1. Vet the extension and throw for non-obj files.
+   1. Vet the extension and throw for non-supported files.
    2. Make sure the mesh type's `scale` property is used.
    3. Make sure the given density value is used.
 
@@ -158,40 +158,57 @@ TYPED_TEST_SUITE_P(MeshTypeSpatialInertaTest);
 TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
   using MeshType = TypeParam;
 
-  const std::string valid_path = FindResourceOrThrow(
+  const std::string valid_obj_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj");
-  const MeshType unit_scale(valid_path, 1.0);
-  const MeshType double_scale(valid_path, 2.0);
+  const std::string valid_vtk_path = FindResourceOrThrow(
+      "drake/geometry/test/one_tetrahedron.vtk");
+  const MeshType unit_scale_obj(valid_obj_path, 1.0);
+  const MeshType double_scale_obj(valid_obj_path, 2.0);
+  const MeshType unit_scale_vtk(valid_vtk_path, 1.0);
+  const MeshType double_scale_vtk(valid_vtk_path, 2.0);
   const MeshType nonexistent("nonexistent.stl", 1.0);
 
   {
-    // Extension test; .obj doesn't throw, everything else does.
+    // Extension test; .obj and .vtk don't throw, everything else does.
     // Note: this should be case-insensitive; .OBJ should also work. However,
     // we need *another* valid OBJ with the different capitalization of the
     // extension to test this. Rather than creating/copying such a file, we're
     // foregoing the test. The case insensitivity is *not* documented.
 
-    EXPECT_NO_THROW(CalcSpatialInertia(unit_scale, kDensity));
+    EXPECT_NO_THROW(CalcSpatialInertia(unit_scale_obj, kDensity));
+    EXPECT_NO_THROW(CalcSpatialInertia(unit_scale_vtk, kDensity));
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcSpatialInertia(nonexistent, kDensity),
-        ".*only supports .obj .* given '.*nonexistent.stl'.*");
+        ".*only supports .obj or .*.vtk .* given '.*nonexistent.stl'.*");
   }
 
   {
-    // Confirm that the scale is used.
-    const SpatialInertia<double> M_SScm_S_small =
-        CalcSpatialInertia(unit_scale, kDensity);
-    const SpatialInertia<double> M_SScm_S_large =
-        CalcSpatialInertia(double_scale, kDensity);
-    EXPECT_DOUBLE_EQ(M_SScm_S_large.get_mass(), M_SScm_S_small.get_mass() * 8);
+    // Confirm that the scale is used with .obj input.
+    const SpatialInertia<double> M_SScm_S_obj_small =
+        CalcSpatialInertia(unit_scale_obj, kDensity);
+    const SpatialInertia<double> M_SScm_S_obj_large =
+        CalcSpatialInertia(double_scale_obj, kDensity);
+    EXPECT_DOUBLE_EQ(M_SScm_S_obj_large.get_mass(),
+                     M_SScm_S_obj_small.get_mass() * 8);
   }
 
   {
-    // Confirm that the density is used.
+    // Confirm that the scale is used with .vtk input.
+    const SpatialInertia<double> M_SScm_S_vtk_small =
+        CalcSpatialInertia(unit_scale_vtk, kDensity);
+    const SpatialInertia<double> M_SScm_S_vtk_large =
+        CalcSpatialInertia(double_scale_vtk, kDensity);
+    EXPECT_DOUBLE_EQ(M_SScm_S_vtk_large.get_mass(),
+                     M_SScm_S_vtk_small.get_mass() * 8);
+  }
+
+  {
+    // Confirm that the density is used. Note: only .obj input is tested, since
+    // the implementation's handling of density does not differ by file type.
     const SpatialInertia<double> M_SScm_S_small =
-        CalcSpatialInertia(unit_scale, kDensity);
+        CalcSpatialInertia(unit_scale_obj, kDensity);
     const SpatialInertia<double> M_SScm_S_large =
-        CalcSpatialInertia(unit_scale, kDensity * 2);
+        CalcSpatialInertia(unit_scale_obj, kDensity * 2);
     EXPECT_DOUBLE_EQ(M_SScm_S_large.get_mass(), M_SScm_S_small.get_mass() * 2);
   }
 }
