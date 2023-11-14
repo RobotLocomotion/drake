@@ -78,19 +78,6 @@ class MakeArmControllerModelTest : public ::testing::Test {
   const std::string wsg_model_path_;
 };
 
-// A helper function that uses plant.GetBodyIndices() internally to aggregate
-// `BodyIndex`s across multiple `ModelInstanceIndex`s.
-std::vector<BodyIndex> GetBodyIndices(
-    const MultibodyPlant<double>& plant,
-    const std::vector<ModelInstanceIndex>& models) {
-  std::vector<BodyIndex> body_indices;
-  for (const auto& model : models) {
-    const std::vector<BodyIndex> indices = plant.GetBodyIndices(model);
-    body_indices.insert(body_indices.end(), indices.begin(), indices.end());
-  }
-  return body_indices;
-}
-
 // Returns all body indices in the `plant` except the world body index.
 std::vector<BodyIndex> GetAllBodyIndices(const MultibodyPlant<double>& plant) {
   // The world body is index zero, and thus the loop iterates from index one.
@@ -99,21 +86,41 @@ std::vector<BodyIndex> GetAllBodyIndices(const MultibodyPlant<double>& plant) {
   return body_indices;
 }
 
-TEST_F(MakeArmControllerModelTest, GetBodyIndices) {
-  // An empty `models` should have zero bodies.
-  EXPECT_EQ(GetBodyIndices(*sim_plant_, {}).size(), 0);
+// Checks mass, inertia, and gravity generalized forces for the (full)
+// simulation plant and the control plant. This expects that the simulation
+// plant consists only of the arm and (optional) gripper.
+void CompareInertialTerms(const MultibodyPlant<double>& sim_plant,
+                          ModelInstanceIndex sim_arm_model_instance,
+                          const MultibodyPlant<double>& control_plant,
+                          const Context<double>& sim_plant_context) {
+  // Create analogous control context.
+  std::unique_ptr<Context<double>> control_plant_context =
+      control_plant.CreateDefaultContext();
+  const Eigen::VectorXd q_arm =
+      sim_plant.GetPositions(sim_plant_context, sim_arm_model_instance);
+  control_plant.SetPositions(control_plant_context.get(), q_arm);
 
-  const ModelInstanceInfo iiwa7_info = AddIiwaModel();
-  EXPECT_EQ(GetBodyIndices(*sim_plant_, {iiwa7_info.model_instance}).size(), 8);
-  // Query an empty `models` in a non-empty plant should still return zero.
-  EXPECT_EQ(GetBodyIndices(*sim_plant_, {}).size(), 0);
+  // Compare total mass.
+  EXPECT_NEAR(sim_plant.CalcTotalMass(sim_plant_context),
+              control_plant.CalcTotalMass(*control_plant_context), kTolerance);
 
-  const ModelInstanceInfo wsg_info = AddWsgModel();
-  EXPECT_EQ(GetBodyIndices(*sim_plant_, {wsg_info.model_instance}).size(), 3);
+  // Check the spatial inertial of the two plants.
+  const SpatialInertia<double> M_CIo_W_sim = sim_plant.CalcSpatialInertia(
+      sim_plant_context, sim_plant.world_frame(), GetAllBodyIndices(sim_plant));
+  const SpatialInertia<double> M_CIo_W_control =
+      control_plant.CalcSpatialInertia(*control_plant_context,
+                                       control_plant.world_frame(),
+                                       GetAllBodyIndices(control_plant));
+  EXPECT_TRUE(CompareMatrices(M_CIo_W_sim.CopyToFullMatrix6(),
+                              M_CIo_W_control.CopyToFullMatrix6(), kTolerance));
 
-  const std::vector<ModelInstanceIndex> wsg_iiwa7{wsg_info.model_instance,
-                                                  iiwa7_info.model_instance};
-  EXPECT_EQ(GetBodyIndices(*sim_plant_, wsg_iiwa7).size(), 11);
+  const Eigen::VectorXd sim_gravity_full =
+      sim_plant.CalcGravityGeneralizedForces(sim_plant_context);
+  const Eigen::VectorXd sim_gravity =
+      sim_plant.GetActuationFromArray(sim_arm_model_instance, sim_gravity_full);
+  const Eigen::VectorXd control_gravity =
+      control_plant.CalcGravityGeneralizedForces(*control_plant_context);
+  EXPECT_TRUE(CompareMatrices(sim_gravity, control_gravity, kTolerance));
 }
 
 /* Creates a simple simulation MultibodyPlant with only one Iiwa arm, and the
@@ -165,12 +172,35 @@ TEST_F(MakeArmControllerModelTest, SingleIiwaWithoutWsg) {
                                            iiwa7_child_frame);
   EXPECT_TRUE(X_WIiwa_control.IsExactlyEqualTo(X_WIiwa_sim));
 
-  // Check the mass property.
-  EXPECT_EQ(sim_plant_->CalcTotalMass(*sim_plant_context),
-            control_plant->CalcTotalMass(*control_plant_context));
-
   // `grasp_frame` should not present in `control_plant`.
   EXPECT_FALSE(control_plant->HasFrameNamed("grasp_frame"));
+
+  // Check inertial terms.
+  CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
+                       *sim_plant_context);
+}
+
+TEST_F(MakeArmControllerModelTest, DifferentGravity) {
+  // Manually add an Iiwa arm to `sim_plant_` MultibodyPlant and weld it to the
+  // world frame.
+  const ModelInstanceInfo iiwa7_info = AddIiwaModel();
+  sim_plant_->WeldFrames(sim_plant_->world_frame(),
+                         sim_plant_->GetFrameByName(iiwa7_info.child_frame_name,
+                                                    iiwa7_info.model_instance),
+                         RigidTransform<double>());
+  sim_plant_->mutable_gravity_field().set_gravity_vector(
+      Eigen::Vector3d(0.1, 0.2, -0.3));
+  sim_plant_->Finalize();
+
+  std::unique_ptr<MultibodyPlant<double>> control_plant =
+      MakeArmControllerModel(*sim_plant_, iiwa7_info);
+  ASSERT_NE(control_plant, nullptr);
+
+  std::unique_ptr<Context<double>> sim_plant_context =
+      sim_plant_->CreateDefaultContext();
+
+  CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
+                       *sim_plant_context);
 }
 
 /* Creates a more complex simulation MultibodyPlant from a directives file
@@ -245,23 +275,6 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
   EXPECT_TRUE(control_plant->IsAnchored(control_iiwa7_child_frame.body()));
   EXPECT_TRUE(X_WIiwa_sim.IsExactlyEqualTo(X_WIiwa_control));
 
-  // Check the total mass of the Iiwa arm and the Wsg gripper.
-  const std::vector<ModelInstanceIndex> sim_plant_iiwa7_wsg = {
-      iiwa7_info.model_instance, wsg_info.model_instance};
-  EXPECT_EQ(sim_plant_->CalcTotalMass(*sim_plant_context, sim_plant_iiwa7_wsg),
-            control_plant->CalcTotalMass(*control_plant_context));
-
-  // Check the spatial inertial matrix of the Iiwa arm and the Wsg gripper.
-  const SpatialInertia<double> M_CIo_I_sim = sim_plant_->CalcSpatialInertia(
-      *sim_plant_context, sim_iiwa7_child_frame,
-      GetBodyIndices(*sim_plant_, sim_plant_iiwa7_wsg));
-  const SpatialInertia<double> M_CIo_I_control =
-      control_plant->CalcSpatialInertia(*control_plant_context,
-                                        control_iiwa7_child_frame,
-                                        GetAllBodyIndices(*control_plant));
-  EXPECT_TRUE(CompareMatrices(M_CIo_I_sim.CopyToFullMatrix6(),
-                              M_CIo_I_control.CopyToFullMatrix6(), kTolerance));
-
   // Check `grasp_frame` is added at the same pose as `sim_plant_`.
   EXPECT_TRUE(control_plant->HasFrameNamed("grasp_frame"));
   const Frame<double>& sim_wsg_child_frame = sim_plant_->GetFrameByName(
@@ -278,6 +291,9 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
   const RigidTransform<double> X_GF_control = control_wsg_grasp_frame.CalcPose(
       *control_plant_context, control_wsg_child_frame);
   EXPECT_TRUE(X_GF_sim.IsNearlyEqualTo(X_GF_control, kTolerance));
+
+  CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
+                       *sim_plant_context);
 }
 
 }  // namespace

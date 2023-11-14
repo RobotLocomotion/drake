@@ -28,6 +28,7 @@ using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::Frame;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
+using drake::systems::Context;
 using drake::systems::DiagramBuilder;
 
 const char* const kTestDir =
@@ -476,6 +477,33 @@ directives:
   EXPECT_EQ(
       flat_directives.directives[1].add_frame.value().X_PF.base_frame.value(),
       "world" /* Not "nested::world" */);
+}
+
+// Ensure that we incorporate weld offsets into produces model info.
+GTEST_TEST(ProcessModelDirectivesTest, WeldOffset) {
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      "drake/manipulation/util/test/panda_arm_and_hand.dmd.yaml"));
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(directives, make_parser(&plant).get());
+  plant.Finalize();
+  const std::unique_ptr<Context<double>> context =
+      plant.CreateDefaultContext();
+
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "panda");
+  EXPECT_TRUE(added_models[0].X_PC.IsExactlyIdentity());
+
+  EXPECT_EQ(added_models[1].model_name, "panda_hand");
+  EXPECT_FALSE(added_models[1].X_PC.IsExactlyIdentity());
+
+  const Frame<double>& frame_P =
+      plant.GetFrameByName(added_models[1].parent_frame_name);
+  const Frame<double>& frame_C =
+      plant.GetFrameByName(added_models[1].child_frame_name);
+  const math::RigidTransformd panda_hand_X_PC_expected =
+      plant.CalcRelativeTransform(*context, frame_P, frame_C);
+  EXPECT_TRUE(added_models[1].X_PC.IsExactlyEqualTo(panda_hand_X_PC_expected));
 }
 
 }  // namespace
