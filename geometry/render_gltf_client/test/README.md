@@ -84,34 +84,33 @@ and the intermediate glTF file.
 Two sets of color, depth, and label images are generated from `RenderEngineVtk`
 and `RenderEngineGltfClient`.  The `RenderEngineGltfClient` engine connects to
 a server (`server_demo.py`) that uses a VTK-backed rendering pipeline
-(`server_vtk_backend.cc`). Therefore, both render engines use VTK to render;
-comparing their outputs directly provides provide evidence that the RPC
-infrastructure is merely a communication tool between a client and
-a server but has negligible impact on the image content.  Images produced by
-`RenderEngineVtk` are treated as ground truth for pixel-by-pixel comparison.
-However, it's inevitable to have rounding errors due to subtle renderer
-settings; therefore, the test places a reasonably small tolerance for the
-comparison.
+(`server_vtk_backend.cc`).  Therefore, both render engines use VTK to render;
+comparing their outputs directly provides evidence that the RPC infrastructure
+is merely a communication tool between a client and a server but has negligible
+impact on the image content.  Images produced by `RenderEngineVtk` are treated
+as ground truth for pixel-by-pixel comparison.  However, it's inevitable to have
+rounding errors due to subtle renderer settings; therefore, the test places a
+reasonably small tolerance for the comparison.
 
 In addition to rendering comparisons, there is another integration test focuses
 on the glTF correctness.  For `RenderEngineGltfClient` to render an image, the
 client converts geometries in `SceneGraph` to a glTF file and sends it over the
-wire. This test inspects the content of the intermediate glTF files.
+wire.  This test inspects the content of the intermediate glTF files.
 
 Two good resources for understanding the glTF format:
 [glTF-Tutorials](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/README.md),
 [glTF Properties Reference](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#properties-reference)
 
 The test includes cached glTF files (`test_*_scene.gltf`) against which the
-output is compared. The comparison is not a *literal* byte-by-byte comparison of
-the files' contents. Two equivalent glTF files can appear quite different simply
-by changing the ordering of elements. This test transforms the glTF files to
-eliminate this source of variability. Furthermore, we omit some portions of the
-glTF files to simplify the test in favor of focusing on the specific
-expectations enumerated below.
+output is compared.  The comparison is not a *literal* byte-by-byte comparison
+of the files' contents.  Two equivalent glTF files can appear quite different
+simply by changing the ordering of elements.  This test transforms the glTF
+files to eliminate this source of variability.  Furthermore, we omit some
+portions of the glTF files to simplify the test in favor of focusing on the
+specific expectations enumerated below.
 
 <!-- TODO(SeanCurtis-TRI) The test needs to include a glTF file so we can
- confirm this remains true even with multiple glTFs being merged -->
+ confirm this remains true even with multiple glTFs being merged. -->
 The glTF contains a single scene in the `scenes` entry (although glTF generally
 allows for multiple scenes) and the `scene` value references that scene.
 
@@ -158,13 +157,20 @@ the test in:
 bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs
 ```
 
-If a meaningful change has been made to VTK or how Drake uses VTK the reference
-glTF files will probably no longer be a valid reference. The simplest way to
-update the reference files is to look at the test results (located in the
-path above), manually inspect and confirm the differences in glTF files from
-the old reference to the new test glTF files is expected and correct and then
-to simply change update the reference glTF files to use the new files created
-by the failed test.
+#### Updating reference glTF files for the tests
+
+If a meaningful change has been made to VTK or how Drake uses VTK, the reference
+glTF files will probably no longer be valid.  In this case, the test will fail.
+Manually inspect the test results (located in the path above), and confirm that
+the generated glTF is what you would expect based on the underlying changes. If
+so, you will derive the new reference glTF from the generated glTF file.
+
+**Note** To avoid committing large glTF files, do not simply copy the generated
+glTF file over the old reference file. Instead, be sure to delete the entire
+`buffers` entry which contains texture and geometry data and bloats the file
+size.  That field is not used at all in the glTF test.  It does mean you cannot
+load the reference glTF in a glTF viewer, but you can always rely on the test's
+output files for that.
 
 ## Prototyping your own Server
 If everything is running as expected, then you can begin changing the

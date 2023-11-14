@@ -168,7 +168,7 @@ class TestIntegration(unittest.TestCase):
 
     @staticmethod
     def _traverse_and_mutate(gltf, entry):
-        """Walk the tree rooted at `entry` and replace entries found in
+        """Walks the tree rooted at `entry` and replace entries found in
         _REPLACED with the explicit tree referenced."""
         entry_type = type(entry)
         if entry_type == dict:
@@ -224,7 +224,7 @@ class TestIntegration(unittest.TestCase):
 
     @staticmethod
     def _save_to_outputs(source_file, prefix=''):
-        """Write the given source file to the undeclared outputs (if defined).
+        """Writes the given source file to the undeclared outputs (if defined).
         If written, the files will be found in:
         bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs  # noqa
         """
