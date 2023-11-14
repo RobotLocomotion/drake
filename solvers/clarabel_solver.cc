@@ -284,7 +284,13 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
   }
 
-  // TODO(hongkai.dai): Add PSD constraint.
+  std::vector<int> psd_cone_length;
+  internal::ParsePositiveSemidefiniteConstraints(
+      prog, /* upper triangular = */ true, &A_triplets, &b, &A_row_count,
+      &psd_cone_length);
+  for (const int length : psd_cone_length) {
+    cones.push_back(clarabel::PSDTriangleConeT<double>(length));
+  }
 
   internal::ParseExponentialConeConstraints(prog, &A_triplets, &b,
                                             &A_row_count);
