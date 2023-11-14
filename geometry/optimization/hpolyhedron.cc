@@ -637,17 +637,36 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
 //         bool do_affine_transform) const {
 
 // }
-HPolyhedron HPolyhedron::ShuffleHyperplanes(std::vector<double>& d, std::vector<bool>& moved_in) const {
+HPolyedron MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int i,std::vector<int>& N_cull,std::vector<int>& redundant_indices, Eigen::VectorXd& hx) const{
+  moved_in[i] = true;
+  for (ind index : redundant_indices){
+    
+  }
+
+}
+
+HPolyhedron HPolyhedron::ShuffleHyperplanes(std::vector<double>& d, std::vector<bool>& moved_in, int random_seed) const {
   std::vector<int> ind(d.size());
-  // std::vector<int> ind2(moved_in.size());
   std::iota(ind.begin(),ind.end(),0);
   std::cout << moved_in[0] << '\n';
+  std::shuffle(ind.begin(),ind.end(),RandomGenerator(random_seed));
+  std::shuffle(d.begin(),d.end(),RandomGenerator(random_seed));
+  std::shuffle(moved_in.begin(),moved_in.end(),RandomGenerator(random_seed));
+
   for (size_t i = 0; i < ind.size(); ++i){
-    log()->info("{}",ind[i]);
+    log()->info("d: {}",d[i]);
   }
-  
-  // std::cout << ind << '\n';
-  return HPolyhedron(A_,b_);
+  for (size_t i = 0; i < ind.size(); ++i){
+    log()->info("moved_in: {}",moved_in[i]);
+  }
+  MatrixXd A(b_.size(), ambient_dimension());
+  VectorXd b(b_.size());
+
+  for (int i : ind){
+    A.row(i) = A_.row(ind[i]);
+    b(i) = b_(ind[i]);
+  }
+  return HPolyhedron(A,b);
 }
 
 std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {

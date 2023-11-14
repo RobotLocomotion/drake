@@ -245,7 +245,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("FindRedundant", &HPolyhedron::FindRedundant,
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
         .def("ShuffleHyperplanes", &HPolyhedron::ShuffleHyperplanes,
-            py::arg("d"),py::arg("moved_in"), cls_doc.ShuffleHyperplanes.doc)
+            py::arg("d"),py::arg("moved_in"),py::arg("random_seed"), cls_doc.ShuffleHyperplanes.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
