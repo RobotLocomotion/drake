@@ -101,8 +101,8 @@
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
- *    <td align="center"></td>
- *    <td align="center"></td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  * </tr>
  * <tr><td><a href="https://github.com/cvxgrp/scs">
  *    SCS</a></td>
