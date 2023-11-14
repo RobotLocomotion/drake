@@ -33,6 +33,10 @@ Mac are available to download as attachments from Drake's GitHub
 The most recent release is
 [v1.22.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.22.0):
 
+<!-- FIXME When 1.23.0 is released, the following URLs need to be updated to
+use version numbers instead of dates, e.g. v1.23.0/drake-1.23.0-focal.tar.gz.
+Once that happens, this note should be removed. -->
+
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.22.0/drake-20231016-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.22.0/drake-20231016-focal.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.22.0/drake-20231016-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.22.0/drake-20231016-jammy.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.22.0/drake-20231016-mac.tar.gz (for x86_64)
