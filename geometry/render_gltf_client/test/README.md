@@ -166,7 +166,7 @@ the generated glTF is what you would expect based on the underlying changes. If
 so, you will derive the new reference glTF from the generated glTF file.
 
 **Note** To avoid committing large glTF files, do not simply copy the generated
-glTF file over the old reference file. Ihstead, be sure to delete the entire
+glTF file over the old reference file. Instead, be sure to delete the entire
 `buffers` entry which contains texture and geometry data and bloats the file
 size.  That field is not used at all in the glTF test.  It does mean you cannot
 load the reference glTF in a glTF viewer, but you can always rely on the test's
