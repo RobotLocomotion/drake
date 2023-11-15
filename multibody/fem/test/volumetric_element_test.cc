@@ -358,17 +358,17 @@ TEST_F(VolumetricElementTest, ExternalForce) {
   Vector3<AD> gravity_vector(0, 0, -9.81);
   GravityForceField<AD> gravity_field(gravity_vector, mass_density);
   /* The gravity force field doesn't depend on Context, but a Context is needed
-   for a ForceDensityEvaluator. So we create a dummy Context that's otherwise
+   formally. So we create a dummy Context that's otherwise
    unused. */
   MultibodyPlant<AD> plant(0.01);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
-  multibody::internal::ForceDensityEvaluator<AD> evaluator(&gravity_field,
-                                                           context.get());
+  fem::FemPlantData<AD> plant_data{.plant_context = context.get(),
+                                   .force_density_fields = {&gravity_field}};
 
   VectorX<AD> gravity_force = VectorX<AD>::Zero(kNumDofs);
   const AD scale = 1.0;
-  element().AddScaledExternalForces(data, scale, evaluator, &gravity_force);
+  element().AddScaledExternalForces(data, scale, plant_data, &gravity_force);
   Vector3<AD> total_force = Vector3<AD>::Zero();
   for (int i = 0; i < kNumNodes; ++i) {
     total_force += gravity_force.segment<3>(3 * i);

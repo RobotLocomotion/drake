@@ -421,18 +421,23 @@ class VolumetricElement
     return data;
   }
 
-  void DoAddScaledExternalForces(
-      const Data& data, const T& scale,
-      const multibody::internal::ForceDensityEvaluator<T>& force_density,
-      EigenPtr<Vector<T, num_dofs>> result) const {
+  void DoAddScaledExternalForces(const Data& data, const T& scale,
+                                 const FemPlantData<T>& plant_data,
+                                 EigenPtr<Vector<T, num_dofs>> result) const {
     const std::array<Vector<T, 3>, num_quadrature_points>&
         quadrature_positions = data.quadrature_positions;
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
     for (int q = 0; q < num_quadrature_points; ++q) {
-      const Vector3<T> scaled_force =
-          scale * force_density.EvaluateAt(quadrature_positions[q]) *
-          reference_volume_[q];
+      Vector3<T> scaled_force = Vector3<T>::Zero();
+      for (const multibody::ForceDensityField<T>* force_density :
+           plant_data.force_density_fields) {
+        DRAKE_ASSERT(force_density != nullptr);
+        scaled_force += scale *
+                        force_density->EvaluateAt(*plant_data.plant_context,
+                                                  quadrature_positions[q]) *
+                        reference_volume_[q];
+      }
       for (int n = 0; n < num_nodes; ++n) {
         result->template segment<3>(3 * n) += scaled_force * S[q](n);
       }

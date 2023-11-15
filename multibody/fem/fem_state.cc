@@ -72,31 +72,16 @@ void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
 }
 
 template <typename T>
-const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
-FemState<T>::GetExternalForces() const {
-  return force_densities_;
-}
-
-template <typename T>
-void FemState<T>::SetExternalForces(
-    std::vector<multibody::internal::ForceDensityEvaluator<T>>
-        force_densities) {
-  force_densities_ = std::move(force_densities);
-}
-
-template <typename T>
 std::unique_ptr<FemState<T>> FemState<T>::Clone() const {
   if (owned_context_ != nullptr) {
     auto clone = std::make_unique<FemState<T>>(this->system_);
     clone->owned_context_->SetTimeStateAndParametersFrom(*this->owned_context_);
-    clone->SetExternalForces(this->GetExternalForces());
     return clone;
   }
   DRAKE_DEMAND(context_ != nullptr);
   // Note that this creates a "shared context" clone. See the class
   // documentation for cautionary notes.
   auto clone = std::make_unique<FemState<T>>(this->system_, this->context_);
-  clone->SetExternalForces(this->GetExternalForces());
   return clone;
 }
 

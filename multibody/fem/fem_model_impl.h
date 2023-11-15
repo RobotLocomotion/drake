@@ -72,6 +72,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
+                      const FemPlantData<T>& plant_data,
                       EigenPtr<VectorX<T>> residual) const final {
     /* The values are accumulated in the residual, so it is important to clear
      the old data. */
@@ -82,17 +83,13 @@ class FemModelImpl : public FemModel<typename Element::T> {
     Vector<T, Element::num_dofs> element_residual;
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
-    const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
-        force_densities = fem_state.GetExternalForces();
     for (int e = 0; e < num_elements(); ++e) {
       /* residual = Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ. */
       /* The Ma-fₑ(x)-fᵥ(x, v) term. */
       elements_[e].CalcInverseDynamics(element_data[e], &element_residual);
       /* The -fₑₓₜ term. */
-      for (const auto& f : force_densities) {
-        elements_[e].AddScaledExternalForces(element_data[e], -1.0, f,
-                                             &element_residual);
-      }
+      elements_[e].AddScaledExternalForces(element_data[e], -1.0, plant_data,
+                                           &element_residual);
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();
       for (int a = 0; a < Element::num_nodes; ++a) {

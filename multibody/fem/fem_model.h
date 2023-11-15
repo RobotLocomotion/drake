@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
+#include "drake/multibody/fem/fem_plant_data.h"
 #include "drake/multibody/fem/fem_state.h"
 
 namespace drake {
@@ -134,12 +135,14 @@ class FemModel {
   std::unique_ptr<FemState<T>> MakeFemState() const;
 
   /** Calculates the residual G(x, v, a) (see class doc) evaluated at the
-   given FEM state. The residual for degrees of freedom with Dirichlet boundary
-   conditions is set to zero. Therefore their residual should not be used as a
-   metric for the error on the boundary condition.
+   given FEM state using the given `plant_data`. The residual for degrees of
+   freedom with Dirichlet boundary conditions is set to zero. Therefore their
+   residual should not be used as a metric for the error on the boundary
+   condition.
    @pre residual != nullptr.
    @throws std::exception if the FEM state is incompatible with this model. */
   void CalcResidual(const FemState<T>& fem_state,
+                    const FemPlantData<T>& plant_data,
                     EigenPtr<VectorX<T>> residual) const;
 
   /** Calculates an approximated tangent matrix evaluated at the given FEM
@@ -224,6 +227,7 @@ class FemModel {
    compatible with `this` FEM model, and the input `residual` is guaranteed to
    be non-null and properly sized. */
   virtual void DoCalcResidual(const FemState<T>& fem_state,
+                              const FemPlantData<T>& plant_data,
                               EigenPtr<VectorX<T>> residual) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for

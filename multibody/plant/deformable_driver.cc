@@ -741,14 +741,6 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
   fem_state->SetPositions(q);
   fem_state->SetVelocities(qdot);
   fem_state->SetAccelerations(qddot);
-  /* Collect all external forces affecting this body and store them into its FEM
-   state. */
-  std::vector<ForceDensityEvaluator<T>> force_density_evaluators;
-  for (const ForceDensityField<T>* f :
-       deformable_model_->GetExternalForces(id)) {
-    force_density_evaluators.emplace_back(f, &context);
-  }
-  fem_state->SetExternalForces(std::move(force_density_evaluators));
 }
 
 template <typename T>
@@ -776,7 +768,13 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
       nonparticipating_vertices.insert(v);
     }
   }
-  fem_solver->AdvanceOneTimeStep(fem_state, nonparticipating_vertices);
+  /* Collect all external forces affecting this body and store them into the
+   FemPlantData for the associated FEM model. */
+  fem::FemPlantData<T> plant_data{
+      .plant_context = &context,
+      .force_density_fields = deformable_model_->GetExternalForces(body_id)};
+  fem_solver->AdvanceOneTimeStep(fem_state, plant_data,
+                                 nonparticipating_vertices);
 }
 
 template <typename T>

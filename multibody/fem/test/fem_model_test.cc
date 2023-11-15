@@ -47,7 +47,8 @@ GTEST_TEST(FemModelTest, CalcResidual) {
   builder.Build();
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
   VectorXd residual(model.num_dofs());
-  model.CalcResidual(*fem_state, &residual);
+  const FemPlantData<double> dummy_data;
+  model.CalcResidual(*fem_state, dummy_data, &residual);
 
   VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
   expected_residual.head<LinearDummyElement::kNumDofs>() +=
@@ -74,16 +75,14 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
   Vector3d gravity_vector(0, 0, -9.81);
   GravityForceField<double> gravity_field(gravity_vector, mass_density);
   /* The gravity force field doesn't depend on Context, but a Context is needed
-   for a ForceDensityEvaluator. So we create a dummy Context that's unused. */
+   formally. So we create a dummy Context that's unused. */
   MultibodyPlant<double> plant(0.01);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
-  std::vector<multibody::internal::ForceDensityEvaluator<double>> evaluators;
-  evaluators.emplace_back(&gravity_field, context.get());
-  fem_state->SetExternalForces(std::move(evaluators));
-
+  const FemPlantData<double> plant_data{
+      .plant_context = context.get(), .force_density_fields = {&gravity_field}};
   VectorXd residual(model.num_dofs());
-  model.CalcResidual(*fem_state, &residual);
+  model.CalcResidual(*fem_state, plant_data, &residual);
 
   /* Since DummyElement adds the external force density directly to the
    residual (see DummyElement::DoAddScaledExternalForces for detail), we expect
@@ -142,25 +141,30 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
   VectorXd residual_without_external_force(model.num_dofs());
-  model.CalcResidual(*fem_state, &residual_without_external_force);
+  const FemPlantData<double> dummy_data;
+  model.CalcResidual(*fem_state, dummy_data, &residual_without_external_force);
   /* We evaluate the residual at two different times and verifies that the ratio
    between the external forces would be equal to the ratio of times. */
   const double kTime = 1.23;
   context->SetTime(kTime);
-  std::vector<multibody::internal::ForceDensityEvaluator<double>> evaluators;
-  evaluators.emplace_back(&force_field, context.get());
-  fem_state->SetExternalForces(evaluators);
-  VectorXd residual(model.num_dofs());
-  model.CalcResidual(*fem_state, &residual);
-  const VectorXd external_force = residual - residual_without_external_force;
+  VectorXd external_force;
+  {
+    const fem::FemPlantData<double> plant_data{
+        .plant_context = context.get(), .force_density_fields = {&force_field}};
+    VectorXd residual(model.num_dofs());
+    model.CalcResidual(*fem_state, plant_data, &residual);
+    external_force = residual - residual_without_external_force;
+  }
 
   context->SetTime(2.0 * kTime);
-  evaluators.clear();
-  evaluators.emplace_back(&force_field, context.get());
-  fem_state->SetExternalForces(evaluators);
-  VectorXd residual2(model.num_dofs());
-  model.CalcResidual(*fem_state, &residual2);
-  const VectorXd external_force2 = residual2 - residual_without_external_force;
+  VectorXd external_force2;
+  {
+    const fem::FemPlantData<double> plant_data{
+        .plant_context = context.get(), .force_density_fields = {&force_field}};
+    VectorXd residual(model.num_dofs());
+    model.CalcResidual(*fem_state, plant_data, &residual);
+    external_force2 = residual - residual_without_external_force;
+  }
 
   EXPECT_TRUE(CompareMatrices(2.0 * external_force, external_force2,
                               4.0 * std::numeric_limits<double>::epsilon()));
@@ -256,8 +260,9 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
 
   /* Trying to calculate residual with the old state causes an exception. */
   VectorXd residual(model.num_dofs());
+  const FemPlantData<double> dummy_data;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcResidual(*fem_state, &residual),
+      model.CalcResidual(*fem_state, dummy_data, &residual),
       "CalcResidual.* model and state are not compatible.");
 
   /* Trying to calculate tangent matrix with the old state causes an exception.
@@ -346,14 +351,15 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     state0->SetVelocities(VectorX<T>::Zero(model.num_dofs()));
     state0->SetAccelerations(VectorX<T>::Zero(model.num_dofs()));
     VectorXd residual0(model.num_dofs());
-    model.CalcResidual(*state0, &residual0);
+    const FemPlantData<T> dummy_data;
+    model.CalcResidual(*state0, dummy_data, &residual0);
 
     unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
     state1->SetPositions(VectorX<T>::Zero(model.num_dofs()));
     state1->SetVelocities(VectorX<T>::Zero(model.num_dofs()));
     state1->SetAccelerations(VectorX<T>::Zero(model.num_dofs()));
     VectorXd residual1(model_without_bc.num_dofs());
-    model_without_bc.CalcResidual(*state1, &residual1);
+    model_without_bc.CalcResidual(*state1, dummy_data, &residual1);
     EXPECT_FALSE(CompareMatrices(residual0, residual1));
 
     bc.ApplyHomogeneousBoundaryCondition(&residual1);
