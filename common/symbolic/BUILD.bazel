@@ -165,6 +165,7 @@ drake_cc_googletest(
     name = "monomial_util_test",
     deps = [
         ":monomial_util",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

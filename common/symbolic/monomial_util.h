@@ -212,6 +212,25 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
                                                                       degree);
 }
 
+/** Returns all the monomials (in graded reverse lexicographic order) such
+ * that the total degree for each set of variables is no larger than a specific
+ * degree. For example if x_set = {x₀, x₁} and y_set = {y₀, y₁}, then
+ * MonomialBasis({{x_set, 2}, {y_set, 1}}) will include all the monomials, whose
+ * total degree of x_set is no larger than 2, and the total degree of y_set is
+ * no larger than 1. Hence it can include monomials such as x₀x₁y₀, but not
+ * x₀y₀y₁ because the total degree for y_set is 2. So it would return the
+ * following set of monomials (ignoring the ordering) {x₀²y₀, x₀²y₁, x₀x₁y₀,
+ * x₀x₁y₁, x₁²y₀, x₁²y₀, x₀y₀, x₀y₁, x₁y₀, x₁y₁, x₀², x₀x₁, x₁², x₀, x₁, y₀, y₁,
+ * 1}.
+ * @param variables_degree `(vars, degree)` maps each set of variables `vars` to
+ * the maximal degree of these variables in the monomial. Namely the summation
+ * of the degree of each variable in `vars` is no larger than `degree`.
+ * @pre The variables in `variables_degree` don't overlap.
+ * @pre The degree in `variables_degree` are non-negative.
+ */
+[[nodiscard]] VectorX<Monomial> MonomialBasis(
+    const std::unordered_map<Variables, int>& variables_degree);
+
 /** Returns all even degree monomials up to a given degree under the graded
  * reverse lexicographic order. A monomial has an even degree if its total
  * degree is even. So xy is an even degree monomial (degree 2) while x²y is not
