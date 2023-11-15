@@ -31,4 +31,4 @@ struct FemPlantData {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::FemPlantData)
+    struct ::drake::multibody::fem::FemPlantData)
