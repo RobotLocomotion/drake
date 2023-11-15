@@ -1214,23 +1214,6 @@ GTEST_TEST(MeshcatTest, SetCameraPose) {
   }
 }
 
-GTEST_TEST(MeshcatTest, CameraTracking) {
-  Meshcat meshcat;
-
-  // No message received means no pose.
-  EXPECT_EQ(meshcat.GetTrackedCameraPose(), std::nullopt);
-
-  // TODO(SeanCurtis-TRI): There is more to test:
-  //  1. A valid message (is_perspective=true) defines the camera pose.
-  //  2. An invalid message (is_perspective=false) reverts the pose to nullopt.
-  //  3. Disconnecting the port that is defining values resets the pose to
-  //     nullopt.
-  // The problem is that the CheckWebsocketCommand() creates the websocket
-  // connection and disconnects it upon returning. So, I can't really test
-  // those cases. We need a persistent connection that only disconnects when
-  // we ask it to (to test number three).
-}
-
 GTEST_TEST(MeshcatTest, StaticHtml) {
   Meshcat meshcat;
 

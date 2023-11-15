@@ -529,6 +529,9 @@ class Meshcat {
      - The meshcat session that last transmitted its pose is no longer
        connected.
      - The meshcat session transmitting has an orthographic camera.
+
+  <!-- Note to developer. This logic is tested in the python test
+   meshcat_camera_tracking_test.py. -->
    */
   std::optional<math::RigidTransformd> GetTrackedCameraPose() const;
 
