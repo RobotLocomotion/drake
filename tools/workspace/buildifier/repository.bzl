@@ -33,17 +33,17 @@ def _impl(repository_ctx):
     # To update this, each artifact needs to be downloaded and its checksum
     # computed manually.  See tools/workspace/mirrors.bzl for the canonical
     # URL.
-    version = "v6.3.3"
+    version = "v6.4.0"
     darwin_urls = [
         x.format(version = version, filename = "buildifier-darwin-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    darwin_sha256 = "3c36a3217bd793815a907a8e5bf81c291e2d35d73c6073914640a5f42e65f73f"  # noqa
+    darwin_sha256 = "eeb47b2de27f60efe549348b183fac24eae80f1479e8b06cac0799c486df5bed"  # noqa
     linux_urls = [
         x.format(version = version, filename = "buildifier-linux-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    linux_sha256 = "42f798ec532c58e34401985043e660cb19d5ae994e108d19298c7d229547ffca"  # noqa
+    linux_sha256 = "be63db12899f48600bad94051123b1fd7b5251e7661b9168582ce52396132e92"  # noqa
 
     # Choose which binary to use.
     os_result = determine_os(repository_ctx)
