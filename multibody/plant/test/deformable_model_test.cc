@@ -18,6 +18,7 @@ using geometry::SceneGraphInspector;
 using geometry::Sphere;
 using math::RigidTransformd;
 using std::make_unique;
+using systems::BasicVector;
 
 class DeformableModelTest : public ::testing::Test {
  protected:
@@ -337,29 +338,45 @@ TEST_F(DeformableModelTest, ExternalForces) {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField)
 
     /* Constructs an force density field that has the functional form given by
-     input `field` */
+     input `field` which is then scaled by a scalar value via input port. */
     explicit ConstantForceDensityField(
         std::function<Vector3<double>(const Vector3<double>&)> field)
         : field_(std::move(field)) {}
 
+    /* Gets the double-valued input port that determines whether the force field
+     is turned on or off. 0 for off and anything else for on.  */
+    const systems::InputPort<double>& get_input_port() const {
+      return parent_system_or_throw().get_input_port(scale_port_index_);
+    }
+
    private:
-    Vector3<double> DoEvaluateAt(const systems::Context<double>&,
+    Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
                                  const Vector3<double>& p_WQ) const final {
-      return field_(p_WQ);
+      return get_input_port().Eval(context)(0) * field_(p_WQ);
     };
 
     std::unique_ptr<ForceDensityField<double>> DoClone() const final {
       return std::make_unique<ConstantForceDensityField>(*this);
     }
 
+    void DoDeclareInputPorts(multibody::MultibodyPlant<double>* plant) final {
+      scale_port_index_ = this->DeclareVectorInputPort(
+                                  plant, "on/off signal for the force field",
+                                  BasicVector<double>(1.0))
+                              .get_index();
+    }
+
     std::function<Vector3<double>(const Vector3<double>&)> field_;
+    systems::InputPortIndex scale_port_index_;
   };
 
   auto force_field = [](const Vector3d& x) {
     return 3.14 * x;
   };
-  deformable_model_ptr_->AddExternalForce(
-      std::make_unique<ConstantForceDensityField>(force_field));
+  auto constant_force =
+      std::make_unique<ConstantForceDensityField>(force_field);
+  const ConstantForceDensityField* constant_force_ptr = constant_force.get();
+  deformable_model_ptr_->AddExternalForce(std::move(constant_force));
   constexpr double kRezHint = 0.5;
   DeformableBodyId body_id = RegisterSphere(kRezHint);
   /* Pre-finalize calls to GetExternalForces are not allowed. */
@@ -397,7 +414,10 @@ TEST_F(DeformableModelTest, ExternalForces) {
       EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ),
                 gravity_vector * default_body_config_.mass_density());
     } else {
-      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), 3.14 * p_WQ);
+      const double scale = 2.71;
+      constant_force_ptr->get_input_port().FixValue(plant_context.get(),
+                                                    Vector1d(scale));
+      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), scale * 3.14 * p_WQ);
     }
   }
 }
