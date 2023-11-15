@@ -175,9 +175,32 @@ int do_main() {
                           RigidTransformd(Vector3d{++x, -0.25, 0}));
   }
 
-  std::cout << R"""(
-Open up your browser to the URL above.
+  std::cout << "\nDo *not* open up your browser to the URL above. Instead use "
+            << "the following URL\n\n"
+            << meshcat->web_url() << "?tracked_camera=on\n\n";
 
+  MaybePauseForUser();
+
+  // Note: this tests that the parameter on the html page is enough to enable
+  // camera tracking. Full camera tracking protocols are tested in
+  // meshcat_camera_tracking_test.py.
+  if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+    std::cout << "Meshcat isn't receiving tracked camera poses from your "
+              << "browser. Are you sure your browser is using the full URL?\n"
+              << "\n    " << meshcat->web_url() << "?tracked_camera=on\n\n"
+              << "If not, use the url with the 'tracked_camera' parameter.\n\n";
+
+  MaybePauseForUser();
+
+    if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+      std::cout << "  !!! ERROR !!! It appears that camera tracking isn't "
+                << "working!\n";
+    } else {
+      std::cout << "That did it. Now we can move on.\n";
+    }
+  }
+
+  std::cout << R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a red sphere
@@ -553,38 +576,6 @@ Open up your browser to the URL above.
             << "When you're done, close the browser window.\n\n";
 
   MaybePauseForUser();
-
-  // NOTE: This test bails out of the program early if any of the stages fail.
-
-  std::cout << "\nNow we'll track camera broadcasting. The default URL should "
-            << "mean no camera positions are broadcast. Confirming now...";
-  if (meshcat->GetTrackedCameraPose() != std::nullopt) {
-    std::cout << "\n\n   !!! ERROR !!! Tracked camera pose reported!\n";
-    return 1;
-  }
-  std::cout << "confirmed!\n\n";
-  std::cout << "Now open a new browser window and paste the following URL:\n"
-            << "    " << meshcat->web_url() << "?tracked_camera=on\n"
-            << "After it's loaded ";
-
-  MaybePauseForUser();
-
-  if (meshcat->GetTrackedCameraPose() == std::nullopt) {
-    std::cout << "\n   !!! ERROR !!! No camera positions has been reported\n";
-    return 1;
-  }
-  std::cout << "The new session has successfully broadcast its camera position "
-            << "to Drake.\n"
-            << "Finally, close the broadcasting window. We should no longer "
-            << "have any tracked camera pose. Close the windows and ";
-
-  MaybePauseForUser();
-
-  if (meshcat->GetTrackedCameraPose() != std::nullopt) {
-    std::cout << "   !!! ERROR !!! Tracked camera pose reported!\n";
-    return 1;
-  }
-  std::cout << "   Confirmed!\n\n";
 
   std::cout << "Exiting..." << std::endl;
   return 0;

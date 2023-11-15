@@ -106,6 +106,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "meshcat_camera_tracking_test",
+    deps = [
+        ":geometry",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
