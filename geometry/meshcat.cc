@@ -2000,8 +2000,8 @@ class Meshcat::Impl {
       if (camera_pose_source_ != nullptr && camera_pose_source_ != ws) {
         static const logging::Warn log_once(
             "More than one meshcat client is attempting to broadcast its "
-            "camera pose. Confirm that only one browser window includes the "
-            "?tracked_camera=on parameter in its URL.");
+            "camera pose. The view rendered will be that of the browser whose "
+            "camera was last modified.");
       }
       camera_pose_source_ = ws;
       if (*data.is_perspective) {

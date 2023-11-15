@@ -132,7 +132,7 @@ class ModelVisualizer:
         self._context = None
 
         # State necessary for self._render_if_necessary().
-        self.last_camera_time = time.time()
+        self._last_camera_time = time.time()
 
     def _check_rep(self, *, finalized):
         """
@@ -342,13 +342,13 @@ class ModelVisualizer:
             ApplyCameraConfig(
                 config=camera_config,
                 builder=self._builder.builder())
-            self._camera_sensor = self._builder.builder().GetSubsystemByName(
+            camera_sensor = self._builder.builder().GetSubsystemByName(
                 "rgbd_sensor_preview")
             camera_publisher = self._builder.builder().GetSubsystemByName(
                 "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_preview)")
             # Export the preview camera image output port for later use.
             self._builder.builder().ExportOutput(
-                self._camera_sensor.GetOutputPort("color_image"),
+                camera_sensor.GetOutputPort("color_image"),
                 "preview_image")
             # Disable LCM image transmission. It has a non-trivial cost, and
             # at the moment Meldis can't display LCM images anyway.
@@ -463,10 +463,10 @@ class ModelVisualizer:
         """This evaluates the state of the camera and plant and possibly
         triggers a rendering (up to a maximum hard-coded rate).
         """
-        if time.time() < (self.last_camera_time + 0.0625):
+        if time.time() < (self._last_camera_time + 0.0625):
             return
 
-        self.last_camera_time = time.time()
+        self._last_camera_time = time.time()
         X_WC = self._meshcat.GetTrackedCameraPose()
         if X_WC is None:
             return
@@ -509,12 +509,12 @@ class ModelVisualizer:
         # more sense as an argument to Run() vs an argument to our constructor.
         if self._browser_new:
             self._browser_new = False
-            url_params = ''
+            url_params = ""
             if self._show_rgbd_sensor:
                 url_params = "?tracked_camera=on"
             url = self._meshcat.web_url() + url_params
             _webbrowser_open(url=url, new=True)
-        elif self._show_rgbd_sensor and self._meshcat is not None:
+        elif self._show_rgbd_sensor:
             logging.getLogger("drake").info(
                 "You've requested to show the RGBD Sensor. To control the "
                 "sensor position, make sure you open one browser to the "

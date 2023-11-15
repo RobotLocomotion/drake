@@ -201,6 +201,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "model_visualizer_camera_tracking_test",
+    timeout = "moderate",
+    data = [
+        ":model_visualizer",
+    ],
+    deps = [
+        ":model_visualizer",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":visualization",

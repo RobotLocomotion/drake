@@ -518,10 +518,10 @@ class Meshcat {
 
        http://localhost:7000/?tracked_camera=on
 
-   Do not use the same transmitting URL on multiple browsers at the same time.
-   The transmitted camera data will interfere with each other. If you require
-   multiple browsers viewing the same meshcat instance, make sure the remaining
-   windows use the non-transmitting url.
+   It is possible to use that URL in multiple browsers simultaneously. A
+   particular view will only transmit its camera position when its camera
+   position actually *changes*. As such, the returned camera pose will reflect
+   the pose of the camera from that most-recently manipulated browser.
 
    std::nullopt is returned if:
 
@@ -529,6 +529,9 @@ class Meshcat {
      - The meshcat session that last transmitted its pose is no longer
        connected.
      - The meshcat session transmitting has an orthographic camera.
+
+  <!-- Note to developer. This logic is tested in the python test
+   meshcat_camera_tracking_test.py. -->
    */
   std::optional<math::RigidTransformd> GetTrackedCameraPose() const;
 
