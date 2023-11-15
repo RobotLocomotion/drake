@@ -8,8 +8,8 @@
 #include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fem/damping_model.h"
 #include "drake/multibody/fem/fem_indexes.h"
+#include "drake/multibody/fem/fem_plant_data.h"
 #include "drake/multibody/fem/fem_state.h"
-#include "drake/multibody/plant/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -194,18 +194,17 @@ class FemElement {
    `force_density_field`.
    @param[in] data  The FEM data to evaluate the external force.
    @param[in] scale  The scaling factor applied to the external force.
-   @param[in] force_density_field  Evaluates the force density at a given
-   current location.
+   @param[in] plant_data  Data from the owning MultibodyPlant used to evaluate
+   the external force.
    @param[in, out] external_force  The vector to which the scaled external force
    will be added.
    @pre external_force != nullptr */
   void AddScaledExternalForces(
-      const Data& data, const T& scale,
-      const multibody::internal::ForceDensityEvaluator<T>& force_density,
+      const Data& data, const T& scale, const FemPlantData<T>& plant_data,
       EigenPtr<Vector<T, num_dofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
     static_cast<const DerivedElement*>(this)->DoAddScaledExternalForces(
-        data, scale, force_density, external_force);
+        data, scale, plant_data, external_force);
   }
 
   /* Extracts the dofs corresponding to the nodes given by `node_indices` from
@@ -298,10 +297,8 @@ class FemElement {
    derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoAddScaledExternalForces()`. */
-  void DoAddScaledExternalForces(
-      const Data&, const T&,
-      const multibody::internal::ForceDensityEvaluator<T>&,
-      EigenPtr<Vector<T, num_dofs>>) const {
+  void DoAddScaledExternalForces(const Data&, const T&, const FemPlantData<T>&,
+                                 EigenPtr<Vector<T, num_dofs>>) const {
     ThrowIfNotImplemented(__func__);
   }
 

@@ -159,7 +159,8 @@ TEST_F(VolumetricModelTest, TangentMatrixIsResidualDerivative) {
   unique_ptr<FemState<AutoDiffXd>> autodiff_state =
       MakeDeformedFemState(model_);
   VectorX<AutoDiffXd> residual(autodiff_state->num_dofs());
-  model_.CalcResidual(*autodiff_state, &residual);
+  const FemPlantData<AutoDiffXd> dummy_data;
+  model_.CalcResidual(*autodiff_state, dummy_data, &residual);
 
   VolumetricModel<DoubleElement> double_model;
   AddBoxToModel(&double_model);

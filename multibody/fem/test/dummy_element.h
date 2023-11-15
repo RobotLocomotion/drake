@@ -147,14 +147,17 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
    density directly to the nodes. Even though this is unphysical (the units
    don't match), this gives us an easy way to test APIs without introducing
    extra complexities. */
-  void DoAddScaledExternalForces(
-      const Data& data, const T& scale,
-      const multibody::internal::ForceDensityEvaluator<T>& force_density,
-      EigenPtr<Vector<T, kNumDofs>> result) const {
+  void DoAddScaledExternalForces(const Data& data, const T& scale,
+                                 const FemPlantData<T>& plant_data,
+                                 EigenPtr<Vector<T, kNumDofs>> result) const {
     for (int i = 0; i < this->num_nodes; ++i) {
       const auto node_q = data.element_q.template segment<3>(3 * i);
-      result->template segment<3>(3 * i) +=
-          scale * force_density.EvaluateAt(node_q);
+      for (const multibody::ForceDensityField<T>* force_density :
+           plant_data.force_density_fields) {
+        result->template segment<3>(3 * i) +=
+            scale *
+            force_density->EvaluateAt(*plant_data.plant_context, node_q);
+      }
     }
   }
 };

@@ -6,7 +6,6 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fem/fem_state_system.h"
-#include "drake/multibody/plant/force_density_evaluator.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -75,20 +74,6 @@ class FemState {
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
   /* @} */
 
-#ifndef DRAKE_DOXYGEN_CXX
-  /* Getter and setter for the external force density field evaluators. The
-   external forces are always evaluated explicitly in the FEM model,
-   regardless of the time stepping scheme used. That is, force fields are
-   evaluated at the current states (including rigid and deformable states as
-   well as inputs) of the owning MultibodyPlant. */
-  const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
-  GetExternalForces() const;
-
-  void SetExternalForces(
-      std::vector<multibody::internal::ForceDensityEvaluator<T>>
-          force_densities);
-#endif
-
   /** Returns the number of degrees of freedom in the FEM model and state. */
   int num_dofs() const {
     return get_context()
@@ -126,7 +111,6 @@ class FemState {
   copyable_unique_ptr<systems::Context<T>> owned_context_{nullptr};
   /* Referenced context that contains the FEM states and data. */
   const systems::Context<T>* context_{nullptr};
-  std::vector<multibody::internal::ForceDensityEvaluator<T>> force_densities_;
 };
 
 }  // namespace fem
