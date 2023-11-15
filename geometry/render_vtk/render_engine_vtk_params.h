@@ -81,6 +81,9 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(default_clear_color));
     a->Visit(DRAKE_NVP(lights));
     a->Visit(DRAKE_NVP(environment_map));
+    a->Visit(DRAKE_NVP(exposure));
+    a->Visit(DRAKE_NVP(cast_shadows));
+    a->Visit(DRAKE_NVP(shadow_map_size));
   }
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
@@ -111,6 +114,77 @@ struct RenderEngineVtkParams {
    will not be present. Lights *can* be explicitly added to combine with the
    environment map. */
   std::optional<EnvironmentMap> environment_map;
+
+  /** Exposure is an aspect of "tone mapping" (as described in
+   <a href="https://www.kitware.com/pbrj1/">VTK's description of its PBR
+   capabilities</a>). Drake uses the GenericFilmic tone mapper and this value
+   maps to its `exposure` property.
+
+   By default, exposure is undefined and *no* tone mapping is applied to the
+   image. Providing any value at all will enable tone mapping and can be done
+   so whether your scene uses default Phong illumination model or
+   physically-based rendering (e.g., such as when an environment map is present
+   or a glTF model has been added).
+
+   This property is analogous to the concept of "exposure" in traditional
+   photography. Exposure controls how much the film material is exposed to the
+   light in the scene. Too little exposure and the scene is dark and muddy. Too
+   much exposure, and the image becomes over saturated. As the amount of radiant
+   energy in the scene increases, reducing the exposure may be necessary. In
+   essence, exposure serves as a scale factor on the radiant energy. When
+   thinking about it as a scale factor, it may *seem* that setting exposure to
+   one would leave the image unchanged (with respect to the images that
+   %RenderEngineVtk has historically produced). This is not the case. As noted
+   above, setting any value, including one, enables tone mapping. Without tone
+   mapping enabled, there is a direct correlation between radiant energy on
+   the surface and the final pixel colors. Tone mapping defines a non-linear
+   relationship between illumination levels and pixel color.
+
+   The most common use for the `exposure` parameter is to combine an environment
+   map with shadow-casting lights. If the environment map contains a great
+   deal of light energy, it may overpower the strength of your lights. By
+   reducing the exposure (below one), the shadows caused by the lights will
+   become more distinct.
+
+   If you plan on working with shadows and environment maps, best practice will
+   be to set exposure to one and enable tone mapping. You can increase the value
+   if your image seems too dark, or reduce the value if it seems "washed out".
+   */
+  std::optional<double> exposure{};
+
+  /** If `true`, *all* lights that are *able* to cast shadows will do so.
+
+   Several important notes when designing your lighting:
+
+       - Point lights do not cast shadows.
+       - Directional lights will create a shadow map that spans the whole scene.
+         If your scene includes a geometry that is significantly larger than
+         the locale you're rendering, this will significantly reduce the
+         efficacy of the directional light's shadows. Consider truncating that
+         larger geometry. A common case would be to use a HalfSpace to define
+         a ground. A half space has infinite extent, so any reasonable
+         approximation would be quite large. Better to use a box targeted to
+         where you need it.
+       - Transparent objects cast no shadows at all, but they do receive them.
+
+   Currently, there is no way to enable/disable shadows on a per-light basis.
+
+   <!-- TODO(SeanCurtis-TRI): Figure out a way to set this on a per-light
+    basis. One *could* use the vtkLight::ShadowAttenuation property, but it
+    would still incur the cost of rendering a shadow map. The best option would
+    be to upstream/patch a change to VTK where each light could simply declare
+    its ability to cast shadows. We'll wait to see how common this need is. -->
+  */
+  bool cast_shadows{false};
+
+  /** The size of texture map (in pixels) to use for shadow maps. Note: this is
+   a *global* setting. All shadow casting lights will use a map of the same
+   size. Larger map sizes increase GPU memory usage and rendering times but
+   improve shadow fidelity (less obvious pixelation).
+
+   See the note on `cast_shadows` for the warning on directional lights and
+   shadow maps. */
+  int shadow_map_size{256};
 };
 
 }  // namespace geometry

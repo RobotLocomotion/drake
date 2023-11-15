@@ -100,7 +100,10 @@ struct LightParameter {
   Eigen::Vector3d position{0, 0, 0};
 
   /** Specifies the frame to which the camera is fixed, `"world"` or `"camera"`.
-   */
+
+   Remember, as documented by @ref systems::sensors::CameraInfo "CameraInfo",
+   the camera frame has +Cz pointing *into* the image, +Cx pointing to the
+   right, and +Cy pointing to the bottom of the image. */
   std::string frame{"camera"};
 
   /** A multiplier for the brightness of the light. A zero intensity will
