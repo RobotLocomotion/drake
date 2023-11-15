@@ -6,6 +6,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -576,47 +577,6 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
     Render(&engine);
     VerifyUniformColor(bg);
   }
-}
-
-// Performs the shape-centered-in-the-image test with a sphere.
-TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
-  RenderEngineVtk renderer;
-  InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
-  const int int_alpha = 128;
-  default_color_ = kDefaultVisualColor;
-  default_color_.a = int_alpha;
-  PopulateSphereTest(&renderer);
-  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
-  const auto& intrinsics = camera.core().intrinsics();
-  ImageRgba8U color(intrinsics.width(), intrinsics.height());
-  renderer.RenderColorImage(camera, &color);
-
-  // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
-  // *not* use the OpenGL drivers and, empirically, it has shown a different
-  // alpha blending behavior.
-  // For an alpha of 128 (i.e., 50%), the correct pixel color would be a
-  // *linear* blend, i.e., 50% background and 50% foreground. However, the
-  // implementation in Xvfb seems to be a function alpha *squared*. So, we
-  // formulate this test to pass if the resultant pixel has one of two possible
-  // colors.
-  // In both cases, the resultant alpha will always be a full 255 (because the
-  // background is a full 255).
-  auto blend = [](const TestColor& c1, const TestColor& c2, double alpha) {
-    auto r = static_cast<uint8_t>(c1.r * alpha + (c2.r * (1 - alpha)));
-    auto g = static_cast<uint8_t>(c1.g * alpha + (c2.g * (1 - alpha)));
-    auto b = static_cast<uint8_t>(c1.b * alpha + (c2.b * (1 - alpha)));
-    return TestColor{r, g, b, 255};
-  };
-  const double linear_factor = int_alpha / 255.0;
-  const TestColor expect_linear =
-      blend(kDefaultVisualColor, kTerrainColor, linear_factor);
-  const double quad_factor = linear_factor * (-linear_factor + 2);
-  const TestColor expect_quad =
-      blend(kDefaultVisualColor, kTerrainColor, quad_factor);
-
-  const ScreenCoord inlier = GetInlier(intrinsics);
-  EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
-              CompareColor(expect_quad, color, inlier));
 }
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
@@ -2100,16 +2060,42 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
 
 namespace {
 
+// Configure what gets added by AddShapeRows().
+struct WholeImageConfig {
+  // If true, a textured glTF is used in place of a texture .obj.
+  bool gltf_mesh{};
+
+  // If true, a box is used in place of a half space -- necessary for shadows
+  // from a directional light. See documentation on
+  // RenderEngineVtkParams::cast_shadows for details.
+  bool no_half_space{};
+};
+
 // Adds rows of Shapes to the given `render_engine`. For each shape type,
 // where appropriate, exercises the Shape api and geometry properties to produce
 // various variations of how that shape *could* be rendered.
 // The rows start at x = 0 and extend in the -x direction.
-// @param gltf_mesh  Controls whether the mesh shape uses an obj (false) or a
-//                   glTF file (true). Using a glTF file will automatically
-//                   promote the renderer to work in PBR mode.
+// If `render_engine` is null, the return value is what the value would be if
+// the shapes had been registered.
 // @returns the x-value for the shape farthest from the origin (along Wx).
-double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
-  RenderEngineVtk& engine = *render_engine;
+double AddShapeRows(RenderEngineVtk* render_engine,
+                    const WholeImageConfig& config = {}) {
+  auto register_visual =
+      [render_engine](GeometryId id, const Shape& shape,
+                      const PerceptionProperties& properties,
+                      const std::variant<Vector3d, RigidTransformd>& pose) {
+        if (render_engine != nullptr) {
+          // Every geometry gets a small rotation around its vertical axis; we
+          // want to make sure rotation is properly accounted for.
+          const RotationMatrixd R_WG = RotationMatrixd::MakeZRotation(M_PI / 6);
+          const RigidTransformd X_WG =
+              std::holds_alternative<Vector3d>(pose)
+                  ? RigidTransformd(R_WG, std::get<0>(pose))
+                  : std::get<1>(pose);
+          render_engine->RegisterVisual(id, shape, properties, X_WG,
+                                        /* needs_update = */ false);
+        }
+      };
 
   int label_value = 0;
   // We want variety among render labels (to confirm that they all matter).
@@ -2146,36 +2132,28 @@ double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
     return material;
   };
 
-  // Every geometry gets a small rotation around its vertical axis; we want to
-  // make sure rotation is properly accounted for.
-
-  const RotationMatrixd R_WG = RotationMatrixd::MakeZRotation(M_PI / 6);
+  const double row1 = -0.3;
+  const double row2 = 0;
+  const double row3 = 0.3;
 
   double x = 0;
   const Box box(0.1, 0.075, 0.05);
-  engine.RegisterVisual(GeometryId::get_new_id(), box,
-                        diffuse_material(Rgba(1, 0.25, 0.25)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
-  engine.RegisterVisual(GeometryId::get_new_id(), box, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), box,
+                  diffuse_material(Rgba(1, 0.25, 0.25)), Vector3d{x, row1, 0});
+  register_visual(GeometryId::get_new_id(), box, texture_material(),
+                  Vector3d{x, row2, 0});
   PerceptionProperties scaled_texture_material(texture_material());
   scaled_texture_material.AddProperty("phong", "diffuse_scale",
                                       Vector2d{0.5, 0.5});
-  engine.RegisterVisual(GeometryId::get_new_id(), box, scaled_texture_material,
-                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), box, scaled_texture_material,
+                  Vector3d{x, row3, 0});
 
   x -= 0.15;
   const Capsule capsule(0.05, 0.1);
-  engine.RegisterVisual(GeometryId::get_new_id(), capsule,
-                        diffuse_material(Rgba(1, 1, 0.25)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
-  engine.RegisterVisual(GeometryId::get_new_id(), capsule, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), capsule,
+                  diffuse_material(Rgba(1, 1, 0.25)), Vector3d{x, row1, 0});
+  register_visual(GeometryId::get_new_id(), capsule, texture_material(),
+                  Vector3d{x, row2, 0});
 
   // Convex is treated the same as Mesh. We'll put a token convex shape in, but
   // do the rigorous testing on Mesh below.
@@ -2183,37 +2161,24 @@ double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
   const Convex convex(
       FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"),
       0.05);
-  engine.RegisterVisual(GeometryId::get_new_id(), convex,
-                        diffuse_material(Rgba(0.8, 0.25, 0.8)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), convex,
+                  diffuse_material(Rgba(0.8, 0.25, 0.8)), Vector3d{x, row1, 0});
 
   x -= 0.15;
   const Cylinder cylinder(0.05, 0.1);
-  engine.RegisterVisual(GeometryId::get_new_id(), cylinder,
-                        diffuse_material(Rgba(0.25, 1, 0.25)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
-  engine.RegisterVisual(GeometryId::get_new_id(), cylinder, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), cylinder,
+                  diffuse_material(Rgba(0.25, 1, 0.25)), Vector3d{x, row1, 0});
+  register_visual(GeometryId::get_new_id(), cylinder, texture_material(),
+                  Vector3d{x, row2, 0});
 
   x -= 0.15;
   const Ellipsoid ellipsoid(0.05, 0.025, 0.0375);
-  engine.RegisterVisual(GeometryId::get_new_id(), ellipsoid,
-                        diffuse_material(Rgba(0.25, 1, 1)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
-  engine.RegisterVisual(GeometryId::get_new_id(), ellipsoid, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), ellipsoid,
+                  diffuse_material(Rgba(0.25, 1, 1)), Vector3d{x, row1, 0});
+  register_visual(GeometryId::get_new_id(), ellipsoid, texture_material(),
+                  Vector3d{x, row2, 0});
 
-  // HalfSpace - no textured version; it doesn't support textures.
-  const HalfSpace half_space;
-  engine.RegisterVisual(GeometryId::get_new_id(), half_space,
-                        diffuse_material(Rgba(0.5, 0.25, 0.5)),
-                        RigidTransformd(R_WG, Vector3d{0, 0, -0.25}),
-                        /* needs_update = */ false);
+  // See below for half space.
 
   x -= 0.15;
   // This mesh has materials (box_checkered.obj or fully_textured_pyramid.gltf).
@@ -2221,49 +2186,72 @@ double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
   // to confirm that, at the cost of spewing warnings.
   const Mesh mesh1(
       FindResourceOrThrow(
-          gltf_mesh
+          config.gltf_mesh
               ? "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"
               : "drake/geometry/render/test/meshes/box_checkered.obj"),
       0.05);
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh1,
-                        diffuse_material(Rgba(0.25, 1, 0.25)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh1,
+                  diffuse_material(Rgba(0.25, 1, 0.25)), Vector3d{x, row1, 0});
 
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh1, minimum_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh1, minimum_material(),
+                  Vector3d{x, row2, 0});
 
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh1, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh1, texture_material(),
+                  Vector3d{x, row3, 0});
 
   x -= 0.15;
   const Mesh mesh2(
       FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"),
       0.05);
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh2,
-                        diffuse_material(Rgba(0.25, 1, 0.25)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh2,
+                  diffuse_material(Rgba(0.25, 1, 0.25)), Vector3d{x, row1, 0});
 
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh2, minimum_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh2, minimum_material(),
+                  Vector3d{x, row2, 0});
 
-  engine.RegisterVisual(GeometryId::get_new_id(), mesh2, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), mesh2, texture_material(),
+                  Vector3d{x, row3, 0});
 
   x -= 0.15;
   const Sphere sphere(0.05);
-  engine.RegisterVisual(GeometryId::get_new_id(), sphere,
-                        diffuse_material(Rgba(0.25, 0.25, 1)),
-                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
-                        /* needs_update = */ false);
-  engine.RegisterVisual(GeometryId::get_new_id(), sphere, texture_material(),
-                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
-                        /* needs_update = */ false);
+  register_visual(GeometryId::get_new_id(), sphere,
+                  diffuse_material(Rgba(0.25, 0.25, 1)), Vector3d{x, row1, 0});
+  register_visual(GeometryId::get_new_id(), sphere, texture_material(),
+                  Vector3d{x, row2, 0});
+
+  // Include a transparent object. We should see through it to another box.
+  // With shadows, it should receive but not cast shadows.
+  {
+    const double mid_x = x * 0.5;
+    const Box slab(0.2, 0.2, 0.025);
+    register_visual(GeometryId::get_new_id(), slab,
+                    diffuse_material(Rgba(0.8, 0.5, 0.5)),
+                    RigidTransformd(Vector3d(mid_x + 0.05, row3, 0.1)));
+    // Just a little transparent means it won't cast or receive shadows.
+    register_visual(GeometryId::get_new_id(), slab,
+                    diffuse_material(Rgba(0.5, 0.8, 0.5, 0.5)),
+                    RigidTransformd(Vector3d(mid_x + 0.1, row3 + 0.05, 0.2)));
+    register_visual(GeometryId::get_new_id(), slab,
+                    diffuse_material(Rgba(0.5, 0.5, 0.8)),
+                    RigidTransformd(Vector3d(mid_x + 0.15, row3 + 0.1, 0.3)));
+  }
+
+  // We've deferred the ground plane until after everything else has been
+  // placed so that when we use a box instead of a half space, we can limit its
+  // size by centering it on the rows.
+  const Rgba ground_color(0.5, 0.25, 0.5);
+  if (config.no_half_space) {
+    const Box ground(-3 * x, -3 * x, 1.0);
+    register_visual(GeometryId::get_new_id(), ground,
+                    diffuse_material(ground_color),
+                    RigidTransformd(Vector3d{0.5 * x, 0, -0.5 - 0.2}));
+  } else {
+    // HalfSpace - no textured version; it doesn't support textures.
+    const HalfSpace half_space;
+    register_visual(GeometryId::get_new_id(), half_space,
+                    diffuse_material(ground_color), Vector3d{0, 0, -0.2});
+  }
+
   return x;
 }
 
@@ -2285,7 +2273,7 @@ double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
 //                    we're also only *testing* the color-encoded depth as well.
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const std::string& ref_filename,
-                   double tolerance) {
+                   double tolerance, std::string_view log_suffix = {}) {
   // The type we save to disk and compare the bytes of; may not be the same as
   // the input image type.
   using CompareType =
@@ -2304,9 +2292,9 @@ void CompareImages(const ImageType& test_image, const std::string& ref_filename,
   const std::filesystem::path ref_path = FindResourceOrThrow(ref_filename);
   if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
     const std::filesystem::path out_dir(dir);
-    ImageIo{}.Save(
-        compare_image,
-        out_dir / fmt::format("{}_test.png", ref_path.stem().string()));
+    ImageIo{}.Save(compare_image,
+                   out_dir / fmt::format("{}{}_test.png",
+                                         ref_path.stem().string(), log_suffix));
   }
 
   CompareType expected_image;
@@ -2342,12 +2330,24 @@ void CompareImages(const ImageType& test_image, const std::string& ref_filename,
             kConformity);
 }
 
+// Given lights measured and expressed in World, re-expresses them in Camera.
+vector<LightParameter> TransformLightsToCamera(
+    const vector<LightParameter>& lights_W, const RigidTransformd& X_WC) {
+  const RigidTransformd X_CW = X_WC.inverse();
+  vector<LightParameter> lights_C(lights_W);
+  for (LightParameter& light : lights_C) {
+    light.position = X_CW * light.position;
+    light.direction = X_CW.rotation() * light.direction;
+    light.frame = "camera";
+  }
+  return lights_C;
+}
+
 }  // namespace
 
 /* TODO(SeanCurtis-TRI) Figure out how to roll some of the other tests above
  into these single-image renderings, including:
 
-   - Transparency
    - glTF models (and their implicit affect of promoting other materials to PBR)
    - Multi-material meshes
    - The light tests.
@@ -2408,78 +2408,100 @@ TEST_F(RenderEngineVtkTest, WholeImageDefaultParams) {
 // Like WholeImageDefaultParams, except we use non-default render engine
 // parameters to detect differences.
 TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
-  const std::string hdr_path =
-      FindResourceOrThrow("drake/geometry/test/env_256_six_color_room.hdr");
-  const RenderEngineVtkParams params{
-      .default_diffuse = Eigen::Vector4d(0.1, 0.2, 0.4, 1.0),
-      .default_clear_color = Eigen::Vector3d(0.25, 0.25, 0.25),
-      .lights = {{.type = "point",
-                  .color = Rgba(1.0, 0.75, 0.75),
-                  .attenuation_values = {0, 0, 1},
-                  .position = Eigen::Vector3d(0, 0, 0.3),
-                  .frame = "world",
-                  .intensity = 0.5},
-                 {.type = "spot",
-                  .color = Rgba(0.75, 1.0, 0.75),
-                  .position = Eigen::Vector3d(0, -0.1, 2),
-                  .frame = "world",
-                  .intensity = 1,
-                  .direction = Eigen::Vector3d(-0.5, 0, -1),
-                  .cone_angle = 10},
-                 {.type = "directional",  // Rim light highlight the tops.
-                  .color = Rgba(1, 1, 1),
-                  .frame = "camera",
-                  .intensity = 10,
-                  // Remember, +Cy points *down* in the image and -Cz points
-                  // into the camera.
-                  .direction = Eigen::Vector3d(0, 1, -1)}},
-      .environment_map = {
-          // Note: The ground plane covers the full background, we won't be
-          // able to see the skybox.
-          EnvironmentMap{.texture = EquirectangularMap{.path = hdr_path}}}};
-  RenderEngineVtk engine(params);
-
-  // We'll use the same camera as the default camera for the tests, but shrink
-  // the image size so they're not as big in the repository.
-  const int w = 480;
-  const int h = 360;
-  const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
-  const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
-  const DepthRenderCamera camera(
-      {"unused", intrinsics, depth_camera_.core().clipping(),
-       depth_camera_.core().sensor_pose_in_camera_body()},
-      depth_camera_.depth_range());
-
-  const double last_x = AddShapeRows(&engine, /* gltf_mesh = */ true);
-  // Now make the rendering.
-  // The camera is above the Wz = 0 plane, looking generally down and in the
-  // +Wy direction (across the rows of shapes).
+  // We need to determine the camera position up front, so we can transform
+  // world-frame light definitions into the camera frame. We can determine the
+  // extent of added shapes by omitting the render engine and getting the
+  // expected result of actually registering geometry.
+  const double last_x =
+      AddShapeRows(nullptr, {.gltf_mesh = true, .no_half_space = true});
+  // The camera is above the Wz plane, on the +Wz side of the x-y plane, looking
+  // down and across the x-y plane (looking across the rows of shapes).
   const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
                              Vector3d(last_x / 2, -0.75, 1.1));
-  engine.UpdateViewpoint(X_WR);
 
-  ImageRgba8U color(w, h);
-  ImageDepth32F depth(w, h);
-  ImageLabel16I label(w, h);
-  this->Render(&engine, &camera, &color, &depth, &label);
+  const std::string hdr_path =
+      FindResourceOrThrow("drake/geometry/test/env_256_six_color_room.hdr");
+  vector<LightParameter> lights_W{{.type = "point",
+                                   .color = Rgba(1.0, 0.75, 0.75),
+                                   .attenuation_values = {0, 0, 1},
+                                   .position = Vector3d(0, 0, 0.3),
+                                   .frame = "world",
+                                   .intensity = 0.5},
+                                  {.type = "spot",
+                                   .color = Rgba(0.75, 1.0, 0.75),
+                                   .position = Vector3d(0, -0.1, 2),
+                                   .frame = "world",
+                                   .intensity = 1,
+                                   .direction = Vector3d(-0.5, 0, -1),
+                                   .cone_angle = 10},
+                                  {.type = "directional",
+                                   .color = Rgba(1, 1, 1),
+                                   .frame = "world",
+                                   .intensity = 1,
+                                   .direction = Vector3d(0.02, -0.05, -1)}};
+  // We should get the same images whether the lights are expressed in the
+  // world frame or the camera frame.
+  // TODO(SeanCurtis-TRI): When we can edit the lights after instantiation,
+  // simplify this so we don't re-instantiate the engine.
+  for (const vector<LightParameter>& lights :
+       {lights_W, TransformLightsToCamera(lights_W, X_WR)}) {
+    const RenderEngineVtkParams params{
+        .default_diffuse = Eigen::Vector4d(0.1, 0.2, 0.4, 1.0),
+        .default_clear_color = Vector3d(0.25, 0.25, 0.25),
+        .lights = lights,
+        .environment_map = {EnvironmentMap{
+            // Note: The ground plane covers the full background, we won't be
+            // able to see the skybox.
+            .texture = EquirectangularMap{.path = hdr_path}}},
+        .exposure = 0.75,
+        .cast_shadows = true,
+        .shadow_map_size = 1024};
+    RenderEngineVtk engine(params);
 
-  {
-    SCOPED_TRACE("Color image");
-    CompareImages(color,
-                  "drake/geometry/render_vtk/test/whole_image_custom_color.png",
-                  /* tolerance = */ 2);
-  }
-  {
-    SCOPED_TRACE("Depth image");
-    CompareImages(depth,
-                  "drake/geometry/render_vtk/test/whole_image_custom_depth.png",
-                  /* tolerance = */ 2);
-  }
-  {
-    SCOPED_TRACE("Label image");
-    CompareImages(label,
-                  "drake/geometry/render_vtk/test/whole_image_custom_label.png",
-                  /* tolerance = */ 0);
+    // We'll use the same camera as the default camera for the tests, but shrink
+    // the image size so they're not as big in the repository.
+    const int w = 480;
+    const int h = 360;
+    const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+    const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+    const DepthRenderCamera camera(
+        {"unused", intrinsics, depth_camera_.core().clipping(),
+         depth_camera_.core().sensor_pose_in_camera_body()},
+        depth_camera_.depth_range());
+
+    // The value we used to define the camera pose better match.
+    DRAKE_DEMAND(AddShapeRows(&engine, {.gltf_mesh = true,
+                                        .no_half_space = true}) == last_x);
+
+    // Now make the rendering.
+    engine.UpdateViewpoint(X_WR);
+
+    ImageRgba8U color(w, h);
+    ImageDepth32F depth(w, h);
+    ImageLabel16I label(w, h);
+    this->Render(&engine, &camera, &color, &depth, &label);
+
+    {
+      SCOPED_TRACE(fmt::format("Color image - {}", lights[0].frame));
+      // We only need this for color, as neither depth nor label images are
+      // affected by shadows.
+      const std::string log_suffix = fmt::format("_{}", lights[0].frame);
+      CompareImages(
+          color, "drake/geometry/render_vtk/test/whole_image_custom_color.png",
+          /* tolerance = */ 2, log_suffix);
+    }
+    {
+      SCOPED_TRACE("Depth image");
+      CompareImages(
+          depth, "drake/geometry/render_vtk/test/whole_image_custom_depth.png",
+          /* tolerance = */ 2);
+    }
+    {
+      SCOPED_TRACE("Label image");
+      CompareImages(
+          label, "drake/geometry/render_vtk/test/whole_image_custom_label.png",
+          /* tolerance = */ 0);
+    }
   }
 }
 
