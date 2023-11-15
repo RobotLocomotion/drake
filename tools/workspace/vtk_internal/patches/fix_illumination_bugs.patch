@@ -3,10 +3,10 @@ them.
 
 1. The PBR illumination model didn't account for *non*-positional lights. It
    would always compute the direction to the light from fragment to light
-   *position*. But positional lights don't have a position to speak of. Instead,
-   it should simply be the negative of the light direction; that is the
+   *position*. But non-positional lights don't have a position to speak of.
+   Instead, it should simply be the negative of the light direction; that is the
    definition of the direction to the light source for directional lights.
-2. The fragment shader has text search-and-replace games in two locations.
+2. The fragment shader has text search-and-replace games in two locations:
    vtkOpenGLPolyDataMapper and vtkShadowMapPass. The former introduces the
    lighting calculations to define "radiance", the latter updates the "radiance"
    definition to account for shadows. This update depends on the shadow map
@@ -95,7 +95,7 @@ index 94f2a7f20f..5ec85bf6ec 100644
                        "      }\n"
                        "      else\n"
                        "      {\n"
-@@ -1292,8 +1269,16 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderLight(
+@@ -1292,8 +1269,14 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderLight(
                        "      }\n"
                        "    }\n"
                        "  }\n"
@@ -105,8 +105,6 @@ index 94f2a7f20f..5ec85bf6ec 100644
 +                      "  NdL = clamp(dot(N, L), 1e-5, 1.0);\n"
 +                      "  NdH = clamp(dot(N, H), 1e-5, 1.0);\n"
 +                      "  HdL = clamp(dot(H, L), 1e-5, 1.0);\n"
-+                      "  if (lightPositional" << i << " != 0) {\n"
-+                      "  }\n"
 +                      // Don't change this definition of radiance; vtkShadowMapPass
 +                      // uses it to inject shadows.
 +                      "  radiance = lightColor" << i << ";\n"
@@ -190,7 +188,7 @@ index db13f455d8..14528326c7 100644
 +  ///@{
 +  /**
 +   * Set/Get the exponential constant for the Exponential Shadow Maps. The
-+   * default value is that recommended by the authors of the Exponential
++   * default value is the value recommended by the authors of the Exponential
 +   * Shadow Map paper: 80. This represents the maximum practical value for
 +   * 32-bit floating point precision in the shadow map. Values that are too
 +   * small will lead to "light leaking" (where shadows get attenuated away from
