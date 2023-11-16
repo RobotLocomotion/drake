@@ -60,6 +60,7 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(output_delay));
     a->Visit(DRAKE_NVP(rgb));
     a->Visit(DRAKE_NVP(depth));
+    a->Visit(DRAKE_NVP(label));
     a->Visit(DRAKE_NVP(show_rgb));
     a->Visit(DRAKE_NVP(do_compress));
     a->Visit(DRAKE_NVP(lcm_bus));
@@ -403,9 +404,13 @@ struct CameraConfig {
   /** If true, depth images will be produced and published via LCM. */
   bool depth{false};
 
-  /** Controls whether the rendered RGB images are displayed (in a separate
-   window controlled by the thread in which the camera images are rendered).
-   Only applies to color images and depends on whether the RenderEngine instance
+  /** If true, label images will be produced and published via LCM. */
+  bool label{false};
+
+  /** Controls whether the rendered RGB and/or label images are displayed (in
+   separate windows controlled by the thread in which the camera images are
+   rendered). As both image types are rendered from `ColorRenderCamera`, it
+   applies to both of them and depends on whether the RenderEngine instance
    supports it. */
   bool show_rgb{false};
 
