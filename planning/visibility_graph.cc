@@ -139,14 +139,15 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
   // evaluations.
   std::vector<std::vector<int>> edges(num_points);
 
-  const auto edge_check_work = [&](const int thread_num, const int64_t i) {
+  const auto edge_check_work = [&](const int thread_num, const int64_t index) {
+    const int i = static_cast<int>(index);
     if (points_free[i] > 0) {
-      edges[i].push_back(static_cast<int>(i));
-      for (int64_t j = i + 1; j < num_points; ++j) {
+      edges[i].push_back(i);
+      for (int j = i + 1; j < num_points; ++j) {
         if (points_free[j] > 0 &&
             checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
                                            thread_num)) {
-          edges[i].push_back(static_cast<int>(j));
+          edges[i].push_back(j);
         }
       }
     }

@@ -568,13 +568,12 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
                       number_of_threads);
 
   const auto config_work = [&](const int thread_num, const int64_t index) {
-    collision_checks.at(static_cast<size_t>(index)) =
-        static_cast<uint8_t>(CheckConfigCollisionFree(
-            configs.at(static_cast<int64_t>(index)), thread_num));
+    collision_checks.at(index) =
+        CheckConfigCollisionFree(configs.at(index), thread_num);
   };
 
   StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                             static_cast<int64_t>(configs.size()), config_work,
+                             configs.size(), config_work,
                              ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
@@ -756,15 +755,14 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
                       number_of_threads);
 
   const auto edge_work = [&](const int thread_num, const int64_t index) {
-    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge =
-        edges.at(static_cast<size_t>(index));
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
 
-    collision_checks.at(static_cast<size_t>(index)) = static_cast<uint8_t>(
-        CheckEdgeCollisionFree(edge.first, edge.second, thread_num));
+    collision_checks.at(index) =
+        CheckEdgeCollisionFree(edge.first, edge.second, thread_num);
   };
 
   StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                             static_cast<int64_t>(edges.size()), edge_work,
+                             edges.size(), edge_work,
                              ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
@@ -860,15 +858,14 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
                       number_of_threads);
 
   const auto edge_work = [&](const int thread_num, const int64_t index) {
-    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge =
-        edges.at(static_cast<size_t>(index));
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
 
-    collision_checks.at(static_cast<size_t>(index)) =
+    collision_checks.at(index) =
         MeasureEdgeCollisionFree(edge.first, edge.second, thread_num);
   };
 
   StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                             static_cast<int64_t>(edges.size()), edge_work,
+                             edges.size(), edge_work,
                              ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
