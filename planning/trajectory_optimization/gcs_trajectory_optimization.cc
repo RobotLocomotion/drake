@@ -96,7 +96,7 @@ Subgraph::Subgraph(
 
   // Add Regions with time scaling set.
   Eigen::VectorXd this_edge_offset = Eigen::VectorXd::Zero(num_positions());
-  for (size_t i = 0; i < regions_.size(); ++i) {
+  for (int i = 0; i < ssize(regions_); ++i) {
     ConvexSets vertex_set;
     // Assign each control point to a separate set.
     const int num_points = order + 1;
@@ -114,6 +114,8 @@ Subgraph::Subgraph(
   r_trajectory_ =
       BezierCurve<double>(0, 1, MatrixXd::Zero(num_positions(), order + 1));
 
+  // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) = 0, via Ax =
+  // 0, A = [I, -I], x = [u_controls.col(order); v_controls.col(0)].
   Eigen::SparseMatrix<double> A(num_positions(), 2 * num_positions());
   std::vector<Eigen::Triplet<double>> tripletList;
   tripletList.reserve(2 * num_positions());
@@ -122,7 +124,7 @@ Subgraph::Subgraph(
     tripletList.push_back(Eigen::Triplet<double>(i, num_positions() + i, -1.0));
   }
   A.setFromTriplets(tripletList.begin(), tripletList.end());
-  for (size_t idx = 0; idx < edges_between_regions.size(); ++idx) {
+  for (int idx = 0; idx < ssize(edges_between_regions); ++idx) {
     // Add edge.
     Vertex* u = vertices_[edges_between_regions[idx].first];
     Vertex* v = vertices_[edges_between_regions[idx].second];
@@ -131,8 +133,12 @@ Subgraph::Subgraph(
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
-    if (edge_offsets.has_value() && !edge_offsets.value().empty()) {
-      this_edge_offset = edge_offsets.value()[idx];
+    if (edge_offsets.has_value()) {
+      // In this case, we instead enforce the constraint
+      // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
+      // -tau_uv.value(), via Ax = -edge_offsets.value()[idx], A = [I, -I],
+      // x = [u_controls.col(order); v_controls.col(0)].
+      this_edge_offset = -edge_offsets.value()[idx];
     }
     const auto path_continuity_constraint =
         std::make_shared<LinearEqualityConstraint>(A, this_edge_offset);
@@ -144,22 +150,20 @@ Subgraph::Subgraph(
 
 Subgraph::~Subgraph() = default;
 
-const std::pair<double, double> GcsTrajectoryOptimization::GetLowerUpperBound(
+const std::pair<double, double>
+GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension) const {
   DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
   MathematicalProgram prog;
-  VectorXDecisionVariable x =
-      prog.NewContinuousVariables(region.ambient_dimension());
   VectorXDecisionVariable y =
       prog.NewContinuousVariables(region.ambient_dimension());
   VectorXDecisionVariable z =
       prog.NewContinuousVariables(region.ambient_dimension());
-  prog.AddLinearConstraint(x == y - z);
   region.AddPointInSetConstraints(&prog, y);
   region.AddPointInSetConstraints(&prog, z);
   VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
   objective_vector[dimension] = 1;
-  prog.AddLinearCost(objective_vector, x);
+  prog.AddLinearCost(objective_vector.dot(y - z));
 
   auto result = Solve(prog);
   if (!result.is_success()) {
@@ -175,10 +179,10 @@ void Subgraph::RespectsConvexityRadius(
     const geometry::optimization::ConvexSets& regions) const {
   // For each dimension corresponding to an unbounded revolute joint, make sure
   // each region respects the convexity radius.
-  for (size_t i = 0; i < regions.size(); ++i) {
-    for (const size_t& j : continuous_joints()) {
+  for (int i = 0; i < ssize(regions); ++i) {
+    for (const int& j : continuous_joints()) {
       auto [min_value, max_value] =
-          traj_opt_.GetLowerUpperBound(*regions[i], j);
+          traj_opt_.GetMinimumAndMaximumValueAlongDimension(*regions[i], j);
       if (max_value - min_value >= M_PI) {
         // The set is wider than the convexity radius, and can't be used with
         // wraparound edges.
@@ -392,8 +396,8 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
           A, VectorXd::Zero(num_positions()));
 
   // TODO(wrangelvid) this can be parallelized.
-  for (int i = 0; i < from_subgraph.size(); ++i) {
-    for (int j = 0; j < to_subgraph.size(); ++j) {
+  for (int i = 0; i < ssize(from_subgraph); ++i) {
+    for (int j = 0; j < ssize(to_subgraph); ++j) {
       if (from_subgraph.regions()[i]->IntersectsWith(
               *to_subgraph.regions()[j])) {
         if (subspace != nullptr) {
@@ -634,15 +638,26 @@ symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
 }
 
 GcsTrajectoryOptimization::GcsTrajectoryOptimization(
-    int num_positions, const std::vector<size_t>& continuous_joints)
+    int num_positions, const std::vector<int>& continuous_joints)
     : num_positions_(num_positions), continuous_joints_(continuous_joints) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
-  for (size_t i = 0; i < continuous_joints_.size(); ++i) {
+  for (int i = 0; i < ssize(continuous_joints_); ++i) {
     // Make sure the unbounded revolute joints point to valid indices.
-    DRAKE_THROW_UNLESS(continuous_joints_[i] < size_t(num_positions));
+    DRAKE_THROW_UNLESS(continuous_joints_[i] < num_positions);
+    if (continuous_joints_[i] >= num_positions) {
+      throw std::runtime_error(
+          fmt::format("Each joint index in continuous_joints must be strictly "
+                      "less than num_positions. Joint index {} violates this, "
+                      "as num_positions is {}.",
+                      i, num_positions));
+    }
   }
-  std::unordered_set<size_t> comparison(continuous_joints_.begin(),
-                                        continuous_joints_.end());
+  std::unordered_set<int> comparison(continuous_joints_.begin(),
+                                     continuous_joints_.end());
+  if (comparison.size() != continuous_joints_.size()) {
+    throw std::runtime_error(
+        fmt::format("continuous_joints must not contain duplicate entries."));
+  }
   DRAKE_THROW_UNLESS(comparison.size() == continuous_joints_.size());
 }
 
@@ -693,46 +708,65 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 int order, double h_min,
                                                 double h_max,
                                                 std::string name) {
+  // TODO(wrangelvid): This is O(n^2) and can be improved.
   DRAKE_DEMAND(regions.size() > 0);
   const int dimension = regions[0]->ambient_dimension();
 
   std::vector<std::pair<int, int>> edges_between_regions;
-  std::vector<std::vector<std::pair<double, double>>> region_lower_upper_bounds;
-  for (size_t i = 0; i < regions.size(); ++i) {
-    region_lower_upper_bounds.emplace_back(
+  std::vector<std::vector<std::pair<double, double>>>
+      region_minimum_and_maximum_values;
+  for (int i = 0; i < ssize(regions); ++i) {
+    region_minimum_and_maximum_values.emplace_back(
         std::vector<std::pair<double, double>>());
-    for (const size_t& k : continuous_joints()) {
-      region_lower_upper_bounds[i].emplace_back(
-          GetLowerUpperBound(*regions[i], k));
+    for (const int& k : continuous_joints()) {
+      region_minimum_and_maximum_values[i].emplace_back(
+          GetMinimumAndMaximumValueAlongDimension(*regions[i], k));
     }
   }
   std::vector<VectorXd> edge_offsets;
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
-  for (size_t i = 0; i < regions.size(); ++i) {
-    for (size_t j = i + 1; j < regions.size(); ++j) {
+  for (int i = 0; i < ssize(regions); ++i) {
+    for (int j = i + 1; j < ssize(regions); ++j) {
       offset.setZero();
 
-      // First, we compute what the offset would be if the sets were to overlap.
-      for (const size_t& k : continuous_joints()) {
-        if (region_lower_upper_bounds[j][k].first <
-            region_lower_upper_bounds[i][k].first) {
-          offset[k] = 2 * M_PI *
-                      static_cast<int>((region_lower_upper_bounds[i][k].second -
-                                        region_lower_upper_bounds[j][k].first) /
-                                       (2 * M_PI));
+      // First, we compute what the offset that should be applied to regions[i]
+      // to potentially make it overlap with regions[j].
+      for (const int& k : continuous_joints()) {
+        if (region_minimum_and_maximum_values[i][k].first <
+            region_minimum_and_maximum_values[j][k].first) {
+          // In this case, the minimum value of regions[i] along dimension k is
+          // smaller than the minimum value of regions[j] along dimension k, so
+          // we must translate by a positive amount. By the convexity radius
+          // property (which has already been checked), we know that the width
+          // of each set is strictly less than π. So we need to translate
+          // regions[i] by some multiple of 2π such that the difference between
+          // the maximum value in regions[j] and the minimum value in regions[i]
+          // is less than 2π. This is computed by taking that difference,
+          // dividing by 2π, and truncating.
+          offset[k] =
+              2 * M_PI *
+              static_cast<int>((region_minimum_and_maximum_values[j][k].second -
+                                region_minimum_and_maximum_values[i][k].first) /
+                               (2 * M_PI));
         } else {
-          offset[k] = -2 * M_PI *
-                      static_cast<int>((region_lower_upper_bounds[j][k].second -
-                                        region_lower_upper_bounds[i][k].first) /
-                                       (2 * M_PI));
+          // In this case, the minimum value of regions[j] along dimension k is
+          // smaller than the minimum value of regions[i] along dimension k. We
+          // do the same thing as above, but flip the order of the sets. As a
+          // result, we also flip the sign of the resulting translation.
+          offset[k] =
+              -2 * M_PI *
+              static_cast<int>((region_minimum_and_maximum_values[i][k].second -
+                                region_minimum_and_maximum_values[j][k].first) /
+                               (2 * M_PI));
         }
       }
 
-      // Now that we know the offset, we actually check if the sets intersect.
+      // Now that we know the offset that is for each dimension, we actually
+      // check if the sets intersect.
       MathematicalProgram prog;
       VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
       VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-      prog.AddLinearConstraint(x - y == offset);
+      prog.AddLinearConstraint(x + offset == y);
       regions[i]->AddPointInSetConstraints(&prog, x);
       regions[j]->AddPointInSetConstraints(&prog, y);
       const auto result = Solve(prog);
