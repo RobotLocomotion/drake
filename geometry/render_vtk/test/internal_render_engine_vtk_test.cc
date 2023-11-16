@@ -578,194 +578,6 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
   }
 }
 
-// Tests an image with *only* terrain (perpendicular to the camera's forward
-// direction) -- no use of "inlier" or "outlier" pixel locations.
-TEST_F(RenderEngineVtkTest, TerrainTest) {
-  Init(X_WC_, true);
-  const Vector3d p_WR = X_WC_.translation();
-
-  // At several different distances.
-  for (const float depth : {1.f, 2.f, 3.f, 4.f, 4.9999f}) {
-    X_WC_.set_translation({p_WR(0), p_WR(1), depth});
-    renderer_->UpdateViewpoint(X_WC_);
-    Render();
-    SCOPED_TRACE(fmt::format("Valid depth return: {}", depth));
-    VerifyUniformColor(kTerrainColor);
-    VerifyUniformLabel(RenderLabel::kDontCare);
-    VerifyUniformDepth(depth);
-  }
-
-  // Closer than kZNear.
-  X_WC_.set_translation({p_WR(0), p_WR(1), kZNear - 1e-5});
-  renderer_->UpdateViewpoint(X_WC_);
-  Render();
-  SCOPED_TRACE("Closer than near");
-  VerifyUniformColor(kTerrainColor);
-  VerifyUniformLabel(RenderLabel::kDontCare);
-  VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooClose);
-
-  // Farther than kZFar.
-  X_WC_.set_translation({p_WR(0), p_WR(1), kZFar + 1e-3});
-  renderer_->UpdateViewpoint(X_WC_);
-  Render();
-  SCOPED_TRACE("Farther than far");
-  VerifyUniformColor(kTerrainColor);
-  VerifyUniformLabel(RenderLabel::kDontCare);
-  VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooFar);
-}
-
-// Creates a terrain and then positions the camera such that a horizon between
-// terrain and sky appears -- no use of "inlier" or "outlier" pixel locations.
-TEST_F(RenderEngineVtkTest, HorizonTest) {
-  // Camera at the origin, pointing in a direction parallel to the ground.
-  RigidTransformd X_WR{RotationMatrixd{AngleAxisd(-M_PI_2, Vector3d::UnitX()) *
-                                       AngleAxisd(M_PI_2, Vector3d::UnitY())}};
-  Init(X_WR, true);
-
-  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
-  const auto& intrinsics = camera.core().intrinsics();
-  // Returns y in [0, camera.height), index of horizon location in image
-  // coordinate system under several assumptions:
-  //   - the ground plane is not clipped by kClippingPlaneFar,
-  //   - camera is located above the ground (z > 0).
-  //   - the ground is a square 100m on a side, centered on world origin.
-  //   - camera is located above world origin with a view direction parallel to
-  //     the ground (such that the horizon is a horizontal line).
-  auto CalcHorizon = [intrinsics](double z) {
-    const double kTerrainHalfSize = 50.;
-    const double kFocalLength =
-        intrinsics.height() * 0.5 / std::tan(0.5 * intrinsics.fov_y());
-    // We assume the horizon is *below* the middle of the screen. So, we compute
-    // the number of pixels below the screen center the horizon must lie, and
-    // then add half screen height to that value to get the number of rows
-    // from the top row of the image.
-    return 0.5 * intrinsics.height() + z / kTerrainHalfSize * kFocalLength;
-  };
-
-  // Verifies v index of horizon at three different camera heights.
-  const Vector3d p_WR = X_WR.translation();
-  for (const double z : {2., 1., 0.5}) {
-    X_WR.set_translation({p_WR(0), p_WR(1), z});
-    renderer_->UpdateViewpoint(X_WR);
-    ImageRgba8U color(intrinsics.width(), intrinsics.height());
-    renderer_->RenderColorImage(camera, &color);
-
-    int actual_horizon{0};
-    // This test is looking for the *first* row that isn't exactly sky color.
-    // That implies it's starting its search *in the sky*. That implies that the
-    // top row is zero and the bottom row is height - 1.
-    for (int y = 0; y < intrinsics.height(); ++y) {
-      if ((kBgColor.r != color.at(0, y)[0]) ||
-          (kBgColor.g != color.at(0, y)[1]) ||
-          (kBgColor.b != color.at(0, y)[2])) {
-        actual_horizon = y;
-        break;
-      }
-    }
-
-    const double expected_horizon = CalcHorizon(z);
-    ASSERT_NEAR(expected_horizon, actual_horizon, 1.001) << "z = " << z;
-  }
-}
-
-// TODO(SeanCurtis-TRI): Do texture tests for capsules and ellipsoids as well.
-
-// Performs the shape-centered-in-the-image test with a box.
-TEST_F(RenderEngineVtkTest, BoxTest) {
-  const auto& intrinsics = depth_camera_.core().intrinsics();
-  for (const bool use_texture : {false, true}) {
-    for (const double texture_scale : {1.0, 0.5}) {
-      const bool texture_scaled = texture_scale != 1;
-      // We only need to sample texture scale if we're *using* the texture.
-      if (!use_texture && texture_scaled) continue;
-      Init(X_WC_, true);
-
-      // Sets up a box.
-      // Use non-uniform dimensions. Can't make the dimensions too large,
-      // otherwise the box will extend towards the image boundaries, occluding
-      // the background (outlier) pixels which _will_ register the wrong color.
-      Box box(1.999, 0.55, 0.75);
-      expected_label_ = RenderLabel(1);
-      const GeometryId id = GeometryId::get_new_id();
-
-      // For the box, we'll use a special texture that will allow us to detect
-      // tiling. The default VTK cube source tiles the texture based on the
-      // size of the box. We confirm that doesn't actually happen. We test both
-      // the untiled default behavior and the ability to scale the texture.
-      PerceptionProperties props = simple_material();
-      if (use_texture) {
-        props.AddProperty("phong", "diffuse_map",
-                          FindResourceOrThrow(
-                              "drake/geometry/render/test/diag_gradient.png"));
-        props.UpdateProperty("phong", "diffuse", Rgba(1, 1, 1));
-        if (texture_scaled) {
-          props.AddProperty("phong", "diffuse_scale",
-                            Vector2d{texture_scale, texture_scale});
-        }
-      }
-      renderer_->RegisterVisual(id, box, props, RigidTransformd::Identity(),
-                                true /* needs update */);
-      // We want to position the box so that one corner of the box exactly
-      // covers the pixel used for the "inlier test" (w/2, h/2). We can't put
-      // the corner at (0, 0, z) (for some depth z) because pixel (w/2, h/2)
-      // isn't *centered* on the world origin. We actually want the corner to be
-      // half a pixel away from the origin at (px/2, py/2, z), where px and py
-      // are the measures of a pixel in meters at the expected depth of the
-      // box's leading face.
-      // Because we have a radially symmetric lens, px = py and we can compute
-      // that measure by with simple trigonometry.
-      const double pixel_size = 4 * expected_object_depth_ *
-                                tan(intrinsics.fov_y() / 2.0) /
-                                intrinsics.height();
-      RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
-                           Vector3d{(-box.width() + pixel_size) * 0.5,
-                                    (-box.depth() + pixel_size) * 0.5, 0.625}};
-      renderer_->UpdatePoses(
-          unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-
-      if (texture_scaled) {
-        // If we've scaled the texture:
-        //   1. use_texture is enabled.
-        //   2. The color isn't the ideal kTextureColor, because we're somewhere
-        //      else in the gradient texture.
-        // The gradient texture is crafted such that it has the same texture
-        // color as box.png in the corner positioned at the center of the image.
-        // When we scale the image differently, we'll radically change the
-        // color at that same corner.
-
-        expected_color_ = TestColor(130, 119, 16, 255);
-        // Quick proof that we're testing for a different color -- we're drawing
-        // the red channel from our expected color.
-        ASSERT_NE(kTextureColor.r, expected_color_.r);
-      } else {
-        // Otherwise the expected is simply the texture color of box.png.
-        expected_color_ = use_texture ? kTextureColor : default_color_;
-      }
-
-      PerformCenterShapeTest(
-          renderer_.get(),
-          fmt::format("Box test - {}",
-                      use_texture ? (texture_scaled ? "scaled texture"
-                                                    : "unscaled texture")
-                                  : "diffuse color")
-              .c_str());
-    }
-  }
-}
-
-// Performs the shape-centered-in-the-image test with a sphere.
-TEST_F(RenderEngineVtkTest, SphereTest) {
-  for (const bool use_texture : {false, true}) {
-    Init(X_WC_, true);
-    PopulateSphereTest(renderer_.get(), use_texture);
-    expected_color_ = use_texture ? kTextureColor : default_color_;
-    PerformCenterShapeTest(
-        renderer_.get(),
-        fmt::format("Sphere test {}", use_texture ? "textured" : "rgba")
-            .c_str());
-  }
-}
-
 // Performs the shape-centered-in-the-image test with a sphere.
 TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
   RenderEngineVtk renderer;
@@ -807,159 +619,6 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
               CompareColor(expect_quad, color, inlier));
 }
 
-// Performs the shape-centered-in-the-image test with a capsule.
-TEST_F(RenderEngineVtkTest, CapsuleTest) {
-  for (const bool use_texture : {false, true}) {
-    Init(X_WC_, true);
-
-    // Sets up a capsule.
-    const double radius = 0.15;
-    const double length = 1.2;
-    Capsule capsule(radius, length);
-    expected_label_ = RenderLabel(2);
-    const GeometryId id = GeometryId::get_new_id();
-    renderer_->RegisterVisual(id, capsule, simple_material(use_texture),
-                              RigidTransformd::Identity(),
-                              true /* needs update */);
-    // Position the top of the capsule to be 1 m above the terrain. Since the
-    // middle of the capsule is positioned at the origin 0, the top of the
-    // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.15 =
-    // 0.75. To reach a total of 1, we need to offset it by an additional 0.25.
-    RigidTransformd X_WV{Vector3d{0, 0, 0.25}};
-    renderer_->UpdatePoses(
-        unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-
-    expected_color_ = use_texture ? kTextureColor : default_color_;
-    PerformCenterShapeTest(renderer_.get(), "Capsule test");
-  }
-}
-
-// Performs a test with a capsule centered in the image but rotated
-// perpendicularly such that the length of the capsule can be seen in the
-// camera view (as opposed to a top-down view of its spherical side).
-// |          ●●
-// |         ●  ●
-// |        ●    ●
-// |________●____●__________
-// |        ●    ●
-// |        ●    ●
-// |         ●  ●
-// |          ●●
-TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
-  Init(X_WC_, true);
-
-  // Sets up a capsule.
-  const double radius = 0.15;
-  const double length = 1.2;
-  Capsule capsule(radius, length);
-  expected_label_ = RenderLabel(2);
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, capsule, simple_material(),
-                            RigidTransformd::Identity(),
-                            true /* needs update */);
-
-  // Position the capsule so that it lies along the x-axis where the highest
-  // point on the barrel is at z = 1. Capsules are by default z-axis aligned
-  // so we need to rotate it by 90 degrees. Since the radius of the capsule is
-  // 0.15, we need to shift it by an additional 0.85 along the z-axis to reach
-  // a total of 1.
-  RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
-                       Vector3d{0, 0, 0.85}};
-  renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-
-  Render(renderer_.get());
-
-  const char* name = "Capsule rotated test";
-  VerifyOutliers(*renderer_, depth_camera_, name);
-
-  // Verifies the inliers towards the ends of the capsule and ensures its
-  // length attribute is respected as opposed to just its radius. This
-  // distinguishes it from other shape tests, such as a sphere.
-  const ScreenCoord inlier = GetInlier(depth_camera_.core().intrinsics());
-  const int offsets[2] = {kHeight / 4, -kHeight / 4};
-  const int x = inlier.x;
-  for (const int& offset : offsets) {
-    const int y = inlier.y + offset;
-    const ScreenCoord offset_inlier = {x, y};
-    EXPECT_TRUE(CompareColor(expected_color_, color_, offset_inlier))
-        << "Color at: " << offset_inlier << " for test: " << name;
-    EXPECT_TRUE(IsExpectedDepth(depth_, offset_inlier, expected_object_depth_,
-                                kDepthTolerance))
-        << "Depth at: " << offset_inlier << " for test: " << name;
-    EXPECT_EQ(label_.at(x, y)[0], static_cast<int>(expected_label_))
-        << "Label at: " << offset_inlier << " for test: " << name;
-  }
-}
-
-// Performs the shape-centered-in-the-image test with a cylinder.
-TEST_F(RenderEngineVtkTest, CylinderTest) {
-  for (const bool use_texture : {false, true}) {
-    Init(X_WC_, true);
-
-    // Sets up a cylinder.
-    Cylinder cylinder(0.2, 1.2);
-    expected_label_ = RenderLabel(2);
-    const GeometryId id = GeometryId::get_new_id();
-    renderer_->RegisterVisual(id, cylinder, simple_material(use_texture),
-                              RigidTransformd::Identity(),
-                              true /* needs update */);
-    // Position the top of the cylinder to be 1 m above the terrain.
-    RigidTransformd X_WV{Vector3d{0, 0, 0.4}};
-    renderer_->UpdatePoses(
-        unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-
-    expected_color_ = use_texture ? kTextureColor : default_color_;
-    PerformCenterShapeTest(renderer_.get(), "Cylinder test");
-  }
-}
-
-// Performs the shape-centered-in-the-image test with an ellipsoid rotated
-// three different ways for confirming each extent axis.
-TEST_F(RenderEngineVtkTest, EllipsoidTest) {
-  Init(X_WC_, true);
-
-  // Sets up an ellipsoid.
-  const double a = 0.25;
-  const double b = 0.4;
-  const double c = 0.5;
-  Ellipsoid ellipsoid(a, b, c);
-  expected_label_ = RenderLabel(2);
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, ellipsoid, simple_material(),
-                            RigidTransformd::Identity(),
-                            true /* needs update */);
-
-  const double target_z = 1.0;
-
-  // By default the 'c' extent of the ellipsoid is aligned with the z-axis of
-  // the world. For the test we need to align the top of the ellipsoid to be at
-  // the target height above the terrain, so we move it by (target_z - c) units
-  // along the z-axis.
-  RigidTransformd X_WV{Vector3d{0, 0, target_z - c}};
-  renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: c extent");
-
-  // Rotate the ellipsoid so that the 'b' extent is aligned with the z-axis of
-  // the world, then move it by (target_z - b) units along the z-axis.
-  X_WV =
-      RigidTransformd{RotationMatrixd{AngleAxisd(-M_PI / 2, Vector3d::UnitX())},
-                      Vector3d{0, 0, target_z - b}};
-  renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: b extent");
-
-  // Rotate the ellipsoid so that the 'a' extent is aligned with the z-axis of
-  // the world, then move it by (target_z - a) units along the z-axis.
-  X_WV =
-      RigidTransformd{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
-                      Vector3d{0, 0, target_z - a}};
-  renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: a extent");
-}
-
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
 // be a box). The textured box will be one that is textured via its mtl library.
 // We use it to confirm that the render engine is properly _invoking_ the obj
@@ -999,92 +658,6 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
         renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
-}
-
-// There have been circumstances in which a glTF model, when rendered in depth
-// or label images, displays the wrong transform. This examines the alignment
-// of a glTF file in three images. The "wrong" transform entailed compounded
-// transforms -- extra scale, transform, and rotation. So, we make sure they're
-// all non-identity so we can detect if any of those quantities lead to a
-// different appearance.
-TEST_F(RenderEngineVtkTest, GltfColorVsDepth) {
-  // Position the pyramid at some arbitrary point in space with a small spin
-  // around its vertical axis (the scale is applied while registering).
-  const RigidTransformd X_WP{RotationMatrixd::MakeZRotation(M_PI / 6),
-                             Vector3d(1, -2, 3)};
-  // Offset the camera from the pyramid in the Wx direction, looking in the -Wx
-  // direction (with +Wz up).
-  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2, 0, M_PI / 2));
-  const RigidTransformd X_WC(R_WC, X_WP.translation() + Vector3d(3.5, 0, 0));
-  Init(X_WC);
-
-  // Write test outputs so we can inspect the images in case of failure.
-  auto log_image = [](const auto& image, std::string_view name) {
-    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
-      const std::filesystem::path out_dir(dir);
-      ImageIo{}.Save(image, out_dir / fmt::format("{}_test.png", name));
-    }
-  };
-
-  PerceptionProperties material;
-  // Pick a label that will be easily discernible in the saved image.
-  const RenderLabel label(255 * 15);
-  material.AddProperty("label", "id", label);
-  const GeometryId id = GeometryId::get_new_id();
-  const std::string filename = FindResourceOrThrow(
-      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
-  renderer_->RegisterVisual(id, Mesh(filename, 0.5), material, X_WP,
-                            false /* needs update */);
-  const int size = 64;
-  ImageRgba8U color_image(size, size);
-  const ColorRenderCamera color_camera(
-      {"unused", {size, size, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
-  renderer_->RenderColorImage(color_camera, &color_image);
-  log_image(color_image, "GltfColorVsDepth_color");
-
-  ImageDepth32F depth32_image(size, size);
-  // Simple depth range -- just make sure near and far encloses the pyramid.
-  const DepthRenderCamera depth_camera(color_camera.core(), {0.1, 10});
-  renderer_->RenderDepthImage(depth_camera, &depth32_image);
-  {
-    ColorizeDepthImage<double> colorizer;
-    ImageRgba8U color_depth(size, size);
-    colorizer.Calc(depth32_image, &color_depth);
-    log_image(color_depth, "GltfColorVsDepth_depth");
-  }
-
-  ImageLabel16I label_image(size, size);
-  renderer_->RenderLabelImage(color_camera, &label_image);
-  log_image(label_image, "GltfColorVsDepth_label");
-
-  // Everywhere the depth is finite, we should have the expected label value and
-  // a color that is *not* the background.
-  // Likewise, everywhere the label is the expected label, we should have a
-  // finite depth and non-background color.
-  // However, a non-background color does not imply finite depth nor expected
-  // label because of anti-aliasing between the pyramid and the background.
-  bool gltf_visible = false;
-  for (int r = 0; r < color_image.height(); ++r) {
-    for (int c = 0; c < color_image.width(); ++c) {
-      // Depth implies color and label.
-      if (*depth32_image.at(c, r) < std::numeric_limits<double>::infinity()) {
-        const TestColor color(color_image.at(c, r));
-        ASSERT_NE(color, kBgColor);
-        ASSERT_EQ(RenderLabel(*label_image.at(c, r)), label);
-        gltf_visible = true;
-      }
-      // Label implies color and depth.
-      if (*label_image.at(c, r) == label) {
-        const TestColor color(color_image.at(c, r));
-        ASSERT_NE(color, kBgColor);
-        ASSERT_NE(*depth32_image.at(c, r),
-                  std::numeric_limits<double>::infinity());
-        gltf_visible = true;
-      }
-    }
-  }
-  // The depth image wasn't all infinite values.
-  ASSERT_TRUE(gltf_visible);
 }
 
 // A simple regression test to make sure that we are supporting all of the
@@ -2522,6 +2095,388 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
                                 ImageTraits<PixelType::kDepth32F>::kTooClose,
                                 0.0));
+  }
+}
+
+namespace {
+
+// Adds rows of Shapes to the given `render_engine`. For each shape type,
+// where appropriate, exercises the Shape api and geometry properties to produce
+// various variations of how that shape *could* be rendered.
+// The rows start at x = 0 and extend in the -x direction.
+// @returns the x-value for the shape farthest from the origin (along Wx).
+double AddShapeRows(RenderEngineVtk* render_engine, bool gltf_mesh = false) {
+  RenderEngineVtk& engine = *render_engine;
+
+  int label_value = 0;
+  // We want variety among render labels (to confirm that they all matter).
+  // Each invocation of minimum_material creates a unique render label value.
+  // Changing the invocations will change the output label image.
+  auto minimum_material = [&label_value]() {
+    PerceptionProperties material;
+    // When viewing a label image in something like, gimp, we'd like to be
+    // able to distinguish different labels. However, when the 15 bits of value
+    // is compressed to 8 bits in the image viewer, values that only differ
+    // in the last 8 bits are indistinguishable from each other. So, we'll
+    // make sure that the labels differ in the higher bits. Shifting the
+    // counter 8 bits would suffice. But we want the values to *visually*
+    // differ, so, after the necessary 8 bits, we shift two more bits so that
+    // there is a bigger visual distance.
+    material.AddProperty("label", "id", RenderLabel(++label_value << 10));
+    return material;
+  };
+
+  auto diffuse_material = [&minimum_material](const Rgba& rgba) {
+    PerceptionProperties material(minimum_material());
+    material.AddProperty("phong", "diffuse", rgba);
+    return material;
+  };
+
+  PerceptionProperties texture_material(minimum_material());
+  texture_material.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+  texture_material.AddProperty(
+      "phong", "diffuse_map",
+      FindResourceOrThrow("drake/geometry/render/test/meshes/checker.png"));
+
+  // Every geometry gets a small rotation around its vertical axis; we want to
+  // make sure rotation is properly accounted for.
+
+  const RotationMatrixd R_WG = RotationMatrixd::MakeZRotation(M_PI / 6);
+
+  double x = 0;
+  const Box box(0.1, 0.075, 0.05);
+  engine.RegisterVisual(GeometryId::get_new_id(), box,
+                        diffuse_material(Rgba(1, 0.25, 0.25)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+  engine.RegisterVisual(GeometryId::get_new_id(), box, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+  PerceptionProperties scaled_texture_material(texture_material);
+  scaled_texture_material.AddProperty("phong", "diffuse_scale",
+                                      Vector2d{0.5, 0.5});
+  engine.RegisterVisual(GeometryId::get_new_id(), box, scaled_texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  const Capsule capsule(0.05, 0.1);
+  engine.RegisterVisual(GeometryId::get_new_id(), capsule,
+                        diffuse_material(Rgba(1, 1, 0.25)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+  engine.RegisterVisual(GeometryId::get_new_id(), capsule, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+
+  // Convex is treated the same as Mesh. We'll put a token convex shape in, but
+  // do the rigorous testing on Mesh below.
+  x -= 0.15;
+  const Convex convex(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"),
+      0.05);
+  engine.RegisterVisual(GeometryId::get_new_id(), convex,
+                        diffuse_material(Rgba(0.8, 0.25, 0.8)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  const Cylinder cylinder(0.05, 0.1);
+  engine.RegisterVisual(GeometryId::get_new_id(), cylinder,
+                        diffuse_material(Rgba(0.25, 1, 0.25)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+  engine.RegisterVisual(GeometryId::get_new_id(), cylinder, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  const Ellipsoid ellipsoid(0.05, 0.025, 0.0375);
+  engine.RegisterVisual(GeometryId::get_new_id(), ellipsoid,
+                        diffuse_material(Rgba(0.25, 1, 1)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+  engine.RegisterVisual(GeometryId::get_new_id(), ellipsoid, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+
+  // HalfSpace - no textured version; it doesn't support textures.
+  const HalfSpace half_space;
+  engine.RegisterVisual(GeometryId::get_new_id(), half_space,
+                        diffuse_material(Rgba(0.5, 0.25, 0.5)),
+                        RigidTransformd(R_WG, Vector3d{0, 0, -0.25}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  // This mesh has materials (box_checkered.obj or fully_textured_pyramid.gltf).
+  // Drake is supposed to ignore any further material specifications and we want
+  // to confirm that, at the cost of spewing warnings.
+  const Mesh mesh1(
+      FindResourceOrThrow(
+          gltf_mesh
+              ? "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"
+              : "drake/geometry/render/test/meshes/box_checkered.obj"),
+      0.05);
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh1,
+                        diffuse_material(Rgba(0.25, 1, 0.25)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh1, minimum_material(),
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh1, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  const Mesh mesh2(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"),
+      0.05);
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh2,
+                        diffuse_material(Rgba(0.25, 1, 0.25)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh2, minimum_material(),
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+
+  engine.RegisterVisual(GeometryId::get_new_id(), mesh2, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.5, 0}),
+                        /* needs_update = */ false);
+
+  x -= 0.15;
+  const Sphere sphere(0.05);
+  engine.RegisterVisual(GeometryId::get_new_id(), sphere,
+                        diffuse_material(Rgba(0.25, 0.25, 1)),
+                        RigidTransformd(R_WG, Vector3d{x, -0.25, 0}),
+                        /* needs_update = */ false);
+  engine.RegisterVisual(GeometryId::get_new_id(), sphere, texture_material,
+                        RigidTransformd(R_WG, Vector3d{x, 0.25, 0}),
+                        /* needs_update = */ false);
+  return x;
+}
+
+// Compares the test image against a reference image.
+//
+// The test image will be written to the test outputs (if defined) with the same
+// name as the reference file, but with "_test" appended to the filename. The
+// bytes of the image are compared to within the given tolerance.
+//
+// We want the referenced images to be meaningful to a human as well. So, we
+// adopt the following strategy:
+//
+//   1. color images: No extra action taken.
+//   2. label images: To view the 16-bit image in an 8-bit world, we use label
+//                    values that truncate nicely (see AddShapeRows()).
+//   3. depth images: To view the 32-bit depth image in an 8-bit world, we
+//                    color the depth via ColorizeDepthImage. We are not saving
+//                    the literal depth values to disk. By implication, it means
+//                    we're also only *testing* the color-encoded depth as well.
+template <typename ImageType>
+void CompareImages(const ImageType& test_image, const std::string& ref_filename,
+                   double tolerance) {
+  // The type we save to disk and compare the bytes of; may not be the same as
+  // the input image type.
+  using CompareType =
+      std::conditional_t<std::is_same_v<ImageType, ImageDepth32F>, ImageRgba8U,
+                         ImageType>;
+  CompareType compare_image;
+  if constexpr (std::is_same_v<ImageType, ImageDepth32F>) {
+    // Normalize the depth image so that the resulting image is interpretable
+    // by humans.
+    ColorizeDepthImage<double> colorizer;
+    colorizer.Calc(test_image, &compare_image);
+  } else {
+    compare_image = test_image;
+  }
+
+  const std::filesystem::path ref_path = FindResourceOrThrow(ref_filename);
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const std::filesystem::path out_dir(dir);
+    ImageIo{}.Save(
+        compare_image,
+        out_dir / fmt::format("{}_test.png", ref_path.stem().string()));
+  }
+
+  CompareType expected_image;
+  ASSERT_TRUE(systems::sensors::LoadImage(ref_path, &expected_image));
+
+  // Confirming image equivalence is tricky. We want to be sensitive to changes
+  // in code that might produce different images but, at the same time, write a
+  // test that will survive the vagaries of rendering in CI. To that end, we
+  // employ two thresholds:
+  //
+  //   - `tolerance`: allowed per-channel deviation.
+  //   - conformity: the fraction of channel values that must deviate less than
+  //                 `tolerance`.
+  //
+  // Tolerance is provided by each test, but the conformity is hard-coded to be
+  // a high value (99.5%). Essentially, each of the primitives added by
+  // AddShapeRows() fills about 0.5% of the final image. If we want to recognize
+  // when any of those shapes changes in some significant way, we need to fail
+  // if that number of pixels deviates.
+  using T = typename CompareType::T;
+  ASSERT_EQ(expected_image.size(), compare_image.size());
+  Eigen::Map<const VectorX<T>> data_expected(expected_image.at(0, 0),
+                                             expected_image.size());
+  Eigen::Map<const VectorX<T>> data_actual(compare_image.at(0, 0),
+                                           compare_image.size());
+  const auto differences = (data_expected.template cast<float>() -
+                            data_actual.template cast<float>())
+                               .array()
+                               .abs();
+  const int num_acceptable = (differences <= tolerance).count();
+  const double kConformity = 0.995;
+  EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()),
+            kConformity);
+}
+
+}  // namespace
+
+/* TODO(SeanCurtis-TRI) Figure out how to roll some of the other tests above
+ into these single-image renderings, including:
+
+   - Transparency
+   - glTF models (and their implicit affect of promoting other materials to PBR)
+   - Multi-material meshes
+   - The light tests.
+ */
+
+// Tests multiple rendering features of the render engine by creating one
+// "complex" scene and rendering it. It compares the rendered image to a
+// reference image. We render all the geometries as anchored, because we're
+// not testing the engine's ability to update state, but just testing the
+// render features -- textures, materials, lighting, etc.
+TEST_F(RenderEngineVtkTest, WholeImageDefaultParams) {
+  RenderEngineVtk engine;
+
+  // We'll use the same camera as the default camera for the tests, but shrink
+  // the image size so they're not as big in the repository.
+  const int w = 480;
+  const int h = 360;
+  const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+  const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+  const DepthRenderCamera camera(
+      {"unused", intrinsics, depth_camera_.core().clipping(),
+       depth_camera_.core().sensor_pose_in_camera_body()},
+      depth_camera_.depth_range());
+
+  const double last_x = AddShapeRows(&engine);
+  // Now make the rendering.
+  // The camera is above the Wz = 0 plane, looking generally down and in the
+  // +Wy direction (across the rows of shapes).
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(last_x / 2, -0.75, 1.1));
+  engine.UpdateViewpoint(X_WR);
+
+  ImageRgba8U color(w, h);
+  ImageDepth32F depth(w, h);
+  ImageLabel16I label(w, h);
+  this->Render(&engine, &camera, &color, &depth, &label);
+
+  {
+    SCOPED_TRACE("Color image");
+    CompareImages(
+        color, "drake/geometry/render_vtk/test/whole_image_default_color.png",
+        /* tolerance = */ 2);
+  }
+  {
+    SCOPED_TRACE("Depth image");
+    CompareImages(
+        depth, "drake/geometry/render_vtk/test/whole_image_default_depth.png",
+        /* tolerance = */ 2);
+  }
+  {
+    SCOPED_TRACE("Label image");
+    CompareImages(
+        label, "drake/geometry/render_vtk/test/whole_image_default_label.png",
+        /* tolerance = */ 0);
+  }
+}
+
+// Like WholeImageDefaultParams, except we use non-default render engine
+// parameters to detect differences.
+TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
+  const std::string hdr_path =
+      FindResourceOrThrow("drake/geometry/test/env_256_six_color_room.hdr");
+  const RenderEngineVtkParams params{
+      .default_diffuse = Eigen::Vector4d(0.1, 0.2, 0.4, 1.0),
+      .default_clear_color = Eigen::Vector3d(0.25, 0.25, 0.25),
+      .lights = {{.type = "point",
+                  .color = Rgba(1.0, 0.75, 0.75),
+                  .attenuation_values = {0, 0, 1},
+                  .position = Eigen::Vector3d(0, 0, 0.3),
+                  .frame = "world",
+                  .intensity = 0.5},
+                 {.type = "spot",
+                  .color = Rgba(0.75, 1.0, 0.75),
+                  .position = Eigen::Vector3d(0, -0.1, 2),
+                  .frame = "world",
+                  .intensity = 1,
+                  .direction = Eigen::Vector3d(-0.5, 0, -1).normalized(),
+                  .cone_angle = 10},
+                 {.type = "directional",  // Rim light highlight the tops.
+                  .color = Rgba(1, 1, 1),
+                  .frame = "camera",
+                  // TODO(SeanCurtis-TRI): The instantiation of this light shows
+                  // that things don't get angry. However, when the material is
+                  // PBR it appears that this camera doesn't work right. Instead
+                  // of rim light on the tops of each of the rounded primitives
+                  // (with intensity = 5), this is being treated as a headlight.
+                  // We need to to look into vtkOpenGLPolyDataMapper to see
+                  // what the cause of this might be.
+                  .intensity = 0,
+                  .direction = Eigen::Vector3d(0, -0.5, -1).normalized()}},
+      .environment_map = {
+          // Note: The ground plane covers the full background, we won't be
+          // able to see the skybox.
+          EnvironmentMap{.texture = EquirectangularMap{.path = hdr_path}}}};
+  RenderEngineVtk engine(params);
+
+  // We'll use the same camera as the default camera for the tests, but shrink
+  // the image size so they're not as big in the repository.
+  const int w = 480;
+  const int h = 360;
+  const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+  const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+  const DepthRenderCamera camera(
+      {"unused", intrinsics, depth_camera_.core().clipping(),
+       depth_camera_.core().sensor_pose_in_camera_body()},
+      depth_camera_.depth_range());
+
+  const double last_x = AddShapeRows(&engine, /* gltf_mesh = */ true);
+  // Now make the rendering.
+  // The camera is above the Wz = 0 plane, looking generally down and in the
+  // +Wy direction (across the rows of shapes).
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(last_x / 2, -0.75, 1.1));
+  engine.UpdateViewpoint(X_WR);
+
+  ImageRgba8U color(w, h);
+  ImageDepth32F depth(w, h);
+  ImageLabel16I label(w, h);
+  this->Render(&engine, &camera, &color, &depth, &label);
+
+  {
+    SCOPED_TRACE("Color image");
+    CompareImages(color,
+                  "drake/geometry/render_vtk/test/whole_image_custom_color.png",
+                  /* tolerance = */ 2);
+  }
+  {
+    SCOPED_TRACE("Depth image");
+    CompareImages(depth,
+                  "drake/geometry/render_vtk/test/whole_image_custom_depth.png",
+                  /* tolerance = */ 2);
+  }
+  {
+    SCOPED_TRACE("Label image");
+    CompareImages(label,
+                  "drake/geometry/render_vtk/test/whole_image_custom_label.png",
+                  /* tolerance = */ 0);
   }
 }
 
