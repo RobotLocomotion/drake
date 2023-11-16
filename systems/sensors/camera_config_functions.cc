@@ -192,7 +192,7 @@ void ApplyCameraConfig(const CameraConfig& config,
                        const MultibodyPlant<double>* plant,
                        SceneGraph<double>* scene_graph,
                        DrakeLcmInterface* lcm) {
-  if (!(config.rgb || config.depth)) {
+  if (!(config.rgb || config.depth || config.label)) {
     return;
   }
 
@@ -231,11 +231,12 @@ void ApplyCameraConfig(const CameraConfig& config,
     camera_sys = builder->AddSystem<RgbdSensorAsync>(
         scene_graph, frame_A, X_AB, config.fps, config.capture_offset,
         config.output_delay,
-        config.rgb ? std::optional<ColorRenderCamera>{color_camera}
-                   : std::nullopt,
+        (config.rgb || config.label)
+            ? std::optional<ColorRenderCamera>{color_camera}
+            : std::nullopt,
         config.depth ? std::optional<DepthRenderCamera>{depth_camera}
                      : std::nullopt,
-        /* render_label_image = */ false);
+        config.label);
     camera_sys->set_name(fmt::format("rgbd_sensor_{}", config.name));
     builder->Connect(scene_graph->get_query_output_port(),
                      camera_sys->get_input_port());
@@ -259,6 +260,7 @@ void ApplyCameraConfig(const CameraConfig& config,
       config.name, config.fps, lcm_publisher_offset,
       config.rgb ? &camera_sys->GetOutputPort("color_image") : nullptr,
       config.depth ? &camera_sys->GetOutputPort("depth_image_16u") : nullptr,
+      config.label ? &camera_sys->GetOutputPort("label_image") : nullptr,
       config.do_compress, builder, lcm);
 }
 
