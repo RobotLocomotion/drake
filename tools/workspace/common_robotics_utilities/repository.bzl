@@ -5,15 +5,15 @@ def common_robotics_utilities_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "calderpg/common_robotics_utilities",
+        repository = "ToyotaResearchInstitute/common_robotics_utilities",
         upgrade_advice = """
         When updating, ensure that any new unit tests are reflected in
         package.BUILD.bazel and BUILD.bazel in drake. Tests may have been
         updated in ToyotaResearchInstitute/common_robotics_utilities/test/ or
         ToyotaResearchInstitute/common_robotics_utilities/CMakeLists.txt.ros2
         """,
-        commit = "436fcdfe249872892dfe3f1a4050d7aa8b87ee3f",
-        sha256 = "dda4238fd1e52104ca2c583b4e2f2666e635ec449f9509f07eae8882cc082b73",  # noqa
+        commit = "d0700edefb72c2393f12ed3bbfbefdd01b02ce6f",
+        sha256 = "2cb9a292bb47ba20aa5a89a51199eac35485d8246b027bd1ccf4dac5d98c285b",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
