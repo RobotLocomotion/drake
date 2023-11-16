@@ -1725,9 +1725,12 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
   ok_to_feedthrough.insert(
       plant.get_generalized_acceleration_output_port().get_index());
-  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i)
+  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
     ok_to_feedthrough.insert(
         plant.get_generalized_acceleration_output_port(i).get_index());
+    ok_to_feedthrough.insert(
+        plant.get_net_actuation_output_port(i).get_index());
+  }
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
   if (plant.is_discrete()) {
