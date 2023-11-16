@@ -145,13 +145,11 @@ the main body of the document:
    7. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
       tag the release until all seven builds have succeeded.
-3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
-   sure that the nightly build git sha from the prior steps matches the
-   ``newest_commit`` whose changes are enumerated in the notes.  Some dates
-   are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-   them all. There is also a dummy date 2099-12-31 that should also be changed.
-   Also replace ``VERSION`` in the tarball name with the appropriate ``1.N.0``.
-   1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
+3. Update the release notes to have the ``YYYY-MM-DD`` we choose.
+   1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
+   2. Make sure that the nightly build git sha from the prior steps matches the
+      ``newest_commit`` whose changes are enumerated in the notes.
+   3. Update the github links within ``doc/_pages/from_binary.md`` to reflect
       the upcoming v1.N.0.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
 5. Wait for the wheel builds to complete, and then download release artifacts:
