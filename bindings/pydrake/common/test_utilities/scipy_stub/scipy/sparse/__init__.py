@@ -32,9 +32,13 @@ class csc_matrix:
                     value = dense[r, c]
                     if not value:
                         continue
-                    self.indices.append(len(self.data))
+                    self.indices.append(r)
                     self.data.append(value)
                 self.indptr.append(len(self.indices))
+
+        self.data = np.asarray(self.data)
+        self.indices = np.asarray(self.indices)
+        self.indptr = np.asarray(self.indptr)
 
         # To sanity-check our arguments, convert the data to triplets.
         self._triplets = []
