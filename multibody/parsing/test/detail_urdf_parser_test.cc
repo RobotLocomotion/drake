@@ -481,6 +481,45 @@ TEST_F(UrdfParserTest, MimicFloatingJoint) {
                            "single-dof joints.*"));
 }
 
+// Test that mimic tags in different model instances that refer to joints have
+// have colliding names with joints in other model instances don't produce an
+// error. See https://github.com/RobotLocomotion/drake/issues/20538.
+TEST_F(UrdfParserTest, MimicDifferentModelInstances) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0' multiplier='1' offset='0' />
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='b'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0' multiplier='1' offset='0' />
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_EQ(NumErrors(), 0);
+  EXPECT_EQ(NumWarnings(), 0);
+}
+
 TEST_F(UrdfParserTest, Material) {
   // Material parsing is tested fully elsewhere (see ParseMaterial()). This
   // test is just proof-of-life that top-level material stanzas are recognized.
