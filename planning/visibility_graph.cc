@@ -7,10 +7,9 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
-using common_robotics_utilities::parallelism::DynamicParallelForLoop;
+using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;
-using common_robotics_utilities::parallelism::StaticParallelForLoop;
-using common_robotics_utilities::parallelism::ThreadWorkRange;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 
 namespace drake {
 namespace planning {
@@ -127,43 +126,36 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
   // parallel evaluations.
   std::vector<uint8_t> points_free(num_points, 0x00);
 
-  const auto point_check_thread_work = [&](const ThreadWorkRange& work_range) {
-    const int thread_num = work_range.GetThreadNum();
-    for (int i = static_cast<int>(work_range.GetRangeStart());
-         i < static_cast<int>(work_range.GetRangeEnd()); ++i) {
-      points_free[i] = static_cast<uint8_t>(
-          checker.CheckConfigCollisionFree(points.col(i), thread_num));
-    }
+  const auto point_check_work = [&](const int thread_num, const int64_t i) {
+    points_free[i] = static_cast<uint8_t>(
+        checker.CheckConfigCollisionFree(points.col(i), thread_num));
   };
 
-  StaticParallelForLoop(DegreeOfParallelism(num_threads_to_use), 0, num_points,
-                        point_check_thread_work,
-                        ParallelForBackend::BEST_AVAILABLE);
+  StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+                             num_points, point_check_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   // Choose std::vector as a thread-safe data structure for the parallel
   // evaluations.
   std::vector<std::vector<int>> edges(num_points);
 
-  const auto edge_check_thread_work = [&](const ThreadWorkRange& work_range) {
-    const int thread_num = work_range.GetThreadNum();
-    for (int i = static_cast<int>(work_range.GetRangeStart());
-         i < static_cast<int>(work_range.GetRangeEnd()); ++i) {
-      if (points_free[i] > 0) {
-        edges[i].push_back(i);
-        for (int j = i + 1; j < num_points; ++j) {
-          if (points_free[j] > 0 &&
-              checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
-                                             thread_num)) {
-            edges[i].push_back(j);
-          }
+  const auto edge_check_work = [&](const int thread_num, const int64_t index) {
+    const int i = static_cast<int>(index);
+    if (points_free[i] > 0) {
+      edges[i].push_back(i);
+      for (int j = i + 1; j < num_points; ++j) {
+        if (points_free[j] > 0 &&
+            checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
+                                           thread_num)) {
+          edges[i].push_back(j);
         }
       }
     }
   };
 
-  DynamicParallelForLoop(DegreeOfParallelism(num_threads_to_use), 0, num_points,
-                         edge_check_thread_work,
-                         ParallelForBackend::BEST_AVAILABLE);
+  DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+                              num_points, edge_check_work,
+                              ParallelForBackend::BEST_AVAILABLE);
 
   // Convert edges into the SparseMatrix format, using a custom iterator to
   // avoid explicitly copying the data into a list of Eigen::Triplet.

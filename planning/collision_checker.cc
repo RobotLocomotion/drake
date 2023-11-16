@@ -27,8 +27,7 @@ namespace planning {
 using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::parallelism::ParallelForBackend;
-using common_robotics_utilities::parallelism::StaticParallelForLoop;
-using common_robotics_utilities::parallelism::ThreadWorkRange;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -568,21 +567,15 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   drake::log()->debug("CheckConfigsCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-  const auto thread_work = [&](const ThreadWorkRange& work_range) {
-    const int thread_num = work_range.GetThreadNum();
-    for (size_t index = static_cast<size_t>(work_range.GetRangeStart());
-         index < static_cast<size_t>(work_range.GetRangeEnd()); ++index) {
-      if (CheckConfigCollisionFree(configs.at(index), thread_num)) {
-        collision_checks.at(index) = 1;
-      } else {
-        collision_checks.at(index) = 0;
-      }
-    }
+  const auto config_work = [&](const int thread_num, const int64_t index) {
+    collision_checks.at(static_cast<size_t>(index)) =
+        static_cast<uint8_t>(CheckConfigCollisionFree(
+            configs.at(static_cast<int64_t>(index)), thread_num));
   };
 
-  StaticParallelForLoop(DegreeOfParallelism(number_of_threads), 0,
-                        static_cast<int64_t>(configs.size()), thread_work,
-                        ParallelForBackend::BEST_AVAILABLE);
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             static_cast<int64_t>(configs.size()), config_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
@@ -729,24 +722,21 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
 
-    const auto thread_work = [&](const ThreadWorkRange& work_range) {
-      const int thread_num = work_range.GetThreadNum();
-      for (int step = static_cast<int>(work_range.GetRangeStart());
-           step < static_cast<int>(work_range.GetRangeEnd()); ++step) {
-        if (edge_valid.load()) {
-          const double ratio =
-              static_cast<double>(step) / static_cast<double>(num_steps);
-          const Eigen::VectorXd qinterp =
-              InterpolateBetweenConfigurations(q1, q2, ratio);
-          if (!CheckConfigCollisionFree(qinterp, thread_num)) {
-            edge_valid.store(false);
-          }
+    const auto step_work = [&](const int thread_num, const int64_t step) {
+      if (edge_valid.load()) {
+        const double ratio =
+            static_cast<double>(step) / static_cast<double>(num_steps);
+        const Eigen::VectorXd qinterp =
+            InterpolateBetweenConfigurations(q1, q2, ratio);
+        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
+          edge_valid.store(false);
         }
       }
     };
 
-    StaticParallelForLoop(DegreeOfParallelism(number_of_threads), 0, num_steps,
-                          thread_work, ParallelForBackend::BEST_AVAILABLE);
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               num_steps, step_work,
+                               ParallelForBackend::BEST_AVAILABLE);
 
     return edge_valid.load();
   } else {
@@ -765,22 +755,17 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   drake::log()->debug("CheckEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-  const auto thread_work = [&](const ThreadWorkRange& work_range) {
-    const int thread_num = work_range.GetThreadNum();
-    for (size_t index = static_cast<size_t>(work_range.GetRangeStart());
-         index < static_cast<size_t>(work_range.GetRangeEnd()); ++index) {
-      const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
-      if (CheckEdgeCollisionFree(edge.first, edge.second, thread_num)) {
-        collision_checks.at(index) = 1;
-      } else {
-        collision_checks.at(index) = 0;
-      }
-    }
+  const auto edge_work = [&](const int thread_num, const int64_t index) {
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge =
+        edges.at(static_cast<size_t>(index));
+
+    collision_checks.at(static_cast<size_t>(index)) = static_cast<uint8_t>(
+        CheckEdgeCollisionFree(edge.first, edge.second, thread_num));
   };
 
-  StaticParallelForLoop(DegreeOfParallelism(number_of_threads), 0,
-                        static_cast<int64_t>(edges.size()), thread_work,
-                        ParallelForBackend::BEST_AVAILABLE);
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             static_cast<int64_t>(edges.size()), edge_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
@@ -832,34 +817,31 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     alpha.store(1.0);
     std::mutex alpha_mutex;
 
-    const auto thread_work = [&](const ThreadWorkRange& work_range) {
-      const int thread_num = work_range.GetThreadNum();
-      for (int step = static_cast<int>(work_range.GetRangeStart());
-           step < static_cast<int>(work_range.GetRangeEnd()); ++step) {
-        const double ratio = step / static_cast<double>(num_steps);
-        // If this step fails, this is the alpha which we would report.
-        const double possible_alpha =
-            (step - 1) / static_cast<double>(num_steps);
-        if (possible_alpha < alpha.load()) {
-          const Eigen::VectorXd qinterp =
-              InterpolateBetweenConfigurations(q1, q2, ratio);
-          if (!CheckConfigCollisionFree(qinterp, thread_num)) {
-            std::lock_guard<std::mutex> update_lock(alpha_mutex);
-            // Between the initial decision to interpolate and check collisions
-            // and now, another thread may have proven a *lower* alpha is
-            // invalid; check again before setting *this* as the lowest known
-            // invalid step.
-            if (possible_alpha < alpha.load()) {
-              alpha.store(possible_alpha);
-            }
+    const auto step_work = [&](const int thread_num, const int64_t step) {
+      const double ratio =
+          static_cast<double>(step) / static_cast<double>(num_steps);
+      // If this step fails, this is the alpha which we would report.
+      const double possible_alpha =
+          static_cast<double>(step - 1) / static_cast<double>(num_steps);
+      if (possible_alpha < alpha.load()) {
+        const Eigen::VectorXd qinterp =
+            InterpolateBetweenConfigurations(q1, q2, ratio);
+        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
+          std::lock_guard<std::mutex> update_lock(alpha_mutex);
+          // Between the initial decision to interpolate and check collisions
+          // and now, another thread may have proven a *lower* alpha is
+          // invalid; check again before setting *this* as the lowest known
+          // invalid step.
+          if (possible_alpha < alpha.load()) {
+            alpha.store(possible_alpha);
           }
         }
       }
     };
 
-    StaticParallelForLoop(DegreeOfParallelism(number_of_threads), 0,
-                          num_steps + 1, thread_work,
-                          ParallelForBackend::BEST_AVAILABLE);
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               num_steps + 1, step_work,
+                               ParallelForBackend::BEST_AVAILABLE);
 
     return EdgeMeasure(distance, alpha.load());
   } else {
@@ -878,19 +860,17 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
   drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-  const auto thread_work = [&](const ThreadWorkRange& work_range) {
-    const int thread_num = work_range.GetThreadNum();
-    for (size_t index = static_cast<size_t>(work_range.GetRangeStart());
-         index < static_cast<size_t>(work_range.GetRangeEnd()); ++index) {
-      const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
-      collision_checks.at(index) =
-          MeasureEdgeCollisionFree(edge.first, edge.second, thread_num);
-    }
+  const auto edge_work = [&](const int thread_num, const int64_t index) {
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge =
+        edges.at(static_cast<size_t>(index));
+
+    collision_checks.at(static_cast<size_t>(index)) =
+        MeasureEdgeCollisionFree(edge.first, edge.second, thread_num);
   };
 
-  StaticParallelForLoop(DegreeOfParallelism(number_of_threads), 0,
-                        static_cast<int64_t>(edges.size()), thread_work,
-                        ParallelForBackend::BEST_AVAILABLE);
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             static_cast<int64_t>(edges.size()), edge_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
