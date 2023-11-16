@@ -677,7 +677,7 @@ void UrdfParser::ParseMimicTag(XMLElement* node) {
   ParseScalarAttribute(mimic_node, "multiplier", &gear_ratio);
   ParseScalarAttribute(mimic_node, "offset", &offset);
 
-  if (!plant->HasJointNamed(name)) {
+  if (!plant->HasJointNamed(name, model_instance_)) {
     // This can currently happen if we have a "floating" joint, which does
     // not produce the actual QuaternionFloatingJoint above.
     Warning(*mimic_node,
@@ -688,7 +688,7 @@ void UrdfParser::ParseMimicTag(XMLElement* node) {
     return;
   }
 
-  const Joint<double>& joint0 = plant->GetJointByName(name);
+  const Joint<double>& joint0 = plant->GetJointByName(name, model_instance_);
   const Joint<double>& joint1 =
       plant->GetJointByName(joint_to_mimic, model_instance_);
 
