@@ -393,10 +393,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             subgraph_edges_doc.AddPathContinuityConstraints.doc);
 
     gcs_traj_opt  // BR
-        .def(py::init<int, const std::vector<size_t>&>(),
-            py::arg("num_positions"),
-            py::arg("continuous_joints") = std::vector<size_t>(),
-            cls_doc.ctor.doc)
+        .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),
+            py::arg("continuous_joints") = std::vector<int>(), cls_doc.ctor.doc)
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("continuous_joints", &Class::continuous_joints,
             cls_doc.continuous_joints.doc)

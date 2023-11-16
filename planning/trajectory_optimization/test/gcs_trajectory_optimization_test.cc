@@ -1096,7 +1096,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
   const double expected_cost_no_wraparound = 6.0 - 1.0;
   EXPECT_TRUE(expected_cost_wraparound < expected_cost_no_wraparound);
 
-  std::vector<size_t> continuous_joints = {0};
+  std::vector<int> continuous_joints = {0};
 
   // Check multiple permutations to make sure the ordering of which set is
   // "wrapped around" does not affect the algorithm. std::vector<ConvexSets>
@@ -1187,7 +1187,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   EXPECT_TRUE(expected_cost_both_wraparound < expected_cost_one_wraparound);
   EXPECT_TRUE(expected_cost_one_wraparound < expected_cost_no_wraparound);
 
-  std::vector<size_t> continuous_joints;
+  std::vector<int> continuous_joints;
   GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 100;
 
@@ -1271,7 +1271,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 4;
   const VPolytope v(points);
-  std::vector<size_t> continuous_joints = {0};
+  std::vector<int> continuous_joints = {0};
   GcsTrajectoryOptimization gcs(1, continuous_joints);
   EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), 1), std::exception);
   const std::vector<std::pair<int, int>> edges;
@@ -1284,9 +1284,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
                 0, 4, 0, 4;
   // clang-format on
   const VPolytope w(points_new);
-  std::vector<size_t> continuous_joints1 = {0};
-  std::vector<size_t> continuous_joints2 = {1};
-  std::vector<size_t> continuous_joints3 = {0, 1};
+  std::vector<int> continuous_joints1 = {0};
+  std::vector<int> continuous_joints2 = {1};
+  std::vector<int> continuous_joints3 = {0, 1};
   GcsTrajectoryOptimization gcs0(2);
   GcsTrajectoryOptimization gcs1(2, continuous_joints1);
   GcsTrajectoryOptimization gcs2(2, continuous_joints2);
@@ -1301,7 +1301,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, misc_continuous_interface) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 2;
   const VPolytope v(points);
-  std::vector<size_t> continuous_joints = {0};
+  std::vector<int> continuous_joints = {0};
   GcsTrajectoryOptimization gcs(1, continuous_joints);
   EXPECT_EQ(gcs.continuous_joints().size(), continuous_joints.size());
   EXPECT_EQ(gcs.continuous_joints()[0], continuous_joints[0]);
