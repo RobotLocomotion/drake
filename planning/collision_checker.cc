@@ -829,9 +829,8 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
         if (!CheckConfigCollisionFree(qinterp, thread_num)) {
           std::lock_guard<std::mutex> update_lock(alpha_mutex);
           // Between the initial decision to interpolate and check collisions
-          // and now, another thread may have proven a *lower* alpha is
-          // invalid; check again before setting *this* as the lowest known
-          // invalid step.
+          // and now, another thread may have proven a *lower* alpha is invalid;
+          // check again before setting *this* as the lowest known invalid step.
           if (possible_alpha < alpha.load()) {
             alpha.store(possible_alpha);
           }
