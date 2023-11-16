@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -47,6 +48,16 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   std::string TakeWarning() {
     EXPECT_FALSE(warning_records_.empty());
     return Take(&warning_records_).FormatWarning();
+  }
+
+  /// Return the current number of errors.
+  int NumErrors() {
+    return ssize(error_records_);
+  }
+
+  /// Return the current number of warnings.
+  int NumWarnings() {
+    return ssize(warning_records_);
   }
 
   // This resets the diagnostic collections so that lingering reports to not
