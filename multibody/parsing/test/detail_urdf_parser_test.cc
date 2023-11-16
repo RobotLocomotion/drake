@@ -344,6 +344,8 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
 // warning as MimicNoSap).
 
 TEST_F(UrdfParserTest, MimicNoSap) {
+  // Currently the <mimic> tag is only supported by SAP. Setting the solver
+  // to TAMSI should be a warning.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -363,6 +365,7 @@ TEST_F(UrdfParserTest, MimicNoSap) {
 }
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -380,6 +383,7 @@ TEST_F(UrdfParserTest, MimicNoJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicBadJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -397,6 +401,7 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicSameJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -414,6 +419,7 @@ TEST_F(UrdfParserTest, MimicSameJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -436,6 +442,7 @@ TEST_F(UrdfParserTest, MimicMismatchedJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -458,6 +465,7 @@ TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicFloatingJoint) {
+  // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -479,6 +487,50 @@ TEST_F(UrdfParserTest, MimicFloatingJoint) {
   EXPECT_THAT(TakeWarning(),
               MatchesRegex(".*Drake only supports the mimic element for "
                            "single-dof joints.*"));
+}
+
+// Test that mimic tags in different model instances that refer to joints that
+// have colliding names with joints in other model instances don't produce an
+// error.
+TEST_F(UrdfParserTest, MimicDifferentModelInstances) {
+  // Currently the <mimic> tag is only supported by SAP.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0' multiplier='1' offset='0' />
+      </joint>
+    </robot>)""",
+                                   ""),
+            std::nullopt /* valid model instance index was parsed */);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='b'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0' multiplier='1' offset='0' />
+      </joint>
+    </robot>)""",
+                                   ""),
+            std::nullopt /* valid model instance index was parsed */);
+  EXPECT_EQ(NumErrors(), 0);
+  EXPECT_EQ(NumWarnings(), 0);
 }
 
 TEST_F(UrdfParserTest, Material) {
