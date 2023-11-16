@@ -242,10 +242,29 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
         acrobot_u(1) /* Acrobot elbow */).finished();
     // clang-format on
 
-    // Verify that actuation output is an exact copy of the inputs.
-    const VectorXd actuation_output =
-        plant_->get_net_actuation_output_port().Eval(*context_);
-    EXPECT_EQ(actuation_output, expected_u);
+    // Verify that net actuation output is an exact copy of the inputs.
+    VerifyNetActuationOutputPorts(arm_u, acrobot_u, gripper_u, expected_u);
+  }
+
+  // Helper to verify that the net actuation output ports report the values
+  // provided within `tolerance`.
+  void VerifyNetActuationOutputPorts(const VectorXd& arm_u,
+                                     const VectorXd& acrobot_u,
+                                     const VectorXd& gripper_u,
+                                     const VectorXd& u,
+                                     double tolerance = 0) const {
+    EXPECT_TRUE(CompareMatrices(
+        plant_->get_net_actuation_output_port(arm_model_).Eval(*context_),
+        arm_u, tolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(
+        plant_->get_net_actuation_output_port(gripper_model_).Eval(*context_),
+        gripper_u, tolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(
+        plant_->get_net_actuation_output_port(acrobot_model_).Eval(*context_),
+        acrobot_u, tolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(
+        CompareMatrices(plant_->get_net_actuation_output_port().Eval(*context_),
+                        u, tolerance, MatrixCompareType::relative));
   }
 
  protected:
@@ -527,11 +546,9 @@ TEST_F(ActuatedIiiwaArmTest,
   EXPECT_TRUE(CompareMatrices(x_actuation, x_tau, kTolerance,
                               MatrixCompareType::relative));
 
-  // Verify the actuation values reported by the plant.
-  const VectorXd actuation_output =
-      plant_->get_net_actuation_output_port().Eval(*context_);
-  EXPECT_TRUE(CompareMatrices(actuation_output, expected_u, kTolerance,
-                              MatrixCompareType::relative));
+  // Verify the net actuation values reported by the plant.
+  VerifyNetActuationOutputPorts(arm_u, acrobot_u, gripper_u, expected_u,
+                                kTolerance);
 }
 
 // We verify that the PD controlled actuators exert effort limits.
@@ -600,10 +617,8 @@ TEST_F(ActuatedIiiwaArmTest,
                               MatrixCompareType::relative));
 
   // Verify the actuation values reported by the plant.
-  const VectorXd actuation_output =
-      plant_->get_net_actuation_output_port().Eval(*context_);
-  EXPECT_TRUE(CompareMatrices(actuation_output, expected_u, kTolerance,
-                              MatrixCompareType::relative));
+  VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u, expected_u,
+                                kTolerance);
 
   // Joint 4 is actuated beyond its effort limits. Here we verify that when the
   // joint is locked (and only for this joint), it's PD controller is ignored
@@ -614,12 +629,9 @@ TEST_F(ActuatedIiiwaArmTest,
       (VectorXd(7) << 300, 300, 55, -350, -300, -300, -40).finished();
   const VectorXd expected_u_when_joint4_is_locked = AssembleFullModelActuation(
       arm_u_when_joint4_is_locked, acrobot_u, gripper_u);
-
-  const VectorXd actuation_output_when_joint4_is_locked =
-      plant_->get_net_actuation_output_port().Eval(*context_);
-  EXPECT_TRUE(CompareMatrices(actuation_output_when_joint4_is_locked,
-                              expected_u_when_joint4_is_locked, kTolerance,
-                              MatrixCompareType::relative));
+  VerifyNetActuationOutputPorts(arm_u_when_joint4_is_locked, acrobot_u,
+                                gripper_u, expected_u_when_joint4_is_locked,
+                                kTolerance);
 }
 
 // This test verifies that for continuous models the actuation output port
