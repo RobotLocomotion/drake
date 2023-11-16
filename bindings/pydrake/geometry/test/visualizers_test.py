@@ -5,6 +5,7 @@ import unittest
 import urllib.request
 
 import numpy as np
+import umsgpack
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
@@ -174,9 +175,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetCameraTarget(target_in_world=[1, 2, 3])
         meshcat.SetCameraPose(camera_in_world=[3, 4, 5],
                               target_in_world=[1, 1, 1])
-        meshcat.AddButton(name="button", keycode="KeyB")
-        self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
-        meshcat.DeleteButton(name="button")
+        meshcat.AddButton(name="alice", keycode="KeyB")
+        self.assertEqual(meshcat.GetButtonClicks(name="alice"), 0)
+        meshcat._InjectWebsocketMessage(message=umsgpack.packb({
+            "type": "button",
+            "name": "alice",
+        }))
+        self.assertEqual(meshcat.GetButtonClicks(name="alice"), 1)
+        meshcat.DeleteButton(name="alice")
         meshcat.AddSlider(name="slider",
                           min=0,
                           max=1,

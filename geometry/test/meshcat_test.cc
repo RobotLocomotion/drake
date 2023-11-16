@@ -139,7 +139,8 @@ GTEST_TEST(MeshcatTest, EphemeralPort) {
   Meshcat meshcat(0);
   EXPECT_GE(meshcat.port(), 32768);
 
-  // Try clicking a button to make sure the number was correct.
+  // Try clicking a button to make sure the number was correct. This also serves
+  // as an end-to-end test of button handling over websockets.
   meshcat.AddButton("button");
   CheckWebsocketCommand(meshcat, R"""({
       "type": "button",
@@ -654,6 +655,9 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
                               "Requested environment map cannot be read.+");
 }
 
+// Tests the functional logic of button handling, without actually creating any
+// websocket connections. (The EphemeralPort case tests a button using an actual
+// connection.)
 GTEST_TEST(MeshcatTest, Buttons) {
   Meshcat meshcat;
 
@@ -666,11 +670,17 @@ GTEST_TEST(MeshcatTest, Buttons) {
   meshcat.AddButton("alice");
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
 
+  auto click = [&meshcat]() {
+    internal::UserInterfaceEvent data;
+    data.type = "button";
+    data.name = "alice";
+    std::stringstream message_stream;
+    msgpack::pack(message_stream, data);
+    meshcat.InjectWebsocketMessage(message_stream.str());
+  };
+
   // Clicking the button increases the count.
-  CheckWebsocketCommand(meshcat, R"""({
-      "type": "button",
-      "name": "alice"
-    })""", {}, {});
+  click();
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
 
   // Adding using an existing button name resets its count.
@@ -678,10 +688,7 @@ GTEST_TEST(MeshcatTest, Buttons) {
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
 
   // Clicking the button increases the count again.
-  CheckWebsocketCommand(meshcat, R"""({
-      "type": "button",
-      "name": "alice"
-    })""", {}, {});
+  click();
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
 
   // Removing the button then asking for clicks is an error.
@@ -711,10 +718,7 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   // Adding a button with the keycode.
   meshcat.AddButton("alice", "KeyT");
-  CheckWebsocketCommand(meshcat, R"""({
-      "type": "button",
-      "name": "alice"
-    })""", {}, {});
+  click();
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
   // Adding with the same keycode still resets.
   meshcat.AddButton("alice", "KeyT");

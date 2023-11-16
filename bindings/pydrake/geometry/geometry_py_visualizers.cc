@@ -367,7 +367,13 @@ void DoScalarIndependentDefinitions(py::module m) {
               return py::bytes(
                   self.GetPackedProperty(path, std::string{property}));
             },
-            py::arg("path"), py::arg("property"));
+            py::arg("path"), py::arg("property"))
+        .def(
+            "_InjectWebsocketMessage",
+            [](Class& self, py::bytes message) {
+              self.InjectWebsocketMessage(message);
+            },
+            py::arg("message"));
 
     const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
     py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
