@@ -1665,6 +1665,8 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
+        ":sos_examples",
     ],
 )
 

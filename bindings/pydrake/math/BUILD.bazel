@@ -28,6 +28,8 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_cc_library(
     name = "math_py",
     srcs = [
+        "math_py_matmul.cc",
+        "math_py_operators.cc",
         # TODO(jwnimmer-tri) Split the monolith into pieces.
         "math_py_monolith.cc",
     ],

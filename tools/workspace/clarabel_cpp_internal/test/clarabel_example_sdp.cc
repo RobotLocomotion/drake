@@ -1,9 +1,8 @@
 // Copied from (Apache-2.0):
-// https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/examples/cpp/example_lp.cpp
+// https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/examples/cpp/example_sdp.cpp
 // https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/examples/cpp/utils.h
 
-#include <cstddef>
-#include <cstdio>
+#include <cmath>
 #include <vector>
 
 #include <Clarabel>
@@ -34,38 +33,47 @@ void print_solution(const clarabel::DefaultSolution<double>& solution) {
 
 }  // namespace
 
-int main() {
-  Eigen::MatrixXd P_dense = Eigen::MatrixXd::Zero(2, 2);
-  Eigen::SparseMatrix<double> P = P_dense.sparseView();
+int main(void) {
+  // SDP Example
+  int n = 3;
+  int nvec = (n * (n + 1)) >> 1;
+
+  // 6 x 6 zero matrix
+  Eigen::SparseMatrix<double> P =
+      Eigen::MatrixXd::Zero(nvec, nvec).sparseView();
   P.makeCompressed();
 
-  Eigen::Vector<double, 2> q = {1.0, -1.0};
+  Eigen::Vector<double, 6> c{1, 0, 1, 0, 0, 1};
 
-  // a 2-d box constraint, separated into 4 inequalities.
-  // A = [I; -I]
-  Eigen::MatrixXd A_dense(4, 2);
-  A_dense << 1., 0., 0., 1., -1., 0., 0., -1.;
+  Eigen::MatrixXd A_dense(7, 6);
+  const double s = M_SQRT2;
+  // clang-format off
+  A_dense <<
+      -1, 0,  0,  0,  0,   0,
+      0,  -s, 0,  0,  0,   0,
+      0,  0,  -1, 0,  0,   0,
+      0,  0,  0,  -s, 0,   0,
+      0,  0,  0,  0,  -s,  0,
+      0,  0,  0,  0,  0,  -1,
+      1,  4,  3,  8,  10,  6;
+  // clang-format on
 
   Eigen::SparseMatrix<double> A = A_dense.sparseView();
   A.makeCompressed();
 
-  Eigen::Vector<double, 4> b = {1.0, 1.0, 1.0, 1.0};
+  Eigen::Vector<double, 7> b = {0, 0, 0, 0, 0, 0, 1};
 
   std::vector<clarabel::SupportedConeT<double>> cones{
-      clarabel::NonnegativeConeT<double>(4),
-      // {.tag = SupportedConeT<double>::Tag::NonnegativeConeT,
-      // .nonnegative_cone_t = {._0 = 4 }}
+      clarabel::PSDTriangleConeT<double>(n),
+      clarabel::ZeroConeT<double>(1),
   };
 
   // Settings
   clarabel::DefaultSettings<double> settings =
-      clarabel::DefaultSettingsBuilder<double>::default_settings()
-          .equilibrate_enable(true)
-          .equilibrate_max_iter(50)
-          .build();
+      clarabel::DefaultSettings<double>::default_settings();
 
   // Build solver
-  clarabel::DefaultSolver<double> solver(P, q, A, b, cones, settings);
+  clarabel::DefaultSolver<double> solver(P, c, A, b, cones, settings);
 
   // Solve
   solver.solve();

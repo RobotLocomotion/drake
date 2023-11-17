@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/ssize.h"
 
 namespace drake {
 namespace symbolic {
@@ -11,6 +12,58 @@ Eigen::Matrix<Monomial, Eigen::Dynamic, 1> MonomialBasis(const Variables& vars,
                                                          const int degree) {
   return internal::ComputeMonomialBasis<Eigen::Dynamic>(
       vars, degree, internal::DegreeType::kAny);
+}
+
+VectorX<Monomial> MonomialBasis(
+    const std::unordered_map<Variables, int>& vars_degree) {
+  // Check if the variables overlap.
+  Variables all_vars;
+  for (const auto& [vars, degree] : vars_degree) {
+    for (const auto& var : vars) {
+      if (all_vars.include(var)) {
+        throw std::runtime_error(fmt::format(
+            "MonomialBasis(): {} shows up more than once in vars_degree",
+            var.get_name()));
+      }
+      all_vars.insert(var);
+    }
+  }
+  // First we generate the monomials for each (vars, degree) pair.
+  std::vector<VectorX<Monomial>> monomial_basis_each_vars;
+  for (const auto& [vars, degree] : vars_degree) {
+    monomial_basis_each_vars.push_back(MonomialBasis(vars, degree));
+  }
+  // Now we collect all the possible combinations of the monomials. Namely for
+  // each i, we take an arbitrary element from monomial_basis_each_vars[i],
+  // and multiply these elements together. We insert the multiplied new
+  // monomial into `basis`.
+  std::vector<Monomial> basis;
+  basis.reserve(std::accumulate(
+      monomial_basis_each_vars.begin(), monomial_basis_each_vars.end(), 1,
+      [](int prod, const VectorX<Monomial>& monomial_vec) {
+        return prod * (monomial_vec.rows());
+      }));
+  // Insert the 1 monomial.
+  basis.emplace_back();
+  for (const auto& monomial_vec : monomial_basis_each_vars) {
+    const int monomials_count = ssize(basis);
+    // The last element of monomial_vec should be 1.
+    DRAKE_ASSERT(monomial_vec[monomial_vec.rows() - 1].total_degree() == 0);
+    // Insert the whole monomial_vec besides the 1 monomial which is at the end.
+    basis.insert(basis.end(), monomial_vec.data(),
+                 monomial_vec.data() + monomial_vec.rows() - 1);
+    // Start at 1 since basis(0) is the 1 monomial, which we have already
+    // considered in the previous line.
+    for (int i = 1; i < monomials_count; ++i) {
+      // Stop before the 1 monomial at the end of monomial_vec.
+      for (int j = 0; j < monomial_vec.rows() - 1; ++j) {
+        basis.push_back(basis.at(i) * monomial_vec(j));
+      }
+    }
+  }
+  std::sort(basis.begin(), basis.end(),
+            GradedReverseLexOrder<std::less<Variable>>());
+  return Eigen::Map<VectorX<Monomial>>(basis.data(), basis.size());
 }
 
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(

@@ -904,6 +904,14 @@ class Meshcat {
                                 std::string property) const;
 
 #ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use for unit testing only) Injects a websocket message as if it
+  came from a web browser. Note that this skips the entire network stack, so the
+  `ws` pointer will be null during message handling; some messages (e.g., slider
+  controls) do not allow a null pointer. This function blocks until the message
+  has been handled. Search meshcat_test for uses of `msgpack::pack` for examples
+  of how to prepare the `message` bytes. */
+  void InjectWebsocketMessage(std::string_view message);
+
   /* (Internal use for unit testing only) Causes the websocket worker thread to
   exit with an error, which will spit out an exception from the next Meshcat
   main thread function that gets called. The fault_number selects which fault to

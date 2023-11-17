@@ -283,13 +283,22 @@ drake_cc_binary(
     ],
 )
 
+filegroup(
+    name = "gltf_client_test_models",
+    testonly = True,
+    data = [
+        ":test/4_color_texture.png",
+        ":test/example_scene.sdf",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
 drake_cc_binary(
     name = "client_demo",
     testonly = True,
     srcs = ["test/client_demo.cc"],
     data = [
-        ":test/4_color_texture.png",
-        ":test/example_scene.sdf",
+        ":gltf_client_test_models",
         "//manipulation/models/ycb:models",
     ],
     deps = [
@@ -352,6 +361,7 @@ filegroup(
         "test/red_box.gltf",
         "test/textured_green_box.gltf",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_googletest(
@@ -365,6 +375,26 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+filegroup(
+    name = "all_gltfs_and_images",
+    testonly = True,
+    srcs = glob([
+        "test/*.gltf",
+        "test/*.png",
+        "test/*.tiff",
+    ]),
+)
+
+drake_py_unittest(
+    name = "file_size_test",
+    data = [
+        ":all_gltfs_and_images",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 

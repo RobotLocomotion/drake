@@ -75,6 +75,7 @@ LIBDRAKE_COMPONENTS = [
     "//perception",
     "//planning",
     "//planning/trajectory_optimization",
+    "//planning/graph_algorithms",
     "//solvers",
     "//systems/analysis",
     "//systems/controllers",

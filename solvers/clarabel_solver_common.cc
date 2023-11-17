@@ -35,6 +35,7 @@ bool CheckAttributes(const MathematicalProgram& prog,
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
+          ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost});
   return internal::CheckConvexSolverAttributes(

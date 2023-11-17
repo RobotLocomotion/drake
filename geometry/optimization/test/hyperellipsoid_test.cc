@@ -471,14 +471,8 @@ GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid2) {
   points << 2, -2,
             0,  0;
   // clang-format on
-  MatrixXd A_expected(1, 2);
-  A_expected << 0.5, 0;
-
-  const double kTol = 1e-6;
-  Hyperellipsoid E =
-      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
-  EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
-  EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
+  EXPECT_THROW(Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points),
+               std::exception);
 
   // Points that *almost* lie on a manifold, but with a large rank tolerance.
   points.resize(2, 3);
@@ -486,14 +480,12 @@ GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid2) {
   points <<    2,      0,    -2,
             1e-3,  -1e-3,  1e-3;
   // clang-format on
-  Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, 1e-2);
-  EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
-  EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
+  EXPECT_THROW(
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, 1e-2),
+      std::exception);
 
   // Default rank tolerance.
-  E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
-  EXPECT_EQ(E.A().rows(), 2);
-  EXPECT_EQ(E.A().cols(), 2);
+  EXPECT_NO_THROW(Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points));
 
   // Cause the solver to fail with an extremely thin ellipsoid and an extremely
   // low rank tolerance.
@@ -511,32 +503,6 @@ GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid2) {
         Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, 1e-14),
         ".*Consider adjusting rank_tol.*");
   }
-
-  // However the default rank_tol works.
-  E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
-  EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
-  EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
-}
-
-// Test a one-dimensional "ball" in a five-dimensional space
-GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid3) {
-  MatrixXd point(5, 2);
-  // clang-format off
-  point << 0.1, -0.1,
-           0.2, -0.2,
-           0.3, -0.3,
-           0.4, -0.4,
-           0.5, -0.5;
-  // clang-format on
-  VectorXd center(5);
-  center << 0.123, 0.435, 2.3, -0.2, 0.75;
-  point.colwise() += center;
-
-  const double kTol = 1e-6;
-  Hyperellipsoid E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(point);
-  EXPECT_EQ(E.A().rows(), 1);
-  EXPECT_EQ(E.A().cols(), 5);
-  EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
 }
 
 GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest) {

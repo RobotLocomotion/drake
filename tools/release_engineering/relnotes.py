@@ -312,8 +312,8 @@ def _create(args, notes_dir, notes_filename, gh, drake):
     with open(f"{notes_dir}/template.txt", "r") as f:
         template = f.read()
     content = template.format(
-        version=args.version,
-        prior_version=args.prior_version,
+        version=args.version[1:],
+        prior_version=args.prior_version[1:],
         oldest_commit_exclusive=prior_sha,
         newest_commit_inclusive=prior_sha,
     )

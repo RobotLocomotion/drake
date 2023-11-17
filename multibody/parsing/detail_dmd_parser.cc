@@ -39,6 +39,7 @@ void AddWeld(
         // See warning in ModelInstanceInfo about these members.
         info.parent_frame_name = parent_frame.name();
         info.child_frame_name = child_frame.name();
+        info.X_PC = X_PC;
       }
     }
     DRAKE_THROW_UNLESS(found);

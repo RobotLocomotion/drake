@@ -28,6 +28,7 @@ using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::Frame;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
+using drake::systems::Context;
 using drake::systems::DiagramBuilder;
 
 const char* const kTestDir =
@@ -396,6 +397,113 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
       ProcessModelDirectives(directives, &plant, nullptr,
         make_parser(&plant).get()),
         R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+}
+
+// Test that flattening is idempotent and semantically a no-op.
+GTEST_TEST(ProcessModelDirectivesTest, Flatten) {
+  std::vector<ModelInstanceInfo> deep_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    deep_models = ProcessModelDirectives(directives, make_parser(&plant).get());
+  }
+
+  std::vector<ModelInstanceInfo> flat_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    ModelDirectives flat_directives;
+    FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+    flat_models = ProcessModelDirectives(flat_directives, parser.get());
+  }
+
+  std::vector<ModelInstanceInfo> reflattened_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    ModelDirectives flat_directives;
+    ModelDirectives reflattened_directives;  // To test idempotency.
+    FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+    FlattenModelDirectives(flat_directives, parser->package_map(),
+                           &reflattened_directives);
+    reflattened_models =
+        ProcessModelDirectives(reflattened_directives, parser.get());
+  }
+
+  // If there were inconsistencies in the scoped names between directives,
+  // e.g. frame names referring to nonexistent model scopes, then the
+  // `ProcessModelDirectives` call above would have failed.  So we only need
+  // to ensure that the models are present with identical names and we can be
+  // reasonably sure the other named elements must have been correct.
+
+  // Models from flattened directives have the same names as the originals.
+  std::set<std::string> deep_names;
+  for (const auto& info : deep_models) {
+    deep_names.insert(info.model_name);
+  }
+  std::set<std::string> flat_names;
+  for (const auto& info : flat_models) {
+    flat_names.insert(info.model_name);
+  }
+  EXPECT_EQ(deep_names, flat_names);
+
+  // Repeated flattening makes no difference (idempotency).
+  std::set<std::string> reflattened_names;
+  for (const auto& info : reflattened_models) {
+    reflattened_names.insert(info.model_name);
+  }
+  EXPECT_EQ(flat_names, reflattened_names);
+}
+
+GTEST_TEST(ProcessModelDirectivesTest, FlattenWithWorld) {
+  // Test that frames named "world" are unaffected by the model namespace.
+  const std::string kDirectives = R"(
+directives:
+  - add_directives:
+      file: package://process_model_directives_test/add_frame_without_model_namespace.dmd.yaml
+      model_namespace: nested
+)";
+  const ModelDirectives directives = LoadModelDirectivesFromString(kDirectives);
+  MultibodyPlant<double> plant(0.0);
+  std::unique_ptr<Parser> parser = make_parser(&plant);
+  ModelDirectives flat_directives;
+  FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+  EXPECT_EQ(
+      flat_directives.directives[1].add_frame.value().X_PF.base_frame.value(),
+      "world" /* Not "nested::world" */);
+}
+
+// Ensure that we incorporate weld offsets into produces model info.
+GTEST_TEST(ProcessModelDirectivesTest, WeldOffset) {
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      "drake/manipulation/util/test/panda_arm_and_hand.dmd.yaml"));
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(directives, make_parser(&plant).get());
+  plant.Finalize();
+  const std::unique_ptr<Context<double>> context =
+      plant.CreateDefaultContext();
+
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "panda");
+  EXPECT_TRUE(added_models[0].X_PC.IsExactlyIdentity());
+
+  EXPECT_EQ(added_models[1].model_name, "panda_hand");
+  EXPECT_FALSE(added_models[1].X_PC.IsExactlyIdentity());
+
+  const Frame<double>& frame_P =
+      plant.GetFrameByName(added_models[1].parent_frame_name);
+  const Frame<double>& frame_C =
+      plant.GetFrameByName(added_models[1].child_frame_name);
+  const math::RigidTransformd panda_hand_X_PC_expected =
+      plant.CalcRelativeTransform(*context, frame_P, frame_C);
+  EXPECT_TRUE(added_models[1].X_PC.IsExactlyEqualTo(panda_hand_X_PC_expected));
 }
 
 }  // namespace

@@ -93,51 +93,75 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
       prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
                          VectorDecisionVariable<3>(X(0, 1), X(0, 2), X(1, 2)));
 
-  auto solve_and_check = [&prog, &X](const Eigen::Vector3d& sol_expected,
-                                     double tol) {
-    const auto result = Solve(prog);
-    if (result.get_solver_id() != SnoptSolver::id()) {
-      // Do not check when we use SNOPT. It is known that our SnoptSolver
-      // wrapper doesn't solve this problem correctly, see
-      // https://github.com/RobotLocomotion/drake/pull/9382
-      // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and enable
-      // this test with Snopt.
-      EXPECT_TRUE(result.is_success());
-      EXPECT_TRUE(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
-                                      X(0, 1), X(0, 2), X(1, 2))),
-                                  sol_expected, tol));
-      // The matrix should be positive semidefinite.
-      const Eigen::Matrix3d X_sol = result.GetSolution(X);
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
-      EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
-    }
-  };
+  auto solve_and_check =
+      [&prog, &X](
+          const Eigen::Vector3d& sol_expected,
+          double psd_tol,  // tolerance for checking whether a matrix is psd
+          double cost_equality_tol  // tolerance for checking that two solutions
+                                    // achieve the same cost
+      ) {
+        const auto result = Solve(prog);
+        auto prog_expected = prog.Clone();
+        prog_expected->AddLinearEqualityConstraint(X(0, 1), sol_expected(0));
+        prog_expected->AddLinearEqualityConstraint(X(0, 2), sol_expected(1));
+        prog_expected->AddLinearEqualityConstraint(X(1, 2), sol_expected(2));
+        const auto result_expected = Solve(*prog_expected);
 
-  const double tol{1E-6};
+        if (result.get_solver_id() != SnoptSolver::id()) {
+          // Do not check when we use SNOPT. It is known that our SnoptSolver
+          // wrapper doesn't solve this problem correctly, see
+          // https://github.com/RobotLocomotion/drake/pull/9382
+          // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and
+          // enable this test with Snopt.
+
+          // Check that expected solution is feasible and achieves the same cost
+          // as the optimal solution. This avoids the issue of the expected
+          // solution potentially being one of many possible solutions to the
+          // optimization problem.
+          EXPECT_TRUE(result.is_success());
+          EXPECT_TRUE(result_expected.is_success());
+          EXPECT_NEAR(result.get_optimal_cost(),
+                      result_expected.get_optimal_cost(), cost_equality_tol);
+
+          // The matrix should be positive semidefinite.
+          const Eigen::Matrix3d X_sol_expected = result_expected.GetSolution(X);
+          Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_expected(
+              X_sol_expected);
+          EXPECT_TRUE(
+              (eigen_solver_expected.eigenvalues().array() >= -psd_tol).all());
+
+          const Eigen::Matrix3d X_sol = result.GetSolution(X);
+          Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
+          EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -psd_tol).all());
+        }
+      };
+
+  const double psd_tol{1E-6};
+  const double cost_equality_tol{1E-8};
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1, 0, 0));
-  solve_and_check(Eigen::Vector3d(-1, 0, 0), tol);
+  solve_and_check(Eigen::Vector3d(-1, 0, 0), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(-1, 0, 0));
-  solve_and_check(Eigen::Vector3d(1, 0, 0), tol);
+  solve_and_check(Eigen::Vector3d(1, 0, 0), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0, 1, 0));
-  solve_and_check(Eigen::Vector3d(0, -1, 0), tol);
+  solve_and_check(Eigen::Vector3d(0, -1, 0), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0, -1, 0));
-  solve_and_check(Eigen::Vector3d(0, 1, 0), tol);
+  solve_and_check(Eigen::Vector3d(0, 1, 0), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0, 0, 1));
-  solve_and_check(Eigen::Vector3d(0, 0, -2), tol);
+  solve_and_check(Eigen::Vector3d(0, 0, -2), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0, 0, -1));
-  solve_and_check(Eigen::Vector3d(0, 0, 2), tol);
+  solve_and_check(Eigen::Vector3d(0, 0, 2), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1, 1, 1));
-  solve_and_check(Eigen::Vector3d(0, -1, -2), tol);
+  solve_and_check(Eigen::Vector3d(0, -1, -2), psd_tol, cost_equality_tol);
 
   cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(2, 0, 1));
-  solve_and_check(Eigen::Vector3d(-1, 0, -1), tol);
+  solve_and_check(Eigen::Vector3d(-1, 0, -1), psd_tol, cost_equality_tol);
 }
 
 }  // namespace solvers

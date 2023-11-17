@@ -13,6 +13,13 @@ package(default_visibility = ["//visibility:public"])
 # licenses([
 #     "TODO",  # Apache-2.0
 # ])
+filegroup(
+    name = "license_glob",
+    srcs = glob(
+        ["LICENSE*"],
+        allow_empty = False,
+    ),
+)
 
 rust_library(
     name = "clarabel",
@@ -28,6 +35,11 @@ rust_library(
             "WORKSPACE.bazel",
         ],
     ),
+    crate_features = [
+        "blas",
+        "lapack",
+        "sdp",
+    ],
     crate_root = "src/lib.rs",
     edition = "2021",
     proc_macro_deps = [
@@ -78,9 +90,11 @@ rust_library(
     version = "0.6.0",
     deps = [
         "@crate__amd-0.2.2//:amd",
+        "@crate__blas-0.22.0//:blas",
         "@crate__cfg-if-1.0.0//:cfg_if",
         "@crate__derive_builder-0.11.2//:derive_builder",
         "@crate__itertools-0.11.0//:itertools",
+        "@crate__lapack-0.19.0//:lapack",
         "@crate__lazy_static-1.4.0//:lazy_static",
         "@crate__num-traits-0.2.17//:num_traits",
         "@crate__thiserror-1.0.50//:thiserror",

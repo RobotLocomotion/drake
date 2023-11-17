@@ -21,7 +21,9 @@ more information.
 import copy
 import json
 import os
+from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import unittest
@@ -166,7 +168,7 @@ class TestIntegration(unittest.TestCase):
 
     @staticmethod
     def _traverse_and_mutate(gltf, entry):
-        """Walk the tree rooted at `entry` and replace entries found in
+        """Walks the tree rooted at `entry` and replace entries found in
         _REPLACED with the explicit tree referenced."""
         entry_type = type(entry)
         if entry_type == dict:
@@ -220,6 +222,18 @@ class TestIntegration(unittest.TestCase):
         # normalization, e.g., meshes, cameras, materials, accessors, etc.
         self.assertCountEqual(actual["nodes"], expected["nodes"])
 
+    @staticmethod
+    def _save_to_outputs(source_file, prefix=''):
+        """Writes the given source file to the undeclared outputs (if defined).
+        If written, the files will be found in:
+        bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs  # noqa
+        """
+        output_dir = os.getenv('TEST_UNDECLARED_OUTPUTS_DIR')
+        if output_dir is not None:
+            source_path = Path(source_file)
+            shutil.copy(source_path,
+                        os.path.join(output_dir, prefix + source_path.name))
+
     @unittest.skipIf(_SKIP, "Skipped on macOS, see #19305")
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
@@ -229,6 +243,14 @@ class TestIntegration(unittest.TestCase):
         vtk_image_sets = self.get_demo_image_paths("vtk")
         self.run_render_client("client")
         client_image_sets = self.get_demo_image_paths("client")
+
+        for image_set in vtk_image_sets:
+            for image_path in image_set:
+                self._save_to_outputs(image_path, 'vtk_')
+
+        for image_set in client_image_sets:
+            for image_path in image_set:
+                self._save_to_outputs(image_path, 'client_')
 
         for vtk_image_paths, client_image_paths in zip(
             vtk_image_sets, client_image_sets
@@ -297,6 +319,8 @@ class TestIntegration(unittest.TestCase):
         for gltf_path, ground_truth_gltf_path in self.get_gltf_path_pairs(
             gltf_file_dir
         ):
+            self._save_to_outputs(gltf_path)
+            self._save_to_outputs(ground_truth_gltf_path)
             with open(gltf_path, "r") as f:
                 gltf = json.load(f)
             with open(ground_truth_gltf_path, "r") as g:

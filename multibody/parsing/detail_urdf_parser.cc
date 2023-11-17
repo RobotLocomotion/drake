@@ -89,6 +89,7 @@ class UrdfParser {
   void ParseTransmission(const JointEffortLimits& joint_effort_limits,
                          XMLElement* node);
   void ParseJoint(JointEffortLimits* joint_effort_limits, XMLElement* node);
+  void ParseMimicTag(XMLElement* node);
   const Body<double>* GetBodyForElement(const std::string& element_name,
                                         const std::string& link_name);
   void ParseJointDynamics(XMLElement* node, double* damping);
@@ -626,76 +627,94 @@ void UrdfParser::ParseJoint(
   }
 
   joint_effort_limits->emplace(name, effort);
+}
 
+void UrdfParser::ParseMimicTag(XMLElement* node) {
   XMLElement* mimic_node = node->FirstChildElement("mimic");
-  if (mimic_node) {
-    if (!plant->is_discrete() ||
-        plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
-      Warning(
-          *mimic_node,
-          fmt::format("Joint '{}' specifies a mimic element that will be "
-                      "ignored. Mimic elements are currently only supported by "
-                      "MultibodyPlant with a discrete time step and using "
-                      "DiscreteContactSolver::kSap.",
-                      name));
-    } else {
-      std::string joint_to_mimic;
-      double gear_ratio{1.0};
-      double offset{0.0};
-      if (!ParseStringAttribute(mimic_node, "joint", &joint_to_mimic)) {
-        Error(*mimic_node,
-              fmt::format("Joint '{}' mimic element is missing the "
-                          "required 'joint' attribute.",
-                          name));
-        return;
-      }
-      if (!plant->HasJointNamed(joint_to_mimic, model_instance_)) {
-        Error(*mimic_node,
-              fmt::format("Joint '{}' mimic element specifies joint '{}' which"
-                          " does not exist.",
-                          name, joint_to_mimic));
-        return;
-      }
-      ParseScalarAttribute(mimic_node, "multiplier", &gear_ratio);
-      ParseScalarAttribute(mimic_node, "offset", &offset);
+  if (!mimic_node) return;
 
-      if (!index) {
-        // This can currently happen if we have a "floating" joint, which does
-        // not produce the actual QuaternionFloatingJoint above.
-        Warning(*mimic_node,
-                fmt::format("Drake only supports the mimic element for "
-                            "single-dof joints. The mimic element in joint "
-                            "'{}' will be ignored.",
-                            name));
-      } else {
-        const Joint<double>& joint0 = plant->get_joint(*index);
-        const Joint<double>& joint1 =
-            plant->GetJointByName(joint_to_mimic, model_instance_);
-        if (joint1.num_velocities() != joint0.num_velocities()) {
-          Error(*mimic_node,
-                fmt::format("Joint '{}' which has {} DOF cannot mimic "
-                            "joint '{}' which has {} DOF.",
-                            name, joint0.num_velocities(), joint_to_mimic,
-                            joint1.num_velocities()));
-          return;
-        }
-        if (joint0.num_velocities() != 1) {
-          // The URDF documentation is ambiguous as to whether multi-dof joints
-          // are supported by the mimic tag. So we only raise a warning, not an
-          // error.
-          Warning(*mimic_node,
-                  fmt::format("Drake only supports the mimic element for "
-                              "single-dof joints. The joint '{}' (with {} "
-                              "dofs) is attempting to mimic joint '{}' (with "
-                              "{} dofs). The mimic element will be ignored.",
-                              name, joint0.num_velocities(), joint_to_mimic,
-                              joint1.num_velocities()));
-        } else {
-          plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
-        }
-      }
-    }
+  auto plant = w_.plant;
+  std::string name;
+  ParseStringAttribute(node, "name", &name);
+
+  if (!plant->is_discrete() ||
+      plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
+    Warning(
+        *mimic_node,
+        fmt::format("Joint '{}' specifies a mimic element that will be "
+                    "ignored. Mimic elements are currently only supported by "
+                    "MultibodyPlant with a discrete time step and using "
+                    "DiscreteContactSolver::kSap.",
+                    name));
+    return;
   }
+
+  std::string joint_to_mimic;
+  if (!ParseStringAttribute(mimic_node, "joint", &joint_to_mimic)) {
+    Error(*mimic_node, fmt::format("Joint '{}' mimic element is missing the "
+                                   "required 'joint' attribute.",
+                                   name));
+    return;
+  }
+  if (!plant->HasJointNamed(joint_to_mimic, model_instance_)) {
+    Error(*mimic_node,
+          fmt::format("Joint '{}' mimic element specifies joint '{}' which"
+                      " does not exist.",
+                      name, joint_to_mimic));
+    return;
+  }
+
+  if (joint_to_mimic == name) {
+    Error(*mimic_node,
+          fmt::format("Joint '{}' mimic element specifies "
+                      "joint '{}'. Joints cannot mimic themselves.",
+                      name, joint_to_mimic));
+    return;
+  }
+
+  double gear_ratio{1.0};
+  double offset{0.0};
+  ParseScalarAttribute(mimic_node, "multiplier", &gear_ratio);
+  ParseScalarAttribute(mimic_node, "offset", &offset);
+
+  if (!plant->HasJointNamed(name, model_instance_)) {
+    // This can currently happen if we have a "floating" joint, which does
+    // not produce the actual QuaternionFloatingJoint above.
+    Warning(*mimic_node,
+            fmt::format("Drake only supports the mimic element for "
+                        "single-dof joints. The mimic element in joint "
+                        "'{}' will be ignored.",
+                        name));
+    return;
+  }
+
+  const Joint<double>& joint0 = plant->GetJointByName(name, model_instance_);
+  const Joint<double>& joint1 =
+      plant->GetJointByName(joint_to_mimic, model_instance_);
+
+  if (joint1.num_velocities() != joint0.num_velocities()) {
+    Error(*mimic_node, fmt::format("Joint '{}' which has {} DOF cannot mimic "
+                                   "joint '{}' which has {} DOF.",
+                                   name, joint0.num_velocities(),
+                                   joint_to_mimic, joint1.num_velocities()));
+    return;
+  }
+
+  if (joint0.num_velocities() != 1) {
+    // The URDF documentation is ambiguous as to whether multi-dof joints
+    // are supported by the mimic tag. So we only raise a warning, not an
+    // error.
+    Warning(*mimic_node,
+            fmt::format("Drake only supports the mimic element for "
+                        "single-dof joints. The joint '{}' (with {} "
+                        "dofs) is attempting to mimic joint '{}' (with "
+                        "{} dofs). The mimic element will be ignored.",
+                        name, joint0.num_velocities(), joint_to_mimic,
+                        joint1.num_velocities()));
+    return;
+  }
+
+  plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
 }
 
 void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
@@ -841,6 +860,32 @@ void UrdfParser::ParseTransmission(
     }
     plant->get_mutable_joint_actuator(actuator.index())
         .set_default_gear_ratio(gear_ratio);
+  }
+
+  // Parse and add the optional drake:controller_gains parameter.
+  XMLElement* controller_gains_node =
+      actuator_node->FirstChildElement("drake:controller_gains");
+  if (controller_gains_node) {
+    double p = 0.0;
+    if (!ParseScalarAttribute(controller_gains_node, "p", &p)) {
+      Error(*controller_gains_node,
+            fmt::format(
+                "joint actuator {}'s drake:controller_gains does not have a"
+                " 'p' attribute!",
+                actuator_name));
+      return;
+    }
+    double d = 0.0;
+    if (!ParseScalarAttribute(controller_gains_node, "d", &d)) {
+      Error(*controller_gains_node,
+            fmt::format(
+                "joint actuator {}'s drake:controller_gains does not have a"
+                " 'd' attribute!",
+                actuator_name));
+      return;
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_controller_gains({p, d});
   }
 }
 
@@ -1040,6 +1085,14 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
     const std::string node_name(joint_node->Name());
     if (node_name == "joint" || node_name == "drake:joint") {
       ParseJoint(&joint_effort_limits, joint_node);
+    }
+  }
+
+  for (XMLElement* joint_node = node->FirstChildElement(); joint_node;
+       joint_node = joint_node->NextSiblingElement()) {
+    const std::string node_name(joint_node->Name());
+    if (node_name == "joint" || node_name == "drake:joint") {
+      ParseMimicTag(joint_node);
     }
   }
 

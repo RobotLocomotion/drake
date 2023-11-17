@@ -146,6 +146,10 @@ void DefineGeometryOptimization(py::module m) {
         .def("B", &AffineBall::B, py_rvp::reference_internal, cls_doc.B.doc)
         .def("center", &AffineBall::center, py_rvp::reference_internal,
             cls_doc.center.doc)
+        .def_static("MinimumVolumeCircumscribedEllipsoid",
+            &AffineBall::MinimumVolumeCircumscribedEllipsoid, py::arg("points"),
+            py::arg("rank_tol") = 1e-6,
+            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc)
         .def_static("MakeAxisAligned", &AffineBall::MakeAxisAligned,
             py::arg("radius"), py::arg("center"), cls_doc.MakeAxisAligned.doc)
         .def_static("MakeHypersphere", &AffineBall::MakeHypersphere,
@@ -451,6 +455,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.configuration_obstacles.doc)
         .def_readwrite("starting_ellipse", &IrisOptions::starting_ellipse,
             cls_doc.starting_ellipse.doc)
+        .def_readwrite("bounding_region", &IrisOptions::bounding_region,
+            cls_doc.bounding_region.doc)
         .def_readwrite("num_additional_constraint_infeasible_samples",
             &IrisOptions::num_additional_constraint_infeasible_samples,
             cls_doc.num_additional_constraint_infeasible_samples.doc)

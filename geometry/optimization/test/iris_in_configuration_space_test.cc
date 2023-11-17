@@ -366,6 +366,41 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
               1e-6);
 }
 
+GTEST_TEST(IrisInConfigurationSpaceTest, BoundingRegion) {
+  const Vector2d sample{0.0, 0.0};
+  IrisOptions options;
+  options.iteration_limit = 1;
+  options.num_collision_infeasible_samples = 0;
+  ConvexSets obstacles;
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(0.2, 0.2), Vector2d(1, 1)));
+  options.configuration_obstacles = obstacles;
+  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // Add a bounding region that halves the plant's joint limits.
+  options.bounding_region =
+      HPolyhedron::MakeBox(Vector2d(-1, -0.5), Vector2d(1, 0.5));
+  HPolyhedron region_w_bounding =
+      IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // `region` should have only one additional half space beyond the initial
+  // polytope. `region_w_bounding` should have a further four half spaces since
+  // its initial polytope will have been intersected with
+  // `options.bounding_region`.
+  EXPECT_EQ(region.b().size(), 5);
+  EXPECT_EQ(region_w_bounding.b().size(), 9);
+
+  // The point (-1.5, -0.5) is within the plant's joint limits but outside the
+  // bounding region. It should be contained in region but not in
+  // region_w_bounding.
+  EXPECT_TRUE(region.PointInSet(Vector2d(-1.5, -0.5)));
+  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(-1.5, -0.5)));
+
+  // A point closer to the origin should be in both regions.
+  EXPECT_TRUE(region.PointInSet(Vector2d(-0.5, -0.25)));
+  EXPECT_TRUE(region_w_bounding.PointInSet(Vector2d(-0.5, -0.25)));
+}
+
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
 // prismatic joint.  The configuration space is a (convex) line segment q ∈
 // (−1,1).

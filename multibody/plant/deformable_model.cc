@@ -69,6 +69,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
   geometry_id_to_body_id_.emplace(geometry_id, body_id);
   body_ids_.emplace_back(body_id);
+  body_id_to_density_prefinalize_.emplace(body_id, config.mass_density());
   return body_id;
 }
 
@@ -173,6 +174,21 @@ systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
   this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
   return discrete_state_indexes_.at(id);
+}
+
+template <typename T>
+void DeformableModel<T>::AddExternalForce(
+    std::unique_ptr<ForceDensityField<T>> force_density) {
+  this->ThrowIfSystemResourcesDeclared(__func__);
+  force_densities_.push_back(std::move(force_density));
+}
+
+template <typename T>
+const std::vector<const ForceDensityField<T>*>&
+DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  return body_index_to_force_densities_[GetBodyIndex(id)];
 }
 
 template <typename T>
@@ -327,6 +343,33 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {
     DeformableBodyId id = body_ids_[i];
     body_id_to_index_[id] = i;
+  }
+
+  /* Add user defined external forces to each body. */
+  body_index_to_force_densities_.resize(num_bodies());
+  for (int i = 0; i < num_bodies(); ++i) {
+    for (int j = 0; j < ssize(force_densities_); ++j) {
+      body_index_to_force_densities_[i].push_back(force_densities_[j].get());
+    }
+  }
+
+  /* Add gravity to each body. */
+  for (const auto& [deformable_id, fem_model] : fem_models_) {
+    const T& density = body_id_to_density_prefinalize_.at(deformable_id);
+    const Vector3<T>& gravity = plant->gravity_field().gravity_vector();
+    auto gravity_force =
+        std::make_unique<GravityForceField<T>>(gravity, density);
+    DeformableBodyIndex index = body_id_to_index_.at(deformable_id);
+    body_index_to_force_densities_[index].emplace_back(gravity_force.get());
+    AddExternalForce(std::move(gravity_force));
+  }
+  body_id_to_density_prefinalize_.clear();
+
+  /* Declare cache entries and input ports for force density fields that need
+   them. */
+  for (std::unique_ptr<ForceDensityField<T>>& force_density :
+       force_densities_) {
+    force_density->DeclareSystemResources(plant_);
   }
 }
 

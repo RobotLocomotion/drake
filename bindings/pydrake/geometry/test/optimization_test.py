@@ -92,6 +92,12 @@ class TestGeometryOptimization(unittest.TestCase):
 
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
+        points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points, rank_tol=1e-2)
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points)
+
     def test_affine_subspace(self):
         dut = mut.AffineSubspace()
 
@@ -551,6 +557,8 @@ class TestGeometryOptimization(unittest.TestCase):
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
+        options.bounding_region = mut.HPolyhedron.MakeBox(
+            lb=[-6, -6, -6], ub=[6, 6, 6])
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],

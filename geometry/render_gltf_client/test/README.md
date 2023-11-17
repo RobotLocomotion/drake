@@ -79,33 +79,40 @@ demonstrate the pipeline that a Drake user can run through the command line.
 ### Notes on Integration Test
 Furthermore, in `integration_test.py`, two end-to-end integration tests are
 designed to quantitatively inspect the actual output, i.e., the rendered images
-or the intermediate glTF file.
+and the intermediate glTF file.
 
 Two sets of color, depth, and label images are generated from `RenderEngineVtk`
-and `RenderEngineGltfClient`.  Both `RenderEngine`'s render images via the VTK
-library underlying, and thus, comparing their output images provide evidence
-that the RPC infrastructure is merely a communication tool between a client and
-a server but has minimal impact on the image rendering process.  Images
-produced by `RenderEngineVtk` are treated as ground truth for pixel-by-pixel
-comparison.  However, it's inevitable to have rounding errors due to subtle
-renderer settings; therefore, the test places a reasonably small tolerance for
-the comparison.
+and `RenderEngineGltfClient`.  The `RenderEngineGltfClient` engine connects to
+a server (`server_demo.py`) that uses a VTK-backed rendering pipeline
+(`server_vtk_backend.cc`).  Therefore, both render engines use VTK to render;
+comparing their outputs directly provides evidence that the RPC infrastructure
+is merely a communication tool between a client and a server but has negligible
+impact on the image content.  Images produced by `RenderEngineVtk` are treated
+as ground truth for pixel-by-pixel comparison.  However, it's inevitable to have
+rounding errors due to subtle renderer settings; therefore, the test places a
+reasonably small tolerance for the comparison.
 
-Besides precise image differencing, there is another integration test focuses on
-the glTF correctness.  For `RenderEngineGltfClient` to render an image, the
+In addition to rendering comparisons, there is another integration test focuses
+on the glTF correctness.  For `RenderEngineGltfClient` to render an image, the
 client converts geometries in `SceneGraph` to a glTF file and sends it over the
-wire.  This test inspects the content of the intermediate glTF file.
+wire.  This test inspects the content of the intermediate glTF files.
 
-Two good resources of glTF:
+Two good resources for understanding the glTF format:
 [glTF-Tutorials](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/README.md),
 [glTF Properties Reference](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#properties-reference)
 
-The paragraphs below provide a guideline to check your generated glTF in case of
-a test failure (which should be rare).
+The test includes cached glTF files (`test_*_scene.gltf`) against which the
+output is compared.  The comparison is not a *literal* byte-by-byte comparison
+of the files' contents.  Two equivalent glTF files can appear quite different
+simply by changing the ordering of elements.  This test transforms the glTF
+files to eliminate this source of variability.  Furthermore, we omit some
+portions of the glTF files to simplify the test in favor of focusing on the
+specific expectations enumerated below.
 
-`scene` is the starting point of the entire glTF file and points to the only
-entry in `scenes`.  There should be only one scene, even though glTF allows
-multiple.
+<!-- TODO(SeanCurtis-TRI) The test needs to include a glTF file so we can
+ confirm this remains true even with multiple glTFs being merged. -->
+The glTF contains a single scene in the `scenes` entry (although glTF generally
+allows for multiple scenes) and the `scene` value references that scene.
 
 Each entry in `nodes` contains an added geometry in `SceneGraph`, a camera node,
 or the node aggregating information pointed by `scenes`.  The `matrix` field
@@ -133,6 +140,37 @@ Each `buffers` entry represents a block of raw binary data, and `bufferViews`
 and `accessors` provide hints on how to interpret a raw buffer to a meaningful
 data structure.  As comparing the exact object texture is covered by the image
 differencing test, only the `accessors` section is compared in the test.
+
+#### Viewing the integration test outputs
+
+There are two reasons why it would be necessary to see the outputs of the
+integration test:
+
+  - The test fails.
+  - A meaningful change has been made in the underlying VTK library or the way
+    we use that would change the contents of the glTF file.
+
+If either of the tests fail, you can find the files that were assessed during
+the test in:
+
+```
+bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs
+```
+
+#### Updating reference glTF files for the tests
+
+If a meaningful change has been made to VTK or how Drake uses VTK, the reference
+glTF files will probably no longer be valid.  In this case, the test will fail.
+Manually inspect the test results (located in the path above), and confirm that
+the generated glTF is what you would expect based on the underlying changes. If
+so, you will derive the new reference glTF from the generated glTF file.
+
+**Note** To avoid committing large glTF files, do not simply copy the generated
+glTF file over the old reference file. Instead, be sure to delete the entire
+`buffers` entry which contains texture and geometry data and bloats the file
+size.  That field is not used at all in the glTF test.  It does mean you cannot
+load the reference glTF in a glTF viewer, but you can always rely on the test's
+output files for that.
 
 ## Prototyping your own Server
 If everything is running as expected, then you can begin changing the

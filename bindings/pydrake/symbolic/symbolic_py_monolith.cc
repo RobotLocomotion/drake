@@ -736,13 +736,21 @@ void DefineSymbolicMonolith(py::module m) {
               const int degree) {
             return MonomialBasis(Variables{vars}, degree);
           },
-          py::arg("vars"), py::arg("degree"), doc.MonomialBasis.doc_2args)
+          py::arg("vars"), py::arg("degree"),
+          doc.MonomialBasis.doc_2args_vars_degree)
       .def(
           "MonomialBasis",
           [](const Variables& vars, const int degree) {
             return MonomialBasis(vars, degree);
           },
-          py::arg("vars"), py::arg("degree"), doc.MonomialBasis.doc_2args)
+          py::arg("vars"), py::arg("degree"),
+          doc.MonomialBasis.doc_2args_vars_degree)
+      .def(
+          "MonomialBasis",
+          [](const std::unordered_map<Variables, int>& vars_degree) {
+            return MonomialBasis(vars_degree);
+          },
+          py::arg("vars_degree"), doc.MonomialBasis.doc_1args_variables_degree)
       .def("EvenDegreeMonomialBasis", &symbolic::EvenDegreeMonomialBasis,
           py::arg("vars"), py::arg("degree"), doc.EvenDegreeMonomialBasis.doc)
       .def("OddDegreeMonomialBasis", &symbolic::OddDegreeMonomialBasis,

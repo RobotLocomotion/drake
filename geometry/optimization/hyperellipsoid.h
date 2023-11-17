@@ -110,14 +110,14 @@ class Hyperellipsoid final : public ConvexSet {
   non-zero if they are strictly greater than `rank_tol` * `max_singular_value`.
   The default is 1e-6 to be compatible with common solver tolerances. This is
   used to detect if the data lies on a lower-dimensional affine space than the
-  ambient dimension of the ellipsoid.
+  ambient dimension of the ellipsoid. If this is the case, then use
+  AffineBall::MinimumVolumeCircumscribedEllipsoid instead.
   @throws std::exception if the MathematicalProgram fails to solve. If this
   were to happen (due to numerical issues), then increasing `rank_tol` should
   provide a mitigation.
   @throw std::exception if points includes NaNs or infinite values.
-  @pre The numerical data rank of points is greater than 0 (the largest
-  singular value is greater than rank_tol). This requires, for instance, that
-  points.cols() > 1.
+  @throw std::exception if the numerical data rank of points is less than d.
+
   */
   static Hyperellipsoid MinimumVolumeCircumscribedEllipsoid(
       const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);

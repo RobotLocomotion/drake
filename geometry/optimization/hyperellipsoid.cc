@@ -200,7 +200,11 @@ Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
     svd.setThreshold(rank_tol);
     rank = svd.rank();
     if (rank < dim) {
-      U = svd.matrixU().leftCols(rank);
+      throw std::runtime_error(
+          "The numerical rank of the points appears to be less than the "
+          "ambient dimension. The smallest singular value is {}, which is "
+          "below rank_tol = {}. Decrease rank_tol or consider using "
+          "AffineBall::MinimumVolumeCircumscribedEllipsoid instead.");
     }
   }
 
@@ -212,17 +216,11 @@ Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
   // TODO(russt): Avoid the symbolic computation here and write A_lorentz
   // directly, s.t. v = A_lorentz * vars + b_lorentz, where A=Aᵀ and b are the
   // vars.
-  VectorX<Expression> v(rank + 1);
+  VectorX<Expression> v(dim + 1);
   v[0] = 1;
   for (int i = 0; i < n; ++i) {
-    if (U) {  // rank < dim
-      // |AUᵀ(x-mean) + b|₂ <= 1, written as a Lorentz cone with v = [1;
-      // AUᵀ(x-mean) + b].
-      v.tail(rank) = A * U->transpose() * (points.col(i) - mean) + b;
-    } else {  // rank == dim
-      // |Ax + b|₂ <= 1, written as a Lorentz cone with v = [1; A * x + b].
-      v.tail(rank) = A * points.col(i) + b;
-    }
+    // |Ax + b|₂ <= 1, written as a Lorentz cone with v = [1; A * x + b].
+    v.tail(dim) = A * points.col(i) + b;
     prog.AddLorentzConeConstraint(v);
   }
 
@@ -243,12 +241,7 @@ Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
   // the convex hull of the points is guaranteed to be bounded.
   const VectorXd c = A_sol.llt().solve(-b_sol);
 
-  if (U) {
-    // AUᵀ(x-mean) + b => AUᵀ(x - center), so center = -UA⁻¹b + mean.
-    return Hyperellipsoid(A_sol * U->transpose(), (*U) * c + mean);
-  } else {
-    return Hyperellipsoid(A_sol, c);
-  }
+  return Hyperellipsoid(A_sol, c);
 }
 
 std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {

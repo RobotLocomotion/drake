@@ -369,6 +369,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // in FinalizePlantOnly():
     //   -instance_actuation_ports_
     //   -actuation_port_
+    //   -instance_net_actuation_ports_
     //   -net_actuation_port_
     //   -applied_generalized_force_input_port_
     //   -applied_spatial_force_input_port_
@@ -596,6 +597,17 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
     throw std::runtime_error(
         "Currently weld constraints are only supported for discrete "
         "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support weld constraints. For all other solvers, we let
+  // the discrete update manager throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support weld constraints. Use "
+        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
+        "SAP solver instead. For other solvers, refer to "
+        "DiscreteContactSolver.");
   }
 
   const MultibodyConstraintId constraint_id =
@@ -2770,10 +2782,28 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
 
-  // Total applied actuation. For discrete models it can contain constraint
-  // terms.
+  // Net actuation ports.
   // N.B. We intentionally declare a dependency on kinematics in the continuous
   // mode in anticipation for adding PD support in continuous mode.
+  instance_net_actuation_ports_.resize(num_model_instances());
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_dofs = num_actuated_dofs(model_instance_index);
+    instance_net_actuation_ports_[model_instance_index] =
+        this->DeclareVectorOutputPort(
+                GetModelInstanceName(model_instance_index) + "_net_actuation",
+                instance_num_dofs,
+                [this, model_instance_index](const systems::Context<T>& context,
+                                             systems::BasicVector<T>* result) {
+                  const VectorX<T>& net_actuation =
+                      get_net_actuation_output_port().Eval(context);
+                  result->SetFromVector(this->GetActuationFromArray(
+                      model_instance_index, net_actuation));
+                },
+                {state_ticket, this->all_input_ports_ticket(),
+                 this->all_parameters_ticket()})
+            .get_index();
+  }
   net_actuation_port_ = this->DeclareVectorOutputPort(
                                 "net_actuation", num_actuated_dofs(),
                                 &MultibodyPlant::CalcActuationOutput,
@@ -3103,6 +3133,9 @@ void MultibodyPlant<T>::DeclareParameters() {
   for (const auto& [id, spec] : ball_constraints_specs_) {
     constraint_active_status_map[id] = true;
   }
+  for (const auto& [id, spec] : weld_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
 
   internal::ConstraintActiveStatusMap map_wrapper{constraint_active_status_map};
 
@@ -3176,6 +3209,16 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(net_actuation_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return systems::System<T>::get_output_port(
+      instance_net_actuation_ports_.at(model_instance));
 }
 
 template <typename T>

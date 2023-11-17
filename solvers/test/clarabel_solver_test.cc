@@ -9,6 +9,8 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
+#include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -282,15 +284,63 @@ GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   }
 }
 
-// TODO(hongkai.dai): Enable this test when ClarabelSolver supports PSD
-// constraints.
-// GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
-//  ClarabelSolver clarabel_solver;
-//  if (clarabel_solver.available()) {
-//    MinimalEllipsoidCoveringPoints(clarabel_solver, 1E-4);
-//  }
-//}
+GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
+  ClarabelSolver clarabel_solver;
+  if (clarabel_solver.available()) {
+    MinimalEllipsoidCoveringPoints(clarabel_solver, 1E-4);
+  }
+}
 
+GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
+  ClarabelSolver scs_solver;
+  if (scs_solver.available()) {
+    MatrixLogDeterminantLower(scs_solver, kTol);
+  }
+}
+GTEST_TEST(TestSos, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestSos, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestSos, SimpleSos1) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestSos, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  ClarabelSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestSos, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  ClarabelSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, kTol);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -482,6 +482,64 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidVelocityBounds) {
                               "where both subgraphs have zero order.");
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
+  /* The velocity of a curve is not defined for a subgraph of order 0.*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& regions1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1);
+
+  auto& regions2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1);
+
+  auto& regions1_to_regions2 = gcs.AddEdges(regions1, regions2);
+
+  // Zero order path continuity should throw an error, since its support by
+  // default.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+
+  // Negative continuity should be rejected as well.
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1.AddPathContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(-1),
+      "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddPathContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+
+  // Adding global continuity constraints should consider the order of the
+  // subgraphs and edges between subgraphs. Thus very large continuity orders
+  // shouldn't be rejected.
+  DRAKE_EXPECT_NO_THROW(gcs.AddPathContinuityConstraints(100));
+
+  // Since the order of region1 is 1, velocity continuity should be support.
+  DRAKE_EXPECT_NO_THROW(regions1.AddPathContinuityConstraints(1));
+  // But acceleration continuity would require the region to be of order 2.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint of order greater than the set "
+      "order.");
+
+  // Similarly the edges between subgraphs allow for velocity but no
+  // acceleration continuity.
+  DRAKE_EXPECT_NO_THROW(regions1_to_regions2.AddPathContinuityConstraints(1));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint to a subgraph edge where both "
+      "subgraphs order are not greater than or equal to the requested "
+      "continuity order.");
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
   /* Adds four points to the graph without any edges. */
   const int kDimension = 2;
@@ -700,6 +758,80 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+}
+
+TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
+  const int kDimension = 2;
+  const double kSpeed = 1.0;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start(0.2, 0.2), goal(4.8, 4.8);
+  auto& regions = gcs.AddRegions(regions_, 6);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0.0, 0.0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0.0, 0.0);
+
+  gcs.AddEdges(source, regions);
+  gcs.AddEdges(regions, target);
+
+  gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
+  gcs.AddVelocityBounds(Vector2d(-kSpeed, -kSpeed), Vector2d(kSpeed, kSpeed));
+
+  // Add velocity and acceleration continuity on r(s).
+  gcs.AddPathContinuityConstraints(1);
+  gcs.AddPathContinuityConstraints(2);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 2.5e3);
+
+  if (!GurobiOrMosekSolverAvailable()) {
+    return;
+  }
+
+  // Define solver options.
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 5;
+
+  auto [traj, result] = gcs.SolvePath(source, target, options);
+
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  auto normalized_traj = GcsTrajectoryOptimization::NormalizeSegmentTimes(traj);
+  EXPECT_TRUE(CompareMatrices(
+      normalized_traj.value(normalized_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(normalized_traj.value(normalized_traj.end_time()),
+                              goal, 1e-6));
+  EXPECT_EQ(normalized_traj.get_number_of_segments(),
+            traj.get_number_of_segments());
+  EXPECT_EQ(normalized_traj.start_time(), traj.start_time());
+  // Since each segment will be one second long, we expect the number of
+  // segments to match the duration of the normalized trajectory.
+  EXPECT_EQ(normalized_traj.get_number_of_segments(),
+            normalized_traj.end_time() - normalized_traj.start_time());
+
+  // Check for velocity and acceleration continuity.
+  for (int i = 0; i < normalized_traj.get_number_of_segments() - 1; ++i) {
+    auto normalized_segment_vel = normalized_traj.segment(i).MakeDerivative();
+    auto normalized_next_segment_vel =
+        normalized_traj.segment(i + 1).MakeDerivative();
+    EXPECT_TRUE(CompareMatrices(
+        normalized_segment_vel->value(normalized_segment_vel->end_time()),
+        normalized_next_segment_vel->value(
+            normalized_next_segment_vel->start_time()),
+        1e-6));
+
+    auto normalized_segment_acc = normalized_traj.segment(i).MakeDerivative(2);
+    auto normalized_next_segment_acc =
+        normalized_traj.segment(i + 1).MakeDerivative(2);
+    EXPECT_TRUE(CompareMatrices(
+        normalized_segment_acc->value(normalized_segment_acc->end_time()),
+        normalized_next_segment_acc->value(
+            normalized_next_segment_acc->start_time()),
+        1e-6));
+  }
 }
 
 TEST_F(SimpleEnv2D, DurationDelay) {

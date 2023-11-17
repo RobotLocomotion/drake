@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_static_library")
@@ -23,6 +24,7 @@ rust_static_library(
     name = "clarabel_cpp_rust_wrapper",
     edition = "2021",
     srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
+    crate_features = ["sdp"],
     deps = all_crate_deps(),
 )
 
@@ -30,16 +32,24 @@ rust_static_library(
 cc_library(
     name = "clarabel_cpp",
     linkstatic = True,
+    defines = [
+        "FEATURE_SDP",
+    ],
     deps = [
         ":hdrs",
         ":clarabel_cpp_rust_wrapper",
+        "@blas",
         "@eigen",
+        "@lapack",
     ],
     visibility = ["//visibility:public"],
 )
 
-# TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
-# to add the license-install rule here.
+install(
+    name = "install",
+    docs = ["LICENSE.md"],
+    visibility = ["//visibility:public"],
+)
 
 # TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
 # to un-nerf exported_symbols_test when Clarabel is enabled (and figure out how

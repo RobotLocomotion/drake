@@ -53,6 +53,9 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
       simulation_plant.GetModelInstanceByName(arm_info.model_name);
 
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  plant->mutable_gravity_field().set_gravity_vector(
+      simulation_plant.gravity_field().gravity_vector());
+
   Parser parser(plant.get());
   const auto models = parser.AddModels(arm_info.model_path);
   DRAKE_DEMAND(models.size() == 1);

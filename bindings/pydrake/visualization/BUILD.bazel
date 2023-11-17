@@ -37,6 +37,7 @@ drake_pybind_library(
     cc_srcs = [
         "visualization_py.cc",
         "visualization_py_config.cc",
+        "visualization_py_image_systems.cc",
         "visualization_py_sliders.cc",
         "visualization_py.h",
     ],
@@ -160,6 +161,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "image_systems_test",
+    deps = [
+        ":visualization",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "meldis_test",
     data = [
         "//examples/hydroelastic/spatula_slip_control:models",
@@ -213,6 +222,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "sliders_test",
+    deps = [
+        ":visualization",
+    ],
+)
+
+drake_py_unittest(
     name = "triad_test",
     data = [
         "//multibody/benchmarks/acrobot:models",
@@ -228,13 +244,6 @@ drake_py_unittest(
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "visualization_test",
-    deps = [
-        ":visualization",
     ],
 )
 

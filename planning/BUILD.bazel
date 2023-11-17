@@ -206,6 +206,7 @@ drake_cc_library(
     hdrs = ["visibility_graph.h"],
     interface_deps = [
         ":collision_checker",
+        "//common:parallelism",
     ],
     deps = [
         "@common_robotics_utilities",

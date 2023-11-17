@@ -2,7 +2,9 @@
 
 #include <vector>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -15,6 +17,8 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
+using std::sqrt;
+using symbolic::Expression;
 using symbolic::Variable;
 
 AffineBall::AffineBall() : AffineBall(MatrixXd(0, 0), VectorXd(0)) {}
@@ -56,6 +60,34 @@ double volume_of_unit_sphere(int dim) {
 }
 
 }  // namespace
+
+AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol) {
+  DRAKE_THROW_UNLESS(!points.hasNaN());
+  DRAKE_THROW_UNLESS(points.allFinite());
+  DRAKE_THROW_UNLESS(points.rows() >= 1);
+  DRAKE_THROW_UNLESS(points.cols() >= 1);
+  const int dim = points.rows();
+
+  AffineSubspace ah(VPolytope(points), rank_tol);
+  const int rank = ah.AffineDimension();
+  Eigen::MatrixXd points_local = ah.ToLocalCoordinates(points);
+
+  // Compute circumscribed ellipsoid in local coordinates
+  const Hyperellipsoid hyperellipsoid_local =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points_local,
+                                                          rank_tol);
+  const AffineBall affineball_local(hyperellipsoid_local);
+
+  // Lift the ellipsoid {Bu+center| |u|₂ ≤ 1} to the original coordinate system
+  // i.e. the set {ABu + (Ac+t) | |u|₂ ≤ 1}
+  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(dim, dim);
+  A_full.leftCols(rank) = ah.basis() * affineball_local.B();
+  Eigen::VectorXd center_full =
+      ah.ToGlobalCoordinates(affineball_local.center());
+
+  return AffineBall(A_full, center_full);
+}
 
 double AffineBall::DoCalcVolume() const {
   return volume_of_unit_sphere(ambient_dimension()) * B_.determinant();

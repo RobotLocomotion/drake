@@ -11,6 +11,7 @@ def clarabel_cpp_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/git_submodule.patch",
+            ":patches/sdp.patch",
         ],
         mirrors = mirrors,
     )
