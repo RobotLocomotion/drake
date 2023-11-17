@@ -10,6 +10,7 @@
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
@@ -348,23 +349,33 @@ TEST_F(VolumetricElementTest, MassMatrixSumUpToTotalMass) {
   EXPECT_NEAR(mass_matrix_sum, total_mass * kSpatialDimension, kEpsilon);
 }
 
-TEST_F(VolumetricElementTest, AddScaledGravityForce) {
-  const Vector3<AD> gravity_vector(1, 2, 3);
-  VectorX<AD> scaled_gravity_force = VectorX<AD>::Zero(kNumDofs);
-  const double scale = 2.0;
-  unique_ptr<FemState<AD>> fem_state = MakeDeformedState();
-  const Data& data = EvalElementData(*fem_state);
-  /* Calculate the gravity force using the implementation in VolumetricElement.
-   */
-  element().AddScaledGravityForce(data, scale, gravity_vector,
-                                  &scaled_gravity_force);
-  /* Use the implementation in the base class as the reference. */
-  VectorX<AD> expected_scaled_gravity_force = VectorX<AD>::Zero(kNumDofs);
-  const FemElement<ElementType>& base_fem_element = element();
-  base_fem_element.AddScaledGravityForce(data, scale, gravity_vector,
-                                         &expected_scaled_gravity_force);
-  EXPECT_TRUE(CompareMatrices(expected_scaled_gravity_force,
-                              scaled_gravity_force, kEpsilon));
+/* Tests that when applying the gravity force density field, the result agrees
+ with analytic solution. */
+TEST_F(VolumetricElementTest, ExternalForce) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+  const AD mass_density = 2.7;
+  Vector3<AD> gravity_vector(0, 0, -9.81);
+  GravityForceField<AD> gravity_field(gravity_vector, mass_density);
+  /* The gravity force field doesn't depend on Context, but a Context is needed
+   formally. So we create a dummy Context that's otherwise
+   unused. */
+  MultibodyPlant<AD> plant(0.01);
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  fem::FemPlantData<AD> plant_data{*context, {&gravity_field}};
+
+  VectorX<AD> gravity_force = VectorX<AD>::Zero(kNumDofs);
+  const AD scale = 1.0;
+  element().AddScaledExternalForces(data, plant_data, scale, &gravity_force);
+  Vector3<AD> total_force = Vector3<AD>::Zero();
+  for (int i = 0; i < kNumNodes; ++i) {
+    total_force += gravity_force.segment<3>(3 * i);
+  }
+
+  const Vector3<AD> expected_gravity_force =
+      reference_volume()[0] * gravity_vector * mass_density;
+  EXPECT_TRUE(CompareMatrices(total_force, expected_gravity_force, kEpsilon));
 }
 
 }  // namespace

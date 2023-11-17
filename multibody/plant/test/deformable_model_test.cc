@@ -18,6 +18,7 @@ using geometry::SceneGraphInspector;
 using geometry::Sphere;
 using math::RigidTransformd;
 using std::make_unique;
+using systems::BasicVector;
 
 class DeformableModelTest : public ::testing::Test {
  protected:
@@ -328,6 +329,97 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
                    deformable_id, rigid_body, X_BA, box, X_BG),
                std::exception);
+}
+
+TEST_F(DeformableModelTest, ExternalForces) {
+  /* A user defined force density field. */
+  class ConstantForceDensityField final : public ForceDensityField<double> {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField)
+
+    /* Constructs an force density field that has the functional form given by
+     input `field` which is then scaled by a scalar value via input port. */
+    explicit ConstantForceDensityField(
+        std::function<Vector3<double>(const Vector3<double>&)> field)
+        : field_(std::move(field)) {}
+
+    /* Gets the double-valued input port that determines whether the force field
+     is turned on or off. 0 for off and anything else for on.  */
+    const systems::InputPort<double>& get_input_port() const {
+      return parent_system_or_throw().get_input_port(scale_port_index_);
+    }
+
+   private:
+    Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
+                                 const Vector3<double>& p_WQ) const final {
+      return get_input_port().Eval(context)(0) * field_(p_WQ);
+    };
+
+    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+      return std::make_unique<ConstantForceDensityField>(*this);
+    }
+
+    void DoDeclareInputPorts(multibody::MultibodyPlant<double>* plant) final {
+      scale_port_index_ = this->DeclareVectorInputPort(
+                                  plant, "on/off signal for the force field",
+                                  BasicVector<double>(1.0))
+                              .get_index();
+    }
+
+    std::function<Vector3<double>(const Vector3<double>&)> field_;
+    systems::InputPortIndex scale_port_index_;
+  };
+
+  auto force_field = [](const Vector3d& x) {
+    return 3.14 * x;
+  };
+  auto constant_force =
+      std::make_unique<ConstantForceDensityField>(force_field);
+  const ConstantForceDensityField* constant_force_ptr = constant_force.get();
+  deformable_model_ptr_->AddExternalForce(std::move(constant_force));
+  constexpr double kRezHint = 0.5;
+  DeformableBodyId body_id = RegisterSphere(kRezHint);
+  /* Pre-finalize calls to GetExternalForces are not allowed. */
+  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->GetExternalForces(body_id),
+                              ".*before system resources.*declared.*");
+  /* We modify the gravity to deviate from the default to verify that it is
+   reflected in the external gravity applied to the deformable body. */
+  const Vector3d gravity_vector(0.0, 0.0, -10.0);
+  plant_->mutable_gravity_field().set_gravity_vector(gravity_vector);
+  plant_->Finalize();
+  auto plant_context = plant_->CreateDefaultContext();
+
+  /* Post-finalize calls to AddExternalForce are not allowed. */
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->AddExternalForce(
+          std::make_unique<ConstantForceDensityField>(force_field)),
+      ".*AddExternalForce.*after system resources have been declared.*");
+
+  DeformableBodyId fake_id = DeformableBodyId::get_new_id();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->GetExternalForces(fake_id),
+      fmt::format(".*No.*id.*{}.*registered.*", fake_id));
+
+  const std::vector<const ForceDensityField<double>*>& external_forces =
+      deformable_model_ptr_->GetExternalForces(body_id);
+  for (const auto* force : external_forces) {
+    const auto* g = dynamic_cast<const GravityForceField<double>*>(force);
+    const auto* f = dynamic_cast<const ConstantForceDensityField*>(force);
+    /* We know two external forces are added to the deformable body, one is
+     gravity (added automatically), the other is the explicit force defined
+     above. */
+    ASSERT_TRUE((g != nullptr) ^ (f != nullptr));
+    const Vector3d p_WQ(1, 2, 3);
+    if (g != nullptr) {
+      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ),
+                gravity_vector * default_body_config_.mass_density());
+    } else {
+      const double scale = 2.71;
+      constant_force_ptr->get_input_port().FixValue(plant_context.get(),
+                                                    Vector1d(scale));
+      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), scale * 3.14 * p_WQ);
+    }
+  }
 }
 
 }  // namespace

@@ -95,11 +95,6 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     return 7.89 * MakeSpdMatrix();
   }
 
-  /* Dummy element provides zero gravity force so that we have complete control
-   over what the residual is. */
-  void AddScaledGravityForce(const Data&, const T&, const Vector3<T>&,
-                             EigenPtr<Vector<T, kNumDofs>>) const {}
-
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */
@@ -146,6 +141,24 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
       const Data&, const T& scale,
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> M) const {
     *M += scale * mass_matrix();
+  }
+
+  /* Implements FemElement::DoAddScaledExternalForces(). Here we add the force
+   density directly to the nodes. Even though this is unphysical (the units
+   don't match), this gives us an easy way to test APIs without introducing
+   extra complexities. */
+  void DoAddScaledExternalForces(const Data& data,
+                                 const FemPlantData<T>& plant_data,
+                                 const T& scale,
+                                 EigenPtr<Vector<T, kNumDofs>> result) const {
+    for (int i = 0; i < this->num_nodes; ++i) {
+      const auto node_q = data.element_q.template segment<3>(3 * i);
+      for (const multibody::ForceDensityField<T>* force_density :
+           plant_data.force_density_fields) {
+        result->template segment<3>(3 * i) +=
+            scale * force_density->EvaluateAt(plant_data.plant_context, node_q);
+      }
+    }
   }
 };
 
