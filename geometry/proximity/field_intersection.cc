@@ -234,16 +234,15 @@ void VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
   }
 }
 
-template <class MeshBuilder, class BvType>
-void HydroelasticVolumeIntersector<MeshBuilder, BvType>::
-    IntersectCompliantVolumes(
-        GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
-        const Bvh<BvType, VolumeMesh<double>>& bvh0_M,
-        const math::RigidTransform<T>& X_WM, GeometryId id1,
-        const VolumeMeshFieldLinear<double, double>& field1_N,
-        const Bvh<BvType, VolumeMesh<double>>& bvh1_N,
-        const math::RigidTransform<T>& X_WN,
-        std::unique_ptr<ContactSurface<T>>* contact_surface_W) {
+template <class MeshBuilder>
+void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
+    const math::RigidTransform<T>& X_WM, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<T>& X_WN,
+    std::unique_ptr<ContactSurface<T>>* contact_surface_W) {
   const math::RigidTransform<T> X_MN = X_WM.InvertAndCompose(X_WN);
 
   // The computation will be in Frame M and then transformed to the world frame.
@@ -305,11 +304,11 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
     HydroelasticContactRepresentation representation) {
   std::unique_ptr<ContactSurface<T>> contact_surface_W;
   if (representation == HydroelasticContactRepresentation::kTriangle) {
-    HydroelasticVolumeIntersector<TriMeshBuilder<T>, Obb>()
+    HydroelasticVolumeIntersector<TriMeshBuilder<T>>()
         .IntersectCompliantVolumes(id0, field0_M, bvh0_M, X_WM, id1, field1_N,
                                    bvh1_N, X_WN, &contact_surface_W);
   } else {
-    HydroelasticVolumeIntersector<PolyMeshBuilder<T>, Obb>()
+    HydroelasticVolumeIntersector<PolyMeshBuilder<T>>()
         .IntersectCompliantVolumes(id0, field0_M, bvh0_M, X_WM, id1, field1_N,
                                    bvh1_N, X_WN, &contact_surface_W);
   }
@@ -320,10 +319,10 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
 // Template instantiations
 //----------------------------------------------------------
 // These instantiations are for Hydroelastics.
-template class HydroelasticVolumeIntersector<PolyMeshBuilder<double>, Obb>;
-template class HydroelasticVolumeIntersector<TriMeshBuilder<double>, Obb>;
-template class HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>;
-template class HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>, Obb>;
+template class HydroelasticVolumeIntersector<PolyMeshBuilder<double>>;
+template class HydroelasticVolumeIntersector<TriMeshBuilder<double>>;
+template class HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>>;
+template class HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>>;
 // This instantiation is for Deformables.
 template class VolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 
