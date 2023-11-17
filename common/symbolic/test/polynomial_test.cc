@@ -1211,6 +1211,8 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   const Polynomial sub2 = poly2.SubstituteAndExpand(indeterminate_substitution,
                                                     &substitutions_cached_data);
   const Polynomial sub2_expected{4 * pow(a_, 3) * (b_ + 1)};
+  std::cout << sub2 << std::endl;
+  std::cout << sub2_expected << std::endl;
   EXPECT_TRUE(sub2.EqualTo(sub2_expected));
   // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²,  x²y: 8a³(b+1)}.
   EXPECT_EQ(substitutions_cached_data.get_data()->size(), 5);
