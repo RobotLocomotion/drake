@@ -463,6 +463,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "image_io_test_params",
+    testonly = True,
+    srcs = ["test/image_io_test_params.cc"],
+    hdrs = ["test/image_io_test_params.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":image",
+        ":image_file_format",
+        "@gtest//:without_main",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+    ],
+)
+
 drake_cc_googletest(
     name = "image_io_internal_test",
     data = [
@@ -619,6 +634,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "vtk_image_reader_writer_test",
     deps = [
+        ":image_io_test_params",
         ":vtk_image_reader_writer",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
