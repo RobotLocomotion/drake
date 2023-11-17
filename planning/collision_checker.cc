@@ -13,11 +13,9 @@
 
 #include <common_robotics_utilities/math.hpp>
 #include <common_robotics_utilities/openmp_helpers.hpp>
+#include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/print.hpp>
 #include <common_robotics_utilities/utility.hpp>
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/fmt_eigen.h"
@@ -27,6 +25,9 @@ namespace drake {
 namespace planning {
 
 using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -566,16 +567,14 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   drake::log()->debug("CheckConfigsCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(number_of_threads) schedule(static)
-#endif
-  for (size_t idx = 0; idx < configs.size(); ++idx) {
-    if (CheckConfigCollisionFree(configs.at(idx), GetContextOmpThreadNum())) {
-      collision_checks.at(idx) = 1;
-    } else {
-      collision_checks.at(idx) = 0;
-    }
-  }
+  const auto config_work = [&](const int thread_num, const int64_t index) {
+    collision_checks.at(index) =
+        CheckConfigCollisionFree(configs.at(index), thread_num);
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             configs.size(), config_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
@@ -722,20 +721,22 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
 
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(number_of_threads) schedule(static)
-#endif
-    for (int step = 0; step < num_steps; ++step) {
+    const auto step_work = [&](const int thread_num, const int64_t step) {
       if (edge_valid.load()) {
         const double ratio =
             static_cast<double>(step) / static_cast<double>(num_steps);
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp, GetContextOmpThreadNum())) {
+        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
           edge_valid.store(false);
         }
       }
-    }
+    };
+
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               num_steps, step_work,
+                               ParallelForBackend::BEST_AVAILABLE);
+
     return edge_valid.load();
   } else {
     // If OpenMP cannot parallelize, fall back to the serial version.
@@ -753,18 +754,16 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   drake::log()->debug("CheckEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(number_of_threads) schedule(static)
-#endif
-  for (size_t idx = 0; idx < edges.size(); ++idx) {
-    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
-    if (CheckEdgeCollisionFree(edge.first, edge.second,
-                               GetContextOmpThreadNum())) {
-      collision_checks.at(idx) = 1;
-    } else {
-      collision_checks.at(idx) = 0;
-    }
-  }
+  const auto edge_work = [&](const int thread_num, const int64_t index) {
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
+
+    collision_checks.at(index) =
+        CheckEdgeCollisionFree(edge.first, edge.second, thread_num);
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             edges.size(), edge_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
@@ -816,17 +815,16 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     alpha.store(1.0);
     std::mutex alpha_mutex;
 
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(number_of_threads) schedule(static)
-#endif
-    for (int step = 0; step <= num_steps; ++step) {
-      const double ratio = step / static_cast<double>(num_steps);
+    const auto step_work = [&](const int thread_num, const int64_t step) {
+      const double ratio =
+          static_cast<double>(step) / static_cast<double>(num_steps);
       // If this step fails, this is the alpha which we would report.
-      const double possible_alpha = (step - 1) / static_cast<double>(num_steps);
+      const double possible_alpha =
+          static_cast<double>(step - 1) / static_cast<double>(num_steps);
       if (possible_alpha < alpha.load()) {
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp, GetContextOmpThreadNum())) {
+        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
           std::lock_guard<std::mutex> update_lock(alpha_mutex);
           // Between the initial decision to interpolate and check collisions
           // and now, another thread may have proven a *lower* alpha is invalid;
@@ -836,7 +834,12 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
           }
         }
       }
-    }
+    };
+
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               num_steps + 1, step_work,
+                               ParallelForBackend::BEST_AVAILABLE);
+
     return EdgeMeasure(distance, alpha.load());
   } else {
     // If OpenMP cannot parallelize, fall back to the serial version.
@@ -854,14 +857,16 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
   drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(number_of_threads) schedule(static)
-#endif
-  for (size_t idx = 0; idx < edges.size(); ++idx) {
-    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
-    collision_checks.at(idx) = MeasureEdgeCollisionFree(
-        edge.first, edge.second, GetContextOmpThreadNum());
-  }
+  const auto edge_work = [&](const int thread_num, const int64_t index) {
+    const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(index);
+
+    collision_checks.at(index) =
+        MeasureEdgeCollisionFree(edge.first, edge.second, thread_num);
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             edges.size(), edge_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   return collision_checks;
 }
@@ -1024,10 +1029,7 @@ void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(
 }
 
 bool CollisionChecker::CanEvaluateInParallel() const {
-  // TODO(calderpg-tri) Remove OpenMP dependence once alternative parallel-for
-  // loop backends are supported.
-  return SupportsParallelChecking() && num_allocated_contexts() > 1 &&
-         common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild();
+  return SupportsParallelChecking() && num_allocated_contexts() > 1;
 }
 
 std::string CollisionChecker::CriticizePaddingMatrix() const {

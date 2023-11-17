@@ -2,6 +2,7 @@
 
 #include <Eigen/Sparse>
 
+#include "drake/common/parallelism.h"
 #include "drake/planning/collision_checker.h"
 
 namespace drake {
@@ -20,7 +21,7 @@ LinearDistanceAndInterpolationProvider, which is the default), but some more
 complex spaces with non-linear interpolation (e.g. a Dubin's car) are not
 symmetric.
 
-If `parallelize=`==true, then the
+If `parallelize` specifies more than one thread, then the
 CollisionCheckerParams::distance_and_interpolation_provider for `checker` must
 be implemented in C++, either by providing the C++ implementation directly
 directly or by using the default provider.
@@ -32,7 +33,8 @@ points.col(j). A is always symmetric.
 */
 Eigen::SparseMatrix<bool> VisibilityGraph(
     const CollisionChecker& checker,
-    const Eigen::Ref<const Eigen::MatrixXd>& points, bool parallelize = true);
+    const Eigen::Ref<const Eigen::MatrixXd>& points,
+    Parallelism parallelize = Parallelism::Max());
 
 }  // namespace planning
 }  // namespace drake
