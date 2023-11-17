@@ -1,6 +1,7 @@
 #include "drake/common/symbolic/lex_monomial.h"
 
-#include <iostream>
+#include <map>
+
 namespace drake {
 namespace symbolic {
 
@@ -8,7 +9,7 @@ std::unique_ptr<OrderedMonomial> LexMonomial::DoGetNextMonomial() const {
   std::map<Variable, int> powers{powers_};
   powers.rbegin()->second += 1;
   return std::unique_ptr<OrderedMonomial>(new LexMonomial(powers));
-};
+}
 
 std::optional<std::unique_ptr<OrderedMonomial>>
 LexMonomial::DoMaybeGetPreviousMonomial() const {
@@ -27,7 +28,7 @@ LexMonomial::DoMaybeGetPreviousMonomial() const {
     }
   }
   return std::unique_ptr<OrderedMonomial>(new LexMonomial(powers));
-};
+}
 
 bool LexMonomial::DoLessThanComparison(const OrderedMonomial& m) const {
   // We have already checked that this and @p m have the same variables.
@@ -40,7 +41,7 @@ bool LexMonomial::DoLessThanComparison(const OrderedMonomial& m) const {
     }
   }
   return false;
-};
+}
 
 }  // namespace symbolic
 }  // namespace drake

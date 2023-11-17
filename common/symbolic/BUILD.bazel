@@ -225,6 +225,19 @@ drake_cc_library (
     ]
 )
 
+drake_cc_library (
+    name = "grlex_monomial",
+    hdrs = [
+        "grlex_monomial.h"
+    ],
+    srcs = [
+        "grlex_monomial.cc"
+    ],
+    deps = [
+        ":ordered_monomial"
+    ]
+)
+
 drake_cc_googletest(
     name = "decompose_test",
     deps = [
@@ -256,6 +269,14 @@ drake_cc_googletest(
     name = "grev_lex_monomial_test",
     deps = [
         ":grev_lex_monomial",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "grlex_monomial_test",
+    deps = [
+        ":grlex_monomial",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

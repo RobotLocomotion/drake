@@ -1,4 +1,7 @@
 #pragma once
+#include <memory>
+#include <optional>
+
 #include "drake/common/symbolic/polynomial.h"
 
 namespace drake {
