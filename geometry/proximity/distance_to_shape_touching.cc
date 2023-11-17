@@ -46,18 +46,13 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
   return Vector3d(kNan, kNan, kNan);
 }
 
-// Helper method to determine whether a point lies approximately (to internal
-// tolerance) on either a face, edge or vertex. To do so this method marks a
-// vector `n` with a 1 at index `i` if the point lies approximately on either
-// the positive or negative face of the box on dimension `i`. The sum of the
-// returned vector encodes whether the point is on a face (1), edge (2), vertex
-// (3) or none (0). The returned vector also encodes which face, edge or vertex
-// the point lies on (up to a sign).
 Vector3d PointOnBoxHelper(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
   const Vector3d half_size = box_B.side / 2.0;
   const double kEps = 1e-14;
   Vector3d n{0.0, 0.0, 0.0};
   using std::abs;
+  // Mark the vector `n` with a 1 at index `i` if the point lies approximately
+  // on either the positive or negative face of the box on dimension `i`.
   for (int i = 0; i < 3; ++i) {
     double diff = abs(half_size(i) - abs(p_BQ(i)));
     if (diff <= kEps) n(i) = 1.0;
@@ -140,7 +135,9 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   }
 
   // The index of the non-zero entry determines the axis of the edge that either
-  // Ca or Cb lies on.
+  // Ca or Cb lies on. Note that axis_index_A is valid only when s_A == 2,
+  // and axis_index_B is valid only when s_B == 2.  We will use them under
+  // those conditions only.
   const int axis_index_A = (Vector3d::Ones() - v_A).dot(Vector3d(0, 1, 2));
   const int axis_index_B = (Vector3d::Ones() - v_B).dot(Vector3d(0, 1, 2));
   // Edge-to-edge.
