@@ -38,12 +38,21 @@ Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
                                          const Eigen::Vector3d& p_BCb);
 
 /* Helper method to determine whether a point `p_BQ` lies approximately (to
- internal tolerance) on either a face, edge or vertex of `box_B`. To do so this
- method marks a vector `n` with a 1 at index `i` if the point lies approximately
- on either the positive or negative face of the box on dimension `i`. The sum of
- the returned vector encodes whether the point is on a face (1), edge (2),
- vertex (3) or none (0). The returned vector also encodes which face, edge or
- vertex the point lies on (up to a sign). */
+ internal tolerance) on either a face, edge or vertex of `box_B`.
+
+ @return v_B a vector expressed in the box's frame B encoding the location of
+         the point:-
+         v_B is (1, 0, 0) if p_BQ is on one of the two faces normal to Bx axis.
+         v_B is (0, 1, 0) if p_BQ is on one of the two faces normal to By axis.
+         v_B is (0, 0, 1) if p_BQ is on one of the two faces normal to Bz axis.
+         v_B is (0, 1, 1) if p_BQ is on one of the four edges parallel to Bx.
+         v_B is (1, 0, 1) if p_BQ is on one of the four edges parallel to By.
+         v_B is (1, 1, 0) if p_BQ is on one of the four edges parallel to Bz.
+         v_B is (1, 1, 1) if p_BQ is at one of the eight vertices.
+         v_B is (0, 0, 0) if p_BQ is on none of the faces, edges, or vertices.
+         The v_B.sum() encodes whether the point is on a face (1), edge (2),
+         vertex (3) or none (0).
+ */
 Eigen::Vector3d PointOnBoxHelper(const Eigen::Vector3d& p_BQ,
                                  const fcl::Boxd& box_B);
 
