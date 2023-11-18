@@ -58,17 +58,22 @@ def repository_python_info(repository_ctx):
     # - `version_major` - major version
     # - `os` - results from `determine_os(...)`
     os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-    os_key = os_result.target
-    if os_result.is_ubuntu:
-        os_key += ":" + os_result.ubuntu_release
-    versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
+    if os_result.error == None:
+        os_key = os_result.target
+        if os_result.is_ubuntu:
+            os_key += ":" + os_result.ubuntu_release
+        is_any_macos = os_result.is_macos or os_result.is_macos_wheel
+        homebrew_prefix = os_result.homebrew_prefix
+    else:
+        os_key = "unknown"
+        is_any_macos = repository_ctx.os.name == "mac os x"
+        homebrew_prefix = "/opt/homebrew"
+    versions_supported = _VERSION_SUPPORT_MATRIX.get(os_key, [])
 
-    if os_result.is_macos or os_result.is_macos_wheel:
+    if is_any_macos:
         python = repository_ctx.attr.macos_interpreter_path
         if "{homebrew_prefix}" in python:
-            python = python.format(homebrew_prefix = os_result.homebrew_prefix)
+            python = python.format(homebrew_prefix = homebrew_prefix)
     else:
         python = repository_ctx.attr.linux_interpreter_path
 
@@ -120,7 +125,7 @@ def repository_python_info(repository_ctx):
         site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version_major,
-        os = os_result,
+        is_any_macos = is_any_macos,
     )
 
 def _impl(repository_ctx):
@@ -183,10 +188,10 @@ def _impl(repository_ctx):
     for i in reversed(range(len(linkopts))):
         if linkopts[i].startswith("-l") and linkopts[i].find(libpy) != -1:
             has_direct_link = True
-            if py_info.os.is_macos:
+            if py_info.is_any_macos:
                 linkopts.pop(i)
 
-    if py_info.os.is_macos:
+    if py_info.is_any_macos:
         linkopts = ["-undefined dynamic_lookup"] + linkopts
 
     if not has_direct_link:
