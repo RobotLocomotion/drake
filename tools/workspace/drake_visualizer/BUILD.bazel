@@ -69,7 +69,7 @@ install(
         ":install_wrapper_script",
         "//tools/workspace/drake_visualizer/_drake_visualizer_builtin_scripts:install",  # noqa
         "@drake_visualizer//:install",
-    ],
+    ] if _DRAKE_VISUALIZER_ENABLED else [],
 )
 
 drake_py_unittest(
