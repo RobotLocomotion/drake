@@ -1,9 +1,0 @@
-.git
-.gitattributes
-.github
-.gitignore
-.idea
-bazel-*
-gen
-tools/bazel
-user.bazelrc
