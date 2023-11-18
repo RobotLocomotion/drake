@@ -261,9 +261,11 @@ def get_name_chain(cursor):
         piece = p.spelling
         name_chain.insert(0, piece)
         p = p.semantic_parent
-    # Do not try to specify names for anonymous structs.
-    while '' in name_chain:
-        name_chain.remove('')
+    # Prune away the names of anonymous structs and enums.
+    name_chain = [
+        x for x in name_chain
+        if x != '' and not x.startswith('(unnamed')
+    ]
     return tuple(name_chain)
 
 
