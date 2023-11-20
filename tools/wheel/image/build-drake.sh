@@ -12,7 +12,7 @@ cd /opt/drake-wheel-build/drake-build
 export BAZELISK_HOME=/var/cache/bazel/bazelisk
 
 # Add wheel-specific bazel options.
-cat > /etc/bazel.bazelrc << EOF
+cat > /opt/drake-wheel-build/drake-build/drake.bazelrc << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_OS=manylinux
