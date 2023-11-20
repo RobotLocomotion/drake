@@ -76,27 +76,36 @@ fi
 # Build and "install" Drake.
 # -----------------------------------------------------------------------------
 
-cd "$git_root"
+readonly build_root="/opt/drake-wheel-build/drake-build"
 
-export SNOPT_PATH=git
+mkdir -p "$build_root"
+cd "$build_root"
 
-# TODO(jwnimmer-tri) To make it easier to build a macOS wheel for a different
-# Python, we should to switch to using CMake for this step so that we can use
-# use the canonical `-DPython_EXECUTABLE`.
+# Add wheel-specific bazel options.
+cat > "$build_root/drake.bazelrc" << EOF
+build --repo_env=DRAKE_OS=macos_wheel
+build --repo_env=SNOPT_PATH=git
+build --config=packaging
+# See tools/wheel/wheel_builder/macos.py for more on this env variable.
+build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
+EOF
 
-declare -a bazel_args=(
-    --repo_env=DRAKE_OS=macos_wheel
-    --define=NO_DRAKE_VISUALIZER=ON
-    --define=WITH_MOSEK=ON
-    --define=WITH_SNOPT=ON
-    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
-    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
-)
+# Install Drake.
+cmake "$git_root" \
+    -DCMAKE_INSTALL_PREFIX=/opt/drake
+make install
+
+# Build wheel tools.
+cd "$build_root/drake_build_cwd"
 
 bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath
 bazel build "${bazel_args[@]}" //tools/wheel:change_lpath
 
-bazel run "${bazel_args[@]}" //:install -- /opt/drake
+ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
+
+# Ensure that the user (or build script) will be able to delete the build tree
+# later.
+find "$build_root" -type d -print0 | xargs -0 chmod u+w
 
 # -----------------------------------------------------------------------------
 # Set up a Python virtual environment with the latest setuptools.
@@ -116,11 +125,11 @@ pip install --upgrade \
     wheel
 
 ln -s \
-    "$git_root/bazel-bin/tools/wheel/strip_rpath" \
+    "$build_root/bazel-bin/tools/wheel/strip_rpath" \
     "/opt/drake-wheel-build/python/bin/strip_rpath"
 
 ln -s \
-    "$git_root/bazel-bin/tools/wheel/change_lpath" \
+    "$build_root/bazel-bin/tools/wheel/change_lpath" \
     "/opt/drake-wheel-build/python/bin/change_lpath"
 
 # -----------------------------------------------------------------------------

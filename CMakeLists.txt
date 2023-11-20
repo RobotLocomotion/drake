@@ -575,7 +575,9 @@ foreach(import IN LISTS BAZELRC_IMPORTS)
 endforeach()
 
 # We need to run Bazel in a dedicated temporary directory. The particular
-# name `drake_build_cwd` isn't important, it just needs to be unique.
+# name `drake_build_cwd` isn't important, it just needs to be unique. Note,
+# however, that the macOS wheel builds also need to know this path, so if it
+# ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/WORKSPACE.in drake_build_cwd/WORKSPACE.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
