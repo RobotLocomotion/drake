@@ -244,7 +244,16 @@ drake_cc_library(
 
 )
 
+drake_cc_library(
+    name = "uniform_set_sampler",
+    srcs = ["uniform_set_sampler.cc"],
+    hdrs = ["uniform_set_sampler.h"],
+    interface_deps = [
+        ":approximate_convex_cover_builder_base",
+        "//geometry/optimization:convex_set",
+    ]
 
+)
 
 drake_cc_googletest(
     name = "body_shape_description_test",
@@ -378,6 +387,13 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bernoulli_test_cover_checker_test",
+    deps = [
+        ":bernoulli_test_cover_checker",
     ],
 )
 
