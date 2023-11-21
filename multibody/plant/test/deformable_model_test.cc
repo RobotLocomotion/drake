@@ -411,9 +411,13 @@ TEST_F(DeformableModelTest, ExternalForces) {
     ASSERT_TRUE((g != nullptr) ^ (f != nullptr));
     const Vector3d p_WQ(1, 2, 3);
     if (g != nullptr) {
+      EXPECT_EQ(g->density_type(),
+                ForceDensityField<double>::DensityType::kPerReferenceVolume);
       EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ),
                 gravity_vector * default_body_config_.mass_density());
     } else {
+      EXPECT_EQ(f->density_type(),
+                ForceDensityField<double>::DensityType::kPerCurrentVolume);
       const double scale = 2.71;
       constant_force_ptr->get_input_port().FixValue(plant_context.get(),
                                                     Vector1d(scale));

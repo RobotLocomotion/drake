@@ -29,15 +29,8 @@ class ForceDensityField {
  public:
   virtual ~ForceDensityField() = default;
 
-  // TODO(xuchenhan-tri): Switch the force density measure to the more intuitive
-  // force per current configuration volume. This will make gravity field
-  // implementation slightly more cumbersome.
   /** Evaluates the force density [N/m³] with the given `context` of the
-   owning MultibodyPlant and a position in world, `p_WQ`.
-   @note this returns the force per unit of _reference_ configuration volume
-   (where the reference undeformed configuration is defined by the input mesh
-   provided by the user) instead of force per unit of _current_ (deformed)
-   configuration volume. */
+   owning MultibodyPlant and a position in world, `p_WQ`. */
   Vector3<T> EvaluateAt(const systems::Context<T>& context,
                         const Vector3<T>& p_WQ) const {
     return DoEvaluateAt(context, p_WQ);
@@ -56,6 +49,20 @@ class ForceDensityField {
     DRAKE_THROW_UNLESS(tree_system_ != nullptr);
     return *tree_system_;
   }
+
+  /** (Advanced) Enum for the type of force density in %ForceDensityField. */
+  enum class DensityType {
+    /** EvaluateAt() returns the force per unit of _current_ (deformed)
+     configuration volume. */
+    kPerCurrentVolume,
+    /** EvaluateAt() returns the force per unit of _reference_ configuration
+     volume where the reference undeformed configuration is defined by the input
+     mesh provided by the user. */
+    kPerReferenceVolume,
+  };
+
+  /* (Advanced) Returns the force density type of `this` %ForceDensityField. */
+  DensityType density_type() const { return density_type_; }
 
 #ifndef DRAKE_DOXYGEN_CXX
   /* (Internal use only) Declares internal::MultibodyTreeSystem cache
@@ -94,7 +101,9 @@ class ForceDensityField {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField)
 
-  ForceDensityField() = default;
+  explicit ForceDensityField(
+      DensityType density_type = DensityType::kPerCurrentVolume)
+      : density_type_(density_type) {}
 
   /** Derived classes must override this function to provide a threadsafe
    implemention to the NVI EvaluateAt(). */
@@ -145,6 +154,7 @@ class ForceDensityField {
   }
 
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
+  DensityType density_type_{DensityType::kPerCurrentVolume};
 };
 
 /** A uniform gravitational force density field for a uniform density object.
@@ -159,7 +169,9 @@ class GravityForceField : public ForceDensityField<T> {
   density object. with the given `gravity_vector` [m/s²] and `mass_density`
   [kg/m³]. */
   GravityForceField(const Vector3<T>& gravity_vector, const T& mass_density)
-      : force_density_(mass_density * gravity_vector) {}
+      : ForceDensityField<T>(
+            ForceDensityField<T>::DensityType::kPerReferenceVolume),
+        force_density_(mass_density * gravity_vector) {}
 
  private:
   Vector3<T> DoEvaluateAt(const systems::Context<T>&,
