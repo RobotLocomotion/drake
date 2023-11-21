@@ -1,4 +1,3 @@
-coinor-libcoinutils3v5
 default-jre
 jupyter-notebook
 libblas3
@@ -37,6 +36,5 @@ python3-matplotlib
 python3-numpy
 python3-pil
 python3-pydot
-python3-pygame
 python3-yaml
 zlib1g
