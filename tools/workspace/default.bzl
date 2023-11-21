@@ -84,6 +84,7 @@ load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
+load("//tools/workspace/rules_license:repository.bzl", "rules_license_repository")  # noqa
 load("//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
 load("//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository")
 load("//tools/workspace/rules_rust_tinyjson:repository.bzl", "rules_rust_tinyjson_repository")  # noqa
@@ -314,6 +315,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     if "ros_xacro_internal" not in excludes:
         ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
+    if "rules_license" not in excludes:
+        rules_license_repository(name = "rules_license", mirrors = mirrors)
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
     if "rules_rust" not in excludes:
