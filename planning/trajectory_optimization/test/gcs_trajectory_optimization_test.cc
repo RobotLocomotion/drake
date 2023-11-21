@@ -1099,7 +1099,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
   std::vector<int> continuous_joints = {0};
 
   // Check multiple permutations to make sure the ordering of which set is
-  // "wrapped around" does not affect the algorithm. std::vector<ConvexSets>
+  // "wrapped around" does not affect the algorithm.
   std::vector<ConvexSets> permutations = {
       MakeConvexSets(v1, v2, v3), MakeConvexSets(v1, v3, v2),
       MakeConvexSets(v2, v1, v3), MakeConvexSets(v2, v3, v1),

@@ -363,7 +363,7 @@ class GcsTrajectoryOptimization final {
   solvers struggle numerically with large values.
   @param name is the name of the subgraph. A default name will be provided.
   @throws std::exception if any of the regions has a width of π or greater along
-  dimensions coresponding to continuous joints.
+  dimensions corresponding to continuous joints.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
                        int order, double h_min = 0, double h_max = 20,

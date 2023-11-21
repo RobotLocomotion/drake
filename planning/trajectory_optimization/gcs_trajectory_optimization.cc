@@ -188,7 +188,10 @@ void Subgraph::RespectsConvexityRadius(
         // wraparound edges.
         throw std::runtime_error(fmt::format(
             "GcsTrajectoryOptimization: Region at index {} is wider than π "
-            "along dimension {}, so it doesn't respect the convexity radius!",
+            "along dimension {}, so it doesn't respect the convexity radius! "
+            "To add this set, separate it into smaller pieces so that along "
+            "dimensions corresponding to continuous joints, its width is "
+            "strictly smaller than π.",
             i, j));
       }
     }
@@ -664,7 +667,6 @@ GcsTrajectoryOptimization::GcsTrajectoryOptimization(
     throw std::runtime_error(
         fmt::format("continuous_joints must not contain duplicate entries."));
   }
-  DRAKE_THROW_UNLESS(comparison.size() == continuous_joints_.size());
 }
 
 GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;

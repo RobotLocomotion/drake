@@ -540,7 +540,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         gcs_wraparound = GcsTrajectoryOptimization(
             num_positions=1, continuous_joints=[0])
         self.assertEqual(len(gcs_wraparound.continuous_joints()), 1)
-        gcs_wraparound.AddRegions(regions=[Point([0]), Point([1])],
+        gcs_wraparound.AddRegions(regions=[Point([0]), Point([2*np.pi])],
                                   order=1,
-                                  edges_between_regions=[],
-                                  edge_offsets=[])
+                                  edges_between_regions=[[0, 1]],
+                                  edge_offsets=[[2*np.pi]])
