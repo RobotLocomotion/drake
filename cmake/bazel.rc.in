@@ -45,5 +45,8 @@ build @BAZEL_CONFIG@
 # Respect user.bazelrc (when present).
 try-import @PROJECT_SOURCE_DIR@/user.bazelrc
 
+# Use build-specific bazel options (if present).
+try-import @PROJECT_BINARY_DIR@/drake.bazelrc
+
 # TODO(jwnimmer-tri) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also, and
 # specifically make sure the user's -std=c++NN is respected.
