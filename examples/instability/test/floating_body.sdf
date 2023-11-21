@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="floating_body">
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </visual>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <!--
+        Represents inertial terms in Anzu's yukon_gold_potato.sdf on
+        2022-11-02.
+        -->
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.000156</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000156</iyy>
+          <iyz>0</iyz>
+          <izz>0.000156</izz>
+        </inertia>
+      </inertial>
+    </link>
+  </model>
+</sdf>
