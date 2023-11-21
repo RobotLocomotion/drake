@@ -6,7 +6,9 @@ import unittest
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
+    Diagram_,
     DiagramBuilder,
+    DiagramBuilder_,
     LeafSystem_,
     SystemScalarConverter,
 )
@@ -253,7 +255,7 @@ class TestScalarConversion(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             BadParenting_[float]
         self.assertIn("BadParenting_[float]", str(cm.exception))
-        self.assertIn("LeafSystem", str(cm.exception))
+        self.assertIn("System", str(cm.exception))
 
     def test_clone(self):
         """Tests the System.Clone bindings. This is most convenient to do in
@@ -265,3 +267,34 @@ class TestScalarConversion(unittest.TestCase):
             dut.Clone()
             copy.copy(dut)
             copy.deepcopy(dut)
+
+    def test_diagram_sublcass(self):
+        @mut.TemplateSystem.define("MyDiagram_")
+        def MyDiagram_(T):
+
+            class Impl(Diagram_[T]):
+                def _construct(self, value, *, converter=None):
+                    Diagram_[T].__init__(self, converter=converter)
+                    builder = DiagramBuilder_[T]()
+                    self.example = builder.AddSystem(Example_[T](value=value))
+                    builder.BuildInto(self)
+
+                def _construct_copy(self, other, *, converter=None):
+                    Diagram_[T].__init__(
+                        self, converter=converter, other=other
+                    )
+                    self.example, = self.GetSystems()
+
+            return Impl
+
+        for T, U in SystemScalarConverter.SupportedConversionPairs:
+            diagram_U = MyDiagram_[U](value=10)
+            self.assertEqual(diagram_U.example.value, 10)
+            self.assertIsNone(diagram_U.example.copied_from)
+            diagram_T = diagram_U.ToScalarType[T]()
+            self.assertIsInstance(diagram_T, MyDiagram_[T])
+            self.assertEqual(diagram_T.example.value, 10)
+            self.assertIs(diagram_T.example.copied_from, diagram_U.example)
+            # Ensure both diagrams can create a context.
+            diagram_U.CreateDefaultContext()
+            diagram_T.CreateDefaultContext()
