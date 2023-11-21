@@ -31,7 +31,7 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
     systems::DiscreteValues<T>* updates) const {
   // The discrete sampling of input ports needs to be the first step of a
   // discrete update.
-  SampleDiscreteInputPortForces(context);
+  InitiateDiscreteUpdate(context);
   DRAKE_DEMAND(updates != nullptr);
   // Perform discrete updates for deformable bodies if they exist.
   if constexpr (std::is_same_v<T, double>) {
@@ -41,10 +41,25 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
   }
   // Perform discrete updates for rigid bodies.
   DoCalcDiscreteValues(context, updates);
+
+  // Make sure the discrete ouput port values are sampled.
+  if (plant().get_geometry_query_input_port().HasValue(context)) {
+    EvalContactResults(context);
+  }
 }
 
 template <typename T>
 void DiscreteUpdateManager<T>::DeclareCacheEntries() {
+  // See ThrowIfNonContactForceInProgress().
+  const auto& non_contact_forces_evaluation_in_progress = DeclareCacheEntry(
+      "Evaluation of non-contact forces and accelerations is in progress",
+      // N.B. This flag is set to true only when the computation is in
+      // progress. Therefore its default value is `false`.
+      systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.non_contact_forces_evaluation_in_progress =
+      non_contact_forces_evaluation_in_progress.cache_index();
+
   // The Correct Solution:
   // The Implicit Stribeck solver solution S is a function of state x,
   // actuation input u (and externally applied forces) and even time if
@@ -67,94 +82,106 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // depend on time and (even continuous) inputs. However it does emulate
   // the discrete update of these values as if zero-order held, which is
   // what we want.
+
+  // This cache entry is manually managed to refresh at the beginning of a
+  // discrete update. The value of the cache entry is inmaterial. Its sole
+  // purpose is to indicate that we are at a new discrete update step and all
+  // discrete input ports, cache entries, and output port values are
+  // invalidated.
+  const auto& discrete_signal_cache_entry = DeclareCacheEntry(
+      "Discrete signal that all discrete input ports, cache entries, and "
+      "output ports depend on.",
+      systems::ValueProducer(true, &systems::ValueProducer::NoopCalc),
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.discrete_signal = discrete_signal_cache_entry.cache_index();
+
   const auto& discrete_input_port_forces_cache_entry = DeclareCacheEntry(
       "Discrete force input port values",
       systems::ValueProducer(this, InputPortForces<T>(plant()),
                              &DiscreteUpdateManager<T>::CalcInputPortForces),
-      // The cache entry is manually managed to refresh at the beginning of a
-      // discrete update.
-      {systems::System<T>::nothing_ticket()});
+      {discrete_signal_cache_entry.ticket()});
   cache_indexes_.discrete_input_port_forces =
       discrete_input_port_forces_cache_entry.cache_index();
 
-  const auto& contact_solver_results_cache_entry = DeclareCacheEntry(
-      "Contact solver results",
-      systems::ValueProducer(
-          this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket(),
-       discrete_input_port_forces_cache_entry.ticket()});
-  cache_indexes_.contact_solver_results =
-      contact_solver_results_cache_entry.cache_index();
-
-  // See ThrowIfNonContactForceInProgress().
-  const auto& non_contact_forces_evaluation_in_progress = DeclareCacheEntry(
-      "Evaluation of non-contact forces and accelerations is in progress",
-      // N.B. This flag is set to true only when the computation is in
-      // progress. Therefore its default value is `false`.
-      systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-      {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
-
-  MultibodyForces<T> model_forces(plant());
-  const auto& multibody_forces_cache_entry = DeclareCacheEntry(
-      "Discrete update multibody forces",
-      systems::ValueProducer(
-          this, model_forces,
-          &DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.discrete_update_multibody_forces =
-      multibody_forces_cache_entry.cache_index();
-
-  const auto& actuation_cache_entry = DeclareCacheEntry(
-      "Discrete update actuation",
-      systems::ValueProducer(this, VectorX<T>(plant().num_actuated_dofs()),
-                             &DiscreteUpdateManager<T>::CalcActuation),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.actuation = actuation_cache_entry.cache_index();
-
-  const auto& contact_results_cache_entry = DeclareCacheEntry(
-      "Contact results (discrete)",
-      systems::ValueProducer(this,
-                             &DiscreteUpdateManager<T>::CalcContactResults),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
-
-  // Cache discrete contact pairs.
   const auto& discrete_contact_pairs_cache_entry = DeclareCacheEntry(
       "Discrete contact pairs.",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcDiscreteContactPairs),
-      {systems::System<T>::xd_ticket(),
+      {discrete_signal_cache_entry.ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
-  // Cache contact kinematics.
-  const auto& contact_kinematics_cache_entry = DeclareCacheEntry(
-      "Contact kinematics.",
+  const auto& discrete_contact_kinematics_cache_entry = DeclareCacheEntry(
+      "Discrete contact kinematics.",
       systems::ValueProducer(this,
                              &DiscreteUpdateManager::CalcContactKinematics),
-      {systems::System<T>::xd_ticket(),
+      {discrete_signal_cache_entry.ticket(),
        systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.contact_kinematics =
-      contact_kinematics_cache_entry.cache_index();
+  cache_indexes_.discrete_contact_kinematics =
+      discrete_contact_kinematics_cache_entry.cache_index();
 
-  // Cache hydroelastic contact info.
-  const auto& hydroelastic_contact_info_cache_entry = DeclareCacheEntry(
-      "Hydroelastic contact info.",
+  const auto& discrete_contact_solver_results_cache_entry = DeclareCacheEntry(
+      "Discrete contact solver results",
       systems::ValueProducer(
-          this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
-      // Compliant contact forces due to hydroelastics with Hunt &
-      // Crosseley are function of the kinematic variables q & v only.
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.hydroelastic_contact_info =
-      hydroelastic_contact_info_cache_entry.cache_index();
+          this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
+      {systems::System<T>::all_parameters_ticket(),
+       discrete_signal_cache_entry.ticket(),
+       discrete_contact_kinematics_cache_entry.ticket(),
+       discrete_contact_pairs_cache_entry.ticket(),
+       discrete_input_port_forces_cache_entry.ticket()});
+  cache_indexes_.discrete_contact_solver_results =
+      discrete_contact_solver_results_cache_entry.cache_index();
+
+  MultibodyForces<T> model_forces(plant());
+  const auto& discrete_multibody_forces_cache_entry = DeclareCacheEntry(
+      "Discrete update multibody forces",
+      systems::ValueProducer(
+          this, model_forces,
+          &DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces),
+      {systems::System<T>::all_parameters_ticket(),
+       discrete_signal_cache_entry.ticket(),
+       discrete_contact_solver_results_cache_entry.ticket(),
+       discrete_input_port_forces_cache_entry.ticket()});
+  cache_indexes_.discrete_update_multibody_forces =
+      discrete_multibody_forces_cache_entry.cache_index();
+
+  const auto& discrete_actuation_cache_entry = DeclareCacheEntry(
+      "Discrete update actuation",
+      systems::ValueProducer(this, VectorX<T>(plant().num_actuated_dofs()),
+                             &DiscreteUpdateManager<T>::CalcActuation),
+      {systems::System<T>::all_parameters_ticket(),
+       discrete_signal_cache_entry.ticket(),
+       discrete_contact_solver_results_cache_entry.ticket(),
+       discrete_input_port_forces_cache_entry.ticket()});
+  cache_indexes_.discrete_actuation =
+      discrete_actuation_cache_entry.cache_index();
+
+  const auto& discrete_hydroelastic_contact_info_cache_entry =
+      DeclareCacheEntry(
+          "Hydroelastic contact info.",
+          systems::ValueProducer(
+              this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
+          {systems::System<T>::all_parameters_ticket(),
+           discrete_signal_cache_entry.ticket(),
+           discrete_contact_kinematics_cache_entry.ticket(),
+           discrete_contact_pairs_cache_entry.ticket(),
+           discrete_contact_solver_results_cache_entry.ticket()});
+  cache_indexes_.discrete_hydroelastic_contact_info =
+      discrete_hydroelastic_contact_info_cache_entry.cache_index();
+
+  const auto& discrete_contact_results_cache_entry = DeclareCacheEntry(
+      "Contact results (discrete)",
+      systems::ValueProducer(this,
+                             &DiscreteUpdateManager<T>::CalcContactResults),
+      {systems::System<T>::all_parameters_ticket(),
+       discrete_signal_cache_entry.ticket(),
+       discrete_hydroelastic_contact_info_cache_entry.ticket(),
+       discrete_contact_kinematics_cache_entry.ticket(),
+       discrete_contact_pairs_cache_entry.ticket(),
+       discrete_contact_solver_results_cache_entry.ticket()});
+  cache_indexes_.discrete_contact_results =
+      discrete_contact_results_cache_entry.cache_index();
 
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
@@ -281,7 +308,7 @@ const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.contact_solver_results)
+      .get_cache_entry(cache_indexes_.discrete_contact_solver_results)
       .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
           context);
 }
@@ -411,32 +438,26 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
+void DiscreteUpdateManager<T>::InitiateDiscreteUpdate(
     const drake::systems::Context<T>& context) const {
-  const auto& discrete_input_forces_cache_entry =
-      plant().get_cache_entry(cache_indexes_.discrete_input_port_forces);
+  const auto& discrete_signal_cache_entry =
+      plant().get_cache_entry(cache_indexes_.discrete_signal);
   // The discrete sampling via cache entry trick only works when caching is
   // enable. See #12786 for details.
-  if (discrete_input_forces_cache_entry.is_cache_entry_disabled(context)) {
+  if (discrete_signal_cache_entry.is_cache_entry_disabled(context)) {
     static const logging::Warn log_once(
-        "The discrete sampling of external force input ports rely on caching "
-        "turned on. Caching is disabled for the discrete MultibodyPlant's "
-        "context. As a result, the external force input ports are sampled "
-        "continuously instead. See issue #12643.");
+        "The discrete sampling input/output ports rely on caching turned on. "
+        "Caching is disabled for the discrete MultibodyPlant's "
+        "context. As a result, the input/output ports are sampled continuously "
+        "instead. See issue #12643.");
   }
-  // Actually sample the discrete forces.
-  auto& cache_entry_value =
-      discrete_input_forces_cache_entry.get_mutable_cache_entry_value(context);
-  cache_entry_value.mark_out_of_date();
-  InputPortForces<T>& forces =
-      cache_entry_value.template GetMutableValueOrThrow<InputPortForces<T>>();
-  CalcInputPortForces(context, &forces);
-  cache_entry_value.mark_up_to_date();
-
   // Initiate a value modification event.
   const systems::DependencyTracker& tracker =
-      context.get_tracker(discrete_input_forces_cache_entry.ticket());
+      context.get_tracker(discrete_signal_cache_entry.ticket());
   tracker.NoteValueChange(context.start_new_change_event());
+  auto& cache_entry_value =
+      discrete_signal_cache_entry.get_mutable_cache_entry_value(context);
+  cache_entry_value.mark_up_to_date();
 }
 
 template <typename T>
@@ -712,7 +733,7 @@ const std::vector<HydroelasticContactInfo<T>>&
 DiscreteUpdateManager<T>::EvalHydroelasticContactInfo(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.hydroelastic_contact_info)
+      .get_cache_entry(cache_indexes_.discrete_hydroelastic_contact_info)
       .template Eval<std::vector<HydroelasticContactInfo<T>>>(context);
 }
 
@@ -1248,7 +1269,7 @@ template <typename T>
 const VectorX<T>& DiscreteUpdateManager<T>::EvalActuation(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.actuation)
+      .get_cache_entry(cache_indexes_.discrete_actuation)
       .template Eval<VectorX<T>>(context);
 }
 
@@ -1256,7 +1277,7 @@ template <typename T>
 const ContactResults<T>& DiscreteUpdateManager<T>::EvalContactResults(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.contact_results)
+      .get_cache_entry(cache_indexes_.discrete_contact_results)
       .template Eval<ContactResults<T>>(context);
 }
 
@@ -1265,7 +1286,7 @@ const DiscreteContactData<ContactPairKinematics<T>>&
 DiscreteUpdateManager<T>::EvalContactKinematics(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.contact_kinematics)
+      .get_cache_entry(cache_indexes_.discrete_contact_kinematics)
       .template Eval<DiscreteContactData<ContactPairKinematics<T>>>(context);
 }
 

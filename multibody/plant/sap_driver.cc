@@ -83,26 +83,28 @@ void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
   DRAKE_DEMAND(mutable_manager == manager_);
 
-  const systems::DependencyTicket xd_ticket = systems::System<T>::xd_ticket();
-  const systems::DependencyTicket inputs_ticket =
-      plant().all_input_ports_ticket();
+  const systems::DependencyTicket discrete_signal_ticket =
+      manager_->discrete_signal_ticket();
   const systems::DependencyTicket parameters_ticket =
       plant().all_parameters_ticket();
-  const std::set<systems::DependencyTicket> state_input_and_parameters = {
-      xd_ticket, inputs_ticket, parameters_ticket};
+  // SapDriver is used in discrete MbP that samples input ports discretely, so
+  // we can't depend on the continuous input ports. That is, we cannot depend on
+  // the `plant().all_input_ports_ticket()`.
+  const std::set<systems::DependencyTicket> discrete_signal_and_parameters = {
+      discrete_signal_ticket, parameters_ticket};
 
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "contact problem",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),
                              &SapDriver<T>::CalcContactProblemCache),
-      state_input_and_parameters);
+      discrete_signal_and_parameters);
   contact_problem_ = contact_problem_cache_entry.cache_index();
 
   const auto& sap_solver_results_cache_entry =
       mutable_manager->DeclareCacheEntry(
           "SAP solver results",
           systems::ValueProducer(this, &SapDriver<T>::CalcSapSolverResults),
-          state_input_and_parameters);
+          discrete_signal_and_parameters);
   sap_results_ = sap_solver_results_cache_entry.cache_index();
 }
 
