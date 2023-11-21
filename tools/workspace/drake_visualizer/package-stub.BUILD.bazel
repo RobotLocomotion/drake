@@ -1,7 +1,6 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:py.bzl", "py_library")
-load("@drake//tools/install:install.bzl", "install")
 
 py_library(
     name = "drake_visualizer_python_deps",
@@ -10,10 +9,5 @@ py_library(
 
 filegroup(
     name = "drake_visualizer",
-    visibility = ["//visibility:public"],
-)
-
-install(
-    name = "install",
     visibility = ["//visibility:public"],
 )
