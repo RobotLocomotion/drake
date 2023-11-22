@@ -77,7 +77,8 @@ def build(options):
     if options.extract:
         _assert_isdir(options.output_dir, 'Output location')
 
-    _provision()
+    if options.provision:
+        _provision()
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
@@ -101,7 +102,7 @@ def build(options):
     # Build the wheel.
     build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
     build_command = ['bash', build_script]
-    if options.incremental:
+    if not options.dependencies:
         build_command.append('--no-deps')
     build_command.append(options.version)
 
@@ -133,8 +134,12 @@ def add_build_arguments(parser):
         help='do not delete build/test trees on success '
              '(tree(s) are always retained on failure)')
     parser.add_argument(
-        '--incremental', action='store_true',
-        help='only build Drake itself '
+        '--no-provision', dest='provision', action='store_false',
+        help='skip host provisioning '
+             '(requires already-povisioned host)')
+    parser.add_argument(
+        '--no-dependencies', dest='dependencies', action='store_false',
+        help='skip building dependencies '
              '(requires previously built dependencies)')
 
 
