@@ -227,6 +227,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::unordered_map<geometry::GeometryId, BodyIndex>&
   geometry_id_to_body_index() const;
 
+  systems::EventStatus ResetDiscretePorts(
+      const systems::Context<T>& context) const;
+
+  systems::DependencyTicket discrete_signal_ticket() const;
+
   /* @} */
 
   const MultibodyTreeTopology& tree_topology() const {
@@ -237,12 +242,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    exists. Otherwise, returns nullptr. */
   const DeformableDriver<double>* deformable_driver() const {
     return deformable_driver_.get();
-  }
-
-  /* (Internal use only) Used for downstream systems to declare dependencies on.
-   */
-  systems::DependencyTicket discrete_signal_ticket() const {
-    return plant().get_cache_entry(cache_indexes_.discrete_signal).ticket();
   }
 
  protected:
@@ -400,16 +399,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    manager. */
   struct CacheIndexes {
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
-    /* Manually managed cache entry that mimics a discrete input/output ports
-     added to the owning MbP via input ports (see issue #12786). This cache
-     entry is manually marked out-of-date (and invalidates downstream cache
-     entries), and immediately marked up-to-date at the beginning of each
-     discrete update. So when caching is enabled, it is always up-to-date as
-     long as any discrete update has happened. The only time this cache entry
-     may be updated automatically via the caching mechanism is when a downstream
-     cache entry pulls on it before any discrete update has happened. Evaluating
-     this cache entry when caching is disabled throws an exception. */
-    systems::CacheIndex discrete_signal;
     systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex discrete_contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
@@ -438,11 +427,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    algebraic loop exists and an exception is thrown. */
   [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
       const systems::Context<T>& context) const;
-
-  /* Updates the discrete_signal cache entry. This should only be called at the
-   beginning of each discrete update.
-   @throws std::exception if caching is disabled for the given `context`. */
-  void InitiateDiscreteUpdate(const systems::Context<T>& context) const;
 
   /* Collects the sum of all forces added to the owning MultibodyPlant and store
    them in given `forces`. The existing values in `forces` is cleared. */

@@ -145,6 +145,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
                                         geometry::GeometryId geometry_id) {
     return plant.FindBodyByGeometryId(geometry_id);
   }
+
+  static systems::EventStatus ResetDiscretePorts(
+      const systems::Context<T>& context, const MultibodyPlant<T>& plant) {
+    return plant.ResetDiscretePorts(context);
+  }
+
+  static systems::DependencyTicket discrete_signal_ticket(
+      const MultibodyPlant<T>& plant) {
+    return plant.discrete_signal_ticket();
+  }
 };
 }  // namespace internal
 }  // namespace multibody
