@@ -1,10 +1,10 @@
 load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_wrap_static_archive_hidden")
 load("@gfortran//:version.bzl", COMPILER_MAJOR = "MAJOR")
 
 def fortran_library(
         name,
         srcs = [],
-        linkopts = [],
         deps = [],
         **kwargs):
     """Compiles a Fortran library.  This library's symbols will have hidden
@@ -42,27 +42,26 @@ def fortran_library(
             visibility = ["//visibility:private"],
         )
 
-    # Consolidate object code into an archive, so that we are able to tell the
-    # linker to use hidden visibility for it.
-    libname = "lib{}_{}.pic.a".format(
-        native.repository_name()[1:],  # (Drop the leading @.)
-        name,
-    )
-    native.genrule(
-        name = name + "_ar_genrule",
+    # Collate the *.pic.o files into an `*.a` archive.
+    cc_library(
+        name = "_{}_archive".format(name),
         srcs = objs,
-        outs = [libname],
-        cmd = "$(AR) qcD $@ $(SRCS)",
-        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+        linkstatic = True,
         visibility = ["//visibility:private"],
     )
 
-    # Wrap the *.pic.a file into a cc_library, so that we can attach
-    # linkopts and deps.
+    # Convert the archive to use hidden visbility.
+    cc_wrap_static_archive_hidden(
+        name = "_{}_archive_hidden".format(name),
+        static_archive_name = "_{}_archive".format(name),
+    )
+
+    # Provide a cc_library with the final result.
     cc_library(
         name = name,
-        srcs = [libname],
-        linkopts = linkopts + ["-Wl,--exclude-libs=" + libname],
-        deps = deps + ["@gfortran//:runtime"],
+        deps = deps + [
+            "_{}_archive_hidden".format(name),
+            "@gfortran//:runtime",
+        ],
         **kwargs
     )
