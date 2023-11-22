@@ -2758,6 +2758,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     // Also permit triggering a step via a Forced update.
     this->DeclareForcedDiscreteUpdateEvent(
         &MultibodyPlant<T>::CalcDiscreteStep);
+
+    this->DeclareForcedPublishEvent(&MultibodyPlant<T>::ResetDiscretePorts);
   }
 
   DeclareCacheEntries();
@@ -2782,6 +2784,19 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
 
+  // TODO(xuchenhan-tri): Give all output ports of discrete plant the same
+  // treatment as the net_actuation_port.
+  // For discrete plant, all output ports depend on the discrete
+  // signal tickets so that in a force publish their values can be re-computed.
+  const std::set<systems::DependencyTicket> discrete_actuation_dependency = {
+      state_ticket, this->all_input_ports_ticket(),
+      this->all_parameters_ticket(), discrete_signal_ticket()};
+  const std::set<systems::DependencyTicket> continuous_actuation_dependency = {
+      state_ticket, this->all_input_ports_ticket(),
+      this->all_parameters_ticket()};
+  const std::set<systems::DependencyTicket> actuation_dependency =
+      is_discrete() ? discrete_actuation_dependency
+                    : continuous_actuation_dependency;
   // Net actuation ports.
   // N.B. We intentionally declare a dependency on kinematics in the continuous
   // mode in anticipation for adding PD support in continuous mode.
@@ -2800,16 +2815,14 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   result->SetFromVector(this->GetActuationFromArray(
                       model_instance_index, net_actuation));
                 },
-                {state_ticket, this->all_input_ports_ticket(),
-                 this->all_parameters_ticket()})
+                actuation_dependency)
             .get_index();
   }
-  net_actuation_port_ = this->DeclareVectorOutputPort(
-                                "net_actuation", num_actuated_dofs(),
-                                &MultibodyPlant::CalcActuationOutput,
-                                {state_ticket, this->all_input_ports_ticket(),
-                                 this->all_parameters_ticket()})
-                            .get_index();
+  net_actuation_port_ =
+      this->DeclareVectorOutputPort("net_actuation", num_actuated_dofs(),
+                                    &MultibodyPlant::CalcActuationOutput,
+                                    actuation_dependency)
+          .get_index();
 
   // Declare per model instance desired states input ports.
   instance_desired_state_ports_.resize(num_model_instances());
@@ -2959,7 +2972,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                       "_generalized_contact_forces",
                   instance_num_velocities, calc,
                   {systems::System<T>::xd_ticket(),
-                   systems::System<T>::all_parameters_ticket()})
+                   systems::System<T>::all_parameters_ticket(),
+                   discrete_signal_ticket()})
               .get_index();
     } else {
       const auto& generalized_contact_forces_continuous_cache_entry =
@@ -3020,6 +3034,18 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
+
+  // This cache entry is manually managed to refresh at the beginning of a
+  // discrete update. The value of the cache entry is inmaterial. Its sole
+  // purpose is to indicate that we are at a new discrete update step and all
+  // discrete input ports, cache entries, and output port values are
+  // invalidated.
+  const auto& discrete_signal_cache_entry = this->DeclareCacheEntry(
+      "Discrete signal that all discrete input ports, cache entries, and "
+      "output ports depend on.",
+      systems::ValueProducer(true, &systems::ValueProducer::NoopCalc),
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.discrete_signal = discrete_signal_cache_entry.cache_index();
 
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
   // control over cache dependencies on parameters. For example,

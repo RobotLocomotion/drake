@@ -5076,6 +5076,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
+    /* Manually managed cache entry that mimics a discrete input/output ports
+     added to the owning MbP via input ports (see issue #12786). This cache
+     entry is manually marked out-of-date (and invalidates downstream cache
+     entries), and immediately marked up-to-date at the beginning of each
+     discrete update. So when caching is enabled, it is always up-to-date as
+     long as any discrete update has happened. The only time this cache entry
+     may be updated automatically via the caching mechanism is when a downstream
+     cache entry pulls on it before any discrete update has happened. Evaluating
+     this cache entry when caching is disabled throws an exception. */
+    systems::CacheIndex discrete_signal;
     systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
@@ -5559,6 +5569,40 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             internal::ConstraintActiveStatusMap>(
             parameter_indices_.constraint_active_status)
         .map;
+  }
+
+  // Resets all discrete input/output ports for `this` discrete MultibodyPlant
+  // such that all port values are re-evaluated when the port is pulled on.
+  // @pre `this` MultibodyPlant is discrete.
+  // @pre caching is enabled for the given `context`.
+  systems::EventStatus ResetDiscretePorts(
+      const systems::Context<T>& context) const {
+    DRAKE_DEMAND(is_discrete());
+    const auto& discrete_signal_cache_entry =
+        this->get_cache_entry(cache_indexes_.discrete_signal);
+    // The discrete sampling via cache entry trick only works when caching is
+    // enable. See #12786 for details.
+    if (discrete_signal_cache_entry.is_cache_entry_disabled(context)) {
+      static const logging::Warn log_once(
+          "The discrete sampling input/output ports rely on caching turned on. "
+          "Caching is disabled for the discrete MultibodyPlant's "
+          "context. As a result, the input/output ports are sampled "
+          "continuously "
+          "instead. See issue #12643.");
+    }
+    // Initiate a value modification event.
+    const systems::DependencyTracker& tracker =
+        context.get_tracker(discrete_signal_cache_entry.ticket());
+    tracker.NoteValueChange(context.start_new_change_event());
+    auto& cache_entry_value =
+        discrete_signal_cache_entry.get_mutable_cache_entry_value(context);
+    cache_entry_value.mark_up_to_date();
+    return systems::EventStatus::Succeeded();
+  }
+
+  /* Used for discrete update manager to declare dependencies on. */
+  systems::DependencyTicket discrete_signal_ticket() const {
+    return this->get_cache_entry(cache_indexes_.discrete_signal).ticket();
   }
 
   // Removes `this` MultibodyPlant's ability to convert to the scalar types

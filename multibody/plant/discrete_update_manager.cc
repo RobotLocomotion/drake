@@ -31,7 +31,7 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
     systems::DiscreteValues<T>* updates) const {
   // The discrete sampling of input ports needs to be the first step of a
   // discrete update.
-  InitiateDiscreteUpdate(context);
+  ResetDiscretePorts(context);
   DRAKE_DEMAND(updates != nullptr);
   // Perform discrete updates for deformable bodies if they exist.
   if constexpr (std::is_same_v<T, double>) {
@@ -43,9 +43,7 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
   DoCalcDiscreteValues(context, updates);
 
   // Make sure the discrete ouput port values are sampled.
-  if (plant().get_geometry_query_input_port().HasValue(context)) {
-    EvalContactResults(context);
-  }
+  SampleDiscreteOutputPorts(context);
 }
 
 template <typename T>
@@ -83,23 +81,11 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // the discrete update of these values as if zero-order held, which is
   // what we want.
 
-  // This cache entry is manually managed to refresh at the beginning of a
-  // discrete update. The value of the cache entry is inmaterial. Its sole
-  // purpose is to indicate that we are at a new discrete update step and all
-  // discrete input ports, cache entries, and output port values are
-  // invalidated.
-  const auto& discrete_signal_cache_entry = DeclareCacheEntry(
-      "Discrete signal that all discrete input ports, cache entries, and "
-      "output ports depend on.",
-      systems::ValueProducer(true, &systems::ValueProducer::NoopCalc),
-      {systems::System<T>::nothing_ticket()});
-  cache_indexes_.discrete_signal = discrete_signal_cache_entry.cache_index();
-
   const auto& discrete_input_port_forces_cache_entry = DeclareCacheEntry(
       "Discrete force input port values",
       systems::ValueProducer(this, InputPortForces<T>(plant()),
                              &DiscreteUpdateManager<T>::CalcInputPortForces),
-      {discrete_signal_cache_entry.ticket()});
+      {discrete_signal_ticket()});
   cache_indexes_.discrete_input_port_forces =
       discrete_input_port_forces_cache_entry.cache_index();
 
@@ -107,8 +93,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Discrete contact pairs.",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcDiscreteContactPairs),
-      {discrete_signal_cache_entry.ticket(),
-       systems::System<T>::all_parameters_ticket()});
+      {discrete_signal_ticket(), systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
@@ -116,8 +101,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Discrete contact kinematics.",
       systems::ValueProducer(this,
                              &DiscreteUpdateManager::CalcContactKinematics),
-      {discrete_signal_cache_entry.ticket(),
-       systems::System<T>::all_parameters_ticket()});
+      {discrete_signal_ticket(), systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_contact_kinematics =
       discrete_contact_kinematics_cache_entry.cache_index();
 
@@ -125,8 +109,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Discrete contact solver results",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
-      {systems::System<T>::all_parameters_ticket(),
-       discrete_signal_cache_entry.ticket(),
+      {systems::System<T>::all_parameters_ticket(), discrete_signal_ticket(),
        discrete_contact_kinematics_cache_entry.ticket(),
        discrete_contact_pairs_cache_entry.ticket(),
        discrete_input_port_forces_cache_entry.ticket()});
@@ -139,8 +122,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       systems::ValueProducer(
           this, model_forces,
           &DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces),
-      {systems::System<T>::all_parameters_ticket(),
-       discrete_signal_cache_entry.ticket(),
+      {systems::System<T>::all_parameters_ticket(), discrete_signal_ticket(),
        discrete_contact_solver_results_cache_entry.ticket(),
        discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.discrete_update_multibody_forces =
@@ -150,8 +132,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Discrete update actuation",
       systems::ValueProducer(this, VectorX<T>(plant().num_actuated_dofs()),
                              &DiscreteUpdateManager<T>::CalcActuation),
-      {systems::System<T>::all_parameters_ticket(),
-       discrete_signal_cache_entry.ticket(),
+      {systems::System<T>::all_parameters_ticket(), discrete_signal_ticket(),
        discrete_contact_solver_results_cache_entry.ticket(),
        discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.discrete_actuation =
@@ -163,7 +144,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
           systems::ValueProducer(
               this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
           {systems::System<T>::all_parameters_ticket(),
-           discrete_signal_cache_entry.ticket(),
+           discrete_signal_ticket(),
            discrete_contact_kinematics_cache_entry.ticket(),
            discrete_contact_pairs_cache_entry.ticket(),
            discrete_contact_solver_results_cache_entry.ticket()});
@@ -174,8 +155,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Contact results (discrete)",
       systems::ValueProducer(this,
                              &DiscreteUpdateManager<T>::CalcContactResults),
-      {systems::System<T>::all_parameters_ticket(),
-       discrete_signal_cache_entry.ticket(),
+      {systems::System<T>::all_parameters_ticket(), discrete_signal_ticket(),
        discrete_hydroelastic_contact_info_cache_entry.ticket(),
        discrete_contact_kinematics_cache_entry.ticket(),
        discrete_contact_pairs_cache_entry.ticket(),
@@ -221,6 +201,20 @@ const std::unordered_map<geometry::GeometryId, BodyIndex>&
 DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::geometry_id_to_body_index(*plant_);
+}
+
+template <typename T>
+systems::EventStatus DiscreteUpdateManager<T>::ResetDiscretePorts(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ResetDiscretePorts(
+      context, plant());
+}
+
+template <typename T>
+systems::DependencyTicket DiscreteUpdateManager<T>::discrete_signal_ticket()
+    const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::discrete_signal_ticket(
+      plant());
 }
 
 template <typename T>
@@ -435,29 +429,6 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
   return ScopeExit([&evaluation_in_progress]() {
     evaluation_in_progress = false;
   });
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::InitiateDiscreteUpdate(
-    const drake::systems::Context<T>& context) const {
-  const auto& discrete_signal_cache_entry =
-      plant().get_cache_entry(cache_indexes_.discrete_signal);
-  // The discrete sampling via cache entry trick only works when caching is
-  // enable. See #12786 for details.
-  if (discrete_signal_cache_entry.is_cache_entry_disabled(context)) {
-    static const logging::Warn log_once(
-        "The discrete sampling input/output ports rely on caching turned on. "
-        "Caching is disabled for the discrete MultibodyPlant's "
-        "context. As a result, the input/output ports are sampled continuously "
-        "instead. See issue #12643.");
-  }
-  // Initiate a value modification event.
-  const systems::DependencyTracker& tracker =
-      context.get_tracker(discrete_signal_cache_entry.ticket());
-  tracker.NoteValueChange(context.start_new_change_event());
-  auto& cache_entry_value =
-      discrete_signal_cache_entry.get_mutable_cache_entry_value(context);
-  cache_entry_value.mark_up_to_date();
 }
 
 template <typename T>
@@ -1362,6 +1333,25 @@ void DiscreteUpdateManager<T>::ExtractConcreteModel(
         "Only T = double is supported for the simulation of deformable "
         "bodies.");
   }
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::SampleDiscreteOutputPorts(
+    const systems::Context<T>& context) const {
+  // Sample contact results port if and only the geometry input port is
+  // connected.
+  if (plant().get_geometry_query_input_port().HasValue(context)) {
+    EvalContactResults(context);
+  }
+  // TODO(xuchenhan-tri): Make sure all output ports that explicitly depend on
+  // discrete states gets sampled here. However, note that output ports that
+  // depend discrete input ports but not explicitly on discrete states don't
+  // need to be sampled here because when those ports are pulled, we still have
+  // all the necessary information to compute the output values. Remember that
+  // the reason we need to sample discrete output ports is to prevent the
+  // computation based on out of sync input port values and discrete state (e.g.
+  // in the case of contact results, the contact solver results is computed with
+  // (x-, u+) whereas the geometry query is computed with x+).
 }
 
 }  // namespace internal

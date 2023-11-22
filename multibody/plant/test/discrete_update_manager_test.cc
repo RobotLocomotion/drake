@@ -473,6 +473,55 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
 }
 
+GTEST_TEST(DiscreteUpdateManagerCacheEntry, ForcedUpdate) {
+  double dt = 0.25;
+  MultibodyPlant<double> plant(dt);
+  const std::string sdf_model = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="object">
+    <joint name="z_axis" type="prismatic">
+      <parent>world</parent>
+      <child>object</child>
+      <axis>0 0 1</axis>
+    </joint>
+    <link name="object">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)""";
+  const std::vector<ModelInstanceIndex> models =
+      Parser(&plant).AddModelsFromString(sdf_model, "sdf");
+  plant.Finalize();
+  auto plant_context = plant.CreateDefaultContext();
+  const ModelInstanceIndex only_model = models[0];
+  const systems::InputPort<double>& u_input =
+      plant.get_actuation_input_port(only_model);
+  const systems::OutputPort<double>& u_output =
+      plant.get_net_actuation_output_port(only_model);
+  u_input.FixValue(plant_context.get(), Vector1<double>(1.0));
+  // The net actuation port should match the input actuation.
+  VectorXd net_u = u_output.Eval(*plant_context);
+  EXPECT_EQ(net_u(0), 1.0);
+  // Since the plant is discrete, changing the input port value isn't
+  // immediately reflected in the output port.
+  u_input.FixValue(plant_context.get(), Vector1<double>(2.0));
+  net_u = u_output.Eval(*plant_context);
+  EXPECT_EQ(net_u(0), 1.0);
+  // The force publish flushes discrete port values and the output port value
+  // should match the input port values again.
+  plant.ForcedPublish(*plant_context);
+  net_u = u_output.Eval(*plant_context);
+  EXPECT_EQ(net_u(0), 2.0);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace internal
