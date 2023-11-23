@@ -184,7 +184,7 @@ def _handle_github(workspace_name, gh, data):
     return old_commit, new_commit
 
 
-def _handle_buildifier(gh, data):
+def _check_buildifier(gh, data):
     assert data["name"] == "buildifier"
     old_version = data["version"]
     time.sleep(0.2)  # Don't make github angry.
@@ -212,8 +212,8 @@ def _check_for_upgrades(gh, args, metadata):
                 workspace_name, data["version"]))
             continue
         elif workspace_name == "buildifier":
-            assert key == "manual"
-            old_commit, new_commit = _handle_buildifier(gh, data)
+            assert key == "buildifier"
+            old_commit, new_commit = _check_buildifier(gh, data)
         elif key == "manual":
             print("{} version {} needs manual inspection".format(
                 workspace_name, data.get("version", "???")))
@@ -259,11 +259,53 @@ def _do_commit(local_drake_checkout, actually_commit,
         print(("*" * 72) + "\n")
 
 
+def _upgrade_buildifier(gh, data):
+    # Check if an upgrade is necessary.
+    old_version, new_version = _check_buildifier(gh, data)
+    if old_version == new_version:
+        return UpgradeResult(False)
+
+    # Gather the new checksums.
+    new_checksums = {}
+    for item in data["downloads"]:
+        github_urls = [
+            x.replace(old_version, new_version)
+            for x in item["urls"]
+            if "github.com" in x
+        ]
+        github_url, = github_urls
+        filename = github_url.split("/")[-1]
+        hasher = hashlib.sha256()
+        with urllib.request.urlopen(github_url) as response:
+            while True:
+                data = response.read(4096)
+                if not data:
+                    break
+                hasher.update(data)
+        new_checksums[filename] = hasher.hexdigest()
+
+    # Overwrite the version file.
+    bzl_filename = "tools/workspace/buildifier/version.bzl"
+    bzl = f'VERSION = "{new_version}"\n\n'
+    bzl += "CHECKSUMS = {\n"
+    for one_file in sorted(new_checksums.keys()):
+        one_checksum = new_checksums[one_file]
+        bzl += f'    "{one_file}": "{one_checksum}",  # noqa\n'
+    bzl += "}\n"
+    with open(bzl_filename, "w", encoding="utf-8") as f:
+        f.write(bzl)
+
+    message = f"Upgrade buildifier to latest release {new_version}"
+    return UpgradeResult(True, False, [bzl_filename], message)
+
+
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
     data = metadata[workspace_name]
+    if data["repository_rule_type"] == "buildifier":
+        return _upgrade_buildifier(gh, data)
     if data["repository_rule_type"] != "github":
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     repository = data["repository"]
