@@ -185,19 +185,6 @@ this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
 https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
-## Updating pypi_archive software versions
-
-To lock in a new version, change the `version` argument of the `pypi_archive`
-call, comment out the `sha256` argument, and then run `bazel build`.  Bazel's
-fetch step will attempt to download the new version but then complain about a
-checksum mismatch.  Paste the new checksum into the `sha256` argument and
-remove its commenting-out.  Then, `bazel build` should succeed.
-
-Commit and pull-request the changed lines to Drake as usual.  Many changes like
-this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
-the macOS build(s) in Jenkins before merging, using the instructions at
-https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
-
 ## Updating pkg_config_repository software versions
 
 Most `pkg_config_repository` calls refer to libraries provided by the host

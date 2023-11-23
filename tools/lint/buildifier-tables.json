@@ -37,12 +37,6 @@
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 
-    "pypi_archive.package":       300,
-    "pypi_archive.version":       310,
-    "pypi_archive.sha256":        340,
-    "pypi_archive.strip_prefix":  350,
-    "pypi_archive.build_file":    360,
-
     "new_local_repository.path":                300,
     "new_local_repository.build_file_content":  360,
 
