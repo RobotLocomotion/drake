@@ -1,19 +1,14 @@
-# -*- python -*-
-
 load(
-    "//tools/skylark:drake_py_per_os.bzl",
-    "drake_py_binary_ubuntu_only",
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
-# This program is used by a small subset of Drake maintainers, all of whom
-# operate solely on Ubuntu, and furthermore relies on manual testing. Since we
-# never develop, use, or test this on macOS, we reflect that in the build
-# system by omitting the target entirely on macOS. Note that it also depends on
-# maintainer-only packages.
-drake_py_binary_ubuntu_only(
+# This program is used by a small subset of Drake maintainers (and depends on
+# maintainer-only packages) and relies on manual testing.
+drake_py_binary(
     name = "push_release",
     srcs = ["push_release.py"],
     deps = [
