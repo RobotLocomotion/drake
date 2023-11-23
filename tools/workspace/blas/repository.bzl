@@ -15,8 +15,7 @@ def blas_repository(name):
     os_specific_alias_repository(
         name = name,
         mapping = {
-            "macOS default": ["blas=@openblas"],
-            "Ubuntu default": ["blas=@libblas"],
-            "manylinux": ["blas=@libblas"],
+            "linux": ["blas=@libblas"],
+            "osx": ["blas=@openblas"],
         },
     )
