@@ -1,16 +1,14 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("@python//:version.bzl", "PYTHON_VERSION")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
-load(
-    "@drake_detected_os//:os.bzl",
-    "UBUNTU_RELEASE",
-)
 
 drake_py_unittest(
     name = "stable_baselines3_internal_test",
-    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
+    # DrakeGym is only supported for Python >= 3.10.
+    tags = ["manual"] if PYTHON_VERSION in [
+        "3.8",
+        "3.9",
+    ] else [],
     deps = ["@stable_baselines3_internal//:stable_baselines3"],
 )
 
