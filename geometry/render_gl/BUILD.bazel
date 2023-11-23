@@ -1,19 +1,16 @@
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
+    "drake_cc_googletest_linux_only",
     "drake_cc_library",
+    "drake_cc_library_linux_only",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
-load(
-    "//tools/skylark:drake_cc_per_os.bzl",
-    "drake_cc_googletest_ubuntu_only",
-    "drake_cc_library_ubuntu_only",
-)
 
-# This render_gl package is only implemented on Ubuntu.  For macOS, only the
-# factory is available and it will always throw an exception.  For Ubuntu, the
+# This render_gl package is only implemented on Linux.  For macOS, only the
+# factory is available and it will always throw an exception.  For Linux, the
 # factory is the sole public entry point, even though the implementation is
 # made up of several other distinct components.
 #
@@ -35,13 +32,14 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_opengl_context",
     srcs = ["internal_opengl_context.cc"],
     hdrs = [
         "internal_opengl_context.h",
         "internal_opengl_includes.h",
     ],
+    tags = ["manual"],
     deps = [
         "//common:essential",
         "//common:scope_exit",
@@ -51,9 +49,10 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_opengl_geometry",
     hdrs = ["internal_opengl_geometry.h"],
+    tags = ["manual"],
     deps = [
         ":internal_opengl_context",
         ":internal_shader_program_data",
@@ -62,7 +61,7 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_render_engine_gl",
     srcs = [
         "internal_render_engine_gl.cc",
@@ -71,6 +70,7 @@ drake_cc_library_ubuntu_only(
         "internal_buffer_dim.h",
         "internal_render_engine_gl.h",
     ],
+    tags = ["manual"],
     deps = [
         ":internal_opengl_context",
         ":internal_opengl_geometry",
@@ -142,12 +142,13 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_shader_program",
     srcs = ["internal_shader_program.cc"],
     hdrs = [
         "internal_shader_program.h",
     ],
+    tags = ["manual"],
     deps = [
         ":internal_opengl_context",
         ":internal_shader_program_data",
@@ -159,9 +160,10 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_shader_program_data",
     hdrs = ["internal_shader_program_data.h"],
+    tags = ["manual"],
     deps = [
         "//common:copyable_unique_ptr",
         "//common:identifier",
@@ -169,7 +171,7 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_shape_meshes",
     srcs = ["internal_shape_meshes.cc"],
     hdrs = ["internal_shape_meshes.h"],
@@ -177,13 +179,14 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
         "//geometry/render:render_mesh",
     ],
+    tags = ["manual"],
     deps = [
         "//common:essential",
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
-drake_cc_library_ubuntu_only(
+drake_cc_library_linux_only(
     name = "internal_texture_library",
     srcs = ["internal_texture_library.cc"],
     hdrs = ["internal_texture_library.h"],
@@ -191,6 +194,7 @@ drake_cc_library_ubuntu_only(
         "//common:essential",
         ":internal_opengl_context",
     ],
+    tags = ["manual"],
     deps = [
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
@@ -199,14 +203,14 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_buffer_dim_test",
     deps = [
         ":internal_render_engine_gl",
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_opengl_context_test",
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -220,7 +224,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_opengl_geometry_test",
     deps = [
         ":internal_opengl_geometry",
@@ -229,7 +233,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_render_engine_gl_test",
     data = [
         "//geometry/render:test_models",
@@ -242,6 +246,7 @@ drake_cc_googletest_ubuntu_only(
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
+        "@gflags",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOImage",
@@ -260,7 +265,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_shape_meshes_test",
     data = [
         "//geometry/render:test_models",
@@ -274,7 +279,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_shader_program_test",
     tags = vtk_test_tags(),
     deps = [
@@ -286,7 +291,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "thread_test",
     data = [
         "//geometry/render:test_models",
@@ -306,7 +311,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "multithread_safety_test",
     data = [
         "//geometry/render:test_models",
@@ -329,7 +334,7 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_ubuntu_only(
+drake_cc_googletest_linux_only(
     name = "internal_texture_library_test",
     data = [
         "//geometry/render:test_models",
