@@ -27,8 +27,12 @@ openblas_repository = repository_rule(
     attrs = {
         "modname": attr.string(default = "openblas"),
         "licenses": attr.string_list(default = ["notice"]),  # BSD-3-Clause
-        "pkg_config_paths": attr.string_list(),
-        "homebrew_subdir": attr.string(default = "opt/openblas/lib/pkgconfig"),
+        "pkg_config_paths": attr.string_list(default = [
+            # TODO(#20581) Homebrew is missing the *.pc file symlink. We'll
+            # need to work-around that with some hard-coded paths here.
+            "/opt/homebrew/opt/openblas/lib/pkgconfig",
+            "/usr/local/opt/openblas/lib/pkgconfig",
+        ]),
     },
     local = True,
     configure = True,
