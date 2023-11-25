@@ -1,39 +1,13 @@
-load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
-def _impl(repository_ctx):
-    os_result = determine_os(repository_ctx)
-
-    if os_result.error != None:
-        fail(os_result.error)
-
-    if os_result.is_macos:
-        # On macOS, no targets should depend on @glx.
-        build_flavor = "macos"
-    elif os_result.is_ubuntu or os_result.is_manylinux:
-        build_flavor = "ubuntu"
-        hdrs = [
-            "GL/glx.h",
-            "GL/glxext.h",
-        ]
-        for hdr in hdrs:
-            repository_ctx.symlink(
-                "/usr/include/{}".format(hdr),
-                "include/{}".format(hdr),
-            )
-    else:
-        fail("Operating system is NOT supported {}".format(os_result))
-
-    repository_ctx.symlink(
-        Label(
-            "@drake//tools/workspace/glx:package-{}.BUILD.bazel".format(
-                build_flavor,
-            ),
-        ),
-        "BUILD.bazel",
+def glx_repository(name):
+    pkg_config_repository(
+        name = name,
+        licenses = ["notice"],  # SGI-B-2.0
+        modname = "glx",
+        extra_deps = [
+            "@opengl",
+            "@x11",
+        ],
+        defer_error_os_names = ["mac os x"],
     )
-
-glx_repository = repository_rule(
-    local = True,
-    configure = True,
-    implementation = _impl,
-)
