@@ -6,11 +6,13 @@ licenses(["permissive"])  # BSD-2-Clause AND Expat
 
 cc_library(
     name = "opencl",
-    hdrs = glob(["include/**/*.h"]),
-    includes = ["include"],
-    linkopts = [
-        "-L/usr/lib/x86_64-linux-gnu",
-        "-lOpenCL",
-    ],
+    linkopts = select({
+        "@drake//tools/skylark:osx": [
+            "-framework OpenCL",
+        ],
+        "//conditions:default": [
+            "-lOpenCL",
+        ],
+    }),
     visibility = ["//visibility:public"],
 )
