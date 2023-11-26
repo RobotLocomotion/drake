@@ -263,7 +263,7 @@ std::string GetScopedName(const MultibodyPlant<T>& plant,
 // controlled.
 template <typename T>
 bool AnyActuatorHasPdControl(const MultibodyPlant<T>& plant) {
-  for (JointActuatorIndex a(0); a < plant.num_actuators(); ++a) {
+  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
     if (plant.get_joint_actuator(a).has_controller()) return true;
   }
   return false;
@@ -275,7 +275,7 @@ template <typename T>
 int NumOfPdControlledActuators(const MultibodyPlant<T>& plant,
                                ModelInstanceIndex model_instance) {
   int num_actuators = 0;
-  for (JointActuatorIndex a(0); a < plant.num_actuators(); ++a) {
+  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
     const JointActuator<T>& actuator = plant.get_joint_actuator(a);
     if (actuator.model_instance() == model_instance &&
         actuator.has_controller()) {
@@ -766,6 +766,11 @@ const JointActuator<T>& MultibodyPlant<T>::AddJointActuator(
 }
 
 template <typename T>
+void MultibodyPlant<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
+  this->mutable_tree().RemoveJointActuator(actuator);
+}
+
+template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
@@ -1248,8 +1253,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
 template <typename T>
 MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
   MatrixX<T> B = MatrixX<T>::Zero(num_velocities(), num_actuated_dofs());
-  for (JointActuatorIndex actuator_index(0); actuator_index < num_actuators();
-       ++actuator_index) {
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
     const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
     // This method assumes actuators on single dof joints. Assert this
     // condition.
@@ -1681,8 +1685,7 @@ std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   std::vector<std::string> names(num_actuators());
 
-  for (int actuator_index = 0; actuator_index < num_actuators();
-       ++actuator_index) {
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         get_joint_actuator(JointActuatorIndex(actuator_index));
     const std::string prefix =
@@ -2289,8 +2292,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
   DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
     const VectorX<T> u = AssembleActuationInput(context);
-    for (JointActuatorIndex actuator_index(0); actuator_index < num_actuators();
-         ++actuator_index) {
+    for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
       // We only support actuators on single dof joints for now.

@@ -304,6 +304,7 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
   owned_actuators_.push_back(std::move(owned));
+  joint_actuator_indices_.push_back(actuator_index);
   actuator->set_parent_tree(this, actuator_index);
   this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
   return *actuator;
@@ -445,6 +446,7 @@ void MultibodyTree<T>::CloneActuatorAndAdd(
   actuator_clone->set_parent_tree(this, actuator_index);
   actuator_clone->set_model_instance(actuator.model_instance());
   owned_actuators_.push_back(std::move(actuator_clone));
+  joint_actuator_indices_.push_back(actuator_index);
 }
 
 template <typename T>

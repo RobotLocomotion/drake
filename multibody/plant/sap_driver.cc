@@ -736,8 +736,7 @@ void SapDriver<T>::AddPdControllerConstraints(
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     if (actuator.has_controller()) {
@@ -1112,8 +1111,7 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
 
   // Map generalized forces to actuation indexing.
   int constraint_index = start;
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();

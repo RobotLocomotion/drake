@@ -289,7 +289,7 @@ class KukaIiwaArmTests : public ::testing::Test {
                              const VectorX<double>& gear_ratios) const {
     DRAKE_DEMAND(plant != nullptr);
     int local_joint_index = 0;
-    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
       if (std::count(models.begin(), models.end(),

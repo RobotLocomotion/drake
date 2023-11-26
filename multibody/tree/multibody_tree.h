@@ -463,6 +463,9 @@ class MultibodyTree {
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity());
 
+  // See MultibodyPlant documentation.
+  void RemoveJointActuator(const JointActuator<T>& actuator);
+
   // Creates a new model instance.  Returns the index for a new model
   // instance (as there is no concrete object beyond the index).
   //
@@ -501,7 +504,7 @@ class MultibodyTree {
 
   // Returns the number of actuators in the model.
   // @see AddJointActuator().
-  int num_actuators() const { return ssize(owned_actuators_); }
+  int num_actuators() const { return ssize(joint_actuator_indices_); }
 
   // See MultibodyPlant method.
   int num_mobilizers() const { return ssize(owned_mobilizers_); }
@@ -614,16 +617,30 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
+  bool has_joint_actuator(JointActuatorIndex actuator_index) const {
+    if (actuator_index >= ssize(owned_actuators_)) return false;
+    return owned_actuators_.at(actuator_index) != nullptr;
+  }
+
+  // See MultibodyPlant method.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
-    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
+    DRAKE_THROW_UNLESS(actuator_index < ssize(owned_actuators_));
+    if (owned_actuators_.at(actuator_index) == nullptr) {
+      throw std::logic_error(fmt::format(
+          "JointActuator at index {} has been removed.", actuator_index));
+    }
     return *owned_actuators_[actuator_index];
   }
 
   // See MultibodyPlant method.
   JointActuator<T>& get_mutable_joint_actuator(
       JointActuatorIndex actuator_index) {
-    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
+    DRAKE_THROW_UNLESS(actuator_index < ssize(owned_actuators_));
+    if (owned_actuators_.at(actuator_index) == nullptr) {
+      throw std::logic_error(fmt::format(
+          "JointActuator at index {} has been removed.", actuator_index));
+    }
     return *owned_actuators_[actuator_index];
   }
 
@@ -764,6 +781,11 @@ class MultibodyTree {
   // Returns a list of joint indices associated with `model_instance`.
   std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
   const;
+
+  // See MultibodyPlant method.
+  const std::vector<JointActuatorIndex>& GetJointActuatorIndices() const {
+    return joint_actuator_indices_;
+  }
 
   // See MultibodyPlant method.
   std::vector<JointActuatorIndex> GetJointActuatorIndices(
@@ -2265,7 +2287,13 @@ class MultibodyTree {
     }
 
     for (const auto& actuator : owned_actuators_) {
-      tree_clone->CloneActuatorAndAdd(*actuator);
+      if (actuator == nullptr) {
+        // For consistency, the clone must also keep a nullptr in the same
+        // index.
+        tree_clone->owned_actuators_.push_back(nullptr);
+      } else {
+        tree_clone->CloneActuatorAndAdd(*actuator);
+      }
     }
 
     // Register the cloned Joints with the multibody_graph_.
@@ -3045,6 +3073,11 @@ class MultibodyTree {
   std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
 
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
+
+  // Maintain a list of the actuator indices that have _not_ been removed. This
+  // may not be the same size as owned_actuators_ (which maintains a nullptr
+  // for the removed elements).
+  std::vector<JointActuatorIndex> joint_actuator_indices_{};
 
   // List of all frames in the system ordered by their FrameIndex. This vector
   // contains a pointer to all frames in owned_frames_ as well as a pointer to
