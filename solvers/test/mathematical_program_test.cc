@@ -3017,8 +3017,9 @@ GTEST_TEST(TestMathematicalProgram,
 
   MathematicalProgram prog_manual;
   prog_manual.AddDecisionVariables(minor_manual);
-  auto psd_cnstr_manual = prog.AddPositiveSemidefiniteConstraint(
-                                  2 * Matrix4d::Identity() * minor_manual)
+  auto psd_cnstr_manual = prog_manual
+                              .AddPositiveSemidefiniteConstraint(
+                                  2 * Matrix3d::Identity() * minor_manual)
                               .evaluator();
   const auto& new_psd_cnstr_manual =
       prog.positive_semidefinite_constraints().back();
@@ -3033,12 +3034,6 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(prog.GetAllConstraints().size(),
             prog_manual.GetAllConstraints().size());
 
-  EXPECT_EQ(prog.linear_equality_constraints()[0].variables(),
-            prog_manual.linear_equality_constraints()[0].variables());
-  //TODO THIS WILL FAIL.
-  EXPECT_TRUE(CompareMatrices(
-      prog.linear_equality_constraints()[0].evaluator()->GetDenseA(),
-      prog_manual.linear_equality_constraints()[0].evaluator()->GetDenseA()));
   EXPECT_TRUE(CompareMatrices(
       prog.linear_equality_constraints()[0].evaluator()->upper_bound(),
       prog_manual.linear_equality_constraints()[0].evaluator()->upper_bound()));

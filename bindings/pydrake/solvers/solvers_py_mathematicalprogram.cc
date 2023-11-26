@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <memory>
+#include <set>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
@@ -1122,6 +1123,28 @@ void BindMathematicalProgram(py::module m) {
             return self->AddPositiveSemidefiniteConstraint(e);
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args_e)
+      .def(
+          "AddPrincipleMinorIsPositiveSemidefiniteConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixXDecisionVariable>& vars,
+              std::set<int> minor_indices) {
+            return self->AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+                vars, minor_indices);
+          },
+          doc.MathematicalProgram
+              .AddPrincipleMinorIsPositiveSemidefiniteConstraint
+              .doc_2args_symmetric_matrix_var_minor_indices)
+      .def(
+          "AddPrincipleMinorIsPositiveSemidefiniteConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Expression>>& e,
+              std::set<int> minor_indices) {
+            return self->AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+                e, minor_indices);
+          },
+          doc.MathematicalProgram
+              .AddPrincipleMinorIsPositiveSemidefiniteConstraint
+              .doc_2args_e_minor_indices)
       .def(
           "AddLinearMatrixInequalityConstraint",
           [](MathematicalProgram* self,
