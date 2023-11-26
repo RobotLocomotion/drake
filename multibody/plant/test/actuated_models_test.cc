@@ -44,7 +44,7 @@ namespace {
 
 // This fixture loads a MultibodyPlant model of a KUKA Iiiwa arm with a Schunk
 // gripper.
-class ActuatedIiiwaArmTest : public ::testing::Test {
+class ActuatedIiwaArmTest : public ::testing::Test {
  public:
   // Enum to control the PD model for ther kuka arm and its gripper.
   // This does not affect the acrobot model, which has no PD controllers.
@@ -106,8 +106,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
 
       // Arm actuators.
       std::vector<JointActuatorIndex> arm_actuators;
-      for (JointActuatorIndex actuator_index(0);
-           actuator_index < plant_->num_actuators(); ++actuator_index) {
+      for (JointActuatorIndex actuator_index :
+           plant_->GetJointActuatorIndices()) {
         if (plant_->get_joint_actuator(actuator_index).model_instance() ==
             arm_model_) {
           arm_actuators.push_back(actuator_index);
@@ -146,11 +146,17 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     // We make the acrobot fully actuated.
     const Joint<double>& acrobot_shoulder =
         plant_->GetJointByName("ShoulderJoint", acrobot_model_);
-    plant_->AddJointActuator("ShoulderActuator", acrobot_shoulder);
+    plant_->AddJointActuator("ShoulderJoint", acrobot_shoulder);
     // N.B. Notice that this actuator is added at a later state long after other
     // model instances were added to the plant. This will allow testing that
     // actuation input is assembled as documented by monotonically
     // increasing JointActuatorIndex, regardless of model instance index.
+
+    if (test_remove_joint_actuators_) {
+      plant_->RemoveJointActuator(
+          plant_->GetJointActuatorByName("iiwa_joint_3"));
+      plant_->RemoveJointActuator(plant_->GetJointActuatorByName("ElbowJoint"));
+    }
 
     plant_->Finalize();
 
@@ -268,6 +274,11 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
                         u, tolerance, MatrixCompareType::relative));
   }
 
+  // Helper to test RemoveJointActuator. Must be called before SetUpModel.
+  void test_remove_joint_actuators(bool val) {
+    test_remove_joint_actuators_ = val;
+  }
+
  protected:
   const int kKukaNumPositions_{7};
   const int kGripperNumPositions_{2};
@@ -279,9 +290,10 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
   ModelInstanceIndex gripper_model_;
   ModelInstanceIndex box_model_;
   std::unique_ptr<Context<double>> context_;
+  bool test_remove_joint_actuators_{false};
 };
 
-TEST_F(ActuatedIiiwaArmTest, JointActuatorApis) {
+TEST_F(ActuatedIiwaArmTest, JointActuatorApis) {
   SetUpModel();
   for (JointActuatorIndex actuator_index :
        plant_->GetJointActuatorIndices(gripper_model_)) {
@@ -293,7 +305,7 @@ TEST_F(ActuatedIiiwaArmTest, JointActuatorApis) {
   }
 }
 
-TEST_F(ActuatedIiiwaArmTest, GetActuationInputPort) {
+TEST_F(ActuatedIiwaArmTest, GetActuationInputPort) {
   SetUpModel();
 
   EXPECT_NO_THROW(plant_->get_actuation_input_port(arm_model_));
@@ -311,7 +323,7 @@ TEST_F(ActuatedIiiwaArmTest, GetActuationInputPort) {
       "num_model_instances\\(\\)' failed.");
 }
 
-TEST_F(ActuatedIiiwaArmTest, GetDesiredStatePort) {
+TEST_F(ActuatedIiwaArmTest, GetDesiredStatePort) {
   SetUpModel(ModelConfiguration::kArmIsNotControlled);
 
   EXPECT_NO_THROW(plant_->get_desired_state_input_port(arm_model_));
@@ -336,7 +348,7 @@ TEST_F(ActuatedIiiwaArmTest, GetDesiredStatePort) {
 // Verify the assembly of actuation input ports. In particular, we verify this
 // assembly is performed in the order of JointActuatorIndex and that
 // disconnected ports default to zero values.
-TEST_F(ActuatedIiiwaArmTest, AssembleActuationInput) {
+TEST_F(ActuatedIiwaArmTest, AssembleActuationInput) {
   // We setup a model with one PD controlled model instance (the gripper) and a
   // model instance without PD control (the arm).
   SetUpModel(ModelConfiguration::kArmIsNotControlled);
@@ -370,7 +382,7 @@ TEST_F(ActuatedIiiwaArmTest, AssembleActuationInput) {
 // Verify that MultibodyPlant::AssembleDesiredStateInput() throws an exception
 // when not all actuators in a model instance are PD controlled. Once a PD
 // controller is defined in a model instance, all actuators must use PD control.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        AssembleDesiredStateInput_ThrowsIfPartiallyPDControlled) {
   SetUpModel(ModelConfiguration::kArmIsPartiallyControlled);
 
@@ -385,7 +397,7 @@ TEST_F(ActuatedIiiwaArmTest,
       "Model iiwa7 is partially PD controlled. .*");
 }
 
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        AssembleDesiredStateInput_ThrowsIfDesiredStateNotConnected) {
   SetUpModel();
 
@@ -399,7 +411,7 @@ TEST_F(ActuatedIiiwaArmTest,
 
 // Verify the assembly of desired states for a plant with a single PD controlled
 // model instance.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        AssembleDesiredStateInput_VerifyAssemblyWithOneModel) {
   SetUpModel();
 
@@ -435,7 +447,7 @@ TEST_F(ActuatedIiiwaArmTest,
 
 // Verify the assembly of desired states for a plant with two PD controlled
 // model instances.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        AssembleDesiredStateInput_VerifyAssemblyWithTwoModels) {
   SetUpModel(ModelConfiguration::kArmIsControlled);
 
@@ -472,7 +484,7 @@ TEST_F(ActuatedIiiwaArmTest,
   EXPECT_EQ(full_xd, expected_xd);
 }
 
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        PdControlledActuatorsOnlySupportedForDiscreteModels) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       SetUpModel(ModelConfiguration::kArmIsControlled,
@@ -485,7 +497,7 @@ TEST_F(ActuatedIiiwaArmTest,
 // This unit test verifies that, when within effort limits, forces applied
 // through the generalized forces input port has the same effect as applying the
 // same forces using the actuation input port.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        WithinEffortLimitsActuationMatchesAppliedGeneralizedForces) {
   // We add PD controllers but set their gains to zero since for this test we
   // are only interested on verifying that the effect of input actuation in the
@@ -553,7 +565,7 @@ TEST_F(ActuatedIiiwaArmTest,
 }
 
 // We verify that the PD controlled actuators exert effort limits.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        OutsideEffortLimitsActuationMatchesAppliedGeneralizedForces) {
   // We add PD controllers but set their gains to zero since for this test we
   // are only interested on verifying that the effect of input actuation in the
@@ -640,7 +652,7 @@ TEST_F(ActuatedIiiwaArmTest,
 
 // This test verifies that for continuous models the actuation output port
 // simply feeds through the actuation inputs.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        ActuationOutputForContinuousModelsFeedsThroughActuationInput) {
   SetUpModel(ModelConfiguration::kNoPdControl,
              MultibodyPlantConfig{.time_step = 0.0});
@@ -649,7 +661,7 @@ TEST_F(ActuatedIiiwaArmTest,
 
 // This test verifies that discrete models using a solver other than SAP, simply
 // feed through the actuation inputs.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        ActuationOutputForDiscreteNonSapModelsFeedsThroughActuationInput) {
   SetUpModel(ModelConfiguration::kNoPdControl,
              MultibodyPlantConfig{.time_step = 0.01,
@@ -659,12 +671,93 @@ TEST_F(ActuatedIiiwaArmTest,
 
 // This test verifies that SAP models without PD controllers also feed through
 // the actuation input to the actuation output.
-TEST_F(ActuatedIiiwaArmTest,
+TEST_F(ActuatedIiwaArmTest,
        ActuationOutputForDiscreteSapModelsFeedsThroughActuationInput) {
   SetUpModel(ModelConfiguration::kNoPdControl,
              MultibodyPlantConfig{.time_step = 0.01,
                                   .discrete_contact_approximation = "sap"});
   VerifyActuationOutputFeedsThroughActuationInputs();
+}
+
+// Call the same methods as the RemoveJointActuator test to confirm the values
+// _without_ the actuators removed.
+TEST_F(ActuatedIiwaArmTest, DontRemoveJointActuator) {
+  test_remove_joint_actuators(false);
+  SetUpModel();
+
+  EXPECT_EQ(plant_->num_actuators(), 7 + 2 + 2);
+  EXPECT_EQ(plant_->num_actuators(arm_model_), 7);
+  EXPECT_EQ(plant_->num_actuators(acrobot_model_), 2);
+  EXPECT_EQ(plant_->num_actuators(gripper_model_), 2);
+
+  EXPECT_EQ(plant_->num_actuated_dofs(), 7 + 2 + 2);
+  EXPECT_EQ(plant_->num_actuated_dofs(arm_model_), 7);
+  EXPECT_EQ(plant_->num_actuated_dofs(acrobot_model_), 2);
+  EXPECT_EQ(plant_->num_actuated_dofs(gripper_model_), 2);
+
+  EXPECT_TRUE(plant_->HasJointActuatorNamed("iiwa_joint_3"));
+  EXPECT_TRUE(plant_->HasJointActuatorNamed("iiwa_joint_3", arm_model_));
+  EXPECT_TRUE(plant_->HasJointActuatorNamed("ElbowJoint"));
+  EXPECT_TRUE(plant_->HasJointActuatorNamed("ElbowJoint", acrobot_model_));
+
+  const JointActuator<double>& iiwa_joint_3_actuator =
+      plant_->GetJointActuatorByName("iiwa_joint_3");
+  EXPECT_EQ(plant_->GetJointActuatorByName("iiwa_joint_3", arm_model_).index(),
+            iiwa_joint_3_actuator.index());
+  EXPECT_TRUE(plant_->has_joint_actuator(iiwa_joint_3_actuator.index()));
+
+  // GetJointActuatorIndices.
+  EXPECT_EQ(plant_->GetJointActuatorIndices().size(), 7 + 2 + 2);
+  const JointActuator<double>& shoulder_joint_actuator =
+      plant_->GetJointActuatorByName("ShoulderJoint");
+  const JointActuator<double>& elbow_joint_actuator =
+      plant_->GetJointActuatorByName("ElbowJoint");
+  std::vector<JointActuatorIndex> expected_indices{
+      elbow_joint_actuator.index(), shoulder_joint_actuator.index()};
+  EXPECT_EQ(plant_->GetJointActuatorIndices(acrobot_model_), expected_indices);
+}
+
+TEST_F(ActuatedIiwaArmTest, RemoveJointActuator) {
+  // Remove iiwa_joint_3 and ElbowJoint from the model.
+  test_remove_joint_actuators(true);
+  SetUpModel();
+
+  EXPECT_EQ(plant_->num_actuators(), 6 + 1 + 2);
+  EXPECT_EQ(plant_->num_actuators(arm_model_), 6);
+  EXPECT_EQ(plant_->num_actuators(acrobot_model_), 1);
+  EXPECT_EQ(plant_->num_actuators(gripper_model_), 2);
+
+  EXPECT_EQ(plant_->num_actuated_dofs(), 6 + 1 + 2);
+  EXPECT_EQ(plant_->num_actuated_dofs(arm_model_), 6);
+  EXPECT_EQ(plant_->num_actuated_dofs(acrobot_model_), 1);
+  EXPECT_EQ(plant_->num_actuated_dofs(gripper_model_), 2);
+
+  EXPECT_FALSE(plant_->HasJointActuatorNamed("iiwa_joint_3"));
+  EXPECT_FALSE(plant_->HasJointActuatorNamed("iiwa_joint_3", arm_model_));
+  EXPECT_FALSE(plant_->HasJointActuatorNamed("ElbowJoint"));
+  EXPECT_FALSE(plant_->HasJointActuatorNamed("ElbowJoint", acrobot_model_));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->GetJointActuatorByName("iiwa_joint_3"),
+                              ".*There is no JointActuator named "
+                              "'iiwa_joint_3' anywhere in the model.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetJointActuatorByName("iiwa_joint_3", arm_model_),
+      ".*There is no JointActuator named 'iiwa_joint_3' anywhere in the "
+      "model.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetJointActuatorByName("ElbowJoint"),
+      ".*There is no JointActuator named 'ElbowJoint' anywhere in the model.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetJointActuatorByName("ElbowJoint", acrobot_model_),
+      ".*There is no JointActuator named 'ElbowJoint' anywhere in the model.*");
+
+  // GetJointActuatorIndices.
+  EXPECT_EQ(plant_->GetJointActuatorIndices().size(), 6 + 1 + 2);
+  const JointActuator<double>& shoulder_joint_actuator =
+      plant_->GetJointActuatorByName("ShoulderJoint");
+  std::vector<JointActuatorIndex> expected_indices{
+      shoulder_joint_actuator.index()};
+  EXPECT_EQ(plant_->GetJointActuatorIndices(acrobot_model_), expected_indices);
 }
 
 }  // namespace
