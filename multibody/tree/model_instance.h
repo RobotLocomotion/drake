@@ -109,8 +109,8 @@ class ModelInstance final : public MultibodyElement<T> {
   std::vector<JointIndex> GetActuatedJointIndices() const;
 
   // Returns the actuation for `this` model instance extracted from `u`.
-  // @param[in] u Actuation for the full plant model, indexed by
-  // JointActuatorIndex.
+  // @param[in] u Actuation for the full plant model (ordered by monotonically
+  // increasing JointActuatorIndex).
   // @returns the per model instance actuation, order by monotonically
   // increasing JointActuatorIndex within this model instance.
   // @throws std::exception if `u` is not of size
@@ -126,10 +126,10 @@ class ModelInstance final : public MultibodyElement<T> {
   //   joints in this model instance. It is ordered by monotonically increasing
   //   JointActuatorIndex within this model instance.
   // @param[in,out] u Actuation values for the entire plant model to which
-  //   `this` actuator belongs, indexed by JointActuatorIndex. It must be of
-  //   size equal to the number of degrees of freedom of all of the actuated
-  //   joints in the entire MultibodyTree model. Only values corresponding to
-  //   this model instance are updated.
+  //   `this` actuator belongs (ordered by monotonically increasing
+  //   JointActuatorIndex). It must be of size equal to the number of degrees of
+  //   freedom of all of the actuated joints in the entire MultibodyTree model.
+  //   Only values corresponding to this model instance are updated.
   // @throws std::exception if `u_instance` is not of size equal to the number
   //   of degrees of freedom of all of the actuated joints in this model or `u`
   //   is not of size equal to the number of degrees of freedom of all of the
