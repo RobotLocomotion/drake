@@ -219,9 +219,21 @@ drake_cc_library(
     hdrs = ["approximate_convex_cover_builder_base.h"],
     interface_deps = [
         "//geometry/optimization:convex_set",
-        "//planning/graph_algorithms:max_clique_solver_base"
+        "//planning/graph_algorithms:max_clique_solver_base",
+        ":point_sampler_base"
     ]
 
+)
+
+drake_cc_library(
+    name = "point_sampler_base",
+    srcs = ["point_sampler_base.cc"],
+    hdrs = ["point_sampler_base.h"],
+    interface_deps = [
+        "//common:essential",
+        "//common:random",
+        "//geometry/optimization:convex_set"
+    ]
 )
 
 drake_cc_library(
@@ -249,7 +261,7 @@ drake_cc_library(
     srcs = ["uniform_set_sampler.cc"],
     hdrs = ["uniform_set_sampler.h"],
     interface_deps = [
-        ":approximate_convex_cover_builder_base",
+        ":point_sampler_base",
         "//geometry/optimization:convex_set",
     ]
 
@@ -387,6 +399,15 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "uniform_set_sampler_test",
+    deps = [
+        ":uniform_set_sampler",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/optimization:convex_set"
     ],
 )
 

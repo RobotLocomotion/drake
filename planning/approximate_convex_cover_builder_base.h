@@ -6,6 +6,7 @@
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
+#include "drake/planning/point_sampler_base.h"
 
 namespace drake {
 namespace planning {
@@ -46,47 +47,6 @@ class CoverageCheckerBase {
   // functions.
   // TODO(Alexandre.Amice) decide what to do about copy/move/assign.
 //  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
-};
-
-/**
- * An abstract base class for implementing ways to sample points from the
- * underlying space an approximate convex cover builder wishes to cover.
- */
-class PointSamplerBase {
- public:
-  /**
-   * Sample num_points from the underlying space and return these points as a
-   * matrix where each column represents an underlying point.
-   * @param num_threads the number of threads used to sample points.
-   */
-  virtual Eigen::MatrixXd SamplePoints(int num_points) = 0;
-
-  virtual ~PointSamplerBase() {}
-
- protected:
-  // We put the copy/move/assignment constructors as protected to avoid copy
-  // slicing. The inherited final subclasses should put them in public
-  // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointSamplerBase);
-};
-
-class AdjacencyMatrixBuilderBase {
- public:
-  /**
-   * Given points in the space, build the adjacency matrix of these points
-   * describing the desired graphical relationship.
-   * @param points to be used as the vertices of the graph.
-   */
-  virtual Eigen::SparseMatrix<bool>& BuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points) = 0;
-
-  virtual ~AdjacencyMatrixBuilderBase() {}
-
- protected:
-  // We put the copy/move/assignment constructors as protected to avoid copy
-  // slicing. The inherited final subclasses should put them in public
-  // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AdjacencyMatrixBuilderBase);
 };
 
 /**

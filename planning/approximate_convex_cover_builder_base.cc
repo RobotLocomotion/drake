@@ -333,5 +333,7 @@ std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
   return built_sets;
 }
 
+
+
 }  // namespace planning
 }  // namespace drake

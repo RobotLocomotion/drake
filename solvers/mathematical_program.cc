@@ -1210,8 +1210,9 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   return Y;
 }
 
-MatrixX<symbolic::Expression> MathematicalProgram::TightenPsdConstraintToDd(
-    const Binding<PositiveSemidefiniteConstraint>& constraint) {
+MatrixX<symbolic::Expression> MathematicalProgram::
+    TightenPsdConstraintToDd(
+        const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
   // column-major order. This is the same convention as Eigen, so we can use the
@@ -1222,23 +1223,6 @@ MatrixX<symbolic::Expression> MathematicalProgram::TightenPsdConstraintToDd(
                                                 n, n);
   return AddPositiveDiagonallyDominantMatrixConstraint(
       mat_vars.cast<Expression>());
-}
-
-std::pair<MatrixX<symbolic::Variable>, MatrixX<symbolic::Expression>>
-MathematicalProgram::TightenLmiConstraintToDd(
-    const Binding<LinearMatrixInequalityConstraint>& constraint) {
-  RemoveConstraint(constraint);
-  auto Y = NewSymmetricContinuousVariables(constraint.GetNumElements(), "Y");
-  // ∑ᵢxᵢFᵢ
-  MatrixX<symbolic::Expression> xF =
-      constraint.evaluator()->F().at(0) * constraint.variables()(0);
-  for (int i = 1; i < static_cast<int>(constraint.GetNumElements()); ++i) {
-    xF += constraint.evaluator()->F().at(i) * constraint.variables()(i);
-  }
-  AddLinearConstraint(xF == Y);
-  MatrixX<symbolic::Expression> new_constraint =
-      AddPositiveDiagonallyDominantMatrixConstraint(Y.cast<Expression>());
-  return {Y, new_constraint};
 }
 
 namespace {
