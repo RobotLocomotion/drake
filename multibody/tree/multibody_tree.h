@@ -462,6 +462,9 @@ class MultibodyTree {
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity());
 
+  // See MultibodyPlant documentation.
+  void RemoveJointActuator(const JointActuator<T>& actuator);
+
   // Creates a new model instance.  Returns the index for a new model
   // instance (as there is no concrete object beyond the index).
   //
@@ -606,6 +609,11 @@ class MultibodyTree {
   // See MultibodyPlant method.
   Joint<T>& get_mutable_joint(JointIndex joint_index) {
     return joints_.get_mutable_element(joint_index);
+  }
+
+  // See MultibodyPlant method.
+  bool has_joint_actuator(JointActuatorIndex actuator_index) const {
+    return actuators_.has_element(actuator_index);
   }
 
   // See MultibodyPlant method.
@@ -755,6 +763,11 @@ class MultibodyTree {
   // Returns a list of joint indices associated with `model_instance`.
   std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
   const;
+
+  // See MultibodyPlant method.
+  const std::vector<JointActuatorIndex>& GetJointActuatorIndices() const {
+    return actuators_.indices();
+  }
 
   // See MultibodyPlant method.
   std::vector<JointActuatorIndex> GetJointActuatorIndices(
@@ -2226,6 +2239,11 @@ class MultibodyTree {
     for (const Joint<T>* joint : joints_.elements()) {
       tree_clone->CloneJointAndAdd(*joint);
     }
+
+    // Fill the `actuators_` collection with nulls. This is to preserve the
+    // removed index structure of the ElementCollection when adding the cloned
+    // actuators.
+    tree_clone->actuators_.ResizeToMatch(actuators_);
 
     for (const JointActuator<T>* actuator : actuators_.elements()) {
       tree_clone->CloneActuatorAndAdd(*actuator);
