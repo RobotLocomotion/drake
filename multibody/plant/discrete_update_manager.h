@@ -195,7 +195,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Evaluate the actuation applied through actuators during the discrete
    update. This will include actuation input as well as controller models.
-   The returned vector is indexed by JointActuatorIndex. */
+   The actuation value for a particular actuator can be found at offset
+   JointActuator::input_start() in the returned vector. */
   const VectorX<T>& EvalActuation(const systems::Context<T>& context) const;
 
   /* Evaluates discrete contact pairs from all types of contact (point contact,

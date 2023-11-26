@@ -517,6 +517,7 @@ drake_cc_googletest(
         ":spheres_stack",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
     ],
 )
 
@@ -690,6 +691,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
         "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
@@ -1215,6 +1217,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
         "//systems/analysis:simulator",
         "//systems/framework:abstract_value_cloner",
         "//systems/primitives:pass_through",

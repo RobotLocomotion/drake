@@ -7,7 +7,9 @@ using internal::MultibodyTreeSystem;
 using systems::Parameters;
 
 template <typename T>
-MultibodyElement<T>::~MultibodyElement() {}
+MultibodyElement<T>::~MultibodyElement() {
+  parent_tree_ = nullptr;
+}
 
 template <typename T>
 void MultibodyElement<T>::DeclareParameters(

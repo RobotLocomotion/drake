@@ -7,15 +7,31 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/test/dummy_model.h"
+#include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 namespace drake {
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  template <typename T>
+  static internal::DiscreteUpdateManager<T>* discrete_update_manager(
+      const MultibodyPlant<T>& plant) {
+    return plant.discrete_update_manager_.get();
+  }
+};
+
 namespace internal {
 namespace test {
 using contact_solvers::internal::ContactSolverResults;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::Context;
@@ -23,6 +39,7 @@ using systems::ContextBase;
 using systems::DiscreteStateIndex;
 using systems::DiscreteValues;
 using systems::OutputPortIndex;
+
 // Dummy state data.
 constexpr int kNumRigidDofs = 6;
 constexpr int kNumAdditionalDofs = 9;
@@ -413,7 +430,7 @@ TEST_P(AlgebraicLoopDetection, LoopDetectionTestWhenCachingIsDisabled) {
 GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   double dt = 0.25;
   systems::DiagramBuilder<double> builder;
-  MultibodyPlantConfig config = {.time_step = dt};
+  MultibodyPlantConfig config{.time_step = dt};
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
   const std::string sdf_model = R"""(
 <?xml version="1.0"?>
@@ -474,6 +491,42 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   /* The velocity update in this time step should reflect the change in
    actuation. */
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
+}
+
+/* Tests that actuation forces are accumulated using the correct indexing from
+ JointActuaton::input_start() */
+TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+  // Set gravity vector to zero so there is no force element contribution.
+  plant_->mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
+
+  FinalizeAndBuild();
+
+  const systems::InputPort<double>& u_input =
+      plant_->get_actuation_input_port();
+  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+
+  DiscreteUpdateManager<double>* manager =
+      MultibodyPlantTester::discrete_update_manager(*plant_);
+
+  // CalcNonContactForces includes:
+  //   - Force elements
+  //   - Externally applied general/spatial forces
+  //   - Feed forward actuation
+  //   - PD controlled actuation
+  //   - Joint limits penalty forces
+  // By construction of the model above, all of these are zero except for the
+  // feed forward actuation. Thus
+  // DiscreteUpdateManager::CalcJointActuationForces() is the only function that
+  // contributes to the accumulated forces. This tests that the indexing in
+  // CalcJointActuationForces() correctly uses JointActuaton::input_start().
+  MultibodyForces<double> forces(*plant_);
+  manager->CalcNonContactForces(
+      *plant_context_, false /* no joint limit penalty forces */,
+      false /* no pd controlled actuator forces */, &forces);
+
+  const Vector3d expected_actuation_wo_pd(1.0, 0.0, 3.0);
+  EXPECT_TRUE(
+      CompareMatrices(forces.generalized_forces(), expected_actuation_wo_pd));
 }
 
 }  // namespace
