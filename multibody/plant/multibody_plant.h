@@ -402,11 +402,13 @@ the per model-instance ports (
 @ref get_actuation_input_port(ModelInstanceIndex)const
 "get_actuation_input_port(ModelInstanceIndex)") are summed up.
 
-@note The vector data supplied to %MultibodyPlant's actuation input ports should
-be ordered by @ref JointActuatorIndex. For the get_actuation_input_port() that
-covers all actuators, the iᵗʰ vector element corresponds to
-`JointActuatorIndex(i)`. For the
-@ref get_actuation_input_port(ModelInstanceIndex)const
+@note A JointActuator's index into the vector data supplied to %MultibodyPlant's
+actuation input port for all actuators (get_actuation_input_port()) is given by
+JointActuator::input_start(), NOT by its JointActuatorIndex. That is, the vector
+element data for a JointActuator at index JointActuatorIndex(i) in the full
+input port vector is found at index:
+  MultibodyPlant::get_joint_actuator(JointActuatorIndex(i)).input_start().
+For the @ref get_actuation_input_port(ModelInstanceIndex)const
 "get_actuation_input_port(ModelInstanceIndex)" specific to a model index, the
 vector data is ordered by monotonically increasing @ref JointActuatorIndex for
 the actuators within that model instance: the 0ᵗʰ vector element
@@ -849,7 +851,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Actuation values can be provided through a single input port which
   /// describes the entire plant, or through multiple input ports which each
   /// provide the actuation values for a specific model instance. See
-  /// AddJointActuator() and num_actuators().
+  /// AddJointActuator() and num_actuated_dofs().
   ///
   /// Output ports provide information about the entire %MultibodyPlant
   /// or its individual model instances.
@@ -905,10 +907,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const;
 
   /// Returns a constant reference to the input port for external actuation for
-  /// all actuated dofs. This input port is a vector valued port indexed by
-  /// @ref JointActuatorIndex, see JointActuator::index(), and can be set with
-  /// JointActuator::set_actuation_vector().
-  /// Refer to @ref mbp_actuation "Actuation" for further details.
+  /// all actuated dofs. This input port is a vector valued port and can be set
+  /// with JointActuator::set_actuation_vector(). The actuation value for a
+  /// particular actuator can be found at offset JointActuator::input_start() in
+  /// this vector. Refer to @ref mbp_actuation "Actuation" for further details.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::InputPort<T>& get_actuation_input_port() const;
@@ -932,10 +934,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the output port that reports actuation
   /// values applied through joint actuators. This output port is a vector
-  /// valued port indexed by @ref JointActuatorIndex, see
-  /// JointActuator::index(). Models that include PD controllers will include
-  /// their contribution in this port, refer to @ref mbp_actuation "Actuation"
-  /// for further details.
+  /// valued port. The actuation value for a particular actuator can be found at
+  /// offset JointActuator::input_start() in this vector. Models that include PD
+  /// controllers will include their contribution in this port, refer to @ref
+  /// mbp_actuation "Actuation" for further details.
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port.
   /// @pre Finalize() was already called on `this` plant.
@@ -973,8 +975,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// sized. This port must provide one desired position and one desired
   /// velocity per joint actuator. Desired state is assumed to be packed as xd =
   /// [qd, vd] that is, configurations first followed by velocities.
-  /// Configurations in qd are ordered by JointActuatorIndex, see
-  /// JointActuator::set_actuation_vector(). Similarly for velocities in vd.
+  /// The actuation value for a particular actuator can be found at offset
+  /// JointActuator::input_start() in both qd and vd. For example:
+  /// ```
+  /// const double qd_actuator = xd[actuator.input_start()];
+  /// const double vd_actuator =
+  ///    xd[actuator.input_start() + plant.num_actuated_dofs()];
+  /// ```
   ///
   /// @warning If a user specifies a PD controller for an actuator from a given
   /// model instance, then all actuators of that model instance are required to
@@ -1405,12 +1412,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// via this actuator, the user-level code (e.g., a controller) should query
   /// this effort limit and impose the saturation there.
   /// @returns A constant reference to the new JointActuator just added, which
-  /// will remain valid for the lifetime of `this` plant.
+  /// will remain valid for the lifetime of `this` plant or until the
+  /// JointActuator has been removed from the plant with RemoveJointActuator().
   /// @throws std::exception if `joint.num_velocities() > 1` since for now we
   /// only support actuators for single dof joints.
+  /// @see RemoveJointActuator()
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity());
+
+  /// Removes and deletes `actuator` from this %MultibodyPlant. Any existing
+  /// references to `actuator` will become invalid, and future calls to
+  /// `get_joint_actuator(actuator_index)` will throw an exception.
+  ///
+  /// @throws std::exception if the plant is already finalized.
+  /// @see AddJointActuator()
+  void RemoveJointActuator(const JointActuator<T>& actuator);
 
   /// Creates a new model instance.  Returns the index for the model
   /// instance.
@@ -2910,12 +2927,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns a vector of actuation values for `model_instance` from a vector
   /// `u` of actuation values for the entire plant model. Refer to @ref
   /// mbp_actuation "Actuation" for further details.
-  /// @param[in] u Actuation values for the entire model, indexed by
-  /// @ref JointActuatorIndex.
+  /// @param[in] u Actuation values for the entire model. The actuation value
+  ///   in `u` for a particular actuator can be found at offset
+  ///   JointActuator::input_start().
   /// @returns Actuation values for `model_instance`, ordered by monotonically
-  /// increasing @ref JointActuatorIndex.
+  ///   increasing @ref JointActuatorIndex.
   /// @throws std::exception if `u` is not of size
-  /// MultibodyPlant::num_actuated_dofs().
+  ///   MultibodyPlant::num_actuated_dofs().
   VectorX<T> GetActuationFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u) const {
@@ -2929,9 +2947,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] u_instance Actuation values for the model instance. Values are
   ///   ordered by monotonically increasing @ref JointActuatorIndex within the
   ///   model instance.
-  /// @param[in,out] u Actuation values for the entire plant model, indexed by
-  ///   @ref JointActuatorIndex. Only values corresponding to `model_instance`
-  ///   are changed.
+  /// @param[in,out] u Actuation values for the entire plant model. The
+  ///   actuation value in `u` for a particular actuator can be found at offset
+  ///   JointActuator::input_start(). Only values corresponding to
+  ///   `model_instance` are changed.
   /// @throws std::exception if the size of `u_instance` is not equal to the
   ///   number of actuation inputs for the joints of `model_instance`.
   void SetActuationInArray(ModelInstanceIndex model_instance,
@@ -4376,8 +4395,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// A user specifies the preferred order in uₛ via
   /// `user_to_actuator_index_map`. The actuation values in uₛ are a
   /// concatenation of the values for each actuator in the order they appear in
-  /// `user_to_actuator_index_map`.
-  /// The full vector of actuation values u is ordered by JointActuatorIndex.
+  /// `user_to_actuator_index_map`. The actuation value in the full vector of
+  /// actuation values `u` for a particular actuator can be found at offset
+  /// JointActuator::input_start().
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
     return internal_tree().MakeActuatorSelectorMatrix(
@@ -4386,12 +4406,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// This method creates an actuation matrix B mapping a vector of actuation
   /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
-  /// size `nv x nu` with `nu` equal to num_actuators() and `nv` equal to
+  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
   /// num_velocities().
-  /// The vector u of actuation values is of size num_actuators(). For a given
-  /// JointActuator, `u[JointActuator::index()]` stores the value for the
-  /// external actuation corresponding to that actuator. `tau_u` on the other
-  /// hand is indexed by generalized velocity indexes according to
+  /// The vector u of actuation values is of size num_actuated_dofs(). For a
+  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
+  /// for the external actuation corresponding to that actuator. `tau_u` on the
+  /// other hand is indexed by generalized velocity indexes according to
   /// `Joint::velocity_start()`.
   /// @warning B is a permutation matrix. While making a permutation has
   /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
@@ -4408,11 +4428,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Alternative signature to build an actuation selector matrix `Su` such
   /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
-  /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
+  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
   /// values for the actuators acting on the joints listed by
   /// `user_to_joint_index_map`. It is assumed that all joints referenced by
-  /// `user_to_joint_index_map` are actuated.
-  /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// `user_to_joint_index_map` are actuated. See
+  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
   /// details.
   /// @throws std::exception if any of the joints in
   /// `user_to_joint_index_map` does not have an actuator.
@@ -4643,6 +4663,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetJointIndices(model_instance);
   }
 
+  /// Returns a list of all joint actuator indices. The vector is ordered by
+  /// monotonically increasing @ref JointActuatorIndex, but the indexes will in
+  /// general not be consecutive due to actuators that were removed.
+  const std::vector<JointActuatorIndex>& GetJointActuatorIndices() const {
+    return internal_tree().GetJointActuatorIndices();
+  }
+
   /// Returns a list of joint actuator indices associated with `model_instance`.
   /// The vector is ordered by monotonically increasing @ref JointActuatorIndex.
   /// @throws std::exception if called pre-finalize.
@@ -4766,6 +4793,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     return internal_tree().num_actuated_dofs(model_instance);
+  }
+
+  /// Returns true if plant has a joint actuator with unique index
+  /// `actuator_index`. The value could be false if the actuator was removed
+  /// using RemoveJointActuator().
+  bool has_joint_actuator(JointActuatorIndex actuator_index) const {
+    return internal_tree().has_joint_actuator(actuator_index);
   }
 
   /// Returns a constant reference to the joint actuator with unique index
@@ -5251,22 +5285,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void EstimatePointContactParameters(double penetration_allowance);
 
   // Helper method to assemble actuation input vector from the appropriate
-  // ports. The return value is indexed by JointActuatorIndex.
+  // ports. The actuation value for a particular actuator can be found at offset
+  // JointActuator::input_start() in the returned vector (see
+  // MultibodyPlant::get_actuation_input_port()).
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
   // Computes the net applied actuation through actuators. For continuous
   // models (thus far) this only inludes values coming from the
   // actuation_input_port. For discrete models, it includes actuator
   // controllers, see @ref mbp_actuation. Similarly to AssembleActuationInput(),
-  // this function assembles actuation values indexed by JointActuatorIndex.
+  // this function assembles actuation values into the vector `actuation`. The
+  // actuation value for a particular actuator can be found at offset
+  // JointActuator::input_start() in `actuation` (see
+  // MultibodyPlant::get_actuation_input_port()).
   void CalcActuationOutput(const systems::Context<T>& context,
                            systems::BasicVector<T>* actuation) const;
 
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
   // individual model instances.
-  // The return stacks desired state as xd = [qd, vd], with both qd and vd
-  // indexed by JointActuatorIndex (it is assumed that qd.size() == vd.size()).
+  // The return stacks desired state as xd = [qd, vd].
+  // The actuation value for a particular actuator can be found at offset
+  // JointActuator::input_start() in both qd and vd (see
+  // MultibodyPlant::get_actuation_input_port()).
   VectorX<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
