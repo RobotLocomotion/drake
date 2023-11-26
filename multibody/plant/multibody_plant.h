@@ -849,7 +849,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Actuation values can be provided through a single input port which
   /// describes the entire plant, or through multiple input ports which each
   /// provide the actuation values for a specific model instance. See
-  /// AddJointActuator() and num_actuators().
+  /// AddJointActuator() and num_actuated_dofs().
   ///
   /// Output ports provide information about the entire %MultibodyPlant
   /// or its individual model instances.
@@ -1411,6 +1411,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity());
+
+  /// Removes `actuator` from this %MultibodyPlant and frees the corresponding
+  /// memory. Any existing references to `actuator` will become invalid, and
+  /// future calls to `get_joint_actuator(actuator.index())` will throw an
+  /// exception.
+  ///
+  /// @throws std::exception if the plant is already finalized.
+  void RemoveJointActuator(const JointActuator<T>& actuator);
 
   /// Creates a new model instance.  Returns the index for the model
   /// instance.
@@ -4467,10 +4475,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// This method creates an actuation matrix B mapping a vector of actuation
   /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
-  /// size `nv x nu` with `nu` equal to num_actuators() and `nv` equal to
+  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
   /// num_velocities().
-  /// The vector u of actuation values is of size num_actuators(). For a given
-  /// JointActuator, `u[JointActuator::index()]` stores the value for the
+  /// The vector u of actuation values is of size num_actuated_dofs(). For a
+  /// given JointActuator, `u[JointActuator::index()]` stores the value for the
   /// external actuation corresponding to that actuator. `tau_u` on the other
   /// hand is indexed by generalized velocity indexes according to
   /// `Joint::velocity_start()`.
@@ -4716,6 +4724,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetJointIndices(model_instance);
   }
 
+  /// Returns a list of all joint actuator indices. The vector is ordered by
+  /// monotonically increasing @ref JointActuatorIndex.
+  const std::vector<JointActuatorIndex>& GetJointActuatorIndices() const {
+    return internal_tree().GetJointActuatorIndices();
+  }
+
   /// Returns a list of joint actuator indices associated with `model_instance`.
   /// The vector is ordered by monotonically increasing @ref JointActuatorIndex.
   /// @throws std::exception if called pre-finalize.
@@ -4839,6 +4853,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     return internal_tree().num_actuated_dofs(model_instance);
+  }
+
+  /// Returns true if plant has a joint actuator with unique index
+  /// `actuator_index`. The value could be false if the actuator was removed
+  /// using RemoveJointActuator().
+  bool has_joint_actuator(JointActuatorIndex actuator_index) const {
+    return internal_tree().has_joint_actuator(actuator_index);
   }
 
   /// Returns a constant reference to the joint actuator with unique index

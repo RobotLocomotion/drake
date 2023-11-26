@@ -111,8 +111,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
   }
 
   void SetGripperModel() {
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < plant_->num_actuators(); ++actuator_index) {
+    for (JointActuatorIndex actuator_index :
+         plant_->GetJointActuatorIndices()) {
       JointActuator<double>& actuator =
           plant_->get_mutable_joint_actuator(actuator_index);
       if (actuator.model_instance() == gripper_model_) {
@@ -146,7 +146,7 @@ TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
 
   // Sanity check we only defined PD controllers for the grippers DOFs.
   int num_controlled_actuators = 0;
-  for (JointActuatorIndex a(0); a < plant_->num_actuators(); ++a) {
+  for (JointActuatorIndex a : plant_->GetJointActuatorIndices()) {
     const JointActuator<double>& actuator = plant_->get_joint_actuator(a);
     if (actuator.has_controller()) ++num_controlled_actuators;
   }

@@ -126,12 +126,12 @@ GTEST_TEST(JointLimitsIiwa7, TestEffortVelocityPositionValues) {
     parser.AddModels(FindResourceOrThrow(model_file));
     plant.Finalize();
 
-    for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
+    for (multibody::JointActuatorIndex index :
+         canonical_plant.GetJointActuatorIndices()) {
       const multibody::JointActuator<double>& canonical_joint_actuator =
-          canonical_plant.get_joint_actuator(
-              drake::multibody::JointActuatorIndex(i));
+          canonical_plant.get_joint_actuator(index);
       const multibody::JointActuator<double>& joint_actuator =
-          plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
+          plant.get_joint_actuator(index);
 
       CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
     }
@@ -200,12 +200,12 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
     parser.AddModels(FindResourceOrThrow(model_file));
     plant.Finalize();
 
-    for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
+    for (multibody::JointActuatorIndex index :
+         canonical_plant.GetJointActuatorIndices()) {
       const multibody::JointActuator<double>& canonical_joint_actuator =
-          canonical_plant.get_joint_actuator(
-              drake::multibody::JointActuatorIndex(i));
+          canonical_plant.get_joint_actuator(index);
       const multibody::JointActuator<double>& joint_actuator =
-          plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
+          plant.get_joint_actuator(index);
 
       CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
 
@@ -214,8 +214,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
       std::filesystem::path model_path(model_file);
       if (model_path.filename() == "dual_iiwa14_polytope_collision.urdf") {
         const multibody::JointActuator<double>& second_instance_joint_actuator =
-            plant.get_joint_actuator(
-                drake::multibody::JointActuatorIndex(i + 7));
+            plant.get_joint_actuator(multibody::JointActuatorIndex(index + 7));
         CompareActuatorLimits(canonical_joint_actuator,
                               second_instance_joint_actuator);
       }

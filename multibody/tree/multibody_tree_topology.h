@@ -318,6 +318,7 @@ struct JointActuatorTopology {
   int actuator_index_start{-1};
   // The number of dofs actuated by this actuator.
   int num_dofs{-1};
+  bool removed{false};
 };
 
 // Data structure to store the topological information associated with a tree
@@ -490,11 +491,6 @@ class MultibodyTreeTopology {
     return ssize(force_elements_);
   }
 
-  // Returns the number of joint actuators in the topology.
-  int num_joint_actuators() const {
-    return ssize(joint_actuators_);
-  }
-
   // Returns the number of levels in the forest topology.
   int forest_height() const {
     return forest_height_;
@@ -531,7 +527,12 @@ class MultibodyTreeTopology {
   // given a JointActuatorIndex.
   const JointActuatorTopology& get_joint_actuator(
       JointActuatorIndex index) const {
-    DRAKE_ASSERT(index < num_joint_actuators());
+    DRAKE_ASSERT(index < ssize(joint_actuators_));
+    if (joint_actuators_[index].removed) {
+      throw std::runtime_error(fmt::format(
+          "The JointActuator with index {} was removed from the topology.",
+          index));
+    }
     return joint_actuators_[index];
   }
 
@@ -756,11 +757,38 @@ class MultibodyTreeTopology {
           "See documentation for Finalize() for details.");
     }
     const int actuator_index_start = num_actuated_dofs();
-    const JointActuatorIndex actuator_index(num_joint_actuators());
+    const JointActuatorIndex actuator_index(ssize(joint_actuators_));
     joint_actuators_.emplace_back(
         actuator_index, actuator_index_start, num_dofs);
     num_actuated_dofs_ += num_dofs;
     return actuator_index;
+  }
+
+  // Removes `actuator_index` from the list of joint actuators. The
+  // `actuator_index_start` will be modified if necessary for other actuators.
+  // @throws std::exception if called post-Finalize.
+  void RemoveJointActuator(JointActuatorIndex actuator_index) {
+    DRAKE_DEMAND(actuator_index < ssize(joint_actuators_));
+    if (is_valid()) {
+      throw std::logic_error(
+          "RemoveJointActuator() must be called pre-Finalize.");
+    }
+    DRAKE_ASSERT(num_actuated_dofs_ >=
+                 joint_actuators_[actuator_index].num_dofs);
+
+    // Mark the actuator as "removed".
+    joint_actuators_[actuator_index].removed = true;
+
+    // Reduce the total number of actuated dofs.
+    int num_dofs = joint_actuators_[actuator_index].num_dofs;
+    num_actuated_dofs_ -= num_dofs;
+
+    // Update the actuator_index_start for all joint actuators that come after
+    // the one we just removed.
+    for (JointActuatorIndex i(actuator_index); i < ssize(joint_actuators_);
+         ++i) {
+      joint_actuators_[i].actuator_index_start -= num_dofs;
+    }
   }
 
   // This method must be called by MultibodyTree::Finalize() after all

@@ -11,7 +11,7 @@ from pydrake.multibody.tree import (
 
 def MakeNamedViewActuation(plant, view_name):
     names = [None] * plant.get_actuation_input_port().size()
-    for ind in range(plant.num_actuators()):
+    for ind in plant.GetJointActuatorIndices():
         actuator = plant.get_joint_actuator(JointActuatorIndex(ind))
         assert actuator.num_inputs() == 1
         names[actuator.input_start()] = actuator.name()

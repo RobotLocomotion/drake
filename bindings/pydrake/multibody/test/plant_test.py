@@ -259,6 +259,32 @@ class TestPlant(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             plant.EvalBodyPoseInWorld(context, body)
 
+    @numpy_compare.check_all_types
+    def test_multibody_plant_remove_joint_actuator(self, T):
+        plant = MultibodyPlant_[T](0)
+        instance = plant.AddModelInstance("instance")
+        body = plant.AddRigidBody(
+            name="body", model_instance=instance,
+            M_BBo_B=SpatialInertia_[float]())
+        joint = plant.AddJoint(
+            PrismaticJoint_[T](
+                "joint",
+                plant.world_frame(),
+                body.body_frame(),
+                [0, 0, 1]))
+        actuator = plant.AddJointActuator("actuator", joint, 1)
+        actuator_index = actuator.index()
+        self.assertEqual(
+            plant.GetJointActuatorIndices(), [actuator.index()])
+        self.assertTrue(
+            plant.has_joint_actuator(actuator_index=actuator_index))
+        plant.RemoveJointActuator(actuator=actuator)
+        self.assertFalse(
+            plant.has_joint_actuator(actuator_index=actuator_index))
+        plant.Finalize()
+        self.assertEqual(
+            plant.GetJointActuatorIndices(model_instance=instance), [])
+
     def test_multibody_plant_config(self):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)

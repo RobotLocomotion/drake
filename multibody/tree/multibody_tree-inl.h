@@ -386,10 +386,15 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
                            "See documentation for Finalize() for details.");
   }
 
-  const JointActuatorIndex actuator_index =
-      topology_.add_joint_actuator(joint.num_velocities());
+  // Create the JointActuator _before_ adding it to the topology; otherwise if
+  // the JointActuator constructor throws, the actuator_index will not properly
+  // index into owned_actuators_.
   owned_actuators_.push_back(
       std::make_unique<JointActuator<T>>(name, joint, effort_limit));
+  const JointActuatorIndex actuator_index =
+      topology_.add_joint_actuator(joint.num_velocities());
+  DRAKE_DEMAND(actuator_index == ssize(owned_actuators_)-1);
+  joint_actuator_indices_.push_back(actuator_index);
   JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
   this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
@@ -531,6 +536,7 @@ void MultibodyTree<T>::CloneActuatorAndAdd(
   actuator_clone->set_parent_tree(this, actuator_index);
   actuator_clone->set_model_instance(actuator.model_instance());
   owned_actuators_.push_back(std::move(actuator_clone));
+  joint_actuator_indices_.push_back(actuator_index);
 }
 
 template <typename T>

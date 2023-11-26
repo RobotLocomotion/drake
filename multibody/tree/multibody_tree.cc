@@ -89,6 +89,24 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
+void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
+  DRAKE_MBT_THROW_IF_FINALIZED();
+  JointActuatorIndex actuator_index = actuator.index();
+
+  // Rather than change all of the remaining actuator indices, we'll just
+  // invalidate this actuator in the list.
+  owned_actuators_.at(actuator_index) = nullptr;
+
+  // Remove the actuator index.
+  joint_actuator_indices_.erase(
+      std::remove(joint_actuator_indices_.begin(),
+                  joint_actuator_indices_.end(), actuator_index),
+      joint_actuator_indices_.end());
+
+  topology_.RemoveJointActuator(actuator_index);
+}
+
+template <typename T>
 const std::string& MultibodyTree<T>::GetModelInstanceName(
     ModelInstanceIndex model_instance) const {
   const auto it = instance_index_to_name_.find(model_instance);
@@ -150,20 +168,25 @@ std::string_view GetElementClassname() {
 
 // Given a tree and element index, returns the corresponding `const Element&`.
 template <typename T, typename ElementIndex>
-const auto& GetElementByIndex(
+const auto* GetElementByIndex(
     const MultibodyTree<T>& tree,
     const ElementIndex index) {
   if constexpr (std::is_same_v<ElementIndex, BodyIndex>) {
-    return tree.get_body(index);
+    return &tree.get_body(index);
   }
   if constexpr (std::is_same_v<ElementIndex, FrameIndex>) {
-    return tree.get_frame(index);
+    return &tree.get_frame(index);
   }
   if constexpr (std::is_same_v<ElementIndex, JointIndex>) {
-    return tree.get_joint(index);
+    return &tree.get_joint(index);
   }
   if constexpr (std::is_same_v<ElementIndex, JointActuatorIndex>) {
-    return tree.get_joint_actuator(index);
+    if (!tree.has_joint_actuator(index)) {
+      // Help the auto return type deduction.
+      const JointActuator<T>* null_actuator{nullptr};
+      return null_actuator;
+    }
+    return &tree.get_joint_actuator(index);
   }
   DRAKE_UNREACHABLE();
 }
@@ -183,8 +206,11 @@ std::string GetElementModelInstancesByName(
   const auto [lower, upper] = name_to_index.equal_range(name);
   for (auto it = lower; it != upper; ++it) {
     const ElementIndex index = it->second;
-    const auto& element = GetElementByIndex(tree, index);
-    model_instances.push_back(element.model_instance());
+    const auto* element = GetElementByIndex(tree, index);
+    if (element) {
+      // Removed elements are not reported here.
+      model_instances.push_back(element->model_instance());
+    }
   }
   // Sort them, because map iteration order is non-deterministic.
   std::sort(model_instances.begin(), model_instances.end());
@@ -215,8 +241,9 @@ bool HasElementNamed(
     // turns out to be incorrect, we can switch to a different data structure.
     for (auto it = lower; it != upper; ++it) {
       const ElementIndex index = it->second;
-      const auto& element = GetElementByIndex(tree, index);
-      if (element.model_instance() == *model_instance) {
+      const auto* element = GetElementByIndex(tree, index);
+      if (!element) continue;  // Element was removed.
+      if (element->model_instance() == *model_instance) {
         return true;
       }
     }
@@ -229,8 +256,18 @@ bool HasElementNamed(
     return false;
   }
 
-  // With no model instance requested, ensure the name is globally unique.
-  if (std::next(lower) != upper) {
+  // With no model instance requested, ensure there is exactly one element with
+  // this name.
+  int num_matches = 0;
+  for (auto it = lower; it != upper; ++it) {
+    const auto* element = GetElementByIndex(tree, it->second);
+    if (!element) continue;  // Element was removed.
+    ++num_matches;
+  }
+
+  if (num_matches < 1) {
+    return false;
+  } else if (num_matches > 1) {
     const std::string_view element_classname =
         GetElementClassname<ElementIndex>();
     const std::string known_instances =
@@ -275,8 +312,9 @@ const auto& GetElementByName(
     std::map<ModelInstanceIndex, std::vector<std::string_view>>
         names_by_model_instance;
     for (const auto& [element_name, element_index] : name_to_index) {
-      const auto& element = GetElementByIndex(tree, element_index);
-      names_by_model_instance[element.model_instance()].push_back(
+      const auto* element = GetElementByIndex(tree, element_index);
+      if (!element) continue;
+      names_by_model_instance[element->model_instance()].push_back(
           element_name.view());
     }
     if (names_by_model_instance.empty()) {
@@ -301,24 +339,54 @@ const auto& GetElementByName(
 
   // Filter for the requested model_instance, if one was provided.
   if (model_instance) {
+    bool found_in_other_instance = false;
     for (auto it = lower; it != upper; ++it) {
       const ElementIndex index = it->second;
-      const auto& element = GetElementByIndex(tree, index);
-      if (element.model_instance() == *model_instance) {
-        return element;
+      const auto* element = GetElementByIndex(tree, index);
+      if (!element) continue;  // Element was removed.
+      if (element->model_instance() == *model_instance) {
+        return *element;
+      } else {
+        found_in_other_instance = true;
       }
     }
-    const std::string known_instances =
-        GetElementModelInstancesByName(tree, name, name_to_index);
-    throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' in the model instance named"
-        " '{}', but one does exist in other model instances ({}).",
-        element_classname, element_classname, name, model_instance_name,
-        known_instances));
+    if (found_in_other_instance) {
+      const std::string known_instances =
+          GetElementModelInstancesByName(tree, name, name_to_index);
+      throw std::logic_error(fmt::format(
+          "Get{}ByName(): There is no {} named '{}' in the model instance named"
+          " '{}', but one does exist in other model instances ({}).",
+          element_classname, element_classname, name, model_instance_name,
+          known_instances));
+    } else {
+      throw std::logic_error(fmt::format(
+          "Get{}ByName(): The {} named '{}' in the model instance named"
+          " '{}' was removed.",
+          element_classname, element_classname, name, model_instance_name));
+    }
   }
 
-  // With no model instance requested, ensure the name is globally unique.
-  if (std::next(lower) != upper) {
+  // With no model instance requested, ensure there is exactly one element with
+  // this name.
+  int num_matches = 0;
+  ElementIndex index{};
+  for (auto it = lower; it != upper; ++it) {
+    const auto* element = GetElementByIndex(tree, it->second);
+    if (!element) continue;  // Element was removed.
+    index = it->second;
+    ++num_matches;
+  }
+
+  if (num_matches == 1) {
+    // Success.
+    const auto* element = GetElementByIndex(tree, index);
+    DRAKE_DEMAND(element != nullptr);
+    return *element;
+  } else if (num_matches < 1) {
+    throw std::logic_error(
+        fmt::format("Get{}ByName(): The {} named '{}' was removed.",
+                    element_classname, element_classname, name));
+  } else {  // num_matches > 1
     const std::string known_instances =
         GetElementModelInstancesByName(tree, name, name_to_index);
     throw std::logic_error(fmt::format(
@@ -326,9 +394,7 @@ const auto& GetElementByName(
         " ({}); you must provide a model_instance argument to disambiguate.",
         element_classname, element_classname, name, known_instances));
   }
-
-  // Success.
-  return GetElementByIndex(tree, lower->second);
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace
@@ -427,6 +493,7 @@ std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
 template <typename T>
 std::vector<JointActuatorIndex> MultibodyTree<T>::GetJointActuatorIndices(
     ModelInstanceIndex model_instance) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
   return model_instances_.at(model_instance)->GetJointActuatorIndices();
 }
@@ -745,7 +812,9 @@ void MultibodyTree<T>::FinalizeInternals() {
     force_element->SetTopology(topology_);
   }
   for (const auto& actuator : owned_actuators_) {
-    actuator->SetTopology(topology_);
+    if (actuator != nullptr) {
+      actuator->SetTopology(topology_);
+    }
   }
 
   body_node_levels_.resize(topology_.forest_height());
@@ -866,8 +935,10 @@ void MultibodyTree<T>::CreateModelInstances() {
   // JointActuatorIndex within each model instance. If this was not true,
   // ModelInstance::add_joint_actuator() would throw.
   for (const auto& joint_actuator : owned_actuators_) {
-    model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
-        joint_actuator.get());
+    if (joint_actuator != nullptr) {
+      model_instances_.at(joint_actuator->model_instance())
+          ->add_joint_actuator(joint_actuator.get());
+    }
   }
 }
 
@@ -1208,6 +1279,7 @@ void MultibodyTree<T>::CalcReflectedInertia(
   // See JointActuator::reflected_inertia().
   *reflected_inertia = VectorX<double>::Zero(num_velocities());
   for (const auto& actuator : owned_actuators_) {
+    if (actuator == nullptr) continue;
     const int joint_velocity_index =
         actuator->joint().velocity_start();  // within v
     (*reflected_inertia)(joint_velocity_index) =
@@ -3551,8 +3623,7 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
 
   std::vector<JointActuatorIndex> joint_to_actuator_index(num_joints());
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(actuator_index);
     joint_to_actuator_index[actuator.joint().index()] = actuator_index;
   }
@@ -3659,7 +3730,7 @@ VectorX<double> MultibodyTree<T>::GetEffortLowerLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd lower = Eigen::VectorXd::Constant(
       num_actuated_dofs(), -std::numeric_limits<double>::infinity());
-  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+  for (JointActuatorIndex i : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(i);
     for (int j = actuator.input_start();
          j < actuator.input_start() + actuator.num_inputs(); ++j) {
@@ -3675,7 +3746,7 @@ VectorX<double> MultibodyTree<T>::GetEffortUpperLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd upper = Eigen::VectorXd::Constant(
       num_actuated_dofs(), std::numeric_limits<double>::infinity());
-  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+  for (JointActuatorIndex i : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(i);
     for (int j = actuator.input_start();
          j < actuator.input_start() + actuator.num_inputs(); ++j) {

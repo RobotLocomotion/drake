@@ -225,6 +225,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("name"), py::arg("joint"),
             py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
             cls_doc.AddJointActuator.doc)
+        .def("RemoveJointActuator", &Class::RemoveJointActuator,
+            py::arg("actuator"), cls_doc.RemoveJointActuator.doc)
         .def(
             "AddFrame",
             [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
@@ -715,6 +717,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_mutable_joint", &Class::get_mutable_joint,
             py::arg("joint_index"), py_rvp::reference_internal,
             cls_doc.get_mutable_joint.doc)
+        .def("has_joint_actuator", &Class::has_joint_actuator,
+            py::arg("actuator_index"), cls_doc.has_joint_actuator.doc)
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_rvp::reference_internal,
             cls_doc.get_joint_actuator.doc)
@@ -734,8 +738,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.is_gravity_enabled.doc)
         .def("GetJointIndices", &Class::GetJointIndices,
             py::arg("model_instance"), cls_doc.GetJointIndices.doc)
-        .def("GetJointActuatorIndices", &Class::GetJointActuatorIndices,
-            py::arg("model_instance"), cls_doc.GetJointActuatorIndices.doc)
+        .def("GetJointActuatorIndices",
+            overload_cast_explicit<const std::vector<JointActuatorIndex>&>(
+                &Class::GetJointActuatorIndices),
+            py_rvp::reference_internal,
+            cls_doc.GetJointActuatorIndices.doc_0args)
+        .def("GetJointActuatorIndices",
+            overload_cast_explicit<std::vector<JointActuatorIndex>,
+                ModelInstanceIndex>(&Class::GetJointActuatorIndices),
+            py::arg("model_instance"),
+            cls_doc.GetJointActuatorIndices.doc_1args)
         .def("GetActuatedJointIndices", &Class::GetActuatedJointIndices,
             py::arg("model_instance"), cls_doc.GetActuatedJointIndices.doc)
         .def("GetModelInstanceName",

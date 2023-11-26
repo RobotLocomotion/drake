@@ -137,7 +137,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
                              const VectorX<double>& rotor_inertias,
                              const VectorX<double>& gear_ratios) {
     DRAKE_DEMAND(plant != nullptr);
-    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
       joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
@@ -147,7 +147,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
 
   void SetReflectedInertiaToZero(MultibodyPlant<double>* plant) {
     DRAKE_DEMAND(plant != nullptr);
-    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
       joint_actuator.set_default_rotor_inertia(0.0);
@@ -609,8 +609,7 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
   // Load the models.
   LoadBothModelsSetStateAndFinalize(rotor_inertias, gear_ratios);
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
             plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
@@ -622,8 +621,7 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
               joint_actuator.rotor_inertia(*context_ri_));
   }
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
             plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
@@ -635,8 +633,7 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
   // Create a new default context.
   auto context = plant_ri_.CreateDefaultContext();
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
             plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
