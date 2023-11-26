@@ -1150,15 +1150,16 @@ namespace {
 
 template <typename T>
 MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
-            std::set<int> minor_indices) {
-  DRAKE_ASSERT(
-      std::all_of(minor_indices.begin(), minor_indices.end(), [](int elt) {
-        return elt >= 0;
-      }));
-  DRAKE_ASSERT(std::all_of(minor_indices.begin(), minor_indices.end(),
-                           [&mat](int elt) {
-                             return elt < mat.rows();
-                           }));
+                     std::set<int> minor_indices) {
+  // In Debug builds, check if the minor_indices are valid.
+  if (kDrakeAssertIsArmed) {
+    auto elt_is_in_bounds = [&mat](int elt) {
+      return elt >= 0 && elt < mat.rows();
+    };
+    DRAKE_ASSERT(std::all_of(minor_indices.begin(), minor_indices.end(),
+                             elt_is_in_bounds));
+  }
+
   MatrixX<T> minor(minor_indices.size(), minor_indices.size());
   int row_count = 0;
   for (auto row_it = minor_indices.begin(); row_it != minor_indices.cend();
