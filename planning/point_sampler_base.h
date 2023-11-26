@@ -25,7 +25,7 @@ class PointSamplerBase {
   // We put the copy/move/assignment constructors as protected to avoid copy
   // slicing. The inherited final subclasses should put them in public
   // functions.
-//  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointSamplerBase);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointSamplerBase);
 
   virtual Eigen::MatrixXd DoSamplePoints(int num_points) = 0;
 };
