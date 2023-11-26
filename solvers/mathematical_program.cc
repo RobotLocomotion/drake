@@ -1146,6 +1146,52 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return AddConstraint(constraint, symmetric_matrix_var);
 }
 
+namespace {
+
+template <typename T>
+MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
+            std::set<int> minor_indices) {
+  DRAKE_ASSERT(
+      std::all_of(minor_indices.begin(), minor_indices.end(), [](int elt) {
+        return elt >= 0;
+      }));
+  DRAKE_ASSERT(std::all_of(minor_indices.begin(), minor_indices.end(),
+                           [&mat](int elt) {
+                             return elt < mat.rows();
+                           }));
+  MatrixX<T> minor(minor_indices.size(), minor_indices.size());
+  int row_count = 0;
+  for (auto row_it = minor_indices.begin(); row_it != minor_indices.cend();
+       ++row_it) {
+    minor(row_count, row_count) = mat(*row_it, *row_it);
+    int col_count = row_count + 1;
+    for (auto col_it = next(row_it); col_it != minor_indices.cend(); ++col_it) {
+      minor(row_count, col_count) = mat(*row_it, *col_it);
+      minor(col_count, row_count) = mat(*col_it, *row_it);
+      ++col_count;
+    }
+    ++row_count;
+  }
+  return minor;
+}
+}  // namespace
+
+Binding<PositiveSemidefiniteConstraint>
+MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+    const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
+    std::set<int> minor_indices) {
+  return AddPositiveSemidefiniteConstraint(
+      MakeMinor<symbolic::Variable>(symmetric_matrix_var, minor_indices));
+}
+
+Binding<PositiveSemidefiniteConstraint>
+MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
+    std::set<int> minor_indices) {
+  return AddPositiveSemidefiniteConstraint(
+      MakeMinor<symbolic::Expression>(e, minor_indices));
+}
+
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
   if (!CheckBinding(binding)) {
@@ -1210,9 +1256,8 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   return Y;
 }
 
-MatrixX<symbolic::Expression> MathematicalProgram::
-    TightenPsdConstraintToDd(
-        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+MatrixX<symbolic::Expression> MathematicalProgram::TightenPsdConstraintToDd(
+    const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
   // column-major order. This is the same convention as Eigen, so we can use the
@@ -1324,9 +1369,8 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       Eigen::Map<const VectorXDecisionVariable>(X.data(), X.size()));
 }
 
-Binding<LinearConstraint> MathematicalProgram::
-    RelaxPsdConstraintToDdDualCone(
-        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+Binding<LinearConstraint> MathematicalProgram::RelaxPsdConstraintToDdDualCone(
+    const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
   // column-major order. This is the same convention as Eigen, so we can use the
@@ -1335,8 +1379,7 @@ Binding<LinearConstraint> MathematicalProgram::
   const MatrixXDecisionVariable mat_vars =
       Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
                                                 n, n);
-  return AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-      mat_vars);
+  return AddPositiveDiagonallyDominantDualConeMatrixConstraint(mat_vars);
 }
 
 namespace {
@@ -1455,9 +1498,9 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   return M;
 }
 
-std::vector<std::vector<Matrix2<symbolic::Variable>>> MathematicalProgram::
-    TightenPsdConstraintToSdd(
-        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+std::vector<std::vector<Matrix2<symbolic::Variable>>>
+MathematicalProgram::TightenPsdConstraintToSdd(
+    const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
   // column-major order. This is the same convention as Eigen, so we can use the
@@ -1502,9 +1545,9 @@ MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
       X.cast<Expression>());
 }
 
-std::vector<Binding<RotatedLorentzConeConstraint>> MathematicalProgram::
-    RelaxPsdConstraintToSddDualCone(
-        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+std::vector<Binding<RotatedLorentzConeConstraint>>
+MathematicalProgram::RelaxPsdConstraintToSddDualCone(
+    const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
   // column-major order. This is the same convention as Eigen, so we can use the
@@ -1513,8 +1556,7 @@ std::vector<Binding<RotatedLorentzConeConstraint>> MathematicalProgram::
   const MatrixXDecisionVariable mat_vars =
       Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
                                                 n, n);
-  return AddScaledDiagonallyDominantDualConeMatrixConstraint(
-      mat_vars);
+  return AddScaledDiagonallyDominantDualConeMatrixConstraint(mat_vars);
 }
 
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(

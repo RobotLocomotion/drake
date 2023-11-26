@@ -2590,6 +2590,37 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds a constraint the that the principle minor of a symmetric matrix
+   * composed of the indices in minor_indices is positive semidefinite.
+   *
+   * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
+   * symmetric or if minor_indices contains an larger than
+   * symmetric_matrix_var.rows() or smaller than 0.
+   * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
+   * @see AddPositiveSemidefiniteConstraint.
+   */
+  Binding<PositiveSemidefiniteConstraint>
+  AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
+      std::set<int> minor_indices);
+
+  /**
+   * Adds a constraint the that the principle minor of a symmetric matrix of
+   * expressions composed of the indices in minor_indices is positive
+   * semidefinite.
+   *
+   * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
+   * symmetric or if minor_indices contains an larger than
+   * symmetric_matrix_var.rows() or smaller than 0.
+   * @param e Imposes constraint "e is positive semidefinite".
+   * @see AddPositiveSemidefiniteConstraint.
+   */
+  Binding<PositiveSemidefiniteConstraint>
+  AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
+      std::set<int> minor_indices);
+
+  /**
    * Adds a linear matrix inequality constraint to the program.
    *
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
