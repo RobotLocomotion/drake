@@ -46,7 +46,10 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
   // @pre It is expected that:
   //   rotor_inertias.size() == gear_ratios.size() == plant_ri_.num_actuators()
   //   and that the index in the vector corresponds with the joint actuator
-  //   index.
+  //   index. For consistency with the rest of Drake we still call
+  //   GetJointActuatorIndices() below to iterate over the actuators, but the
+  //   returned indices will always start from 0 and count up by 1 each with no
+  //   gaps because no actuators have been removed.
   //
   // See the section 'Reflected Inertia' in documentation for
   // drake::multibody::JointActuator for more details.
@@ -137,7 +140,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
                              const VectorX<double>& rotor_inertias,
                              const VectorX<double>& gear_ratios) {
     DRAKE_DEMAND(plant != nullptr);
-    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
       joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
@@ -147,7 +150,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
 
   void SetReflectedInertiaToZero(MultibodyPlant<double>* plant) {
     DRAKE_DEMAND(plant != nullptr);
-    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
       joint_actuator.set_default_rotor_inertia(0.0);
@@ -609,11 +612,10 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
   // Load the models.
   LoadBothModelsSetStateAndFinalize(rotor_inertias, gear_ratios);
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
-            plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
+            plant_ri_.get_mutable_joint_actuator(index));
 
     // Default gear ratio and rotor inertia end up in the context.
     EXPECT_EQ(joint_actuator.default_gear_ratio(),
@@ -622,11 +624,10 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
               joint_actuator.rotor_inertia(*context_ri_));
   }
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
-            plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
+            plant_ri_.get_mutable_joint_actuator(index));
     // Set the model parameters to something different.
     joint_actuator.set_default_gear_ratio(99);
     joint_actuator.set_default_rotor_inertia(100);
@@ -635,11 +636,10 @@ TEST_F(MultibodyPlantReflectedInertiaTests, DefaultParameters) {
   // Create a new default context.
   auto context = plant_ri_.CreateDefaultContext();
 
-  for (JointActuatorIndex index(0); index < plant_ri_.num_actuators();
-       ++index) {
+  for (JointActuatorIndex index : plant_ri_.GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         dynamic_cast<JointActuator<double>&>(
-            plant_ri_.get_mutable_joint_actuator(JointActuatorIndex(index)));
+            plant_ri_.get_mutable_joint_actuator(index));
     // New default values should propagate to a new default context.
     EXPECT_EQ(joint_actuator.default_gear_ratio(),
               joint_actuator.gear_ratio(*context));
