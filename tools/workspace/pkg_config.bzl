@@ -52,20 +52,6 @@ def setup_pkg_config_repository(repository_ctx):
 
     os_result = determine_os(repository_ctx)
 
-    if os_result.is_macos or os_result.is_macos_wheel:
-        # Find the desired homebrew search path, if any.
-        homebrew_prefix = os_result.homebrew_prefix
-        homebrew_subdir = getattr(
-            repository_ctx.attr,
-            "homebrew_subdir",
-            "",
-        )
-        if homebrew_prefix and homebrew_subdir:
-            pkg_config_paths.insert(0, "{}/{}".format(
-                homebrew_prefix,
-                homebrew_subdir,
-            ))
-
     if os_result.is_manylinux or os_result.is_macos_wheel:
         pkg_config_paths.insert(0, "/opt/drake-dependencies/share/pkgconfig")
         pkg_config_paths.insert(0, "/opt/drake-dependencies/lib/pkgconfig")
@@ -344,7 +330,6 @@ _do_pkg_config_repository = repository_rule(
         "extra_deps": attr.string_list(),
         "build_epilog": attr.string(),
         "pkg_config_paths": attr.string_list(),
-        "homebrew_subdir": attr.string(),
         "extra_deprecation": attr.string(),
         "defer_error_os_names": attr.string_list(),
     },
@@ -403,11 +388,6 @@ def pkg_config_repository(**kwargs):
         pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
                           that we ignore the environment variable
                           PKG_CONFIG_PATH set by the user.
-        homebrew_subdir: (Optional) If running on macOS, then this path under
-                         the homebrew prefix will also be searched. For
-                         example, homebrew_subdir = "opt/libpng/lib/pkgconfig"
-                         would search "/usr/local/opt/libpng/lib/pkgconfig" or
-                         "/opt/homebrew/opt/libpng/lib/pkgconfig".
         extra_deprecation: (Optional) Add a deprecation message to the library
                            BUILD target.
         defer_error_os_names: (Optional) On these operating systems (as named
