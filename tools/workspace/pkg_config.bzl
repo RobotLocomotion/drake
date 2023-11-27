@@ -73,6 +73,26 @@ def setup_pkg_config_repository(repository_ctx):
     # Check if we can find the required *.pc file of any version.
     result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
     if result.error != None:
+        defer_error_os_names = getattr(
+            repository_ctx.attr,
+            "defer_error_os_names",
+            [],
+        )
+        if repository_ctx.os.name in defer_error_os_names:
+            repository_ctx.file(
+                "BUILD.bazel",
+                """
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+cc_library(
+    name = {name},
+    srcs = ["pkg_config_failed.cc"],
+    visibility = ["//visibility:public"],
+)
+                """.format(
+                    name = repr(repository_ctx.name),
+                ),
+            )
+            return struct(value = True, error = None)
         return result
 
     # If we have a minimum version, enforce that.
@@ -326,6 +346,7 @@ _do_pkg_config_repository = repository_rule(
         "pkg_config_paths": attr.string_list(),
         "homebrew_subdir": attr.string(),
         "extra_deprecation": attr.string(),
+        "defer_error_os_names": attr.string_list(),
     },
     local = True,
     configure = True,
@@ -389,6 +410,11 @@ def pkg_config_repository(**kwargs):
                          "/opt/homebrew/opt/libpng/lib/pkgconfig".
         extra_deprecation: (Optional) Add a deprecation message to the library
                            BUILD target.
+        defer_error_os_names: (Optional) On these operating systems (as named
+                              by repository_ctx.os.name), failure to find the
+                              *.pc file will yield a link-time error, not a
+                              fetch-time error. This is useful for externals
+                              that are guarded by select() statements.
     """
     if "deprecation" in kwargs:
         fail("When calling pkg_config_repository, don't use deprecation=str " +

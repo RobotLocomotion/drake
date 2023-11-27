@@ -2,6 +2,8 @@
 
 # %{topcomment}
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 licenses(%{licenses})
 
 package(default_visibility = ["//visibility:public"])
