@@ -2,6 +2,8 @@ r"""
 Downloads the to-be-released binaries, verifies they are all the same version,
 and prepares to upload them per the release playbook.
 
+This program is supported only on Ubuntu (not macOS).
+
 Use bazel to build the tool.
 
 Here's an example of how to obtain the git sha for the release:

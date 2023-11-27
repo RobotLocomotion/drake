@@ -14,6 +14,9 @@ increasing.
 
 Begin this process around 1 week prior to the intended release date.
 
+The release engineering tools (relnotes, download_release_candidate,
+push_release, etc.) are supported only on Ubuntu (not macOS).
+
 ## Prior to release
 
 1. Choose the next version number.
