@@ -63,7 +63,7 @@ Subgraph::Subgraph(
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
     GcsTrajectoryOptimization* traj_opt,
-    std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
+    std::optional<const std::vector<VectorXd>> edge_offsets)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
@@ -73,8 +73,7 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(!regions_.empty());
 
   if (edge_offsets.has_value()) {
-    DRAKE_THROW_UNLESS(edge_offsets.value().size() ==
-                       edges_between_regions.size());
+    DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
   }
 
   // Make sure all regions have the same ambient dimension.
@@ -86,7 +85,7 @@ Subgraph::Subgraph(
   // If there are any unbounded revolute joints, make sure the convexity radius
   // is respected.
   if (continuous_joints().size() > 0) {
-    RespectsConvexityRadius(regions_);
+    ThrowsForInvalidConvexityRadius(regions_);
   }
 
   // Make time scaling set once to avoid many allocations when adding the
@@ -138,7 +137,7 @@ Subgraph::Subgraph(
       // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
       // -tau_uv.value(), via Ax = -edge_offsets.value()[idx], A = [I, -I],
       // x = [u_controls.col(order); v_controls.col(0)].
-      this_edge_offset = -edge_offsets.value()[idx];
+      this_edge_offset = -edge_offsets->at(idx);
     }
     const auto path_continuity_constraint =
         std::make_shared<LinearEqualityConstraint>(A, this_edge_offset);
@@ -153,6 +152,9 @@ Subgraph::~Subgraph() = default;
 const std::pair<double, double>
 GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension) const {
+  // TODO(cohnt) centralize this function in geometry/optimization, by making it
+  // a member of ConvexSet. Also potentially only compute the value once, and
+  // then return the pre-computed value instead of re-computing.
   DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
   MathematicalProgram prog;
   VectorXDecisionVariable y =
@@ -175,7 +177,7 @@ GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
   return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
 }
 
-void Subgraph::RespectsConvexityRadius(
+void Subgraph::ThrowsForInvalidConvexityRadius(
     const geometry::optimization::ConvexSets& regions) const {
   // For each dimension corresponding to an unbounded revolute joint, make sure
   // each region respects the convexity radius.
@@ -648,17 +650,24 @@ symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
 
 GcsTrajectoryOptimization::GcsTrajectoryOptimization(
     int num_positions, const std::vector<int>& continuous_joints)
-    : num_positions_(num_positions), continuous_joints_(continuous_joints) {
+    : num_positions_(num_positions),
+      continuous_joints_(std::move(continuous_joints)) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
   for (int i = 0; i < ssize(continuous_joints_); ++i) {
     // Make sure the unbounded revolute joints point to valid indices.
-    DRAKE_THROW_UNLESS(continuous_joints_[i] < num_positions);
+    if (continuous_joints_[i] < 0) {
+      throw std::runtime_error(
+          fmt::format("Each joint index in continuous_joints must be "
+                      "non-negative. Joint index {} (located at {}) "
+                      "violates this.",
+                      continuous_joints_[i], i));
+    }
     if (continuous_joints_[i] >= num_positions) {
       throw std::runtime_error(
           fmt::format("Each joint index in continuous_joints must be strictly "
-                      "less than num_positions. Joint index {} violates this, "
-                      "as num_positions is {}.",
-                      i, num_positions));
+                      "less than num_positions. Joint index {} (located at {}) "
+                      "violates this, as num_positions is {}.",
+                      continuous_joints_[i], i, num_positions));
     }
   }
   std::unordered_set<int> comparison(continuous_joints_.begin(),
@@ -675,10 +684,9 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
-    std::optional<std::vector<Eigen::VectorXd>> edge_offsets) {
+    std::optional<const std::vector<VectorXd>> edge_offsets) {
   if (edge_offsets.has_value()) {
-    DRAKE_THROW_UNLESS(edge_offsets.value().size() ==
-                       edges_between_regions.size());
+    DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
   }
   if (name.empty()) {
     name = fmt::format("Subgraph{}", subgraphs_.size());
