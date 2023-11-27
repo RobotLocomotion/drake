@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -71,7 +72,8 @@ class StaticSolverInterface {
 };
 
 // The list of all solvers compiled in Drake.
-constexpr std::array<StaticSolverInterface, 12> kKnownSolvers{
+constexpr std::array<StaticSolverInterface, 13> kKnownSolvers{
+    StaticSolverInterface::Make<ClarabelSolver>(),
     StaticSolverInterface::Make<ClpSolver>(),
     StaticSolverInterface::Make<CsdpSolver>(),
     StaticSolverInterface::Make<EqualityConstrainedQPSolver>(),
@@ -159,7 +161,9 @@ void GetAvailableSolversHelper(
           // faster than Mosek (as of 07-26-2021), but the difference is not
           // significant.
           // Clp is slower than Gurobi and Mosek (with the barrier method).
-          GurobiSolver, MosekSolver, ClpSolver,
+          // Clarabel is also a very good open-source solver. I found that
+          // Clarabel is slightly less accurate than Clp.
+          GurobiSolver, MosekSolver, ClpSolver, ClarabelSolver,
           // Dispreferred (generic nonlinear solvers).
           // I generally find SNOPT faster than IPOPT. Nlopt is less reliable.
           SnoptSolver, IpoptSolver, NloptSolver,
@@ -182,6 +186,9 @@ void GetAvailableSolversHelper(
           // slightly faster than Gurobi. In practice, I find their performance
           // comparable, so the order between these two can be switched.
           MosekSolver, GurobiSolver,
+          // Clarabel is an open-source QP solver with relatively good accuracy.
+          // (But might not be as fast as OSQP).
+          ClarabelSolver,
           // Dispreferred (ADMM, low accuracy).
           // Although both OSQP and SCS use ADMM, I find OSQP to be more
           // accurate than SCS. Oftentime I find OSQP generates solution with
@@ -202,6 +209,8 @@ void GetAvailableSolversHelper(
           // According to http://plato.asu.edu/ftp/socp.html, Mosek is slightly
           // faster than Gurobi for SOCP, but the difference is small.
           MosekSolver, GurobiSolver,
+          // ClarabelSolver is a good open-source convex solver.
+          ClarabelSolver,
           // Dispreferred (cannot handle free variables).
           CsdpSolver,
           // Dispreferred (ADMM, low accuracy).
@@ -218,6 +227,8 @@ void GetAvailableSolversHelper(
       AddSolversIfAvailable<
           // Preferred solvers.
           MosekSolver,
+          // Clarabel is a good open-source convex solver. Preferred.
+          ClarabelSolver,
           // Dispreferred (cannot handle free variables).
           CsdpSolver,
           // Dispreferred (ADMM, low accuracy).
@@ -242,6 +253,8 @@ void GetAvailableSolversHelper(
       AddSolversIfAvailable<
           // Preferred solver.
           MosekSolver,
+          // Open-source preferred solver.
+          ClarabelSolver,
           // Dispreferred solver, low accuracy (with ADMM method).
           ScsSolver>(result);
       return;
@@ -264,6 +277,8 @@ void GetAvailableSolversHelper(
           // I don't know if Mosek is better than Gurobi for this type of
           // programs.
           MosekSolver, GurobiSolver,
+          // Open-source preferred solver.
+          ClarabelSolver,
           // Dispreferred solver (ADMM, low accuracy).
           ScsSolver>(result);
       return;
@@ -292,9 +307,10 @@ void GetAvailableSolversHelper(
         // order, drawn from all of the partial orders given throughout the
         // other case statements shown above.
         AddSolversIfAvailable<LinearSystemSolver, EqualityConstrainedQPSolver,
-                              MosekSolver, GurobiSolver, OsqpSolver, ClpSolver,
-                              MobyLCPSolver<double>, SnoptSolver, IpoptSolver,
-                              NloptSolver, CsdpSolver, ScsSolver>(result);
+                              MosekSolver, GurobiSolver, ClarabelSolver,
+                              OsqpSolver, ClpSolver, MobyLCPSolver<double>,
+                              SnoptSolver, IpoptSolver, NloptSolver, CsdpSolver,
+                              ScsSolver>(result);
       }
       return;
     }
