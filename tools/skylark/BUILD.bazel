@@ -10,6 +10,11 @@ config_setting(
     values = {"cpu": "k8"},
 )
 
+py_binary(
+    name = "rewrite_osx_ar_hidden",
+    srcs = ["rewrite_osx_ar_hidden.py"],
+)
+
 exports_files([
     "py_env_runner.py",
 ])
