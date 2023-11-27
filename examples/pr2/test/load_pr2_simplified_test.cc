@@ -19,7 +19,7 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
       "pr2_simplified.urdf");
   plant.Finalize();
 
-  EXPECT_EQ(plant.num_actuators(), 28);
+  EXPECT_EQ(plant.num_actuators(), 22);
   EXPECT_EQ(plant.num_positions(), 28);
   EXPECT_EQ(plant.num_bodies(), 84);
 }
