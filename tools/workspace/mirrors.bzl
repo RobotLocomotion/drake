@@ -50,16 +50,6 @@ DEFAULT_MIRRORS = {
         # N.B. ibiblio doesn't offer https.
         "http://maven.ibiblio.org/maven2/{fulljar}",
     ],
-    "pypi": [
-        "https://files.pythonhosted.org/packages/source/{p}/{package}/{package}-{version}.tar.gz",  # noqa
-        "https://drake-mirror.csail.mit.edu/pypi/{package}/{package}-{version}.tar.gz",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/pypi/{package}/{package}-{version}.tar.gz",  # noqa
-    ],
-    "pypi_wheel": [
-        "https://files.pythonhosted.org/packages/{blake2_256_01}/{blake2_256_23}/{blake2_256_4p}/{package}-{version}-{tag}.whl",  # noqa
-        "https://drake-mirror.csail.mit.edu/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
-    ],
     # On 2024-01-01 upon completion of @vtk deprecation, remove this stanza.
     "vtk": [
         "https://drake-packages.csail.mit.edu/vtk/{archive}",

@@ -206,11 +206,6 @@ def _check_for_upgrades(gh, args, metadata):
             # For details, see drake/tools/workspace/crate_universe/README.md.
             print(f"Ignoring {workspace_name} from rules_rust")
             continue
-        elif key in ["pypi", "pypi_wheel"]:
-            # TODO(jwnimmer-tri) Implement for real.
-            print("{} version {} needs manual inspection".format(
-                workspace_name, data["version"]))
-            continue
         elif workspace_name == "buildifier":
             assert key == "manual"
             old_commit, new_commit = _handle_buildifier(gh, data)
