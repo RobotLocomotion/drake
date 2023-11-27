@@ -10,6 +10,11 @@ config_setting(
     values = {"cpu": "k8"},
 )
 
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
 exports_files([
     "py_env_runner.py",
 ])
