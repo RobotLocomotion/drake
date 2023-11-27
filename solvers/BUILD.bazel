@@ -140,6 +140,7 @@ drake_cc_library(
         ":solver_interface",
     ],
     deps = [
+        ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
         ":equality_constrained_qp_solver",
@@ -1850,6 +1851,7 @@ drake_cc_googletest(
     name = "choose_best_solver_test",
     deps = [
         ":choose_best_solver",
+        ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
         ":equality_constrained_qp_solver",
