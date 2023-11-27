@@ -314,14 +314,7 @@ void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClientParams& parameters)
-    : RenderEngineVtk({.default_label = parameters.default_label}),
-      render_client_{std::make_unique<RenderClient>(parameters)} {
-  if (parameters.default_label.has_value()) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2023-12-01",
-        "RenderEngineGltfClient(): the default_label option is deprecated.");
-  }
-}
+    : render_client_{std::make_unique<RenderClient>(parameters)} {}
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClient& other)

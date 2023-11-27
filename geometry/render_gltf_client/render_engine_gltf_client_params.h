@@ -30,10 +30,6 @@ struct RenderEngineGltfClientParams {
    See GetUrl() for details. */
   std::string render_endpoint{"render"};
 
-  /** (Deprecated.) The default_label is no longer configurable. <br>
-   This will be removed from Drake on or after 2023-12-01. */
-  std::optional<render::RenderLabel> default_label;
-
   /** Whether or not the client should log information about which files are
    being generated, as well as any information about HTTP communications between
    the client and server such as HTTP header information, url and port, etc.
