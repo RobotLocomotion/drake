@@ -163,10 +163,10 @@ void GetAvailableSolversHelper(
           // Dispreferred (generic nonlinear solvers).
           // I generally find SNOPT faster than IPOPT. Nlopt is less reliable.
           SnoptSolver, IpoptSolver, NloptSolver,
-          // Dispreferred (cannot handle free variables).
-          CsdpSolver,
           // Dispreferred (ADMM, low accuracy).
-          ScsSolver>(result);
+          ScsSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver>(result);
       return;
     }
     case ProgramType::kQP: {
@@ -202,10 +202,10 @@ void GetAvailableSolversHelper(
           // According to http://plato.asu.edu/ftp/socp.html, Mosek is slightly
           // faster than Gurobi for SOCP, but the difference is small.
           MosekSolver, GurobiSolver,
-          // Dispreferred (cannot handle free variables).
-          CsdpSolver,
           // Dispreferred (ADMM, low accuracy).
           ScsSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
           // Dispreferred (generic nonlinear solvers).
           // I strongly suggest NOT to use these solvers for SOCP. These
           // gradient-based solvers ignore the convexity of the problem, and
@@ -218,10 +218,10 @@ void GetAvailableSolversHelper(
       AddSolversIfAvailable<
           // Preferred solvers.
           MosekSolver,
-          // Dispreferred (cannot handle free variables).
-          CsdpSolver,
           // Dispreferred (ADMM, low accuracy).
-          ScsSolver>(result);
+          ScsSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver>(result);
       // Dispreferred (generic nonlinear solvers). I strongly
       // suggest NOT to use these solvers for SDP. These gradient-based
       // solvers ignore the convexity of the problem, and also these solvers
@@ -294,7 +294,7 @@ void GetAvailableSolversHelper(
         AddSolversIfAvailable<LinearSystemSolver, EqualityConstrainedQPSolver,
                               MosekSolver, GurobiSolver, OsqpSolver, ClpSolver,
                               MobyLCPSolver<double>, SnoptSolver, IpoptSolver,
-                              NloptSolver, CsdpSolver, ScsSolver>(result);
+                              NloptSolver, ScsSolver, CsdpSolver>(result);
       }
       return;
     }
