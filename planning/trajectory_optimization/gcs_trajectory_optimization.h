@@ -49,11 +49,11 @@ class GcsTrajectoryOptimization final {
   @param num_positions is the dimension of the configuration space.
   @param continuous_joints is a list of indices corresponding to
   continuous joints, i.e., revolute joints which don't have any joint limits,
-  and hence "wrap around" at 2π. Each entry in continuous_joints must be less
-  than num_positions, and there must be no repeated values. This feature is
-  currently only supported within a single subgraph: continuous joints won't be
-  taken into account when constructing edges between subgraphs or checking if
-  sets intersect through a subspace.
+  and hence "wrap around" at 2π. Each entry in continuous_joints must be
+  non-negative, less than num_positions, and unique. This feature is currently
+  only supported within a single subgraph: continuous joints won't be taken into
+  account when constructing edges between subgraphs or checking if sets
+  intersect through a subspace.
   */
   explicit GcsTrajectoryOptimization(
       int num_positions,
@@ -155,7 +155,7 @@ class GcsTrajectoryOptimization final {
              const std::vector<std::pair<int, int>>& regions_to_connect,
              int order, double h_min, double h_max, std::string name,
              GcsTrajectoryOptimization* traj_opt,
-             std::optional<std::vector<Eigen::VectorXd>> edge_offsets);
+             std::optional<const std::vector<Eigen::VectorXd>> edge_offsets);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -166,8 +166,8 @@ class GcsTrajectoryOptimization final {
     }
 
     /* Throw an error if any convex set in regions violates the convexity
-     * radius. */
-    void RespectsConvexityRadius(
+    radius. */
+    void ThrowsForInvalidConvexityRadius(
         const geometry::optimization::ConvexSets& regions) const;
 
     /* Extracts the control points variables from a vertex. */
@@ -290,7 +290,7 @@ class GcsTrajectoryOptimization final {
   int num_positions() const { return num_positions_; }
 
   /** Returns a list of indices corresponding to revolute joints which don't
-   * have joint limits. */
+  have joint limits. */
   const std::vector<int>& continuous_joints() { return continuous_joints_; }
 
   /** Returns a Graphviz string describing the graph vertices and edges.  If
@@ -314,7 +314,7 @@ class GcsTrajectoryOptimization final {
   /** Creates a Subgraph with the given regions and indices.
   @param regions represent the valid set a control point can be in. We retain a
   copy of the regions since other functions may access them. If any of the
-  positions represent revolute joints without limits, each region have a maximum
+  positions represent revolute joints without limits, each region has a maximum
   width of strictly less than π along dimensions corresponding to those joints.
   @param edges_between_regions is a list of pairs of indices into the regions
   vector. For each pair representing an edge between two regions, an edge is
@@ -328,22 +328,26 @@ class GcsTrajectoryOptimization final {
   convex for h > 0. For example the perspective quadratic cost of the path
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
-  @param name is the name of the subgraph. A default name will be provided.
-  @param edge_offsets is an optional list of vectors whose length must match the
-  length of edges_between_regions. For each pair of sets listed in
-  edges_between_regions, the first set is translated by the corresponding vector
-  in edge_offsets before computing the constraints associated to that edge. This
-  is used to add edges between sets that "wrap around" 2π along some dimension,
-  due to, e.g., a continuous joint. This edge offset corresponds to the
-  translation component of the affine map τ_uv in equation (11) of
-  "Non-Euclidean Motion Planning with Graphs of Geodesically-Convex Sets", and
-  per the discussion in Subsection VI A, τ_uv has no rotation component.
+  @param name is the name of the subgraph. If the passed name is an empty
+  string, a default name will be provided.
+  @param edge_offsets is an optional list of vectors. If defined, the list must
+  contain the same number of entries as edges_between_regions. In other words,
+  if defined, there must be one edge offset for each specified edge. For each
+  pair of sets listed in edges_between_regions, the first set is translated (in
+  configuration space) by the corresponding vector in edge_offsets before
+  computing the constraints associated to that edge. This is used to add edges
+  between sets that "wrap around" 2π along some dimension, due to, e.g., a
+  continuous joint. This edge offset corresponds to the translation component of
+  the affine map τ_uv in equation (11) of "Non-Euclidean Motion Planning with
+  Graphs of Geodesically-Convex Sets", and per the discussion in Subsection VI
+  A, τ_uv has no rotation component.
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
       double h_min = 0, double h_max = 20, std::string name = "",
-      std::optional<std::vector<Eigen::VectorXd>> edge_offsets = std::nullopt);
+      std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
+          std::nullopt);
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -524,7 +528,7 @@ class GcsTrajectoryOptimization final {
   const std::vector<int> continuous_joints_;
 
   /* Computes the minium and maximum values that can be attained along a certain
-   * dimension for a point constrained to lie within a convex set. */
+  dimension for a point constrained to lie within a convex set. */
   const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
       const geometry::optimization::ConvexSet& region, int dimension) const;
 

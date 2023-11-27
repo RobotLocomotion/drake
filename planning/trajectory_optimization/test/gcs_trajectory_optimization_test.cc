@@ -1077,7 +1077,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   const double tol = 1e-7;
 
   Eigen::Matrix<double, 1, 2> points1, points2, points3;
@@ -1089,21 +1089,21 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
   VPolytope v3(points3);
 
   Vector1d start(1.0), goal(6.0);
-  EXPECT_TRUE(v1.PointInSet(start, tol));
-  EXPECT_TRUE(v3.PointInSet(goal, tol));
+  DRAKE_DEMAND(v1.PointInSet(start, tol));
+  DRAKE_DEMAND(v3.PointInSet(goal, tol));
 
   const double expected_cost_wraparound = 2.0 * M_PI - 6.0 + 1.0;
   const double expected_cost_no_wraparound = 6.0 - 1.0;
-  EXPECT_TRUE(expected_cost_wraparound < expected_cost_no_wraparound);
+  DRAKE_DEMAND(expected_cost_wraparound < expected_cost_no_wraparound);
 
   std::vector<int> continuous_joints = {0};
 
   // Check multiple permutations to make sure the ordering of which set is
-  // "wrapped around" does not affect the algorithm.
-  std::vector<ConvexSets> permutations = {
-      MakeConvexSets(v1, v2, v3), MakeConvexSets(v1, v3, v2),
-      MakeConvexSets(v2, v1, v3), MakeConvexSets(v2, v3, v1),
-      MakeConvexSets(v3, v1, v2), MakeConvexSets(v3, v2, v1)};
+  // "wrapped around" does not affect the algorithm. Sets v1 and v3 overlap with
+  // a wraparound edge, so flipping their order is sufficient for checking this
+  // behavior.
+  std::vector<ConvexSets> permutations = {MakeConvexSets(v1, v2, v3),
+                                          MakeConvexSets(v3, v2, v1)};
   for (const auto& convexsets : permutations) {
     GcsTrajectoryOptimization gcs1(1, continuous_joints);
     auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
@@ -1121,7 +1121,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
     regions1.AddPathLengthCost(1);
 
     auto [traj1, result1] = gcs1.SolvePath(source1, target1);
-    EXPECT_TRUE(result1.is_success());
+    ASSERT_TRUE(result1.is_success());
     EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_wraparound, tol);
     EXPECT_EQ(traj1.get_number_of_segments(), 2);
     EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
@@ -1145,14 +1145,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_1d) {
   regions2.AddPathLengthCost(1);
 
   auto [traj2, result2] = gcs2.SolvePath(source2, target2);
-  EXPECT_TRUE(result2.is_success());
+  ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_no_wraparound, tol);
   EXPECT_EQ(traj2.get_number_of_segments(), 3);
   EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
   if (!GurobiOrMosekSolverAvailable()) {
     // These test cases are too large for free solvers such as CSDP.
     return;
@@ -1175,8 +1175,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   }
 
   Vector2d start(1.0, 1.0), goal(6.0, 6.0);
-  EXPECT_TRUE(sets[0]->PointInSet(start, tol));
-  EXPECT_TRUE(sets[8]->PointInSet(goal, tol));
+  DRAKE_DEMAND(sets[0]->PointInSet(start, tol));
+  DRAKE_DEMAND(sets[8]->PointInSet(goal, tol));
 
   const double dist_long_way = 5.0;
   const double dist_shortcut = 1.0 + (2.0 * M_PI - 6.0);
@@ -1184,8 +1184,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   const double expected_cost_one_wraparound =
       sqrt((dist_long_way * dist_long_way) + (dist_shortcut * dist_shortcut));
   const double expected_cost_no_wraparound = sqrt(2) * dist_long_way;
-  EXPECT_TRUE(expected_cost_both_wraparound < expected_cost_one_wraparound);
-  EXPECT_TRUE(expected_cost_one_wraparound < expected_cost_no_wraparound);
+  DRAKE_DEMAND(expected_cost_both_wraparound < expected_cost_one_wraparound);
+  DRAKE_DEMAND(expected_cost_one_wraparound < expected_cost_no_wraparound);
 
   std::vector<int> continuous_joints;
   GraphOfConvexSetsOptions options;
@@ -1210,7 +1210,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   regions1.AddPathLengthCost(1);
 
   auto [traj1, result1] = gcs1.SolvePath(source1, target1, options);
-  EXPECT_TRUE(result1.is_success());
+  ASSERT_TRUE(result1.is_success());
   EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_no_wraparound, tol);
   EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
@@ -1234,7 +1234,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   regions2.AddPathLengthCost(1);
 
   auto [traj2, result2] = gcs2.SolvePath(source2, target2, options);
-  EXPECT_TRUE(result2.is_success());
+  ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_one_wraparound, tol);
   EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
@@ -1260,22 +1260,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_test_2d) {
   regions3.AddPathLengthCost(1);
 
   auto [traj3, result3] = gcs3.SolvePath(source3, target3, options);
-  EXPECT_TRUE(result3.is_success());
+  ASSERT_TRUE(result3.is_success());
   EXPECT_NEAR(result3.get_optimal_cost(), expected_cost_both_wraparound, tol);
   EXPECT_TRUE(CompareMatrices(traj3.value(traj3.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj3.value(traj3.end_time()), goal, 1e-6));
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
+GTEST_TEST(GcsTrajectoryOptimizationTest,
+           WraparoundWithInvalidConvexityRadius) {
   // 1D example
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 4;
   const VPolytope v(points);
   std::vector<int> continuous_joints = {0};
   GcsTrajectoryOptimization gcs(1, continuous_joints);
-  EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), 1), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), 1),
+                              ".*doesn't respect the convexity radius.*");
   const std::vector<std::pair<int, int>> edges;
-  EXPECT_THROW(gcs.AddRegions(MakeConvexSets(v), edges, 1), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), edges, 1),
+                              ".*doesn't respect the convexity radius.*");
 
   // 2D example
   Eigen::Matrix<double, 2, 4> points_new;
@@ -1293,11 +1296,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, wraparound_convexity_radius) {
   GcsTrajectoryOptimization gcs3(2, continuous_joints3);
   DRAKE_EXPECT_NO_THROW(gcs0.AddRegions(MakeConvexSets(w), 1));
   DRAKE_EXPECT_NO_THROW(gcs1.AddRegions(MakeConvexSets(w), 1));
-  EXPECT_THROW(gcs2.AddRegions(MakeConvexSets(w), 1), std::exception);
-  EXPECT_THROW(gcs3.AddRegions(MakeConvexSets(w), 1), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs2.AddRegions(MakeConvexSets(w), 1),
+                              ".*doesn't respect the convexity radius.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs3.AddRegions(MakeConvexSets(w), 1),
+                              ".*doesn't respect the convexity radius.*");
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, misc_continuous_interface) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 2;
   const VPolytope v(points);
@@ -1307,7 +1312,19 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, misc_continuous_interface) {
   EXPECT_EQ(gcs.continuous_joints()[0], continuous_joints[0]);
 
   continuous_joints.emplace_back(0);
-  EXPECT_THROW(GcsTrajectoryOptimization(1, continuous_joints), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_joints),
+      ".*continuous_joints must not contain duplicate entries.*");
+
+  continuous_joints = {-1};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_joints),
+      ".*Each joint index in continuous_joints must be non-negative.*");
+
+  continuous_joints = {2};
+  DRAKE_EXPECT_THROWS_MESSAGE(GcsTrajectoryOptimization(1, continuous_joints),
+                              ".*Each joint index in continuous_joints must be "
+                              "strictly less than num_positions.*");
 }
 
 }  // namespace
