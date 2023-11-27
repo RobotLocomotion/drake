@@ -7,68 +7,14 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/point_sampler_base.h"
+#include "drake/planning/coverage_checker_base.h"
 
 namespace drake {
 namespace planning {
 
-using geometry::optimization::ConvexSet;
+using geometry::optimization::ConvexSets;
 using graph_algorithms::MaxCliqueSolverBase;
 
-/**
- * An abstract base class for implementing methods for checking whether a set of
- * convex sets provides sufficient coverage for solving approximate convex
- * cover.
- */
-class CoverageCheckerBase {
- public:
-  /**
-   * Check that the current sets provide sufficient coverage.
-   */
-//  virtual bool CheckCoverage(
-//      const std::vector<ConvexSet>& current_sets) const = 0;
-//
-//  /**
-//   * Check that the current sets provide sufficient coverage.
-//   */
-//  virtual bool CheckCoverage(
-//      const std::queue<ConvexSet>& current_sets) const = 0;
-
-//  virtual bool CheckCoverage(
-//      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
-
-  virtual bool CheckCoverage(
-      const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
-
-  virtual ~CoverageCheckerBase() {}
-
- protected:
-  // We put the copy/move/assignment constructors as protected to avoid copy
-  // slicing. The inherited final subclasses should put them in public
-  // functions.
-  // TODO(Alexandre.Amice) decide what to do about copy/move/assign.
-//  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
-};
-
-/**
- * An abstract base class for implementing ways to build a convex set from a
- * clique of points
- */
-class ConvexSetFromCliqueBuilderBase {
- public:
-  /**
-   * Given a set of points, build a convex set.
-   */
-  virtual std::unique_ptr<ConvexSet> BuildConvexSet(
-      const Eigen::Ref<const Eigen::MatrixXd>& clique_points) = 0;
-
-  virtual ~ConvexSetFromCliqueBuilderBase() {}
-
- protected:
-  // We put the copy/move/assignment constructors as protected to avoid copy
-  // slicing. The inherited final subclasses should put them in public
-  // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSetFromCliqueBuilderBase);
-};
 /**
  * TODO Fill in this constructor
  *
@@ -132,7 +78,7 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
 //std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
 //    const ApproximateConvexCoverFromCliqueCoverOptions& options);
 
-std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
+ConvexSets ApproximateConvexCoverFromCliqueCover(
     std::unique_ptr<CoverageCheckerBase> coverage_checker,
     std::unique_ptr<PointSamplerBase> point_sampler,
     std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,

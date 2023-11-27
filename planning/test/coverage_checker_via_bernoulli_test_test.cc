@@ -11,7 +11,7 @@ namespace drake {
 namespace planning {
 namespace {
 using Eigen::Vector2d;
-using geometry::optimization::ConvexSet;
+using geometry::optimization::ConvexSets;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperrectangle;
 using geometry::optimization::VPolytope;
@@ -20,7 +20,7 @@ using geometry::optimization::VPolytope;
 // deviation of the expected coverage.
 void TestCoveredFractionWithinOneStandardDeviationOfExpected(
     const CoverageCheckerViaBernoulliTest& checker,
-    const std::vector<std::unique_ptr<ConvexSet>>& current_sets,
+    const ConvexSets& current_sets,
     const double expected_coverage) {
   const double coverage{checker.GetSampledCoverageFraction(current_sets)};
 
@@ -99,14 +99,14 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByBoxesSuccess) {
                                           std::move(sampler), num_threads,
                                           point_in_set_tol};
 
-  std::vector<std::unique_ptr<ConvexSet>> current_sets;
-  current_sets.push_back(
+  ConvexSets current_sets;
+  current_sets.emplace_back(
       std::make_unique<Hyperrectangle>(Vector2d{0, 0}, Vector2d{0.45, 0.5}));
-  current_sets.push_back(
+  current_sets.emplace_back(
       std::make_unique<Hyperrectangle>(Vector2d{0.55, 0}, Vector2d{1, 0.5}));
-  current_sets.push_back(
+  current_sets.emplace_back(
       std::make_unique<Hyperrectangle>(Vector2d{0, 0.5}, Vector2d{0.45, 1}));
-  current_sets.push_back(
+  current_sets.emplace_back(
       std::make_unique<Hyperrectangle>(Vector2d{0.55, 0.5}, Vector2d{1, 1}));
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
@@ -136,8 +136,8 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByBoxesFails) {
                                           std::move(sampler), num_threads,
                                           point_in_set_tol};
 
-  std::vector<std::unique_ptr<ConvexSet>> current_sets;
-  current_sets.push_back(
+  ConvexSets current_sets;
+  current_sets.emplace_back(
       std::make_unique<Hyperrectangle>(Vector2d{0, 0}, Vector2d{0.5, 0.5}));
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
@@ -168,11 +168,11 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByHPolyhedron) {
                                           std::move(sampler), num_threads,
                                           point_in_set_tol};
 
-  std::vector<std::unique_ptr<ConvexSet>> current_sets;
+  ConvexSets current_sets;
   // An HPolyhedron comprising the lower left diagonal of the 1x1 box.
   const Eigen::Matrix<double, 3, 2> A{{-1, 0}, {0, -1}, {1, 1}};
   const Eigen::Vector3d b{0, 0, 1};
-  current_sets.push_back(std::make_unique<HPolyhedron>(A, b));
+  current_sets.emplace_back(std::make_unique<HPolyhedron>(A, b));
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
       checker, current_sets,
@@ -208,14 +208,14 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByMix) {
                                           std::move(sampler), num_threads,
                                           point_in_set_tol};
 
-  std::vector<std::unique_ptr<ConvexSet>> current_sets;
+  ConvexSets current_sets;
   // An HPolyhedron comprising the lower left diagonal of the 1x1 box.
   //  const Eigen::Matrix<double, 3, 2> A{{-1, 0}, {0, -1}, {1, 1}};
   //  const Eigen::Vector3d b{0, 0, 1};
-  //  current_sets.push_back(std::make_unique<HPolyhedron>(A, b));
+  //  current_sets.emplace_back(std::make_unique<HPolyhedron>(A, b));
   // A VPolytope covering the entire 1x1 box.
   const Eigen::Matrix<double, 2, 4> vertices{{0, 0, 1, 1}, {0, 1, 0, 1}};
-  current_sets.push_back(std::make_unique<VPolytope>(vertices));
+  current_sets.emplace_back(std::make_unique<VPolytope>(vertices));
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
       checker, current_sets, 1 /* Check that we achieve 100% coverage.*/

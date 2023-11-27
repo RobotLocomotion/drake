@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace planning {
-using geometry::optimization::ConvexSet;
+using geometry::optimization::ConvexSets;
 
 /**
  * An interface for implementing methods for checking whether a set of
@@ -34,7 +34,7 @@ class CoverageCheckerBase {
   //      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
   bool CheckCoverage(
-      const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const;
+      const ConvexSets& current_sets) const;
 
   virtual ~CoverageCheckerBase() {}
 
@@ -45,7 +45,7 @@ class CoverageCheckerBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
 
   virtual bool DoCheckCoverage(
-      const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
+      const ConvexSets& current_sets) const = 0;
 };
 
 }  // namespace planning

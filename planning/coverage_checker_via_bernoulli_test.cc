@@ -4,11 +4,12 @@
 #include <omp.h>
 #endif
 
-#include <iostream>
 #include <thread>
 
 namespace drake {
 namespace planning {
+using geometry::optimization::ConvexSets;
+
 
 CoverageCheckerViaBernoulliTest::CoverageCheckerViaBernoulliTest(
     const double alpha, const int num_points_per_check,
@@ -21,7 +22,7 @@ CoverageCheckerViaBernoulliTest::CoverageCheckerViaBernoulliTest(
       point_in_set_tol_{point_in_set_tol} {};
 
 double CoverageCheckerViaBernoulliTest::GetSampledCoverageFraction(
-    const std::vector<std::unique_ptr<ConvexSet>>& current_sets) const {
+    const ConvexSets& current_sets) const {
   const int num_threads{
       num_threads_ > 0 ? num_threads_
                        : static_cast<int>(std::thread::hardware_concurrency())};
@@ -45,7 +46,7 @@ double CoverageCheckerViaBernoulliTest::GetSampledCoverageFraction(
 }
 
 bool CoverageCheckerViaBernoulliTest::DoCheckCoverage(
-    const std::vector<std::unique_ptr<geometry::optimization::ConvexSet>>&
+    const ConvexSets&
         current_sets) const {
   return GetSampledCoverageFraction(current_sets) >= alpha_;
 }

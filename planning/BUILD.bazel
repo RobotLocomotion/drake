@@ -12,7 +12,7 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
-        ":approximate_convex_cover_builder_base",
+#        ":approximate_convex_cover_builder_base",
         ":body_shape_description",
         ":collision_avoidance",
         ":collision_checker",
@@ -213,17 +213,26 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "approximate_convex_cover_builder_base",
-    srcs = ["approximate_convex_cover_builder_base.cc"],
-    hdrs = ["approximate_convex_cover_builder_base.h"],
-    interface_deps = [
-        "//geometry/optimization:convex_set",
-        "//planning/graph_algorithms:max_clique_solver_base",
-        ":point_sampler_base"
-    ]
+#drake_cc_library(
+#    name = "approximate_convex_cover_builder_base",
+#    srcs = ["approximate_convex_cover_builder_base.cc"],
+#    hdrs = ["approximate_convex_cover_builder_base.h"],
+#    interface_deps = [
+#        "//geometry/optimization:convex_set",
+#        "//planning/graph_algorithms:max_clique_solver_base",
+#        ":point_sampler_base",
+#        ":coverage_checker_base"
+#    ]
+#)
 
-)
+#drake_cc_library(
+#    name = "iris_from_clique_cover",
+#    srcs = ["iris_from_clique_cover.cc"],
+#    hdrs = ["iris_from_clique_cover.h"],
+#    interface_deps = [
+#        ":approximate_convex_cover_builder_base"
+#    ]
+#)
 
 drake_cc_library(
     name = "point_sampler_base",
@@ -236,13 +245,16 @@ drake_cc_library(
     ]
 )
 
+
 drake_cc_library(
-    name = "iris_from_clique_cover",
-    srcs = ["iris_from_clique_cover.cc"],
-    hdrs = ["iris_from_clique_cover.h"],
+    name = "uniform_set_sampler",
+    srcs = ["uniform_set_sampler.cc"],
+    hdrs = ["uniform_set_sampler.h"],
     interface_deps = [
-        ":approximate_convex_cover_builder_base"
+        ":point_sampler_base",
+        "//geometry/optimization:convex_set",
     ]
+
 )
 
 drake_cc_library(
@@ -265,18 +277,26 @@ drake_cc_library(
         ":point_sampler_base",
         "//common"
     ]
-
 )
 
 drake_cc_library(
-    name = "uniform_set_sampler",
-    srcs = ["uniform_set_sampler.cc"],
-    hdrs = ["uniform_set_sampler.h"],
+    name = "convex_set_from_clique_builder_base",
+    srcs = ["convex_set_from_clique_builder_base.cc"],
+    hdrs = ["convex_set_from_clique_builder_base.h"],
     interface_deps = [
-        ":point_sampler_base",
-        "//geometry/optimization:convex_set",
+        "//geometry/optimization:convex_set"
     ]
+)
 
+drake_cc_library(
+    name = "iris_region_from_clique_builder",
+    srcs = ["iris_region_from_clique_builder.cc"],
+    hdrs = ["iris_region_from_clique_builder.h"],
+    interface_deps = [
+        "//geometry/optimization:convex_set",
+        "//geometry/optimization:iris",
+        ":convex_set_from_clique_builder_base"
+    ]
 )
 
 drake_cc_googletest(
@@ -431,6 +451,11 @@ drake_cc_googletest(
         ":coverage_checker_via_bernoulli_test",
         ":uniform_set_sampler"
     ],
+)
+
+drake_cc_googletest(
+    name="iris_region_from_clique_builder_test",
+    deps =[":iris_region_from_clique_builder"]
 )
 
 add_lint_tests()
