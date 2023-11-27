@@ -12,6 +12,7 @@ namespace planning {
  */
 class PointSamplerBase {
  public:
+  PointSamplerBase() = default;
   /**
    * Sample num_points from the underlying space and return these points as a
    * matrix where each column represents an underlying point.
