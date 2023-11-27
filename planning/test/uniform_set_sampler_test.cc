@@ -53,10 +53,10 @@ GTEST_TEST(UniformSetSampler, UniformHPolyhedronSamplerManualSeed) {
 }
 
 GTEST_TEST(UniformSetSampler, UniformHyperrectangleSamplerDefaultCtor) {
-  const Eigen::Vector2d lb{-2,-1};
-  const Eigen::Vector2d ub{-2,-1};
+  const Eigen::Vector2d lb{-2, -1};
+  const Eigen::Vector2d ub{2, 1};
   const Hyperrectangle rectangle{lb, ub};
-  RandomGenerator generator(0);
+  RandomGenerator generator;
 
   UniformSetSampler<Hyperrectangle> sampler{rectangle, generator};
 
@@ -73,8 +73,8 @@ GTEST_TEST(UniformSetSampler, UniformHyperrectangleSamplerDefaultCtor) {
 }
 
 GTEST_TEST(UniformSetSampler, UniformHyperrectangleSamplerManualSeed) {
-  const Eigen::Vector2d lb{-2,-1};
-  const Eigen::Vector2d ub{-2,-1};
+  const Eigen::Vector2d lb{-2, -1};
+  const Eigen::Vector2d ub{2, 1};
   const Hyperrectangle rectangle{lb, ub};
   RandomGenerator generator(0);
 

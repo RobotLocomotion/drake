@@ -6,12 +6,12 @@ namespace drake {
 namespace planning {
 template <typename T>
 UniformSetSampler<T>::UniformSetSampler(const T& set)
-    : set_{set}, generator_{} {}
+    : PointSamplerBase(), set_{set}, generator_{} {}
 
 template <typename T>
 UniformSetSampler<T>::UniformSetSampler(const T& set,
                                         const RandomGenerator& generator)
-    : set_{set}, generator_{generator} {}
+    : PointSamplerBase(), set_{set}, generator_{generator} {}
 
 template <typename T>
 Eigen::MatrixXd UniformSetSampler<T>::DoSamplePoints(int num_points) {

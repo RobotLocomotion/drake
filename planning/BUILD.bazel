@@ -246,12 +246,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "bernoulli_test_cover_checker",
-    srcs = ["bernoulli_test_cover_checker.cc"],
-    hdrs = ["bernoulli_test_cover_checker.h"],
+    name = "coverage_checker_base",
+    srcs = ["coverage_checker_base.cc"],
+    hdrs = ["coverage_checker_base.h"],
+    interface_deps =[
+        "//geometry/optimization:convex_set"
+    ]
+
+)
+
+drake_cc_library(
+    name = "coverage_checker_via_bernoulli_test",
+    srcs = ["coverage_checker_via_bernoulli_test.cc"],
+    hdrs = ["coverage_checker_via_bernoulli_test.h"],
     interface_deps = [
-        ":collision_checker",
-        ":approximate_convex_cover_builder_base"
+        ":coverage_checker_base",
+        ":point_sampler_base"
     ]
 
 )
@@ -412,9 +422,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "bernoulli_test_cover_checker_test",
+    name = "coverage_checker_via_bernoulli_test_test",
     deps = [
-        ":bernoulli_test_cover_checker",
+        ":coverage_checker_via_bernoulli_test",
+        ":uniform_set_sampler"
     ],
 )
 

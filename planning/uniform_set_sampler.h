@@ -26,7 +26,7 @@ class UniformSetSampler : public PointSamplerBase {
   UniformSetSampler(const T& set, const RandomGenerator& generator);
 
  protected:
-  Eigen::MatrixXd DoSamplePoints(int num_points);
+  Eigen::MatrixXd DoSamplePoints(int num_points) override;
 
  private:
   T set_;
