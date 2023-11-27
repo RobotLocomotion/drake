@@ -16,6 +16,10 @@
 #include "drake/systems/sensors/lcm_image_traits.h"
 #include "drake/systems/sensors/vtk_image_reader_writer.h"
 
+// TODO(jwnimmer-tri) Simplify this code by using "image_io.h" instead of
+// "vtk_image_reader_writer.h", and using a DiagnosticPolicy instead of status
+// bools flying around everywhere.
+
 namespace drake {
 namespace systems {
 namespace sensors {
