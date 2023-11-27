@@ -49,5 +49,6 @@ bool CoverageCheckerViaBernoulliTest::DoCheckCoverage(
         current_sets) const {
   return GetSampledCoverageFraction(current_sets) >= alpha_;
 }
+
 }  // namespace planning
 }  // namespace drake

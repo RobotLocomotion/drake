@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {

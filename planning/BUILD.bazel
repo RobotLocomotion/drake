@@ -250,6 +250,7 @@ drake_cc_library(
     srcs = ["coverage_checker_base.cc"],
     hdrs = ["coverage_checker_base.h"],
     interface_deps =[
+        "//common:essential",
         "//geometry/optimization:convex_set"
     ]
 
@@ -261,7 +262,8 @@ drake_cc_library(
     hdrs = ["coverage_checker_via_bernoulli_test.h"],
     interface_deps = [
         ":coverage_checker_base",
-        ":point_sampler_base"
+        ":point_sampler_base",
+        "//common"
     ]
 
 )
@@ -423,6 +425,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "coverage_checker_via_bernoulli_test_test",
+    # Running with multiple threads is an essential part of our test coverage.
+    num_threads = 2,
     deps = [
         ":coverage_checker_via_bernoulli_test",
         ":uniform_set_sampler"

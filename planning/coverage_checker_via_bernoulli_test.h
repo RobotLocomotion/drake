@@ -3,7 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/planning/coverage_checker_base.h"
 #include "drake/planning/point_sampler_base.h"
 
@@ -12,7 +11,6 @@ namespace planning {
 
 class CoverageCheckerViaBernoulliTest final : public CoverageCheckerBase {
  public:
-    DRAKE_DEFAULT_COPY_MOVE_AND_ASSIGN(CoverageCheckerViaBernoulliTest);
   /**
    * @param alpha CheckCoverage returns True if an alpha fraction of
    * the sampled points are in the current sets
@@ -71,7 +69,7 @@ class CoverageCheckerViaBernoulliTest final : public CoverageCheckerBase {
 
   double alpha_;
   int num_points_per_check_;
-  const copyable_unique_ptr<PointSamplerBase> point_sampler_;
+  const std::unique_ptr<PointSamplerBase> point_sampler_;
   int num_threads_;
   double point_in_set_tol_;
 };
