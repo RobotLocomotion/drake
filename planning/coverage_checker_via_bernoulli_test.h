@@ -12,7 +12,7 @@ namespace planning {
 
 class CoverageCheckerViaBernoulliTest final : public CoverageCheckerBase {
  public:
-  //  DRAKE_DEFAULT_COPY_MOVE_AND_ASSIGN(CoverageCheckerViaBernoulliTest);
+    DRAKE_DEFAULT_COPY_MOVE_AND_ASSIGN(CoverageCheckerViaBernoulliTest);
   /**
    * @param alpha CheckCoverage returns True if an alpha fraction of
    * the sampled points are in the current sets
