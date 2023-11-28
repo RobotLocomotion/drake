@@ -175,6 +175,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "dm_control_internal" not in excludes:
         dm_control_internal_repository(name = "dm_control_internal", mirrors = mirrors)  # noqa
     if "drake_detected_os" not in excludes:
+        # The @drake_detected_os external is deprecated in Drake's WORKSPACE
+        # and will be removed on 2024-03-01.
         os_repository(name = "drake_detected_os")
     if "drake_models" not in excludes:
         drake_models_repository(name = "drake_models", mirrors = mirrors)
