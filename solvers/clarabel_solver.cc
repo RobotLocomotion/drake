@@ -10,6 +10,7 @@
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
+#include "drake/solvers/scs_clarabel_common.h"
 
 namespace drake {
 namespace solvers {
@@ -155,6 +156,52 @@ clarabel::DefaultSettings<double> SetClarabelSettings(
   settings.verbose = solver_options.get_print_to_console();
   // TODO(hongkai.dai): set more options.
   return settings;
+}
+
+void SetBoundingBoxDualSolution(
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const Eigen::VectorXd>& dual,
+    const std::vector<std::vector<std::pair<int, int>>>& bbcon_dual_indices,
+    MathematicalProgramResult* result) {
+  for (int i = 0; i < static_cast<int>(prog.bounding_box_constraints().size());
+       ++i) {
+    Eigen::VectorXd bbcon_dual = Eigen::VectorXd::Zero(
+        prog.bounding_box_constraints()[i].variables().rows());
+    for (int j = 0; j < prog.bounding_box_constraints()[i].variables().rows();
+         ++j) {
+      if (prog.bounding_box_constraints()[i].evaluator()->lower_bound()(j) ==
+          prog.bounding_box_constraints()[i].evaluator()->upper_bound()(j)) {
+        // This is an equality constraint.
+        // Notice that we have a negative sign in front of dual.
+        // This is because in Clarabel, for a problem with the linear equality
+        // constraint
+        // min cᵀx
+        // s.t A*x=b
+        // Clarabel formulates the dual problem as
+        // max -bᵀy
+        // s.t Aᵀy = -c
+        // Note that there is a negation sign before b and c in Clarabel dual
+        // problem, which is different from the standard formulation (no
+        // negation sign). Hence the dual variable for the linear equality
+        // constraint is the negation of the shadow price.
+        bbcon_dual[j] = -dual(bbcon_dual_indices[i][j].second);
+      } else {
+        if (bbcon_dual_indices[i][j].first != -1) {
+          // lower bound is not infinity.
+          // The shadow price for the lower bound is positive. SCS dual for the
+          // positive cone is also positive, so we add the SCS dual.
+          bbcon_dual[j] += dual(bbcon_dual_indices[i][j].first);
+        }
+        if (bbcon_dual_indices[i][j].second != -1) {
+          // upper bound is not infinity.
+          // The shadow price for the upper bound is negative. SCS dual for the
+          // positive cone is positive, so we subtract the SCS dual.
+          bbcon_dual[j] -= dual(bbcon_dual_indices[i][j].second);
+        }
+      }
+    }
+    result->set_dual_solution(prog.bounding_box_constraints()[i], bbcon_dual);
+  }
 }
 
 }  // namespace
@@ -322,6 +369,12 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
 
   result->set_x_val(
       Eigen::Map<Eigen::VectorXd>(solution.x.data(), prog.num_vars()));
+
+  SetBoundingBoxDualSolution(prog, solution.z, bbcon_dual_indices, result);
+  internal::SetDualSolution(prog, solution.z, linear_constraint_dual_indices,
+                            linear_eq_y_start_indices,
+                            lorentz_cone_y_start_indices,
+                            rotated_lorentz_cone_y_start_indices, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
     solution_result = SolutionResult::kSolutionFound;
