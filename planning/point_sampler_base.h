@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/common/drake_copyable.h"
-
 #include <Eigen/Core>
+
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace planning {

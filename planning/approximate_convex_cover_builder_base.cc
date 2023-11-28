@@ -128,7 +128,7 @@ std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
   std::queue<std::unique_ptr<ConvexSet>> ret;
   std::unique_lock<std::mutex> lock(*computed_cliques_mutex);
   while (true) {
-    // wait until either notified or clique_cover_complete is treu
+    // wait until either notified or clique_cover_complete is true.
     computed_clique_condition_variable->wait(lock, [&clique_cover_complete] {
       return *clique_cover_complete;
     });

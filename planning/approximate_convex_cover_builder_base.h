@@ -8,6 +8,7 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/point_sampler_base.h"
 #include "drake/planning/coverage_checker_base.h"
+#include "drake/planning/convex_set_From_clique_builder_base.h"
 
 namespace drake {
 namespace planning {

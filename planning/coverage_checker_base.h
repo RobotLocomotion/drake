@@ -33,8 +33,7 @@ class CoverageCheckerBase {
   //  virtual bool CheckCoverage(
   //      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
 
-  bool CheckCoverage(
-      const ConvexSets& current_sets) const;
+  bool CheckCoverage(const ConvexSets& current_sets) const;
 
   virtual ~CoverageCheckerBase() {}
 
@@ -44,8 +43,7 @@ class CoverageCheckerBase {
   // functions.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoverageCheckerBase);
 
-  virtual bool DoCheckCoverage(
-      const ConvexSets& current_sets) const = 0;
+  virtual bool DoCheckCoverage(const ConvexSets& current_sets) const = 0;
 };
 
 }  // namespace planning

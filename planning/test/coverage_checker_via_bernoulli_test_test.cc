@@ -20,13 +20,12 @@ using geometry::optimization::VPolytope;
 // deviation of the expected coverage.
 void TestCoveredFractionWithinOneStandardDeviationOfExpected(
     const CoverageCheckerViaBernoulliTest& checker,
-    const ConvexSets& current_sets,
-    const double expected_coverage) {
+    const ConvexSets& current_sets, const double expected_coverage) {
   const double coverage{checker.GetSampledCoverageFraction(current_sets)};
 
   const double standard_deviation_of_check{checker.get_num_points_per_check() *
-                                        expected_coverage *
-                                        (1 - expected_coverage)};
+                                           expected_coverage *
+                                           (1 - expected_coverage)};
 
   // Check that we achieve approximately expected_coverage within 1 standard
   // deviation.
