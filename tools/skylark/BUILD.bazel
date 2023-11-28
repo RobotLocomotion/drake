@@ -4,10 +4,9 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-# Used by :python_env.bzl.
 config_setting(
     name = "linux",
-    values = {"cpu": "k8"},
+    constraint_values = ["@platforms//os:linux"],
 )
 
 config_setting(
