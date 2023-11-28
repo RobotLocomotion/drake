@@ -301,6 +301,7 @@ def _os_impl(repo_ctx):
         fail(os_result.error)
 
     constants = """
+print("The @drake_detected_os repository is deprecated and will be removed on 2024-03-01")  # noqa
 TARGET = {target}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}
