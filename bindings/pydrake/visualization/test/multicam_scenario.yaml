@@ -54,19 +54,18 @@ Multicam:
   # Configure three cameras with different poses and parameters for testing.
   cameras:
     camera_0:
-      name: camera_0
       name: vtk_camera
       renderer_name: vtk
       renderer_class: !RenderEngineVtkParams {}
       width: 640
       height: 480
       depth: True
+      label: True
       fps: 10.0
       X_PB:
         translation: [1.5, 0.8, 1.25]
         rotation: !Rpy { deg: [-120, 5, 125] }
     camera_1:
-      name: camera_1
       name: gl_camera_front
       renderer_name: gl
       renderer_class: !RenderEngineGlParams {}
@@ -78,12 +77,11 @@ Multicam:
         translation: [0, 1.5, 0.5]
         rotation: !Rpy { deg: [90, 180, 0] }
     camera_2:
-      name: camera_2
       name: vtk_camera_top
       renderer_name: vtk
       width: 480
       height: 320
-      depth: False
+      label: True
       fps: 15.0
       X_PB:
         translation: [0, -0.7, 2.0]

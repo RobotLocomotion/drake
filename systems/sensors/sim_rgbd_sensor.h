@@ -110,9 +110,8 @@ std::pair<geometry::FrameId, math::RigidTransformd> GetGeometryFrame(
     const multibody::Frame<double>& plant_frame,
     const math::RigidTransformd& X_PB);
 
-// TODO(#19901): Add support for publishing label images.
-/* Adds LCM publishers for images (RGB and/or Depth), at the camera's specified
-  rate.
+/* Adds LCM publishers for images (RGB, depth, and/or label), at the camera's
+  specified rate.
 
  @param serial           The SimRgbdSensor.serial().
  @param fps              The SimRgbdSensor.rate_hz().
@@ -120,6 +119,7 @@ std::pair<geometry::FrameId, math::RigidTransformd> GetGeometryFrame(
                          for a comprehensive description.
  @param rgb_port         The (optional) port for color images.
  @param depth_16u_port   The (optional) port for depth images.
+ @param label_port       The (optional) port for label images.
  @param do_compress      If true, the published images will be compressed.
  @param[in,out] builder  The publishing infrastructure will be added to this
                          builder's diagram.
@@ -130,11 +130,13 @@ std::pair<geometry::FrameId, math::RigidTransformd> GetGeometryFrame(
  @pre lcm != nullptr.
  @pre builder != nullptr.
  @pre rgb_port is null or ImageRgba8U-valued.
- @pre depth_16u_port is null or ImageDepth16U-valued. */
+ @pre depth_16u_port is null or ImageDepth16U-valued.
+ @pre label_port is null or ImageLabel16I-valued. */
 void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
                                   double publish_offset,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,
+                                  const OutputPort<double>* label_port,
                                   bool do_compress,
                                   DiagramBuilder<double>* builder,
                                   drake::lcm::DrakeLcmInterface* lcm);
@@ -143,6 +145,7 @@ void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
 void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_camera,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,
+                                  const OutputPort<double>* label_port,
                                   bool do_compress,
                                   DiagramBuilder<double>* builder,
                                   drake::lcm::DrakeLcmInterface* lcm);

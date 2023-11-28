@@ -12,8 +12,8 @@ namespace systems {
 namespace sensors {
 
 /** Constructs a simulated camera sensor (rgbd sensor and publishing systems)
- within `builder`. As specified, the RGB and/or depth images from the camera
- are published via `lcm` on the channel
+ within `builder`. As specified, the RGB, depth, and/or label images from the
+ camera are published via `lcm` on the channel
  <tt>DRAKE_RGBD_CAMERA_IMAGES_{camera_config.name}</tt>.
 
 
