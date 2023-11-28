@@ -1,4 +1,5 @@
 #include "drake/planning/uniform_set_sampler.h"
+
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 
@@ -17,6 +18,8 @@ template <typename T>
 Eigen::MatrixXd UniformSetSampler<T>::DoSamplePoints(int num_points) {
   Eigen::MatrixXd ret(set_.ambient_dimension(), num_points);
   for (int i = 0; i < num_points; ++i) {
+    // TODO(Alexandre.Amice) ensure that we use the HPolyhedron hit and run
+    // sampler here.
     ret.col(i) = set_.UniformSample(&generator_);
   }
   return ret;

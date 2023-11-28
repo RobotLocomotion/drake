@@ -13,11 +13,9 @@ class VisibilityGraphBuilder final : AdjacencyMatrixBuilderBase {
   VisibilityGraphBuilder(std::unique_ptr<CollisionChecker>& checker,
                          bool parallelize = true);
 
-
-
  private:
   Eigen::SparseMatrix<bool> DoBuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points) override;
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const override;
 
   std::unique_ptr<CollisionChecker> checker_;
   bool parallelize_;

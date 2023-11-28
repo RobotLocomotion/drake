@@ -9,9 +9,8 @@ VisibilityGraphBuilder::VisibilityGraphBuilder(
     : checker_{std::move(checker)}, parallelize_{parallelize} {}
 
 Eigen::SparseMatrix<bool> VisibilityGraphBuilder::DoBuildAdjacencyMatrix(
-    const Eigen::Ref<const Eigen::MatrixXd>& points) {
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
   return VisibilityGraph(*checker_, points, parallelize_);
-
 }
 
 }  // namespace planning

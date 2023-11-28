@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
+#include "drake/planning/adjacency_matrix_builder_base.h"
+#include "drake/planning/convex_set_from_clique_builder_base.h"
+#include "drake/planning/coverage_checker_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/point_sampler_base.h"
-#include "drake/planning/coverage_checker_base.h"
-#include "drake/planning/convex_set_From_clique_builder_base.h"
 
 namespace drake {
 namespace planning {
@@ -31,21 +32,19 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
       std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builder,
       int num_sampled_points, int minimum_clique_size = 3);
 
-  [[nodiscard]] const CoverageCheckerBase* coverage_checker() const {
+  [[nodiscard]] CoverageCheckerBase* coverage_checker() const {
     return coverage_checker_.get();
   }
 
-  [[nodiscard]] const PointSamplerBase*
-  point_sampler() const {
+  [[nodiscard]] PointSamplerBase* point_sampler() const {
     return point_sampler_.get();
   }
 
-  [[nodiscard]] const AdjacencyMatrixBuilderBase* adjacency_matrix_builder()
-      const {
+  [[nodiscard]] AdjacencyMatrixBuilderBase* adjacency_matrix_builder() const {
     return adjacency_matrix_builder_.get();
   }
 
-  [[nodiscard]] const MaxCliqueSolverBase* max_clique_solver() const {
+  [[nodiscard]] MaxCliqueSolverBase* max_clique_solver() const {
     return max_clique_solver_.get();
   }
 
@@ -55,8 +54,7 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
 
   [[nodiscard]] int num_set_builders() const { return set_builders_.size(); }
 
-  [[nodiscard]] const ConvexSetFromCliqueBuilderBase* get_set_builder(
-      int i) const {
+  [[nodiscard]] ConvexSetFromCliqueBuilderBase* get_set_builder(int i) const {
     return set_builders_.at(i).get();
   }
 
@@ -71,21 +69,22 @@ class ApproximateConvexCoverFromCliqueCoverOptions {
 
   std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders_;
 
-  const int num_sampled_points_;
+  const int num_sampled_points_{100};
 
-  const int minimum_clique_size_;
+  const int minimum_clique_size_{3};
 };
 
-//std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
-//    const ApproximateConvexCoverFromCliqueCoverOptions& options);
+void ApproximateConvexCoverFromCliqueCover(
+    const ApproximateConvexCoverFromCliqueCoverOptions& options,
+    ConvexSets* convex_sets);
 
-ConvexSets ApproximateConvexCoverFromCliqueCover(
-    std::unique_ptr<CoverageCheckerBase> coverage_checker,
-    std::unique_ptr<PointSamplerBase> point_sampler,
-    std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
-    std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
-    std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders,
-    int num_sampled_points, int minimum_clique_size = 3);
+// ConvexSets ApproximateConvexCoverFromCliqueCover(
+//    std::unique_ptr<CoverageCheckerBase> coverage_checker,
+//    std::unique_ptr<PointSamplerBase> point_sampler,
+//    std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
+//    std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
+//    std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders,
+//    int num_sampled_points, int minimum_clique_size = 3);
 
 }  // namespace planning
 }  // namespace drake

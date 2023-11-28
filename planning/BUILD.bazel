@@ -233,17 +233,19 @@ drake_cc_library(
     ],
 )
 
-#drake_cc_library(
-#    name = "approximate_convex_cover_builder_base",
-#    srcs = ["approximate_convex_cover_builder_base.cc"],
-#    hdrs = ["approximate_convex_cover_builder_base.h"],
-#    interface_deps = [
-#        "//geometry/optimization:convex_set",
-#        "//planning/graph_algorithms:max_clique_solver_base",
-#        ":point_sampler_base",
-#        ":coverage_checker_base"
-#    ]
-#)
+drake_cc_library(
+    name = "approximate_convex_cover_builder_base",
+    srcs = ["approximate_convex_cover_builder_base.cc"],
+    hdrs = ["approximate_convex_cover_builder_base.h"],
+    interface_deps = [
+        "//geometry/optimization:convex_set",
+        "//planning/graph_algorithms:max_clique_solver_base",
+        ":point_sampler_base",
+        ":coverage_checker_base",
+        ":convex_set_from_clique_builder_base",
+        ":adjacency_matrix_builder_base"
+    ]
+)
 
 #drake_cc_library(
 #    name = "iris_from_clique_cover",
@@ -272,6 +274,16 @@ drake_cc_library(
     interface_deps = [
         ":point_sampler_base",
         "//geometry/optimization:convex_set",
+    ],
+)
+
+drake_cc_library(
+    name = "rejection_sampler",
+    srcs = ["rejection_sampler.cc"],
+    hdrs = ["rejection_sampler.h"],
+    interface_deps = [
+        ":point_sampler_base",
+        "//common:essential",
     ],
 )
 
@@ -459,6 +471,17 @@ drake_cc_googletest(
         "//geometry/optimization:convex_set",
     ],
 )
+
+drake_cc_googletest(
+    name = "rejection_sampler_test",
+    deps = [
+        ":rejection_sampler",
+        ":uniform_set_sampler",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/optimization:convex_set",
+    ],
+)
+
 
 drake_cc_googletest(
     name = "coverage_checker_via_bernoulli_test_test",

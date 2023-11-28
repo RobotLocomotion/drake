@@ -19,7 +19,7 @@ class AdjacencyMatrixBuilderBase {
    * Throws an exception of any of points are infinite or nan.
    */
   Eigen::SparseMatrix<bool> BuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points);
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const;
 
   virtual ~AdjacencyMatrixBuilderBase() {}
 
@@ -30,7 +30,7 @@ class AdjacencyMatrixBuilderBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AdjacencyMatrixBuilderBase);
 
   virtual Eigen::SparseMatrix<bool> DoBuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points) = 0;
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const = 0;
 };
 
 }  // namespace planning

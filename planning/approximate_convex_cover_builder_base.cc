@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "drake/common/ssize.h"
+#include "drake/common/drake_copyable.h"
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -118,14 +119,14 @@ void ComputeGreedyTruncatedCliqueCover(
  * as other worker threads will be asynchronously pulling off of this queue to
  * build convex sets in ApproximateConvexCoverFromCliqueCover.
  */
-std::queue<std::unique_ptr<ConvexSet>> SetBuilderWorker(
+std::queue<copyable_unique_ptr<ConvexSet>> SetBuilderWorker(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
     ConvexSetFromCliqueBuilderBase* set_builder,
     std::queue<VectorX<bool>>* computed_cliques,
     std::mutex* computed_cliques_mutex,
     std::condition_variable* computed_clique_condition_variable,
     bool* clique_cover_complete) {
-  std::queue<std::unique_ptr<ConvexSet>> ret;
+  std::queue<copyable_unique_ptr<ConvexSet>> ret;
   std::unique_lock<std::mutex> lock(*computed_cliques_mutex);
   while (true) {
     // wait until either notified or clique_cover_complete is true.
@@ -171,15 +172,94 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 
 }  // namespace
 
-// std::vector<std::unique_ptr<ConvexSet>>
+void ApproximateConvexCoverFromCliqueCover(
+    const ApproximateConvexCoverFromCliqueCoverOptions& options,
+    ConvexSets* convex_sets) {
+  //  const int num_threads =
+  //      options.num_threads() < 1
+  //          ? static_cast<int>(std::thread::hardware_concurrency())
+  //          : options.num_threads();
+  //  bool parallelize = options.num_threads() == 1;
+
+  // The computed cliques from the max clique solver. These will get pulled off
+  // the queue by the set builder workers to build the sets.
+  std::queue<VectorX<bool>> computed_cliques;
+  // Used to lock access to the computed_cliques to avoid the threads racing.
+  std::mutex computed_cliques_mutex;
+  // This boolean will be used to signal to the set builder worker threads that
+  // no more cliques will be added to the queue, so they can return their
+  // sets to the main thread.
+  bool stop_workers = false;
+
+  // Condition variable used to notify threads when new values are added to the
+  // computed_cliques.
+  std::condition_variable computed_clique_condition_variable;
+
+//  std::vector<copyable_unique_ptr<ConvexSet>> built_sets;
+  while (!options.coverage_checker()->CheckCoverage(*convex_sets)) {
+    stop_workers = false;
+    // Sample points according to some distribution.
+    const Eigen::MatrixXd points =
+        options.point_sampler()->SamplePoints(options.num_sampled_points());
+
+    // Build graphs from which we will compute cliques.
+    Eigen::SparseMatrix<bool> adjacency_matrix =
+        options.adjacency_matrix_builder()->BuildAdjacencyMatrix(points);
+
+    // Reserve more space in for the newly built sets. Typically, we won't get
+    // this worst case number of new cliques, so we only reserve half of the
+    // worst case.
+    convex_sets->reserve(
+        convex_sets->size() +
+        ComputeMaxNumberOfCliquesInGreedyCliqueCover(
+            adjacency_matrix.cols(), options.minimum_clique_size()) /
+            2);
+
+    // Compute truncated clique cover.
+    std::thread clique_cover_thread{[&options, &adjacency_matrix,
+                                     &computed_cliques, &computed_cliques_mutex,
+                                     &computed_clique_condition_variable,
+                                     &stop_workers]() {
+      ComputeGreedyTruncatedCliqueCover(
+          options.minimum_clique_size(), *options.max_clique_solver(),
+          &adjacency_matrix, &computed_cliques, &computed_cliques_mutex,
+          &computed_clique_condition_variable, &stop_workers);
+    }};
+
+    // Build convex sets.
+    std::vector<std::future<std::queue<copyable_unique_ptr<ConvexSet>>>>
+        build_sets_future;
+    build_sets_future.reserve(options.num_set_builders());
+    for (int i = 0; i < options.num_set_builders(); ++i) {
+      build_sets_future.emplace_back(
+          std::async(std::launch::async, SetBuilderWorker, points,
+                     options.get_set_builder(i), &computed_cliques,
+                     &computed_cliques_mutex,
+                     &computed_clique_condition_variable, &stop_workers));
+    }
+
+    // The clique cover and the convex sets are computed asynchronously. Wait
+    // for all the threads to join and then add the new sets to built sets.
+    clique_cover_thread.join();
+    for (auto& new_set_queue_future : build_sets_future) {
+      std::queue<copyable_unique_ptr<ConvexSet>> new_set_queue{
+          new_set_queue_future.get()};
+      while (!new_set_queue.empty()) {
+        convex_sets->push_back(std::move(new_set_queue.front()));
+        new_set_queue.pop();
+      }
+    }
+  }
+}
+
+// std::vector<copyable_unique_ptr<ConvexSet>>
 // ApproximateConvexCoverFromCliqueCover(
-//    const ApproximateConvexCoverFromCliqueCoverOptions& options) {
-//  //  const int num_threads =
-//  //      options.num_threads() < 1
-//  //          ? static_cast<int>(std::thread::hardware_concurrency())
-//  //          : options.num_threads();
-//  //  bool parallelize = options.num_threads() == 1;
-//
+//    std::unique_ptr<CoverageCheckerBase> coverage_checker,
+//    std::unique_ptr<PointSamplerBase> point_sampler,
+//    std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
+//    std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
+//    std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders,
+//    int num_sampled_points, int minimum_clique_size) {
 //  // The computed cliques from the max clique solver. These will get pulled
 //  off
 //  // the queue by the set builder workers to build the sets.
@@ -197,55 +277,53 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 //  // computed_cliques.
 //  std::condition_variable computed_clique_condition_variable;
 //
-//  std::vector<std::unique_ptr<ConvexSet>> built_sets;
-//  while (!options.coverage_checker()->CheckCoverage(built_sets)) {
+//  std::vector<copyable_unique_ptr<ConvexSet>> built_sets;
+//  while (!coverage_checker->CheckCoverage(built_sets)) {
 //    stop_workers = false;
 //    // Sample points according to some distribution.
 //    const Eigen::MatrixXd points =
-//        options.point_sampler()->SamplePoints(options.num_sampled_points());
+//        point_sampler->SamplePoints(num_sampled_points);
 //
 //    // Build graphs from which we will compute cliques.
 //    Eigen::SparseMatrix<bool> adjacency_matrix =
-//        options.adjacency_matrix_builder()->BuildAdjacencyMatrix(points);
+//        adjacency_matrix_builder->BuildAdjacencyMatrix(points);
 //
 //    // Reserve more space in for the newly built sets. Typically, we won't get
 //    // this worst case number of new cliques, so we only reserve half of the
 //    // worst case.
-//    built_sets.reserve(
-//        built_sets.size() +
-//        ComputeMaxNumberOfCliquesInGreedyCliqueCover(
-//            adjacency_matrix.cols(), options.minimum_clique_size()) /
-//            2);
+//    built_sets.reserve(built_sets.size() +
+//                       ComputeMaxNumberOfCliquesInGreedyCliqueCover(
+//                           adjacency_matrix.cols(), minimum_clique_size) /
+//                           2);
 //
 //    // Compute truncated clique cover.
-//    std::thread clique_cover_thread{[&options, &adjacency_matrix,
-//                                     &computed_cliques,
-//                                     &computed_cliques_mutex,
-//                                     &computed_clique_condition_variable,
-//                                     &stop_workers]() {
-//      ComputeGreedyTruncatedCliqueCover(
-//          options.minimum_clique_size(), *options.max_clique_solver(),
-//          &adjacency_matrix, &computed_cliques, &computed_cliques_mutex,
-//          &computed_clique_condition_variable, &stop_workers);
-//    }};
+//    std::thread clique_cover_thread{
+//        [&adjacency_matrix, &max_clique_solver, &minimum_clique_size,
+//         &computed_cliques, &computed_cliques_mutex,
+//         &computed_clique_condition_variable, &stop_workers]() {
+//          ComputeGreedyTruncatedCliqueCover(
+//              minimum_clique_size, *max_clique_solver, &adjacency_matrix,
+//              &computed_cliques, &computed_cliques_mutex,
+//              &computed_clique_condition_variable, &stop_workers);
+//        }};
 //
 //    // Build convex sets.
-//    std::vector<std::future<std::queue<std::unique_ptr<ConvexSet>>>>
+//    std::vector<std::future<std::queue<copyable_unique_ptr<ConvexSet>>>>
 //        build_sets_future;
-//    build_sets_future.reserve(options.num_set_builders());
-//    for (int i = 0; i < options.num_set_builders(); ++i) {
-//      build_sets_future.emplace_back(
-//          std::async(std::launch::async, SetBuilderWorker, points,
-//                     options.get_set_builder(i), &computed_cliques,
-//                     &computed_cliques_mutex,
-//                     &computed_clique_condition_variable, &stop_workers));
+//    build_sets_future.reserve(set_builders.size());
+//    for (int i = 0; i < ssize(set_builders); ++i) {
+//      build_sets_future.emplace_back(std::async(
+//          std::launch::async, SetBuilderWorker, points,
+//          set_builders.at(i).get(), &computed_cliques,
+//          &computed_cliques_mutex, &computed_clique_condition_variable,
+//          &stop_workers));
 //    }
 //
 //    // The clique cover and the convex sets are computed asynchronously. Wait
 //    // for all the threads to join and then add the new sets to built sets.
 //    clique_cover_thread.join();
 //    for (auto& new_set_queue_future : build_sets_future) {
-//      std::queue<std::unique_ptr<ConvexSet>> new_set_queue{
+//      std::queue<copyable_unique_ptr<ConvexSet>> new_set_queue{
 //          new_set_queue_future.get()};
 //      while (!new_set_queue.empty()) {
 //        built_sets.push_back(std::move(new_set_queue.front()));
@@ -255,85 +333,6 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 //  }
 //  return built_sets;
 //}
-
-std::vector<std::unique_ptr<ConvexSet>> ApproximateConvexCoverFromCliqueCover(
-    std::unique_ptr<CoverageCheckerBase> coverage_checker,
-    std::unique_ptr<PointSamplerBase> point_sampler,
-    std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
-    std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
-    std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders,
-    int num_sampled_points, int minimum_clique_size) {
-  // The computed cliques from the max clique solver. These will get pulled off
-  // the queue by the set builder workers to build the sets.
-  std::queue<VectorX<bool>> computed_cliques;
-  // Used to lock access to the computed_cliques to avoid the threads racing.
-  std::mutex computed_cliques_mutex;
-  // This boolean will be used to signal to the set builder worker threads that
-  // no more cliques will be added to the queue, so they can return their sets
-  // to the main thread.
-  bool stop_workers = false;
-
-  // Condition variable used to notify threads when new values are added to the
-  // computed_cliques.
-  std::condition_variable computed_clique_condition_variable;
-
-  std::vector<std::unique_ptr<ConvexSet>> built_sets;
-  while (!coverage_checker->CheckCoverage(built_sets)) {
-    stop_workers = false;
-    // Sample points according to some distribution.
-    const Eigen::MatrixXd points =
-        point_sampler->SamplePoints(num_sampled_points);
-
-    // Build graphs from which we will compute cliques.
-    Eigen::SparseMatrix<bool> adjacency_matrix =
-        adjacency_matrix_builder->BuildAdjacencyMatrix(points);
-
-    // Reserve more space in for the newly built sets. Typically, we won't get
-    // this worst case number of new cliques, so we only reserve half of the
-    // worst case.
-    built_sets.reserve(built_sets.size() +
-                       ComputeMaxNumberOfCliquesInGreedyCliqueCover(
-                           adjacency_matrix.cols(), minimum_clique_size) /
-                           2);
-
-    // Compute truncated clique cover.
-    std::thread clique_cover_thread{
-        [&adjacency_matrix, &max_clique_solver, &minimum_clique_size,
-         &computed_cliques, &computed_cliques_mutex,
-         &computed_clique_condition_variable, &stop_workers]() {
-          ComputeGreedyTruncatedCliqueCover(
-              minimum_clique_size, *max_clique_solver, &adjacency_matrix,
-              &computed_cliques, &computed_cliques_mutex,
-              &computed_clique_condition_variable, &stop_workers);
-        }};
-
-    // Build convex sets.
-    std::vector<std::future<std::queue<std::unique_ptr<ConvexSet>>>>
-        build_sets_future;
-    build_sets_future.reserve(set_builders.size());
-    for (int i = 0; i < ssize(set_builders); ++i) {
-      build_sets_future.emplace_back(std::async(
-          std::launch::async, SetBuilderWorker, points,
-          set_builders.at(i).get(), &computed_cliques, &computed_cliques_mutex,
-          &computed_clique_condition_variable, &stop_workers));
-    }
-
-    // The clique cover and the convex sets are computed asynchronously. Wait
-    // for all the threads to join and then add the new sets to built sets.
-    clique_cover_thread.join();
-    for (auto& new_set_queue_future : build_sets_future) {
-      std::queue<std::unique_ptr<ConvexSet>> new_set_queue{
-          new_set_queue_future.get()};
-      while (!new_set_queue.empty()) {
-        built_sets.push_back(std::move(new_set_queue.front()));
-        new_set_queue.pop();
-      }
-    }
-  }
-  return built_sets;
-}
-
-
 
 }  // namespace planning
 }  // namespace drake
