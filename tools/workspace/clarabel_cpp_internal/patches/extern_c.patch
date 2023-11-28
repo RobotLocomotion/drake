@@ -1,0 +1,76 @@
+[Clarabel.cpp] Use per-function extern annotations (instead of grouping)
+
+Drake's vendor_cxx tool doesn't know how to parse `extern "C" { ... }`
+groupings. Work around that by marking all of the individual functions
+one by one.
+
+We should improve vendor_cxx to handle the original file (e.g., rather
+than trying to upstream this patch).
+
+--- include/cpp/DefaultSettings.h
++++ include/cpp/DefaultSettings.h
+@@ -300,10 +300,10 @@ class DefaultSettingsBuilder
+     }
+ };
+ 
+-extern "C" {
++extern "C"
+ DefaultSettings<double> clarabel_DefaultSettings_f64_default();
++extern "C"
+ DefaultSettings<float> clarabel_DefaultSettings_f32_default();
+-}
+ 
+ template<>
+ inline DefaultSettings<double> DefaultSettings<double>::default_settings()
+
+--- include/cpp/DefaultSolver.h
++++ include/cpp/DefaultSolver.h
+@@ -130,7 +130,7 @@ struct DefaultSolver<T>::ConvertedCscMatrix
+     }
+ };
+ 
+-extern "C" {
++extern "C"
+ RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_new(const CscMatrix<double> *P,
+                                                            const double *q,
+                                                            const CscMatrix<double> *A,
+@@ -139,6 +139,7 @@ RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_new(const CscMatrix<doubl
+                                                            const SupportedConeT<double> *cones,
+                                                            const DefaultSettings<double> *settings);
+ 
++extern "C"
+ RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_new(const CscMatrix<float> *P,
+                                                            const float *q,
+                                                            const CscMatrix<float> *A,
+@@ -147,23 +148,30 @@ RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_new(const CscMatrix<float
+                                                            const SupportedConeT<float> *cones,
+                                                            const DefaultSettings<float> *settings);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_solve(RustDefaultSolverHandle_f64 solver);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f32_solve(RustDefaultSolverHandle_f32 solver);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_free(RustDefaultSolverHandle_f64 solver);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f32_free(RustDefaultSolverHandle_f32 solver);
+ 
++extern "C"
+ DefaultSolution<double>::ClarabelDefaultSolution
+ clarabel_DefaultSolver_f64_solution(RustDefaultSolverHandle_f64 solver);
+ 
++extern "C"
+ DefaultSolution<float>::ClarabelDefaultSolution clarabel_DefaultSolver_f32_solution(RustDefaultSolverHandle_f32 solver);
+ 
++extern "C"
+ DefaultInfo<double> clarabel_DefaultSolver_f64_info(RustDefaultSolverHandle_f64 solver);
+ 
++extern "C"
+ DefaultInfo<float> clarabel_DefaultSolver_f32_info(RustDefaultSolverHandle_f32 solver);
+-}
+ 
+ // Convert unique_ptr P, A to CscMatrix objects, then init the solver
+ // The CscMatrix objects are only used to pass the information needed to Rust.

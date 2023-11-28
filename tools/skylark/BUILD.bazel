@@ -14,6 +14,11 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
+py_binary(
+    name = "rewrite_osx_ar_hidden",
+    srcs = ["rewrite_osx_ar_hidden.py"],
+)
+
 exports_files([
     "py_env_runner.py",
 ])

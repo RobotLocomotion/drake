@@ -248,9 +248,6 @@ selects.config_setting_group(
         # Debug builds have a lot more symbols (no dead code elimination) so
         # are too much work to tidy up.
         "//tools/cc_toolchain:debug",
-        # Rust symbols (from Clarabel) have the wrong visibility; this is a
-        # known issue with a TODO in the Clarabel BUILD file.
-        "//tools:with_clarabel",
     ],
 )
 
