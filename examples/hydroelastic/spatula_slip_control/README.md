@@ -25,14 +25,28 @@ files and also calling C++ APIs.
 bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control
 ```
 
-You should see the printout of Meshcat URL like this:
+Use the MeshCat URL from the log messages for visualization.  For example, 
+it is `http://localhost:7002` at the last line of these log messages:
 
 ```
-[console] [info] Meshcat listening for connections at http://localhost:7000
+drake (master)$ bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control
+INFO: Analyzed target //examples/hydroelastic/spatula_slip_control:spatula_slip_control (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //examples/hydroelastic/spatula_slip_control:spatula_slip_control up-to-date:
+  bazel-bin/examples/hydroelastic/spatula_slip_control/spatula_slip_control
+INFO: Elapsed time: 0.428s, Critical Path: 0.00s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/examples/hydroelastic/spatula_slip_control/spatula_slip_control
+[2023-11-27 15:10:48.768] [console] [info] Meshcat listening for connections at http://localhost:7002
 ```
 
-Click on the Meshcat link (for example, http://localhost:7000)
-to visualize.
+Please note that other examples may instruct users to run `meldis` for 
+visualization. However, this example recommends using MeshCat URL from 
+the log messages because it supports Animations playback (see the section 
+*Playback simulation* below).
+You can use `meldis` with this example, but it will not show Animations
+playback when the simulation finishes.
 
 ## Illustration and Collision geometries
 
