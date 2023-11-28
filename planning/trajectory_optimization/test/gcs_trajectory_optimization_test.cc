@@ -1078,6 +1078,21 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
+  /*
+             0, 2π
+    6 (rad) *********    ◄──┐
+         G *         ***    │
+       ***             ***  Short path
+      **                 ** (with wraparound)
+      **                 **
+      *                   *
+      **                 **
+      **                 S  1 (rad)
+       ***             ***
+         ***         ***
+     ▲      *********
+     └── Long path (no wraparound)
+  */
   const double tol = 1e-7;
 
   Eigen::Matrix<double, 1, 2> points1, points2, points3;
@@ -1096,7 +1111,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   const double expected_cost_no_wraparound = 6.0 - 1.0;
   DRAKE_DEMAND(expected_cost_wraparound < expected_cost_no_wraparound);
 
-  std::vector<int> continuous_joints = {0};
+  std::vector<int> continuous_revolute_joints = {0};
 
   // Check multiple permutations to make sure the ordering of which set is
   // "wrapped around" does not affect the algorithm. Sets v1 and v3 overlap with
@@ -1105,7 +1120,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   std::vector<ConvexSets> permutations = {MakeConvexSets(v1, v2, v3),
                                           MakeConvexSets(v3, v2, v1)};
   for (const auto& convexsets : permutations) {
-    GcsTrajectoryOptimization gcs1(1, continuous_joints);
+    GcsTrajectoryOptimization gcs1(1, continuous_revolute_joints);
     auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
 
     auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
@@ -1187,83 +1202,60 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
   DRAKE_DEMAND(expected_cost_both_wraparound < expected_cost_one_wraparound);
   DRAKE_DEMAND(expected_cost_one_wraparound < expected_cost_no_wraparound);
 
-  std::vector<int> continuous_joints;
+  std::vector<int> continuous_revolute_joints;
   GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 100;
 
-  // No wraparound
+  struct TestConfig {
+    std::string name;
+    std::vector<int> continuous_joints;
+    double expected_cost{};
+    int edge_count{};
+  };
 
-  GcsTrajectoryOptimization gcs1(2, continuous_joints);
-  auto& regions1 = gcs1.AddRegions(sets, 1, 0.01, 1, "");
+  const std::vector<TestConfig> configs{
+      {.name = "No wraparound",
+       .expected_cost = expected_cost_no_wraparound,
+       // 9 sets connected in a grid implies 12 bidirectional edges implies 24
+       // edges Edges crossing the corners gives us 8 more bidirectional edges
+       // (16 edges) The start and goal are each connected to one set, so 42
+       // total.
+       .edge_count = 42},
+      {.name = "One wraparound",
+       .continuous_joints = {0},
+       .expected_cost = expected_cost_one_wraparound,
+       // One wraparound adds 3 new edges wrapping around along the rows, and
+       // also 4 new edges crossing the rows, so 14 new directional edges.
+       .edge_count = 56},
+      {.name = "Two wraparound",
+       .continuous_joints = {0, 1},
+       .expected_cost = expected_cost_both_wraparound,
+       // Another wraparound adds another 3 new edges wrapping around along the
+       // columns, and also 4 new edges crossing the columns, and finally 2 more
+       // edges connecting the opposite corners (e.g. top-left to bottom-right),
+       // so 18 new directional edges.
+       .edge_count = 74}};
+  for (const TestConfig& config : configs) {
+    SCOPED_TRACE(config.name);
+    GcsTrajectoryOptimization gcs(2, config.continuous_joints);
+    auto& regions = gcs.AddRegions(sets, 1, 0.01, 1, "");
 
-  auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
+    auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
+    auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
 
-  gcs1.AddEdges(source1, regions1);
-  gcs1.AddEdges(regions1, target1);
+    gcs.AddEdges(source, regions);
+    gcs.AddEdges(regions, target);
 
-  // 9 sets connected in a grid implies 12 bidirectional edges implies 24 edges
-  // Edges crossing the corners gives us 8 more bidirectional edges (16 edges)
-  // The start and goal are each connected to one set, so 42 total.
-  EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 42);
+    EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), config.edge_count);
 
-  regions1.AddPathLengthCost(1);
+    regions.AddPathLengthCost(1);
 
-  auto [traj1, result1] = gcs1.SolvePath(source1, target1, options);
-  ASSERT_TRUE(result1.is_success());
-  EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_no_wraparound, tol);
-  EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
-  EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
-
-  // One wraparound
-  continuous_joints.emplace_back(0);
-
-  GcsTrajectoryOptimization gcs2(2, continuous_joints);
-  auto& regions2 = gcs2.AddRegions(sets, 1, 0.01, 1, "");
-
-  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
-
-  gcs2.AddEdges(source2, regions2);
-  gcs2.AddEdges(regions2, target2);
-
-  // We've added 3 new edges wrapping around along the rows, and also
-  // 4 new edges crossing the rows, so 14 new directional edges.
-  EXPECT_EQ(gcs2.graph_of_convex_sets().Edges().size(), 56);
-
-  regions2.AddPathLengthCost(1);
-
-  auto [traj2, result2] = gcs2.SolvePath(source2, target2, options);
-  ASSERT_TRUE(result2.is_success());
-  EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_one_wraparound, tol);
-  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
-  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
-
-  // Both wraparound
-  continuous_joints.emplace_back(1);
-
-  GcsTrajectoryOptimization gcs3(2, continuous_joints);
-  auto& regions3 = gcs3.AddRegions(sets, 1, 0.01, 1, "");
-
-  auto& source3 = gcs3.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target3 = gcs3.AddRegions(MakeConvexSets(Point(goal)), 0);
-
-  gcs3.AddEdges(source3, regions3);
-  gcs3.AddEdges(regions3, target3);
-
-  // We've added 3 new edges wrapping around along the columns, and also
-  // 4 new edges crossing the columns, and finally 2 more edges connecting
-  // the opposite corners (e.g. top-left to bottom-right), so 18 new
-  // directional edges.
-  EXPECT_EQ(gcs3.graph_of_convex_sets().Edges().size(), 74);
-
-  regions3.AddPathLengthCost(1);
-
-  auto [traj3, result3] = gcs3.SolvePath(source3, target3, options);
-  ASSERT_TRUE(result3.is_success());
-  EXPECT_NEAR(result3.get_optimal_cost(), expected_cost_both_wraparound, tol);
-  EXPECT_TRUE(CompareMatrices(traj3.value(traj3.start_time()), start, 1e-6));
-  EXPECT_TRUE(CompareMatrices(traj3.value(traj3.end_time()), goal, 1e-6));
+    auto [traj, result] = gcs.SolvePath(source, target, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), config.expected_cost, tol);
+    EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+    EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+  }
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest,
@@ -1272,8 +1264,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 4;
   const VPolytope v(points);
-  std::vector<int> continuous_joints = {0};
-  GcsTrajectoryOptimization gcs(1, continuous_joints);
+  std::vector<int> continuous_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), 1),
                               ".*doesn't respect the convexity radius.*");
   const std::vector<std::pair<int, int>> edges;
@@ -1287,13 +1279,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
                 0, 4, 0, 4;
   // clang-format on
   const VPolytope w(points_new);
-  std::vector<int> continuous_joints1 = {0};
-  std::vector<int> continuous_joints2 = {1};
-  std::vector<int> continuous_joints3 = {0, 1};
+  std::vector<int> continuous_revolute_joints1 = {0};
+  std::vector<int> continuous_revolute_joints2 = {1};
+  std::vector<int> continuous_revolute_joints3 = {0, 1};
   GcsTrajectoryOptimization gcs0(2);
-  GcsTrajectoryOptimization gcs1(2, continuous_joints1);
-  GcsTrajectoryOptimization gcs2(2, continuous_joints2);
-  GcsTrajectoryOptimization gcs3(2, continuous_joints3);
+  GcsTrajectoryOptimization gcs1(2, continuous_revolute_joints1);
+  GcsTrajectoryOptimization gcs2(2, continuous_revolute_joints2);
+  GcsTrajectoryOptimization gcs3(2, continuous_revolute_joints3);
   DRAKE_EXPECT_NO_THROW(gcs0.AddRegions(MakeConvexSets(w), 1));
   DRAKE_EXPECT_NO_THROW(gcs1.AddRegions(MakeConvexSets(w), 1));
   DRAKE_EXPECT_THROWS_MESSAGE(gcs2.AddRegions(MakeConvexSets(w), 1),
@@ -1306,25 +1298,28 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 2;
   const VPolytope v(points);
-  std::vector<int> continuous_joints = {0};
-  GcsTrajectoryOptimization gcs(1, continuous_joints);
-  EXPECT_EQ(gcs.continuous_joints().size(), continuous_joints.size());
-  EXPECT_EQ(gcs.continuous_joints()[0], continuous_joints[0]);
+  std::vector<int> continuous_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  EXPECT_EQ(gcs.continuous_revolute_joints().size(),
+            continuous_revolute_joints.size());
+  EXPECT_EQ(gcs.continuous_revolute_joints()[0], continuous_revolute_joints[0]);
 
-  continuous_joints.emplace_back(0);
+  continuous_revolute_joints.emplace_back(0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GcsTrajectoryOptimization(1, continuous_joints),
-      ".*continuous_joints must not contain duplicate entries.*");
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*continuous_revolute_joints must not contain duplicate entries.*");
 
-  continuous_joints = {-1};
+  continuous_revolute_joints = {-1};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GcsTrajectoryOptimization(1, continuous_joints),
-      ".*Each joint index in continuous_joints must be non-negative.*");
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*Each joint index in continuous_revolute_joints must lie in the "
+      "interval.*");
 
-  continuous_joints = {2};
-  DRAKE_EXPECT_THROWS_MESSAGE(GcsTrajectoryOptimization(1, continuous_joints),
-                              ".*Each joint index in continuous_joints must be "
-                              "strictly less than num_positions.*");
+  continuous_revolute_joints = {2};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*Each joint index in continuous_revolute_joints must lie in the "
+      "interval.*");
 }
 
 }  // namespace

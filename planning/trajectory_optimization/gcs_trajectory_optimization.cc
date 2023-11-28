@@ -82,10 +82,10 @@ Subgraph::Subgraph(
     DRAKE_THROW_UNLESS(region->ambient_dimension() == num_positions());
   }
 
-  // If there are any unbounded revolute joints, make sure the convexity radius
+  // If there are any continuous revolute joints, make sure the convexity radius
   // is respected.
-  if (continuous_joints().size() > 0) {
-    ThrowsForInvalidConvexityRadius(regions_);
+  if (continuous_revolute_joints().size() > 0) {
+    ThrowsForInvalidConvexityRadius();
   }
 
   // Make time scaling set once to avoid many allocations when adding the
@@ -177,18 +177,18 @@ GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
   return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
 }
 
-void Subgraph::ThrowsForInvalidConvexityRadius(
-    const geometry::optimization::ConvexSets& regions) const {
-  for (int i = 0; i < ssize(regions); ++i) {
-    for (const int& j : continuous_joints()) {
+void Subgraph::ThrowsForInvalidConvexityRadius() const {
+  for (int i = 0; i < ssize(regions_); ++i) {
+    for (const int& j : continuous_revolute_joints()) {
       auto [min_value, max_value] =
-          traj_opt_.GetMinimumAndMaximumValueAlongDimension(*regions[i], j);
+          traj_opt_.GetMinimumAndMaximumValueAlongDimension(*regions_[i], j);
       if (max_value - min_value >= M_PI) {
         throw std::runtime_error(fmt::format(
             "GcsTrajectoryOptimization: Region at index {} is wider than π "
             "along dimension {}, so it doesn't respect the convexity radius! "
             "To add this set, separate it into smaller pieces so that along "
-            "dimensions corresponding to continuous joints, its width is "
+            "dimensions corresponding to continuous revolute joints, its width "
+            "is "
             "strictly smaller than π.",
             i, j));
       }
@@ -375,10 +375,10 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       throw std::runtime_error("Subspace must be a Point or HPolyhedron.");
     }
   }
-  if (!continuous_joints().empty()) {
+  if (!continuous_revolute_joints().empty()) {
     // Wraparound edges are not yet implemented for EdgesBetweenSubgraphs.
     drake::log()->warn(
-        "The wraparound edges used for continuous joints are not yet "
+        "The wraparound edges used for continuous revolute joints are not yet "
         "implemented for EdgesBetweenSubgraphs.");
   }
 
@@ -645,32 +645,25 @@ symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
 }
 
 GcsTrajectoryOptimization::GcsTrajectoryOptimization(
-    int num_positions, const std::vector<int>& continuous_joints)
+    int num_positions, std::vector<int> continuous_revolute_joints)
     : num_positions_(num_positions),
-      continuous_joints_(std::move(continuous_joints)) {
+      continuous_revolute_joints_(std::move(continuous_revolute_joints)) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
-  for (int i = 0; i < ssize(continuous_joints_); ++i) {
+  for (int i = 0; i < ssize(continuous_revolute_joints_); ++i) {
     // Make sure the unbounded revolute joints point to valid indices.
-    if (continuous_joints_[i] < 0) {
-      throw std::runtime_error(
-          fmt::format("Each joint index in continuous_joints must be "
-                      "non-negative. Joint index {} (located at {}) "
-                      "violates this.",
-                      continuous_joints_[i], i));
-    }
-    if (continuous_joints_[i] >= num_positions) {
-      throw std::runtime_error(
-          fmt::format("Each joint index in continuous_joints must be strictly "
-                      "less than num_positions. Joint index {} (located at {}) "
-                      "violates this, as num_positions is {}.",
-                      continuous_joints_[i], i, num_positions));
+    if (continuous_revolute_joints_[i] < 0 ||
+        continuous_revolute_joints_[i] >= num_positions) {
+      throw std::runtime_error(fmt::format(
+          "Each joint index in continuous_revolute_joints must lie in the "
+          "interval [0, {}). Joint index {} (located at {}) violates this.",
+          num_positions, continuous_revolute_joints_[i], i));
     }
   }
-  std::unordered_set<int> comparison(continuous_joints_.begin(),
-                                     continuous_joints_.end());
-  if (comparison.size() != continuous_joints_.size()) {
-    throw std::runtime_error(
-        fmt::format("continuous_joints must not contain duplicate entries."));
+  std::unordered_set<int> comparison(continuous_revolute_joints_.begin(),
+                                     continuous_revolute_joints_.end());
+  if (comparison.size() != continuous_revolute_joints_.size()) {
+    throw std::runtime_error(fmt::format(
+        "continuous_revolute_joints must not contain duplicate entries."));
   }
 }
 
@@ -730,7 +723,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   for (int i = 0; i < ssize(regions); ++i) {
     region_minimum_and_maximum_values.emplace_back(
         std::vector<std::pair<double, double>>());
-    for (const int& k : continuous_joints()) {
+    for (const int& k : continuous_revolute_joints()) {
       region_minimum_and_maximum_values[i].emplace_back(
           GetMinimumAndMaximumValueAlongDimension(*regions[i], k));
     }
@@ -743,7 +736,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
 
       // First, we compute what the offset that should be applied to regions[i]
       // to potentially make it overlap with regions[j].
-      for (const int& k : continuous_joints()) {
+      for (const int& k : continuous_revolute_joints()) {
         if (region_minimum_and_maximum_values[i][k].first <
             region_minimum_and_maximum_values[j][k].first) {
           // In this case, the minimum value of regions[i] along dimension k is
