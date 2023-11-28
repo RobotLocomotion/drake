@@ -152,9 +152,9 @@ build (click on "Console Output" then "Full Log") and search for the text
 To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
-* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-wheel-experimental-release``
-* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-wheel-experimental-release``
-* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-wheel-experimental-release``
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)
