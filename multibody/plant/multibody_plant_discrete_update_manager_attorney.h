@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -41,6 +42,33 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant->DeclareCacheEntry(std::move(description),
                                     std::move(value_producer),
                                     std::move(prerequisites_of_calc));
+  }
+
+  static systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
+      MultibodyPlant<T>* plant,
+      std::variant<std::string, systems::UseDefaultName> name,
+      typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
+      typename systems::LeafOutputPort<T>::CalcCallback calc_function,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::System<T>::all_sources_ticket()}) {
+    DRAKE_DEMAND(plant != nullptr);
+    return plant->DeclareAbstractOutputPort(
+        std::move(name), std::move(alloc_function), std::move(calc_function),
+        std::move(prerequisites_of_calc));
+  }
+
+  static systems::LeafOutputPort<T>& DeclareVectorOutputPort(
+      MultibodyPlant<T>* plant,
+      std::variant<std::string, systems::UseDefaultName> name,
+      const systems::BasicVector<T>& model_vector,
+      typename systems::LeafOutputPort<T>::CalcVectorCallback
+          vector_calc_function,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::System<T>::all_sources_ticket()}) {
+    DRAKE_DEMAND(plant != nullptr);
+    return plant->DeclareVectorOutputPort(std::move(name), model_vector,
+                                          std::move(vector_calc_function),
+                                          std::move(prerequisites_of_calc));
   }
 
   static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(

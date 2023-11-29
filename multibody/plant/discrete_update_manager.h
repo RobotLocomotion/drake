@@ -134,6 +134,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     multibody_state_index_ = plant_->GetDiscreteStateIndexOrThrow();
     ExtractModelInfo();
     DeclareCacheEntries();
+    DeclareDiscreteOutputPorts();
   }
 
   /* Given the state of the model stored in `context`, this method performs the
@@ -170,6 +171,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    discrete update from the state stored in `context`. */
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const;
+
+  // TODO(xuchenhan-tri): Open similar ports for other discrete quantities that
+  // depend on contact solver results that guarantees won't trigger an expensive
+  // contact solver result computation but may lag behind by one step.
+  const systems::OutputPort<T>& get_discrete_contact_results_output_port()
+      const {
+    return plant().get_output_port(discrete_contact_results_port_);
+  }
+  const systems::OutputPort<T>& get_discrete_net_actuation_output_port() const {
+    return plant().get_output_port(discrete_net_actuation_port_);
+  }
 
   /* Computes all non-contact applied forces including:
      - Force elements.
@@ -403,10 +415,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
      this cache entry requests its value before any discrete update has
      happened. Evaluating this cache entry when caching is disabled throws an
      exception. */
+    systems::CacheIndex discrete_signal;
     systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
     systems::CacheIndex contact_results;
+    systems::CacheIndex discrete_contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
     systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
@@ -433,10 +447,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
       const systems::Context<T>& context) const;
 
-  /* Updates the discrete_input_forces cache entry. This should only be called
-   at the beginning of each discrete update.
+  // TODO(xuchenhan-tri): We are overloading the term "discrete". Here, by
+  // discrete cache entries and output ports, we mean those that are guaranteed
+  // to be computed at most once in a single MbP discrete step.
+  /* Invalidates all discrete cache entries and output ports. This should only
+   be called at the beginning of each discrete update.
    @throws std::exception if caching is disabled for the given `context`. */
-  void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
+  void InitiateDiscreteUpdate(const systems::Context<T>& context) const;
 
   /* Collects the sum of all forces added to the owning MultibodyPlant and store
    them in given `forces`. The existing values in `forces` is cleared. */
@@ -446,9 +463,24 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* NVI to DoDeclareCacheEntries(). */
   void DeclareCacheEntries();
 
+  void DeclareDiscreteOutputPorts();
+
   /* Calc version of EvalContactResults(). */
   void CalcContactResults(const systems::Context<T>& context,
                           ContactResults<T>* contact_results) const;
+
+  /* Calc function for the discrete contact results output port. */
+  void CopyDiscreteContactResults(const systems::Context<T>& context,
+                                  AbstractValue* output) const {
+    auto& output_value = output->get_mutable_value<ContactResults<T>>();
+    output_value = EvalContactResults(context);
+  }
+
+  /* Calc function for the discrete net actuation output port. */
+  void CopyDiscreteNetActuation(const systems::Context<T>& context,
+                                systems::BasicVector<T>* output) const {
+    output->SetFromVector(EvalActuation(context));
+  }
 
   /* Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
    DoCalcDiscreteUpdateMultibodyForces. */
@@ -524,9 +556,15 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
       const systems::Context<T>& context) const;
 
+  /* Computes all discrete output port values that depend explicitly on discrete
+   update signal. */
+  void SampleDiscreteOutputPorts(const systems::Context<T>& context) const;
+
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
+  systems::OutputPortIndex discrete_contact_results_port_;
+  systems::OutputPortIndex discrete_net_actuation_port_;
   CacheIndexes cache_indexes_;
   /* deformable_driver_ computes the information on all deformable bodies needed
    to advance the discrete states. */

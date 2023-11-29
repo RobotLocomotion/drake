@@ -878,6 +878,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port() const;
 
+  /// Returns a constant reference to the port that outputs the discrete
+  /// net actuation.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  /// @throws std::exception if `this` %MultibodyPlant is not discrete.
+  const systems::OutputPort<T>& get_discrete_net_actuation_output_port() const;
+
   /// Returns a constant reference to the output port that reports actuation
   /// values applied through joint actuators, for a specific model instance.
   /// Models that include PD controllers will include their contribution in this
@@ -1007,6 +1013,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns a constant reference to the port that outputs ContactResults.
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
+
+  /// Returns a constant reference to the port that outputs discrete
+  /// ContactResults.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  /// @throws std::exception if `this` %MultibodyPlant is not discrete.
+  const systems::OutputPort<T>& get_discrete_contact_results_output_port()
+      const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.

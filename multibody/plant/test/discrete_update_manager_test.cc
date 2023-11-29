@@ -161,8 +161,10 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     throw std::logic_error("Must implement if needed for these tests.");
   }
 
-  void DoCalcActuation(const systems::Context<T>&, VectorX<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
+  // The actuation computation is a dummy stub
+  void DoCalcActuation(const systems::Context<T>&,
+                       VectorX<T>* actuation) const final {
+    actuation->setZero();
   }
 
  private:
@@ -472,6 +474,70 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
    actuation. */
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
 }
+
+GTEST_TEST(DiscreteUpdateManagerCacheEntry, ForcedUpdate) {
+  double dt = 0.25;
+  MultibodyPlant<double> plant(dt);
+  const std::string sdf_model = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="object">
+    <joint name="z_axis" type="prismatic">
+      <parent>world</parent>
+      <child>object</child>
+      <axis>0 0 1</axis>
+    </joint>
+    <link name="object">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)""";
+  const std::vector<ModelInstanceIndex> models =
+      Parser(&plant).AddModelsFromString(sdf_model, "sdf");
+  plant.Finalize();
+  auto plant_context = plant.CreateDefaultContext();
+  const ModelInstanceIndex only_model = models[0];
+  const systems::InputPort<double>& u_input =
+      plant.get_actuation_input_port(only_model);
+  const systems::OutputPort<double>& u_output =
+      plant.get_net_actuation_output_port(only_model);
+  // TODO(xuuchenhan-tri): Add per model instance discrete net acutation ports.
+  const systems::OutputPort<double>& discrete_u_output =
+      plant.get_discrete_net_actuation_output_port();
+
+  u_input.FixValue(plant_context.get(), Vector1<double>(1.0));
+  // The net actuation port should match the input actuation.
+  VectorXd net_u = u_output.Eval(*plant_context);
+  EXPECT_EQ(net_u(0), 1.0);
+  VectorXd discrete_net_u = discrete_u_output.Eval(*plant_context);
+  EXPECT_EQ(discrete_net_u(0), 1.0);
+  // Even with discrete plant, changing the input port value is immediately
+  // reflected in the output port.
+  u_input.FixValue(plant_context.get(), Vector1<double>(2.0));
+  net_u = u_output.Eval(*plant_context);
+  EXPECT_EQ(net_u(0), 2.0);
+  // But not in the discrete output port.
+  discrete_net_u = discrete_u_output.Eval(*plant_context);
+  EXPECT_EQ(discrete_net_u(0), 1.0);
+
+  // After a discrete update, the discrete output port value should be brought
+  // up to date.
+  auto updates = plant.AllocateDiscreteVariables();
+  plant.CalcForcedDiscreteVariableUpdate(*plant_context, updates.get());
+  discrete_net_u = discrete_u_output.Eval(*plant_context);
+  EXPECT_EQ(discrete_net_u(0), 2.0);
+}
+
+// TODO(xuchenhan-tri): Add a unit test to show the effect of modifying discrete
+// state on the regular output ports vs. discrete output ports using contact
+// results.
 
 }  // namespace
 }  // namespace test

@@ -3212,6 +3212,19 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port()
 }
 
 template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_discrete_net_actuation_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Discrete net acutation is only available for a discrete "
+        "MultibodyPlant.");
+  }
+  DRAKE_DEMAND(discrete_update_manager_ != nullptr);
+  return discrete_update_manager_->get_discrete_net_actuation_output_port();
+}
+
+template <typename T>
 const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -3287,6 +3300,19 @@ const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_output_port(contact_results_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_discrete_contact_results_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Discrete contact results is only available for a discrete "
+        "MultibodyPlant.");
+  }
+  DRAKE_DEMAND(discrete_update_manager_ != nullptr);
+  return discrete_update_manager_->get_discrete_contact_results_output_port();
 }
 
 template <typename T>
