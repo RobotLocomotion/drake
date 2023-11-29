@@ -341,6 +341,22 @@ GTEST_TEST(TestSos, UnivariateNonnegative1) {
     dut.CheckResult(result, kTol);
   }
 }
+
+GTEST_TEST(TestOptions, SetMaxIter) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_TRUE(result.is_success());
+    ASSERT_GT(result.get_solver_details<ClarabelSolver>().iterations, 1);
+    // Now change the max iteration to 1.
+    solver_options.SetOption(solver.id(), "max_iter", 1);
+    result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
