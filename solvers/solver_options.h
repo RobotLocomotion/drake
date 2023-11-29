@@ -56,6 +56,11 @@ namespace solvers {
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
+ *
+ * "Clarabel" -- Parameter name and values as specified in Clarabel
+ * https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/
+ * Note that `direct_solve_method` is not supported in Drake yet.
+ * Clarabel's boolean options should be passed as integers (0 or 1).
  */
 class SolverOptions {
  public:
