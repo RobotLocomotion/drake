@@ -39,7 +39,8 @@ GTEST_TEST(IrisFromCliqueCover, BoxWithCornerObstaclesTest) {
       HPolyhedron::MakeBox(Vector2d(0.55, 0.55), Vector2d(1, 1)));
 
   IrisFromCliqueCoverOptions options;
-  options.num_builders = 1;
+  // TODO(Alexandre.Amice) bump this number of workers up to at least 2.
+  options.num_builders = 2;
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 100;
   std::vector<copyable_unique_ptr<HPolyhedron>> sets;

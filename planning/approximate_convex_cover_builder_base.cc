@@ -275,9 +275,12 @@ void ApproximateConvexCoverFromCliqueCover(
               &adjacency_matrix, &computed_cliques, &computed_cliques_mutex,
               &computed_clique_condition_variable, &stop_workers);
         }};
+
     // The clique cover and the convex sets are computed asynchronously. Wait
     // for all the threads to join and then add the new sets to built sets.
+    // TODO(Alexand.Amice) need to move this down after the build sets futures, but for now that's not working.
     clique_cover_thread.join();
+
     // Build convex sets.
     std::vector<std::future<std::queue<copyable_unique_ptr<ConvexSet>>>>
         build_sets_future;
@@ -288,6 +291,8 @@ void ApproximateConvexCoverFromCliqueCover(
           set_builders.at(i).get(), &computed_cliques, &computed_cliques_mutex,
           &computed_clique_condition_variable, &stop_workers));
     }
+
+
 
     //    std::cout << "clique_cover_thread joined" << std::endl;
     for (auto& new_set_queue_future : build_sets_future) {
