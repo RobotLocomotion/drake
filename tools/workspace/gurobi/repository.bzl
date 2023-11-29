@@ -1,8 +1,6 @@
 # This is a Bazel repository_rule for the Gurobi solver.  See
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 
-load("//tools/workspace:os.bzl", "determine_os")
-
 # Finds the "latest" f'{path}/{prefix}*/{subdir}', where "latest" is determined
 # by converting the part that matched the '*' to an integer and taking the
 # match with the highest value.
@@ -24,11 +22,11 @@ def _find_latest(repo_ctx, path, prefix, subdir):
 # release.
 #
 def _gurobi_impl(repo_ctx):
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
+    os_name = repo_ctx.os.name
+    if os_name == "mac os x":
+        os_name = "darwin"
 
-    if os_result.is_macos:
+    if os_name == "darwin":
         # Gurobi must be installed into its standard location.
         gurobi_home = _find_latest(
             repo_ctx,
@@ -37,8 +35,7 @@ def _gurobi_impl(repo_ctx):
             "macos_universal2",
         )
         repo_ctx.symlink(gurobi_home, "gurobi-distro")
-        build_flavor = "macos"
-    else:
+    elif os_name == "linux":
         # The default directory for the downloaded gurobi is
         # /opt/gurobi100*/linux64. If the user does not use the default
         # directory, the he/she should set GUROBI_HOME environment variable to
@@ -53,13 +50,16 @@ def _gurobi_impl(repo_ctx):
             ),
             "gurobi-distro",
         )
-        build_flavor = "ubuntu"
+    else:
+        # Defer error reporting to the BUILD file.
+        repo_ctx.symlink("/gurobi-notfound", "gurobi-distro")
+        os_name = "linux"
 
     # Emit the generated BUILD.bazel file.
     repo_ctx.template(
         "BUILD.bazel",
         Label("@drake//tools/workspace/gurobi:" +
-              "package-{}.BUILD.bazel.in".format(build_flavor)),
+              "package-{}.BUILD.bazel.in".format(os_name)),
         substitutions = {
             "{gurobi_home}": gurobi_home,
         },
