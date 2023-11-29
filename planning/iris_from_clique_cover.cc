@@ -50,7 +50,6 @@ class ConvexObstaclesVisibilityMaker final : public AdjacencyMatrixBuilderBase {
 
     std::vector<Triplet<bool>> visibility_edges;
     for (int i = 0; i < num_points; ++i) {
-      std::cout << "Checking point " << i << std::endl;
       for (int j = i + 1; j < num_points; ++j) {
         if (IsVisible(points.col(i), points.col(j))) {
           visibility_edges.emplace_back(i, j, true);
@@ -61,7 +60,7 @@ class ConvexObstaclesVisibilityMaker final : public AdjacencyMatrixBuilderBase {
     Eigen::SparseMatrix<bool> adjacency_matrix(num_points, num_points);
     adjacency_matrix.setFromTriplets(visibility_edges.begin(),
                                      visibility_edges.end());
-    std::cout << "adjaceny matrix build" << std::endl;
+    std::cout << "adjaceny matrix built" << std::endl;
     return adjacency_matrix;
   }
 

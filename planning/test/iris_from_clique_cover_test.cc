@@ -43,6 +43,8 @@ GTEST_TEST(IrisFromCliqueCover, BoxWithCornerObstaclesTest) {
 
   std::cout << fmt::format("Got {} sets", sets.size()) << std::endl;
 
+  EXPECT_FALSE(true);
+
   //  const Eigen::Matrix<double, 2, 4> clique1{{0.45, 0.45, 0.55, 0.55},
   //                                            {0.0, 1.0, 0.0, 1.0}};
   //  copyable_unique_ptr<ConvexSet> set1_base =

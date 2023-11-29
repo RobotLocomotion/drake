@@ -1,7 +1,6 @@
 #include "drake/planning/iris_region_from_clique_builder.h"
 
 #include "drake/geometry/optimization/hyperellipsoid.h"
-
 namespace drake {
 namespace planning {
 using geometry::optimization::ConvexSets;
