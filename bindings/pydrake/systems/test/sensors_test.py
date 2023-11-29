@@ -2,6 +2,7 @@ import pydrake.systems.sensors as mut
 
 import copy
 import gc
+import tempfile
 import unittest
 
 import numpy as np
@@ -527,6 +528,41 @@ class TestSensors(unittest.TestCase):
         mut.ImageFileFormat.kJpeg
         mut.ImageFileFormat.kPng
         mut.ImageFileFormat.kTiff
+
+    def test_image_io_metadata(self):
+        dut = mut.ImageIo.Metadata(width=640)
+        self.assertEqual(dut.width, 640)
+        self.assertIn("width=640", repr(dut))
+
+    def test_image_io_using_buffer(self):
+        orig_image = mut.ImageRgba8U(6, 4)
+
+        format = mut.ImageFileFormat.kPng
+        dut = mut.ImageIo()
+        data = dut.Save(image=orig_image, format=format)
+        self.assertIsInstance(data, bytes)
+        self.assertGreater(len(data), 0)
+
+        meta = dut.LoadMetadata(buffer=data)
+        self.assertEqual((meta.width, meta.height), (6, 4))
+
+        new_image = dut.Load(buffer=data, format=format)
+        self.assertEqual((new_image.width(), new_image.height()), (6, 4))
+
+    def test_image_io_using_file(self):
+        orig_image = mut.ImageRgba8U(6, 4)
+
+        with tempfile.TemporaryDirectory() as temp:
+            path = f"{temp}/test_image_io_using_file.png"
+
+            dut = mut.ImageIo()
+            dut.Save(image=orig_image, path=path, format=None)
+
+            meta = dut.LoadMetadata(path=path)
+            self.assertEqual((meta.width, meta.height), (6, 4))
+
+            new_image = dut.Load(path=path, format=mut.ImageFileFormat.kPng)
+            self.assertEqual((new_image.width(), new_image.height()), (6, 4))
 
     def test_image_writer(self):
         writer = mut.ImageWriter()
