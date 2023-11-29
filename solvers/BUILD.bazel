@@ -973,6 +973,7 @@ drake_cc_variant_library(
     ],
     deps_enabled = [
         "//math:eigen_sparse_triplet",
+        "//tools/workspace/clarabel_cpp_internal:serialize",
         "@clarabel_cpp_internal//:clarabel_cpp",
     ],
 )

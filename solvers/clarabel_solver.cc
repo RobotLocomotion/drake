@@ -7,9 +7,11 @@
 #include <Clarabel>
 #include <Eigen/Eigen>
 
+#include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
+#include "drake/tools/workspace/clarabel_cpp_internal/serialize.h"
 
 namespace drake {
 namespace solvers {
@@ -145,124 +147,98 @@ void SetSolverDetails(
   solver_details->status = SolverStatusToString(clarabel_solution.status);
 }
 
-template <typename T, typename U>
-void SetClarabelSetting(std::unordered_map<std::string, U>* solver_options,
-                        const std::string& name, T* clarabel_setting) {
-  auto it = solver_options->find(name);
-  if (it != solver_options->end()) {
-    *clarabel_setting = it->second;
-    // We will erase the recognized option from solver_options. In the end,
-    // if solver_options has remaining options, we will throw a warning
-    // about the un-recognized options.
-    solver_options->erase(it);
-  }
-}
+class SettingsConverter {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SettingsConverter);
 
-clarabel::DefaultSettings<double> SetClarabelSettings(
-    const SolverOptions& solver_options) {
-  clarabel::DefaultSettings<double> settings =
+  explicit SettingsConverter(const SolverOptions& solver_options) {
+    // Propagate Drake's common options into `settings_`.
+    settings_.verbose = solver_options.get_print_to_console();
+    // TODO(jwnimmer-tri) Handle get_print_file_name().
+
+    // Copy the Clarabel-specific `solver_options` to pending maps.
+    pending_options_double_ =
+        solver_options.GetOptionsDouble(ClarabelSolver::id());
+    pending_options_int_ = solver_options.GetOptionsInt(ClarabelSolver::id());
+    pending_options_str_ = solver_options.GetOptionsStr(ClarabelSolver::id());
+
+    // Move options from `pending_..._` to `settings_`.
+    Serialize(this, settings_);
+
+    // Identify any unsupported names (i.e., any leftovers in `pending_..._`.
+    std::vector<std::string> unknown_names;
+    for (const auto& [name, _] : pending_options_double_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_int_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_str_) {
+      unknown_names.push_back(name);
+    }
+    if (unknown_names.size() > 0) {
+      throw std::logic_error(fmt::format(
+          "ClarabelSolver: unrecognized solver options {}. Please check "
+          "https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/include/cpp/"
+          "DefaultSettings.h for the supported solver options.",
+          fmt::join(unknown_names, ", ")));
+    }
+  }
+
+  const clarabel::DefaultSettings<double>& settings() const {
+    return settings_;
+  }
+
+  void Visit(const NameValue<double>& x) {
+    this->SetFromDoubleMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<bool>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value == 0 || option_value == 1);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<uint32_t>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value >= 0);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<clarabel::ClarabelDirectSolveMethods>& x) {
+    DRAKE_THROW_UNLESS(x.name() == std::string{"direct_solve_method"});
+    // TODO(jwnimmer-tri) Add support for this option.
+    // For now it is unsupported and will throw (as an unknown name, below).
+  }
+
+ private:
+  template <typename T>
+  void SetFromDoubleMap(const char* name, T* clarabel_value) {
+    auto it = pending_options_double_.find(name);
+    if (it != pending_options_double_.end()) {
+      *clarabel_value = it->second;
+      pending_options_double_.erase(it);
+    }
+  }
+  template <typename T>
+  void SetFromIntMap(const char* name, T* clarabel_value) {
+    auto it = pending_options_int_.find(name);
+    if (it != pending_options_int_.end()) {
+      *clarabel_value = it->second;
+      pending_options_int_.erase(it);
+    }
+  }
+
+  std::unordered_map<std::string, double> pending_options_double_;
+  std::unordered_map<std::string, int> pending_options_int_;
+  std::unordered_map<std::string, std::string> pending_options_str_;
+
+  clarabel::DefaultSettings<double> settings_ =
       clarabel::DefaultSettingsBuilder<double>::default_settings().build();
-  // Clarabel defaults to print to console. But that would create too much noise
-  // on the console. So we overwrite the default value with
-  // solver_options.get_print_to_console().
-  settings.verbose = solver_options.get_print_to_console();
-
-  std::unordered_map<std::string, double> solver_options_double =
-      solver_options.GetOptionsDouble(ClarabelSolver::id());
-
-  std::unordered_map<std::string, int> solver_options_int =
-      solver_options.GetOptionsInt(ClarabelSolver::id());
-  // The options can be found in Clarabel upstream code DefaultSettings.h
-  SetClarabelSetting(&solver_options_int, "max_iter", &(settings.max_iter));
-  SetClarabelSetting(&solver_options_double, "time_limit",
-                     &(settings.time_limit));
-  SetClarabelSetting(&solver_options_int, "verbose", &(settings.verbose));
-  SetClarabelSetting(&solver_options_double, "max_step_fraction",
-                     &(settings.max_step_fraction));
-  SetClarabelSetting(&solver_options_double, "tol_gap_abs",
-                     &(settings.tol_gap_abs));
-  SetClarabelSetting(&solver_options_double, "tol_gap_rel",
-                     &(settings.tol_gap_rel));
-  SetClarabelSetting(&solver_options_double, "tol_feas", &(settings.tol_feas));
-  SetClarabelSetting(&solver_options_double, "tol_infeas_abs",
-                     &(settings.tol_infeas_abs));
-  SetClarabelSetting(&solver_options_double, "tol_infeas_rel",
-                     &(settings.tol_infeas_rel));
-  SetClarabelSetting(&solver_options_double, "tol_ktratio",
-                     &(settings.tol_ktratio));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_gap_abs",
-                     &(settings.reduced_tol_gap_abs));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_gap_rel",
-                     &(settings.reduced_tol_gap_rel));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_feas",
-                     &(settings.reduced_tol_feas));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_infeas_abs",
-                     &(settings.reduced_tol_infeas_abs));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_infeas_rel",
-                     &(settings.reduced_tol_infeas_rel));
-  SetClarabelSetting(&solver_options_double, "reduced_tol_ktratio",
-                     &(settings.reduced_tol_ktratio));
-  SetClarabelSetting(&solver_options_int, "equilibrate_enable",
-                     &(settings.equilibrate_enable));
-  SetClarabelSetting(&solver_options_int, "equilibrate_max_iter",
-                     &(settings.equilibrate_max_iter));
-  SetClarabelSetting(&solver_options_double, "equilibrate_min_scaling",
-                     &(settings.equilibrate_min_scaling));
-  SetClarabelSetting(&solver_options_double, "equilibrate_max_scaling",
-                     &(settings.equilibrate_max_scaling));
-  SetClarabelSetting(&solver_options_double, "linesearch_backtrack_step",
-                     &(settings.linesearch_backtrack_step));
-  SetClarabelSetting(&solver_options_double, "min_switch_step_length",
-                     &(settings.min_switch_step_length));
-  SetClarabelSetting(&solver_options_double, "min_terminate_step_length",
-                     &(settings.min_terminate_step_length));
-  SetClarabelSetting(&solver_options_int, "direct_kkt_solver",
-                     &(settings.direct_kkt_solver));
-  SetClarabelSetting(&solver_options_int, "static_regularization_enable",
-                     &(settings.static_regularization_enable));
-  SetClarabelSetting(&solver_options_double, "static_regularization_constant",
-                     &(settings.static_regularization_constant));
-  SetClarabelSetting(&solver_options_double,
-                     "static_regularization_proportional",
-                     &(settings.static_regularization_proportional));
-  SetClarabelSetting(&solver_options_int, "dynamic_regularization_enable",
-                     &(settings.dynamic_regularization_enable));
-  SetClarabelSetting(&solver_options_double, "dynamic_regularization_eps",
-                     &(settings.dynamic_regularization_eps));
-  SetClarabelSetting(&solver_options_double, "&dynamic_regularization_delta",
-                     &(settings.dynamic_regularization_delta));
-  SetClarabelSetting(&solver_options_int, "iterative_refinement_enable",
-                     &(settings.iterative_refinement_enable));
-  SetClarabelSetting(&solver_options_double, "iterative_refinement_reltol",
-                     &(settings.iterative_refinement_reltol));
-  SetClarabelSetting(&solver_options_double, "iterative_refinement_abstol",
-                     &(settings.iterative_refinement_abstol));
-  SetClarabelSetting(&solver_options_int, "iterative_refinement_max_iter",
-                     &(settings.iterative_refinement_max_iter));
-  SetClarabelSetting(&solver_options_double, "iterative_refinement_stop_ratio",
-                     &(settings.iterative_refinement_stop_ratio));
-  SetClarabelSetting(&solver_options_int, "presolve_enable",
-                     &(settings.presolve_enable));
-  if (!solver_options_int.empty()) {
-    for (const auto& [option_name, option_value] : solver_options_int) {
-      throw std::runtime_error(fmt::format(
-          "ClarabelSolver: unrecognized solver options {}. Please check "
-          "https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/include/cpp/"
-          "DefaultSettings.h for all supported solver options.",
-          option_name));
-    }
-  }
-  if (!solver_options_double.empty()) {
-    for (const auto& [option_name, option_value] : solver_options_double) {
-      throw std::runtime_error(fmt::format(
-          "ClarabelSolver: unrecognized solver options {}. Please check "
-          "https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/include/cpp/"
-          "DefaultSettings.h for all supported solver options.",
-          option_name));
-    }
-  }
-  return settings;
-}
+};
 
 }  // namespace
 
@@ -412,8 +388,8 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   const Eigen::Map<Eigen::VectorXd> b_vec{b.data(), ssize(b)};
 
-  clarabel::DefaultSettings<double> settings =
-      SetClarabelSettings(merged_options);
+  const SettingsConverter settings_converter(merged_options);
+  clarabel::DefaultSettings<double> settings = settings_converter.settings();
 
   clarabel::DefaultSolver<double> solver(P, q_vec, A, b_vec, cones, settings);
 
