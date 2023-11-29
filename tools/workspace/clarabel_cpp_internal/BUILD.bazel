@@ -1,27 +1,3 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_test")
 
-drake_cc_test(
-    name = "clarabel_example_sdp",
-    srcs = select({
-        "//tools:with_clarabel": [
-            "test/clarabel_example_sdp.cc",
-        ],
-        "//conditions:default": [
-            "test/noop.cc",
-        ],
-    }),
-    deps = select({
-        "//tools:with_clarabel": [
-            "@clarabel_cpp_internal//:clarabel_cpp",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "test/clarabel_example_sdp.cc",
-        "test/noop.cc",
-    ],
-)
+add_lint_tests()
