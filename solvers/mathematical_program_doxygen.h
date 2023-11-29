@@ -97,7 +97,7 @@
  *     <td align="center">⟡</td>
  * </tr>
  * <tr><td><a href="https://github.com/oxfordcontrol/Clarabel.rs">
- *    Clarabel</a> ▣</td>
+ *    Clarabel</a></td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
@@ -161,8 +161,6 @@
  * to handle free variables (refer to RemoveFreeVariableMethod for more
  * details). These heuristics can make the problem expensive to solve or
  * poorly conditioned.
- *
- * ▣ Drake's support on Clarabel is experimental. It is not enabled by default.
  *
  * △ These solvers are not accurate. They implement ADMM algorithm, which
  * converges quickly to a low-accuracy solution, and requires many iterations to

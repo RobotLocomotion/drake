@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -586,10 +587,13 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  double kTol =
+      result.get_solver_id() == solvers::ClarabelSolver::id() ? 2E-5 : 1E-5;
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), kTol);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
+  kTol = result.get_solver_id() == solvers::ClarabelSolver::id() ? 2E-5 : 1E-6;
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              kTol);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -613,10 +617,10 @@ TEST_F(ThreePoints, QuadraticCost3) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 5e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              2e-4);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -1568,8 +1572,9 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
       // Some solvers do not balance the two paths as closely as other solvers.
       const double tol =
           (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
-          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
-              ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
+              ? 5E-4
               : 1e-5;
       EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
     } else if (ii < 10) {
