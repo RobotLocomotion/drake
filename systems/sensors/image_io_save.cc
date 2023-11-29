@@ -43,11 +43,13 @@ void CopyImage(const Image<kPixelType>& source_image,
 
 }  // namespace
 
-void ImageIo::SaveImpl(ImageAnyConstPtr image_any, OutputAny output_any) const {
+void ImageIo::SaveImpl(ImageAnyConstPtr image_any,
+                       std::optional<ImageFileFormat> format,
+                       OutputAny output_any) const {
   // Choose which file format to use.
-  const ImageFileFormat format = [this, output_any]() {
-    if (format_.has_value()) {
-      return *format_;
+  const ImageFileFormat chosen_format = [format, output_any]() {
+    if (format.has_value()) {
+      return *format;
     } else if (output_any.index() == 0) {
       const std::filesystem::path& path = *std::get<0>(output_any);
       if (std::optional<ImageFileFormat> from_ext =
@@ -69,9 +71,9 @@ void ImageIo::SaveImpl(ImageAnyConstPtr image_any, OutputAny output_any) const {
   // Make the VTK writer.
   vtkSmartPointer<vtkImageWriter> writer;
   if (output_any.index() == 0) {
-    writer = internal::MakeWriter(format, *std::get<0>(output_any));
+    writer = internal::MakeWriter(chosen_format, *std::get<0>(output_any));
   } else {
-    writer = internal::MakeWriter(format, std::get<1>(output_any));
+    writer = internal::MakeWriter(chosen_format, std::get<1>(output_any));
   }
 
   // Copy the Drake image buffer to a VTK image buffer. Drake uses (x=0, y=0)

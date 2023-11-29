@@ -534,26 +534,19 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(dut.width, 640)
         self.assertIn("width=640", repr(dut))
 
-    def test_image_io_get_set(self):
-        dut = mut.ImageIo()
-        self.assertEqual(dut.GetFileFormat(), None)
-        png = mut.ImageFileFormat.kPng
-        dut.SetFileFormat(png)
-        self.assertEqual(dut.GetFileFormat(), png)
-
     def test_image_io_using_buffer(self):
         orig_image = mut.ImageRgba8U(6, 4)
 
         format = mut.ImageFileFormat.kPng
-        dut = mut.ImageIo(format=format)
-        data = dut.Save(image=orig_image)
+        dut = mut.ImageIo()
+        data = dut.Save(image=orig_image, format=format)
         self.assertIsInstance(data, bytes)
         self.assertGreater(len(data), 0)
 
         meta = dut.LoadMetadata(buffer=data)
         self.assertEqual((meta.width, meta.height), (6, 4))
 
-        new_image = dut.Load(buffer=data)
+        new_image = dut.Load(buffer=data, format=format)
         self.assertEqual((new_image.width(), new_image.height()), (6, 4))
 
     def test_image_io_using_file(self):
@@ -563,12 +556,12 @@ class TestSensors(unittest.TestCase):
             path = f"{temp}/test_image_io_using_file.png"
 
             dut = mut.ImageIo()
-            dut.Save(image=orig_image, path=path)
+            dut.Save(image=orig_image, path=path, format=None)
 
             meta = dut.LoadMetadata(path=path)
             self.assertEqual((meta.width, meta.height), (6, 4))
 
-            new_image = dut.Load(path=path)
+            new_image = dut.Load(path=path, format=mut.ImageFileFormat.kPng)
             self.assertEqual((new_image.width(), new_image.height()), (6, 4))
 
     def test_image_writer(self):

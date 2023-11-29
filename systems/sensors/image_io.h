@@ -19,26 +19,11 @@ namespace sensors {
 /** Utility functions for reading and writing images, from/to either files or
 memory buffers.
 
-The only file formats supported are JPEG, PNG, and TIFF. The file format is
-specified by the ImageFileFormat enum.
+The only file formats supported are JPEG, PNG, and TIFF.
 
-If desired, a specific file format can be configured either in the constructor
-or via the SetFileFormat() function. When configured, that file format will
-always be used, regardless of any filename extension. (In other words, the class
-allows loading or saving a JPEG image from/to a filename ending in `.png`.)
-
-If the ImageFileFormat has NOT been configured, the following behaviors apply:
-- When loading an image from file or memory, the format will be inferred from
-  the data content (ignoring the filename).
-- When saving an image to disk, the filename extension will determine the
-  format. In this case, the filename extension must be a conventional choice
-  (`.jpg`, `.jpeg`, `.png`, `.tif`, or `.tiff`).
-- When saving an image to memory, there is no default format; this will throw
-  an exception.
-
-The only file format that supports images with floating-point scalars is TIFF.
-Trying to load or save a floating-point image from/to a PNG or JPEG file will
-throw an exception. */
+The only format that supports floating-point scalars (e.g., ImageDepth32F) is
+TIFF. Trying to load or save a floating-point image from/to a PNG or JPEG file
+will throw an exception. */
 class ImageIo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageIo);
@@ -75,58 +60,64 @@ class ImageIo {
     size_t size{};
   };
 
-  /** Default constructor (with no file format configured). */
+  /** Default constructor. */
   ImageIo() = default;
 
-  /** Constructs an %ImageIo with SetFileFormat(format) already in place. */
-  explicit ImageIo(ImageFileFormat format) : format_(format) {}
-
   /** Returns the metadata of the given image file, or nullopt if the metadata
-  cannot be determined or is unsupported.
-  @warning This function obeys the configured file format from the constructor
-  or a call to SetFileFormat(). If you want it to *infer* the file format from
-  the file contents, be sure not to configure any specific ImageFileFormat. */
+  cannot be determined or is unsupported. The filename extension has no bearing
+  on the result; the actual file content solely determines the file format. */
   std::optional<Metadata> LoadMetadata(
       const std::filesystem::path& path) const {
     return LoadMetadataImpl(&path);
   }
 
   /** Returns the metadata of the given image buffer, or nullopt if the metadata
-  cannot be determined or is unsupported.
-  @warning This function obeys the configured file format from the constructor
-  or a call to SetFileFormat(). If you want it to *infer* the file format from
-  the buffer contents, be sure not to configure any specific ImageFileFormat. */
+  cannot be determined or is unsupported. */
   std::optional<Metadata> LoadMetadata(ByteSpan buffer) const {
     return LoadMetadataImpl(buffer);
   }
 
-  /** Configures this %ImageIo object to load and save using the given format.
-  Refer to the class overview documentation for a full explanation. */
-  void SetFileFormat(std::optional<ImageFileFormat> format) {
-    format_ = format;
-  }
-
-  /** Returns the most recent value passed to SetFileFormat, or nullopt if no
-  format has ever been set. */
-  std::optional<ImageFileFormat> GetFileFormat() const { return format_; }
-
   /** Loads and returns an image from disk.
+  @param format (Optionally) establishes the required image file format. When
+  set, images that are a different file format will throw an exception. When not
+  set, the filename extension has no bearing on the result; the actual file
+  content solely determines the file format.
   @throws std::exception for any kind of error loading the image file. */
-  ImageAny Load(const std::filesystem::path& path) const {
-    return LoadImpl(&path);
+  ImageAny Load(const std::filesystem::path& path,
+                std::optional<ImageFileFormat> format = std::nullopt) const {
+    return LoadImpl(&path, format);
   }
 
   /** Loads and returns an image from a memory buffer.
+  @param format (Optionally) establishes the required image file format. When
+  set, images that are a different file format will throw an exception.
   @throws std::exception for any kind of error loading the image data. */
-  ImageAny Load(ByteSpan buffer) const { return LoadImpl(buffer); }
+  ImageAny Load(ByteSpan buffer,
+                std::optional<ImageFileFormat> format = std::nullopt) const {
+    return LoadImpl(buffer, format);
+  }
 
-  /** Loads and outputs an image from disk.
+  /** Loads and outputs an image from disk. The filename extension has no
+  bearing on the result; the actual file content solely determines the file
+  format.
   @param[out] image The output image (which will be overwritten).
   @throws std::exception for any kind of error loading the image file.
   @throws std::exception if the loaded image does not match the kPixelType. */
   template <PixelType kPixelType>
   void Load(const std::filesystem::path& path, Image<kPixelType>* image) const {
-    LoadImpl(&path, image);
+    LoadImpl(&path, std::nullopt, image);
+  }
+
+  /** Loads and outputs an image from disk.
+  @param format Establishes the required image file format; images that are a
+  different file format will throw an exception.
+  @param[out] image The output image (which will be overwritten).
+  @throws std::exception for any kind of error loading the image file.
+  @throws std::exception if the loaded image does not match the kPixelType. */
+  template <PixelType kPixelType>
+  void Load(const std::filesystem::path& path, ImageFileFormat format,
+            Image<kPixelType>* image) const {
+    LoadImpl(&path, format, image);
   }
 
   /** Loads and outputs an image from a memory buffer.
@@ -135,37 +126,49 @@ class ImageIo {
   @throws std::exception if the loaded image does not match the kPixelType. */
   template <PixelType kPixelType>
   void Load(ByteSpan buffer, Image<kPixelType>* image) const {
-    LoadImpl(buffer, image);
+    LoadImpl(buffer, std::nullopt, image);
+  }
+
+  /** Loads and outputs an image from a memory buffer.
+  @param format Establishes the required image file format; images that are a
+  different file format will throw an exception.
+  @param[out] image The output image (which will be overwritten).
+  @throws std::exception for any kind of error loading the image data.
+  @throws std::exception if the loaded image does not match the kPixelType. */
+  template <PixelType kPixelType>
+  void Load(ByteSpan buffer, ImageFileFormat format,
+            Image<kPixelType>* image) const {
+    LoadImpl(buffer, format, image);
   }
 
   /** Saves an image to disk.
+  @param format (Optionally) chooses the image file format. When not set, the
+  filename extension will determine the format and the extension must be a
+  supported choice (i.e., `.jpg`, `.jpeg`, `.png`, `.tif`, or `.tiff`).
   @throws std::exception for any kind of error saving the image file. */
   template <PixelType kPixelType>
-  void Save(const Image<kPixelType>& image,
-            const std::filesystem::path& path) const {
-    SaveImpl(&image, &path);
+  void Save(const Image<kPixelType>& image, const std::filesystem::path& path,
+            std::optional<ImageFileFormat> format = std::nullopt) const {
+    SaveImpl(&image, format, &path);
   }
 
   /** Saves an image to a new memory buffer, returning the buffer.
-  @pre SetFormat() has already been called with a non-null format, to determine
-  what format to save as.
   @throws std::exception for any kind of error saving the image data. */
   template <PixelType kPixelType>
-  std::vector<uint8_t> Save(const Image<kPixelType>& image) const {
+  std::vector<uint8_t> Save(const Image<kPixelType>& image,
+                            ImageFileFormat format) const {
     std::vector<uint8_t> result;
-    SaveImpl(&image, &result);
+    SaveImpl(&image, format, &result);
     return result;
   }
 
   /** Saves an image to an existing memory buffer.
   @param[out] buffer The output buffer (which will be overwritten).
-  @pre SetFormat() has already been called with a non-null format, to determine
-  what format to save as.
   @throws std::exception for any kind of error saving the image data. */
   template <PixelType kPixelType>
-  void Save(const Image<kPixelType>& image,
+  void Save(const Image<kPixelType>& image, ImageFileFormat format,
             std::vector<uint8_t>* buffer) const {
-    SaveImpl(&image, buffer);
+    SaveImpl(&image, format, buffer);
   }
 
  private:
@@ -198,16 +201,22 @@ class ImageIo {
 
   // Implementation functions for the public API.
   std::optional<Metadata> LoadMetadataImpl(InputAny input_any) const;
-  ImageAny LoadImpl(InputAny input_any) const;
-  void LoadImpl(InputAny input_any, ImageAnyMutablePtr image_any) const;
-  void SaveImpl(ImageAnyConstPtr image_any, OutputAny output_any) const;
+  ImageAny LoadImpl(InputAny input_any,
+                    std::optional<ImageFileFormat> format) const;
+  void LoadImpl(InputAny input_any, std::optional<ImageFileFormat> format,
+                ImageAnyMutablePtr image_any) const;
+  void SaveImpl(ImageAnyConstPtr image_any,
+                std::optional<ImageFileFormat> format,
+                OutputAny output_any) const;
 
   // Helpers.
   struct LoaderTools;
-  LoaderTools MakeLoaderTools(InputAny input_any) const;
+  LoaderTools MakeLoaderTools(InputAny input_any,
+                              std::optional<ImageFileFormat> format) const;
   void FlushDiagnostics(const LoaderTools& tools) const;
 
-  std::optional<ImageFileFormat> format_;
+  // TODO(jwnimmer-tri) Expose this so that Drake-internal callers can customize
+  // their error handling.
   drake::internal::DiagnosticPolicy diagnostic_;
 };
 

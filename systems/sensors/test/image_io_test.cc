@@ -48,18 +48,18 @@ TEST_P(ImageIoParameterizedTest, RoundTrip) {
     fs::path path = GetTempPath(fmt::format("RoundTrip_{}.image", format));
     std::visit(
         [&](const auto& image) {
-          ImageIo(format).Save(image, path);
+          ImageIo{}.Save(image, path, format);
         },
         original);
-    readback = ImageIo(format).Load(path);
+    readback = ImageIo{}.Load(path, format);
   } else {
     const std::vector<uint8_t> buffer = std::visit(
         [&](const auto& image) {
-          return ImageIo(format).Save(image);
+          return ImageIo{}.Save(image, format);
         },
         original);
     const ImageIo::ByteSpan span{buffer.data(), buffer.size()};
-    readback = ImageIo(format).Load(span);
+    readback = ImageIo{}.Load(span, format);
   }
 
   // The PixelType must remain intact across the Save + Load.
@@ -107,7 +107,7 @@ TEST_P(ImageIoParameterizedTest, RoundTripPreAllocated) {
       GetTempPath(fmt::format("RoundTripPreAllocated_{}.image", format));
   std::visit(
       [&](const auto& image) {
-        ImageIo(format).Save(image, path);
+        ImageIo{}.Save(image, path, format);
       },
       original);
 
@@ -123,7 +123,7 @@ TEST_P(ImageIoParameterizedTest, RoundTripPreAllocated) {
   // Call Load();
   std::visit(
       [&](auto& image) {
-        ImageIo(format).Load(path, &image);
+        ImageIo{}.Load(path, format, &image);
       },
       readback);
 
@@ -148,28 +148,13 @@ TEST_P(ImageIoParameterizedTest, RoundTripPreAllocated) {
 INSTANTIATE_TEST_SUITE_P(All, ImageIoParameterizedTest,
                          GetAllImageIoTestParams());
 
-// Configuration of the file format.
-GTEST_TEST(ImageIoTest, FileFormat) {
-  EXPECT_EQ(ImageIo{ImageFileFormat::kTiff}.GetFileFormat(),
-            ImageFileFormat::kTiff);
-
-  ImageIo dut;
-  EXPECT_EQ(dut.GetFileFormat(), std::nullopt);
-
-  dut.SetFileFormat(ImageFileFormat::kJpeg);
-  EXPECT_EQ(dut.GetFileFormat(), ImageFileFormat::kJpeg);
-
-  dut.SetFileFormat(std::nullopt);
-  EXPECT_EQ(dut.GetFileFormat(), std::nullopt);
-}
-
 // We can save to an output memory buffer, or a buffer return value.
 GTEST_TEST(ImageIoTest, SaveToOutputArgumentMatchesReturnValue) {
-  const ImageIo dut{ImageFileFormat::kPng};
+  const auto format = ImageFileFormat::kPng;
   const ImageRgba8U image(1, 1);
   std::vector<uint8_t> save_output;
-  dut.Save(image, &save_output);
-  EXPECT_EQ(save_output, dut.Save(image));
+  ImageIo{}.Save(image, format, &save_output);
+  EXPECT_EQ(save_output, ImageIo{}.Save(image, format));
 }
 
 // Saving without first setting the ImageFileFormat uses the extension to infer
@@ -199,17 +184,10 @@ GTEST_TEST(ImageIoTest, SaveToFileNoExensionNoFormatError) {
                               ".*path does not imply.*");
 }
 
-// Saving to memory without first setting the ImageFileFormat fails.
-GTEST_TEST(ImageIoTest, SaveToMemoryNoFormatError) {
-  const ImageRgba8U image(1, 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(ImageIo{}.Save(image),
-                              ".*buffer requires SetFileFormat.*");
-}
-
 // We can load metadata from a memory buffer.
 GTEST_TEST(ImageIoTest, LoadMetdataBuffer) {
   std::vector<uint8_t> saved;
-  ImageIo{ImageFileFormat::kPng}.Save(ImageRgba8U(3, 2), &saved);
+  ImageIo{}.Save(ImageRgba8U(3, 2), ImageFileFormat::kPng, &saved);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
   const std::optional<ImageIo::Metadata> meta = ImageIo{}.LoadMetadata(buffer);
   ASSERT_TRUE(meta.has_value());
@@ -240,21 +218,21 @@ GTEST_TEST(ImageIoTest, LoadNotAnImageError) {
 
 // Loading into the wrong pre-allocated Image scalar type fails.
 GTEST_TEST(ImageIoTest, LoadWrongPrealloatedScalarError) {
-  const ImageIo dut{ImageFileFormat::kPng};
-  const std::vector<uint8_t> saved = dut.Save(ImageDepth16U(1, 1));
+  const std::vector<uint8_t> saved =
+      ImageIo{}.Save(ImageDepth16U(1, 1), ImageFileFormat::kPng);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
   ImageRgba8U color;
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.Load(buffer, &color),
+  DRAKE_EXPECT_THROWS_MESSAGE(ImageIo{}.Load(buffer, &color),
                               ".*scalar=16U into scalar=8U.*");
 }
 
 // Loading into the wrong pre-allocated Image number of channels fails.
 GTEST_TEST(ImageIoTest, LoadWrongPrealloatedNumChannelsError) {
-  const ImageIo dut{ImageFileFormat::kPng};
-  const std::vector<uint8_t> saved = dut.Save(ImageGrey8U(1, 1));
+  const std::vector<uint8_t> saved =
+      ImageIo{}.Save(ImageGrey8U(1, 1), ImageFileFormat::kPng);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
   ImageRgb8U rgb;
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.Load(buffer, &rgb),
+  DRAKE_EXPECT_THROWS_MESSAGE(ImageIo{}.Load(buffer, &rgb),
                               ".*channels=1.*channels=3.*");
 }
 
@@ -263,15 +241,15 @@ GTEST_TEST(ImageIoTest, LoadWrongPrealloatedNumChannelsError) {
 GTEST_TEST(ImageIoTest, LoadUnsupportedChannelScalarError) {
   const fs::path path{
       FindResourceOrThrow("drake/systems/sensors/test/png_color16_test.png")};
-  const ImageIo dut{ImageFileFormat::kPng};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.Load(path), ".*template instantiation.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ImageIo{}.Load(path, ImageFileFormat::kPng),
+                              ".*template instantiation.*");
 }
 
 GTEST_TEST(ImageIoTest, LoadUnsupportedColorTiffError) {
   const fs::path path{
       FindResourceOrThrow("drake/systems/sensors/test/tiff_rgb32f_test.tif")};
-  const ImageIo dut{ImageFileFormat::kTiff};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.Load(path), ".*template instantiation.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ImageIo{}.Load(path, ImageFileFormat::kTiff),
+                              ".*template instantiation.*");
 }
 
 // For legacy reasons, we allow type-punning from unsigned 16-bit image data
@@ -279,14 +257,13 @@ GTEST_TEST(ImageIoTest, LoadUnsupportedColorTiffError) {
 // and remove this (by fixing our label images to use unsigned numbers) but for
 // now we need to ensure this capability remains intact.
 GTEST_TEST(ImageIoTest, Load16UDataAs16I) {
-  const ImageIo dut{ImageFileFormat::kPng};
-
+  const auto format = ImageFileFormat::kPng;
   const ImageDepth16U depth(1, 1, uint16_t{22});
-  const std::vector<uint8_t> saved = dut.Save(depth);
+  const std::vector<uint8_t> saved = ImageIo{}.Save(depth, format);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
 
   ImageLabel16I label;
-  dut.Load(buffer, &label);
+  ImageIo{}.Load(buffer, format, &label);
 
   ASSERT_EQ(label.width(), 1);
   ASSERT_EQ(label.height(), 1);
@@ -295,12 +272,12 @@ GTEST_TEST(ImageIoTest, Load16UDataAs16I) {
 
 // Loading can automatically drop an unwanted alpha channel.
 GTEST_TEST(ImageIoTest, LoadDropAlpha) {
-  const ImageIo dut{ImageFileFormat::kPng};
+  const auto format = ImageFileFormat::kPng;
   const ImageRgba8U rgba(3, 2, uint8_t{22});
-  const std::vector<uint8_t> saved = dut.Save(rgba);
+  const std::vector<uint8_t> saved = ImageIo{}.Save(rgba, format);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
   ImageRgb8U rgb;
-  dut.Load(buffer, &rgb);
+  ImageIo{}.Load(buffer, format, &rgb);
   ASSERT_EQ(rgb.width(), 3);
   ASSERT_EQ(rgb.height(), 2);
   EXPECT_EQ(rgb.at(0, 0)[0], 22);
@@ -308,12 +285,12 @@ GTEST_TEST(ImageIoTest, LoadDropAlpha) {
 
 // Loading can automatically add a alpha channel.
 GTEST_TEST(ImageIoTest, LoadAddAlpha) {
-  const ImageIo dut{ImageFileFormat::kPng};
+  const auto format = ImageFileFormat::kPng;
   const ImageRgb8U rgb(3, 2, uint8_t{22});
-  const std::vector<uint8_t> saved = dut.Save(rgb);
+  const std::vector<uint8_t> saved = ImageIo{}.Save(rgb, format);
   const ImageIo::ByteSpan buffer{saved.data(), saved.size()};
   ImageRgba8U rgba;
-  dut.Load(buffer, &rgba);
+  ImageIo{}.Load(buffer, format, &rgba);
   ASSERT_EQ(rgba.width(), 3);
   ASSERT_EQ(rgba.height(), 2);
   EXPECT_EQ(rgba.at(0, 0)[0], 22);

@@ -87,10 +87,10 @@ struct DRAKE_NO_EXPORT ImageIo::LoaderTools {
 
 /* Creates the loader infrastructure for the given input. Always returns
 something, even if the file is missing or can't be parsed or etc. When the
-required format (`format_`) is set, only that image format will be permitted.
-The pointer contained in `input_any` is aliased so must outlive the return
-value. */
-ImageIo::LoaderTools ImageIo::MakeLoaderTools(InputAny input_any) const {
+required `format` set, only that image format will be permitted. The pointer
+contained in `input_any` is aliased so must outlive the return value. */
+ImageIo::LoaderTools ImageIo::MakeLoaderTools(
+    InputAny input_any, std::optional<ImageFileFormat> format) const {
   // The return value aliases the `input_any` borrowed pointer.
   LoaderTools tools{.input_any = input_any};
 
@@ -108,8 +108,8 @@ ImageIo::LoaderTools ImageIo::MakeLoaderTools(InputAny input_any) const {
   tools.reader_observer->set_diagnostic(tools.diagnostic.get());
 
   // Decide which file format to use (with PNG as a last resort).
-  if (format_.has_value()) {
-    tools.format = *format_;
+  if (format.has_value()) {
+    tools.format = *format;
   } else if (std::optional<ImageFileFormat> guess =
                  internal::GuessFileFormat(input_any)) {
     tools.format = *guess;
@@ -234,7 +234,7 @@ void CopyVtkToDrakeImage(const LoaderTools& tools, Image<kPixelType>* image) {
 
 std::optional<Metadata> ImageIo::LoadMetadataImpl(InputAny input_any) const {
   // Attempt to parse.
-  LoaderTools tools = MakeLoaderTools(input_any);
+  LoaderTools tools = MakeLoaderTools(input_any, /* format = */ std::nullopt);
 
   // Return the metadata (if we have any).
   if (!tools.errors->empty()) {
@@ -244,9 +244,10 @@ std::optional<Metadata> ImageIo::LoadMetadataImpl(InputAny input_any) const {
   return tools.metadata;
 }
 
-ImageAny ImageIo::LoadImpl(InputAny input_any) const {
+ImageAny ImageIo::LoadImpl(InputAny input_any,
+                           std::optional<ImageFileFormat> format) const {
   // Parse the image.
-  LoaderTools tools = MakeLoaderTools(input_any);
+  LoaderTools tools = MakeLoaderTools(input_any, format);
   FlushDiagnostics(tools);
   const Metadata& metadata = tools.metadata;
 
@@ -305,9 +306,11 @@ ImageAny ImageIo::LoadImpl(InputAny input_any) const {
   return result;
 }
 
-void ImageIo::LoadImpl(InputAny input_any, ImageAnyMutablePtr image_any) const {
+void ImageIo::LoadImpl(InputAny input_any,
+                       std::optional<ImageFileFormat> format,
+                       ImageAnyMutablePtr image_any) const {
   // Parse the image.
-  LoaderTools tools = MakeLoaderTools(input_any);
+  LoaderTools tools = MakeLoaderTools(input_any, format);
   FlushDiagnostics(tools);
 
   // Copy out the bytes.

@@ -17,23 +17,23 @@ namespace systems {
 namespace sensors {
 
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path) {
-  ImageIo{ImageFileFormat::kPng}.Save(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToTiff(const ImageDepth32F& image, const std::string& file_path) {
-  ImageIo{ImageFileFormat::kTiff}.Save(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kTiff);
 }
 
 void SaveToPng(const ImageDepth16U& image, const std::string& file_path) {
-  ImageIo{ImageFileFormat::kPng}.Save(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path) {
-  ImageIo{ImageFileFormat::kPng}.Save(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToPng(const ImageGrey8U& image, const std::string& file_path) {
-  ImageIo{ImageFileFormat::kPng}.Save(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 ImageWriter::ImageWriter() {
@@ -181,15 +181,12 @@ void ImageWriter::ResetAllImageCounts() const {
 
 template <PixelType kPixelType>
 void ImageWriter::WriteImage(const Context<double>& context, int index) const {
-  constexpr ImageFileFormat format = (kPixelType == PixelType::kDepth32F)
-                                         ? ImageFileFormat::kTiff
-                                         : ImageFileFormat::kPng;
   const auto& port = get_input_port(index);
   const ImagePortInfo& data = port_info_[index];
   const Image<kPixelType>& image = port.Eval<Image<kPixelType>>(context);
-  ImageIo{format}.Save(
-      image, MakeFileName(data.format, data.pixel_type, context.get_time(),
-                          port.get_name(), data.count++));
+  ImageIo{}.Save(image,
+                 MakeFileName(data.format, data.pixel_type, context.get_time(),
+                              port.get_name(), data.count++));
 }
 
 EventStatus ImageWriter::WriteAllImages(const Context<double>& context) const {
