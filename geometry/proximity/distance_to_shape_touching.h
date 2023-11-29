@@ -33,7 +33,9 @@ namespace shape_distance {
  @note  This function is used only in fcl fallback CalcDistanceFallback() in
         distance_to_shape_callback.cc.  */
 Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
+                                         const math::RigidTransformd& X_WA,
                                          const fcl::CollisionObjectd& b,
+                                         const math::RigidTransformd& X_WB,
                                          const Eigen::Vector3d& p_ACa,
                                          const Eigen::Vector3d& p_BCb);
 

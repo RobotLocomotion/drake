@@ -64,7 +64,9 @@ void DistancePairGeometry<T>::SphereShapeDistance(const fcl::Sphered& sphere_A,
 
 template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
+                                  const math::RigidTransformd& X_WA,
                                   const fcl::CollisionObjectd& b,
+                                  const math::RigidTransformd& X_WB,
                                   const fcl::DistanceRequestd& request,
                                   SignedDistancePair<double>* pair_data) {
   fcl::DistanceResultd result;
@@ -77,9 +79,9 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
   // Setting the witness points.
   const Eigen::Vector3d& p_WCa = result.nearest_points[0];
-  pair_data->p_ACa = a.getTransform().inverse() * p_WCa;
+  pair_data->p_ACa = X_WA.inverse() * p_WCa;
   const Eigen::Vector3d& p_WCb = result.nearest_points[1];
-  pair_data->p_BCb = b.getTransform().inverse() * p_WCb;
+  pair_data->p_BCb = X_WB.inverse() * p_WCb;
 
   // Setting the normal.
   // TODO(DamrongGuoy): We should set the tolerance through SceneGraph for
@@ -88,8 +90,8 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   const double kEps = 1e-14;
 
   if (std::abs(result.min_distance) < kEps) {
-    pair_data->nhat_BA_W =
-        CalcGradientWhenTouching(a, b, pair_data->p_ACa, pair_data->p_BCb);
+    pair_data->nhat_BA_W = CalcGradientWhenTouching(
+        a, X_WA, b, X_WB, pair_data->p_ACa, pair_data->p_BCb);
   } else {
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
   }
@@ -125,7 +127,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   DRAKE_DEMAND(result != nullptr);
 
   if (RequiresFallback(a, b)) {
-    CalcDistanceFallback<T>(a, b, request, result);
+    CalcDistanceFallback<T>(a, X_WA, b, X_WB, request, result);
     return;
   }
 
