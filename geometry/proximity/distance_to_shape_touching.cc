@@ -13,7 +13,9 @@ using Eigen::Vector3d;
 using math::RigidTransformd;
 
 Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
+                                  const math::RigidTransformd& X_WA,
                                   const fcl::CollisionObjectd& b,
+                                  const math::RigidTransformd& X_WB,
                                   const Eigen::Vector3d& p_ACa,
                                   const Eigen::Vector3d& p_BCb) {
   // The cases for a sphere touching an ellipsoid/convex mesh/general mesh
@@ -21,14 +23,12 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
   // cylinder/halfspace/sphere are handled by DistancePairGeometry.
   if (a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE) {
     const Vector3d nhat_AB_A = p_ACa.normalized();
-    const math::RotationMatrixd R_WA(a.getRotation());
-    const Vector3d nhat_BA_W = R_WA * (-nhat_AB_A);
+    const Vector3d nhat_BA_W = X_WA.rotation() * (-nhat_AB_A);
     return nhat_BA_W;
   }
   if (b.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE) {
     const Vector3d nhat_BA_B = p_BCb.normalized();
-    const math::RotationMatrixd R_WB(b.getRotation());
-    const Vector3d nhat_BA_W = R_WB * nhat_BA_B;
+    const Vector3d nhat_BA_W = X_WB.rotation() * nhat_BA_B;
     return nhat_BA_W;
   }
   if (a.collisionGeometry()->getNodeType() == fcl::GEOM_BOX &&
@@ -37,9 +37,7 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
         *static_cast<const fcl::Boxd*>(a.collisionGeometry().get());
     const auto& box_B =
         *static_cast<const fcl::Boxd*>(b.collisionGeometry().get());
-    return BoxBoxGradient(box_A, box_B, math::RigidTransformd(a.getTransform()),
-                          math::RigidTransformd(b.getTransform()), p_ACa,
-                          p_BCb);
+    return BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb);
   }
   // TODO(14789): Take care of other shapes. For now, return NaN.
   const double kNan = std::numeric_limits<double>::quiet_NaN();

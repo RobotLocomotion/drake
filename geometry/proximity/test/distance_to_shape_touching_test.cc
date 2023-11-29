@@ -37,9 +37,11 @@ GTEST_TEST(CalcGradientWhenTouching, SphereTouch) {
   ASSERT_EQ(X_WA * p_ACa, Vector3d::Zero());
   ASSERT_EQ(X_WB * p_BCb, Vector3d::Zero());
 
-  EXPECT_EQ(CalcGradientWhenTouching(a, b, p_ACa, p_BCb), -Vector3d::UnitX());
+  EXPECT_EQ(CalcGradientWhenTouching(a, X_WA, b, X_WB, p_ACa, p_BCb),
+            -Vector3d::UnitX());
   // Switching `a` and `b` flips the gradient.
-  EXPECT_EQ(CalcGradientWhenTouching(b, a, p_BCb, p_ACa), Vector3d::UnitX());
+  EXPECT_EQ(CalcGradientWhenTouching(b, X_WB, a, X_WA, p_BCb, p_ACa),
+            Vector3d::UnitX());
 }
 
 // This is just a simple test for CalcGradientWhenTouching() when a box touches
@@ -61,7 +63,7 @@ GTEST_TEST(CalcGradientWhenTouching, box_touches_box) {
   ASSERT_EQ(X_WA * p_ACa, Vector3d::Zero());
   ASSERT_EQ(X_WB * p_BCb, Vector3d::Zero());
 
-  EXPECT_EQ(CalcGradientWhenTouching(box_A, box_B, p_ACa, p_BCb),
+  EXPECT_EQ(CalcGradientWhenTouching(box_A, X_WA, box_B, X_WB, p_ACa, p_BCb),
             -Vector3d::UnitX());
 }
 
