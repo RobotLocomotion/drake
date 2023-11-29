@@ -1037,10 +1037,10 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
 
   // N.B. The CompliantContactManager indexes constraints objects with body
   // indexes. Therefore using body indices on constraint_spatial_forces is
-  // correct. However MultibodyForce uses BodyNodeIndex, see below.
+  // correct. However MultibodyForce uses MobodIndex, see below.
   for (BodyIndex b(0); b < plant().num_bodies(); ++b) {
-    // MultibodyForce indexes spatial body forces by BodyNodeIndex.
-    const BodyNodeIndex node_index = plant().get_body(b).node_index();
+    // MultibodyForce indexes spatial body forces by MobodIndex.
+    const MobodIndex node_index = plant().get_body(b).node_index();
     spatial_forces[node_index] += constraint_spatial_forces[b];
   }
 }

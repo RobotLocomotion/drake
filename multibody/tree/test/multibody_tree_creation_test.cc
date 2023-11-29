@@ -344,7 +344,7 @@ class TreeTopologyTests : public ::testing::Test {
   // body indexed by `body`.
   static void TestBodyNode(const MultibodyTreeTopology& topology,
                            BodyIndex body) {
-    const BodyNodeIndex node = topology.get_body(body).body_node;
+    const MobodIndex node = topology.get_body(body).body_node;
 
     // Verify that the corresponding Body and BodyNode reference each other
     // correctly.
@@ -356,7 +356,7 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.get_body(body).level,
               topology.get_body_node(node).level);
 
-    const BodyNodeIndex parent_node =
+    const MobodIndex parent_node =
         topology.get_body_node(node).parent_body_node;
     // Either (and thus the exclusive or):
     // 1. `body` is the world, and thus `parent_node` is invalid, XOR
@@ -447,16 +447,16 @@ class TreeTopologyTests : public ::testing::Test {
     // knowledge that branches are created according to the order in which
     // mobilizers are added. Refer to schematic in the documentation of this
     // test fixture.
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(0)).body, 0);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(1)).body, 7);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(2)).body, 5);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(3)).body, 3);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(4)).body, 9);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(5)).body, 8);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(6)).body, 4);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(7)).body, 2);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(8)).body, 1);
-    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(9)).body, 6);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(0)).body, 0);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(1)).body, 7);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(2)).body, 5);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(3)).body, 3);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(4)).body, 9);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(5)).body, 8);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(6)).body, 4);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(7)).body, 2);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(8)).body, 1);
+    EXPECT_EQ(topology.get_body_node(MobodIndex(9)).body, 6);
 
     // Verify the expected "forest" of trees.
     EXPECT_EQ(topology.num_trees(), 4);
@@ -540,7 +540,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   // generalized position and one generalized velocity per mobilizer.
   int positions_index = 0;
   int velocities_index = topology.num_positions();
-  for (BodyNodeIndex node_index(1); /* Skips the world node. */
+  for (MobodIndex node_index(1); /* Skips the world node. */
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
     const BodyIndex body_index = node.body;
@@ -653,14 +653,14 @@ TEST_F(TreeTopologyTests, KinematicPathToWorld) {
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   const BodyIndex body6_index(6);
-  const BodyNodeIndex body6_node_index =
+  const MobodIndex body6_node_index =
       topology.get_body(body6_index).body_node;
   const BodyNodeTopology& body6_node =
       topology.get_body_node(body6_node_index);
 
   // Compute kinematic path from body 6 to the world. See documentation for the
   // test fixture TreeTopologyTests for details on the topology under test.
-  std::vector<BodyNodeIndex> path_to_world;
+  std::vector<MobodIndex> path_to_world;
   topology.GetKinematicPathToWorld(body6_node_index, &path_to_world);
 
   const int expected_path_size = body6_node.level + 1;
@@ -674,7 +674,7 @@ TEST_F(TreeTopologyTests, KinematicPathToWorld) {
     // The path is computed in terms of body node indexes. Therefore obtain
     // the expected value of the node index from the expected value of the
     // body index.
-    const BodyNodeIndex expected_node_index =
+    const MobodIndex expected_node_index =
         topology.get_body(body_index).body_node;
     const BodyNodeTopology& node = topology.get_body_node(expected_node_index);
     // Both, expected and computed nodes must be at the same level (depth) in

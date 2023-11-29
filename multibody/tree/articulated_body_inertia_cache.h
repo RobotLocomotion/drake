@@ -45,14 +45,14 @@ class ArticulatedBodyInertiaCache {
   // Articulated body inertia `P_B_W` of the body taken about Bo and expressed
   // in W.
   const ArticulatedBodyInertia<T>& get_P_B_W(
-      BodyNodeIndex body_node_index) const {
+      MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return P_B_W_[body_node_index];
   }
 
   // Mutable version of get_P_B_W().
   ArticulatedBodyInertia<T>& get_mutable_P_B_W(
-      BodyNodeIndex body_node_index) {
+      MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return P_B_W_[body_node_index];
   }
@@ -61,42 +61,42 @@ class ArticulatedBodyInertiaCache {
   // articulated body inertia of parent body P as though it were inertialess,
   // but taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
-      BodyNodeIndex body_node_index) const {
+      MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return Pplus_PB_W_[body_node_index];
   }
 
   // Mutable version of get_Pplus_PB_W().
   ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
-      BodyNodeIndex body_node_index) {
+      MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return Pplus_PB_W_[body_node_index];
   }
 
   // LLT factorization `llt_D_B` of the articulated body hinge inertia.
   const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_llt_D_B(
-      BodyNodeIndex body_node_index) const {
+      MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return llt_D_B_[body_node_index];
   }
 
   // Mutable version of get_llt_D_B().
   math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_llt_D_B(
-      BodyNodeIndex body_node_index) {
+      MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return llt_D_B_[body_node_index];
   }
 
   // The Kalman gain `g_PB_W` of the body.
   const Matrix6xUpTo6<T>& get_g_PB_W(
-      BodyNodeIndex body_node_index) const {
+      MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return g_PB_W_[body_node_index];
   }
 
   // Mutable version of get_g_PB_W().
   Matrix6xUpTo6<T>& get_mutable_g_PB_W(
-      BodyNodeIndex body_node_index) {
+      MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return g_PB_W_[body_node_index];
   }
@@ -125,7 +125,7 @@ class ArticulatedBodyInertiaCache {
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
 
-  // Pools indexed by BodyNodeIndex.
+  // Pools indexed by MobodIndex.
   std::vector<ArticulatedBodyInertia<T>> P_B_W_;
   std::vector<ArticulatedBodyInertia<T>> Pplus_PB_W_;
   std::vector<math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>> llt_D_B_;

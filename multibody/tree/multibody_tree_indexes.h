@@ -11,8 +11,8 @@ namespace internal {
 // Type used to identify mobilizers by index in a multibody tree system.
 using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 
-// Type used to identify tree nodes by index within a multibody tree system.
-using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
+// Type used to identify BodyNodes by index within a multibody tree system.
+using MobodIndex = TypeSafeIndex<class MobodTag>;
 
 // Type used to identify a topological tree within the "forest" of a multibody
 // system.

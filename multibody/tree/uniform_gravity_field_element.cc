@@ -108,7 +108,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
 
-    internal::BodyNodeIndex node_index = body.node_index();
+    internal::MobodIndex node_index = body.node_index();
 
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.

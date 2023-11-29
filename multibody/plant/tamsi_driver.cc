@@ -94,7 +94,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
   plant().CalcMassMatrix(context, &M0);
 
   // Workspace for inverse dynamics:
-  // Bodies' accelerations, ordered by BodyNodeIndex.
+  // Bodies' accelerations, ordered by MobodIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(plant().num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);

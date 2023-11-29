@@ -1004,14 +1004,14 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   internal_tree().CalcSpatialAccelerationsFromVdot(
       context, internal_tree().EvalPositionKinematics(context),
       internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute BodyNodeIndex -> BodyIndex.
+  // Permute MobodIndex -> BodyIndex.
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   // still required dynamic allocation for recording permutation indices.
   // Can change implementation once MultibodyTree becomes fully internal.
   std::vector<SpatialAcceleration<T>> A_WB_array_node = *A_WB_array;
   const internal::MultibodyTreeTopology& topology =
       internal_tree().get_topology();
-  for (internal::BodyNodeIndex node_index(1);
+  for (internal::MobodIndex node_index(1);
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyIndex body_index = topology.get_body_node(node_index).body;
     (*A_WB_array)[body_index] = A_WB_array_node[node_index];
@@ -1889,10 +1889,8 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
     const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
     const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
-    internal::BodyNodeIndex bodyA_node_index =
-        get_body(bodyA_index).node_index();
-    internal::BodyNodeIndex bodyB_node_index =
-        get_body(bodyB_index).node_index();
+    internal::MobodIndex bodyA_node_index = get_body(bodyA_index).node_index();
+    internal::MobodIndex bodyB_node_index = get_body(bodyB_index).node_index();
 
     // Penetration depth, > 0 during pair.
     const T& x = pair.depth;
@@ -2002,10 +2000,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
     const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
-    internal::BodyNodeIndex bodyA_node_index =
-        get_body(bodyA_index).node_index();
-    internal::BodyNodeIndex bodyB_node_index =
-        get_body(bodyB_index).node_index();
+    internal::MobodIndex bodyA_node_index = get_body(bodyA_index).node_index();
+    internal::MobodIndex bodyB_node_index = get_body(bodyB_index).node_index();
 
     // Contact point C.
     const Vector3<T> p_WC = contact_info.contact_point();
@@ -2570,7 +2566,7 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
       EvalSpatialContactForcesContinuous(context);
 
   // Bodies' accelerations and inboard mobilizer reaction forces, respectively,
-  // ordered by BodyNodeIndex and required as output arguments for
+  // ordered by MobodIndex and required as output arguments for
   // CalcInverseDynamics() below but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
@@ -3446,7 +3442,7 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
-    const internal::BodyNodeIndex body_node_index =
+    const internal::MobodIndex body_node_index =
         mobilizer.get_topology().body_node;
 
     // Force on mobilized body B at mobilized frame's origin Mo, expressed in

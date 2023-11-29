@@ -571,8 +571,8 @@ class ContactModelTest : public ::testing::Test {
   // MultibodyPlant::EvalSpatialContactForcesContinuous() from contact results.
   // EvalSpatialContactForcesContinuous() is an internal private method of
   // MultibodyPlant and, as many other multibody methods, sorts the results in
-  // the returned array of spatial forces by BodyNodeIndex. Therefore, the
-  // expected results being generated must also be sorted by BodyNodeIndex.
+  // the returned array of spatial forces by MobodIndex. Therefore, the
+  // expected results being generated must also be sorted by MobodIndex.
   std::vector<SpatialForce<double>> SpatialForceFromContactResults(
       const ContactResults<double>& contacts) {
     std::vector<SpatialForce<double>> F_BBo_W_array(
@@ -596,7 +596,7 @@ class ContactModelTest : public ::testing::Test {
       // N.B. Since we are using this method to test the internal (private)
       // MultibodyPlant::EvalSpatialContactForcesContinuous(), we must use
       // internal API to generate a forces vector sorted in the same way, by
-      // internal::BodyNodeIndex.
+      // internal::MobodIndex.
       F_BBo_W_array[bodyB.node_index()] += F_Bc_W.Shift(p_CBo_W);
       F_BBo_W_array[bodyA.node_index()] -= F_Bc_W.Shift(p_CAo_W);
     }
