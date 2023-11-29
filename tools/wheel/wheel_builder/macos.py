@@ -41,6 +41,26 @@ def _assert_isdir(path, name):
         die(f'{name} \'{path}\' is not a valid directory')
 
 
+def _find_host_key_types(host):
+    key_types = []
+
+    try:
+        command = ['ssh-keygen', '-F', host]
+        known_keys = subprocess.check_output(command, text=True)
+
+        for line in known_keys.split('\n'):
+            if not line or line.startswith('#'):
+                continue
+
+            host, key_type, key_hash = line.strip().split()
+            key_types.append(key_type)
+
+    except subprocess.CalledProcessError:
+        pass
+
+    return key_types
+
+
 def _provision():
     """
     Prepares wheel build environment.
@@ -48,6 +68,26 @@ def _provision():
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
     command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
     subprocess.check_call(command)
+
+    try:
+        os.mkdir(os.path.expanduser('~/.ssh'), mode=0o700)
+    except FileExistsError:
+        pass
+
+    host_keys = ''
+    known_hosts_path = os.path.join(resource_root, 'image', 'known_hosts')
+    with open(known_hosts_path) as f:
+        for line in f:
+            host, key_type, key = line.strip().split()
+            if key_type in _find_host_key_types(host):
+                continue
+
+            host_keys += line
+
+    if host_keys:
+        with open(os.path.expanduser('~/.ssh/known_hosts'), 'a') as f:
+            f.write(''.join(host_keys))
+            os.fchmod(f.fileno(), 0o600)
 
 
 def _test_wheel(wheel, env):
@@ -99,11 +139,22 @@ def build(options):
     deployment_target = f'{platform.mac_ver()[0].split(".")[0]}.0'
     environment['MACOSX_DEPLOYMENT_TARGET'] = deployment_target
 
+    # gfortran hard-codes the path to the SDK with which it was built, which
+    # may not match the SDK actually on the machine. This can result in the
+    # error "ld: library not found for -lm", and can be fixed/overridden by
+    # setting SDKROOT to the appropriate path.
+    sdk_path = subprocess.check_output(['xcrun', '--show-sdk-path'], text=True)
+    environment['SDKROOT'] = sdk_path.strip()
+
+    # Build the wheel dependencies.
+    if options.dependencies:
+        build_deps_script = os.path.join(resource_root, 'macos',
+                                         'build-dependencies.sh')
+        subprocess.check_call(['bash', build_deps_script], env=environment)
+
     # Build the wheel.
     build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
     build_command = ['bash', build_script]
-    if not options.dependencies:
-        build_command.append('--no-deps')
     build_command.append(options.version)
 
     subprocess.check_call(build_command, env=environment)

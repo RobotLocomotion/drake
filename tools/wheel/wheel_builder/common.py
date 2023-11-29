@@ -87,6 +87,14 @@ def do_main(args, platform):
     complete the build.
     """
 
+    # Ensure we and any subprocesses are speaking UTF-8.
+    locale.setlocale(locale.LC_ALL, 'C.UTF8')
+    locale_keys = [k for k in os.environ.keys() if k.startswith('LC_')]
+    for k in locale_keys:
+        os.environ.pop(k)
+    os.environ['LC_ALL'] = 'C.UTF-8'
+    os.environ['LANG'] = 'C.UTF-8'
+
     # Work around `bazel run` changing the working directory; this is to allow
     # the user to pass in relative paths in a sane manner.
     real_cwd = os.environ.get('BUILD_WORKING_DIRECTORY')
