@@ -16,13 +16,13 @@ class RejectionSampler final : public PointSamplerBase {
    * sampler, but reject points which return true when passed to rejection_fun.
    */
   RejectionSampler(
-      std::unique_ptr<PointSamplerBase> sampler,
+      std::shared_ptr<PointSamplerBase> sampler,
       const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>& rejection_fun);
 
  private:
   Eigen::MatrixXd DoSamplePoints(int num_points) override;
 
-  copyable_unique_ptr<PointSamplerBase> sampler_;
+  std::shared_ptr<PointSamplerBase> sampler_;
 
    const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>& rejection_fun_;
 };

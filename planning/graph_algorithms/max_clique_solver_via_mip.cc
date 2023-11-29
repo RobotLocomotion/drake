@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <iostream>
 
 #include "drake/common/ssize.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -19,6 +20,8 @@ MaxCliqueSolverViaMip::MaxCliqueSolverViaMip(
 VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
   const int n = adjacency_matrix.rows();
+  DRAKE_THROW_UNLESS(!initial_guess_.has_value() ||
+                     initial_guess_.value().rows() == n);
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewBinaryVariables(adjacency_matrix.cols(), "x");
@@ -64,9 +67,9 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
 
   solvers::MathematicalProgramResult result;
   std::unique_ptr<solvers::SolverInterface> solver;
+  std::optional<solvers::SolverId> solver_id;
   try {
-    solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
-    solver = solvers::MakeSolver(solver_id);
+    solver_id = solvers::ChooseBestSolver(prog);
   } catch (const std::exception&) {
     // TODO(Alexandre.Amice) update the error message if other max clique
     // solvers based become available.
@@ -77,8 +80,9 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
         "details about supported mixed integer solvers and how to enable "
         "them.");
   }
+  solver = solvers::MakeSolver(solver_id.value());
   solver->Solve(prog, initial_guess_, solver_options_, &result);
-  DRAKE_ASSERT(result.is_success());
+  DRAKE_DEMAND(result.is_success());
 
   // Manually cast the return to a boolean to avoid round off errors from the
   // MIP solver.

@@ -247,14 +247,22 @@ drake_cc_library(
     ]
 )
 
-#drake_cc_library(
-#    name = "iris_from_clique_cover",
-#    srcs = ["iris_from_clique_cover.cc"],
-#    hdrs = ["iris_from_clique_cover.h"],
-#    interface_deps = [
-#        ":approximate_convex_cover_builder_base"
-#    ]
-#)
+drake_cc_library(
+    name = "iris_from_clique_cover",
+    srcs = ["iris_from_clique_cover.cc"],
+    hdrs = ["iris_from_clique_cover.h"],
+    interface_deps = [
+        ":approximate_convex_cover_builder_base",
+        "//geometry/optimization:convex_set",
+        ":rejection_sampler",
+        ":uniform_set_sampler",
+        "//geometry/optimization:iris",
+        "//planning/graph_algorithms:max_clique_solver_via_mip",
+        "//planning/graph_algorithms:max_clique_solver_base",
+        ":iris_region_from_clique_builder",
+        ":coverage_checker_via_bernoulli_test"
+    ]
+)
 
 drake_cc_library(
     name = "point_sampler_base",
@@ -496,6 +504,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "iris_region_from_clique_builder_test",
     deps = [":iris_region_from_clique_builder"],
+)
+
+drake_cc_googletest(
+    name = "iris_from_clique_cover_test",
+    deps = [":iris_from_clique_cover"],
+    timeout = "moderate"
 )
 
 add_lint_tests()

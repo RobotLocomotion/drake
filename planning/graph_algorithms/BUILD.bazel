@@ -75,7 +75,7 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "max_clique_via_mip_test",
+    name = "max_clique_solver_via_mip_test",
     srcs = ["test/max_clique_solver_via_mip_test.cc"],
     deps = [
         ":common_graphs",

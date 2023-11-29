@@ -1,7 +1,6 @@
 #pragma once
 #include <Eigen/Sparse>
 
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -15,27 +14,26 @@ namespace graph_algorithms {
  */
 class MaxCliqueSolverBase {
  public:
-  MaxCliqueSolverBase() = default;
   virtual ~MaxCliqueSolverBase() {}
 
   /**
    * Given the adjacency matrix of an undirected graph, find the maximum clique
    * within the graph. A clique is a collection of vertices in a graph such that
    * each pair of vertices is connected by an edge (i.e. a fully connected
-   * subgraph). This problem is known to be NP-complete, and so the choice of
-   * solvers in @param options determines whether the return of this function is
-   * the true maximum clique in the subgraph (which may take very long to
+   * subgraph). This problem is known to be NP-complete, and so the concrete
+   * implementation of the solver determines whether the return of this function
+   * is the true maximum clique in the graph (which may take very long to
    * compute), or only an approximate solution found via heuristics.
-   * @param adjacency_matrix a symmetric (0,1)-matrix encoding the edge
+   *
+   * This method throws if the adjacency matrix is not symmetric and may throw
+   * depending on the concrete implmementation of the solver.
+   *
+   * @param adjacency_matrix a symmetric binary matrix encoding the edge
    * relationship.
-   * @param options options for solving the max-clique problem.
    * @return A binary vector with the same indexing as the adjacency matrix,
-   * with 1 indicating membership in the clique.
-   * @throws if the adjacency matrix is not symmetric.
-   * @throws based on the preconditions of the solver contained in @param
-   * options.
+   * with true indicating membership in the clique.
    */
-  VectorX<bool> SolveMaxClique(
+  [[nodiscard]] VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
 
  protected:
@@ -43,6 +41,7 @@ class MaxCliqueSolverBase {
   // slicing. The inherited final subclasses should put them in public
   // functions.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverBase);
+  MaxCliqueSolverBase() = default;
 
  private:
   virtual VectorX<bool> DoSolveMaxClique(
