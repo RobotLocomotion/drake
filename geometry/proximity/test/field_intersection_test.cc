@@ -399,7 +399,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
   {
     SCOPED_TRACE("Triangle contact surface.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W;
-    HydroelasticVolumeIntersector<TriMeshBuilder<double>, Obb>()
+    HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
                                    second_id, octahedron_field1_N_,
                                    octahedron_bvh1_N_, X_WN, &contact_patch_W);
@@ -410,7 +410,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
   {
     SCOPED_TRACE("Polygon contact surface.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W;
-    HydroelasticVolumeIntersector<PolyMeshBuilder<double>, Obb>()
+    HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
                                    second_id, octahedron_field1_N_,
                                    octahedron_bvh1_N_, X_WN, &contact_patch_W);
@@ -449,7 +449,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumesAutoDiffXd) {
   {
     SCOPED_TRACE("Triangle contact surface.");
     std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W;
-    HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>, Obb>()
+    HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>>()
         .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
                                    second_id, octahedron_field1_N_,
                                    octahedron_bvh1_N_, X_WN, &contact_patch_W);
@@ -460,7 +460,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumesAutoDiffXd) {
   {
     SCOPED_TRACE("Polygon contact surface.");
     std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W;
-    HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>()
+    HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>>()
         .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
                                    second_id, octahedron_field1_N_,
                                    octahedron_bvh1_N_, X_WN, &contact_patch_W);
@@ -480,7 +480,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumesNoIntersection) {
   const RigidTransformd X_WN(Vector3d::UnitX());
 
   std::unique_ptr<ContactSurface<double>> contact_patch_W;
-  HydroelasticVolumeIntersector<PolyMeshBuilder<double>, Obb>()
+  HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
       .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
                                  second_id, octahedron_field1_N_,
                                  octahedron_bvh1_N_, X_WN, &contact_patch_W);

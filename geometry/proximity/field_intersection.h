@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
@@ -204,14 +205,9 @@ class VolumeIntersector {
  @tparam MeshBuilder
    The type of mesh-output builder of the contact surface. It can be
    TriMeshBuilder<T> or PolyMeshBuilder<T> for T = double or AutoDiffXd.
-   See contact_surface_utility.h for details.
-
- @tparam BvType
-   The type of bounding volumes for the tetrahedra. It should be Obb
-   for hydroelastics.  */
-template <class MeshBuilder, class BvType>
-class HydroelasticVolumeIntersector
-    : public VolumeIntersector<MeshBuilder, BvType> {
+   See contact_surface_utility.h for details.  */
+template <class MeshBuilder>
+class HydroelasticVolumeIntersector {
  public:
   // T is double or AutoDiffXd.
   using T = typename MeshBuilder::ScalarType;
@@ -238,10 +234,10 @@ class HydroelasticVolumeIntersector
                          If there is no contact, nullptr is returned.  */
   void IntersectCompliantVolumes(
       GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
-      const Bvh<BvType, VolumeMesh<double>>& bvh0_M,
+      const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
       const math::RigidTransform<T>& X_WM, GeometryId id1,
       const VolumeMeshFieldLinear<double, double>& field1_N,
-      const Bvh<BvType, VolumeMesh<double>>& bvh1_N,
+      const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
       const math::RigidTransform<T>& X_WN,
       std::unique_ptr<ContactSurface<T>>* contact_surface_W);
 };
