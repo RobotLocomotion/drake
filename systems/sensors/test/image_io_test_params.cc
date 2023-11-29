@@ -23,6 +23,45 @@ vtkNew<vtkImageData> ImageIoTestParams::CreateIotaVtkImage() const {
   return image;
 }
 
+ImageAny ImageIoTestParams::CreateIotaDrakeImage() const {
+  if (force_gray && pixel_scalar() == PixelScalar::k8U) {
+    DRAKE_DEMAND(channels() == 1);
+    ImageGrey8U result(width(), height());
+    auto* dest = result.at(0, 0);
+    std::iota(dest, dest + result.size(), uint8_t{0x01});
+    return result;
+  }
+  if (alpha && pixel_scalar() == PixelScalar::k8U) {
+    DRAKE_DEMAND(channels() == 4);
+    ImageRgba8U result(width(), height());
+    auto* dest = result.at(0, 0);
+    std::iota(dest, dest + result.size(), uint8_t{0x01});
+    return result;
+  }
+  if (pixel_scalar() == PixelScalar::k8U) {
+    DRAKE_DEMAND(channels() == 3);
+    ImageRgb8U result(width(), height());
+    auto* dest = result.at(0, 0);
+    std::iota(dest, dest + result.size(), uint8_t{0x01});
+    return result;
+  }
+  if (pixel_scalar() == PixelScalar::k16U) {
+    DRAKE_DEMAND(channels() == 1);
+    ImageDepth16U result(width(), height());
+    auto* dest = result.at(0, 0);
+    std::iota(dest, dest + result.size(), uint16_t{0x0001});
+    return result;
+  }
+  if (pixel_scalar() == PixelScalar::k32F) {
+    DRAKE_DEMAND(channels() == 1);
+    ImageDepth32F result(width(), height());
+    auto* dest = result.at(0, 0);
+    std::iota(dest, dest + result.size(), 1.0f);
+    return result;
+  }
+  throw std::logic_error("CreateIotaDrakeImage unsupported params");
+}
+
 void ImageIoTestParams::CompareImageBuffer(const void* original,
                                            const void* readback) const {
   // For JPEG images, we can't exactly compare the pixels because the lossy

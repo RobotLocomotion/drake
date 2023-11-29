@@ -79,6 +79,10 @@ struct ImageIoTestParams {
   incrementing numbers, starting from 1 for the first datum. */
   vtkNew<vtkImageData> CreateIotaVtkImage() const;
 
+  /* Creates a sample image in memory. The image data will be filled with
+  incrementing numbers, starting from 1 for the first datum. */
+  ImageAny CreateIotaDrakeImage() const;
+
   /* Given pointers to the pixel data buffer for two images, checks whether
   the round-trip Save() and Load() ended up with a correctly-loaded image.
   @pre the pixel data buffers have the right scalar type and total storage. */
