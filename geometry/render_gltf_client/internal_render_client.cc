@@ -91,6 +91,9 @@ void AddField<RenderImageType>(DataFieldsMap* data_map,
   }
 }
 
+// TODO(jwnimmer-tri) Simplify the image-handling code in this file by using
+// "image_io.h" and a DiagnosticPolicy.
+
 void ReadImageFile(ImageFileFormat format, const std::string& path,
                    vtkImageExport* image_exporter) {
   // Load the image file from disk if possible.
