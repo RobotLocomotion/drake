@@ -7,6 +7,7 @@ from pydrake.multibody.parsing import (
     AddModel,
     AddModelInstance,
     AddWeld,
+    FlattenModelDirectives,
     GetScopedFrameByName,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
@@ -263,6 +264,15 @@ directives:
     file: base.sdf
 """
         LoadModelDirectivesFromString(model_directives=str)
+
+    def test_flatten_model_directives(self):
+        (plant, parser, directives) = self._make_plant_parser_directives()
+        added_models = ProcessModelDirectives(
+            directives=directives, parser=parser)
+        flat_directives = FlattenModelDirectives(
+            directives=directives, package_map=parser.package_map()
+        )
+        self.assertGreater(len(flat_directives.directives), 0)
 
     def test_process_model_directives(self):
         """Check the Process... overload using a Parser."""
