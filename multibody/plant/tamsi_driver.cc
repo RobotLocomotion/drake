@@ -94,7 +94,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
   plant().CalcMassMatrix(context, &M0);
 
   // Workspace for inverse dynamics:
-  // Bodies' accelerations, ordered by BodyNodeIndex.
+  // Bodies' accelerations, ordered by MobodIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(plant().num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
@@ -332,8 +332,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const Vector3<T> p_CB_W = p_WB - p_WC;
     const SpatialForce<T> F_Bo_W = F_Bc_W.Shift(p_CB_W);
 
-    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
-    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+    spatial_contact_forces->at(bodyA.mobod_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.mobod_index()) += F_Bo_W;
   }
 
   // Add contribution from hydroelastic contact.
@@ -364,8 +364,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const Vector3<T> p_CB_W = p_WB - p_WC;
     const SpatialForce<T> F_Bo_W = -F_Ac_W.Shift(p_CB_W);
 
-    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
-    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+    spatial_contact_forces->at(bodyA.mobod_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.mobod_index()) += F_Bo_W;
   }
 }
 

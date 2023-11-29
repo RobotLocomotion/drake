@@ -116,8 +116,8 @@ class BodyNode : public MultibodyElement<T> {
   }
 
   // Returns this element's unique index.
-  BodyNodeIndex index() const {
-    return this->template index_impl<BodyNodeIndex>();
+  MobodIndex index() const {
+    return this->template index_impl<MobodIndex>();
   }
 
   // Returns a constant reference to the body B associated with this node.
@@ -359,10 +359,10 @@ class BodyNode : public MultibodyElement<T> {
   //   must contain already pre-computed spatial accelerations for the inboard
   //   bodies to this node's body B, see precondition below.  It must be of
   //   size equal to the number of bodies in the MultibodyTree and ordered by
-  //   BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  //   MobodIndex. The calling MultibodyTree method must guarantee these
   //   conditions are satisfied. This method will abort if the pointer is
   //   null. There is no mechanism to assert that `A_WB_array_ptr` is ordered
-  //   by BodyNodeIndex and the correctness of MultibodyTree methods, properly
+  //   by MobodIndex and the correctness of MultibodyTree methods, properly
   //   unit tested, should guarantee this condition.
   //
   // @pre The position kinematics cache `pc` was already updated to be in sync
@@ -545,7 +545,7 @@ class BodyNode : public MultibodyElement<T> {
   //   A vector of known spatial accelerations containing the spatial
   //   acceleration `A_WB` for each body in the MultibodyTree model. It must be
   //   of size equal to the number of bodies in the MultibodyTree and ordered
-  //   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  //   by MobodIndex. The calling MultibodyTree method must guarantee these
   //   conditions are satisfied.
   // @param[in] Fapplied_Bo_W
   //   Externally applied spatial force on this node's body B at the body's
@@ -565,10 +565,10 @@ class BodyNode : public MultibodyElement<T> {
   //   inboard mobilizer reaction forces on body B applied at the origin `Mo`
   //   of the inboard mobilizer, expressed in the world frame W.  It must be of
   //   size equal to the number of bodies in the MultibodyTree and ordered by
-  //   BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  //   MobodIndex. The calling MultibodyTree method must guarantee these
   //   conditions are satisfied. This method will abort if the pointer is null.
   //   To access a mobilizer's reaction force on a given body B, access this
-  //   array with the index returned by Body::node_index().
+  //   array with the index returned by Body::mobod_index().
   // @param[out] tau_array
   //   A non-null pointer to the output vector of generalized forces that would
   //   result in body B having spatial acceleration `A_WB`. This method will
@@ -577,7 +577,7 @@ class BodyNode : public MultibodyElement<T> {
   //   in the model.
   //
   // @note There is no mechanism to assert that either `A_WB_array` nor
-  //   `F_BMo_W_array_ptr` are ordered by BodyNodeIndex and the correctness of
+  //   `F_BMo_W_array_ptr` are ordered by MobodIndex and the correctness of
   //   MultibodyTree methods, properly unit tested, should guarantee this
   //   condition.
   //
@@ -690,7 +690,7 @@ class BodyNode : public MultibodyElement<T> {
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
     for (const BodyNode<T>* child_node : children_) {
-      BodyNodeIndex child_node_index = child_node->index();
+      MobodIndex child_node_index = child_node->index();
 
       // Shift vector from Bo to Co, expressed in the world frame W.
       const Vector3<T>& p_BoCo_W = child_node->get_p_PoBo_W(pc);
@@ -1666,7 +1666,7 @@ class BodyNode : public MultibodyElement<T> {
 
   // =========================================================================
   // Per Node Array Accessors.
-  // Quantities are ordered by BodyNodeIndex unless otherwise specified.
+  // Quantities are ordered by MobodIndex unless otherwise specified.
 
   // Returns a const reference to the spatial acceleration of the body B
   // associated with this node as measured and expressed in the world frame W,
@@ -1834,7 +1834,7 @@ class BodyNode : public MultibodyElement<T> {
     const Body<T>& body_B = body();
 
     // Body B spatial inertia about Bo expressed in world W.
-    const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.node_index()];
+    const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
 
     // Equations of motion for a rigid body written at a generic point Bo not
     // necessarily coincident with the body's center of mass. This corresponds
@@ -1844,7 +1844,7 @@ class BodyNode : public MultibodyElement<T> {
     // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
     if (Fb_Bo_W_cache != nullptr) {
       // Dynamic bias for body B.
-      const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.node_index()];
+      const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
       Ftot_BBo_W += Fb_Bo_W;
     }
   }

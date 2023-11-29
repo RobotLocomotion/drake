@@ -407,7 +407,7 @@ TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
   EXPECT_TRUE(CompareMatrices(ac.get_vdot(), a_expected));
   for (BodyIndex b(0); b < plant_.num_bodies(); ++b) {
     const auto& body = plant_.get_body(b);
-    EXPECT_TRUE(ac.get_A_WB(body.node_index()).IsApprox(A_WB_expected[b]));
+    EXPECT_TRUE(ac.get_A_WB(body.mobod_index()).IsApprox(A_WB_expected[b]));
   }
 }
 

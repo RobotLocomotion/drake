@@ -80,7 +80,7 @@ math::RigidTransform<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   internal::PositionKinematicsCache<T> pc(this->tree().get_topology());
   this->tree().CalcPositionKinematicsCache(context, &pc);
-  return math::RigidTransform<T>(pc.get_X_WB(body_->node_index()));
+  return math::RigidTransform<T>(pc.get_X_WB(body_->mobod_index()));
 }
 
 template<typename T>
@@ -91,7 +91,7 @@ AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
   this->tree().CalcPositionKinematicsCache(context, &pc);
   internal::VelocityKinematicsCache<T> vc(this->tree().get_topology());
   this->tree().CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc.get_V_WB(body_->node_index());
+  return vc.get_V_WB(body_->mobod_index());
 }
 
 }  // namespace test
