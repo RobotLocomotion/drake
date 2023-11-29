@@ -85,7 +85,6 @@ fi
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
     /opt/drake/share/drake/package.xml \
-    /opt/drake/share/drake/bindings \
     /opt/drake/share/drake/examples \
     /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \

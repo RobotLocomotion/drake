@@ -570,6 +570,31 @@ Eigen::Vector3d MeshcatYUpPosition(const Eigen::Vector3d& p_WP) {
   return Eigen::Vector3d(p_WP.x(), p_WP.z(), -p_WP.y());
 }
 
+// Creates a Drake camera pose from a meshcat camera pose (encoded as an array
+// of 16 values).
+// @pre the 16 values form a valid rigid transform (i.e., the rotation matrix
+// is properly orthonormal -- the scale is the Identity, etc.).
+RigidTransformd MakeDrakePoseFromMeshcatPoseForCamera(
+    const std::vector<double>& values) {
+  DRAKE_DEMAND(values.size() == 16);
+  Eigen::Map<const Eigen::Matrix4d> matrix(values.data());
+  // The pose of the meshcat camera in meshcat's y-up world frame M. We're
+  // treating the bottom row of the matrix as [0, 0, 0, 1] but otherwise
+  // ignoring it.
+  const RigidTransformd X_MCm(matrix.block<3, 4>(0, 0));
+  DRAKE_DEMAND(X_MCm.rotation().IsValid());
+
+  // Meshcat (aka three.js) cameras are y-up. Rotate to be z-up for Drake.
+  const auto R_WM = RotationMatrixd::MakeXRotation(M_PI / 2);
+  const Eigen::Vector3d p_WC = R_WM * X_MCm.translation();
+
+  // Meshcat camera aims in the -Cz direction with Cy up. Drake renders in the
+  // +Cy direction with -Cy up. So, we need to rotate again.
+  const auto R_CdCm = RotationMatrixd(math::RollPitchYawd(0, M_PI, M_PI));
+  const auto R_WCd = R_WM * X_MCm.rotation() * R_CdCm;
+  return RigidTransformd(R_WCd, p_WC);
+}
+
 }  // namespace
 
 class Meshcat::Impl {
@@ -1308,12 +1333,19 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   void SetCameraPose(const Eigen::Vector3d& p_WC, const Eigen::Vector3d& p_WT) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     SetCameraTarget(p_WT, false /* only_perspective */);
     SetTransform("/Cameras/default", math::RigidTransformd());
     // The camera position in meshcat's y-up world.
     const Eigen::Vector3d p_WC_y = MeshcatYUpPosition(p_WC);
     SetProperty("/Cameras/default/rotated/<object>", "position",
                 std::vector<double>{p_WC_y.x(), p_WC_y.y(), p_WC_y.z()});
+  }
+
+  std::optional<RigidTransformd> GetTrackedCameraPose() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return camera_pose_;
   }
 
   // This function is public via the PIMPL.
@@ -1923,6 +1955,11 @@ class Meshcat::Impl {
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
+    if (ws == camera_pose_source_) {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      camera_pose_source_ = nullptr;
+      camera_pose_ = std::nullopt;
+    }
   }
 
   // This function is called from uWS when it needs to service a GET request.
@@ -1993,6 +2030,23 @@ class Meshcat::Impl {
       gamepad_.index = data.gamepad->index;
       gamepad_.button_values = std::move(data.gamepad->button_values);
       gamepad_.axes = std::move(data.gamepad->axes);
+      return;
+    }
+    if (data.type == "camera_pose" && data.camera_pose.size() == 16 &&
+        data.is_perspective.has_value()) {
+      if (camera_pose_source_ != nullptr && camera_pose_source_ != ws) {
+        static const logging::Warn log_once(
+            "More than one meshcat client is attempting to broadcast its "
+            "camera pose. The view rendered will be that of the browser whose "
+            "camera was last modified.");
+      }
+      camera_pose_source_ = ws;
+      if (*data.is_perspective) {
+        camera_pose_ =
+            MakeDrakePoseFromMeshcatPoseForCamera(std::move(data.camera_pose));
+      } else {
+        camera_pose_ = std::nullopt;
+      }
       return;
     }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
@@ -2069,6 +2123,9 @@ class Meshcat::Impl {
   Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
+  // The socket for the browser that is sending the camera pose.
+  WebSocket* camera_pose_source_{};
+  std::optional<math::RigidTransformd> camera_pose_;
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
@@ -2457,6 +2514,10 @@ void Meshcat::SetCameraTarget(const Eigen::Vector3d& target_in_world) {
 void Meshcat::SetCameraPose(const Eigen::Vector3d& camera_in_world,
                             const Eigen::Vector3d& target_in_world) {
   impl().SetCameraPose(camera_in_world, target_in_world);
+}
+
+std::optional<RigidTransformd> Meshcat::GetTrackedCameraPose() const {
+  return impl().GetTrackedCameraPose();
 }
 
 void Meshcat::AddButton(std::string name, std::string keycode) {

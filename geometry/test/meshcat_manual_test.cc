@@ -175,9 +175,33 @@ int do_main() {
                           RigidTransformd(Vector3d{++x, -0.25, 0}));
   }
 
-  std::cout << R"""(
-Open up your browser to the URL above.
+  std::cout << "\nDo *not* open up your browser to the URL above. Instead use "
+            << "the following URL\n\n"
+            << meshcat->web_url() << "?tracked_camera=on\n\n";
 
+  MaybePauseForUser();
+
+  // Note: this tests that the parameter on the html page is enough to enable
+  // camera tracking. Full camera tracking protocols are tested in
+  // meshcat_camera_tracking_test.py.
+  if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+    std::cout << "Meshcat isn't receiving tracked camera poses from your "
+              << "browser. Are you sure your browser is using the full URL?\n"
+              << "\n    " << meshcat->web_url() << "?tracked_camera=on\n\n"
+              << "If not, use the url with the 'tracked_camera' parameter.\n\n";
+
+    MaybePauseForUser();
+
+    if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+      std::cout << "  !!! ERROR !!! It appears that camera tracking isn't "
+                << "working!\n";
+      return 1;
+    } else {
+      std::cout << "That did it. Now we can move on.\n";
+    }
+  }
+
+  std::cout << R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a red sphere
