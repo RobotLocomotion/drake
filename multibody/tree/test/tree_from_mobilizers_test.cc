@@ -236,8 +236,8 @@ class PendulumTests : public ::testing::Test {
       const PositionKinematicsCache<T>& pc,
       const Body<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    const BodyNodeIndex body_node_index =
+    // Cache entries are accessed by MobodIndex for fast traversals.
+    const MobodIndex body_node_index =
         topology.get_body(body.index()).body_node;
     return RigidTransform<T>(pc.get_X_WB(body_node_index));
   }
@@ -253,7 +253,7 @@ class PendulumTests : public ::testing::Test {
       const VelocityKinematicsCache<double>& vc,
       const Body<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    // Cache entries are accessed by MobodIndex for fast traversals.
     return vc.get_V_WB(topology.get_body(body.index()).body_node);
   }
 
@@ -268,7 +268,7 @@ class PendulumTests : public ::testing::Test {
       const MultibodyTree<double>& tree,
       const AccelerationKinematicsCache<double>& ac, const Body<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    // Cache entries are accessed by MobodIndex for fast traversals.
     return ac.get_A_WB(topology.get_body(body.index()).body_node);
   }
 
@@ -277,7 +277,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
+    pc->get_mutable_X_WB(MobodIndex(1)) = X_WL_;
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -886,9 +886,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       tree().CalcPositionKinematicsCache(*context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
-      const BodyNodeIndex shoulder_node =
+      const MobodIndex shoulder_node =
           shoulder_mobilizer_->get_topology().body_node;
-      const BodyNodeIndex elbow_node =
+      const MobodIndex elbow_node =
           elbow_mobilizer_->get_topology().body_node;
 
       // Expected poses of the outboard frames measured in the inboard frame.

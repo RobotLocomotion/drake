@@ -55,7 +55,7 @@ class VelocityKinematicsCache {
   // Initializes `this` %VelocityKinematicsCache as if all generalized
   // velocities of the corresponding MultibodyTree model were zero.
   void InitializeToZero() {
-    for (BodyNodeIndex body_node_index(0); body_node_index < num_nodes_;
+    for (MobodIndex body_node_index(0); body_node_index < num_nodes_;
          ++body_node_index) {
       V_WB_pool_[body_node_index].SetZero();
       V_FM_pool_[body_node_index].SetZero();
@@ -68,13 +68,13 @@ class VelocityKinematicsCache {
   //                            BodyNode object associated with body B.
   // @retval V_WB_W body B's spatial velocity in the world frame W,
   // expressed in W (for point Bo, the body frame's origin).
-  const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
+  const SpatialVelocity<T>& get_V_WB(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
   }
 
   // Mutable version of get_V_WB().
-  SpatialVelocity<T>& get_mutable_V_WB(BodyNodeIndex body_node_index) {
+  SpatialVelocity<T>& get_mutable_V_WB(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
   }
@@ -82,13 +82,13 @@ class VelocityKinematicsCache {
   // Returns a const reference to the across-mobilizer (associated with node
   // `body_node_index`) spatial velocity `V_FM` of the outboard frame M in the
   // inboard frame F.
-  const SpatialVelocity<T>& get_V_FM(BodyNodeIndex body_node_index) const {
+  const SpatialVelocity<T>& get_V_FM(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_FM_pool_[body_node_index];
   }
 
   // Mutable version of get_V_FM().
-  SpatialVelocity<T>& get_mutable_V_FM(BodyNodeIndex body_node_index) {
+  SpatialVelocity<T>& get_mutable_V_FM(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_FM_pool_[body_node_index];
   }
@@ -96,13 +96,13 @@ class VelocityKinematicsCache {
   // Returns a const reference to the spatial velocity `V_PB_W` of the
   // body B associated with node `body_node_index` in the parent node's body
   // frame P, expressed in the world frame W.
-  const SpatialVelocity<T>& get_V_PB_W(BodyNodeIndex body_node_index) const {
+  const SpatialVelocity<T>& get_V_PB_W(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_PB_W_pool_[body_node_index];
   }
 
   // Mutable version of get_V_PB_W().
-  SpatialVelocity<T>& get_mutable_V_PB_W(BodyNodeIndex body_node_index) {
+  SpatialVelocity<T>& get_mutable_V_PB_W(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_PB_W_pool_[body_node_index];
   }
@@ -110,7 +110,7 @@ class VelocityKinematicsCache {
  private:
   // Pools store entries in the same order multibody tree nodes are
   // ordered in the tree, i.e. in DFT (Depth-First Traversal) order. Therefore
-  // clients of this class will access entries by BodyNodeIndex, see
+  // clients of this class will access entries by MobodIndex, see
   // `get_V_WB()` for instance.
 
   // The type of the pools for storing spatial velocities.
@@ -126,7 +126,7 @@ class VelocityKinematicsCache {
   // Initializes all pools to have NaN values to ease bug detection when entries
   // are accidentally left uninitialized.
   void InitializeToNaN() {
-    for (BodyNodeIndex body_node_index(0); body_node_index < num_nodes_;
+    for (MobodIndex body_node_index(0); body_node_index < num_nodes_;
          ++body_node_index) {
       V_WB_pool_[body_node_index].SetNaN();
       V_FM_pool_[body_node_index].SetNaN();

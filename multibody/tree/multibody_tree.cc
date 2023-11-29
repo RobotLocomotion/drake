@@ -730,7 +730,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   body_node_levels_.resize(topology_.forest_height());
-  for (BodyNodeIndex body_node_index(1);
+  for (MobodIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
         topology_.get_body_node(body_node_index);
@@ -740,7 +740,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   // Creates BodyNode's:
   // This recursion order ensures that a BodyNode's parent is created before the
   // node itself, since BodyNode objects are in Depth First Traversal order.
-  for (BodyNodeIndex body_node_index(0);
+  for (MobodIndex body_node_index(0);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
   }
@@ -788,7 +788,7 @@ void MultibodyTree<T>::Finalize() {
 }
 
 template <typename T>
-void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
+void MultibodyTree<T>::CreateBodyNode(MobodIndex body_node_index) {
   const BodyNodeTopology& node_topology =
       topology_.get_body_node(body_node_index);
   const BodyIndex body_index = node_topology.body;
@@ -1063,7 +1063,7 @@ void MultibodyTree<T>::CalcAllBodyPosesInWorld(
   }
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    const MobodIndex node_index = get_body(body_index).node_index();
     X_WB->at(body_index) = pc.get_X_WB(node_index);
   }
 }
@@ -1078,7 +1078,7 @@ void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
   }
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    const MobodIndex node_index = get_body(body_index).node_index();
     V_WB->at(body_index) = vc.get_V_WB(node_index);
   }
 }
@@ -1094,7 +1094,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
   for (int level = 1; level < tree_height(); ++level) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
+    for (MobodIndex body_node_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
@@ -1126,7 +1126,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
   for (int depth = 1; depth < tree_height(); ++depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
@@ -1202,7 +1202,7 @@ void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
-    for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
+    for (MobodIndex composite_node_index : body_node_levels_[depth]) {
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
 
@@ -1234,7 +1234,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `Ab_WB` for locked floating bodies.
   (*Ab_WB_all)[world_index()].SetNaN();
-  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+  for (MobodIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     SpatialAcceleration<T>& Ab_WB = (*Ab_WB_all)[body_node_index];
@@ -1259,7 +1259,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   // TODO(joemasterjohn): Consider an optimization to avoid computing `Zb_Bo_W`
   //  for locked floating bodies.
   (*Zb_Bo_W_all)[world_index()].SetNaN();
-  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+  for (MobodIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
     const ArticulatedBodyInertia<T>& Pplus_PB_W =
         abic.get_Pplus_PB_W(body_node_index);
@@ -1349,7 +1349,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
   // Performs a base-to-tip recursion computing body accelerations.
   // This skips the world, depth = 0.
   for (int depth = 1; depth < tree_height(); ++depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
@@ -1463,7 +1463,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // contains the total force of the bodies connected to the world by a
   // mobilizer.
   for (int depth = tree_height() - 1; depth >= 0; --depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
@@ -1715,7 +1715,7 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
-    for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
+    for (MobodIndex composite_node_index : body_node_levels_[depth]) {
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
       const int cnv = composite_node.get_num_mobilizer_velocities();
@@ -2041,7 +2041,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
 
     // Get the current body B's spatial inertia about Bo (body B's origin),
     // expressed in the world frame W.
-    const BodyNodeIndex body_node_index = get_body(body_index).node_index();
+    const MobodIndex body_node_index = get_body(body_index).node_index();
     const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
 
     // Shift M_BBo_W from about-point Bo to about-point Wo and add to the sum.
@@ -2226,7 +2226,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     DRAKE_DEMAND(body_index < num_bodies());
 
     // Form the current body's spatial momentum in W about Bo, expressed in W.
-    const BodyNodeIndex body_node_index = get_body(body_index).node_index();
+    const MobodIndex body_node_index = get_body(body_index).node_index();
     const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
     const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(body_node_index);
     SpatialMomentum<T> L_WBo_W = M_BBo_W * V_WBo_W;
@@ -2271,7 +2271,7 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
 
   // TODO(joemasterjohn): Consider and optimization where we avoid computing
   // `H_PB_W` for locked floating bodies.
-  for (BodyNodeIndex node_index(1); node_index < num_bodies(); ++node_index) {
+  for (MobodIndex node_index(1); node_index < num_bodies(); ++node_index) {
     const BodyNode<T>& node = *body_nodes_[node_index];
 
     // The body-node hinge matrix is H_PB_W ∈ ℝ⁶ˣⁿᵐ, with nm ∈ [0; 6] the number
@@ -2801,7 +2801,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   if (body_F.index() == world_index()) return;
 
   // Form kinematic path from body_F to the world.
-  std::vector<BodyNodeIndex> path_to_world;
+  std::vector<MobodIndex> path_to_world;
   topology_.GetKinematicPathToWorld(body_F.node_index(), &path_to_world);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
@@ -2815,7 +2815,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // each node's contribution to the Jacobians.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
-    const BodyNodeIndex body_node_index = path_to_world[ilevel];
+    const MobodIndex body_node_index = path_to_world[ilevel];
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
     const Mobilizer<T>& mobilizer = node.get_mobilizer();
@@ -3084,7 +3084,7 @@ T MultibodyTree<T>::CalcKineticEnergy(
   T twice_kinetic_energy_W = 0.0;
   // Add contributions from each body (except World).
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    const MobodIndex node_index = get_body(body_index).node_index();
     const SpatialInertia<T>& M_B_W = M_Bi_W[node_index];
     const SpatialVelocity<T>& V_WB = vc.get_V_WB(node_index);
     const SpatialMomentum<T> L_WB = M_B_W * V_WB;
@@ -3193,7 +3193,7 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     // Determine whether this set of welded bodies is a most distal leaf in
     // a multibody tree. Reminder, there can be more than one distal leaf as a
     // robot may two or more arms, each with grippers that are distal leafs.
-    const BodyNodeIndex parent_body_node_index = parent_body_topology.body_node;
+    const MobodIndex parent_body_node_index = parent_body_topology.body_node;
     const BodyNodeTopology& parent_body_node_topology =
         tree_topology.get_body_node(parent_body_node_index);
     const bool is_composite_body_distal_leaf_in_tree =
@@ -3301,7 +3301,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       // Get hinge matrix and spatial inertia for this node.
@@ -3344,7 +3344,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       // Get generalized force and body force for this node.
@@ -3398,7 +3398,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
 
   // Perform base-to-tip recursion, skipping the world.
   for (int depth = 1; depth < tree_height(); ++depth) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+    for (MobodIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[body_node_index];

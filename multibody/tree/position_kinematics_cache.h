@@ -51,13 +51,13 @@ class PositionKinematicsCache {
 
   // @returns `X_WB` the pose of the body frame B measured and expressed in
   //                 the world frame W.
-  const RigidTransform<T>& get_X_WB(BodyNodeIndex body_node_index) const {
+  const RigidTransform<T>& get_X_WB(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
 
   // See documentation on the const version get_X_WB() for details.
-  RigidTransform<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
+  RigidTransform<T>& get_mutable_X_WB(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
@@ -66,7 +66,7 @@ class PositionKinematicsCache {
   // orientation of the world frame W with the body frame B.
   // @param[in] body_node_index The unique index for the computational
   //                            BodyNode object associated with body B.
-  const math::RotationMatrix<T>& get_R_WB(BodyNodeIndex body_node_index) const {
+  const math::RotationMatrix<T>& get_R_WB(MobodIndex body_node_index) const {
     const RigidTransform<T>& X_WB = get_X_WB(body_node_index);
     return X_WB.rotation();
   }
@@ -77,13 +77,13 @@ class PositionKinematicsCache {
   //                         BodyNode object associated with body B.
   // @returns `X_PB` a const reference to the pose of the body frame B
   //                 measured and expressed in the parent body frame P.
-  const RigidTransform<T>& get_X_PB(BodyNodeIndex body_node_id) const {
+  const RigidTransform<T>& get_X_PB(MobodIndex body_node_id) const {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
     return X_PB_pool_[body_node_id];
   }
 
   // See documentation on the const version get_X_PB() for details.
-  RigidTransform<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
+  RigidTransform<T>& get_mutable_X_PB(MobodIndex body_node_id) {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
     return X_PB_pool_[body_node_id];
   }
@@ -98,26 +98,26 @@ class PositionKinematicsCache {
   //                            of interest.
   // @returns A const reference to the pose `X_FM` of the outboard frame M
   //          as measured and expressed in the inboard frame F.
-  const RigidTransform<T>& get_X_FM(BodyNodeIndex body_node_index) const {
+  const RigidTransform<T>& get_X_FM(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_FM_pool_[body_node_index];
   }
 
   // See documentation on the const version get_X_FM() for details.
-  RigidTransform<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
+  RigidTransform<T>& get_mutable_X_FM(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_FM_pool_[body_node_index];
   }
 
   // Position of node B, with index `body_node_index`, measured in the inboard
   // body frame P, expressed in the world frame W.
-  const Vector3<T>& get_p_PoBo_W(BodyNodeIndex body_node_index) const {
+  const Vector3<T>& get_p_PoBo_W(MobodIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return p_PoBo_W_pool_[body_node_index];
   }
 
   // Mutable version of get_p_PoBo_W().
-  Vector3<T>& get_mutable_p_PoBo_W(BodyNodeIndex body_node_index) {
+  Vector3<T>& get_mutable_p_PoBo_W(MobodIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return p_PoBo_W_pool_[body_node_index];
   }
@@ -126,7 +126,7 @@ class PositionKinematicsCache {
   // Pool types:
   // Pools store entries in the same order multibody tree nodes are
   // ordered in the tree, i.e. in DFT (Depth-First Traversal) order. Therefore
-  // clients of this class will access entries by BodyNodeIndex, see
+  // clients of this class will access entries by MobodIndex, see
   // `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
@@ -170,7 +170,7 @@ class PositionKinematicsCache {
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
-  // Pools indexed by BodyNodeIndex.
+  // Pools indexed by MobodIndex.
   X_PoolType X_WB_pool_;
   X_PoolType X_PB_pool_;
   X_PoolType X_FM_pool_;

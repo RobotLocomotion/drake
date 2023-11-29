@@ -157,7 +157,7 @@ class DrakeKukaIIwaRobot {
     // Retrieve end-effector spatial acceleration from acceleration cache.
     std::vector<SpatialAcceleration<T>> A_WB(tree().num_bodies());
     // TODO(eric.cousineau): For this model, the end effector's BodyIndex
-    // matches its BodyNodeIndex, thus we're not really checking the difference
+    // matches its MobodIndex, thus we're not really checking the difference
     // between MultibodyPlant and MultibodyTree's ordering.
     DRAKE_DEMAND(int{linkG_->index()} == int{linkG_->node_index()});
     plant().CalcSpatialAccelerationsFromVdot(*context_, qDDt, &A_WB);

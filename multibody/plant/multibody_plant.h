@@ -56,7 +56,7 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   }
 
   // Forces from hydroelastic contact applied to the origin of each body
-  // (indexed by BodyNodeIndex) in the MultibodyPlant.
+  // (indexed by MobodIndex) in the MultibodyPlant.
   std::vector<SpatialForce<T>> F_BBo_W_array;
 
   // Information used for contact reporting collected through the evaluation
@@ -5509,7 +5509,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Helper method to compute contact forces using the hydroelastic model.
-  // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on
+  // F_BBo_W_array is indexed by MobodIndex and it gets overwritten on
   // output. F_BBo_W_array must be of size num_bodies() or an exception is
   // thrown.
   void CalcHydroelasticContactForces(

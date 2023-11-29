@@ -231,7 +231,7 @@ class Body : public MultibodyElement<T> {
 
   /// (Advanced) Returns the index of the node in the underlying tree structure
   /// of the parent MultibodyTree to which this body belongs.
-  internal::BodyNodeIndex node_index() const {
+  internal::MobodIndex node_index() const {
     return topology_.body_node;
   }
 

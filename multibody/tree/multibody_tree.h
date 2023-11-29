@@ -1521,7 +1521,7 @@ class MultibodyTree {
       AccelerationKinematicsCache<T>* ac) const;
 
   // See MultibodyPlant method.
-  // @warning The output parameter `A_WB_array` is indexed by BodyNodeIndex,
+  // @warning The output parameter `A_WB_array` is indexed by MobodIndex,
   // while MultibodyPlant's method returns accelerations indexed by BodyIndex.
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context,
@@ -1574,7 +1574,7 @@ class MultibodyTree {
   //   `Fapplied_Bo_W_array` can have zero size which means there are no
   //   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
   //   of size equal to the number of bodies in `this` %MultibodyTree model.
-  //   This array must be ordered by BodyNodeIndex, which for a given body can
+  //   This array must be ordered by MobodIndex, which for a given body can
   //   be retrieved with Body::node_index().
   //   This method will abort if provided with an array that does not have a
   //   size of either `num_bodies()` or zero.
@@ -1595,7 +1595,7 @@ class MultibodyTree {
   //   containing the spatial acceleration `A_WB` for each body. It must be of
   //   size equal to the number of bodies. This method will abort if the
   //   pointer is null or if `A_WB_array` is not of size `num_bodies()`.
-  //   On output, entries will be ordered by BodyNodeIndex.
+  //   On output, entries will be ordered by MobodIndex.
   //   To access the acceleration `A_WB` of given body B in this array, use the
   //   index returned by Body::node_index().
   // @param[out] F_BMo_W_array
@@ -1606,7 +1606,7 @@ class MultibodyTree {
   //   It must be of size equal to the number of bodies in the MultibodyTree.
   //   This method will abort if the pointer is null or if `F_BMo_W_array`
   //   is not of size `num_bodies()`.
-  //   On output, entries will be ordered by BodyNodeIndex.
+  //   On output, entries will be ordered by MobodIndex.
   //   To access a mobilizer's reaction force on given body B in this array,
   //   use the index returned by Body::node_index().
   // @param[out] tau_array
@@ -1618,7 +1618,7 @@ class MultibodyTree {
   //   Mobilizer::get_generalized_forces_from_array().
   //
   // @warning There is no mechanism to assert that either `A_WB_array` nor
-  //   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
+  //   `F_BMo_W_array` are ordered by MobodIndex. You can use
   //   Body::node_index() to obtain the node index for a given body.
   //
   // @note This method uses `F_BMo_W_array` and `tau_array` as the only local
@@ -2928,7 +2928,7 @@ class MultibodyTree {
   void AddJointDampingForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
-  void CreateBodyNode(BodyNodeIndex body_node_index);
+  void CreateBodyNode(MobodIndex body_node_index);
 
   void CreateModelInstances();
 
@@ -3148,7 +3148,7 @@ class MultibodyTree {
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes
   // in that level.
-  std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
+  std::vector<std::vector<MobodIndex>> body_node_levels_;
 
   // Joint to Mobilizer map, of size num_joints(). For a joint with index
   // joint_index, mobilizer_index = joint_to_mobilizer_[joint_index] maps to the

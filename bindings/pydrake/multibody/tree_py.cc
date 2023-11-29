@@ -1062,7 +1062,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
             py_rvp::reference_internal, cls_doc.mutable_generalized_forces.doc)
         // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
-        // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
+        // they use `internal::MobodIndex`. Instead, use force API in Body.
         .def("AddInForces", &Class::AddInForces, py::arg("addend"),
             cls_doc.AddInForces.doc);
     DefCopyAndDeepCopy(&cls);
