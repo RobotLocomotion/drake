@@ -826,7 +826,10 @@ class Meshcat {
   way to save and share your 3D content.
 
   Note that controls (e.g. sliders and buttons) are not included in the HTML
-  output, because their usefulness relies on a connection to the server. */
+  output, because their usefulness relies on a connection to the server.
+
+  You can also use your browser to download this file, by typing "/download"
+  on the end of the URL (i.e., accessing `web_url() + "/download"`). */
   std::string StaticHtml();
 
   /** Sets a flag indicating that subsequent calls to SetTransform and

@@ -54,7 +54,7 @@ std::string LoadResource(const std::string& resource_name) {
   return content.str();
 }
 
-const std::string& GetUrlContent(std::string_view url_path) {
+const std::string& GetStaticResource(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
   static const drake::never_destroyed<std::string> stats_js(
@@ -227,7 +227,7 @@ class SceneTreeElement {
 
   // Returns a string which implements the entire tree directly in javascript.
   // This is intended for use in generating a "static html" of the scene.
-  std::string CreateCommands() {
+  std::string CreateCommands() const {
     std::string html;
     if (object_) {
       html += CreateCommand(*object_);
@@ -617,7 +617,7 @@ class Meshcat::Impl {
     }
 
     // Fetch the index once to be sure that we preload the content.
-    GetUrlContent("/");
+    GetStaticResource("/");
 
     std::promise<std::tuple<int, bool>> app_promise;
     std::future<std::tuple<int, bool>> app_future =
@@ -1564,45 +1564,50 @@ class Meshcat::Impl {
     return gamepad_;
   }
 
-  // This function is public via the PIMPL.
-  std::string StaticHtml() {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    std::string html = GetUrlContent("/");
-
-    std::promise<std::string> p;
-    std::future<std::string> f = p.get_future();
-    Defer([this, p = std::move(p)]() mutable {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      std::string commands = scene_tree_root_.CreateCommands();
-      if (!animation_.empty()) {
-        commands += CreateCommand(animation_);
-      }
-      if (!camera_target_message_.empty()) {
-        commands += CreateCommand(camera_target_message_);
-      }
-      p.set_value(std::move(commands));
-    });
-
-    // Replace the javascript code in the original html file which connects via
-    // websockets with the static javascript commands.
-    std::regex block_re(
-        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
-    html = std::regex_replace(html, block_re, f.get());
+  // This function is for use by the websocket thread. The Meshcat::StaticHtml()
+  // outer function calls into here using appropriate deferred handling.
+  std::string CalcStandaloneHtml() const {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    std::string html = GetStaticResource("/");
 
     // Insert the javascript directly into the html.
     std::vector<std::pair<std::string, std::string>> js_paths{
         {" src=\"meshcat.js\"", "/meshcat.js"},
         {" src=\"stats.min.js\"", "/stats.min.js"},
     };
-
     for (const auto& [src_link, url] : js_paths) {
       const size_t js_pos = html.find(src_link);
       DRAKE_DEMAND(js_pos != std::string::npos);
       html.erase(js_pos, src_link.size());
-      html.insert(js_pos+1, GetUrlContent(url));
+      html.insert(js_pos + 1, GetStaticResource(url));
     }
 
+    // Replace the javascript code in the original html file which connects via
+    // websockets with the static javascript commands.
+    std::string commands = scene_tree_root_.CreateCommands();
+    if (!animation_.empty()) {
+      commands += CreateCommand(animation_);
+    }
+    if (!camera_target_message_.empty()) {
+      commands += CreateCommand(camera_target_message_);
+    }
+    std::regex block_re(
+        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
+    html = std::regex_replace(html, block_re, commands);
+
     return html;
+  }
+
+  // This function is public via the PIMPL.
+  std::string StaticHtml() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    Defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      p.set_value(CalcStandaloneHtml());
+    });
+    return f.get();
   }
 
   // This function is public via the PIMPL.
@@ -1802,19 +1807,14 @@ class Meshcat::Impl {
       HandleMessage(ws, message);
     };
 
-    uWS::App app =
-        uWS::App()
-            .get("/*",
-                 [&](uWS::HttpResponse<kSsl>* res, uWS::HttpRequest* req) {
-                   DRAKE_DEMAND(IsThread(websocket_thread_id_));
-                   const std::string& content = GetUrlContent(req->getUrl());
-                   if (content.substr(0, 15) == "<!DOCTYPE html>") {
-                     res->writeHeader("Content-Type",
-                                      "text/html; charset=utf-8");
-                   }
-                   res->end(content);
-                 })
-            .ws<PerSocketData>("/*", std::move(behavior));
+    uWS::App app = uWS::App()
+                       .get("/*",
+                            [this](uWS::HttpResponse<kSsl>* response,
+                                   uWS::HttpRequest* request) {
+                              DRAKE_DEMAND(IsThread(websocket_thread_id_));
+                              this->HandleHttpGet(request->getUrl(), response);
+                            })
+                       .ws<PerSocketData>("/*", std::move(behavior));
     app_ = &app;
 
     // Search for an open port.
@@ -1923,6 +1923,26 @@ class Meshcat::Impl {
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
+  }
+
+  // This function is called from uWS when it needs to service a GET request.
+  void HandleHttpGet(std::string_view url_path,
+                     uWS::HttpResponse<kSsl>* response) const {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    drake::log()->debug("Meshcat GET on {}", url_path);
+    if (url_path == "/download") {
+      const std::string output = CalcStandaloneHtml();
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      response->writeHeader("Content-Disposition",
+                            "attachment; filename=\"meshcat.html\"");
+      response->end(output);
+      return;
+    }
+    const std::string& content = GetStaticResource(url_path);
+    if (content.substr(0, 15) == "<!DOCTYPE html>") {
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+    }
+    response->end(content);
   }
 
   // This function is a callback from a WebSocketBehavior. However, unit tests
