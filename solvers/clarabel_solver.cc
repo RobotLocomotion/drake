@@ -165,7 +165,7 @@ class SettingsConverter {
     // Move options from `pending_..._` to `settings_`.
     Serialize(this, settings_);
 
-    // Identify any unsupported names (i.e., any leftovers in `pending_..._`.
+    // Identify any unsupported names (i.e., any leftovers in `pending_..._`).
     std::vector<std::string> unknown_names;
     for (const auto& [name, _] : pending_options_double_) {
       unknown_names.push_back(name);

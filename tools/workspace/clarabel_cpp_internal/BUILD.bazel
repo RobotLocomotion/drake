@@ -18,6 +18,7 @@ drake_py_binary(
     data = [
         "@clarabel_cpp_internal//:include/cpp/DefaultSettings.h",
     ],
+    tags = ["manual"],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
@@ -27,6 +28,7 @@ genrule(
     name = "gen_serialize_h",
     outs = ["gen_serialize.h"],
     cmd = "$(execpath :gen_serialize) --output=$@",
+    tags = ["manual"],
     tools = [":gen_serialize"],
 )
 

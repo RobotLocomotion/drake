@@ -15,4 +15,10 @@ class ClarabelCppInternalLintTest(unittest.TestCase):
         actual = self._read(mydir / "serialize.h")
         expected = self._read(mydir / "gen_serialize.h")
         self.maxDiff = None
+        # If the following check fails, run this command (from the root of a
+        # Drake checkout) to re-generate the header file:
+        #
+        #  bazel run //tools/workspace/clarabel_cpp_internal:gen_serialize -- \
+        #    --output=$(pwd)/tools/workspace/clarabel_cpp_internal/serialize.h
+        #
         self.assertMultiLineEqual(expected, actual)
