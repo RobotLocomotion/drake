@@ -429,15 +429,22 @@ class VolumetricElement
         quadrature_positions = data.quadrature_positions;
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
+    const std::array<Matrix3<T>, num_quadrature_points>& deformation_gradients =
+        data.deformation_gradient_data.deformation_gradient();
     for (int q = 0; q < num_quadrature_points; ++q) {
       Vector3<T> scaled_force = Vector3<T>::Zero();
       for (const multibody::ForceDensityField<T>* force_density :
            plant_data.force_density_fields) {
         DRAKE_ASSERT(force_density != nullptr);
+        const T change_of_volume =
+            force_density->density_type() ==
+                    multibody::ForceDensityType::kPerReferenceVolume
+                ? 1.0
+                : deformation_gradients[q].determinant();
         scaled_force += scale *
                         force_density->EvaluateAt(plant_data.plant_context,
                                                   quadrature_positions[q]) *
-                        reference_volume_[q];
+                        reference_volume_[q] * change_of_volume;
       }
       for (int n = 0; n < num_nodes; ++n) {
         result->template segment<3>(3 * n) += scaled_force * S[q](n);
