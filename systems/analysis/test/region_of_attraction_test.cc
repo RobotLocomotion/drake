@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -123,33 +124,30 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
 // polynomial potential function, and xdot = (U-1)dUdx, which should have
 // U==1 as the true boundary of the RoA.
 GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
-  // This test is known to fail with Mosek as a solver (#12876).
-  if (solvers::MosekSolver::is_available()) {
-    return;
-  }
-
   const Vector2<Variable> x{Variable("x"), Variable("y")};
   Eigen::Matrix2d A1, A2;
   A1 << 1, 2, 3, 4;
   A2 << -1, 2, -3, 4;  // mirror about the y-axis
-  const Expression U{((A1*x).dot(A1*x))*((A2*x).dot(A2*x))};
+  const Expression U{((A1 * x).dot(A1 * x)) * ((A2 * x).dot(A2 * x))};
   const RowVector2<Expression> dUdx = U.Jacobian(x);
   const auto system = SymbolicVectorSystemBuilder()
-      .state(x)
-      .dynamics((U - 1) * dUdx.transpose())
-      .Build();
+                          .state(x)
+                          .dynamics((U - 1) * dUdx.transpose())
+                          .Build();
   const auto context = system->CreateDefaultContext();
 
   RegionOfAttractionOptions options;
-  options.lyapunov_candidate = (x.transpose()*x)(0);
+  options.lyapunov_candidate = (x.transpose() * x)(0);
   options.state_variables = x;
+  // Mosek and Clarabel are known to fail for this test, see #12876.
+  options.solver_id = solvers::CsdpSolver::id();
 
   const Expression V = RegionOfAttraction(*system, *context, options);
 
   // Leverage the quadratic form of V to find the boundary point on the
   // positive x axis.
   symbolic::Environment env{{x(0), 1}, {x(1), 0}};
-  const double rho = 1./V.Evaluate(env);
+  const double rho = 1. / V.Evaluate(env);
   env[x(0)] = std::sqrt(rho);
   // Confirm that it is on the boundary of V.
   EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
@@ -188,10 +186,10 @@ GTEST_TEST(RegionOfAttractionTest, SubSystem) {
   Variable x("x");
   Variable y{"y"};
   const auto& system = *builder.AddSystem(SymbolicVectorSystemBuilder()
-                                             .state(x)
-                                             .dynamics(-x + pow(x, 3) + y)
-                                             .input(y)
-                                             .Build());
+                                              .state(x)
+                                              .dynamics(-x + pow(x, 3) + y)
+                                              .input(y)
+                                              .Build());
   const auto& value_system =
       *builder.AddSystem<ConstantVectorSource<double>>(0);
   builder.Connect(value_system, system);
@@ -235,9 +233,9 @@ class RationalPolynomialSystem final : public LeafSystem<T> {
   }
 
   void DoCalcImplicitTimeDerivativesResidual(
-    const systems::Context<T>& context,
-    const systems::ContinuousState<T>& proposed_derivatives,
-    EigenPtr<VectorX<T>> residual) const override {
+      const systems::Context<T>& context,
+      const systems::ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const override {
     T x = context.get_continuous_state_vector()[0];
     T xdot = proposed_derivatives[0];
     (*residual)[0] = (1.0 + pow(x, 2)) * xdot + x - pow(x, 3);

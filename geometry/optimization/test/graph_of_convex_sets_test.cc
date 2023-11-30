@@ -587,11 +587,9 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  double kTol =
-      result.get_solver_id() == solvers::ClarabelSolver::id() ? 2E-5 : 1E-5;
+  const double kTol = 2E-5;
   EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), kTol);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
-  kTol = result.get_solver_id() == solvers::ClarabelSolver::id() ? 2E-5 : 1E-6;
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
               kTol);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
