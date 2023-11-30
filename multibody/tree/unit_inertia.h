@@ -8,7 +8,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
@@ -260,13 +259,6 @@ class UnitInertia : public RotationalInertia<T> {
     return SolidBox(L, L, L);
   }
 
-  DRAKE_DEPRECATED("2023-12-01",
-                   "SolidCylinder now requires the cylinder's axis "
-                   "direction to be explicitly given and to be a unit vector.")
-  static UnitInertia<T> SolidCylinder(const T& r, const T& L) {
-    return SolidCylinder(r, L, Vector3<T>::UnitZ());
-  }
-
   /// Creates a unit inertia for a uniform density solid cylinder B about
   /// its center of mass Bcm (which is coincident with B's geometric center Bo).
   /// @param[in] radius radius of the cylinder (meters).
@@ -282,19 +274,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @see SolidCylinderAboutEnd() to calculate G_BBp_E, B's unit inertia about
   /// point Bp (Bp is at the center of one of the cylinder's circular ends).
-  ///
-  /// @warning Previously the `unit_vector` argument was named `b_E` and was not
-  /// required to be a unit vector. The use of a non-unit-vector third argument
-  /// has been deprecated and will become an exception on or after 2023-12-01.
   static UnitInertia<T> SolidCylinder(
       const T& radius, const T& length, const Vector3<T>& unit_vector);
-
-  DRAKE_DEPRECATED("2023-12-01",
-                   "SolidCapsule now requires the capsules's axis "
-                   "direction to be explicitly given.")
-  static UnitInertia<T> SolidCapsule(const T& r, const T& L) {
-    return SolidCapsule(r, L, Vector3<T>::UnitZ());
-  }
 
   /// Creates a unit inertia for a uniform density solid capsule B about
   /// its center of mass Bcm (which is coincident with B's geometric center Bo).
@@ -311,13 +292,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   static UnitInertia<T> SolidCapsule(const T& radius, const T& length,
       const Vector3<T>& unit_vector);
-
-  DRAKE_DEPRECATED("2023-12-01",
-                   "SolidCylinderAboutEnd now requires the cylinder's axis "
-                   "direction to be explicitly given.")
-  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
-    return SolidCylinderAboutEnd(r, L, Vector3<T>::UnitZ());
-  }
 
   /// Creates a unit inertia for a uniform-density solid cylinder B about an
   /// end-point Bp of the cylinder's axis (see below for more about Bp).
@@ -396,10 +370,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @throws std::exception if moment_parallel (J) or moment_perpendicular (K)
   /// is negative or if J > 2 K (violates the triangle inequality, see
   /// CouldBePhysicallyValid()) or ‖unit_vector‖ is not within 1.0E-14 of 1.0.
-  ///
-  /// @warning Previously the `unit_vector` argument was named `b_E` and was not
-  /// required to be a unit vector. The use of a non-unit-vector third argument
-  /// has been deprecated and will become an exception on or after 2023-12-01.
   static UnitInertia<T> AxiallySymmetric(const T& moment_parallel,
       const T& moment_perpendicular, const Vector3<T>& unit_vector);
 
@@ -419,10 +389,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @note B's axial moment of inertia (along the line segment) is zero.
   /// @see ThinRod() is an example of an object that is axially symmetric and
   /// that has a zero moment of inertia about Bp in the unit_vector direction.
-  ///
-  /// @warning Previously the `unit_vector` argument was named `b_E` and was not
-  /// required to be a unit vector. The use of a non-unit-vector second argument
-  /// has been deprecated and will become an exception on or after 2023-12-01.
   static UnitInertia<T> StraightLine(const T& moment_perpendicular,
       const Vector3<T>& unit_vector);
 
@@ -439,10 +405,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @throws std::exception if length is not positive or if
   /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @note B's axial moment of inertia (along the rod) is zero..
-  ///
-  /// @warning Previously the `unit_vector` argument was named `b_E` and was not
-  /// required to be a unit vector. The use of a non-unit-vector second argument
-  /// has been deprecated and will become an exception on or after 2023-12-01.
   static UnitInertia<T> ThinRod(const T& length, const Vector3<T>& unit_vector);
 
   /// Constructs a unit inertia with equal moments of inertia along its

@@ -11,16 +11,11 @@ namespace math {
 namespace internal {
 namespace {
 
-GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
+GTEST_TEST(UnitVectorTest, ThrowIfNotUnitVector) {
   // Verify that no exception is thrown for a valid unit vector.
   Vector3<double> unit_vector(1.0, 0.0, 0.0);
   DRAKE_EXPECT_NO_THROW(
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
-
-  // Verify WarnIfNotUnitVector() returns false for a perfect unit vector.
-  bool is_bad_unit_vector =
-      WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
-  EXPECT_FALSE(is_bad_unit_vector);
 
   // Verify that no exception is thrown for a valid or near valid unit vector.
   unit_vector = Vector3<double>(4.321, M_PI, 97531.2468).normalized();
@@ -28,8 +23,8 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
 
   // Verify that no exception is thrown when ‖unit_vector‖ is nearly 1.0.
-  constexpr double kepsilon = std::numeric_limits<double>::epsilon();
-  unit_vector = Vector3<double>(1 + kepsilon, 0, 0);
+  constexpr double epsilon = std::numeric_limits<double>::epsilon();
+  unit_vector = Vector3<double>(1 + epsilon, 0, 0);
   DRAKE_EXPECT_NO_THROW(
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
 
@@ -48,20 +43,6 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ThrowIfNotUnitVector(not_unit_vector, "SomeFunctionName"),
       expected_message);
-
-  // Verify WarnIfNotUnitVector() returns false for a near valid unit vector.
-  is_bad_unit_vector = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
-  EXPECT_FALSE(is_bad_unit_vector);
-
-  // Verify WarnIfNotUnitVector() returns true for an invalid unit vector.
-  // Not checked: A message should have be written to the log file.
-  is_bad_unit_vector = WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
-  EXPECT_TRUE(is_bad_unit_vector);
-
-  // Verify WarnIfNotUnitVector() returns false for a symbolic unit vector.
-  is_bad_unit_vector =
-      WarnIfNotUnitVector(unit_vector_symbolic, "TestSymbolicFunctionName");
-  EXPECT_FALSE(is_bad_unit_vector);
 
   // Verify an exception is thrown for a unit vector with NAN elements.
   not_unit_vector = Vector3<double>(NAN, NAN, NAN);
