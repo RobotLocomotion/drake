@@ -46,11 +46,6 @@ constexpr bool NeedsBgrSwizzle() {
     case PixelType::kRgb8U:
     case PixelType::kRgba8U:
       return false;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case PixelType::kExpr:
-      return false;
-#pragma GCC diagnostic pop
   }
   DRAKE_UNREACHABLE();
 }
