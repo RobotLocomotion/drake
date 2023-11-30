@@ -194,13 +194,13 @@ def make_sim(meshcat=None,
             ), False)
         depth_camera = DepthRenderCamera(color_camera.core(),
                                          DepthRange(0.01, 10.0))
-        parent_id = plant.GetBodyFrameIdIfExists(plant.world_body().index())
         X_PB = RigidTransform(RollPitchYaw(-np.pi/2, 0, 0),
                               np.array([0, -2.5, 0.4]))
-        rgbd_camera = builder.AddSystem(RgbdSensor(parent_id=parent_id,
-                                                   X_PB=X_PB,
-                                                   color_camera=color_camera,
-                                                   depth_camera=depth_camera))
+        rgbd_camera = builder.AddSystem(
+            RgbdSensor(parent_id=scene_graph.world_frame_id(),
+                       X_PB=X_PB,
+                       color_camera=color_camera,
+                       depth_camera=depth_camera))
         builder.Connect(scene_graph.get_query_output_port(),
                         rgbd_camera.query_object_input_port())
         builder.ExportOutput(
