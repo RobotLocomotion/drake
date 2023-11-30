@@ -102,7 +102,8 @@ class ImageIo {
   format.
   @param[out] image The output image (which will be overwritten).
   @throws std::exception for any kind of error loading the image file.
-  @throws std::exception if the loaded image does not match the kPixelType. */
+  @throws std::exception if the loaded image does not match the kPixelType.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   void Load(const std::filesystem::path& path, Image<kPixelType>* image) const {
     LoadImpl(&path, std::nullopt, image);
@@ -113,7 +114,8 @@ class ImageIo {
   different file format will throw an exception.
   @param[out] image The output image (which will be overwritten).
   @throws std::exception for any kind of error loading the image file.
-  @throws std::exception if the loaded image does not match the kPixelType. */
+  @throws std::exception if the loaded image does not match the kPixelType.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   void Load(const std::filesystem::path& path, ImageFileFormat format,
             Image<kPixelType>* image) const {
@@ -123,7 +125,8 @@ class ImageIo {
   /** Loads and outputs an image from a memory buffer.
   @param[out] image The output image (which will be overwritten).
   @throws std::exception for any kind of error loading the image data.
-  @throws std::exception if the loaded image does not match the kPixelType. */
+  @throws std::exception if the loaded image does not match the kPixelType.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   void Load(ByteSpan buffer, Image<kPixelType>* image) const {
     LoadImpl(buffer, std::nullopt, image);
@@ -134,7 +137,8 @@ class ImageIo {
   different file format will throw an exception.
   @param[out] image The output image (which will be overwritten).
   @throws std::exception for any kind of error loading the image data.
-  @throws std::exception if the loaded image does not match the kPixelType. */
+  @throws std::exception if the loaded image does not match the kPixelType.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   void Load(ByteSpan buffer, ImageFileFormat format,
             Image<kPixelType>* image) const {
@@ -164,7 +168,8 @@ class ImageIo {
 
   /** Saves an image to an existing memory buffer.
   @param[out] buffer The output buffer (which will be overwritten).
-  @throws std::exception for any kind of error saving the image data. */
+  @throws std::exception for any kind of error saving the image data.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   void Save(const Image<kPixelType>& image, ImageFileFormat format,
             std::vector<uint8_t>* buffer) const {
