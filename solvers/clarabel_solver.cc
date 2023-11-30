@@ -215,8 +215,7 @@ class SettingsConverter {
   }
 
  private:
-  template <typename T>
-  void SetFromDoubleMap(const char* name, T* clarabel_value) {
+  void SetFromDoubleMap(const char* name, double* clarabel_value) {
     auto it = pending_options_double_.find(name);
     if (it != pending_options_double_.end()) {
       *clarabel_value = it->second;
