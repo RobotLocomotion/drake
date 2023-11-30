@@ -20,7 +20,6 @@ Argument:
 """
 
 load("//tools/workspace:execute.bzl", "which")
-load("//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     # When these values are updated:
@@ -31,22 +30,21 @@ def _impl(repository_ctx):
     mosek_minor_version = 0
     mosek_patch_version = 46
 
-    os_result = determine_os(repository_ctx)
-    if os_result.is_macos or os_result.is_macos_wheel:
-        if os_result.macos_arch_result == "arm64":
+    os_name = repository_ctx.os.name  # 'linux' or 'mac os x' (=> 'darwin')
+    if os_name == "mac os x":
+        os_name = "darwin"
+    os_arch = repository_ctx.os.arch  # 'amd64' or 'aarch64'
+    if os_name == "darwin":
+        if os_arch == "aarch64":
             mosek_platform = "osxaarch64"
             sha256 = "85724bd519d5fe120b4e8d2676b65143b9ce6dce666a07ca4f44ec54727b5ab5"  # noqa
         else:
             mosek_platform = "osx64x86"
             sha256 = "16885bbee2c1d86e0a3f9d9a2c60bbab1bb88e6f1b843ac1fb8da0c62292344f"  # noqa
-    elif os_result.is_ubuntu or os_result.is_manylinux:
+    else:
+        # TODO(jwnimmer-tri) We should add linux aarch64 support here.
         mosek_platform = "linux64x86"
         sha256 = "a6862954137493b74f55c0f2745b7f1672e602cfe9cd8974a95feaf9993f06bf"  # noqa
-    else:
-        fail(
-            "Operating system is NOT supported",
-            attr = repository_ctx.os.name,
-        )
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
     template = "https://download.mosek.com/stable/{}.{}.{}/mosektools{}.tar.bz2"  # noqa
@@ -71,7 +69,7 @@ def _impl(repository_ctx):
 
     platform_prefix = "tools/platform/{}".format(mosek_platform)
 
-    if repository_ctx.os.name == "mac os x":
+    if os_name == "darwin":
         install_name_tool = which(repository_ctx, "install_name_tool")
 
         files = [
