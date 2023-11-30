@@ -697,16 +697,10 @@ RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
 }  // namespace
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
-    : RenderEngine(params.default_label),
+    : RenderEngine(RenderLabel::kDontCare),
       opengl_context_(make_unique<OpenGlContext>()),
       texture_library_(make_shared<TextureLibrary>()),
       parameters_(CleanupLights(std::move(params))) {
-  if (params.default_label != RenderLabel::kDontCare) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2023-12-01",
-        "RenderEngineGl(): the default_label option is deprecated.");
-  }
-
   // The default light parameters have been crafted to create the default
   // "headlamp" camera.
   fallback_lights_.push_back({});
