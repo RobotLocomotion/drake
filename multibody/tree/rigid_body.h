@@ -267,7 +267,7 @@ class RigidBody : public Body<T> {
   /// @retval X_WB pose of rigid body B in world frame W.
   const math::RigidTransform<T>& get_pose_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
-    return pc.get_X_WB(this->node_index());
+    return pc.get_X_WB(this->mobod_index());
   }
 
   /// (Advanced) Extract the rotation matrix relating the world frame to this
@@ -302,7 +302,7 @@ class RigidBody : public Body<T> {
   /// frame W, expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_WB(this->node_index());
+    return vc.get_V_WB(this->mobod_index());
   }
 
   /// (Advanced) Extract this body angular velocity in world, expressed in
@@ -336,7 +336,7 @@ class RigidBody : public Body<T> {
   /// frame W, expressed in W (for point Bo, the body frame's origin).
   const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
       const internal::AccelerationKinematicsCache<T>& ac) const {
-    return ac.get_A_WB(this->node_index());
+    return ac.get_A_WB(this->mobod_index());
   }
 
   /// (Advanced) Extract this body's angular acceleration in world, expressed

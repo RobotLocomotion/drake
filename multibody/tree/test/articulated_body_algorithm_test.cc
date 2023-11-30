@@ -102,7 +102,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Compare results.
   const ArticulatedBodyInertia<double>& Pplus_C_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.node_index());
+      abc.get_Pplus_PB_W(cylinder_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_C_W_expected_mat,
                               Pplus_C_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -110,7 +110,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   Pplus_M_W_expected_mat(0, 0) = 0.0;  // x inertia projected out
 
   const ArticulatedBodyInertia<double>& Pplus_M_W_actual =
-      abc.get_Pplus_PB_W(massless_link.node_index());
+      abc.get_Pplus_PB_W(massless_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_M_W_expected_mat,
       Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -123,7 +123,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Compare results.
   const ArticulatedBodyInertia<double>& P_B_W_actual =
-      abc.get_Pplus_PB_W(box_link.node_index());
+      abc.get_Pplus_PB_W(box_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
       P_B_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
@@ -233,7 +233,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_C_W_expected =
       ArticulatedBodyInertia<double>(Pplus_C_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_C_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.node_index());
+      abc.get_Pplus_PB_W(cylinder_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_C_W_expected_mat,
                               Pplus_C_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -245,7 +245,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Verify that we get the right P_M.
   const ArticulatedBodyInertia<double>& P_M_W_actual =
-      abc.get_P_B_W(massless_link.node_index());
+      abc.get_P_B_W(massless_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(P_M_W_expected_mat,
                               P_M_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -258,7 +258,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double> Pplus_M_W_expected(
       Pplus_M_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_M_W_actual =
-      abc.get_Pplus_PB_W(massless_link.node_index());
+      abc.get_Pplus_PB_W(massless_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_M_W_expected_mat,
                               Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -278,7 +278,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Compare results.
   const ArticulatedBodyInertia<double>& Pplus_B_W_actual =
-      abc.get_Pplus_PB_W(box_link.node_index());
+      abc.get_Pplus_PB_W(box_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
       Pplus_B_W_actual.CopyToFullMatrix6(), kEpsilon));
 }

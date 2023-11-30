@@ -1834,7 +1834,7 @@ class BodyNode : public MultibodyElement<T> {
     const Body<T>& body_B = body();
 
     // Body B spatial inertia about Bo expressed in world W.
-    const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.node_index()];
+    const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
 
     // Equations of motion for a rigid body written at a generic point Bo not
     // necessarily coincident with the body's center of mass. This corresponds
@@ -1844,7 +1844,7 @@ class BodyNode : public MultibodyElement<T> {
     // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
     if (Fb_Bo_W_cache != nullptr) {
       // Dynamic bias for body B.
-      const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.node_index()];
+      const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
       Ftot_BBo_W += Fb_Bo_W;
     }
   }

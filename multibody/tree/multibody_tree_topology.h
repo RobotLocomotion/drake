@@ -474,13 +474,16 @@ class MultibodyTreeTopology {
 
   // Returns the number of mobilizers in the multibody tree. Since the "world"
   // body does not have a mobilizer, the number of mobilizers will always equal
-  // the number of bodies minus one.
+  // the number of mobilized bodies minus one.
   int num_mobilizers() const {
     return ssize(mobilizers_);
   }
 
-  // Returns the number of tree nodes. This must equal the number of bodies.
-  int get_num_body_nodes() const {
+  // Returns the number of mobilized bodies (BodyNodes). Currently this is
+  // restricted to being equal to the number of user-supplied Body objects.
+  // TODO(sherm1) Relax this restriction -- the number of mobilized bodies can
+  //  differ from the number of user-provided links.
+  int num_mobods() const {
     return ssize(body_nodes_);
   }
 
@@ -537,7 +540,7 @@ class MultibodyTreeTopology {
   // Returns a constant reference to the corresponding BodyNodeTopology given
   // a MobodIndex.
   const BodyNodeTopology& get_body_node(MobodIndex index) const {
-    DRAKE_ASSERT(index < get_num_body_nodes());
+    DRAKE_ASSERT(index < num_mobods());
     return body_nodes_[index];
   }
 
@@ -798,7 +801,7 @@ class MultibodyTreeTopology {
     forest_height_ = 1;  // At least one level with the world body at the root.
     body_nodes_.reserve(num_bodies());
     while (!stack.empty()) {
-      const MobodIndex node(get_num_body_nodes());
+      const MobodIndex node(num_mobods());
       const BodyIndex current = stack.top();
       const BodyIndex parent = bodies_[current].parent_body;
 
@@ -861,7 +864,7 @@ class MultibodyTreeTopology {
 
     // After we checked all bodies were reached above, the number of tree nodes
     // should equal the number of bodies in the tree.
-    DRAKE_DEMAND(num_bodies() == get_num_body_nodes());
+    DRAKE_DEMAND(num_bodies() == num_mobods());
 
     // Compile information regarding the size of the system:
     // - Number of degrees of freedom (generalized positions and velocities).
@@ -883,7 +886,7 @@ class MultibodyTreeTopology {
     int position_index = 0;
     int velocity_index_in_state = num_positions_;
     for (MobodIndex node_index(1);
-         node_index < get_num_body_nodes(); ++node_index) {
+         node_index < num_mobods(); ++node_index) {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
@@ -1145,7 +1148,7 @@ class MultibodyTreeTopology {
   void TraverseOutboardNodes(
       const BodyNodeTopology& base,
       std::function<void(const BodyNodeTopology&)> operation) const {
-    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    DRAKE_DEMAND(num_mobods() != 0);
     operation(base);
     // We are done if the base has no more children.
     if (base.get_num_children() == 0) return;
@@ -1166,7 +1169,7 @@ class MultibodyTreeTopology {
   // nodes outboard of `base`, including the generalized velocities of `base`.
   // @pre Body nodes were already created.
   int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const {
-    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    DRAKE_DEMAND(num_mobods() != 0);
     int nv = 0;
     TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
       nv += node.num_mobilizer_velocities;

@@ -401,7 +401,7 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.num_bodies(), kNumBodies);
     EXPECT_EQ(topology.num_mobilizers(), 9);
     EXPECT_EQ(topology.num_force_elements(), 1);
-    EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
+    EXPECT_EQ(topology.num_mobods(), kNumBodies);
     EXPECT_EQ(topology.forest_height(), 4);
 
     // These sets contain the indexes of the bodies in each tree level.
@@ -512,7 +512,7 @@ TEST_F(TreeTopologyTests, Finalize) {
   EXPECT_EQ(model_->num_mobilizers(), 9);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
+  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
   EXPECT_EQ(topology.forest_height(), 4);
 
   VerifyTopology(topology);
@@ -527,7 +527,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->num_joints(), 9);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
+  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
   EXPECT_EQ(topology.forest_height(), 4);
 
   // Verifies the total number of generalized positions and velocities.
@@ -541,7 +541,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   int positions_index = 0;
   int velocities_index = topology.num_positions();
   for (MobodIndex node_index(1); /* Skips the world node. */
-       node_index < topology.get_num_body_nodes(); ++node_index) {
+       node_index < topology.num_mobods(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
     const BodyIndex body_index = node.body;
     const MobilizerIndex mobilizer_index = node.mobilizer;

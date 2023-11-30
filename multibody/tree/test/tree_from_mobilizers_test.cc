@@ -237,9 +237,8 @@ class PendulumTests : public ::testing::Test {
       const Body<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    const MobodIndex body_node_index =
-        topology.get_body(body.index()).body_node;
-    return RigidTransform<T>(pc.get_X_WB(body_node_index));
+    const MobodIndex mobod_index = topology.get_body(body.index()).body_node;
+    return RigidTransform<T>(pc.get_X_WB(mobod_index));
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -825,9 +824,9 @@ class PendulumKinematicTests : public PendulumTests {
         get_body_spatial_acceleration_in_world(tree(), ac, *lower_link_);
     // From inverse dynamics.
     const SpatialAcceleration<double>& A_WUcm_id =
-        A_WB_array[upper_link_->node_index()];
+        A_WB_array[upper_link_->mobod_index()];
     const SpatialAcceleration<double>& A_WL_id =
-        A_WB_array[lower_link_->node_index()];
+        A_WB_array[lower_link_->mobod_index()];
     EXPECT_TRUE(A_WUcm_id.IsApprox(A_WUcm_ac, kTolerance));
     EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
 

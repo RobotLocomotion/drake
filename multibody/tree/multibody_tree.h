@@ -554,37 +554,27 @@ class MultibodyTree {
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
   // See MultibodyPlant method.
-  int num_frames() const {
-    return static_cast<int>(frames_.size());
-  }
+  int num_frames() const { return ssize(frames_); }
 
-  // Returns the number of bodies in the %MultibodyTree including the *world*
-  // body. Therefore the minimum number of bodies in a MultibodyTree is one.
-  int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+  // Returns the number of bodies in the MultibodyPlant including the world
+  // body. Therefore the minimum number of bodies is one.
+  int num_bodies() const { return ssize(owned_bodies_); }
 
   // Returns the number of joints added with AddJoint() to the %MultibodyTree.
-  int num_joints() const { return static_cast<int>(owned_joints_.size()); }
+  int num_joints() const { return ssize(owned_joints_); }
 
   // Returns the number of actuators in the model.
   // @see AddJointActuator().
-  int num_actuators() const {
-    return static_cast<int>(owned_actuators_.size());
-  }
+  int num_actuators() const { return ssize(owned_actuators_); }
 
   // See MultibodyPlant method.
-  int num_mobilizers() const {
-    return static_cast<int>(owned_mobilizers_.size());
-  }
+  int num_mobilizers() const { return ssize(owned_mobilizers_); }
 
   // See MultibodyPlant method.
-  int num_force_elements() const {
-    return static_cast<int>(owned_force_elements_.size());
-  }
+  int num_force_elements() const { return ssize(owned_force_elements_); }
 
   // Returns the number of model instances in the MultibodyTree.
-  int num_model_instances() const {
-    return static_cast<int>(instance_name_to_index_.size());
-  }
+  int num_model_instances() const { return ssize(instance_name_to_index_); }
 
   // Returns the number of generalized positions of the model.
   int num_positions() const {
@@ -2045,15 +2035,15 @@ class MultibodyTree {
   // Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
   // body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
   // mobilities, respectively. See @ref abi_computing_accelerations for further
-  // details. On output `Ab_WB_all[body_node_index]`
-  // contains `Ab_WB` for the body with node index `body_node_index`.
+  // details. On output `Ab_WB_all[mobod_index]`
+  // contains `Ab_WB` for the body with node index `mobod_index`.
   void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* Ab_WB_all) const;
 
   // Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
-  // for each articulated body B. On output `Zb_Bo_W_all[body_node_index]`
-  // contains `Zb_Bo_W` for the body B with node index `body_node_index`.
+  // for each articulated body B. On output `Zb_Bo_W_all[mobod_index]`
+  // contains `Zb_Bo_W` for the body B with node index `mobod_index`.
   void CalcArticulatedBodyForceBias(
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* Zb_Bo_W_all) const;
@@ -2922,13 +2912,13 @@ class MultibodyTree {
   // forces for a quick simple solution. This allows clients of MBT (namely MBP)
   // to implement their own customized (implicit) time stepping schemes.
   // TODO(amcastro-tri): Consider updating ForceElement to also compute a
-  // Jacobian for general force models. That would allow us to implement
-  // implicit schemes for any forces using a more general infrastructure rather
-  // than having to deal with damping in a special way.
+  //  Jacobian for general force models. That would allow us to implement
+  //  implicit schemes for any forces using a more general infrastructure rather
+  //  than having to deal with damping in a special way.
   void AddJointDampingForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
-  void CreateBodyNode(MobodIndex body_node_index);
+  void CreateBodyNode(MobodIndex mobod_index);
 
   void CreateModelInstances();
 

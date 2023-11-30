@@ -77,14 +77,14 @@ template<typename T>
 math::RigidTransform<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   auto& pc = this->EvalPositionKinematics(context);
-  return math::RigidTransform<T>(pc.get_X_WB(body_->node_index()));
+  return math::RigidTransform<T>(pc.get_X_WB(body_->mobod_index()));
 }
 
 template<typename T>
 SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
   auto& vc = this->EvalVelocityKinematics(context);
-  return vc.get_V_WB(body_->node_index());
+  return vc.get_V_WB(body_->mobod_index());
 }
 
 }  // namespace test

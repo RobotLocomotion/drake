@@ -1040,8 +1040,8 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   // correct. However MultibodyForce uses MobodIndex, see below.
   for (BodyIndex b(0); b < plant().num_bodies(); ++b) {
     // MultibodyForce indexes spatial body forces by MobodIndex.
-    const MobodIndex node_index = plant().get_body(b).node_index();
-    spatial_forces[node_index] += constraint_spatial_forces[b];
+    const MobodIndex mobod_index = plant().get_body(b).mobod_index();
+    spatial_forces[mobod_index] += constraint_spatial_forces[b];
   }
 }
 
