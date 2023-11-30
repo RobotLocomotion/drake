@@ -239,6 +239,17 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.model_instance.doc);
   }
 
+  m.def(
+      "FlattenModelDirectives",
+      [](const parsing::ModelDirectives& directives,
+          const multibody::PackageMap& package_map) {
+        parsing::ModelDirectives out;
+        parsing::FlattenModelDirectives(directives, package_map, &out);
+        return out;
+      },
+      py::arg("directives"), py::arg("package_map"),
+      doc.parsing.FlattenModelDirectives.doc);
+
   m.def("ProcessModelDirectives",
       py::overload_cast<const parsing::ModelDirectives&, Parser*>(
           &parsing::ProcessModelDirectives),

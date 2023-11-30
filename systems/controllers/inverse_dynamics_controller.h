@@ -43,7 +43,7 @@ namespace controllers {
  *
  * @note As an alternative to adding a separate controller system to your
  * diagram, you can model gravity compensation with PD controllers using
- * MultibodyPlant APIs. Refer to MultibodyPlat::set_gravity_enabled() as an
+ * MultibodyPlant APIs. Refer to MultibodyPlant::set_gravity_enabled() as an
  * alternative to modeling gravity compensation. To model PD controlled
  * actuators, refer to @ref mbp_actuation "Actuation".
  *
