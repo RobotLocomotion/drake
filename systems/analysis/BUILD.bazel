@@ -649,6 +649,7 @@ drake_cc_googletest(
     name = "region_of_attraction_test",
     deps = [
         ":region_of_attraction",
+        "//solvers:clarabel_solver",
         "//solvers:mosek_solver",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_vector_source",

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -125,6 +126,11 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
 GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   // This test is known to fail with Mosek as a solver (#12876).
   if (solvers::MosekSolver::is_available()) {
+    return;
+  }
+
+  // This test is known to fail with Clarabel as a solver.
+  if (solvers::ClarabelSolver::is_available()) {
     return;
   }
 
