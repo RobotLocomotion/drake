@@ -232,9 +232,8 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
       Gy_expected.CopyToFullMatrix3(), kEpsilon));
 
-  // Compute the unit inertia for a cylinder oriented along a non-unit,
-  // non-axial vector.
-  const Vector3d v(1.0, 2.0, 3.0);
+  // Compute the unit inertia for a cylinder oriented along a non-axial vector.
+  const Vector3d v = Vector3d(1.0, 2.0, 3.0).normalized();
   const UnitInertia<double> Gv =
       UnitInertia<double>::SolidCylinder(r, L, v);
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
@@ -247,25 +246,6 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(
       Gv_expected.CopyToFullMatrix3(), kEpsilon));
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// 2023-12-01 Remove with the deprecated 2 argument SolidCylinder() function.
-GTEST_TEST(UnitInertia, SolidCylinderDeprecated) {
-  const double r = 2.5;
-  const double L = 1.5;
-  const double I_perp = (3.0 * r * r + L * L) / 12.0;
-  const double I_axial = r * r / 2.0;
-  const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
-
-  // Compute the unit inertia for a cylinder oriented along the z-axis
-  // (the default).
-  UnitInertia<double> Gz =
-      UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
-      Gz_expected.CopyToFullMatrix3(), kEpsilon));
-}
-#pragma GCC diagnostic pop
 
 // Tests the static method to obtain the unit inertia of a solid cylinder B
 // computed about a point Bp at the center of its base.
@@ -299,24 +279,6 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
       UnitInertia<double>::SolidCylinderAboutEnd(r, L, bad_vec),
       "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Tests the static method to obtain the unit inertia of a solid cylinder B
-// computed about a point Bp at the center of its base.
-// 2023-12-01 Remove with the old SolidCylinderAboutEnd test.
-GTEST_TEST(UnitInertia, SolidCylinderAboutEndDeprecated) {
-  const double r = 2.5;
-  const double L = 1.5;
-  const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L / 4.0;
-  const double I_axial = r * r / 2.0;
-  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
-  UnitInertia<double> G_BBp_B =
-      UnitInertia<double>::SolidCylinderAboutEnd(r, L);
-  EXPECT_TRUE(G_BBp_B.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
-}
-#pragma GCC diagnostic pop
 
 // Tests the static method to obtain the unit inertia of a solid capsule
 // computed about its center of mass.
@@ -441,18 +403,6 @@ GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
                               G_expected.get_products()));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// 2023-12-01 Remove with the deprecated 2 argument SolidCapsule() function.
-GTEST_TEST(UnitInertia, SolidCapsuleDeprecated) {
-  const double r = 2.5;
-  const double L = 1.5;
-  const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
-  EXPECT_TRUE(G_capsule.CopyToFullMatrix3().isApprox(
-              G_capsule.CopyToFullMatrix3(), kEpsilon));
-}
-#pragma GCC diagnostic pop
-
 // Unit tests for the factory method UnitInertia::AxiallySymmetric().
 // This test creates the unit inertia for a cylinder of radius r and length L
 // with its longitudinal axis aligned with a vector b using two different
@@ -474,9 +424,7 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
   const double I_axial = r * r / 2.0;
 
   // Cylinder's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  // The vector doesn't need to be normalized (but take note that automatic
-  // normalization is deprecated).
-  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
+  const Vector3d b_E = (Vector3d::UnitY() + Vector3d::UnitZ()).normalized();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
   // aligned with the z-axis of the cylinder to the expressed-in frame E.
@@ -525,9 +473,7 @@ GTEST_TEST(UnitInertia, ThinRod) {
   const double I_rod = L * L / 12.0;
 
   // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  // The vector doesn't need to be normalized (but take note that automatic
-  // normalization is deprecated).
-  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
+  const Vector3d b_E = (Vector3d::UnitY() + Vector3d::UnitZ()).normalized();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
   // aligned with the rod to the expressed-in frame E.
