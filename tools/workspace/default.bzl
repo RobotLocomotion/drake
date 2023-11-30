@@ -10,7 +10,6 @@ load("//tools/workspace/cc:repository.bzl", "cc_repository")
 load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
-load("//tools/workspace/clp:repository.bzl", "clp_repository")
 load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
@@ -38,7 +37,6 @@ load("//tools/workspace/glx:repository.bzl", "glx_repository")
 load("//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
-load("//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
 load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
@@ -142,10 +140,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
     if "clang_cindex_python3_internal" not in excludes:
         clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa
-    if "clp" not in excludes:
-        # The @clp external is deprecated in Drake's WORKSPACE and will be
-        # removed on or after 2023-12-01.
-        clp_repository(name = "clp")
     if "clarabel_cpp_internal" not in excludes:
         clarabel_cpp_internal_repository(name = "clarabel_cpp_internal", mirrors = mirrors)  # noqa
     if "clp_internal" not in excludes:
@@ -216,11 +210,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_math_internal_repository(name = "gz_math_internal", mirrors = mirrors)  # noqa
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
-    if "gym_py" not in excludes:
-        # The @gym_py external is deprecated and will be removed from Drake's
-        # WORKSPACE on or after 2023-12-01; see @gymnasium_py for an available
-        # newer replacement.
-        gym_py_repository(name = "gym_py", mirrors = mirrors)
     if "gymnasium_py" not in excludes:
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors)
     if "intel_realsense_ros_internal" not in excludes:
