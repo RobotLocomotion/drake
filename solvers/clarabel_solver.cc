@@ -179,8 +179,8 @@ class SettingsConverter {
     if (unknown_names.size() > 0) {
       throw std::logic_error(fmt::format(
           "ClarabelSolver: unrecognized solver options {}. Please check "
-          "https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/include/cpp/"
-          "DefaultSettings.h for the supported solver options.",
+          "https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/ "
+          "for the supported solver options.",
           fmt::join(unknown_names, ", ")));
     }
   }
