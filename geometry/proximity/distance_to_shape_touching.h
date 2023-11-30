@@ -27,9 +27,6 @@ namespace shape_distance {
  @param p_ACa  Witness point of object `a` measured and expressed in frame A.
  @param p_BCb  Witness point of object `b` measured and expressed in frame B.
 
- @pre  The fcl::CollisionObject `a` and `b` contain their poses X_WA and X_WB
-       in World frame.
-
  @note  This function is used only in fcl fallback CalcDistanceFallback() in
         distance_to_shape_callback.cc.  */
 Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
@@ -43,7 +40,7 @@ Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
  internal tolerance) on either a face, edge or vertex of `box_B`.
 
  @return v_B a vector expressed in the box's frame B encoding the location of
-         the point:-
+         the point:
          v_B is (1, 0, 0) if p_BQ is on one of the two faces normal to Bx axis.
          v_B is (0, 1, 0) if p_BQ is on one of the two faces normal to By axis.
          v_B is (0, 0, 1) if p_BQ is on one of the two faces normal to Bz axis.
@@ -79,22 +76,22 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
  @note If there are multiple vectors in `v_Ws` that can make a separating
        axis, we use the first one in the list.
 
- @note A vector in `v_Ws` doesn't have to be a unit vector.
+ @note A vector in `v_Ws` doesn't have to be a unit vector. It can even be a
+       zero vector, which will be ignored.
 
  @pre The signed distance between the two boxes is zero (or within an
       internal tolerance), i.e., the two boxes barely touch.  */
-Eigen::Vector3d MakeSeparatingVector(const fcl::Boxd& box_A,
-                                     const fcl::Boxd& box_B,
-                                     const math::RigidTransformd& X_WA,
-                                     const math::RigidTransformd& X_WB,
-                                     const std::vector<Eigen::Vector3d>& v_Ws);
+Eigen::Vector3d MaybeMakeSeparatingVector(
+    const fcl::Boxd& box_A, const fcl::Boxd& box_B,
+    const math::RigidTransformd& X_WA, const math::RigidTransformd& X_WB,
+    const std::vector<Eigen::Vector3d>& v_Ws);
 
 /* Computes the signed-distance gradient between two touching boxes.
 
  @param box_A  The first box expressed in frame A.
  @param box_B  The second box expressed in frame B.
- @param X_WA   The pose of the first box in World frame.
- @param X_WB   The pose of the second box in World frame.
+ @param X_WA   The pose of box_A in World frame.
+ @param X_WB   The pose of box_B in World frame.
  @param p_ACa  The witness point of box_A, measured and expressed in frame A.
  @param p_BCb  The witness point of box_B, measured and expressed in frame B.
 

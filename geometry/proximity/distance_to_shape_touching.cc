@@ -18,9 +18,10 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
                                   const math::RigidTransformd& X_WB,
                                   const Eigen::Vector3d& p_ACa,
                                   const Eigen::Vector3d& p_BCb) {
-  // The cases for a sphere touching an ellipsoid/convex mesh/general mesh
-  // will reach here, but the cases for a sphere touching a box/capsule/
-  // cylinder/halfspace/sphere are handled by DistancePairGeometry.
+  // The cases for a sphere touching an ellipsoid, a convex mesh
+  // or a general mesh will reach here, but the cases for a sphere
+  // touching a box, a capsule, a cylinder, a halfspace, or a sphere
+  // are handled by DistancePairGeometry in distance_to_shape_callback.h.
   if (a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE) {
     const Vector3d nhat_AB_A = p_ACa.normalized();
     const Vector3d nhat_BA_W = X_WA.rotation() * (-nhat_AB_A);
@@ -70,10 +71,11 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
   return {d - max_value, d + max_value};
 }
 
-Vector3d MakeSeparatingVector(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
-                              const RigidTransformd& X_WA,
-                              const RigidTransformd& X_WB,
-                              const std::vector<Vector3d>& v_Ws) {
+Vector3d MaybeMakeSeparatingVector(const fcl::Boxd& box_A,
+                                   const fcl::Boxd& box_B,
+                                   const RigidTransformd& X_WA,
+                                   const RigidTransformd& X_WB,
+                                   const std::vector<Vector3d>& v_Ws) {
   const double kEps = 1e-14;
   for (const Vector3d& v_W : v_Ws) {
     double v_W_norm = v_W.norm();
@@ -82,10 +84,8 @@ Vector3d MakeSeparatingVector(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
     }
     const Vector3d unit_vector_W = v_W / v_W_norm;
 
-    double min_A, max_A;
-    std::tie(min_A, max_A) = ProjectedMinMax(box_A, X_WA, unit_vector_W);
-    double min_B, max_B;
-    std::tie(min_B, max_B) = ProjectedMinMax(box_B, X_WB, unit_vector_W);
+    const auto [min_A, max_A] = ProjectedMinMax(box_A, X_WA, unit_vector_W);
+    const auto [min_B, max_B] = ProjectedMinMax(box_B, X_WB, unit_vector_W);
 
     if (max_A < min_B + kEps) {
       return -unit_vector_W;
@@ -146,17 +146,17 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
             .cross(X_WB.rotation().col(axis_index_B));
     if (cross_product_W.norm() > kEps) {
       // The two edges are not parallel.
-      const Vector3d nhat_BA_W =
-          MakeSeparatingVector(box_A, box_B, X_WA, X_WB, {cross_product_W});
+      const Vector3d nhat_BA_W = MaybeMakeSeparatingVector(
+          box_A, box_B, X_WA, X_WB, {cross_product_W});
       DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
       return nhat_BA_W;
     } else {
       // Parallel edge-to-edge. A separating plane passes through at least
       // one of the two faces sharing the edge in Box A.
-      const Vector3d nhat_BA_W =
-          MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
-                               {X_WA.rotation().col((axis_index_A + 1) % 3),
-                                X_WA.rotation().col((axis_index_A + 2) % 3)});
+      const Vector3d nhat_BA_W = MaybeMakeSeparatingVector(
+          box_A, box_B, X_WA, X_WB,
+          {X_WA.rotation().col((axis_index_A + 1) % 3),
+           X_WA.rotation().col((axis_index_A + 2) % 3)});
       DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
       return nhat_BA_W;
     }
@@ -168,11 +168,11 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // Ca is strictly on an edge and Cb is strictly on a vertex.
   if (s_A == 2 && s_B == 3) {
     const Vector3d edge_vector_A_W = X_WA.rotation().col(axis_index_A);
-    const Vector3d nhat_BA_W =
-        MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
-                             {edge_vector_A_W.cross(X_WB.rotation().col(0)),
-                              edge_vector_A_W.cross(X_WB.rotation().col(1)),
-                              edge_vector_A_W.cross(X_WB.rotation().col(2))});
+    const Vector3d nhat_BA_W = MaybeMakeSeparatingVector(
+        box_A, box_B, X_WA, X_WB,
+        {edge_vector_A_W.cross(X_WB.rotation().col(0)),
+         edge_vector_A_W.cross(X_WB.rotation().col(1)),
+         edge_vector_A_W.cross(X_WB.rotation().col(2))});
     DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
     return nhat_BA_W;
   }
@@ -180,11 +180,11 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // Ca is strictly on a vertex and Cb is strictly on an edge.
   if (s_A == 3 && s_B == 2) {
     const Vector3d edge_vector_B_W = X_WB.rotation().col(axis_index_B);
-    const Vector3d nhat_BA_W =
-        MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
-                             {edge_vector_B_W.cross(X_WA.rotation().col(0)),
-                              edge_vector_B_W.cross(X_WA.rotation().col(1)),
-                              edge_vector_B_W.cross(X_WA.rotation().col(2))});
+    const Vector3d nhat_BA_W = MaybeMakeSeparatingVector(
+        box_A, box_B, X_WA, X_WB,
+        {edge_vector_B_W.cross(X_WA.rotation().col(0)),
+         edge_vector_B_W.cross(X_WA.rotation().col(1)),
+         edge_vector_B_W.cross(X_WA.rotation().col(2))});
     DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
     return nhat_BA_W;
   }
@@ -193,7 +193,7 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   DRAKE_ASSERT(s_A == 3 && s_B == 3);
   // This is the special case of vertex-vertex and the below case is the
   // general one.
-  Vector3d nhat_BA_W = MakeSeparatingVector(
+  Vector3d nhat_BA_W = MaybeMakeSeparatingVector(
       box_A, box_B, X_WA, X_WB,
       {X_WA.rotation().col(0), X_WA.rotation().col(1), X_WA.rotation().col(2),
        X_WB.rotation().col(0), X_WB.rotation().col(1), X_WB.rotation().col(2)});
@@ -202,7 +202,7 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   }
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
-      nhat_BA_W = MakeSeparatingVector(
+      nhat_BA_W = MaybeMakeSeparatingVector(
           box_A, box_B, X_WA, X_WB,
           {X_WA.rotation().col(i).cross(X_WB.rotation().col(j))});
       if (!nhat_BA_W.array().isNaN().any()) {

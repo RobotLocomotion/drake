@@ -160,8 +160,8 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
   }
 }
 
-// Tests MakeSeparatingVector() on two touching boxes with various candidate
-// directions for the separating axis.
+// Tests MaybeMakeSeparatingVector() on two touching boxes with various
+// candidate directions for the separating axis.
 //
 //        Y
 //        ↑
@@ -173,7 +173,7 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
 //          |              |
 //          +--------------+
 //
-GTEST_TEST(SeparatingAxis, MakeSeparatingVector) {
+GTEST_TEST(SeparatingAxis, MaybeMakeSeparatingVector) {
   // Fix box_A at World's origin.
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-0.5,0.5]x[-0.5,0.5]x[-0.5,0.5].
@@ -185,27 +185,30 @@ GTEST_TEST(SeparatingAxis, MakeSeparatingVector) {
 
   // Any vector parallel to World's X axis can make the separating axis. It
   // doesn't have to be a unit vector.
-  EXPECT_EQ(
-      MakeSeparatingVector(box_A, box_B, X_WA, X_WB, {Vector3d(0.1, 0, 0)}),
-      -Vector3d::UnitX());
+  EXPECT_EQ(MaybeMakeSeparatingVector(box_A, box_B, X_WA, X_WB,
+                                      {Vector3d(0.1, 0, 0)}),
+            -Vector3d::UnitX());
   // Switching A and B flips the separating vector.
-  EXPECT_EQ(
-      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0.1, 0, 0)}),
-      Vector3d::UnitX());
+  EXPECT_EQ(MaybeMakeSeparatingVector(box_B, box_A, X_WB, X_WA,
+                                      {Vector3d(0.1, 0, 0)}),
+            Vector3d::UnitX());
   // Non-separating direction gets NaN.
   EXPECT_TRUE(
-      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0, 1, 1)})
+      MaybeMakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0, 1, 1)})
           .array()
           .isNaN()
           .any());
   // Zero vector gets NaN.
-  EXPECT_TRUE(MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d::Zero()})
+  EXPECT_TRUE(
+      MaybeMakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d::Zero()})
+          .array()
+          .isNaN()
+          .any());
+  // An empty list of vectors gets NaN.
+  EXPECT_TRUE(MaybeMakeSeparatingVector(box_B, box_A, X_WB, X_WA, {})
                   .array()
                   .isNaN()
                   .any());
-  // An empty list of vectors gets NaN.
-  EXPECT_TRUE(
-      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {}).array().isNaN().any());
 }
 
 // Tests BoxBoxGradient() when two boxes touch on a face. We have seen FCL
