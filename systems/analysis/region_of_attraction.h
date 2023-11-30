@@ -1,6 +1,11 @@
 #pragma once
 
+#include <optional>
+
+#include "drake/common/name_value.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/solvers/solver_id.h"
+#include "drake/solvers/solver_options.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -14,6 +19,17 @@ namespace analysis {
  */
 struct RegionOfAttractionOptions {
   RegionOfAttractionOptions() = default;
+
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(lyapunov_candidate));
+    a->Visit(DRAKE_NVP(state_variables));
+    a->Visit(DRAKE_NVP(use_implicit_dynamics));
+    a->Visit(DRAKE_NVP(solver_id));
+    a->Visit(DRAKE_NVP(solver_options));
+  }
 
   /** A candidate Lyapunov function using the symbolic Variables named
    * x0, x1, ..., where the order matches the continuous state vector of the
@@ -39,6 +55,14 @@ struct RegionOfAttractionOptions {
    * details.
    */
   bool use_implicit_dynamics{false};
+
+  /** If not std::nullopt, then we will solve the optimization problem using the
+   * specified solver; otherwise Drake will choose a solver.
+   */
+  std::optional<solvers::SolverId> solver_id{std::nullopt};
+
+  /** The solver options used in the optimization problem. */
+  std::optional<solvers::SolverOptions> solver_options{std::nullopt};
 };
 
 /**
