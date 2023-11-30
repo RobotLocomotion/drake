@@ -48,7 +48,9 @@ class TestAnalysis(unittest.TestCase):
             "RegionOfAttractionOptions(",
             "lyapunov_candidate=pow(x, 2), ",
             "state_variables=[Variable('x', Continuous)], "
-            "use_implicit_dynamics=False)"]))
+            "use_implicit_dynamics=False, "
+            "solver_id=None, "
+            "solver_options=None)"]))
 
     def test_integrator_constructors(self):
         """Test all constructors for all integrator types."""

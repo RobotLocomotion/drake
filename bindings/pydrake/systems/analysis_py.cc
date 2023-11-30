@@ -418,14 +418,23 @@ Parameter ``interruptible``:
         .def_readwrite("use_implicit_dynamics",
             &RegionOfAttractionOptions::use_implicit_dynamics,
             doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)
+        .def_readwrite("solver_id", &RegionOfAttractionOptions::solver_id,
+            doc.RegionOfAttractionOptions.solver_id.doc)
+        .def_readwrite("solver_options",
+            &RegionOfAttractionOptions::solver_options,
+            doc.RegionOfAttractionOptions.solver_options.doc)
         .def("__repr__", [](const RegionOfAttractionOptions& self) {
           return py::str(
               "RegionOfAttractionOptions("
               "lyapunov_candidate={}, "
               "state_variables={}, "
-              "use_implicit_dynamics={})")
+              "use_implicit_dynamics={}, "
+              "solver_id={}, "
+              "solver_options={})")
               .format(self.lyapunov_candidate, self.state_variables,
-                  self.use_implicit_dynamics);
+                  self.use_implicit_dynamics,
+                  self.solver_id.has_value() ? self.solver_id->name() : "None",
+                  self.solver_options);
         });
 
     m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),

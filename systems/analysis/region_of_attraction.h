@@ -1,6 +1,10 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/symbolic/expression.h"
+#include "drake/solvers/solver_id.h"
+#include "drake/solvers/solver_options.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -39,6 +43,14 @@ struct RegionOfAttractionOptions {
    * details.
    */
   bool use_implicit_dynamics{false};
+
+  /** If not std::nullopt, then we will solve the optimization problem using the
+   * specified solver; otherwise Drake will choose a solver.
+   */
+  std::optional<solvers::SolverId> solver_id{std::nullopt};
+
+  /** The solver options used in the optimization problem. */
+  std::optional<solvers::SolverOptions> solver_options{std::nullopt};
 };
 
 /**

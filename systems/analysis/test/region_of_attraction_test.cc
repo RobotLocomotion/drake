@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -123,11 +125,6 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
 // polynomial potential function, and xdot = (U-1)dUdx, which should have
 // U==1 as the true boundary of the RoA.
 GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
-  // This test is known to fail with Mosek as a solver (#12876).
-  if (solvers::MosekSolver::is_available()) {
-    return;
-  }
-
   const Vector2<Variable> x{Variable("x"), Variable("y")};
   Eigen::Matrix2d A1, A2;
   A1 << 1, 2, 3, 4;
@@ -143,19 +140,23 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   RegionOfAttractionOptions options;
   options.lyapunov_candidate = (x.transpose()*x)(0);
   options.state_variables = x;
+  // Mosek and Clarabel are known to fail for this test, see #12876
+  options.solver_id = solvers::CsdpSolver::id();
 
-  const Expression V = RegionOfAttraction(*system, *context, options);
+  if (solvers::MakeSolver(*(options.solver_id))->available()) {
+    const Expression V = RegionOfAttraction(*system, *context, options);
 
-  // Leverage the quadratic form of V to find the boundary point on the
-  // positive x axis.
-  symbolic::Environment env{{x(0), 1}, {x(1), 0}};
-  const double rho = 1./V.Evaluate(env);
-  env[x(0)] = std::sqrt(rho);
-  // Confirm that it is on the boundary of V.
-  EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
-  // As an inner approximation of the ROA, It should be inside the boundary
-  // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
-  EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
+    // Leverage the quadratic form of V to find the boundary point on the
+    // positive x axis.
+    symbolic::Environment env{{x(0), 1}, {x(1), 0}};
+    const double rho = 1. / V.Evaluate(env);
+    env[x(0)] = std::sqrt(rho);
+    // Confirm that it is on the boundary of V.
+    EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
+    // As an inner approximation of the ROA, It should be inside the boundary
+    // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
+    EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
+  }
 }
 
 // The CubicPolynomialTest again, but this time with an input port that must be
