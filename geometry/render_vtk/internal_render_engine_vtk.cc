@@ -814,7 +814,12 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
     texture->SetRepeat(need_repeat);
     texture->InterpolateOn();
-    color_actor->SetTexture(texture.Get());
+    if (use_pbr_materials_) {
+      texture->SetUseSRGBColorSpace(true);
+      color_actor->GetProperty()->SetBaseColorTexture(texture);
+    } else {
+      color_actor->SetTexture(texture.Get());
+    }
   }
 
   // Note: This allows the color map to be modulated by an arbitrary diffuse
@@ -860,6 +865,16 @@ void RenderEngineVtk::SetPbrMaterials() {
     for (auto& [_, prop_array] : props_) {
       for (auto& part : prop_array[ImageType::kColor].parts) {
         part.actor->GetProperty()->SetInterpolationToPBR();
+        if (part.actor->GetTexture() != nullptr &&
+            part.actor->GetProperty()->GetTexture("albedoTex") == nullptr) {
+          // Phong lighting uses the generic vtkActor "texture". PBR lighting
+          // uses the "albedoTex" (sRGB) texture. We should promote the texture
+          // as well.
+          vtkTexture* texture = part.actor->GetTexture();
+          texture->SetUseSRGBColorSpace(true);
+          part.actor->GetProperty()->SetBaseColorTexture(
+              part.actor->GetTexture());
+        }
       }
     }
   }
