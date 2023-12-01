@@ -7,9 +7,11 @@
 #include <Clarabel>
 #include <Eigen/Eigen>
 
+#include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
+#include "drake/tools/workspace/clarabel_cpp_internal/serialize.h"
 
 namespace drake {
 namespace solvers {
@@ -145,17 +147,97 @@ void SetSolverDetails(
   solver_details->status = SolverStatusToString(clarabel_solution.status);
 }
 
-clarabel::DefaultSettings<double> SetClarabelSettings(
-    const SolverOptions& solver_options) {
-  clarabel::DefaultSettings<double> settings =
+class SettingsConverter {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SettingsConverter);
+
+  explicit SettingsConverter(const SolverOptions& solver_options) {
+    // Propagate Drake's common options into `settings_`.
+    settings_.verbose = solver_options.get_print_to_console();
+    // TODO(jwnimmer-tri) Handle get_print_file_name().
+
+    // Copy the Clarabel-specific `solver_options` to pending maps.
+    pending_options_double_ =
+        solver_options.GetOptionsDouble(ClarabelSolver::id());
+    pending_options_int_ = solver_options.GetOptionsInt(ClarabelSolver::id());
+    pending_options_str_ = solver_options.GetOptionsStr(ClarabelSolver::id());
+
+    // Move options from `pending_..._` to `settings_`.
+    Serialize(this, settings_);
+
+    // Identify any unsupported names (i.e., any leftovers in `pending_..._`).
+    std::vector<std::string> unknown_names;
+    for (const auto& [name, _] : pending_options_double_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_int_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_str_) {
+      unknown_names.push_back(name);
+    }
+    if (unknown_names.size() > 0) {
+      throw std::logic_error(fmt::format(
+          "ClarabelSolver: unrecognized solver options {}. Please check "
+          "https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/ "
+          "for the supported solver options.",
+          fmt::join(unknown_names, ", ")));
+    }
+  }
+
+  const clarabel::DefaultSettings<double>& settings() const {
+    return settings_;
+  }
+
+  void Visit(const NameValue<double>& x) {
+    this->SetFromDoubleMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<bool>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value == 0 || option_value == 1);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<uint32_t>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value >= 0);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<clarabel::ClarabelDirectSolveMethods>& x) {
+    DRAKE_THROW_UNLESS(x.name() == std::string{"direct_solve_method"});
+    // TODO(jwnimmer-tri) Add support for this option.
+    // For now it is unsupported and will throw (as an unknown name, below).
+  }
+
+ private:
+  void SetFromDoubleMap(const char* name, double* clarabel_value) {
+    auto it = pending_options_double_.find(name);
+    if (it != pending_options_double_.end()) {
+      *clarabel_value = it->second;
+      pending_options_double_.erase(it);
+    }
+  }
+  template <typename T>
+  void SetFromIntMap(const char* name, T* clarabel_value) {
+    auto it = pending_options_int_.find(name);
+    if (it != pending_options_int_.end()) {
+      *clarabel_value = it->second;
+      pending_options_int_.erase(it);
+    }
+  }
+
+  std::unordered_map<std::string, double> pending_options_double_;
+  std::unordered_map<std::string, int> pending_options_int_;
+  std::unordered_map<std::string, std::string> pending_options_str_;
+
+  clarabel::DefaultSettings<double> settings_ =
       clarabel::DefaultSettingsBuilder<double>::default_settings().build();
-  // Clarabel defaults to print to console. But that would create too much noise
-  // on the console. So we overwrite the default value with
-  // solver_options.get_print_to_console().
-  settings.verbose = solver_options.get_print_to_console();
-  // TODO(hongkai.dai): set more options.
-  return settings;
-}
+};
 
 }  // namespace
 
@@ -305,8 +387,8 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   const Eigen::Map<Eigen::VectorXd> b_vec{b.data(), ssize(b)};
 
-  clarabel::DefaultSettings<double> settings =
-      SetClarabelSettings(merged_options);
+  const SettingsConverter settings_converter(merged_options);
+  clarabel::DefaultSettings<double> settings = settings_converter.settings();
 
   clarabel::DefaultSolver<double> solver(P, q_vec, A, b_vec, cones, settings);
 
