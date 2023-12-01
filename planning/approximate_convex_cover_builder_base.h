@@ -18,11 +18,6 @@ using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using graph_algorithms::MaxCliqueSolverBase;
 
-/**
- * TODO Fill in this constructor
- *
- * Throw if set_builder is empty.
- */
 struct ApproximateConvexCoverFromCliqueCoverOptions {
   int num_sampled_points{100};
   int minimum_clique_size{3};
