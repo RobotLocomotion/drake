@@ -2047,7 +2047,7 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
 // This test we'll simply confirm that the introduction of a glTF shows an
 // illumination change without any other step (indicating material promotion).
 TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
-  auto test_sphere_color = [this](bool matches_default,
+  auto test_sphere_color = [this](const RgbaColor expected_color,
                                   RenderEngineVtk* renderer) {
     const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
     ImageRgba8U image(camera.core().intrinsics().width(),
@@ -2059,9 +2059,9 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     renderer->RenderColorImage(camera, &image);
 
     const RgbaColor sampled_color(image.at(cx, cy));
-    EXPECT_EQ(IsColorNear(sampled_color, default_color_), matches_default)
+    EXPECT_TRUE(IsColorNear(sampled_color, expected_color))
         << "  rendered color: " << sampled_color << "\n"
-        << "  expected color: " << default_color_;
+        << "  expected color: " << expected_color;
   };
 
   // Baseline test; sphere only reproduces the phong color at the center.
@@ -2076,15 +2076,16 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
                                        .environment_map = EnvironmentMap()};
     auto renderer = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
-    PopulateSphereTest(renderer.get());
-    test_sphere_color(/* matches_default = */ true, renderer.get());
+    PopulateSphereTest(renderer.get(), true);
+    const RgbaColor texture_color(kTextureColor, 255);
+    test_sphere_color(texture_color, renderer.get());
   }
 
   // Add a glTF file; material promoted to PBR no longer matches Phong color.
   {
     SCOPED_TRACE("glTF added");
     Init(X_WC_, true);
-    PopulateSphereTest(renderer_.get());
+    PopulateSphereTest(renderer_.get(), true);
 
     // Place a glTF mesh far away from the origin; we can't see it but it
     // should still change how things render.
@@ -2096,7 +2097,10 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
                               RigidTransformd(Vector3d(30, 0, 0)),
                               false /* needs update */);
 
-    test_sphere_color(/* matches_default = */ false, renderer_.get());
+    // We should still basically be green (because of the green texture), but
+    // the saturation and brightness changes in the presence of PBR material.
+    const RgbaColor pbr_texture_color(ColorI{66, 152, 68}, 255);
+    test_sphere_color(pbr_texture_color, renderer_.get());
   }
 }
 
