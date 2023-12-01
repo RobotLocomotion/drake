@@ -8,6 +8,8 @@ from webbrowser import open as _webbrowser_open
 
 import numpy as np
 
+from pydrake.common.schema import Rotation
+from pydrake.common.yaml import yaml_load_typed
 from pydrake.geometry import (
     Box,
     Cylinder,
@@ -74,7 +76,8 @@ class ModelVisualizer:
                  browser_new=False,
                  pyplot=False,
                  meshcat=None,
-                 environment_map: Path = Path()):
+                 environment_map: Path = Path(),
+                 camera_config: Path = Path()):
         """
         Initializes a ModelVisualizer.
 
@@ -108,6 +111,7 @@ class ModelVisualizer:
         self._pyplot = pyplot
         self._meshcat = meshcat
         self._environment_map = environment_map
+        self._camera_config_path = camera_config
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
@@ -329,11 +333,30 @@ class ModelVisualizer:
         # sensor is affixed to the world frame and we'll modify that pose
         # below.
         if self._show_rgbd_sensor:
+            # Default configuration.
             camera_config = CameraConfig(width=1440, height=1080)
+            camera_config.fps = 1.0  # Ignored -- we're not simulating.
+            camera_config.z_far = 3  # Show 3m of frustum.
+            if self._camera_config_path:
+                try:
+                    camera_config = yaml_load_typed(
+                        schema=CameraConfig,
+                        filename=self._camera_config_path,
+                        defaults=camera_config
+                    )
+                except Exception as e:
+                    msg = f"{e}"
+                    inset = "\n     "
+                    msg = inset + inset.join(msg.split('\n'))
+                    logging.getLogger("drake").warning(
+                        "Error reading camera config file, default "
+                        f"configuration used: {self._camera_config_path}"
+                        f"{msg}")
+            # We need to remap some values to work with the tracking.
             camera_config.name = "preview"
             camera_config.X_PB.base_frame = "$rgbd_sensor_body"
-            camera_config.z_far = 3  # Show 3m of frustum.
-            camera_config.fps = 1.0  # Ignored -- we're not simulating.
+            camera_config.X_PB.translation = [0, 0, 0]
+            camera_config.X_PB.rotation = Rotation.Rpy(deg=[0, 0, 0])
             is_unit_test = "TEST_SRCDIR" in os.environ
             camera_config.show_rgb = not is_unit_test  # Pop up a local window.
             ApplyCameraConfig(
