@@ -187,6 +187,7 @@ drake_cc_library(
     hdrs = ["deformable_contact_internal.h"],
     deps = [
         ":collision_filter",
+        ":deformable_field_intersection",
         ":deformable_mesh_intersection",
         "//common:essential",
         "//geometry:geometry_ids",

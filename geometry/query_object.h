@@ -412,8 +412,10 @@ class QueryObject {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
-  /** Reports contact information among all deformable geometries. This function
-   only supports double as the scalar type.
+  /** Reports contact information among all deformable geometries. It includes
+   contacts between two deformable geometries or contacts between a
+   deformable geometry and a rigid geometry. This function only supports
+   double as the scalar type.
    @param[out] deformable_contact
      Contains all deformable contact data on output. Any data passed in is
      cleared before the computation.
