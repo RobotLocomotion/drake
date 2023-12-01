@@ -1,5 +1,7 @@
 #include "drake/planning/rejection_sampler.h"
-#include <iostream>
+
+#include <memory>
+
 namespace drake {
 namespace planning {
 

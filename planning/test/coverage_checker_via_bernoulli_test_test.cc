@@ -110,8 +110,8 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByBoxesSuccess) {
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
       checker, current_sets,
-      0.90 /* Check that we achieve approximately 90% coverage.*/
-  );
+      0.90 /* Check that we achieve approximately 90% coverage.*/);
+
   /* Asking for 80% coverage when we have 90% */
   checker.set_alpha(0.8);
   EXPECT_TRUE(checker.CheckCoverage(current_sets));
@@ -141,8 +141,7 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByBoxesFails) {
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
       checker, current_sets,
-      0.25 /* Check that we achieve approximately 25% coverage.*/
-  );
+      0.25 /* Check that we achieve approximately 25% coverage.*/);
   /* Asking for 80% coverage when we only have 25% */
   checker.set_alpha(0.8);
   EXPECT_FALSE(checker.CheckCoverage(current_sets));
@@ -175,8 +174,7 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByHPolyhedron) {
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
       checker, current_sets,
-      0.5 /* Check that we achieve approximately 50% coverage.*/
-  );
+      0.5 /* Check that we achieve approximately 50% coverage.*/);
 
   /* Asking for 80% coverage when we only have 50% failse */
   checker.set_alpha(0.8);
@@ -217,8 +215,7 @@ GTEST_TEST(BernoulliCoverageCheck, BoxDomainCoveredByMix) {
   current_sets.emplace_back(std::make_unique<VPolytope>(vertices));
 
   TestCoveredFractionWithinOneStandardDeviationOfExpected(
-      checker, current_sets, 1 /* Check that we achieve 100% coverage.*/
-  );
+      checker, current_sets, 1 /* Check that we achieve 100% coverage.*/);
   // Asking for 90% coverage, when we have 100% coverage succeeds
   checker.set_alpha(0.9);
   EXPECT_TRUE(checker.CheckCoverage(current_sets));

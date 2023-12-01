@@ -1,19 +1,15 @@
 #include "drake/planning/approximate_convex_cover_builder_base.h"
 
-#include <chrono>
 #include <condition_variable>
 #include <future>
-#include <iostream>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/ssize.h"
-
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
 
 namespace drake {
 namespace planning {
@@ -22,25 +18,6 @@ using Eigen::SparseMatrix;
 using Eigen::Triplet;
 using geometry::optimization::ConvexSet;
 using graph_algorithms::MaxCliqueSolverBase;
-
-// ApproximateConvexCoverFromCliqueCoverOptions::
-//    ApproximateConvexCoverFromCliqueCoverOptions(
-//        std::unique_ptr<CoverageCheckerBase> coverage_checker,
-//        std::unique_ptr<PointSamplerBase> point_sampler,
-//        std::unique_ptr<AdjacencyMatrixBuilderBase> adjacency_matrix_builder,
-//        std::unique_ptr<MaxCliqueSolverBase> max_clique_solver,
-//        std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>
-//            set_builder,
-//        int num_sampled_points, int minimum_clique_size)
-//    : coverage_checker_(std::move(coverage_checker)),
-//      point_sampler_(std::move(point_sampler)),
-//      adjacency_matrix_builder_(std::move(adjacency_matrix_builder)),
-//      max_clique_solver_(std::move(max_clique_solver)),
-//      set_builders_(std::move(set_builder)),
-//      num_sampled_points_(num_sampled_points),
-//      minimum_clique_size_(minimum_clique_size) {
-//  DRAKE_THROW_UNLESS(set_builders_.size() > 0);
-//};
 
 namespace {
 // A very simple implementation of a thread-safe asynchronous queue for use when
@@ -77,7 +54,9 @@ class AsyncQueue {
   // acquired. If the queue is still filling, pop will wait for a job rather
   // than returning spuriously. Only returns false when both the queue is done
   // filling and when the queue is completely empty.
-  bool pop(T& write_reference) {
+  // Marked no lint since the linter really dislikes passing a non-const
+  // reference.
+  bool pop(T& write_reference /*NOLINT*/) {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this] {
       return !queue_.empty() || !still_filling_;
@@ -119,35 +98,31 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
   *mat = mat->pruned();
 }
 
-/*
- * Computes the largest clique in the graph represented by @p adjacency_matrix
- * and adds this largest clique to @p computed_cliques. This clique is then
- * removed from the adjacency matrix, and a new maximal clique is computed.
- * This process is completed until no clique of size @p minimum_clique can be
- * found.
- * At this point, set the value of @p clique_cover_computed to true.
- *
- * This method is intended to be used only in
- * ApproximateConvexCoverFromCliqueCover.
- *
- * Note:
- * 1. Access to @p computed_cliques must be locked by @p computed_cliques_lock
- * as other worker threads will be asynchronously pulling off of this queue to
- * build convex sets in ApproximateConvexCoverFromCliqueCover.
- *
- * 2. The adjacency matrix will be mutated by this method and be mostly
- useless
- * after this method is called.
- *
- * @p clique_cover_computed must be set to true on the exit of this method,
- * otherwise ApproximateConvexCoverFromCliqueCover will loop forever.
- */
+// Computes the largest clique in the graph represented by @p adjacency_matrix
+// and adds this largest clique to @p computed_cliques. This clique is then
+// removed from the adjacency matrix, and a new maximal clique is computed.
+// This process is completed until no clique of size @p minimum_clique can be
+// found.
+// At this point, set the value of @p clique_cover_computed to true.
+//
+// This method is intended to be used only in
+// ApproximateConvexCoverFromCliqueCover.
+//
+// Note:
+// 1. Access to @p computed_cliques must be locked by @p computed_cliques_lock
+// as other worker threads will be asynchronously pulling off of this queue to
+// build convex sets in ApproximateConvexCoverFromCliqueCover.
+//
+// 2. The adjacency matrix will be mutated by this method and be mostly useless
+// after this method is called.
+//
+// @p clique_cover_computed must be set to true on the exit of this method,
+// otherwise ApproximateConvexCoverFromCliqueCover will loop forever.
 void ComputeGreedyTruncatedCliqueCover(
     const int minimum_clique_size,
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
     SparseMatrix<bool>* adjacency_matrix,
     AsyncQueue<VectorX<bool>>* computed_cliques) {
-  std::cout << "Launching Greedy Clique Cover" << std::endl;
   float last_clique_size = std::numeric_limits<float>::infinity();
   while (last_clique_size > minimum_clique_size &&
          adjacency_matrix->nonZeros() > minimum_clique_size) {
@@ -156,34 +131,21 @@ void ComputeGreedyTruncatedCliqueCover(
     last_clique_size = max_clique.template cast<int>().sum();
     if (last_clique_size > minimum_clique_size) {
       computed_cliques->push(max_clique);
-      std::cout << "Clique pushed" << std::endl;
       MakeFalseRowsAndColumns(max_clique, adjacency_matrix);
     }
   }
   computed_cliques->done_filling();
-  std::cout << "MAX CLIQUE EXITTED" << std::endl;
 }
 
-/*
- * Pulls cliques from @p computed_cliques and constructs convex sets using @p
- * points contained in the clique by calling @set_builder BuildConvexSet
- method.
- *
- * This process continues until @p clique_cover_complete gets set to true.
- *
- * This method is intended to be used only in
- * ApproximateConvexCoverFromCliqueCover.
- *
- * Note:
- * 1. Access to @p computed_cliques must be locked by @p computed_cliques_lock
- * as other worker threads will be asynchronously pulling off of this queue to
- * build convex sets in ApproximateConvexCoverFromCliqueCover.
- */
+// Pulls cliques from @p computed_cliques and constructs convex sets using @p
+// points contained in the clique by calling @set_builder BuildConvexSet method.
+//
+// This method is intended to be used only in
+// ApproximateConvexCoverFromCliqueCover.
 std::queue<copyable_unique_ptr<ConvexSet>> SetBuilderWorker(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
     ConvexSetFromCliqueBuilderBase* set_builder,
     AsyncQueue<VectorX<bool>>* computed_cliques) {
-  std::cout << "set builder launched" << std::endl;
   std::queue<copyable_unique_ptr<ConvexSet>> ret;
   VectorX<bool> current_clique;
   while (computed_cliques->pop(current_clique)) {
@@ -197,7 +159,6 @@ std::queue<copyable_unique_ptr<ConvexSet>> SetBuilderWorker(
       }
     }
     ret.push(set_builder->BuildConvexSet(clique_points));
-    std::cout << "set made" << std::endl;
   }
   return ret;
 }

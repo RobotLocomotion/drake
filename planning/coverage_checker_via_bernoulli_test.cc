@@ -10,7 +10,6 @@ namespace drake {
 namespace planning {
 using geometry::optimization::ConvexSets;
 
-
 CoverageCheckerViaBernoulliTest::CoverageCheckerViaBernoulliTest(
     const double alpha, const int num_points_per_check,
     std::unique_ptr<PointSamplerBase> point_sampler, const int num_threads,
@@ -46,8 +45,7 @@ double CoverageCheckerViaBernoulliTest::GetSampledCoverageFraction(
 }
 
 bool CoverageCheckerViaBernoulliTest::DoCheckCoverage(
-    const ConvexSets&
-        current_sets) const {
+    const ConvexSets& current_sets) const {
   return GetSampledCoverageFraction(current_sets) >= alpha_;
 }
 

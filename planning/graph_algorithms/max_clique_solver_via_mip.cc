@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <vector>
-#include <iostream>
 
 #include "drake/common/ssize.h"
 #include "drake/solvers/choose_best_solver.h"

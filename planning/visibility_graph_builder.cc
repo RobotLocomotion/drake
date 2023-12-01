@@ -1,11 +1,14 @@
 #include "drake/planning/visibility_graph_builder.h"
+
+#include <utility>
+
 #include "drake/planning/visibility_graph.h"
 
 namespace drake {
 namespace planning {
 
 VisibilityGraphBuilder::VisibilityGraphBuilder(
-    std::unique_ptr<CollisionChecker>& checker, bool parallelize)
+    std::unique_ptr<CollisionChecker> checker, bool parallelize)
     : checker_{std::move(checker)}, parallelize_{parallelize} {}
 
 Eigen::SparseMatrix<bool> VisibilityGraphBuilder::DoBuildAdjacencyMatrix(

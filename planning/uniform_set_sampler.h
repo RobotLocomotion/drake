@@ -14,7 +14,7 @@ class UniformSetSampler : public PointSamplerBase {
    * interface. Instances of this class draw points uniformly at random from an
    * underlying set, usually one of Drake's ConvexSets.
    */
-  UniformSetSampler(const T& set);
+  explicit UniformSetSampler(const T& set);
 
   /**
    * This class provides a concrete implementation of the PointSamplerBase

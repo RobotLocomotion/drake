@@ -29,11 +29,11 @@ struct ApproximateConvexCoverFromCliqueCoverOptions {
 };
 
 void ApproximateConvexCoverFromCliqueCover(
-    CoverageCheckerBase* coverage_checker,
-    PointSamplerBase* point_sampler,
+    CoverageCheckerBase* coverage_checker, PointSamplerBase* point_sampler,
     AdjacencyMatrixBuilderBase* adjacency_matrix_builder,
     MaxCliqueSolverBase* max_clique_solver,
-    const std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>& set_builders,
+    const std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>>&
+        set_builders,
     const ApproximateConvexCoverFromCliqueCoverOptions& options,
     ConvexSets* convex_sets);
 

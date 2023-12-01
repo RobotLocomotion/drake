@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/geometry/optimization/convex_set.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
 namespace planning {

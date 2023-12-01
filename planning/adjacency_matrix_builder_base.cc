@@ -5,12 +5,11 @@
 namespace drake {
 namespace planning {
 Eigen::SparseMatrix<bool> AdjacencyMatrixBuilderBase::BuildAdjacencyMatrix(
-      const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
   DRAKE_THROW_UNLESS(!points.hasNaN());
   DRAKE_THROW_UNLESS(points.allFinite());
   return DoBuildAdjacencyMatrix(points);
 }
-
 
 }  // namespace planning
 }  // namespace drake

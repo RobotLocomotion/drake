@@ -12,21 +12,31 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
-        #        ":approximate_convex_cover_builder_base",
+        ":adjacency_matrix_builder_base",
+        ":approximate_convex_cover_builder_base",
         ":body_shape_description",
         ":collision_avoidance",
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":convex_set_from_clique_builder_base",
+        ":coverage_checker_base",
+        ":coverage_checker_via_bernoulli_test",
         ":distance_and_interpolation_provider",
+        ":iris_from_clique_cover",
+        ":iris_region_from_clique_builder",
         ":linear_distance_and_interpolation_provider",
+        ":point_sampler_base",
+        ":rejection_sampler",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
+        ":uniform_set_sampler",
         ":unimplemented_collision_checker",
         ":visibility_graph",
+        ":visibility_graph_builder",
     ],
 )
 
@@ -243,8 +253,8 @@ drake_cc_library(
         ":point_sampler_base",
         ":coverage_checker_base",
         ":convex_set_from_clique_builder_base",
-        ":adjacency_matrix_builder_base"
-    ]
+        ":adjacency_matrix_builder_base",
+    ],
 )
 
 drake_cc_library(
@@ -260,8 +270,8 @@ drake_cc_library(
         "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//planning/graph_algorithms:max_clique_solver_base",
         ":iris_region_from_clique_builder",
-        ":coverage_checker_via_bernoulli_test"
-    ]
+        ":coverage_checker_via_bernoulli_test",
+    ],
 )
 
 drake_cc_library(
@@ -490,7 +500,6 @@ drake_cc_googletest(
     ],
 )
 
-
 drake_cc_googletest(
     name = "coverage_checker_via_bernoulli_test_test",
     # Running with multiple threads is an essential part of our test coverage.
@@ -508,8 +517,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
+    timeout = "moderate",
     deps = [":iris_from_clique_cover"],
-    timeout = "moderate"
 )
 
 add_lint_tests()

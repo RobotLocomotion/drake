@@ -1,7 +1,5 @@
 #include "drake/planning/iris_from_clique_cover.h"
 
-#include <chrono>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/ssize.h"
@@ -44,20 +42,7 @@ GTEST_TEST(IrisFromCliqueCover, BoxWithCornerObstaclesTest) {
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 100;
   std::vector<copyable_unique_ptr<HPolyhedron>> sets;
-  std::cout << "entering iris from clique cover" << std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
   IrisFromCliqueCover(obstacles, domain, options, &sets);
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << fmt::format(
-             "Got {} sets in {}ms", sets.size(),
-             std::chrono::duration<double, std::milli>(end - start).count())
-      << std::endl;
-  //  for(const auto& s: sets) {
-  //    std::cout << fmt::format("A ={}", fmt_eigen(s->A())) << std::endl;
-  //    std::cout << fmt::format("b ={}", fmt_eigen(s->b())) << std::endl;
-  //    std::cout << std::endl;
-  //  }
 
   EXPECT_EQ(ssize(sets), 2);
 
@@ -78,12 +63,14 @@ GTEST_TEST(IrisFromCliqueCover, BoxWithCornerObstaclesTest) {
             }
             return false;
           };
+
   // The rejection sampler for the C-Free.
   std::unique_ptr<PointSamplerBase> rejection_collision_sampler =
       std::make_unique<RejectionSampler>(sampler, reject_in_collision);
 
+  double coverage_threshold{0.9};
   CoverageCheckerViaBernoulliTest coverage_checker{
-      0.9 /* Achieve 90% coverage */,
+      coverage_threshold,
       static_cast<int>(1e3) /* number of sampled points for test*/,
       std::move(rejection_collision_sampler)};
 
@@ -97,11 +84,12 @@ GTEST_TEST(IrisFromCliqueCover, BoxWithCornerObstaclesTest) {
             .volume;
   }
   EXPECT_TRUE(coverage_checker.CheckCoverage(abstract_sets));
-  // The free space is 0.2 units of area.
+  // The free space is 0.2 units of area. We want to achieve at least 90% of 0.2
+  EXPECT_GE(computed_volume, 0.2 * coverage_threshold);
+  // In reality we achieve slighlty more than 0.189 units of volume. Leave this
+  // test to detect regressions.
   EXPECT_GE(computed_volume, 0.189);
-
 }
-
 }  // namespace
 }  // namespace planning
 }  // namespace drake

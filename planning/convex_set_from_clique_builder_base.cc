@@ -4,7 +4,7 @@ namespace drake {
 namespace planning {
 
 copyable_unique_ptr<ConvexSet> ConvexSetFromCliqueBuilderBase::BuildConvexSet(
-      const Eigen::Ref<const Eigen::MatrixXd>& clique_points) {
+    const Eigen::Ref<const Eigen::MatrixXd>& clique_points) {
   return DoBuildConvexSet(clique_points);
 }
 

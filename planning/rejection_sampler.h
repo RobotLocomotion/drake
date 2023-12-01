@@ -1,15 +1,17 @@
 #pragma once
 
+#include <memory>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/common/random.h"
 #include "drake/planning/point_sampler_base.h"
-#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace planning {
 
 class RejectionSampler final : public PointSamplerBase {
  public:
-//  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RejectionSampler);
+  //  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RejectionSampler);
   /**
    * This class provides a concrete implementation of the PointSamplerBase
    * interface. Instances of this class draw points according to the passed
@@ -17,14 +19,16 @@ class RejectionSampler final : public PointSamplerBase {
    */
   RejectionSampler(
       std::shared_ptr<PointSamplerBase> sampler,
-      const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>& rejection_fun);
+      const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>&
+          rejection_fun);
 
  private:
   Eigen::MatrixXd DoSamplePoints(int num_points) override;
 
   std::shared_ptr<PointSamplerBase> sampler_;
 
-   const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>& rejection_fun_;
+  const std::function<bool(const Eigen::Ref<const Eigen::VectorXd>&)>&
+      rejection_fun_;
 };
 
 }  // namespace planning
