@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/deformable_field_intersection.h"
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
@@ -42,6 +43,18 @@ class GeometriesTester {
   static const RigidGeometry& get_rigid_geometry(const Geometries& geometries,
                                                  GeometryId rigid_id) {
     return geometries.rigid_geometries_.at(rigid_id);
+  }
+
+  /* Expose the map for testing, so testers can use the order of GeometryId's in
+     the map in a consistent way. For example, we will know that, for the two
+     iterators it0 = deformable_geometries().begin() and
+               it1 = std::next(it0, 1),
+     we will have
+               GeometryId deformable0_id = it0->first before
+               GeometryId deformable1_id = it1->first  */
+  static const std::unordered_map<GeometryId, DeformableGeometry>&
+  deformable_geometries(const Geometries& geometries) {
+    return geometries.deformable_geometries_;
   }
 };
 
@@ -323,7 +336,9 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
   }
 }
 
-GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
+// This test focuses on the contact between a deformable geometry and a rigid
+// geometry. The next test will have contacts between deformable geometries.
+GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   Geometries geometries;
   CollisionFilter collision_filter;
   /* The contact data is empty when there is no deformable geometry. */
@@ -417,6 +432,163 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
                          get_extract_ids_functor());
   contact_data = geometries.ComputeDeformableContact(collision_filter);
   EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
+}
+
+// Test contact between deformable geometries. It is separated from the
+// previous test for ease of maintenance. The main objectives of this test are
+//   1. For one contact pair, ComputeDeformableContact() passes arguments to
+//      AddDeformableDeformableContactSurface() in the right order.
+//   2. For n deformable geometries, ComputeDeformableContact() gives
+//      n(n-1)/2 unique pairs of contacts.
+//   3. ComputeDeformableContact() respect the collision filter.
+GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableDeformable) {
+  Geometries geometries;
+  CollisionFilter collision_filter;
+  // First we set up two deformable geometries in contact.
+  {
+    const GeometryId deformable0_id = GeometryId::get_new_id();
+    const GeometryId deformable1_id = GeometryId::get_new_id();
+    collision_filter.AddGeometry(deformable0_id);
+    collision_filter.AddGeometry(deformable1_id);
+
+    // Use Box meshes with medial axis because they have no zero interpolated
+    // signed distance in the interior volume. For simplicity, we use two long
+    // boxes aligned with different axes.
+    //                    Z
+    //                   | |
+    //                   | |
+    //                   | |
+    //        -----------| |------------
+    //        -----------| |------------  X
+    //                   | |
+    //                   | |
+    //                   | |
+    //
+    VolumeMesh<double> mesh0 =
+        MakeBoxVolumeMeshWithMa<double>(Box(0.3, 0.01, 0.01));
+    VolumeMesh<double> mesh1 =
+        MakeBoxVolumeMeshWithMa<double>(Box(0.01, 0.01, 0.3));
+
+    geometries.AddDeformableGeometry(deformable0_id, std::move(mesh0));
+    geometries.AddDeformableGeometry(deformable1_id, std::move(mesh1));
+  }
+
+  // 1. For one contact pair, ComputeDeformableContact() passes arguments to
+  //    AddDeformableDeformableContactSurface() in the right order.
+  {
+    SCOPED_TRACE("One pair");
+    DeformableContact<double> contact_data =
+        geometries.ComputeDeformableContact(collision_filter);
+    ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+
+    // Set up the expected contact data by calling
+    // AddDeformableDeformableContactSurface() with the same order of
+    // arguments that ComputeDeformableContact() did.  The order depends on
+    // how the map Geometries::deformable_geometries_ iterates the list of
+    // geometries.
+    auto it0 = GeometriesTester::deformable_geometries(geometries).begin();
+    auto it1 = std::next(it0, 1);
+    const GeometryId deformable0_id = it0->first;
+    const GeometryId deformable1_id = it1->first;
+    const DeformableGeometry& deformable0_geometry = it0->second;
+    const DeformableGeometry& deformable1_geometry = it1->second;
+    DeformableContact<double> expect;
+    expect.RegisterDeformableGeometry(
+        deformable0_id,
+        deformable0_geometry.deformable_mesh().mesh().num_vertices());
+    expect.RegisterDeformableGeometry(
+        deformable1_id,
+        deformable1_geometry.deformable_mesh().mesh().num_vertices());
+    AddDeformableDeformableContactSurface(
+        deformable0_geometry.CalcSignedDistanceField(),
+        deformable0_geometry.deformable_mesh(), deformable0_id,
+        deformable1_geometry.CalcSignedDistanceField(),
+        deformable1_geometry.deformable_mesh(), deformable1_id, &expect);
+    ASSERT_EQ(expect.contact_surfaces().size(), 1);
+    ASSERT_EQ(contact_data.contact_surfaces().size(),
+              expect.contact_surfaces().size());
+    EXPECT_EQ(contact_data.contact_surfaces().at(0).id_A(),
+              expect.contact_surfaces().at(0).id_A());
+    EXPECT_EQ(contact_data.contact_surfaces().at(0).id_B(),
+              expect.contact_surfaces().at(0).id_B());
+    EXPECT_EQ(contact_data.contact_surfaces().at(0).num_contact_points(),
+              expect.contact_surfaces().at(0).num_contact_points());
+    EXPECT_TRUE(contact_data.contact_surfaces().at(0).contact_mesh_W().Equal(
+        expect.contact_surfaces().at(0).contact_mesh_W()));
+  }
+
+  // 2. For n deformable geometries, ComputeDeformableContact() gives
+  //    n(n-1)/2 unique pairs of contacts. If it creates
+  //    DeformableContactSurface(GeometryId_i, GeometryId_j), i≠j, it does
+  //    not create the "duplicated" DeformableContactSurface(GeometryId_j,
+  //    GeometryId_i).
+  //
+  // We will test with n=3 by adding the third deformable box.
+  //
+  //                    Z     Y
+  //                   | |  / /
+  //                   | | / /
+  //                   | |/ /
+  //                   | / /
+  //        -----------|/|/----------
+  //        -----------/ /|----------  X
+  //                  /|/|
+  //                 / / |
+  //                / /| |
+  //               / / | |
+  //
+  {
+    SCOPED_TRACE("Three pairs");
+    {
+      const GeometryId deformable2_id = GeometryId::get_new_id();
+      collision_filter.AddGeometry(deformable2_id);
+      VolumeMesh<double> mesh2 =
+          MakeBoxVolumeMeshWithMa<double>(Box(0.01, 0.3, 0.01));
+      geometries.AddDeformableGeometry(deformable2_id, std::move(mesh2));
+    }
+    ASSERT_EQ(GeometriesTester::deformable_geometries(geometries).size(), 3);
+    auto it = GeometriesTester::deformable_geometries(geometries).begin();
+    const GeometryId deformable0_id = it->first;
+    const GeometryId deformable1_id = (++it)->first;
+    const GeometryId deformable2_id = (++it)->first;
+
+    DeformableContact<double> contact_data =
+        geometries.ComputeDeformableContact(collision_filter);
+    EXPECT_EQ(contact_data.contact_surfaces().size(), 3);
+
+    // Verify unique pairs of contact without duplication.
+    std::set<std::set<GeometryId>> expected_pairs{
+        {deformable0_id, deformable1_id},
+        {deformable0_id, deformable2_id},
+        {deformable1_id, deformable2_id}};
+    std::set<std::set<GeometryId>> pairs{
+        {contact_data.contact_surfaces().at(0).id_A(),
+         contact_data.contact_surfaces().at(0).id_B()},
+        {contact_data.contact_surfaces().at(1).id_A(),
+         contact_data.contact_surfaces().at(1).id_B()},
+        {contact_data.contact_surfaces().at(2).id_A(),
+         contact_data.contact_surfaces().at(2).id_B()}};
+    EXPECT_EQ(pairs, expected_pairs);
+  }
+
+  // 3. ComputeDeformableContact() respect the collision filter.
+  //    We will use collision filter to disable all contacts.
+  {
+    SCOPED_TRACE("Collision filter");
+    ASSERT_EQ(GeometriesTester::deformable_geometries(geometries).size(), 3);
+    auto it = GeometriesTester::deformable_geometries(geometries).begin();
+    const GeometryId deformable0_id = it->first;
+    const GeometryId deformable1_id = (++it)->first;
+    const GeometryId deformable2_id = (++it)->first;
+    collision_filter.Apply(
+        CollisionFilterDeclaration().ExcludeWithin(
+            GeometrySet({deformable0_id, deformable1_id, deformable2_id})),
+        get_extract_ids_functor());
+
+    DeformableContact<double> contact_data =
+        geometries.ComputeDeformableContact(collision_filter);
+    EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
+  }
 }
 
 }  // namespace
