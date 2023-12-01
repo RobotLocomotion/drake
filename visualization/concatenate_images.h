@@ -20,10 +20,13 @@ output_ports:
 - color_image
 @endsystem
 
-As currently implemented, all inputs must be of type ImageRgba8U, must have
-identical width and height, and all ports must be connected (i.e., with no gaps
-in the grid of rows x cols). Any of those conditions could be generalized as
-future work.
+All inputs must be of type ImageRgba8U.
+
+Any input port may be disconnected, in which case it will be interpreted as
+zero-sized image.
+
+In case of non-uniform image sizes, any gaps between images will be filled with
+all-zero pixels (i.e., with 0% alpha).
 
 @tparam_double_only
 @ingroup visualization */
