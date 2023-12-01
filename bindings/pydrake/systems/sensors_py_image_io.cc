@@ -81,8 +81,7 @@ void DefineSensorsImageIo(py::module m) {
                   image_any);
             },
             py::arg("image"), py::arg("path"), py::arg("format") = std::nullopt,
-            cls_doc.Save
-                .doc_3args_constImage_conststdfilesystempath_stdoptional)
+            cls_doc.Save.doc_3args)
         .def(
             "Save",
             [](const Class& self, const ImageAny& image_any,
@@ -94,9 +93,7 @@ void DefineSensorsImageIo(py::module m) {
               return py::bytes(
                   reinterpret_cast<const char*>(result.data()), result.size());
             },
-            py::arg("image"), py::arg("format"),
-            cls_doc.Save
-                .doc_2args_constImage_drakesystemssensorsImageFileFormat);
+            py::arg("image"), py::arg("format"), cls_doc.Save.doc_2args);
   }
 
   {
