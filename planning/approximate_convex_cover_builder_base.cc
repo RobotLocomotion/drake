@@ -147,7 +147,7 @@ void ComputeGreedyTruncatedCliqueCover(
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
     SparseMatrix<bool>* adjacency_matrix,
     AsyncQueue<VectorX<bool>>* computed_cliques) {
-    std::cout << "Launching Greedy Clique Cover" << std::endl;
+  std::cout << "Launching Greedy Clique Cover" << std::endl;
   float last_clique_size = std::numeric_limits<float>::infinity();
   while (last_clique_size > minimum_clique_size &&
          adjacency_matrix->nonZeros() > minimum_clique_size) {
@@ -228,29 +228,13 @@ void ApproximateConvexCoverFromCliqueCover(
         set_builders,
     const ApproximateConvexCoverFromCliqueCoverOptions& options,
     ConvexSets* convex_sets) {
-  // TODO(Alexandre.Amice) Make sure that the minimum clique size is at least as
-  // big as the ambient dimension.
-  //  std::cout << "entered ApproximateConvexCoverFromCliqueCover" << std::endl;
-
-  int itr{0};
-  //  auto coverage_check_start = std::chrono::high_resolution_clock::now();
   while (!coverage_checker->CheckCoverage(*convex_sets)) {
-    //    auto coverage_check_end = std::chrono::high_resolution_clock::now();
-    //    std::cout << fmt::format("Coverage check took {}ms",
-    //                             std::chrono::duration<double, std::milli>(
-    //                                 coverage_check_end -
-    //                                 coverage_check_start) .count())
-    //              << std::endl;
-    //    std::cout << "Starting itr = " << itr << std::endl;
-
-    // Sample points according to some distribution.
-    //    auto point_sampler_start = std::chrono::high_resolution_clock::now();
     const Eigen::MatrixXd points =
         point_sampler->SamplePoints(options.num_sampled_points);
     Eigen::SparseMatrix<bool> adjacency_matrix =
         adjacency_matrix_builder->BuildAdjacencyMatrix(points);
 
-    // Reserve more space in for the newly built sets. Typically, we won't get
+    // Reserve more space for the newly built sets. Typically, we won't get
     // this worst case number of new cliques, so we only reserve half of the
     // worst case.
     convex_sets->reserve(
@@ -264,21 +248,21 @@ void ApproximateConvexCoverFromCliqueCover(
     AsyncQueue<VectorX<bool>> computed_cliques;
 
     // Compute truncated clique cover.
-    std::thread clique_cover_thread{
-        [&adjacency_matrix, &max_clique_solver, &options, &computed_cliques]() {
-          ComputeGreedyTruncatedCliqueCover(
-              options.minimum_clique_size, *max_clique_solver,
-              &adjacency_matrix, &computed_cliques);
-        }};
+    std::thread clique_cover_thread{[&adjacency_matrix, &max_clique_solver,
+                                     &options, &computed_cliques]() {
+      ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
+                                        *max_clique_solver, &adjacency_matrix,
+                                        &computed_cliques);
+    }};
 
     // Build convex sets.
     std::vector<std::future<std::queue<copyable_unique_ptr<ConvexSet>>>>
         build_sets_future;
     build_sets_future.reserve(set_builders.size());
     for (int i = 0; i < ssize(set_builders); ++i) {
-      build_sets_future.emplace_back(std::async(
-          std::launch::async, SetBuilderWorker, points,
-          set_builders.at(i).get(), &computed_cliques));
+      build_sets_future.emplace_back(
+          std::async(std::launch::async, SetBuilderWorker, points,
+                     set_builders.at(i).get(), &computed_cliques));
     }
 
     // The clique cover and the convex sets are computed asynchronously. Wait

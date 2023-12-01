@@ -30,7 +30,7 @@ class ConvexObstaclesVisibilityMaker final : public AdjacencyMatrixBuilderBase {
   Eigen::SparseMatrix<bool> DoBuildAdjacencyMatrix(
       const Eigen::Ref<const Eigen::MatrixXd>& points) const {
     const int num_points = points.cols();
-    std::cout<< "Entered ConvexObstaclesVisibilityMaker" << std::endl;
+    std::cout << "Entered ConvexObstaclesVisibilityMaker" << std::endl;
 
     auto IsVisible = [this](const Eigen::Ref<const Eigen::VectorXd>& p1,
                             const Eigen::Ref<const Eigen::VectorXd>& p2) {
@@ -154,8 +154,14 @@ void IrisFromCliqueCover(const ConvexSets& obstacles, const HPolyhedron& domain,
 
   ApproximateConvexCoverFromCliqueCoverOptions
       approximate_convex_cover_from_clique_cover_options;
+  // Cliques need to generate full dimensional Lowner John ellipsoids. So we
+  // ensure that we always retrieve cliques of size at least 1 + the ambient
+  // dimension.
+  const int minimum_clique_size =
+      std::max(options.minimum_clique_size,
+               static_cast<int>(domain.ambient_dimension() + 1));
   approximate_convex_cover_from_clique_cover_options.minimum_clique_size =
-      options.minimum_clique_size;
+      minimum_clique_size;
   approximate_convex_cover_from_clique_cover_options.num_sampled_points =
       options.num_points_per_visibility_round;
   std::cout << "entering ApproximateConvexCoverFromCliqueCoverOptions"
