@@ -1,5 +1,8 @@
 import pydrake.visualization as mut
 
+import logging
+from pathlib import Path
+import tempfile
 import unittest
 
 import numpy as np
@@ -73,3 +76,64 @@ class TestModelVisualizerCamera(unittest.TestCase):
         numpy_compare.assert_allclose(X_WB.GetAsMatrix34(),
                                       X_WB_expected.GetAsMatrix34(),
                                       atol=1e-15)
+
+    def test_camera_with_config(self):
+        # There are various additional pieces of logic that *could* be tested.
+        # For example, making sure that the X_PB values in the config file
+        # get ignored (in lieu of configuring the render camera to track the
+        # viewer camera). We're not testing these because if there are errors,
+        # they would become apparent during use. (E.g., the renderer would stop
+        # tracking the viewer's camera). These tests serve as a regression test
+        # against *not* consuming a camera configuration or messages in the
+        # event that parsing fails.
+
+        # Create a config file which configures the camera differently from
+        # the default.
+        renderer_name = "__unique_test_renderer__"
+        scratch_dir = Path(tempfile.mkdtemp())
+        config_file = scratch_dir / "test_config.yaml"
+        with open(config_file, "w") as f:
+            f.write(f"""
+name: gltf_vtk_camera
+renderer_name: {renderer_name}
+renderer_class: RenderEngineVtk
+width: 512
+height: 256
+""")
+        # If we don't provide a configuration file, we don't get a renderer
+        # with the expected name.
+        dut = mut.ModelVisualizer(show_rgbd_sensor=True)
+        dut.Finalize()
+        scene_graph = dut._diagram.scene_graph()
+        self.assertTrue(scene_graph.HasRenderer("default"))
+        self.assertFalse(scene_graph.HasRenderer(renderer_name))
+
+        # Providing a configuration file uses that file.
+        dut = mut.ModelVisualizer(show_rgbd_sensor=True,
+                                  camera_config=config_file)
+        dut.Finalize()
+        scene_graph = dut._diagram.scene_graph()
+        self.assertFalse(scene_graph.HasRenderer("default"))
+        self.assertTrue(scene_graph.HasRenderer(renderer_name))
+
+        # Config without requesting an rgbd sensor has no effect.
+        dut = mut.ModelVisualizer(show_rgbd_sensor=False,
+                                  camera_config=config_file)
+        dut.Finalize()
+        scene_graph = dut._diagram.scene_graph()
+        self.assertFalse(scene_graph.HasRenderer("default"))
+        self.assertFalse(scene_graph.HasRenderer(renderer_name))
+
+        # Various kinds of config loading errors produce a default camera.
+        # We'll use IOError as representative by passing an invalid path.
+        dut = mut.ModelVisualizer(show_rgbd_sensor=True,
+                                  camera_config=config_file / ".bad")
+        with self.assertLogs("drake", logging.WARNING) as cm:
+            dut.Finalize()
+        self.assertEqual(len(cm.records), 1)
+        self.assertRegex(cm.records[0].getMessage(),
+                         "Error reading camera config file.*")
+
+        scene_graph = dut._diagram.scene_graph()
+        self.assertTrue(scene_graph.HasRenderer("default"))
+        self.assertFalse(scene_graph.HasRenderer(renderer_name))
