@@ -13,6 +13,7 @@ licenses(["notice"])  # Apache-2.0
 
 exports_files([
     "LICENSE.md",
+    "include/cpp/DefaultSettings.h",
     "rust_wrapper/Cargo.toml",
 ])
 

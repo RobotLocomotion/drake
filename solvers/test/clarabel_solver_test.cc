@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -339,6 +340,34 @@ GTEST_TEST(TestSos, UnivariateNonnegative1) {
   if (solver.is_available()) {
     const auto result = solver.Solve(dut.prog());
     dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestOptions, SetMaxIter) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_TRUE(result.is_success());
+    ASSERT_GT(result.get_solver_details<ClarabelSolver>().iterations, 1);
+    // Now change the max iteration to 1.
+    solver_options.SetOption(solver.id(), "max_iter", 1);
+    result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  }
+}
+
+GTEST_TEST(TestOptions, unrecognized) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        solver.Solve(dut.prog(), std::nullopt, solver_options),
+        ".*unrecognized solver options bad_unrecognized.*");
   }
 }
 }  // namespace test
