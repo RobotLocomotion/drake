@@ -22,16 +22,16 @@ CoverageCheckerViaBernoulliTest::CoverageCheckerViaBernoulliTest(
 
 double CoverageCheckerViaBernoulliTest::GetSampledCoverageFraction(
     const ConvexSets& current_sets) const {
-  const int num_threads{
-      num_threads_ > 0 ? num_threads_
-                       : static_cast<int>(std::thread::hardware_concurrency())};
   Eigen::MatrixXd sampled_points =
       point_sampler_->SamplePoints(num_points_per_check_);
   // Leave this count as a double since we will use it to perform division
   // later.
   std::atomic<double> num_in_sets{0};
+  const int max_concurrency{
+      std::max(static_cast<int>(std::thread::hardware_concurrency()), 1)};
+  const int num_threads{num_threads_ > 0 ? num_threads_ : max_concurrency};
 #if defined(_OPENMP)
-#pragma omp parallel for num_threads(num_threads)
+#pragma omp parallel for num_threads(num_threads) schedule(static)
 #endif
   for (int i = 0; i < sampled_points.cols(); ++i) {
     for (const auto& set : current_sets) {

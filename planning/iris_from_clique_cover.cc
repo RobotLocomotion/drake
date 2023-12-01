@@ -132,10 +132,10 @@ void IrisFromCliqueCover(const ConvexSets& obstacles, const HPolyhedron& domain,
       std::make_unique<ConvexObstaclesVisibilityMaker>(obstacles);
 
   // Define the set builders.
+  const int max_concurrency{
+      std::max(static_cast<int>(std::thread::hardware_concurrency()) - 1, 1)};
   const int num_builders =
-      options.num_builders < 1
-          ? static_cast<int>(std::thread::hardware_concurrency()) - 1
-          : options.num_builders;
+      options.num_builders < 1 ? max_concurrency : options.num_builders;
   std::vector<std::unique_ptr<ConvexSetFromCliqueBuilderBase>> set_builders;
   set_builders.reserve(num_builders);
   for (int i = 0; i < num_builders; ++i) {

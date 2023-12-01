@@ -21,18 +21,6 @@ class CoverageCheckerBase {
   /**
    * Check that the current sets provide sufficient coverage.
    */
-  //  virtual bool CheckCoverage(
-  //      const std::vector<ConvexSet>& current_sets) const = 0;
-  //
-  //  /**
-  //   * Check that the current sets provide sufficient coverage.
-  //   */
-  //  virtual bool CheckCoverage(
-  //      const std::queue<ConvexSet>& current_sets) const = 0;
-
-  //  virtual bool CheckCoverage(
-  //      const std::queue<std::unique_ptr<ConvexSet>>& current_sets) const = 0;
-
   // TODO(Alexandre.Amice) Coverage checker doesn't necessarily need unique
   // pointers to convex sets. Consider making a template version.
   bool CheckCoverage(const ConvexSets& current_sets) const;
