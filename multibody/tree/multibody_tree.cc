@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -265,19 +266,46 @@ const auto& GetElementByName(
   // If the name is non-existent, then say so, whether or not a specific model
   // instance was requested.
   if (lower == upper) {
-    std::vector<std::string_view> all_keys;
-    all_keys.reserve(name_to_index.size());
-    for (auto it = name_to_index.begin(),
-             end = name_to_index.end();
-         it != end;
-         it = name_to_index.equal_range(it->first).second) {
-      all_keys.push_back(it->first.view());
+    std::string message = fmt::format(
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model ",
+        element_classname, element_classname, name);
+    if (element_classname == "ModelInstance") {
+      std::vector<std::string_view> all_keys;
+      all_keys.reserve(name_to_index.size());
+      for (auto it = name_to_index.begin(),
+              end = name_to_index.end();
+          it != end;
+          it = name_to_index.equal_range(it->first).second) {
+        all_keys.push_back(it->first.view());
+      }
+      std::sort(all_keys.begin(), all_keys.end());
+      message +=
+          fmt::format("(valid names are: {})", fmt::join(all_keys, ", "));
+    } else {  // Print valid names by model instance for all other elements.
+      std::map<ModelInstanceIndex, std::vector<std::string_view>>
+          names_by_model_instance;
+      for (const auto& [key, index] : name_to_index) {
+        const auto& element = GetElementByIndex(tree, index);
+        names_by_model_instance[element.model_instance()].push_back(
+            key.view());
+      }
+      if (names_by_model_instance.empty()) {
+        message =
+            fmt::format("Get{}ByName(): There are no {}s defined in the model",
+                        element_classname, element_classname);
+      } else {
+        std::vector<std::string> instance_messages;
+        instance_messages.reserve(names_by_model_instance.size());
+        for (auto& [instance, names] : names_by_model_instance) {
+          std::sort(names.begin(), names.end());
+          instance_messages.push_back(fmt::format(
+              "valid names in model instance '{}' are: {}",
+              tree.GetModelInstanceName(instance), fmt::join(names, ", ")));
+        }
+        message += fmt::format("({})", fmt::join(instance_messages, "; "));
+      }
     }
-    std::sort(all_keys.begin(), all_keys.end());
-    throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' anywhere in the model "
-        "(valid names are: {})",
-        element_classname, element_classname, name, fmt::join(all_keys, ", ")));
+    throw std::logic_error(message);
   }
 
   // Filter for the requested model_instance, if one was provided.
