@@ -43,8 +43,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] outboard_frame_M
   //   the outboard frame M which can move freely with respect to frame F.
   QuaternionFloatingMobilizer(const Frame<T>& inboard_frame_F,
-                const Frame<T>& outboard_frame_M) :
-      MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+                              const Frame<T>& outboard_frame_M)
+      : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
   bool is_floating() const override { return true; }
 
@@ -55,7 +55,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
 
   // @name Methods to get and set the state for a QuaternionFloatingMobilizer
@@ -95,8 +95,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Alternative signature to set_quaternion(context, q_FM) to set `state` to
   // store the orientation of M in F given by the quaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
-      const systems::Context<T>& context,
-      const Quaternion<T>& q_FM, systems::State<T>* state) const;
+      const systems::Context<T>& context, const Quaternion<T>& q_FM,
+      systems::State<T>* state) const;
 
   // Sets the distribution governing the random samples of the rotation
   // component of the mobilizer state.
@@ -122,8 +122,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   // Sets the distribution governing the random samples of the position
   // component of the mobilizer state.
-  void set_random_position_distribution(const Vector3<symbolic::Expression>&
-      position);
+  void set_random_position_distribution(
+      const Vector3<symbolic::Expression>& position);
 
   // Sets `context` so this mobilizer's generalized coordinates (its quaternion
   // q_FM) are consistent with the given `R_FM` rotation matrix.
@@ -198,8 +198,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @name Mobilizer overrides
   // Refer to the Mobilizer class documentation for details.
   // @{
+  void SetStateFromRigidTransformOrThrow(
+      const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+      systems::State<T>* state) const override;
+
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
+
+  void SetStateFromSpatialVelocityOrThrow(
+      const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+      systems::State<T>* state) const override;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
@@ -209,22 +217,29 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const override;
+  void ProjectSpatialForce(const systems::Context<T>& context,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const override;
 
   bool is_velocity_equal_to_qdot() const override { return false; }
 
-  void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const override;
+  void MapVelocityToQDot(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& v,
+                         EigenPtr<VectorX<T>> qdot) const override;
 
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const override;
+  void MapQDotToVelocity(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& qdot,
+                         EigenPtr<VectorX<T>> v) const override;
+
+  void SetFloatingMobilizerRandomPositionDistribution(
+      const Vector3<symbolic::Expression>& position) final {
+    set_random_position_distribution(position);
+  }
+
+  void SetFloatingMobilizerRandomQuaternionDistribution(
+      const Eigen::Quaternion<symbolic::Expression>& q_FM) final {
+    set_random_quaternion_distribution(q_FM);
+  }
   // @}
 
  protected:
