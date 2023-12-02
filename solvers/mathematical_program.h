@@ -2602,7 +2602,7 @@ class MathematicalProgram {
   Binding<PositiveSemidefiniteConstraint>
   AddPrincipleMinorIsPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
-      std::set<int> minor_indices);
+      const std::set<int>& minor_indices);
 
   /**
    * Adds a constraint the that the principle minor of a symmetric matrix of
@@ -2618,7 +2618,7 @@ class MathematicalProgram {
   Binding<PositiveSemidefiniteConstraint>
   AddPrincipleMinorIsPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
-      std::set<int> minor_indices);
+      const std::set<int>& minor_indices);
 
   /**
    * Adds a linear matrix inequality constraint to the program.

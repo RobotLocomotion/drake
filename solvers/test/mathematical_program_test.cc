@@ -2981,9 +2981,12 @@ GTEST_TEST(TestMathematicalProgram,
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
 
   std::set<int> minor_indices{0, 1, 3};
-  Matrix<symbolic::Variable, 3, 3> minor_manual{{X(0, 0), X(0, 1), X(0, 3)},
-                                                {X(1, 0), X(1, 1), X(1, 3)},
-                                                {X(3, 0), X(3, 1), X(3, 3)}};
+  MatrixXDecisionVariable minor_manual(3,3);
+  // clang-format off
+  minor_manual << X(0, 0), X(0, 1), X(0, 3),
+                  X(1, 0), X(1, 1), X(1, 3),
+                  X(3, 0), X(3, 1), X(3, 3);
+  // clang-format on
 
   auto psd_cnstr =
       prog.AddPrincipleMinorIsPositiveSemidefiniteConstraint(X, minor_indices)
@@ -3001,9 +3004,12 @@ GTEST_TEST(TestMathematicalProgram,
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
   std::set<int> minor_indices{0, 1, 3};
-  Matrix<symbolic::Variable, 3, 3> minor_manual{{X(0, 0), X(0, 1), X(0, 3)},
-                                                {X(1, 0), X(1, 1), X(1, 3)},
-                                                {X(3, 0), X(3, 1), X(3, 3)}};
+  MatrixXDecisionVariable minor_manual(3,3);
+  // clang-format off
+  minor_manual << X(0, 0), X(0, 1), X(0, 3),
+                  X(1, 0), X(1, 1), X(1, 3),
+                  X(3, 0), X(3, 1), X(3, 3);
+  // clang-format on
 
   auto psd_cnstr = prog.AddPrincipleMinorIsPositiveSemidefiniteConstraint(
                            2 * Matrix4d::Identity() * X, minor_indices)

@@ -1150,7 +1150,7 @@ namespace {
 
 template <typename T>
 MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
-                     std::set<int> minor_indices) {
+                     const std::set<int>& minor_indices) {
   // In Debug builds, check if the minor_indices are valid.
   if (kDrakeAssertIsArmed) {
     auto elt_is_in_bounds = [&mat](int elt) {
@@ -1180,7 +1180,7 @@ MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
 Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
-    std::set<int> minor_indices) {
+    const std::set<int>& minor_indices) {
   return AddPositiveSemidefiniteConstraint(
       MakeMinor<symbolic::Variable>(symmetric_matrix_var, minor_indices));
 }
@@ -1188,7 +1188,7 @@ MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
 Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
-    std::set<int> minor_indices) {
+    const std::set<int>& minor_indices) {
   return AddPositiveSemidefiniteConstraint(
       MakeMinor<symbolic::Expression>(e, minor_indices));
 }
