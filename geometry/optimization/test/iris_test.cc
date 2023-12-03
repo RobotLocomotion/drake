@@ -247,6 +247,35 @@ GTEST_TEST(IrisTest, TerminationConditions) {
             8);  // 4 from bbox + 1 from each obstacle.
 }
 
+GTEST_TEST(IrisTest, CallbackFunc) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
+
+  const Vector2d sample{0, 0};  // center of the bounding box.
+  const Vector2d q1{0.15, -0.45};
+  const Vector2d q2{-0.05, 0.75};
+  IrisOptions options;
+  options.iteration_limit = 100;
+  options.termination_threshold = -1;
+  SetOptionsForIrisFromEdge(&options, q1, q2, 1e-3);
+  // EXPECT_TRUE(options.callback_func.value()(domain));
+  // EXPECT_TRUE(options.starting_ellipse->PointInSet(q1, 1e-9));
+  // EXPECT_TRUE(options.starting_ellipse->PointInSet(q2, 1e-9));
+  const HPolyhedron region = Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(region.b().size(), 8);
+  EXPECT_TRUE(region.PointInSet(q1));
+  EXPECT_TRUE(region.PointInSet(q2));
+  // EXPECT_TRUE(options.callback_func.value()(region));
+  drake::log()->info("region A: \n{}, b: \n{}", region.A(), region.b());
+}
+
 GTEST_TEST(IrisTest, BallInBoxNDims) {
   const int N = 8;
   ConvexSets obstacles;
@@ -324,6 +353,29 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
   EXPECT_EQ(options.num_additional_constraint_infeasible_samples,
             options2.num_additional_constraint_infeasible_samples);
   EXPECT_EQ(options.random_seed, options2.random_seed);
+}
+
+GTEST_TEST(IrisOptionsTest, SetOptionsForIrisFromEdge) {
+  IrisOptions options;
+  const Vector2d x_1 = Vector2d::Ones() * 2.0;
+  const Vector2d x_2 = Vector2d::Ones();
+  const double epsilon = 1e-3;
+  const double tol = 1e-9;
+  EXPECT_FALSE(options.starting_ellipse.has_value());
+  EXPECT_FALSE(options.callback_func.has_value());
+  SetOptionsForIrisFromEdge(&options, x_1, x_2, epsilon, tol);
+  EXPECT_TRUE(options.starting_ellipose.has_value());
+  EXPECT_TRUE(options.callback_func.has_value());
+  const Hyperellipsoid& E = options.starting_ellipose.value();
+  EXPECT_TRUE(E.PointInSet(x_1, tol));
+  EXPECT_TRUE(E.PointInSet(x_2, tol));
+  const auto callback = options.callback_func.value();
+  // make a box that only contains upto half of the line segment.
+  const HPolyhedron would_not_contain = HPolyhedron::MakeBox(Vector2d::Zero(), (x_1+x_2)/2);
+  EXPECT_FALSE(callback(would_not_contain));
+  // Make a box that contains the line segment.
+  const HPolyhedron would_contain = HPolyhedron::MakeBox(x_1, x_2);
+  EXPECT_TRUE(callback(would_contain));
 }
 
 class SceneGraphTester : public ::testing::Test {

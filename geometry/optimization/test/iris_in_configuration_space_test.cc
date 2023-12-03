@@ -326,6 +326,71 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
   EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.9)));
 }
 
+/* Same as boxes_in_2d_urdf, but without the first two collision geos.
+The point is to have faster iris computation in the following test.
+*/
+const char boxes_in_2d_urdf_no_collisions[] = R"""(
+<robot name="boxes">
+  <link name="movable">
+    <collision name="center">
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <link name="for_joint"/>
+  <joint name="x" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="for_joint"/>
+  </joint>
+  <joint name="y" type="prismatic">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1" upper="1"/>
+    <parent link="for_joint"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)""";
+/* Make callback function such that the region will contain q1, q2.
+This is meant to generate Iris regions from edges.
+*/
+GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const Vector2d sample{0, 0};  // center of the bounding box.
+    std::function<bool(const HPolyhedron&)> always_true = [&](const HPolyhedron&) {
+    return true;
+  };
+  IrisOptions options;
+  options.iteration_limit = 100;
+  options.termination_threshold = -1;
+  options.configuration_obstacles = obstacles;
+  HPolyhedron region_without_callback = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  options.callback_func = always_true;
+  HPolyhedron region_with_always_true = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  // Region with always true callback function should be the same as region without the callback function
+  EXPECT_TRUE(region_with_always_true.ContainedIn(region_without_callback));
+  EXPECT_TRUE(region_without_callback.ContainedIn(region_with_always_true));
+  // now we add a callback function that will make the region contain q1, q2
+  const Vector2d q1{0.15, -0.45};
+  const Vector2d q2{-0.05, 0.75};
+  SetOptionsForIrisFromEdge(&options, q1, q2, 1e-3);
+  // add some constraint as well
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(2, "q");
+  prog.AddConstraint(q[0], -1, 0.16);
+  options.prog_with_additional_constraints = &prog;
+  HPolyhedron region_with_callback = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  EXPECT_TRUE(region_with_callback.PointInSet(q1));
+  EXPECT_TRUE(region_with_callback.PointInSet(q2));
+}
+
 /* Box obstacles in one corner.
 ┌───────┬─────┐
 │       │     │
