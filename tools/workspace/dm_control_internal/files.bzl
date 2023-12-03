@@ -19,6 +19,7 @@ def dm_control_mujoco_files():
         "dm_control/suite/manipulator.xml",
         "dm_control/suite/pendulum.xml",
         "dm_control/suite/point_mass.xml",
+        "dm_control/suite/quadruped.xml",
         "dm_control/suite/reacher.xml",
         "dm_control/suite/stacker.xml",
         "dm_control/suite/swimmer.xml",
