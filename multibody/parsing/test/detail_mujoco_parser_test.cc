@@ -444,6 +444,8 @@ TEST_F(MujocoParserTest, GeometryProperties) {
     <geom name="red" type="sphere" size="0.1" material="Orange" rgba="1 0 0 1"/>
     <geom name="green" type="sphere" size="0.1" material="Orange"
           class="default_rgba"/>
+    <geom name="no_collision" contype="0" conaffinity="0" />
+    <geom name="no_visual" group="3" />
   </worldbody>
 </mujoco>
 )""";
@@ -453,35 +455,59 @@ TEST_F(MujocoParserTest, GeometryProperties) {
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
   auto CheckProperties = [&inspector](const std::string& geometry_name,
-                                      double mu, const Vector4d& rgba) {
-    GeometryId geom_id = inspector.GetGeometryIdByName(
-        inspector.world_frame_id(), Role::kProximity, geometry_name);
-    const geometry::ProximityProperties* proximity_prop =
-        inspector.GetProximityProperties(geom_id);
-    EXPECT_TRUE(proximity_prop);
-    EXPECT_TRUE(proximity_prop->HasProperty("material", "coulomb_friction"));
-    const auto& friction = proximity_prop->GetProperty<CoulombFriction<double>>(
-        "material", "coulomb_friction");
-    EXPECT_EQ(friction.static_friction(), mu);
-    EXPECT_EQ(friction.dynamic_friction(), mu);
+                                      double mu, const Vector4d& rgba,
+                                      bool has_collision = true,
+                                      bool has_visual = true) {
+    if (has_collision) {
+      GeometryId geom_id = inspector.GetGeometryIdByName(
+          inspector.world_frame_id(), Role::kProximity, geometry_name);
+      const geometry::ProximityProperties* proximity_prop =
+          inspector.GetProximityProperties(geom_id);
+      EXPECT_TRUE(proximity_prop);
+      EXPECT_TRUE(proximity_prop->HasProperty("material", "coulomb_friction"));
+      const auto& friction =
+          proximity_prop->GetProperty<CoulombFriction<double>>(
+              "material", "coulomb_friction");
+      EXPECT_EQ(friction.static_friction(), mu);
+      EXPECT_EQ(friction.dynamic_friction(), mu);
+    } else {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          inspector.GetGeometryIdByName(inspector.world_frame_id(),
+                                        Role::kProximity, geometry_name),
+          ".*has no geometry.*");
+    }
 
-    geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
-                                            Role::kPerception, geometry_name);
-    const geometry::PerceptionProperties* perception_prop =
-        inspector.GetPerceptionProperties(geom_id);
-    EXPECT_TRUE(perception_prop);
-    EXPECT_TRUE(perception_prop->HasProperty("phong", "diffuse"));
-    EXPECT_TRUE(CompareMatrices(
-        perception_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    if (has_visual) {
+      GeometryId geom_id = inspector.GetGeometryIdByName(
+          inspector.world_frame_id(), Role::kPerception, geometry_name);
+      const geometry::PerceptionProperties* perception_prop =
+          inspector.GetPerceptionProperties(geom_id);
+      EXPECT_TRUE(perception_prop);
+      EXPECT_TRUE(perception_prop->HasProperty("phong", "diffuse"));
+      EXPECT_TRUE(CompareMatrices(
+          perception_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    } else {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          inspector.GetGeometryIdByName(inspector.world_frame_id(),
+                                        Role::kPerception, geometry_name),
+          ".*has no geometry.*");
+    }
 
-    geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
-                                            Role::kIllustration, geometry_name);
-    const geometry::IllustrationProperties* illustration_prop =
-        inspector.GetIllustrationProperties(geom_id);
-    EXPECT_TRUE(illustration_prop);
-    EXPECT_TRUE(illustration_prop->HasProperty("phong", "diffuse"));
-    EXPECT_TRUE(CompareMatrices(
-        illustration_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    if (has_visual) {
+      GeometryId geom_id = inspector.GetGeometryIdByName(
+          inspector.world_frame_id(), Role::kIllustration, geometry_name);
+      const geometry::IllustrationProperties* illustration_prop =
+          inspector.GetIllustrationProperties(geom_id);
+      EXPECT_TRUE(illustration_prop);
+      EXPECT_TRUE(illustration_prop->HasProperty("phong", "diffuse"));
+      EXPECT_TRUE(CompareMatrices(
+          illustration_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    } else {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          inspector.GetGeometryIdByName(inspector.world_frame_id(),
+                                        Role::kIllustration, geometry_name),
+          ".*has no geometry.*");
+    }
   };
 
   CheckProperties("default", 1.0, Vector4d{.5, .5, .5, 1});
@@ -491,6 +517,10 @@ TEST_F(MujocoParserTest, GeometryProperties) {
   // If both material and rgba are specified, rgba wins.
   CheckProperties("red", 1.0, Vector4d{1, 0, 0, 1});
   CheckProperties("green", 1.0, Vector4d{0, 1, 0, 1});
+  CheckProperties("no_collision", 1.0, Vector4d{.5, .5, .5, 1},
+                  false /* has collision */, true /* has visual */);
+  CheckProperties("no_visual", 1.0, Vector4d{.5, .5, .5, 1},
+                  true /* has collision */, false /* has visual */);
 }
 
 class BoxMeshTest : public MujocoParserTest {
@@ -1163,7 +1193,6 @@ TEST_F(MujocoParserTest, GeomErrors) {
 <mujoco model="test">
   <worldbody>
     <body>
-      <geom/>
       <geom type="capsule"/>
       <geom type="capsule" fromto="1 2 3 4 5 6"/>
       <geom type="ellipsoid"/>
@@ -1191,8 +1220,6 @@ TEST_F(MujocoParserTest, GeomErrors) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(
       ".*hfield.*unsupported.*ignored.*"));
 
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*sphere.*must have.*element.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
       ".*size.*capsule.*must have.*two elements.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
