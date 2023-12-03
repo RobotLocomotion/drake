@@ -9,11 +9,14 @@
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -129,11 +132,50 @@ TEST_P(GymModelTest, GymModel) {
 }
 
 const char* gym_models[] = {
-  "acrobot", "cartpole", "cheetah", "finger", "fish", "hopper",
-  "humanoid", "humanoid_CMU", "lqr", "manipulator", "pendulum",
-  "point_mass", "reacher", "stacker", "swimmer", "walker"};
+    "acrobot",  "cartpole",   "cheetah",      "finger",  "fish",
+    "hopper",   "humanoid",   "humanoid_CMU", "lqr",     "manipulator",
+    "pendulum", "point_mass", "quadruped",    "reacher", "stacker",
+    "swimmer",  "walker"};
 INSTANTIATE_TEST_SUITE_P(GymModels, GymModelTest,
                          testing::ValuesIn(gym_models));
+
+// In addition to confirming that the parser can successfully parse the model,
+// this test can be used to manually inspect the resulting visualization.
+GTEST_TEST(MujocoParserExtraTest, Visualize) {
+  systems::DiagramBuilder<double> builder;
+  std::shared_ptr<geometry::Meshcat> meshcat =
+      geometry::GetTestEnvironmentMeshcat();
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+
+  ParsingOptions options;
+  PackageMap package_map;
+  MujocoParserWrapper wrapper;
+  internal::CollisionFilterGroupResolver resolver{&plant};
+  internal::DiagnosticPolicy diagnostic_policy;
+  ParsingWorkspace w{
+      options,
+      package_map,
+      diagnostic_policy,
+      &plant,
+      &resolver,
+      [](const drake::internal::DiagnosticPolicy&,
+         const std::string&) -> drake::multibody::internal::ParserInterface& {
+        DRAKE_UNREACHABLE();
+      }};
+  const std::string model_name = "quadruped";
+  const std::string filename = FindResourceOrThrow(fmt::format(
+      "drake/multibody/parsing/dm_control/suite/{}.xml", model_name));
+  wrapper.AddModel({DataSource::kFilename, &filename}, model_name, {}, w);
+  resolver.Resolve(diagnostic_policy);
+  plant.Finalize();
+  visualization::AddDefaultVisualization(&builder, meshcat);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->ExecuteInitializationEvents(context.get());
+  diagram->ForcedPublish(*context);
+  common::MaybePauseForUser();
+}
 
 TEST_F(MujocoParserTest, CartPole) {
   const std::string filename = FindResourceOrThrow(
@@ -313,6 +355,7 @@ TEST_F(MujocoParserTest, GeometryPose) {
   // By default, angles are in degrees.
   std::string xml = R"""(
 <mujoco model="test">
+  <compiler eulerseq="XYZ"/>
   <default class="default_pose">
     <geom pos="1 2 3" quat="0 1 0 0"/>
   </default>
@@ -334,7 +377,7 @@ TEST_F(MujocoParserTest, GeometryPose) {
 </mujoco>
 )""";
 
-  // Explicitly set radians.
+  // Explicitly set radians. Eulerseq is default "xyz".
   std::string radians_xml = R"""(
 <mujoco model="test">
   <compiler angle="radian"/>
@@ -347,10 +390,10 @@ TEST_F(MujocoParserTest, GeometryPose) {
 </mujoco>
 )""";
 
-  // Explicitly set degrees.
+  // Explicitly set degrees. Eulerseq is "ZYZ".
   std::string degrees_xml = R"""(
 <mujoco model="test">
-  <compiler angle="degree"/>
+  <compiler angle="degree" eulerseq="ZYZ"/>
   <worldbody>
     <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -370,13 +413,16 @@ TEST_F(MujocoParserTest, GeometryPose) {
                                 const RigidTransformd& X_FG) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
-    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14))
+        << geometry_name;
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kPerception, geometry_name);
-    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14))
+        << geometry_name;
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kIllustration, geometry_name);
-    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14))
+        << geometry_name;
   };
 
   const Vector3d p{1, 2, 3};
@@ -401,14 +447,22 @@ TEST_F(MujocoParserTest, GeometryPose) {
   CheckPose(
       "axisangle_rad",
       RigidTransformd(Eigen::AngleAxis<double>(0.5, Vector3d{4, 5, 6}), p));
-  CheckPose("euler_rad", RigidTransformd(RollPitchYawd{0.5, 0.7, 1.05}, p));
+  CheckPose("euler_rad",
+            RigidTransformd(RotationMatrixd::MakeXRotation(0.5) *
+                                RotationMatrixd::MakeYRotation(0.7) *
+                                RotationMatrixd::MakeZRotation(1.05),
+                            p));
   CheckPose("axisangle_deg",
             RigidTransformd(
                 Eigen::AngleAxis<double>(M_PI / 6.0, Vector3d{4, 5, 6}), p));
-  CheckPose(
-      "euler_deg",
-      RigidTransformd(RollPitchYawd{M_PI / 6.0, M_PI / 4.0, M_PI / 3.0}, p));
+  CheckPose("euler_deg",
+            RigidTransformd(RotationMatrixd::MakeZRotation(M_PI / 3.0) *
+                                RotationMatrixd::MakeYRotation(M_PI / 4.0) *
+                                RotationMatrixd::MakeZRotation(M_PI / 6.0),
+                            p));
 }
+
+
 
 TEST_F(MujocoParserTest, GeometryPoseErrors) {
   const std::string xml = R"""(
@@ -910,6 +964,7 @@ TEST_F(MujocoParserTest, BodyError) {
 TEST_F(MujocoParserTest, Joint) {
   std::string xml = R"""(
 <mujoco model="test">
+  <compiler eulerseq="XYZ"/>
   <default>
     <geom type="sphere" size="1"/>
     <default class="default_joint">
