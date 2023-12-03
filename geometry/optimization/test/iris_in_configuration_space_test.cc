@@ -326,6 +326,35 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
   EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.9)));
 }
 
+
+GTEST_TEST(IrisInConfigurationSpaceTest, InvalidEllipse) {
+  IrisOptions options;
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  options.configuration_obstacles = obstacles;
+  const Vector2d sample{-0.8, 0.0};
+  const Vector2d ellipse_center{0.4, 0.4};  // right corridor.
+  Hyperellipsoid starting_ellipse = Hyperellipsoid::MakeHypersphere(0.1, ellipse_center);
+  options.starting_ellipse = starting_ellipse;
+  options.require_sample_point_is_contained = true;
+  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+  drake::log()->info("A = {}, b = {}", region.A(), region.b());
+  // The region will stretch in x.
+  EXPECT_TRUE(region.PointInSet(Vector2d(.9, 0.0)));
+  EXPECT_TRUE(region.PointInSet(Vector2d(-.9, 0.0)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.0, .9)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.9)));
+  // These are in collision
+  EXPECT_FALSE(region.PointInSet(Vector2d(-0.75, 0.75)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.75, 0.75)));
+}
+
 /* Same as boxes_in_2d_urdf, but without the first two collision geos.
 The point is to have faster iris computation in the following test.
 */
@@ -389,6 +418,12 @@ GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
   HPolyhedron region_with_callback = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
   EXPECT_TRUE(region_with_callback.PointInSet(q1));
   EXPECT_TRUE(region_with_callback.PointInSet(q2));
+  // failure case
+  const Vector2d q3{-0.85, 0.75};
+  SetOptionsForIrisFromEdge(&options, q1, q3, 1e-3);
+  const auto infeasible = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  drake::log()->info("infeasible region A = {}, b = {}", infeasible.A(), infeasible.b());
+  EXPECT_THROW(IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options), std::runtime_error);
 }
 
 /* Box obstacles in one corner.

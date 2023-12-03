@@ -54,6 +54,11 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
+  if (options.callback_func) {
+      if (!(*options.callback_func)(P)) {
+        throw std::runtime_error("Iris: The callback function on domain failed. The domain must be feasible.");
+      }
+  }
 
   if (options.bounding_region) {
     DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
@@ -113,18 +118,10 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     }
 
     if (options.callback_func) {
-      const auto P_candidate = HPolyhedron(A.topRows(num_constraints),
-                                           b.head(num_constraints));
-      if (!(*options.callback_func)(P_candidate)) {
-        drake::log()->info("Iris callback_func returned false.");
+      if (!(*options.callback_func)(HPolyhedron(A.topRows(num_constraints),
+                                           b.head(num_constraints)))) {
         break;
       }
-      else {
-        drake::log()->info("Iris callback_func returned true.");
-      }
-    }
-    else {
-      drake::log()->info("Iris callback_func not set.");
     }
 
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
@@ -614,6 +611,13 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
     P = HPolyhedron(A.topRows(num_initial_constraints),
                     b.head(num_initial_constraints));
+  }
+
+  if (options.callback_func) {
+    drake::log()->info("IrisInConfigurationSpace: Calling callback function on domain A = \n{}\nb = \n{}\n", P.A(), P.b());
+      if (!(*options.callback_func)(P)) {
+        throw std::runtime_error("IrisInConfigurationSpace: The callback function on domain failed. The domain must be feasible.");
+      }
   }
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
