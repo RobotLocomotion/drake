@@ -578,8 +578,19 @@ TEST_F(BoxMeshTest, MeshFileAbsolutePathCompiler) {
   // Absolute path in the meshdir compiler attribute.
   std::string mesh_asset =
       R"""(<mesh name="box" file="box.obj"/>)""";
+  // Additionally confirm that meshdir takes priority over assetdir.
   std::string compiler =
-      fmt::format(R"""(<compiler meshdir="{}"/>)""",
+      fmt::format(R"""(<compiler assetdir="invalid_name" meshdir="{}"/>)""",
+                  std::filesystem::path(box_obj_).parent_path().string());
+  TestBoxMesh(box_obj_, mesh_asset, compiler);
+}
+
+TEST_F(BoxMeshTest, MeshFileAbsolutePathCompilerUsingAssetDir) {
+  // Absolute path in the meshdir compiler attribute.
+  std::string mesh_asset =
+      R"""(<mesh name="box" file="box.obj"/>)""";
+  std::string compiler =
+      fmt::format(R"""(<compiler assetdir="{}"/>)""",
                   std::filesystem::path(box_obj_).parent_path().string());
   TestBoxMesh(box_obj_, mesh_asset, compiler);
 }
@@ -598,6 +609,15 @@ TEST_F(BoxMeshTest, MeshFileScale) {
   std::string mesh_asset =
       fmt::format(R"""(<mesh name="box" file="{}" scale="2 2 2"/>)""", box_obj_);
   TestBoxMesh(box_obj_, mesh_asset, "", 2.0);
+}
+
+TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
+  // Test the scale set via mesh defaults. According to the mjcf docs, this is
+  // the only supported mesh default.
+  std::string mesh_asset =
+      fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
+  std::string defaults = R"""(<default><mesh scale="2 2 2"/></default>)""";
+  TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
 }
 
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
@@ -891,6 +911,25 @@ TEST_F(MujocoParserTest, AssetErrors) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*not.*found.*nor.*replacement.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*not specify.*file.*ignored.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*non-uniform scale.*"));
+}
+
+TEST_F(MujocoParserTest, AssetDirErrors) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <compiler assetdir="invalid_dir"/>
+  <asset>
+    <mesh name="box_mesh" file="box.obj" />
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box_mesh"/>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*mesh asset.*could not be found.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*specified unknown mesh.*"));
 }
 
 TEST_F(MujocoParserTest, BodyError) {
