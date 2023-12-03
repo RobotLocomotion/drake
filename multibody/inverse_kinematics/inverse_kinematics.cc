@@ -96,10 +96,14 @@ InverseKinematics::InverseKinematics(
             current_positions.segment<size>(start).normalized();
         lb.segment<size>(start) = quat;
         ub.segment<size>(start) = quat;
+        prog_->SetInitialGuess(q_.segment<size>(start), quat);
       } else {
         prog_->AddConstraint(solvers::Binding<solvers::Constraint>(
             std::make_shared<UnitQuaternionConstraint>(),
             q_.segment<size>(start)));
+        // Set a non-zero initial guess to help avoid singularities.
+        prog_->SetInitialGuess(q_.segment<size>(start),
+                              Eigen::Vector4d{1, 0, 0, 0});
       }
     }
   }
