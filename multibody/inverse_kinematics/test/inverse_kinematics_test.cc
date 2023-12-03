@@ -123,6 +123,11 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
 }
 
 TEST_F(TwoFreeBodiesTest, ConstructorAddsUnitQuaterionConstraints) {
+  // By default, the initial guess was set to be [1, 0, 0, 0].
+  EXPECT_TRUE(
+      CompareMatrices(ik_.prog().GetInitialGuess(ik_.q().head<4>()),
+                      Eigen::Vector4d(1, 0, 0, 0)));
+
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
                                           Eigen::Vector4d(1, 2, 3, 4));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
@@ -179,7 +184,7 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
   // Leave joint1 unlocked.
 
   // Lock body2's floating joint to an un-normalized initial value.
-  joint2.set_quaternion(&*context, Eigen::Quaternion<double>(3.0, 0, 0, 0));
+  joint2.set_quaternion(&*context, Eigen::Quaternion<double>(0, 3.0, 0, 0));
   joint2.Lock(&*context);
 
   // Set limits on joint3, but do not lock it.
@@ -197,6 +202,14 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
   const int nq = ik.q().size();
   const solvers::MathematicalProgram& prog = ik.prog();
 
+  // The initial guess is set for the two quaternion floating joints.
+  EXPECT_TRUE(CompareMatrices(
+      ik.prog().GetInitialGuess(ik.q().segment(joint1.position_start(), 4)),
+      Eigen::Vector4d(1, 0, 0, 0)));
+  EXPECT_TRUE(CompareMatrices(
+      ik.prog().GetInitialGuess(ik.q().segment(joint2.position_start(), 4)),
+      Eigen::Vector4d(0, 1, 0, 0)));
+
   // The unit quaternion constraint is only added to joint1.
   ASSERT_EQ(prog.generic_constraints().size(), 1);
   const solvers::Binding<solvers::Constraint>& unit_quat =
@@ -212,7 +225,7 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
   // - Locked quaternion floating joints obey a single, normalized position.
   const int j2_start = joint2.position_start();
   lower.segment(j2_start, 7) = upper.segment(j2_start, 7) =
-      (Vector<double, 7>() << 1, 0, 0, 0, 0, 0, 0).finished();
+      (Vector<double, 7>() << 0, 1, 0, 0, 0, 0, 0).finished();
   // - Unlocked revolute joints still obey their position limits.
   const int j3_start = joint3.position_start();
   lower[j3_start] = -0.5;
