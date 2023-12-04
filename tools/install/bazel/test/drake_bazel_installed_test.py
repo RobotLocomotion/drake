@@ -18,12 +18,12 @@ def main():
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/bazel_skylib/repository.bzl.
-    bazel_skylib_commit = "1.4.2"
+    bazel_skylib_commit = "1.5.0"
     bazel_skylib_urls = [
         f"https://github.com/bazelbuild/bazel-skylib/archive/{bazel_skylib_commit}.tar.gz",  # noqa
         f"https://drake-mirror.csail.mit.edu/github/bazelbuild/bazel-skylib/{bazel_skylib_commit}.tar.gz",  # noqa
     ]
-    bazel_skylib_sha256 = "de9d2cedea7103d20c93a5cc7763099728206bd5088342d0009315913a592cc0"  # noqa
+    bazel_skylib_sha256 = "118e313990135890ee4cc8504e32929844f9578804a1b2f571d69b1dd080cfb8"  # noqa
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.

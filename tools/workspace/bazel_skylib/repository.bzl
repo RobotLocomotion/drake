@@ -9,7 +9,7 @@ def bazel_skylib_repository(name, mirrors = None):
         bazel_skylib commit listed in
         drake/tools/install/bazel/test/drake_bazel_installed_test.py.
         """,
-        commit = "1.4.2",
-        sha256 = "de9d2cedea7103d20c93a5cc7763099728206bd5088342d0009315913a592cc0",  # noqa
+        commit = "1.5.0",
+        sha256 = "118e313990135890ee4cc8504e32929844f9578804a1b2f571d69b1dd080cfb8",  # noqa
         mirrors = mirrors,
     )
