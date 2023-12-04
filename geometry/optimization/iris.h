@@ -225,7 +225,7 @@ iterations terminate before the edge is no longer contained in the IRIS region.
 @param tol to check PointInSet.
 @pre x_1.size() == x_2.size().
 @pre epsilon > 0. */
-void SetOptionsForIrisFromEdge(
+void SetIrisOptionsForEdge(
     IrisOptions* options,
     const Eigen::Ref<const Eigen::VectorXd>& x_1, 
     const Eigen::Ref<const Eigen::VectorXd>& x_2,

@@ -264,7 +264,7 @@ GTEST_TEST(IrisTest, CallbackFunc) {
   IrisOptions options;
   options.iteration_limit = 100;
   options.termination_threshold = -1;
-  SetOptionsForIrisFromEdge(&options, q1, q2, 1e-3);
+  SetIrisOptionsForEdge(&options, q1, q2, 1e-3);
   EXPECT_TRUE(options.callback_func.value()(domain));
   const HPolyhedron region = Iris(obstacles, sample, domain, options);
   EXPECT_EQ(region.b().size(), 8);
@@ -274,7 +274,7 @@ GTEST_TEST(IrisTest, CallbackFunc) {
   drake::log()->info("region A: \n{}, b: \n{}", region.A(), region.b());
   // failure case
   const Vector2d q3{3.0, 0};
-  SetOptionsForIrisFromEdge(&options, q1, q3, 1e-3);
+  SetIrisOptionsForEdge(&options, q1, q3, 1e-3);
   EXPECT_THROW_WITH_MESSAGE(
       Iris(obstacles, sample, domain, options), std::runtime_error,
       ".* The domain must be feasible *.");
@@ -359,7 +359,7 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
   EXPECT_EQ(options.random_seed, options2.random_seed);
 }
 
-GTEST_TEST(IrisOptionsTest, SetOptionsForIrisFromEdge) {
+GTEST_TEST(IrisOptionsTest, SetIrisOptionsForEdge) {
   IrisOptions options;
   const Vector2d x_1 = Vector2d::Ones() * 2.0;
   const Vector2d x_2 = Vector2d::Ones();
@@ -367,7 +367,7 @@ GTEST_TEST(IrisOptionsTest, SetOptionsForIrisFromEdge) {
   const double tol = 1e-9;
   EXPECT_FALSE(options.starting_ellipse.has_value());
   EXPECT_FALSE(options.callback_func.has_value());
-  SetOptionsForIrisFromEdge(&options, x_1, x_2, epsilon, tol);
+  SetIrisOptionsForEdge(&options, x_1, x_2, epsilon, tol);
   EXPECT_TRUE(options.starting_ellipse.has_value());
   EXPECT_TRUE(options.callback_func.has_value());
   const Hyperellipsoid& E = options.starting_ellipse.value();

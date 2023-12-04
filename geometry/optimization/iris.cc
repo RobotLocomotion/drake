@@ -875,7 +875,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   return P;
 }
 
-void SetOptionsForIrisFromEdge(
+void SetIrisOptionsForEdge(
     IrisOptions* options,
     const Eigen::Ref<const Eigen::VectorXd>& x_1, 
     const Eigen::Ref<const Eigen::VectorXd>& x_2,

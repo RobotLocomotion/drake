@@ -409,7 +409,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
   // now we add a callback function that will make the region contain q1, q2
   const Vector2d q1{0.15, -0.45};
   const Vector2d q2{-0.05, 0.75};
-  SetOptionsForIrisFromEdge(&options, q1, q2, 1e-3);
+  SetIrisOptionsForEdge(&options, q1, q2, 1e-3);
   // add some constraint as well
   solvers::MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(2, "q");
@@ -420,7 +420,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
   EXPECT_TRUE(region_with_callback.PointInSet(q2));
   // failure case
   const Vector2d q3{-0.85, 0.75};
-  SetOptionsForIrisFromEdge(&options, q1, q3, 1e-3);
+  SetIrisOptionsForEdge(&options, q1, q3, 1e-3);
   const auto infeasible = IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
   drake::log()->info("infeasible region A = {}, b = {}", infeasible.A(), infeasible.b());
   EXPECT_THROW(IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options), std::runtime_error);
