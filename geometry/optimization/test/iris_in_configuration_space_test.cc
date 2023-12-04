@@ -366,27 +366,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
               1e-6);
 }
 
-GTEST_TEST(IrisInConfigurationSpaceTest, Constrained2D) {
-  IrisOptions options;
-  ConvexSets obstacles;
-  options.relative_termination_threshold = 0.05;
-  options.termination_threshold = 0.05;
-  auto prog = solvers::MathematicalProgram();
-  auto q = prog.NewContinuousVariables<2>("q");
-  auto con = prog.AddConstraint(
-      (q[0] - 1) * (q[0] - 1) + (q[1] - 1) * (q[1] - 1), 0, 1);
-  options.prog_with_additional_constraints = &prog;
-  const Vector2d sample{0.98, 0.02};  // somewhere in the circle
-  EXPECT_TRUE(con.evaluator()->CheckSatisfied(sample));
-  options.require_sample_point_is_contained = true;
-  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
-  EXPECT_TRUE(region.PointInSet(sample));
-  // this point violates the constraint
-  Vector2d q_infeasible{0.1, 0.2};
-  EXPECT_FALSE(con.evaluator()->CheckSatisfied(q_infeasible));
-  EXPECT_FALSE(region.PointInSet(q_infeasible));
-}
-
 GTEST_TEST(IrisInConfigurationSpaceTest, BoundingRegion) {
   const Vector2d sample{0.0, 0.0};
   IrisOptions options;
@@ -859,6 +838,15 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
   EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  // Add an upper bound constraint on q
+  const double q_ub = M_PI / 8;
+  DRAKE_ASSERT(q_ub < qmax);  // otherwise test will be pointless
+  prog.AddConstraint(sin(q[0]), -1.0 / sqrt(2.0), sin(q_ub));
+  HPolyhedron region2 = IrisFromUrdf(boxes_urdf, sample, options);
+  const double kMargin = options.configuration_space_margin;
+  EXPECT_TRUE(region2.PointInSet(Vector1d{q_ub - kTol - kMargin}));
+  EXPECT_FALSE(region2.PointInSet(Vector1d{q_ub + kTol - kMargin}));
 }
 
 // This double pendulum doesn't have any collision geometry, but we'll add
