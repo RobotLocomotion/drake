@@ -65,11 +65,11 @@ class SpringDamperTester : public ::testing::Test {
   }
 
   const SpatialForce<double>& GetSpatialForceOnBodyA() const {
-    return forces_->body_forces().at(bodyA_->node_index());
+    return forces_->body_forces().at(bodyA_->mobod_index());
   }
 
   const SpatialForce<double>& GetSpatialForceOnBodyB() const {
-    return forces_->body_forces().at(bodyB_->node_index());
+    return forces_->body_forces().at(bodyB_->mobod_index());
   }
 
  protected:

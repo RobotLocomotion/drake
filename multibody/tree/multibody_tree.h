@@ -554,37 +554,27 @@ class MultibodyTree {
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
   // See MultibodyPlant method.
-  int num_frames() const {
-    return static_cast<int>(frames_.size());
-  }
+  int num_frames() const { return ssize(frames_); }
 
-  // Returns the number of bodies in the %MultibodyTree including the *world*
-  // body. Therefore the minimum number of bodies in a MultibodyTree is one.
-  int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+  // Returns the number of bodies in the MultibodyPlant including the world
+  // body. Therefore the minimum number of bodies is one.
+  int num_bodies() const { return ssize(owned_bodies_); }
 
   // Returns the number of joints added with AddJoint() to the %MultibodyTree.
-  int num_joints() const { return static_cast<int>(owned_joints_.size()); }
+  int num_joints() const { return ssize(owned_joints_); }
 
   // Returns the number of actuators in the model.
   // @see AddJointActuator().
-  int num_actuators() const {
-    return static_cast<int>(owned_actuators_.size());
-  }
+  int num_actuators() const { return ssize(owned_actuators_); }
 
   // See MultibodyPlant method.
-  int num_mobilizers() const {
-    return static_cast<int>(owned_mobilizers_.size());
-  }
+  int num_mobilizers() const { return ssize(owned_mobilizers_); }
 
   // See MultibodyPlant method.
-  int num_force_elements() const {
-    return static_cast<int>(owned_force_elements_.size());
-  }
+  int num_force_elements() const { return ssize(owned_force_elements_); }
 
   // Returns the number of model instances in the MultibodyTree.
-  int num_model_instances() const {
-    return static_cast<int>(instance_name_to_index_.size());
-  }
+  int num_model_instances() const { return ssize(instance_name_to_index_); }
 
   // Returns the number of generalized positions of the model.
   int num_positions() const {
@@ -1435,7 +1425,7 @@ class MultibodyTree {
   // @param[in] context
   //   The context storing the state of the model.
   // @param[out] M_B_W_all
-  //   For each body in the model, entry Body::node_index() in M_B_W_all
+  //   For each body in the model, entry Body::mobod_index() in M_B_W_all
   //   contains the updated spatial inertia `M_B_W(q)` for that body. On input
   //   it must be a valid pointer to a vector of size num_bodies().
   // @throws std::exception if M_B_W_all is nullptr or if its size is not
@@ -1462,7 +1452,7 @@ class MultibodyTree {
   // @param[in] context
   //   The context storing the state of the model.
   // @param[out] Mc_B_W_all
-  //   For each body in the model, entry Body::node_index() in M_B_W_all
+  //   For each body in the model, entry Body::mobod_index() in M_B_W_all
   //   contains the updated composite body inertia `Mc_B_W(q)` for that body.
   //   On input it must be a valid pointer to a vector of size num_bodies().
   // @throws std::exception if Mc_B_W_all is nullptr or if its size is not
@@ -1479,7 +1469,7 @@ class MultibodyTree {
   // @param[in] context
   //   The context storing the state of the model.
   // @param[out] Fb_Bo_W_all
-  //   For each body in the model, entry Body::node_index() in Fb_Bo_W_all
+  //   For each body in the model, entry Body::mobod_index() in Fb_Bo_W_all
   //   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
   //   it must be a valid pointer to a vector of size num_bodies().
   // @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
@@ -1521,7 +1511,7 @@ class MultibodyTree {
       AccelerationKinematicsCache<T>* ac) const;
 
   // See MultibodyPlant method.
-  // @warning The output parameter `A_WB_array` is indexed by BodyNodeIndex,
+  // @warning The output parameter `A_WB_array` is indexed by MobodIndex,
   // while MultibodyPlant's method returns accelerations indexed by BodyIndex.
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context,
@@ -1574,8 +1564,8 @@ class MultibodyTree {
   //   `Fapplied_Bo_W_array` can have zero size which means there are no
   //   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
   //   of size equal to the number of bodies in `this` %MultibodyTree model.
-  //   This array must be ordered by BodyNodeIndex, which for a given body can
-  //   be retrieved with Body::node_index().
+  //   This array must be ordered by MobodIndex, which for a given body can
+  //   be retrieved with Body::mobod_index().
   //   This method will abort if provided with an array that does not have a
   //   size of either `num_bodies()` or zero.
   // @param[in] tau_applied_array
@@ -1595,9 +1585,9 @@ class MultibodyTree {
   //   containing the spatial acceleration `A_WB` for each body. It must be of
   //   size equal to the number of bodies. This method will abort if the
   //   pointer is null or if `A_WB_array` is not of size `num_bodies()`.
-  //   On output, entries will be ordered by BodyNodeIndex.
+  //   On output, entries will be ordered by MobodIndex.
   //   To access the acceleration `A_WB` of given body B in this array, use the
-  //   index returned by Body::node_index().
+  //   index returned by Body::mobod_index().
   // @param[out] F_BMo_W_array
   //   A pointer to a valid, non nullptr, vector of spatial forces
   //   containing, for each body B, the spatial force `F_BMo_W` corresponding
@@ -1606,9 +1596,9 @@ class MultibodyTree {
   //   It must be of size equal to the number of bodies in the MultibodyTree.
   //   This method will abort if the pointer is null or if `F_BMo_W_array`
   //   is not of size `num_bodies()`.
-  //   On output, entries will be ordered by BodyNodeIndex.
+  //   On output, entries will be ordered by MobodIndex.
   //   To access a mobilizer's reaction force on given body B in this array,
-  //   use the index returned by Body::node_index().
+  //   use the index returned by Body::mobod_index().
   // @param[out] tau_array
   //   On output this array will contain the generalized forces that must be
   //   applied in order to achieve the desired generalized accelerations given
@@ -1618,8 +1608,8 @@ class MultibodyTree {
   //   Mobilizer::get_generalized_forces_from_array().
   //
   // @warning There is no mechanism to assert that either `A_WB_array` nor
-  //   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
-  //   Body::node_index() to obtain the node index for a given body.
+  //   `F_BMo_W_array` are ordered by MobodIndex. You can use
+  //   Body::mobod_index() to obtain the node index for a given body.
   //
   // @note This method uses `F_BMo_W_array` and `tau_array` as the only local
   // temporaries and therefore no additional dynamic memory allocation is
@@ -2045,15 +2035,15 @@ class MultibodyTree {
   // Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
   // body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
   // mobilities, respectively. See @ref abi_computing_accelerations for further
-  // details. On output `Ab_WB_all[body_node_index]`
-  // contains `Ab_WB` for the body with node index `body_node_index`.
+  // details. On output `Ab_WB_all[mobod_index]`
+  // contains `Ab_WB` for the body with node index `mobod_index`.
   void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* Ab_WB_all) const;
 
   // Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
-  // for each articulated body B. On output `Zb_Bo_W_all[body_node_index]`
-  // contains `Zb_Bo_W` for the body B with node index `body_node_index`.
+  // for each articulated body B. On output `Zb_Bo_W_all[mobod_index]`
+  // contains `Zb_Bo_W` for the body B with node index `mobod_index`.
   void CalcArticulatedBodyForceBias(
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* Zb_Bo_W_all) const;
@@ -2922,13 +2912,13 @@ class MultibodyTree {
   // forces for a quick simple solution. This allows clients of MBT (namely MBP)
   // to implement their own customized (implicit) time stepping schemes.
   // TODO(amcastro-tri): Consider updating ForceElement to also compute a
-  // Jacobian for general force models. That would allow us to implement
-  // implicit schemes for any forces using a more general infrastructure rather
-  // than having to deal with damping in a special way.
+  //  Jacobian for general force models. That would allow us to implement
+  //  implicit schemes for any forces using a more general infrastructure rather
+  //  than having to deal with damping in a special way.
   void AddJointDampingForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
-  void CreateBodyNode(BodyNodeIndex body_node_index);
+  void CreateBodyNode(MobodIndex mobod_index);
 
   void CreateModelInstances();
 
@@ -3148,7 +3138,7 @@ class MultibodyTree {
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes
   // in that level.
-  std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
+  std::vector<std::vector<MobodIndex>> body_node_levels_;
 
   // Joint to Mobilizer map, of size num_joints(). For a joint with index
   // joint_index, mobilizer_index = joint_to_mobilizer_[joint_index] maps to the
