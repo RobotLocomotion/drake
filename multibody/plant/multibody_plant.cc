@@ -1004,17 +1004,17 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   internal_tree().CalcSpatialAccelerationsFromVdot(
       context, internal_tree().EvalPositionKinematics(context),
       internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute BodyNodeIndex -> BodyIndex.
+  // Permute MobodIndex -> BodyIndex.
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
-  // still required dynamic allocation for recording permutation indices.
-  // Can change implementation once MultibodyTree becomes fully internal.
-  std::vector<SpatialAcceleration<T>> A_WB_array_node = *A_WB_array;
+  //  still required dynamic allocation for recording permutation indices.
+  //  Can change implementation once MultibodyTree becomes fully internal.
+  std::vector<SpatialAcceleration<T>> A_WB_array_mobod = *A_WB_array;
   const internal::MultibodyTreeTopology& topology =
       internal_tree().get_topology();
-  for (internal::BodyNodeIndex node_index(1);
-       node_index < topology.get_num_body_nodes(); ++node_index) {
-    const BodyIndex body_index = topology.get_body_node(node_index).body;
-    (*A_WB_array)[body_index] = A_WB_array_node[node_index];
+  for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
+       ++mobod_index) {
+    const BodyIndex body_index = topology.get_body_node(mobod_index).body;
+    (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
   }
 }
 
@@ -1889,10 +1889,10 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
     const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
     const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
-    internal::BodyNodeIndex bodyA_node_index =
-        get_body(bodyA_index).node_index();
-    internal::BodyNodeIndex bodyB_node_index =
-        get_body(bodyB_index).node_index();
+    internal::MobodIndex bodyA_mobod_index =
+        get_body(bodyA_index).mobod_index();
+    internal::MobodIndex bodyB_mobod_index =
+        get_body(bodyB_index).mobod_index();
 
     // Penetration depth, > 0 during pair.
     const T& x = pair.depth;
@@ -1905,18 +1905,18 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
     // Contact point position on body A.
-    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_node_index).translation();
+    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_mobod_index).translation();
     const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_node_index).translation();
+    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
     const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
 
     // Separation velocity, > 0  if objects separate.
     const Vector3<T> v_WAc =
-        vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
+        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational();
     const Vector3<T> v_WBc =
-        vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
+        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational();
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
@@ -2002,20 +2002,20 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
     const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
-    internal::BodyNodeIndex bodyA_node_index =
-        get_body(bodyA_index).node_index();
-    internal::BodyNodeIndex bodyB_node_index =
-        get_body(bodyB_index).node_index();
+    const internal::MobodIndex bodyA_mobod_index =
+        get_body(bodyA_index).mobod_index();
+    const internal::MobodIndex bodyB_mobod_index =
+        get_body(bodyB_index).mobod_index();
 
     // Contact point C.
     const Vector3<T> p_WC = contact_info.contact_point();
 
     // Contact point position on body A.
-    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_node_index).translation();
+    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_mobod_index).translation();
     const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_node_index).translation();
+    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
     const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
 
     const Vector3<T> f_Bc_W = contact_info.contact_force();
@@ -2024,13 +2024,13 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     if (bodyA_index != world_index()) {
       // Spatial force on body A at Ao, expressed in W.
       const SpatialForce<T> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-      F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
+      F_BBo_W_array->at(bodyA_mobod_index) += F_AAo_W;
     }
 
     if (bodyB_index != world_index()) {
       // Spatial force on body B at Bo, expressed in W.
       const SpatialForce<T> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-      F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
+      F_BBo_W_array->at(bodyB_mobod_index) += F_BBo_W;
     }
   }
 }
@@ -2138,11 +2138,11 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
-      F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
+      F_BBo_W_array.at(bodyA.mobod_index()) += F_Ao_W;
     }
 
     if (bodyB_index != world_index()) {
-      F_BBo_W_array.at(bodyB.node_index()) += F_Bo_W;
+      F_BBo_W_array.at(bodyB.mobod_index()) += F_Bo_W;
     }
 
     // Add the information for contact reporting.
@@ -2231,7 +2231,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     throw_if_contains_nan(force_structure);
     const BodyIndex body_index = force_structure.body_index;
     const Body<T>& body = get_body(body_index);
-    const auto body_node_index = body.node_index();
+    const auto body_mobod_index = body.mobod_index();
 
     // Get the pose for this body in the world frame.
     const RigidTransform<T>& X_WB = EvalBodyPoseInWorld(context, body);
@@ -2241,7 +2241,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const Vector3<T> p_BoBq_W = X_WB.rotation() * force_structure.p_BoBq_B;
 
     // Shift the spatial force from Bq to Bo.
-    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(-p_BoBq_W);
+    F_BBo_W_array[body_mobod_index] += force_structure.F_Bq_W.Shift(-p_BoBq_W);
   }
 }
 
@@ -2570,7 +2570,7 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
       EvalSpatialContactForcesContinuous(context);
 
   // Bodies' accelerations and inboard mobilizer reaction forces, respectively,
-  // ordered by BodyNodeIndex and required as output arguments for
+  // ordered by MobodIndex and required as output arguments for
   // CalcInverseDynamics() below but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
@@ -3345,7 +3345,7 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    A_WB_all->at(body_index) = ac.get_A_WB(body.node_index());
+    A_WB_all->at(body_index) = ac.get_A_WB(body.mobod_index());
   }
 }
 
@@ -3358,7 +3358,7 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
   DRAKE_DEMAND(this == &body_B.GetParentPlant());
   this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
-  return ac.get_A_WB(body_B.node_index());
+  return ac.get_A_WB(body_B.mobod_index());
 }
 
 template <typename T>
@@ -3383,7 +3383,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(const Context<T>& context,
     // NOTE: The GeometryFrames for each body were registered in the world
     // frame, so we report poses in the world frame.
     poses->set_value(body_index_to_frame_id_.at(body_index),
-                     pc.get_X_WB(body.node_index()));
+                     pc.get_X_WB(body.mobod_index()));
   }
 }
 
@@ -3446,12 +3446,12 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
-    const internal::BodyNodeIndex body_node_index =
-        mobilizer.get_topology().body_node;
+    const internal::MobodIndex mobod_index =
+        mobilizer.get_topology().mobod_index;
 
     // Force on mobilized body B at mobilized frame's origin Mo, expressed in
     // world frame.
-    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[body_node_index];
+    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobod_index];
 
     // Frames:
     const Frame<T>& frame_Jp = joint.frame_on_parent();

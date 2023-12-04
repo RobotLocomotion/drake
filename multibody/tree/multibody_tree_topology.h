@@ -68,7 +68,7 @@ struct BodyTopology {
     if (child_bodies != other.child_bodies) return false;
     if (body_frame != other.body_frame) return false;
     if (level != other.level) return false;
-    if (body_node != other.body_node) return false;
+    if (mobod_index != other.mobod_index) return false;
     if (is_floating != other.is_floating) return false;
     if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
     if (floating_positions_start != other.floating_positions_start)
@@ -108,8 +108,8 @@ struct BodyTopology {
   // Finalize() when a user forgets to connect a body with a mobilizer.
   int level{-1};
 
-  // Index to the tree body node in the MultibodyTree.
-  BodyNodeIndex body_node;
+  // Index to the mobilized body (BodyNode) modeling this Body.
+  MobodIndex mobod_index;
 
   // `true` if this topology corresponds to a floating body in space.
   bool is_floating{false};
@@ -195,7 +195,7 @@ struct MobilizerTopology {
     if (inboard_body != other.inboard_body) return false;
     if (outboard_body != other.outboard_body) return false;
 
-    if (body_node != other.body_node) return false;
+    if (mobod_index != other.mobod_index) return false;
 
     if (num_positions != other.num_positions) return false;
     if (positions_start != other.positions_start) return false;
@@ -237,10 +237,8 @@ struct MobilizerTopology {
   BodyIndex inboard_body;
   // Index to the outboard body.
   BodyIndex outboard_body;
-  // Index to the tree node in the MultibodyTree responsible for this
-  // mobilizer's computations. See the documentation for BodyNodeTopology for
-  // further details on how these computations are organized.
-  BodyNodeIndex body_node;
+  // Index to the mobilized body (BodyNode) modeling this Mobilizer.
+  MobodIndex mobod_index;
 
   // Mobilizer indexing info: Set at Finalize() time.
   // Number of generalized coordinates granted by this mobilizer.
@@ -351,8 +349,8 @@ struct BodyNodeTopology {
   //                       body associated with node `parent_node_in`.
   // @param mobilizer_in The index to the mobilizer associated with this node.
   BodyNodeTopology(
-      BodyNodeIndex index_in, int level_in,
-      BodyNodeIndex parent_node_in,
+      MobodIndex index_in, int level_in,
+      MobodIndex parent_node_in,
       BodyIndex body_in, BodyIndex parent_body_in, MobilizerIndex mobilizer_in)
       : index(index_in), level(level_in),
       parent_body_node(parent_node_in),
@@ -397,13 +395,13 @@ struct BodyNodeTopology {
   }
 
   // Unique index of this node in the MultibodyTree.
-  BodyNodeIndex index{};
+  MobodIndex index{};
 
   // Depth level in the MultibodyTree, level = 0 for the world.
   int level{-1};
 
   // The unique index to the parent BodyNode of this node.
-  BodyNodeIndex parent_body_node;
+  MobodIndex parent_body_node;
 
   BodyIndex body;         // This node's body B.
   BodyIndex parent_body;  // This node's parent body P.
@@ -411,7 +409,7 @@ struct BodyNodeTopology {
   MobilizerIndex mobilizer;  // The mobilizer connecting bodies P and B.
 
   // The list of child body nodes to this node.
-  std::vector<BodyNodeIndex> child_nodes;
+  std::vector<MobodIndex> child_nodes;
 
   // Returns the number of children to this node.
   int get_num_children() const { return ssize(child_nodes);}
@@ -474,13 +472,16 @@ class MultibodyTreeTopology {
 
   // Returns the number of mobilizers in the multibody tree. Since the "world"
   // body does not have a mobilizer, the number of mobilizers will always equal
-  // the number of bodies minus one.
+  // the number of mobilized bodies minus one.
   int num_mobilizers() const {
     return ssize(mobilizers_);
   }
 
-  // Returns the number of tree nodes. This must equal the number of bodies.
-  int get_num_body_nodes() const {
+  // Returns the number of mobilized bodies (BodyNodes). Currently this is
+  // restricted to being equal to the number of user-supplied Body objects.
+  // TODO(sherm1) Relax this restriction -- the number of mobilized bodies can
+  //  differ from the number of user-provided links.
+  int num_mobods() const {
     return ssize(body_nodes_);
   }
 
@@ -535,9 +536,9 @@ class MultibodyTreeTopology {
   }
 
   // Returns a constant reference to the corresponding BodyNodeTopology given
-  // a BodyNodeIndex.
-  const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
-    DRAKE_ASSERT(index < get_num_body_nodes());
+  // a MobodIndex.
+  const BodyNodeTopology& get_body_node(MobodIndex index) const {
+    DRAKE_ASSERT(index < num_mobods());
     return body_nodes_[index];
   }
 
@@ -798,18 +799,18 @@ class MultibodyTreeTopology {
     forest_height_ = 1;  // At least one level with the world body at the root.
     body_nodes_.reserve(num_bodies());
     while (!stack.empty()) {
-      const BodyNodeIndex node(get_num_body_nodes());
+      const MobodIndex node(num_mobods());
       const BodyIndex current = stack.top();
       const BodyIndex parent = bodies_[current].parent_body;
 
-      bodies_[current].body_node = node;
+      bodies_[current].mobod_index = node;
 
       // Computes level.
       int level = 0;  // level = 0 for the world body.
       if (current != 0) {  // Not the world body.
         level = bodies_[parent].level + 1;
         const MobilizerIndex mobilizer = bodies_[current].inboard_mobilizer;
-        mobilizers_[mobilizer].body_node = node;
+        mobilizers_[mobilizer].mobod_index = node;
       }
       // Updates body levels.
       bodies_[current].level = level;
@@ -818,9 +819,9 @@ class MultibodyTreeTopology {
 
       // Since we are doing a DFT, it is valid to ask for the parent node,
       // unless we are at the root.
-      BodyNodeIndex parent_node;
+      MobodIndex parent_node;
       if (node != 0) {  // If we are not at the root:
-        parent_node = bodies_[parent].body_node;
+        parent_node = bodies_[parent].mobod_index;
         body_nodes_[parent_node].child_nodes.push_back(node);
       }
 
@@ -861,7 +862,7 @@ class MultibodyTreeTopology {
 
     // After we checked all bodies were reached above, the number of tree nodes
     // should equal the number of bodies in the tree.
-    DRAKE_DEMAND(num_bodies() == get_num_body_nodes());
+    DRAKE_DEMAND(num_bodies() == num_mobods());
 
     // Compile information regarding the size of the system:
     // - Number of degrees of freedom (generalized positions and velocities).
@@ -882,8 +883,8 @@ class MultibodyTreeTopology {
     // velocities.
     int position_index = 0;
     int velocity_index_in_state = num_positions_;
-    for (BodyNodeIndex node_index(1);
-         node_index < get_num_body_nodes(); ++node_index) {
+    for (MobodIndex node_index(1);
+         node_index < num_mobods(); ++node_index) {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
@@ -951,7 +952,7 @@ class MultibodyTreeTopology {
   // Returns the total number of actuated joint dofs in the model.
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
-  // Given a node in `this` topology, specified by its BodyNodeIndex `from`,
+  // Given a node in `this` topology, specified by its MobodIndex `from`,
   // this method computes the kinematic path formed by all the nodes in the
   // tree that connect `from` with the root (corresponding to the world).
   //
@@ -970,16 +971,16 @@ class MultibodyTreeTopology {
   //   (BodyNodeTopology::level) of body node `from` plus one (so that we can
   //   include the root node in the path).
   void GetKinematicPathToWorld(
-      BodyNodeIndex from, std::vector<BodyNodeIndex>* path_to_world) const {
+      MobodIndex from, std::vector<MobodIndex>* path_to_world) const {
     DRAKE_THROW_UNLESS(path_to_world != nullptr);
 
     const int path_size = get_body_node(from).level + 1;
     path_to_world->resize(path_size);
-    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
-    if (from == BodyNodeIndex(0)) return;
+    (*path_to_world)[0] = world_mobod_index();  // Add the world.
+    if (from == world_mobod_index()) return;
 
     // Navigate the tree inwards starting at "from" and ending at the root.
-    for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
+    for (MobodIndex node = from; node > world_mobod_index();
         node = get_body_node(node).parent_body_node) {
       (*path_to_world)[get_body_node(node).level] = node;
     }
@@ -996,8 +997,8 @@ class MultibodyTreeTopology {
   bool IsBodyAnchored(BodyIndex body_index) const {
     DRAKE_DEMAND(is_valid());
     const BodyTopology& body = get_body(body_index);
-    std::vector<BodyNodeIndex> path_to_world;
-    GetKinematicPathToWorld(body.body_node, &path_to_world);
+    std::vector<MobodIndex> path_to_world;
+    GetKinematicPathToWorld(body.mobod_index, &path_to_world);
     // Skip the world at path_to_world[0].
     for (size_t path_index = 1; path_index < path_to_world.size();
          ++path_index) {
@@ -1073,7 +1074,7 @@ class MultibodyTreeTopology {
       // being the root has necessarily been traversed already.
       if (outboard_bodies.count(body_index) == 0) {
         const BodyNodeTopology& root =
-            get_body_node(get_body(body_index).body_node);
+            get_body_node(get_body(body_index).mobod_index);
         TraverseOutboardNodes(root, collect_body);
       }
     }
@@ -1145,14 +1146,14 @@ class MultibodyTreeTopology {
   void TraverseOutboardNodes(
       const BodyNodeTopology& base,
       std::function<void(const BodyNodeTopology&)> operation) const {
-    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    DRAKE_DEMAND(num_mobods() != 0);
     operation(base);
     // We are done if the base has no more children.
     if (base.get_num_children() == 0) return;
     // Traverse outboard nodes. Since the tree is finalized, we know nodes are
     // in DFT order.
     const int base_level = base.level;
-    for (BodyNodeIndex node_index(base.index + 1);
+    for (MobodIndex node_index(base.index + 1);
          /* Reached the last node in the model. */
          node_index < num_bodies() &&
          /* Reached next tree in the multibody forest */
@@ -1166,7 +1167,7 @@ class MultibodyTreeTopology {
   // nodes outboard of `base`, including the generalized velocities of `base`.
   // @pre Body nodes were already created.
   int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const {
-    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    DRAKE_DEMAND(num_mobods() != 0);
     int nv = 0;
     TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
       nv += node.num_mobilizer_velocities;
@@ -1177,13 +1178,13 @@ class MultibodyTreeTopology {
   // Helper method to be used within Finalize() to obtain the topological
   // information that describes the multibody system as a "forest" of trees.
   void ExtractForestInfo() {
-    const BodyNodeTopology& root = get_body_node(BodyNodeIndex(0));
+    const BodyNodeTopology& root = get_body_node(world_mobod_index());
     const int max_num_trees = root.child_nodes.size();
     num_tree_velocities_.reserve(max_num_trees);
     body_to_tree_index_.resize(num_bodies());
     velocity_to_tree_index_.resize(num_velocities());
 
-    for (const BodyNodeIndex& root_child_index : root.child_nodes) {
+    for (const MobodIndex& root_child_index : root.child_nodes) {
       const BodyNodeTopology& root_child = get_body_node(root_child_index);
       const int nt = CalcNumberOfOutboardVelocities(root_child);
       const TreeIndex tree_index(num_trees());
