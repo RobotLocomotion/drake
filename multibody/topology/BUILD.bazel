@@ -11,25 +11,42 @@ package(
 )
 
 drake_cc_library(
-    name = "multibody_graph",
+    name = "multibody_topology",
     srcs = [
-        "multibody_graph.cc",
+        "link_joint_graph.cc",
+        "link_joint_graph_debug.cc",
+        "spanning_forest.cc",
+        "spanning_forest_debug.cc",
+        "spanning_forest_mobod.cc",
     ],
     hdrs = [
-        "multibody_graph.h",
+        "forest.h",
+        "graph.h",
+        "link_joint_graph.h",
+        "link_joint_graph_constraint.h",
+        "link_joint_graph_defs.h",
+        "link_joint_graph_inlines.h",
+        "link_joint_graph_joint.h",
+        "link_joint_graph_link.h",
+        "spanning_forest.h",
+        "spanning_forest_inlines.h",
+        "spanning_forest_loop_constraint.h",
+        "spanning_forest_mobod.h",
+        "spanning_forest_tree.h",
     ],
     deps = [
+        "//common:copyable_unique_ptr",
         "//common:sorted_pair",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
 drake_cc_googletest(
-    name = "multibody_graph_test",
+    name = "link_joint_graph_test",
     deps = [
-        ":multibody_graph",
+        ":multibody_topology",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests(enable_clang_format_lint = True)

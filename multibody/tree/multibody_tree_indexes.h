@@ -8,9 +8,6 @@ namespace multibody {
 
 namespace internal {
 
-// Type used to identify mobilizers by index in a multibody tree system.
-using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
-
 // Type used to identify any quantity associated with a "mobilized body"
 // (abbreviated "mobod"), which is a depth-first numbered node of the spanning
 // forest used to model a multibody system. This includes BodyNodes and
@@ -31,27 +28,28 @@ inline MobodIndex world_mobod_index() { return MobodIndex(0); }
 // N.B. To simplify checking binding coverage, please ensure these symbols
 // are defined in `tree_py.cc` in the same order.
 
-/// Type used to identify frames by index in a multibody tree system.
+/// Type used to identify frames by index in a multibody plant.
 using FrameIndex = TypeSafeIndex<class FrameTag>;
 
-/// Type used to identify bodies by index in a multibody tree system.
-using BodyIndex = TypeSafeIndex<class BodyTag>;
+/// Type used to identify links by index in a multibody plant.
+using LinkIndex = TypeSafeIndex<class LinkTag>;
 
-/// Type used to identify force elements by index within a multibody tree
-/// system.
+/// (To be deprecated) Synonym for LinkIndex.
+using BodyIndex = LinkIndex;
+
+/// Type used to identify force elements by index within a multibody plant.
 using ForceElementIndex = TypeSafeIndex<class ForceElementTag>;
 
-/// Type used to identify joints by index within a multibody tree system.
+/// Type used to identify joints by index within a multibody plant.
 using JointIndex = TypeSafeIndex<class JointElementTag>;
 
-/// Type used to identify actuators by index within a multibody tree system.
+/// Type used to identify actuators by index within a multibody plant.
 using JointActuatorIndex = TypeSafeIndex<class JointActuatorElementTag>;
 
-/// Type used to identify constraint by id within a multibody system.
+/// Type used to identify constraint by id within a multibody plant.
 using MultibodyConstraintId = Identifier<class ConstraintTag>;
 
-/// Type used to identify model instances by index within a multibody
-/// tree system.
+/// Type used to identify model instances by index within a multibody plant.
 using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 
 // Note:

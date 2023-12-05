@@ -26,7 +26,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/topology/multibody_graph.h"
+#include "drake/multibody/topology/graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -4426,10 +4426,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().world_frame();
   }
 
-  /// Returns the number of bodies in the model, including the "world" body,
+  /// Returns the number of Links in the model, including the "world" Link,
   /// which is always part of the model.
   /// @see AddRigidBody().
-  int num_bodies() const { return internal_tree().num_bodies(); }
+  int num_links() const { return internal_tree().num_links(); }
+
+  /// Alternate spelling for num_links(). Prefer num_links().
+  int num_bodies() const { return num_links(); }
 
   /// Returns a constant reference to the body with unique index `body_index`.
   /// @throws std::exception if `body_index` does not correspond to a body in
@@ -4443,7 +4446,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   bool IsAnchored(const Body<T>& body) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().get_topology().IsBodyAnchored(body.index());
+    return internal_tree().graph().links(body.index()).is_anchored();
   }
 
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant.
@@ -4556,7 +4559,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
   /// Returns all bodies whose kinematics are transitively affected by the given
-  /// vector of joints. The affected bodies are returned in increasing order of
+  /// vector of Joints. The affected bodies are returned in increasing order of
   /// body indexes. Note that this is a kinematic relationship rather than a
   /// dynamic one. For example, if one of the inboard joints is a free (6dof)
   /// joint, the kinematic influence is still felt even though dynamically
@@ -5047,7 +5050,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
+  // Internal-only access to LinkJointGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 #endif

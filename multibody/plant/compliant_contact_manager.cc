@@ -39,9 +39,9 @@ template <typename T>
 AccelerationsDueNonConstraintForcesCache<
     T>::AccelerationsDueNonConstraintForcesCache(const MultibodyTreeTopology&
                                                      topology)
-    : forces(topology.num_bodies(), topology.num_velocities()),
+    : forces(topology.num_links(), topology.num_velocities()),
       abic(topology),
-      Zb_Bo_W(topology.num_bodies()),
+      Zb_Bo_W(topology.num_mobods()),
       aba_forces(topology),
       ac(topology) {}
 

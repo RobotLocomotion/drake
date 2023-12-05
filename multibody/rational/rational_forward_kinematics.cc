@@ -66,12 +66,12 @@ RationalForwardKinematics::RationalForwardKinematics(
   // Initialize map_mobilizer_to_s_index_ to -1, where -1 indicates "no s
   // variable".
   map_mobilizer_to_s_index_ = std::vector<int>(tree.num_mobilizers(), -1);
-  for (BodyIndex body_index(1); body_index < plant_.num_bodies();
-       ++body_index) {
-    const internal::BodyTopology& body_topology =
-        tree.get_topology().get_body(body_index);
+  for (LinkIndex link_index(1); link_index < plant_.num_bodies();
+       ++link_index) {
+    const internal::LinkTopology& link_topology =
+        tree.get_topology().get_link(link_index);
     const internal::Mobilizer<double>* mobilizer =
-        &(tree.get_mobilizer(body_topology.inboard_mobilizer));
+        &(tree.get_mobilizer(link_topology.inboard_mobilizer));
     if (IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
@@ -230,18 +230,18 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // X_F'M' = X_FM.inverse()
   // X_M'C' = X_PF.inverse()
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
-  const internal::BodyTopology& parent_topology =
-      tree.get_topology().get_body(parent);
-  const internal::BodyTopology& child_topology =
-      tree.get_topology().get_body(child);
-  internal::MobilizerIndex mobilizer_index;
+  const internal::LinkTopology& parent_topology =
+      tree.get_topology().get_link(parent);
+  const internal::LinkTopology& child_topology =
+      tree.get_topology().get_link(child);
+  internal::MobodIndex mobilizer_index;
   bool is_order_reversed;
-  if (parent_topology.parent_body.is_valid() &&
-      parent_topology.parent_body == child) {
+  if (parent_topology.parent_link.is_valid() &&
+      parent_topology.parent_link == child) {
     is_order_reversed = true;
     mobilizer_index = parent_topology.inboard_mobilizer;
-  } else if (child_topology.parent_body.is_valid() &&
-             child_topology.parent_body == parent) {
+  } else if (child_topology.parent_link.is_valid() &&
+             child_topology.parent_link == parent) {
     is_order_reversed = false;
     mobilizer_index = child_topology.inboard_mobilizer;
   } else {

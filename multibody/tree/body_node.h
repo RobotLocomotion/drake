@@ -130,8 +130,8 @@ class BodyNode : public MultibodyElement<T> {
   // associated with this node. This method aborts in Debug builds if called on
   // the root node corresponding to the _world_ body.
   const Body<T>& parent_body() const {
-    DRAKE_ASSERT(get_parent_body_index().is_valid());
-    return this->get_parent_tree().get_body(get_parent_body_index());
+    DRAKE_ASSERT(get_parent_link_index().is_valid());
+    return this->get_parent_tree().get_body(get_parent_link_index());
   }
 
   // Returns a const pointer to the parent (inboard) body node or nullptr if
@@ -187,7 +187,7 @@ class BodyNode : public MultibodyElement<T> {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // This method must not be called for the "world" body node.
-    DRAKE_ASSERT(topology_.body != world_index());
+    DRAKE_ASSERT(topology_.link != world_index());
 
     DRAKE_ASSERT(pc != nullptr);
 
@@ -245,7 +245,7 @@ class BodyNode : public MultibodyElement<T> {
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       VelocityKinematicsCache<T>* vc) const {
     // This method must not be called for the "world" body node.
-    DRAKE_ASSERT(topology_.body != world_index());
+    DRAKE_ASSERT(topology_.link != world_index());
 
     DRAKE_ASSERT(vc != nullptr);
     DRAKE_DEMAND(H_PB_W.rows() == 6);
@@ -384,7 +384,7 @@ class BodyNode : public MultibodyElement<T> {
       const VectorX<T>& mbt_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const {
     // This method must not be called for the "world" body node.
-    DRAKE_DEMAND(topology_.body != world_index());
+    DRAKE_DEMAND(topology_.link != world_index());
     DRAKE_DEMAND(A_WB_array_ptr != nullptr);
     std::vector<SpatialAcceleration<T>>& A_WB_array = *A_WB_array_ptr;
 
@@ -776,7 +776,7 @@ class BodyNode : public MultibodyElement<T> {
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
     // Checks on the input arguments.
-    DRAKE_DEMAND(topology_.body != world_index());
+    DRAKE_DEMAND(topology_.link != world_index());
     DRAKE_DEMAND(H_PB_W != nullptr);
     DRAKE_DEMAND(H_PB_W->rows() == 6);
     DRAKE_DEMAND(H_PB_W->cols() == get_num_mobilizer_velocities());
@@ -905,7 +905,7 @@ class BodyNode : public MultibodyElement<T> {
       const SpatialInertia<T>& M_B_W,
       const VectorX<T>& diagonal_inertias,
       ArticulatedBodyInertiaCache<T>* abic) const {
-    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(topology_.link != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
     DRAKE_THROW_UNLESS(diagonal_inertias.size() ==
                        this->get_parent_tree().num_velocities());
@@ -1103,7 +1103,7 @@ class BodyNode : public MultibodyElement<T> {
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       ArticulatedBodyForceCache<T>* aba_force_cache) const {
-    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(topology_.link != world_index());
     DRAKE_THROW_UNLESS(aba_force_cache != nullptr);
 
     // As a guideline for developers, please refer to @ref
@@ -1255,7 +1255,7 @@ class BodyNode : public MultibodyElement<T> {
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& Mc_B_W_all,
       SpatialInertia<T>* Mc_B_W) const {
-    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(topology_.link != world_index());
     DRAKE_THROW_UNLESS(Mc_B_W != nullptr);
 
     // Composite body inertia R_B_W for this node B, about its frame's origin
@@ -1396,19 +1396,21 @@ class BodyNode : public MultibodyElement<T> {
  private:
   friend class BodyNodeTester;
 
-  // Returns the index to the parent body of the body associated with this node.
-  // For the root node, corresponding to the world body, this method returns an
-  // invalid body index. Attempts to using invalid indexes leads to an exception
+  // Returns the index to the parent Link of the Link associated with this node.
+  // For the root node, corresponding to the world Link, this method returns an
+  // invalid LinkIndex. Attempts to using invalid indexes leads to an exception
   // being thrown in Debug builds.
-  BodyIndex get_parent_body_index() const { return topology_.parent_body;}
+  LinkIndex get_parent_link_index() const { return topology_.parent_link;}
 
   // =========================================================================
   // Helpers to access the state.
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().get_state_segment(context,
-        topology_.mobilizer_velocities_start_in_state,
+    const MultibodyTree<T>& tree = this->get_parent_tree();
+    return tree.get_state_segment(
+        context,
+        tree.num_positions() + topology_.mobilizer_velocities_start_in_v,
         topology_.num_mobilizer_velocities);
   }
 

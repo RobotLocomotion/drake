@@ -55,21 +55,20 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
     throw std::logic_error("Input body is a nullptr.");
   }
 
-  DRAKE_DEMAND(body->model_instance().is_valid());
-
-  // Make note in the graph.
-  multibody_graph_.AddBody(body->name(), body->model_instance());
-
   BodyIndex body_index(0);
   FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_body();
+  std::tie(body_index, body_frame_index) = topology_.add_link();
   // These tests MUST be performed BEFORE frames_.push_back() and
-  // owned_bodies_.push_back() below. Do not move them around!
+  // owned_links_.push_back() below. Do not move them around!
   DRAKE_DEMAND(body_index == num_bodies());
   DRAKE_DEMAND(body_frame_index == num_frames());
+  DRAKE_DEMAND(body->model_instance().is_valid());
+
+  // Make note in the graph of the new link.
+  link_joint_graph_.AddLink(body->name(), body->model_instance());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyElement altogether.
+  //  all. Consider also removing MultibodyElement altogether.
   body->set_parent_tree(this, body_index);
   // MultibodyTree can access selected private methods in Body through its
   // BodyAttorney.
@@ -84,7 +83,8 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
   // - Register body.
   BodyType<T>* raw_body_ptr = body.get();
   this->SetElementIndex(body->name(), body->index(), &body_name_to_index_);
-  owned_bodies_.push_back(std::move(body));
+  owned_links_.push_back(std::move(body));
+
   return *raw_body_ptr;
 }
 
@@ -194,16 +194,14 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // later to define mobilizers between those frames in a second tree2.
   mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
   mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
-  const int num_positions = mobilizer->num_positions();
-  const int num_velocities = mobilizer->num_velocities();
-  MobilizerIndex mobilizer_index = topology_.add_mobilizer(
+  MobodIndex mobilizer_index = topology_.add_mobilizer(
+      mobilizer->mobod(),
       mobilizer->inboard_frame().index(),
-      mobilizer->outboard_frame().index(),
-      num_positions, num_velocities);
+      mobilizer->outboard_frame().index());
 
-  // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
+  // This DRAKE_DEMAND MUST be performed BEFORE owned_mobilizers_.push_back()
   // below. Do not move it around!
-  DRAKE_ASSERT(mobilizer_index == num_mobilizers());
+  DRAKE_DEMAND(mobilizer_index == num_mobilizers());
 
   // TODO(sammy-tri) This effectively means that there's no way to
   //  programmatically add mobilizers from outside of MultibodyTree
@@ -223,9 +221,9 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->is_floating() &&
       mobilizer->inboard_frame().body().index() == world_body().index();
 
-  topology_.get_mutable_body(outboard_body_index).is_floating =
+  topology_.get_mutable_link(outboard_body_index).is_floating =
       is_body_floating;
-  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+  topology_.get_mutable_link(outboard_body_index).has_quaternion_dofs =
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
@@ -296,7 +294,7 @@ MultibodyTree<T>::AddForceElement(Args&&... args) {
 template <typename T>
 template <template<typename Scalar> class JointType>
 const JointType<T>& MultibodyTree<T>::AddJoint(
-    std::unique_ptr<JointType<T>> joint) {
+    std::unique_ptr<JointType<T>> joint, bool is_modeling_joint) {
   static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                 "JointType must be a sub-class of Joint<T>.");
 
@@ -332,14 +330,17 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                     joint->child_body().name()));
   }
 
-  // This will check some additional error conditions.
-  RegisterJointInGraph(*joint);
+  // User joints need to be registered with the LinkJointGraph but joints added
+  // during modeling are already in the graph.
+  if (!is_modeling_joint)
+    RegisterJointInGraph(*joint.get());
 
   const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();
   this->SetElementIndex(joint->name(), joint->index(), &joint_name_to_index_);
   owned_joints_.push_back(std::move(joint));
+
   return *raw_joint_ptr;
 }
 
@@ -354,6 +355,15 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
+
+  if (&parent.get_parent_tree() != this || &child.get_parent_tree() != this) {
+    throw std::logic_error(
+        fmt::format("AddJoint(): can't add joint {} between {} and {} "
+                    "because one or both belong to a different "
+                    "MultibodyPlant.",
+                    name, parent.name(), child.name()));
+  }
+
   // The Joint constructor promises that the Joint's model instance will be the
   // same as the child body's model instance. We'll assume that for now, and
   // then cross-check it at the bottom of this function. We need to use the same
@@ -366,6 +376,22 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
       name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
   DRAKE_DEMAND(result.model_instance() == joint_instance);
+  return result;
+}
+
+// This is internal use only so doesn't need the error checking provided
+// by the AddJoint() signature.
+template <typename T>
+template<template<typename> class JointType, typename... Args>
+const JointType<T>& MultibodyTree<T>::AddModelingJoint(
+    const std::string& name,
+    const Body<T>& parent,
+    const Body<T>& child,
+    Args&&... args) {
+
+  const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
+  name, parent.body_frame(), child.body_frame(), std::forward<Args>(args)...),
+                                        true /*modeling joint*/);
   return result;
 }
 
@@ -441,7 +467,7 @@ void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
 template <typename T>
 template <typename FromScalar>
 Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {
-  FrameIndex frame_index = frame.index();
+  const FrameIndex frame_index = frame.index();
 
   auto frame_clone = frame.CloneToScalar(*this);
   frame_clone->set_parent_tree(this, frame_index);
@@ -478,11 +504,11 @@ Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
   // original body_frame_index.
   frames_[body_frame_index] = body_frame_clone;
   Body<T>* raw_body_clone_ptr = body_clone.get();
-  // The order in which bodies are added into owned_bodies_ is important to
+  // The order in which bodies are added into owned_links_ is important to
   // keep the topology invariant. Therefore this method is called from
   // MultibodyTree::CloneToScalar() within a loop by original body_index.
-  DRAKE_DEMAND(static_cast<int>(owned_bodies_.size()) == body_index);
-  owned_bodies_.push_back(std::move(body_clone));
+  DRAKE_DEMAND(static_cast<int>(owned_links_.size()) == body_index);
+  owned_links_.push_back(std::move(body_clone));
   return raw_body_clone_ptr;
 }
 
@@ -490,7 +516,7 @@ template <typename T>
 template <typename FromScalar>
 Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
     const Mobilizer<FromScalar>& mobilizer) {
-  MobilizerIndex mobilizer_index = mobilizer.index();
+  const MobodIndex mobilizer_index = mobilizer.index();
   auto mobilizer_clone = mobilizer.CloneToScalar(*this);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
@@ -503,7 +529,7 @@ template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneForceElementAndAdd(
     const ForceElement<FromScalar>& force_element) {
-  ForceElementIndex force_element_index = force_element.index();
+  const ForceElementIndex force_element_index = force_element.index();
   auto force_element_clone = force_element.CloneToScalar(*this);
   force_element_clone->set_parent_tree(this, force_element_index);
   force_element_clone->set_model_instance(force_element.model_instance());
@@ -513,7 +539,7 @@ void MultibodyTree<T>::CloneForceElementAndAdd(
 template <typename T>
 template <typename FromScalar>
 Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
-  JointIndex joint_index = joint.index();
+  const JointIndex joint_index = joint.index();
   auto joint_clone = joint.CloneToScalar(this);
   joint_clone->set_parent_tree(this, joint_index);
   joint_clone->set_model_instance(joint.model_instance());
@@ -525,7 +551,7 @@ template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneActuatorAndAdd(
     const JointActuator<FromScalar>& actuator) {
-  JointActuatorIndex actuator_index = actuator.index();
+  const JointActuatorIndex actuator_index = actuator.index();
   std::unique_ptr<JointActuator<T>> actuator_clone =
       actuator.CloneToScalar(*this);
   actuator_clone->set_parent_tree(this, actuator_index);

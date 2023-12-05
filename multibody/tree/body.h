@@ -538,7 +538,7 @@ class Body : public MultibodyElement<T> {
   // from the parent MultibodyTree.
   void DoSetTopology(
       const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body(this->index());
+    topology_ = tree_topology.get_link(this->index());
     body_frame_.SetTopology(tree_topology);
   }
 
@@ -567,7 +567,7 @@ class Body : public MultibodyElement<T> {
   BodyFrame<T> body_frame_;
 
   // The internal bookkeeping topology struct used by MultibodyTree.
-  internal::BodyTopology topology_;
+  internal::LinkTopology topology_;
 };
 
 /// @cond
