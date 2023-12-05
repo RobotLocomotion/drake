@@ -1178,7 +1178,7 @@ MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
 }  // namespace
 
 Binding<PositiveSemidefiniteConstraint>
-MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+MathematicalProgram::AddPrincipalMinorIsPositiveSemidefiniteConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
     const std::set<int>& minor_indices) {
   return AddPositiveSemidefiniteConstraint(
@@ -1186,7 +1186,7 @@ MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
 }
 
 Binding<PositiveSemidefiniteConstraint>
-MathematicalProgram::AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+MathematicalProgram::AddPrincipalMinorIsPositiveSemidefiniteConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
     const std::set<int>& minor_indices) {
   return AddPositiveSemidefiniteConstraint(

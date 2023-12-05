@@ -2590,7 +2590,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds a constraint the that the principle minor of a symmetric matrix
+   * Adds a constraint that the principal minor of a symmetric matrix
    * composed of the indices in minor_indices is positive semidefinite.
    *
    * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
@@ -2600,12 +2600,12 @@ class MathematicalProgram {
    * @see AddPositiveSemidefiniteConstraint.
    */
   Binding<PositiveSemidefiniteConstraint>
-  AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+  AddPrincipalMinorIsPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
       const std::set<int>& minor_indices);
 
   /**
-   * Adds a constraint the that the principle minor of a symmetric matrix of
+   * Adds a constraint the that the principal minor of a symmetric matrix of
    * expressions composed of the indices in minor_indices is positive
    * semidefinite.
    *
@@ -2616,7 +2616,7 @@ class MathematicalProgram {
    * @see AddPositiveSemidefiniteConstraint.
    */
   Binding<PositiveSemidefiniteConstraint>
-  AddPrincipleMinorIsPositiveSemidefiniteConstraint(
+  AddPrincipalMinorIsPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 
