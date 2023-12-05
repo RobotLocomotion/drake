@@ -35,7 +35,8 @@ DEFINE_double(realtime_factor, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
-  if (!solvers::SnoptSolver::is_available()) {
+  if (!(solvers::SnoptSolver::is_available() &&
+        solvers::SnoptSolver::is_enabled())) {
     std::cout << "This test was flaky with IPOPT, so currently requires SNOPT."
               << std::endl;
     return 0;

@@ -239,7 +239,7 @@ GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
 }
 
 GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintNames) {
-  if (SnoptSolver::is_available()) {
+  if (SnoptSolver::is_available() && SnoptSolver::is_enabled()) {
     MathematicalProgram prog;
     auto x = prog.NewContinuousVariables<1>();
     auto b0 = prog.AddBoundingBoxConstraint(0, 0, x);
@@ -280,7 +280,7 @@ GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintBindings) {
   auto constraint1 = prog.AddBoundingBoxConstraint(value1, value1, x.head<2>());
   auto constraint2 = prog.AddBoundingBoxConstraint(value2, value2, x);
   SnoptSolver solver;
-  if (solver.is_available()) {
+  if (solver.is_available() && solver.is_enabled()) {
     const auto result = solver.Solve(prog);
     EXPECT_FALSE(result.is_success());
     const double tol = 1e-4;

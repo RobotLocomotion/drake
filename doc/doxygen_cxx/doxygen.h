@@ -234,6 +234,7 @@ namespace solvers {
    <a href="https://github.com/bazelbuild/bazel/blob/6.1.1/tools/python/runfiles/runfiles.py#L77">upstream documentation)</a>
  - <b>RUNFILES_MANIFEST_FILE</b> (see
    <a href="https://github.com/bazelbuild/bazel/blob/6.1.1/tools/python/runfiles/runfiles.py#L77">upstream documentation)</a>
+ - <b>\ref drake::solvers::SnoptSolver "SNOPT_ENABLED"</b>
  - <b>TEST_SRCDIR</b> (see
    <a href="https://bazel.build/reference/test-encyclopedia#initial-conditions">upstream documentation</a>)
  - <b>\ref drake::temp_directory() "TEST_TMPDIR"</b> (see also
