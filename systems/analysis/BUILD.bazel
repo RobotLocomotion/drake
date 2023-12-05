@@ -219,6 +219,7 @@ drake_cc_library(
     srcs = ["region_of_attraction.cc"],
     hdrs = ["region_of_attraction.h"],
     deps = [
+        "//common:name_value",
         "//math:continuous_lyapunov_equation",
         "//math:matrix_util",
         "//math:quadratic_form",

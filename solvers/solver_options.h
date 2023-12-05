@@ -9,6 +9,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/name_value.h"
 #include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/solver_id.h"
 
@@ -62,6 +63,16 @@ class SolverOptions {
   SolverOptions() = default;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
+
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(solver_options_double_));
+    a->Visit(DRAKE_NVP(solver_options_int_));
+    a->Visit(DRAKE_NVP(solver_options_str_));
+    a->Visit(DRAKE_NVP(common_solver_options_));
+  }
 
   /** The values stored in SolverOptions can be double, int, or string.
    * In the future, we might re-order or add more allowed types without any

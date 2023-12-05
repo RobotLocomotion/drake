@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "drake/common/name_value.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/solvers/solver_id.h"
 #include "drake/solvers/solver_options.h"
@@ -18,6 +19,17 @@ namespace analysis {
  */
 struct RegionOfAttractionOptions {
   RegionOfAttractionOptions() = default;
+
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(lyapunov_candidate));
+    a->Visit(DRAKE_NVP(state_variables));
+    a->Visit(DRAKE_NVP(use_implicit_dynamics));
+    a->Visit(DRAKE_NVP(solver_id));
+    a->Visit(DRAKE_NVP(solver_options));
+  }
 
   /** A candidate Lyapunov function using the symbolic Variables named
    * x0, x1, ..., where the order matches the continuous state vector of the

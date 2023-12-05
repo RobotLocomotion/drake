@@ -296,6 +296,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:hash",
+        "//common:name_value",
         "//common:reset_after_move",
     ],
 )
@@ -312,6 +313,7 @@ drake_cc_library(
     ],
     interface_deps = [
         ":solver_id",
+        "//common:name_value",
     ],
     deps = [],
 )

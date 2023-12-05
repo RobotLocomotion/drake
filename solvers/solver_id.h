@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
+#include "drake/common/name_value.h"
 #include "drake/common/reset_after_move.h"
 
 namespace drake {
@@ -20,6 +21,14 @@ class SolverId {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId)
   ~SolverId() = default;
+
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(id_));
+    a->Visit(DRAKE_NVP(name_));
+  }
 
   /** Constructs a specific, known solver type. Internally, a hidden integer is
   allocated and assigned to this instance; all instances that share an integer
