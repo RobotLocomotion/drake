@@ -543,14 +543,14 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             prog.positive_semidefinite_constraints()[0].evaluator().
             matrix_rows(), 3)
-        prog.AddPrincipleMinorIsPositiveSemidefiniteConstraint(S,
+        prog.AddPrincipalMinorIsPositiveSemidefiniteConstraint(S,
                                                                minor_indices)
         self.assertEqual(len(prog.positive_semidefinite_constraints()), 2)
         self.assertEqual(
             prog.positive_semidefinite_constraints()[1].evaluator().
             matrix_rows(), 2)
         prog.AddPositiveSemidefiniteConstraint(S+S)
-        prog.AddPrincipleMinorIsPositiveSemidefiniteConstraint(S+S,
+        prog.AddPrincipalMinorIsPositiveSemidefiniteConstraint(S+S,
                                                                minor_indices)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
