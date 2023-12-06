@@ -843,10 +843,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
   const double q_ub = M_PI / 8;
   DRAKE_ASSERT(q_ub < qmax);  // otherwise test will be pointless
   prog.AddConstraint(sin(q[0]), -1.0 / sqrt(2.0), sin(q_ub));
-  HPolyhedron region2 = IrisFromUrdf(boxes_urdf, sample, options);
+  // Calc the upper bounded region
+  HPolyhedron region_ub = IrisFromUrdf(boxes_urdf, sample, options);
   const double kMargin = options.configuration_space_margin;
-  EXPECT_TRUE(region2.PointInSet(Vector1d{q_ub - kTol - kMargin}));
-  EXPECT_FALSE(region2.PointInSet(Vector1d{q_ub + kTol - kMargin}));
+  EXPECT_TRUE(region_ub.PointInSet(Vector1d{q_ub - kTol - kMargin}));
+  EXPECT_FALSE(region_ub.PointInSet(Vector1d{q_ub + kTol - kMargin}));
 }
 
 // This double pendulum doesn't have any collision geometry, but we'll add
