@@ -1,0 +1,27 @@
+[gz_utils] Disable environ scraping
+
+The whole idea of using `extern char ** environ;` is broken by design.
+It is not thread safe, so library code should be using it. We'll nerf
+the function for Drake so that it never returns anything.
+
+--- src/Environment.cc
++++ src/Environment.cc
+@@ -27,7 +27,8 @@
+ #include <processenv.h>
+ #endif
+ 
+ #ifndef _WIN32
+-extern char ** environ;
++// Disabled for Drake.
++// extern char ** environ;
+ #endif
+ 
+@@ -138,7 +138,7 @@
+   char **currentEnv = nullptr;
+ #ifdef _WIN32
+   currentEnv = *__p__environ();
+-#else
++#elif 0  // Disabled for Drake.
+   currentEnv = environ;
+ #endif
+   // In the case that clearenv() was just called
