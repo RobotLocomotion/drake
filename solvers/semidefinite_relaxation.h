@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "drake/solvers/mathematical_program.h"
 
@@ -25,11 +26,24 @@ namespace solvers {
  relaxations than programs using LinearConstraint or BoundingBoxConstraint,
  even if lower_bound == upper_bound. Prefer LinearEqualityConstraint.
 
+ The optional parameter variable_groups can be used to make a cheaper relaxation
+ with fewer linear constraints. Specifically, only linear constraints whose
+ variables intersect the same entry in variable_groups will be multiplied. For
+ example, if there are three linear constraints Ax ≥ 0, By ≥ 0, Cz ≥ 0, and
+ variables_groups = [{x,y}, {y,z}], then the semidefinite relaxation will
+ include the linear constraints AxyᵀB ≥ 0 and ByzᵀC ≥ 0, but not AxzᵀC ≥ 0. If
+ variable_groups is an empty vector, then no linear constraints will be
+ multiplied. If variable_groups is nullopt, then all linear constraints will be
+ multiplied.
+
  @throws std::exception if `prog` has costs and constraints which are not
  linear nor quadratic.
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog);
+    const MathematicalProgram& prog,
+//    const std::optional<std::vector<symbolic::Variables>> variable_groups =
+//        std::nullopt
+        );
 
 }  // namespace solvers
 }  // namespace drake

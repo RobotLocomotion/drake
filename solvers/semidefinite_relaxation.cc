@@ -24,6 +24,8 @@ namespace {
 
 const double kInf = std::numeric_limits<double>::infinity();
 
+SparseMatrix<double> SparseKroneckerProduct()
+
 }  // namespace
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
@@ -149,8 +151,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
       nnz += binding.evaluator()->get_sparse_A().nonZeros();
     }
 
-    std::vector<Triplet<double>> triplet_list;
-    triplet_list.reserve(nnz);
+    std::vector<Triplet<double>> A_triplets;
+    A_triplets.reserve(nnz);
     SparseMatrix<double> A(num_constraints, prog.num_vars());
     VectorXd b(num_constraints);
 
@@ -160,12 +162,12 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
           prog.FindDecisionVariableIndices(binding.variables());
       for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
         if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-          triplet_list.push_back(
+          A_triplets.push_back(
               Triplet<double>(constraint_idx, indices[i], -1.0));
           b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
         }
         if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-          triplet_list.push_back(
+          A_triplets.push_back(
               Triplet<double>(constraint_idx, indices[i], 1.0));
           b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
         }
@@ -180,7 +182,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-              triplet_list.push_back(Triplet<double>(
+              A_triplets.push_back(Triplet<double>(
                   constraint_idx, indices[j],
                   -binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
@@ -190,7 +192,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-              triplet_list.push_back(Triplet<double>(
+              A_triplets.push_back(Triplet<double>(
                   constraint_idx, indices[j],
                   binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
@@ -199,15 +201,65 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         }
       }
     }
-    A.setFromTriplets(triplet_list.begin(), triplet_list.end());
+    A.setFromTriplets(A_triplets.begin(), A_triplets.end());
 
-    // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented with
-    // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
+    // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented as:
+    // (Ay-b)(Ay-b)ᵀ = [A,b]X[A,b]ᵀ which has vectorization ([A,b]⊗[A,b])vec(X).
+    // However, since this is symmetric, so we only add the non-redundant rows.
+    // This is achieved by writing P([A,b]⊗[A,b])E*vec(lower(X)) where
+    // 1) vec(lower(X)) is the vector obtained by stacking the lower triangular
+    // part of X into a vector.
+    // 2) E is the matrix taking the stacked columns of
+    // the lower triangular part of a matrix to the stacked columns of the full
+    // symmetric matrix.
+    // 3) P is the projection of the stacked columns of a
+    // matrix to the stacked columns of its lower triangular part. Note that P =
+    // Eᵀ
+    //
+    // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ. The
+    // vectorization of this is -vec(bb)ᵀ ≤ (A⊗A)vec(Y) - (A⊗b)y - (b⊗A)y.
+    // Since we only need the lower triangular part here, we add: -Pvec(bb)ᵀ ≤
+    // P(A⊗A)Evec(Y) - P(A⊗b)y - P(b⊗A)y where
+    // 1) E is the matrix taking the
+    // stacked columns of the lower triangular part of a matrix to the stacked
+    // columns of the full symmetric matrix.
+    // 2) P is the projection of the
+    // stacked columns of a matrix to the stacked columns of its lower
+    // triangular part. Note that P = Eᵀ.
+    // This results in the linear constraint:
+    // Now since
     // TODO(russt): Avoid the symbolic computation here.
     // TODO(russt): Avoid the dense matrix.
     // TODO(russt): Only add the lower triangular constraints
     // (MathematicalProgram::AddLinearEqualityConstraint has this option, but
     // AddLinearConstraint does not yet).
+    int lower_triangular_size = (X.rows() * (X.rows() + 1)) / 2;
+    // We form both P and E since transposing sparse matrices leads to
+    // inefficient operations.
+    std::vector<Triplet<double>> P_triplets;
+    std::vector<Triplet<double>> E_triplets;
+    P_triplets.reserve(lower_triangular_size);
+    E_triplets.reserve(lower_triangular_size);
+    int stacked_row_ctr = 0;
+    int stacked_lower_ctr = 0;
+    for (int i = 0; i < X.rows(); ++i) {
+      stacked_row_ctr = i * X.rows();
+      for (int j = i; j < X.rows(); ++j) {
+        P_triplets.emplace_back(stacked_lower_ctr, stacked_row_ctr, 1);
+        E_triplets.emplace_back(stacked_row_ctr, stacked_lower_ctr, 1);
+        ++stacked_lower_ctr;
+        ++stacked_row_ctr;
+      }
+    }
+    SparseMatrix<double> P(lower_triangular_size, X.rows() * X.rows());
+    SparseMatrix<double> E(X.rows() * X.rows(), lower_triangular_size);
+    P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+    E.setFromTriplets(E_triplets.begin(), E_triplets.end());
+
+    SparseMatrix<double> A_kron_A;
+    SparseMatrix<double> A_kron_b;
+    SparseMatrix<double> b_kron_A;
+
     const MatrixX<Expression> AYAT =
         A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
     const VectorX<Variable> y = x.head(prog.num_vars());
