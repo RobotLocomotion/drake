@@ -1,8 +1,8 @@
 [gz_utils] Disable environ scraping
 
 The whole idea of using `extern char ** environ;` is broken by design.
-It is not thread safe, so library code should be using it. We'll nerf
-the function for Drake so that it never returns anything.
+It is not thread safe, so library code shouldn't be using it. We'll
+nerf the function for Drake so that it never returns anything.
 
 --- src/Environment.cc
 +++ src/Environment.cc
