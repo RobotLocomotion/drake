@@ -24,8 +24,6 @@ namespace {
 
 const double kInf = std::numeric_limits<double>::infinity();
 
-SparseMatrix<double> SparseKroneckerProduct()
-
 }  // namespace
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
@@ -203,70 +201,38 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     }
     A.setFromTriplets(A_triplets.begin(), A_triplets.end());
 
-    // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented as:
-    // (Ay-b)(Ay-b)ᵀ = [A,b]X[A,b]ᵀ which has vectorization ([A,b]⊗[A,b])vec(X).
-    // However, since this is symmetric, so we only add the non-redundant rows.
-    // This is achieved by writing P([A,b]⊗[A,b])E*vec(lower(X)) where
-    // 1) vec(lower(X)) is the vector obtained by stacking the lower triangular
-    // part of X into a vector.
-    // 2) E is the matrix taking the stacked columns of
-    // the lower triangular part of a matrix to the stacked columns of the full
-    // symmetric matrix.
-    // 3) P is the projection of the stacked columns of a
-    // matrix to the stacked columns of its lower triangular part. Note that P =
-    // Eᵀ
-    //
-    // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ. The
-    // vectorization of this is -vec(bb)ᵀ ≤ (A⊗A)vec(Y) - (A⊗b)y - (b⊗A)y.
-    // Since we only need the lower triangular part here, we add: -Pvec(bb)ᵀ ≤
-    // P(A⊗A)Evec(Y) - P(A⊗b)y - P(b⊗A)y where
-    // 1) E is the matrix taking the
-    // stacked columns of the lower triangular part of a matrix to the stacked
-    // columns of the full symmetric matrix.
-    // 2) P is the projection of the
-    // stacked columns of a matrix to the stacked columns of its lower
-    // triangular part. Note that P = Eᵀ.
-    // This results in the linear constraint:
-    // Now since
+    // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented with
+    // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
     // TODO(russt): Avoid the symbolic computation here.
     // TODO(russt): Avoid the dense matrix.
     // TODO(russt): Only add the lower triangular constraints
     // (MathematicalProgram::AddLinearEqualityConstraint has this option, but
     // AddLinearConstraint does not yet).
-    int lower_triangular_size = (X.rows() * (X.rows() + 1)) / 2;
-    // We form both P and E since transposing sparse matrices leads to
-    // inefficient operations.
-    std::vector<Triplet<double>> P_triplets;
-    std::vector<Triplet<double>> E_triplets;
-    P_triplets.reserve(lower_triangular_size);
-    E_triplets.reserve(lower_triangular_size);
-    int stacked_row_ctr = 0;
-    int stacked_lower_ctr = 0;
-    for (int i = 0; i < X.rows(); ++i) {
-      stacked_row_ctr = i * X.rows();
-      for (int j = i; j < X.rows(); ++j) {
-        P_triplets.emplace_back(stacked_lower_ctr, stacked_row_ctr, 1);
-        E_triplets.emplace_back(stacked_row_ctr, stacked_lower_ctr, 1);
-        ++stacked_lower_ctr;
-        ++stacked_row_ctr;
-      }
-    }
-    SparseMatrix<double> P(lower_triangular_size, X.rows() * X.rows());
-    SparseMatrix<double> E(X.rows() * X.rows(), lower_triangular_size);
-    P.setFromTriplets(P_triplets.begin(), P_triplets.end());
-    E.setFromTriplets(E_triplets.begin(), E_triplets.end());
-
-    SparseMatrix<double> A_kron_A;
-    SparseMatrix<double> A_kron_b;
-    SparseMatrix<double> b_kron_A;
 
     const MatrixX<Expression> AYAT =
         A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
     const VectorX<Variable> y = x.head(prog.num_vars());
-    relaxation->AddLinearConstraint(
-        AYAT - b * (A * y).transpose() - A * y * b.transpose(),
-        -b * b.transpose(),
-        MatrixXd::Constant(num_constraints, num_constraints, kInf));
+
+    const MatrixX<Expression> rhs =
+        AYAT - b * (A * y).transpose() - A * y * b.transpose();
+    const MatrixXd bbT = -b * b.transpose();
+
+    const int flat_tril_size{
+        static_cast<int>((AYAT.rows() * (AYAT.rows() + 1)) / 2)};
+    VectorX<Expression> rhs_flat_tril(flat_tril_size);
+    VectorXd bbT_flat_tril(flat_tril_size);
+    int count{0};
+    for (int j = 0; j < rhs.rows(); ++j) {
+      for (int i = j; i < rhs.cols(); ++i) {
+        rhs_flat_tril(count) = rhs(i, j);
+        bbT_flat_tril(count) = bbT(i, j);
+        ++count;
+      }
+    }
+    DRAKE_ASSERT(count == flat_tril_size);
+
+    relaxation->AddLinearConstraint(rhs_flat_tril, bbT_flat_tril,
+                                    VectorXd::Constant(flat_tril_size, kInf));
   }
 
   // Linear equality constraints.

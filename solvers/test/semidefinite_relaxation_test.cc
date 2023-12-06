@@ -17,6 +17,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using symbolic::Variable;
 
+namespace {
 void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
                                MathematicalProgram* relaxation) {
   const int N = y_expected.size() + 1;
@@ -28,6 +29,26 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
   const MatrixXd X_expected = x_expected * x_expected.transpose();
   relaxation->SetInitialGuess(X, X_expected);
 }
+
+// TODO(Alexandre.Amice) Move this to common/math for general use.
+// Given a square matrix, extract the lower triangular part as a vector.
+template <typename Derived>
+VectorX<typename Derived::Scalar> ToLowerTriangularPartVectorFromMatrix(
+    const Eigen::MatrixBase<Derived>& matrix) {
+  DRAKE_ASSERT(matrix.rows() == matrix.rows());
+  int tril_size = (matrix.rows() * (matrix.rows() + 1)) / 2;
+  VectorX<typename Derived::Scalar> ret(tril_size);
+  int cur_row{0};
+  for (int j = 0; j < matrix.rows(); ++j) {
+    for (int i = j; i < matrix.rows(); ++i) {
+      ret(cur_row) = matrix(i, j);
+      ++cur_row;
+    }
+  }
+  return ret;
+}
+
+}  // namespace
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, NoCostsNorConstraints) {
   MathematicalProgram prog;
@@ -146,16 +167,13 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, BoundingBoxConstraint) {
   // (Ay-b)(Ay-b)ᵀ, where A and b represent all of the constraints stacked.
   auto linear_constraint = relaxation->linear_constraints()[0];
   VectorXd value = relaxation->EvalBindingAtInitialGuess(linear_constraint);
-  MatrixXd expected =
+  MatrixXd expected_mat =
       (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Map<MatrixXd>(value.data(), N_CONSTRAINTS, N_CONSTRAINTS),
-      expected, 1e-12));
+  VectorXd expected = ToLowerTriangularPartVectorFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   value = linear_constraint.evaluator()->lower_bound();
-  expected = -b * b.transpose();
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Map<MatrixXd>(value.data(), N_CONSTRAINTS, N_CONSTRAINTS),
-      expected, 1e-12));
+  expected = ToLowerTriangularPartVectorFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
@@ -209,18 +227,18 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
   MatrixXd A(8, 2);
   A << -A0.row(0), A0.row(0), A0.row(1), -A0.row(2), -A1_reordered.row(0),
       A1_reordered.row(0), -A1_reordered.row(1), A1_reordered.row(1);
+  int expected_size = (b.size() * (b.size() + 1)) / 2;
   EXPECT_EQ(relaxation->linear_constraints()[2].evaluator()->num_constraints(),
-            b.size() * b.size());
+            expected_size);
   VectorXd value = relaxation->EvalBindingAtInitialGuess(
       relaxation->linear_constraints()[2]);
-  MatrixXd expected =
+  MatrixXd expected_mat =
       (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
-  EXPECT_TRUE(CompareMatrices(Eigen::Map<MatrixXd>(value.data(), 8, 8),
-                              expected, 1e-12));
+  VectorXd expected = ToLowerTriangularPartVectorFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   value = relaxation->linear_constraints()[2].evaluator()->lower_bound();
-  expected = -b * b.transpose();
-  EXPECT_TRUE(CompareMatrices(Eigen::Map<MatrixXd>(value.data(), 8, 8),
-                              expected, 1e-12));
+  expected = ToLowerTriangularPartVectorFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearEqualityConstraint) {
