@@ -776,8 +776,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       for (const auto& binding : additional_constraint_bindings) {
         for (int index = 0; index < binding.evaluator()->num_constraints();
              ++index) {
-          int consecutive_failures = 0;
           for (bool falsify_lower_bound : {true, false}) {
+            int consecutive_failures = 0;
             if (falsify_lower_bound &&
                 std::isinf(binding.evaluator()->lower_bound()[index])) {
               continue;
