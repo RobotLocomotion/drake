@@ -638,12 +638,15 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   Vector3d point_to_draw = Vector3d::Zero();
   int num_points_drawn = 0;
 
+  drake::log()->info("num_initial_constraints = {}", num_initial_constraints);
+
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
     bool seed_point_requirement = true;
     bool callback_continue = true;
     HPolyhedron P_candidate = P;
+    drake::log()->info("IrisInConfigurationSpace: P_candidate.A() = \n{}\nP_candidate.b() = \n{}\n", P_candidate.A(), P_candidate.b());
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
 
