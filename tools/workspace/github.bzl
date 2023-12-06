@@ -56,6 +56,122 @@ def github_archive(
             be taken when upgrading to a new version.
             Used by //tools/workspace:new_release.
     """
+    _github_real(
+        name,
+        repository = repository,
+        commit = commit,
+        commit_pin = commit_pin,
+        sha256 = sha256,
+        build_file = build_file,
+        patches = patches,
+        extra_strip_prefix = extra_strip_prefix,
+        local_repository_override = local_repository_override,
+        mirrors = mirrors,
+        upgrade_advice = upgrade_advice,
+        implementation = _github_archive_real_impl,
+        attrs = {
+            "sha256": attr.string(
+                mandatory = False,
+                default = "0" * 64,
+            ),
+        },
+        **kwargs
+    )
+
+def github_release(
+        name,
+        implementation = None,
+        repository = None,
+        commit = None,
+        commit_pin = None,
+        sha256s = {},
+        build_file = None,
+        patches = None,
+        extra_strip_prefix = "",
+        local_repository_override = None,
+        mirrors = None,
+        upgrade_advice = "",
+        **kwargs):
+    """A macro to be called in the WORKSPACE that adds an external from GitHub
+    using a workspace rule.
+
+    Args:
+        name: required name is the rule name and so is used for @name//...
+            labels when referring to this archive from BUILD files.
+        implementation: required function which sets up the repository.
+        repository: required GitHub repository name in the form
+            organization/project.
+        commit: required commit is the tag name or git commit sha to download.
+        commit_pin: optional boolean, set to True iff the archive should remain
+            at the same version indefinitely, eschewing automated upgrades to
+            newer versions.
+        sha256s: required sha256s is a dictionary of the expected SHA-256
+            checksums of all candidate downloaded release artifacts. When
+            unsure, you can omit this argument (or comment it out) and then the
+            checksum-mismatch error message will offer a suggestion.
+        build_file: optional build file is the BUILD file label to use for
+            building this external. As a Drake-specific abbreviation, when
+            provided as a relative label (e.g., ":package.BUILD.bazel"), it
+            will be taken as relative to the "@drake//tools/workspace/{name}/"
+            package. When no build_file is provided, the BUILD file(s) within
+            the archive will be used.
+        patches: optional list of patches to apply, matching what's described
+            at https://bazel.build/rules/lib/repo/git#git_repository-patches.
+            As a Drake-specific abbreviation, when provided using relative
+            labels (e.g., ":patches/foo.patch"), they will be taken as relative
+            to the "@drake//tools/workspace/{name}/" package.
+        extra_strip_prefix: optional path to strip from the downloaded archive,
+            e.g., "src" to root the repository at "./src/" instead of "./".
+        local_repository_override: optional local repository override can be
+            used for temporary local testing; instead of retrieving the code
+            from GitHub, the code is retrieved from the local filesystem path
+            given in the argument.
+        mirrors: required mirrors is a dict from string to list-of-string with
+            key "github", where the list-of-strings are URLs to use, formatted
+            using {repository} and {commit} string substitutions. The
+            mirrors.bzl file in this directory provides a reasonable default
+            value.
+        upgrade_advice: optional string that describes extra steps that should
+            be taken when upgrading to a new version.
+            Used by //tools/workspace:new_release.
+    """
+    if implementation == None:
+        fail("Missing implementation=")
+
+    _github_real(
+        name,
+        repository = repository,
+        commit = commit,
+        commit_pin = commit_pin,
+        sha256s = sha256s,
+        build_file = build_file,
+        patches = patches,
+        extra_strip_prefix = extra_strip_prefix,
+        local_repository_override = local_repository_override,
+        mirrors = mirrors,
+        upgrade_advice = upgrade_advice,
+        implementation = implementation,
+        attrs = {
+            "sha256s": attr.string_dict(
+                mandatory = False,
+                default = {},
+            ),
+        },
+        **kwargs
+    )
+
+def _github_real(
+        name,
+        implementation,
+        attrs,
+        repository,
+        commit,
+        build_file,
+        patches,
+        extra_strip_prefix,
+        local_repository_override,
+        mirrors,
+        **kwargs):
     if repository == None:
         fail("Missing repository=")
     if commit == None:
@@ -89,45 +205,7 @@ def github_archive(
     # Once we've handled the "local_repository_override" sidestep, we delegate
     # to a rule (not a macro) so that we have more leeway in the actions we can
     # take (i.e., so we can do more than just a simple download-and-extract).
-    _github_archive_real(
-        name = name,
-        repository = repository,
-        commit = commit,
-        commit_pin = commit_pin,
-        sha256 = sha256,
-        build_file = build_file,
-        patches = patches,
-        extra_strip_prefix = extra_strip_prefix,
-        mirrors = mirrors,
-        upgrade_advice = upgrade_advice,
-        **kwargs
-    )
-
-def _resolve_drake_abbreviation(name, label_str):
-    """De-abbreviates the given label_str as a Drake tools/workspace label.
-    If the label_str is None, returns None. If the label_str is relative,
-    interprets it relative to the "@drake//tools/workspace/{name}/" package
-    and returns an absolute label. Otherwise, returns the label_str unchanged.
-    """
-    if label_str == None:
-        return None
-    if label_str.startswith(":"):
-        return "@drake//tools/workspace/" + name + label_str
-    return label_str
-
-# Helper stub to implement a repository_rule in terms of a setup() function.
-def _github_archive_real_impl(repository_ctx):
-    result = setup_github_repository(repository_ctx)
-    if result.error != None:
-        fail("Unable to complete setup for " +
-             "@{} repository: {}".format(
-                 repository_ctx.name,
-                 result.error,
-             ))
-
-_github_archive_real = repository_rule(
-    implementation = _github_archive_real_impl,
-    attrs = {
+    attrs.update({
         "repository": attr.string(
             mandatory = True,
         ),
@@ -135,10 +213,6 @@ _github_archive_real = repository_rule(
             mandatory = True,
         ),
         "commit_pin": attr.bool(),
-        "sha256": attr.string(
-            mandatory = False,
-            default = "0" * 64,
-        ),
         "build_file": attr.label(
             default = None,
         ),
@@ -164,31 +238,121 @@ _github_archive_real = repository_rule(
         "upgrade_advice": attr.string(
             default = "",
         ),
-    },
-)
-"""This is a rule() formulation of the github_archive() macro.  It is identical
-to the macro except that it does not support local_repository_override.
-Consult the macro documentation for full API details.
-"""
+    })
+    repository_rule(implementation = implementation, attrs = attrs)(
+        name = name,
+        repository = repository,
+        commit = commit,
+        build_file = build_file,
+        patches = patches,
+        extra_strip_prefix = extra_strip_prefix,
+        mirrors = mirrors,
+        **kwargs
+    )
 
-def setup_github_repository(repository_ctx):
+def _resolve_drake_abbreviation(name, label_str):
+    """De-abbreviates the given label_str as a Drake tools/workspace label.
+    If the label_str is None, returns None. If the label_str is relative,
+    interprets it relative to the "@drake//tools/workspace/{name}/" package
+    and returns an absolute label. Otherwise, returns the label_str unchanged.
+    """
+    if label_str == None:
+        return None
+    if label_str.startswith(":"):
+        return "@drake//tools/workspace/" + name + label_str
+    return label_str
+
+# Helper stub to implement a repository_rule in terms of a setup() function.
+def _github_archive_real_impl(repository_ctx):
+    result = setup_github_repository(repository_ctx)
+    if result.error != None:
+        fail("Unable to complete setup for " +
+             "@{} repository: {}".format(
+                 repository_ctx.name,
+                 result.error,
+             ))
+
+def _download_github_archive(
+        repository_ctx,
+        repository,
+        commit,
+        mirrors,
+        strip_prefix):
+    """Download a github archive."""
+
+    urls = github_format_urls(
+        repository = repository,
+        commit = commit,
+        mirrors = mirrors,
+    )
+    sha256 = repository_ctx.attr.sha256
+
+    repository_ctx.download_and_extract(
+        urls,
+        sha256 = _sha256(sha256),
+        type = "tar.gz",
+        stripPrefix = strip_prefix,
+    )
+    return sha256, urls
+
+def setup_github_repository(
+        repository_ctx,
+        downloader = _download_github_archive,
+        repository_type = "github"):
     """This is a reusable formulation of the github_archive() macro. It is
     identical to the macro except that (1) it does not support local repository
-    override, and (2) it returns a status struct instead of failing internally.
-    The result struct has a field `error` that will be non-None iff there were
-    any errors.  Consult the macro documentation for additional API details.
+    override, (2) it allows specifying how to download the artifact and which
+    key of mirrors to use, and (3) it returns a status struct instead of
+    failing internally.  The result struct has a field `error` that will be
+    non-None iff there were any errors.  Consult the macro documentation for
+    additional API details.
+
+    Args:
+        repository_ctx: context of a Bazel repository rule.
+        downloader: optional function to download the appropriate artifact and
+            return the resolved checksum and urls.  _download_github_archive()
+            is used by default.
+            an example.
+        repository_type: specifies the repository type, which (among other
+            things) determines which entry in the mirror map is used.
     """
 
-    # Do the download step first.  (This also writes the metadata.)
-    github_download_and_extract(
+    mirrors = repository_ctx.attr.mirrors.get(repository_type)
+
+    repository = repository_ctx.attr.repository
+    commit = repository_ctx.attr.commit
+    commit_pin = getattr(repository_ctx.attr, "commit_pin", None)
+    strip_prefix = _strip_prefix(
+        repository,
+        commit,
+        repository_ctx.attr.extra_strip_prefix,
+    )
+
+    # Do the download step first.
+    sha256, urls = downloader(
         repository_ctx,
-        repository = repository_ctx.attr.repository,
-        commit = repository_ctx.attr.commit,
-        commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
-        mirrors = repository_ctx.attr.mirrors,
-        sha256 = repository_ctx.attr.sha256,
-        extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
-        upgrade_advice = getattr(repository_ctx.attr, "upgrade_advice", ""),
+        repository = repository,
+        commit = commit,
+        mirrors = mirrors,
+        strip_prefix = strip_prefix,
+    )
+
+    # Create a summary file for Drake maintainers.
+    upgrade_advice = getattr(repository_ctx.attr, "upgrade_advice", "")
+    upgrade_advice = "\n".join(
+        [line.strip() for line in upgrade_advice.strip().split("\n")],
+    )
+
+    generate_repository_metadata(
+        repository_ctx,
+        repository_rule_type = repository_type,
+        repository = repository,
+        commit = commit,
+        version_pin = commit_pin,
+        sha256 = sha256,
+        urls = urls,
+        strip_prefix = strip_prefix,
+        upgrade_advice = upgrade_advice,
     )
 
     # Optionally apply source patches, using Bazel's utility helper.  Here we
@@ -220,72 +384,6 @@ def setup_github_repository(repository_ctx):
     if repository_ctx.attr.build_file:
         repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
     return struct(error = None)
-
-def github_download_and_extract(
-        repository_ctx,
-        repository,
-        commit,
-        mirrors,
-        output = "",
-        sha256 = "0" * 64,
-        extra_strip_prefix = "",
-        upgrade_advice = "",
-        commit_pin = None):
-    """Download an archive of the provided GitHub repository and commit to the
-    output path and extract it.
-
-    Args:
-        repository_ctx: context of a Bazel repository rule.
-        repository: GitHub repository name in the form organization/project.
-        commit: git revision for which the archive should be downloaded.
-        mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
-            an example.
-        output: path to the directory where the archive will be unpacked,
-            relative to the Bazel repository directory.
-        sha256: expected SHA-256 hash of the archive downloaded. Fallback to
-            an incorrect default value to prevent the hash check from being
-            disabled, but allow the first download attempt to fail and print
-            the correct SHA-256 hash.
-        extra_strip_prefix: optional path to strip from the downloaded archive,
-            e.g., "src" to root the repository at "./src/" instead of "./".
-        commit_pin: set to True iff the archive should remain at the same
-            version indefinitely, eschewing automated upgrades to newer
-            versions.
-        upgrade_advice: optional string that describes extra steps that should
-            be taken when upgrading to a new version.
-            Used by //tools/workspace:new_release.
-    """
-    urls = _urls(
-        repository = repository,
-        commit = commit,
-        mirrors = mirrors,
-    )
-
-    strip_prefix = _strip_prefix(repository, commit, extra_strip_prefix)
-    repository_ctx.download_and_extract(
-        urls,
-        output = output,
-        sha256 = _sha256(sha256),
-        type = "tar.gz",
-        stripPrefix = strip_prefix,
-    )
-
-    upgrade_advice = "\n".join(
-        [line.strip() for line in upgrade_advice.strip().split("\n")],
-    )
-
-    # Create a summary file for Drake maintainers.
-    generate_repository_metadata(
-        repository_ctx,
-        repository_rule_type = "github",
-        repository = repository,
-        commit = commit,
-        version_pin = commit_pin,
-        sha256 = sha256,
-        urls = urls,
-        strip_prefix = strip_prefix,
-        upgrade_advice = upgrade_advice,
-    )
 
 def _sha256(sha256):
     """Fallback to an incorrect default value of SHA-256 hash to prevent the
@@ -333,7 +431,7 @@ def _is_commit_sha(commit):
         for ch in commit.elems()
     ])
 
-def _format_url(*, pattern, repository, commit):
+def _format_url(*, pattern, repository, commit, substitutions):
     """Given a URL pattern for github.com or a Drake-specific mirror,
     substitutes in the given repository and commit (tag or git sha).
 
@@ -352,12 +450,13 @@ def _format_url(*, pattern, repository, commit):
     """
     is_commit_sha = _is_commit_sha(commit)
     is_tag = not is_commit_sha
-    substitutions = {
+    substitutions = dict(substitutions)
+    substitutions.update({
         "repository": repository,
         "commit": commit,
         "tag_name": commit if is_tag else None,
         "commit_sha": commit if is_commit_sha else None,
-    }
+    })
     for name, value in substitutions.items():
         if value == None:
             needle = "{" + name + "}"
@@ -368,23 +467,24 @@ def _format_url(*, pattern, repository, commit):
                 return None
     return pattern.format(**substitutions)
 
-def _urls(*, repository, commit, mirrors):
+def github_format_urls(*, repository, commit, mirrors, substitutions = {}):
     """Compute the urls from which an archive of the provided GitHub
     repository and commit may be downloaded.
 
      Args:
         repository: GitHub repository name in the form organization/project.
         commit: git revision for which the archive should be downloaded.
-        mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
-            an example.
+        mirrors: list of mirrors, see "github" entry in mirrors.bzl in this
+            directory for an example.
     """
     result_with_nulls = [
         _format_url(
             pattern = x,
             repository = repository,
             commit = commit,
+            substitutions = substitutions,
         )
-        for x in mirrors.get("github")
+        for x in mirrors
     ]
     return [
         url

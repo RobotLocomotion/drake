@@ -32,8 +32,6 @@ command line.
 
 import argparse
 import getpass
-import git
-import github3
 import hashlib
 import json
 import logging
@@ -43,12 +41,15 @@ import shlex
 import subprocess
 import time
 import urllib
-
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 from drake.tools.workspace.metadata import read_repository_metadata
+
+import git
+
+import github3
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
@@ -184,13 +185,111 @@ def _handle_github(workspace_name, gh, data):
     return old_commit, new_commit
 
 
-def _handle_buildifier(gh, data):
-    assert data["name"] == "buildifier"
-    old_version = data["version"]
-    time.sleep(0.2)  # Don't make github angry.
-    gh_repo = gh.repository("bazelbuild", "buildtools")
-    new_version = next(gh_repo.tags()).name
-    return old_version, new_version
+def _do_upgrade_github(temp_dir, lines, repository, old_commit, new_commit):
+    # Locate the two hexadecimal lines we need to edit.
+    commit_line_re = re.compile(
+        r'(?<=    commit = ")' + re.escape(old_commit) + r'(?=",)')
+    checksum_line_re = re.compile(
+        r'(?<=    sha256 = ")[0-9a-f]{64}(?=",)')
+    commit_line_num = None
+    checksum_line_num = None
+    for i, line in enumerate(lines):
+        match = commit_line_re.search(line)
+        if match:
+            assert commit_line_num is None
+            commit_line_num = i
+        match = checksum_line_re.search(line)
+        if match:
+            assert checksum_line_num is None
+            checksum_line_num = i
+    assert commit_line_num is not None
+    assert checksum_line_num is not None
+
+    # Download the new source archive.
+    print("Downloading new archive...")
+    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+    new_commit_filename = new_commit.replace("/", "_") + ".tar.gz"
+    new_checksum = _compute_checksum(temp_dir, new_url, new_commit_filename)
+
+    # Update the repository.bzl contents.
+    lines[commit_line_num] = commit_line_re.sub(
+        new_commit, lines[commit_line_num])
+    lines[checksum_line_num] = checksum_line_re.sub(
+        new_checksum, lines[checksum_line_num])
+    return lines
+
+
+def _do_upgrade_github_release(temp_dir, lines, repository,
+                               old_commit, new_commit):
+    # Locate the two hexadecimal lines we need to edit.
+    commit_line_re = re.compile(
+        r'(?<=    commit = ")' + re.escape(old_commit) + r'(?=",)')
+    checksum_start_re = re.compile(
+        r'    sha256s = [{]')
+    checksum_file_re = re.compile(
+        r'(?<=    ")[^"]+(?=": "[0-9a-f]{64}",)')
+    checksum_sha_re = re.compile(
+        r'(?<=": ")[0-9a-f]{64}(?=",)')
+    commit_line_num = None
+    checksum_start_line_num = None
+    checksum_stop_line_num = None
+    for i, line in enumerate(lines):
+        match = commit_line_re.search(line)
+        if match:
+            assert commit_line_num is None
+            commit_line_num = i
+        match = checksum_start_re.search(line)
+        if match:
+            assert checksum_start_line_num is None
+            checksum_start_line_num = i
+    assert commit_line_num is not None
+    assert checksum_start_line_num is not None
+
+    # Identify the file set.
+    new_checksums = {}
+    for i in range(checksum_start_line_num + 1, len(lines)):
+        line = lines[i]
+        if line.lstrip().startswith("},"):
+            assert checksum_stop_line_num is None
+            checksum_stop_line_num = i
+            break
+
+        match = checksum_file_re.search(line)
+        assert match is not None
+        new_checksums[match.group()] = None
+
+    assert checksum_stop_line_num is not None
+    assert new_checksums
+
+    # Download the new artifacts.
+    print("Downloading new artifact(s)...")
+    for filename in new_checksums:
+        new_url = (
+            f"https://github.com/{repository}/releases/download/"
+            f"{new_commit}/{filename}"
+        )
+        new_commit_filename = f"{new_commit}/{filename}".replace("/", "_")
+        new_checksums[filename] = _compute_checksum(
+            temp_dir, new_url, new_commit_filename)
+
+    # Update the repository.bzl contents.
+    lines[commit_line_num] = commit_line_re.sub(
+        new_commit, lines[commit_line_num])
+
+    for i in range(checksum_start_line_num + 1, checksum_stop_line_num):
+        match = checksum_file_re.search(lines[i])
+        assert match is not None
+
+        new_checksum = new_checksums[match.group()]
+        lines[i] = checksum_sha_re.sub(new_checksum, lines[i])
+
+    return lines
+
+
+GITHUB_UPGRADE_HANDLERS = {
+    "github": _do_upgrade_github,
+    "github_release": _do_upgrade_github_release,
+}
 
 
 def _check_for_upgrades(gh, args, metadata):
@@ -200,15 +299,12 @@ def _check_for_upgrades(gh, args, metadata):
         if data.get("version_pin"):
             continue
         key = data["repository_rule_type"]
-        if key == "github":
+        if key in GITHUB_UPGRADE_HANDLERS:
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
         elif key == "crate_universe":
             # For details, see drake/tools/workspace/crate_universe/README.md.
             print(f"Ignoring {workspace_name} from rules_rust")
             continue
-        elif workspace_name == "buildifier":
-            assert key == "manual"
-            old_commit, new_commit = _handle_buildifier(gh, data)
         elif key == "manual":
             print("{} version {} needs manual inspection".format(
                 workspace_name, data.get("version", "???")))
@@ -254,12 +350,26 @@ def _do_commit(local_drake_checkout, actually_commit,
         print(("*" * 72) + "\n")
 
 
+def _compute_checksum(temp_dir, url, filename):
+    hasher = hashlib.sha256()
+    with open(f"{temp_dir}/{filename}", "wb") as temp:
+        with urllib.request.urlopen(url) as response:
+            while True:
+                data = response.read(4096)
+                if not data:
+                    break
+                hasher.update(data)
+                temp.write(data)
+            return hasher.hexdigest()
+
+
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
     data = metadata[workspace_name]
-    if data["repository_rule_type"] != "github":
+    upgrade_handler = GITHUB_UPGRADE_HANDLERS.get(data["repository_rule_type"])
+    if upgrade_handler is None:
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     repository = data["repository"]
     upgrade_advice = data["upgrade_advice"]
@@ -289,45 +399,11 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     print("Upgrading {} from {} to {}".format(
         workspace_name, old_commit, new_commit))
 
-    # Locate the two hexadecimal lines we need to edit.
-    commit_line_re = re.compile(
-        r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)')
-    checksum_line_re = re.compile(
-        r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
-    commit_line_num = None
-    checksum_line_num = None
-    for i, line in enumerate(lines):
-        match = commit_line_re.search(line)
-        if match:
-            assert commit_line_num is None
-            commit_line_num = i
-        match = checksum_line_re.search(line)
-        if match:
-            assert checksum_line_num is None
-            checksum_line_num = i
-    assert commit_line_num is not None
-    assert checksum_line_num is not None
+    # Update the repository.bzl contents and download the new artifact(s).
+    lines = upgrade_handler(temp_dir, lines, repository,
+                            old_commit, new_commit)
 
-    # Download the new source archive.
-    print("Downloading new archive...")
-    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
-    hasher = hashlib.sha256()
-    new_commit_filename = new_commit.replace("/", "_")
-    with open(f"{temp_dir}/{new_commit_filename}.tar.gz", "wb") as temp:
-        with urllib.request.urlopen(new_url) as response:
-            while True:
-                data = response.read(4096)
-                if not data:
-                    break
-                hasher.update(data)
-                temp.write(data)
-            new_checksum = hasher.hexdigest()
-
-    # Update the repository.bzl contents and then write it out.
-    lines[commit_line_num] = commit_line_re.sub(
-        new_commit, lines[commit_line_num])
-    lines[checksum_line_num] = checksum_line_re.sub(
-        new_checksum, lines[checksum_line_num])
+    # Write out the updated repository.bzl.
     with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
         for line in lines:
             f.write(line)

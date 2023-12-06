@@ -19,74 +19,76 @@ Argument:
     name: A unique name for this rule.
 """
 
-load("//tools/workspace:os.bzl", "determine_os")
 load(
-    "//tools/workspace:metadata.bzl",
-    "generate_repository_metadata",
+    "//tools/workspace:github.bzl",
+    "github_format_urls",
+    "github_release",
+    "setup_github_repository",
 )
 
-def _impl(repository_ctx):
-    # Enumerate the possible binaries.  Note that the buildifier binaries are
-    # fully statically linked, so the particular distribution doesn't matter,
-    # only the kernel.
-    #
-    # To update this, each artifact needs to be downloaded and its checksum
-    # computed manually.  See tools/workspace/mirrors.bzl for the canonical
-    # URL.
-    version = "v6.4.0"
-    darwin_urls = [
-        x.format(version = version, filename = "buildifier-darwin-amd64")
-        for x in repository_ctx.attr.mirrors.get("buildifier")
-    ]
-    darwin_sha256 = "eeb47b2de27f60efe549348b183fac24eae80f1479e8b06cac0799c486df5bed"  # noqa
-    linux_urls = [
-        x.format(version = version, filename = "buildifier-linux-amd64")
-        for x in repository_ctx.attr.mirrors.get("buildifier")
-    ]
-    linux_sha256 = "be63db12899f48600bad94051123b1fd7b5251e7661b9168582ce52396132e92"  # noqa
+def _download(
+        repository_ctx,
+        repository,
+        commit,
+        mirrors,
+        strip_prefix):
+    # Determine which binary to fetch.
+    os_name = repository_ctx.os.name
+    if os_name == "mac os x":
+        os_name = "darwin"
+    os_arch = repository_ctx.os.arch
+    if os_arch == "aarch64":
+        os_arch = "arm64"
+    filename = "buildifier-{}-{}".format(os_name, os_arch)
 
-    # Choose which binary to use.
-    os_result = determine_os(repository_ctx)
-    if os_result.is_macos:
-        urls = darwin_urls
-        sha256 = darwin_sha256
-    elif os_result.is_ubuntu or os_result.is_manylinux:
-        urls = linux_urls
-        sha256 = linux_sha256
-    else:
-        fail("Operating system is NOT supported {}".format(os_result))
+    sha256 = repository_ctx.attr.sha256s.get(filename, "0" * 64)
+    urls = github_format_urls(
+        repository = repository,
+        commit = commit,
+        mirrors = mirrors,
+        substitutions = {
+            "release": commit,
+            "filename": filename,
+        },
+    )
 
     # Fetch the binary from mirrors.
-    output = repository_ctx.path("buildifier")
-    repository_ctx.download(urls, output, sha256, executable = True)
-
-    # Add the BUILD file.
-    repository_ctx.symlink(
-        Label("@drake//tools/workspace/buildifier:package.BUILD.bazel"),
-        "BUILD.bazel",
+    repository_ctx.download(
+        url = urls,
+        output = repository_ctx.path("buildifier"),
+        sha256 = sha256 or "0" * 64,
+        executable = True,
     )
 
-    # Create a summary file for Drake maintainers.  We need to list all
-    # possible binaries so Drake's mirroring scripts will fetch everything.
-    generate_repository_metadata(
+    return sha256, urls
+
+def _impl(repository_ctx):
+    result = setup_github_repository(
         repository_ctx,
-        repository_rule_type = "manual",
-        version = version,
-        downloads = [
-            {
-                "urls": darwin_urls,
-                "sha256": darwin_sha256,
-            },
-            {
-                "urls": linux_urls,
-                "sha256": linux_sha256,
-            },
-        ],
+        downloader = _download,
+        repository_type = "github_release",
     )
+    if result.error != None:
+        fail("Unable to complete setup for " +
+             "@{} repository: {}".format(
+                 repository_ctx.name,
+                 result.error,
+             ))
 
-buildifier_repository = repository_rule(
-    attrs = {
-        "mirrors": attr.string_list_dict(),
-    },
-    implementation = _impl,
-)
+def buildifier_repository(
+        name,
+        mirrors = None):
+    github_release(
+        name = name,
+        implementation = _impl,
+        repository = "bazelbuild/buildtools",
+        commit = "v6.4.0",
+        sha256s = {
+            "buildifier-darwin-amd64": "eeb47b2de27f60efe549348b183fac24eae80f1479e8b06cac0799c486df5bed",  # noqa
+            "buildifier-darwin-arm64": "fa07ba0d20165917ca4cc7609f9b19a8a4392898148b7babdf6bb2a7dd963f05",  # noqa
+            "buildifier-linux-amd64": "be63db12899f48600bad94051123b1fd7b5251e7661b9168582ce52396132e92",  # noqa
+            "buildifier-linux-arm64": "18540fc10f86190f87485eb86963e603e41fa022f88a2d1b0cf52ff252b5e1dd",  # noqa
+        },
+        build_file = ":package.BUILD.bazel",
+        mirrors = mirrors,
+    )
