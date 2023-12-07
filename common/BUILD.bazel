@@ -397,6 +397,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "overloaded",
+    hdrs = ["overloaded.h"],
+    install_hdrs_exclude = ["overloaded.h"],
+    tags = ["exclude_from_package"],
+)
+
+drake_cc_library(
     name = "parallelism",
     srcs = ["parallelism.cc"],
     hdrs = ["parallelism.h"],
@@ -1018,6 +1025,13 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "overloaded_test",
+    deps = [
+        "//common:overloaded",
     ],
 )
 
