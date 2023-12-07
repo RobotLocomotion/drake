@@ -126,26 +126,15 @@ ModelInstanceIndex AddParallelGripper(
                                    "left_finger_collision", proximity_props);
   plant->RegisterCollisionGeometry(right_finger, X_BG, capsule,
                                    "right_finger_collision", proximity_props);
-  /* Get joints so that we can set constraints, damping, and initial conditions.
-   */
+  /* Get joints so that we can set initial conditions. */
   PrismaticJoint<double>& left_slider =
       plant->GetMutableJointByName<PrismaticJoint>("left_slider");
   PrismaticJoint<double>& right_slider =
       plant->GetMutableJointByName<PrismaticJoint>("right_slider");
-  /* Constrain the left and the right fingers such that qₗ = -qᵣ. */
-  plant->AddCouplerConstraint(left_slider, right_slider, -1.0);
   /* Initialize the gripper in an "open" position. */
   const double kInitialWidth = 0.085;
   left_slider.set_default_translation(-kInitialWidth / 2.0);
   right_slider.set_default_translation(kInitialWidth / 2.0);
-  const auto finger_actuator_index =
-      plant->GetJointActuatorByName("left_slider").index();
-  plant->get_mutable_joint_actuator(finger_actuator_index)
-      .set_controller_gains({1e4, 1});
-  const auto hand_actuator_index =
-      plant->GetJointActuatorByName("translate_joint").index();
-  plant->get_mutable_joint_actuator(hand_actuator_index)
-      .set_controller_gains({1e4, 1});
 
   return model_instance;
 }
@@ -234,8 +223,7 @@ int do_main() {
   const PointSourceForceField* suction_force_ptr{nullptr};
   if (use_suction) {
     auto suction_force = std::make_unique<PointSourceForceField>(
-        plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.05), 2.0e5,
-        0.1);
+        plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.05), 0.1);
     suction_force_ptr = suction_force.get();
     owned_deformable_model->AddExternalForce(std::move(suction_force));
   }
@@ -272,7 +260,7 @@ int do_main() {
         kInitialHeight, kStartSuctionHeight, kWaitTime, kTravelTime,
         kPickUpTime, kDropTime);
     builder.Connect(suction.signal_output_port(),
-                    suction_force_ptr->signal_input_port());
+                    suction_force_ptr->maximum_force_density_input_port());
     builder.Connect(suction.desired_state_output_port(),
                     plant.get_desired_state_input_port(gripper_instance));
   } else {

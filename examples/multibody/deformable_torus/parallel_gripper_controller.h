@@ -6,18 +6,18 @@ namespace drake {
 namespace examples {
 namespace deformable_torus {
 
-/* We create a leaf system that outputs the desire state of a parallel jaw
+/* We create a leaf system that outputs the desired state of a parallel jaw
  gripper to follow a close-lift-open motion sequence. The desired position is
  2-dimensional with the first element corresponding to the wrist degree of
  freedom and the second element corresponding to the left finger degree of
  freedom. This control is a time-based state machine, where desired state
- changes based on the context time. This is strictly for demo purposes and is
- not intended to generalize to other cases. There are four states:
+ changes based on the context time. There are four states, executed in the
+ following order:
 
   0. The fingers are open in the initial state.
   1. The fingers are closed to secure a grasp.
   2. The gripper is lifted to a prescribed final height.
-  3. The fingers are open to loosen a grasp.
+  3. The fingers are open to loosen the grasp.
 
  The desired state is interpolated between these states. */
 class ParallelGripperController : public systems::LeafSystem<double> {
@@ -45,10 +45,10 @@ class ParallelGripperController : public systems::LeafSystem<double> {
   const double hold_time_{5.5};
   /* The time at which the fingers reach the desired open state. */
   const double fingers_open_time_{7.0};
-  Eigen::Vector2d initial_state_;
-  Eigen::Vector2d closed_state_;
-  Eigen::Vector2d lifted_state_;
-  Eigen::Vector2d open_state_;
+  Eigen::Vector2d initial_configuration_;
+  Eigen::Vector2d closed_configuration_;
+  Eigen::Vector2d lifted_configuration_;
+  Eigen::Vector2d open_configuration_;
 };
 
 }  // namespace deformable_torus

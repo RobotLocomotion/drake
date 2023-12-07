@@ -36,7 +36,7 @@ class SuctionCupController : public systems::LeafSystem<double> {
   }
 
   const systems::OutputPort<double>& signal_output_port() const {
-    return get_output_port(signal_port_index_);
+    return get_output_port(maximum_force_port_index_);
   }
 
  private:
@@ -44,9 +44,10 @@ class SuctionCupController : public systems::LeafSystem<double> {
   void CalcDesiredState(const systems::Context<double>& context,
                         systems::BasicVector<double>* desired_state) const;
 
-  /* Computes the on/off signal of the suction force based on time. */
-  void CalcSignal(const systems::Context<double>& context,
-                  systems::BasicVector<double>* signal) const;
+  /* Computes the maximum suction force in Newtons based on time. */
+  void CalcMaxForceDensity(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* max_force_density) const;
 
   double initial_height_{};
   double pick_height_{};
@@ -56,7 +57,7 @@ class SuctionCupController : public systems::LeafSystem<double> {
   double drop_time_{};
 
   int desired_state_port_index_{};
-  int signal_port_index_{};
+  int maximum_force_port_index_{};
 };
 
 }  // namespace deformable_torus

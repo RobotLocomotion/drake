@@ -12,8 +12,10 @@ namespace deformable_torus {
 /* A custom external force density field that applies external force to
  deformable bodies. The force density points towards a point C affixed to a
  rigid body. The magnitude of the force density decays linearly with the
- distance to the point C and floors at 0. The force field can be turned on/off
- through an input port to the MultibodyPlant that owns this force field. */
+ distance to the point C and floors at 0. The maximum force density, which
+ defaults to zero, can be configured through a double-valued input port (see
+ maximum_force_density_input_port()) to the MultibodyPlant that owns this force
+ field. */
 class PointSourceForceField : public multibody::ForceDensityField<double> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointSourceForceField)
@@ -24,18 +26,17 @@ class PointSourceForceField : public multibody::ForceDensityField<double> {
                     to.
    @param p_BC      The fixed offset from the body origin to the point source of
                     the force field.
-   @param max_value The maximum magnitude of the force density [N/m^3]. Must be
-                    positive.
    @param distance  The force density decays linearly. `distance` in meters is
                     the distance from the point source beyond which the force
                     density is zero. Must be positive. */
   PointSourceForceField(const multibody::MultibodyPlant<double>& plant,
                         const multibody::Body<double>& body,
-                        const Vector3<double>& p_BC, double max_value,
-                        double distance);
+                        const Vector3<double>& p_BC, double distance);
 
-  const systems::InputPort<double>& signal_input_port() const {
-    return parent_system_or_throw().get_input_port(signal_port_index_);
+  /* Input port for desired maximum force density with unit N/m³. */
+  const systems::InputPort<double>& maximum_force_density_input_port() const {
+    return parent_system_or_throw().get_input_port(
+        maximum_force_density_port_index_);
   }
 
  private:
@@ -63,19 +64,12 @@ class PointSourceForceField : public multibody::ForceDensityField<double> {
 
   void DoDeclareInputPorts(multibody::MultibodyPlant<double>* plant) final;
 
-  /* Returns true if the input force signal is non-zero. */
-  bool IsForceOn(const systems::Context<double>& context) const {
-    return signal_input_port().Eval<systems::BasicVector<double>>(context)[0] !=
-           0.0;
-  }
-
   const multibody::MultibodyPlant<double>* plant_{};
   const multibody::Body<double>* body_{};
   Vector3<double> p_BC_;
-  double max_value_{};
   double distance_{};
   systems::CacheIndex point_source_position_cache_index_;
-  systems::InputPortIndex signal_port_index_;
+  systems::InputPortIndex maximum_force_density_port_index_;
 };
 
 }  // namespace deformable_torus

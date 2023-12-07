@@ -12,13 +12,8 @@ using systems::Context;
 
 PointSourceForceField::PointSourceForceField(
     const MultibodyPlant<double>& plant, const Body<double>& body,
-    const Vector3<double>& p_BC, double max_value, double distance)
-    : plant_(&plant),
-      body_(&body),
-      p_BC_(p_BC),
-      max_value_(max_value),
-      distance_(distance) {
-  DRAKE_THROW_UNLESS(max_value_ > 0);
+    const Vector3<double>& p_BC, double distance)
+    : plant_(&plant), body_(&body), p_BC_(p_BC), distance_(distance) {
   DRAKE_THROW_UNLESS(distance_ > 0);
 }
 
@@ -30,8 +25,12 @@ Vector3<double> PointSourceForceField::DoEvaluateAt(
   if (dist == 0 || dist > distance_) {
     return Vector3<double>::Zero();
   }
-  const double magnitude =
-      IsForceOn(context) ? (distance_ - dist) * max_value_ / distance_ : 0;
+  const double max_value =
+      maximum_force_density_input_port().HasValue(context)
+          ? maximum_force_density_input_port()
+                .Eval<systems::BasicVector<double>>(context)[0]
+          : 0.0;
+  const double magnitude = (distance_ - dist) * max_value / distance_;
   return magnitude * p_QC_W / p_QC_W.norm();
 }
 
@@ -54,8 +53,9 @@ void PointSourceForceField::DoDeclareCacheEntries(
 }
 
 void PointSourceForceField::DoDeclareInputPorts(MultibodyPlant<double>* plant) {
-  signal_port_index_ =
-      this->DeclareVectorInputPort(plant, "on/off signal for the force field",
+  maximum_force_density_port_index_ =
+      this->DeclareVectorInputPort(plant,
+                                   "maximum force density magnitude in N/m³",
                                    BasicVector<double>(1))
           .get_index();
 }

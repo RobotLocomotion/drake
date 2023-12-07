@@ -12,10 +12,10 @@ using Eigen::VectorXd;
 ParallelGripperController::ParallelGripperController(double open_width,
                                                      double closed_width,
                                                      double height)
-    : initial_state_(0, -open_width / 2),
-      closed_state_(0, -closed_width / 2),
-      lifted_state_(height, -closed_width / 2),
-      open_state_(height, -open_width / 2) {
+    : initial_configuration_(0, -open_width / 2),
+      closed_configuration_(0, -closed_width / 2),
+      lifted_configuration_(height, -closed_width / 2),
+      open_configuration_(height, -open_width / 2) {
   this->DeclareVectorOutputPort("desired state", BasicVector<double>(4),
                                 &ParallelGripperController::CalcDesiredState);
 }
@@ -28,19 +28,22 @@ void ParallelGripperController::CalcDesiredState(
   if (t < fingers_closed_time_) {
     const double end_time = fingers_closed_time_;
     const double theta = t / end_time;
-    desired_positions = theta * closed_state_ + (1.0 - theta) * initial_state_;
+    desired_positions =
+        theta * closed_configuration_ + (1.0 - theta) * initial_configuration_;
   } else if (t < gripper_lifted_time_) {
     const double end_time = gripper_lifted_time_ - fingers_closed_time_;
     const double theta = (t - fingers_closed_time_) / end_time;
-    desired_positions = theta * lifted_state_ + (1.0 - theta) * closed_state_;
+    desired_positions =
+        theta * lifted_configuration_ + (1.0 - theta) * closed_configuration_;
   } else if (t < hold_time_) {
-    desired_positions = lifted_state_;
+    desired_positions = lifted_configuration_;
   } else if (t < fingers_open_time_) {
     const double end_time = fingers_open_time_ - hold_time_;
     const double theta = (t - hold_time_) / end_time;
-    desired_positions = theta * open_state_ + (1.0 - theta) * lifted_state_;
+    desired_positions =
+        theta * open_configuration_ + (1.0 - theta) * lifted_configuration_;
   } else {
-    desired_positions = open_state_;
+    desired_positions = open_configuration_;
   }
   output->get_mutable_value() << desired_positions, desired_velocities;
 }
