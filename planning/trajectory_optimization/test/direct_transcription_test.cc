@@ -296,8 +296,9 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
 void SolvePendulumTrajectory(bool continuous_time) {
   // Only solve under SNOPT (IPOPT is unreliable here).
   solvers::SnoptSolver snopt_solver;
-  if (!snopt_solver.is_available()) {
-    drake::log()->warn("SNOPT is unavailable; this test shall be skipped.");
+  if (!(snopt_solver.is_available() && snopt_solver.is_enabled())) {
+    drake::log()->warn(
+        "SNOPT is unavailable or disabled; this test shall be skipped.");
     return;
   }
 
