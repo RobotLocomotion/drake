@@ -1,0 +1,32 @@
+[sdformat] Avoid use of Environment.hh
+
+Drake's build of gz-utils has disabled this header, so we'll need to
+temporarily work around losing it.
+
+TODO(jwnimmer-tri) We either need to document the $SDF_PATH semantics
+in our Doxygen API reference, or else deprecate and remove it.
+
+--- src/SDF.cc
++++ src/SDF.cc
+@@ -33,8 +33,6 @@
+ #include "sdf/sdf_config.h"
+ #include "EmbeddedSdf.hh"
+ 
+-#include <gz/utils/Environment.hh>
+-
+ namespace sdf
+ {
+ inline namespace SDF_VERSION_NAMESPACE
+@@ -132,7 +132,11 @@
+   }
+ 
+   std::string sdfPathEnv;
+-  if(gz::utils::env("SDF_PATH", sdfPathEnv))
++  if (const char* sdf_path = std::getenv("SDF_PATH"))
++  {
++    sdfPathEnv = sdf_path;
++  }
++  if (!sdfPathEnv.empty())
+   {
+     std::vector<std::string> paths = sdf::split(sdfPathEnv, ":");
+     for (std::vector<std::string>::iterator iter = paths.begin();
