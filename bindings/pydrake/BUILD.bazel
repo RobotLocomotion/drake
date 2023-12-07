@@ -55,6 +55,8 @@ drake_py_library(
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
+    # Anonymous namespace and deduction guides both confuse pybind.
+    exclude_hdr_patterns = ["drake/common/overloaded.h"],
     root_name = "pydrake_doc",
     targets = [
         "//tools/install/libdrake:drake_headers",

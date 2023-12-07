@@ -321,6 +321,7 @@ drake_cc_googletest_linux_only(
         ":internal_render_engine_gl",
         ":internal_texture_library",
         "//common:find_resource",
+        "//common:overloaded",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/sensors:image",
         "//systems/sensors:image_writer",

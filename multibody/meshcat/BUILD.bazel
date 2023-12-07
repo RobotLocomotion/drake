@@ -84,6 +84,7 @@ drake_cc_library(
     srcs = ["joint_sliders.cc"],
     hdrs = ["joint_sliders.h"],
     deps = [
+        "//common:overloaded",
         "//common:scope_exit",
         "//geometry:meshcat",
         "//geometry:meshcat_graphviz",
