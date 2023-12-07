@@ -1,6 +1,7 @@
 #include "drake/common/schema/rotation.h"
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/overloaded.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -8,12 +9,6 @@ namespace drake {
 namespace schema {
 
 using symbolic::Expression;
-
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 Rotation::Rotation(const math::RotationMatrix<double>& arg)
     : Rotation(math::RollPitchYaw<double>(arg)) {}
