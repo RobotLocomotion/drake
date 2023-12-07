@@ -20,7 +20,11 @@ SolverId SnoptSolver::id() {
 }
 
 bool SnoptSolver::is_enabled() {
-  return true;
+  const char* snopt_solver_enabled = std::getenv("DRAKE_SNOPT_SOLVER_ENABLED");
+  if (snopt_solver_enabled == nullptr) {
+    return true;
+  }
+  return (std::string(snopt_solver_enabled) != "0");
 }
 
 bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {

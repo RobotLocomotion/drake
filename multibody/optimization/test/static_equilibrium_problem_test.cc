@@ -39,7 +39,7 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
         // RigidBodies Through Contact by Michael Posa, Cecilia Cantu and Russ
         // Tedrake.
         solvers::SnoptSolver snopt_solver;
-        if (snopt_solver.available()) {
+        if (snopt_solver.available() && snopt_solver.enabled()) {
           const auto result = snopt_solver.Solve(dut.prog(), x_init, {});
           ASSERT_TRUE(result.is_success());
 
@@ -162,7 +162,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
        &wall_size](const Eigen::VectorXd& x_init) {
         // Now solve the static equilibrium problem.
         solvers::SnoptSolver snopt_solver;
-        if (snopt_solver.available()) {
+        if (snopt_solver.available() && snopt_solver.enabled()) {
           solvers::SolverOptions solver_options;
           const auto result =
               snopt_solver.Solve(dut.prog(), x_init, solver_options);
