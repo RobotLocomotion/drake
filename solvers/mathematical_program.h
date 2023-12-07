@@ -2590,33 +2590,31 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds a constraint that the principal minor of a symmetric matrix
+   * Adds a constraint that the principal submatrix of a symmetric matrix
    * composed of the indices in minor_indices is positive semidefinite.
    *
-   * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
-   * symmetric or if minor_indices contains a value larger than or equal to
-   * symmetric_matrix_var.rows() or smaller than 0.
+   * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
+   * @pre The pass @p minor_indices contains a value larger than or equal to
+   * symmetric_matrix_var.rows() or smaller than 0.0.
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    * @see AddPositiveSemidefiniteConstraint.
    */
-  Binding<PositiveSemidefiniteConstraint>
-  AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
       const std::set<int>& minor_indices);
 
   /**
-   * Adds a constraint the that the principal minor of a symmetric matrix of
+   * Adds a constraint the that the principal submatrix of a symmetric matrix of
    * expressions composed of the indices in minor_indices is positive
    * semidefinite.
    *
-   * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
-   * symmetric or if minor_indices contains a value larger than or equal to
-   * symmetric_matrix_var.rows() or smaller than 0.
+   * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
+   * @pre The pass @p minor_indices contains a value larger than or equal to
+   * symmetric_matrix_var.rows() or smaller than 0.0.
    * @param e Imposes constraint "e is positive semidefinite".
    * @see AddPositiveSemidefiniteConstraint.
    */
-  Binding<PositiveSemidefiniteConstraint>
-  AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 

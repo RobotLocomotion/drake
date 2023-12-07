@@ -1149,9 +1149,9 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 namespace {
 
 template <typename T>
-// Extract the principal submatirx from the ordered set of minor_indices. This
-// method makes no assumptions about the symmetry of the matrix, nor that the
-// matrix is square.
+// Extract the principal submatrix from the ordered set of minor_indices. The
+// minor_indices must be in monotonically increasing order. This method makes no
+// assumptions about the symmetry of the matrix, nor that the matrix is square.
 MatrixX<T> MakePrincipalSubmatrix(const Eigen::Ref<const MatrixX<T>>& mat,
                                   const std::set<int>& minor_indices) {
   // In Debug builds, check if the minor_indices are valid.
@@ -1184,8 +1184,8 @@ Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
     const std::set<int>& minor_indices) {
-  // The call to AddPositiveSemidefiniteConstraint will throw if
-  // symmetric_matrix_var is not symmetric and we are in debug mode.
+  // This function relies on AddPositiveSemidefiniteConstraint to validate the
+  // documented symmetry prerequisite.
   return AddPositiveSemidefiniteConstraint(
       MakePrincipalSubmatrix<symbolic::Variable>(symmetric_matrix_var,
                                                  minor_indices));
@@ -1195,8 +1195,8 @@ Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
     const std::set<int>& minor_indices) {
-  // The call to AddPositiveSemidefiniteConstraint will throw if
-  // symmetric_matrix_var is not symmetric and we are in debug mode.
+  // This function relies on AddPositiveSemidefiniteConstraint to validate the
+  // documented symmetry prerequisite.
   return AddPositiveSemidefiniteConstraint(
       MakePrincipalSubmatrix<symbolic::Expression>(e, minor_indices));
 }
