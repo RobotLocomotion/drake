@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":name_value",
         ":network_policy",
         ":nice_type_name",
+        ":overloaded",
         ":parallelism",
         ":pointer_cast",
         ":polynomial",
@@ -394,6 +395,12 @@ drake_cc_library(
     deps = [
         ":nice_type_name_override_header",
     ],
+)
+
+drake_cc_library(
+    name = "overloaded",
+    hdrs = ["overloaded.h"],
+    install_hdrs_exclude = ["overloaded.h"],
 )
 
 drake_cc_library(
@@ -1018,6 +1025,13 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "overloaded_test",
+    deps = [
+        "//common:overloaded",
     ],
 )
 

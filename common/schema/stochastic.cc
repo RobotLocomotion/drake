@@ -6,16 +6,11 @@
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/unused.h"
 
 using drake::symbolic::Expression;
 using std::unique_ptr;
-
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 namespace drake {
 namespace schema {
