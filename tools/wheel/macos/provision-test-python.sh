@@ -15,6 +15,8 @@ fi
 rm -rf /opt/drake-wheel-test
 
 # Prepare test environment.
+mkdir /opt/drake-wheel-test
+
 # NOTE: Xcode ships python3, make sure to use the one from brew.
 $(brew --prefix python@$1)/bin/python$1 \
     -m venv /opt/drake-wheel-test/python$1

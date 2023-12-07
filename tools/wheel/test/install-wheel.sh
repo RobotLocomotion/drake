@@ -19,6 +19,9 @@ if [[ -z "$1" ]]; then
     exit 1
 fi
 
+ls -l /opt
+ls -l /opt/drake-wheel-test
+
 . /opt/drake-wheel-test/python/bin/activate
 
 pip install "$1"
