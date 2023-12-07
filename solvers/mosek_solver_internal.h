@@ -19,10 +19,10 @@ namespace drake {
 namespace solvers {
 namespace internal {
 // Mosek treats psd matrix variables in a special manner.
-// Check https://docs.mosek.com/10.0/capi/tutorial-sdo-shared.html for more
+// Check https://docs.mosek.com/10.1/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
 // variable as a "bar var" (as called in Mosek's API, for example
-// https://docs.mosek.com/10.0/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// https://docs.mosek.com/10.1/capi/tutorial-sdo-shared.html). Inside Mosek, it
 // accesses each of the psd matrix variable with a unique ID. Moreover, the
 // Mosek user cannot access the entries of the psd matrix variable individually;
 // instead, the user can only access the matrix X̅ as a whole. To impose
@@ -78,7 +78,7 @@ class MatrixVariableEntry {
 
 // Mosek stores dual variable in different categories, called slc, suc, slx, sux
 // and snx. Refer to
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsolution
 // for more information.
 enum class DualVarType {
   kLinearConstraint,  ///< Corresponds to Mosek's slc and suc.
@@ -496,13 +496,13 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
 }
 
 // @param slx Mosek dual variables for variable lower bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslx
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslx
 // @param sux Mosek dual variables for variable upper bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsux
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsux
 // @param slc Mosek dual variables for linear constraint lower bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetBoundingBoxDualSolution(
     const std::vector<Binding<BoundingBoxConstraint>>& constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
@@ -542,10 +542,10 @@ void SetLinearConstraintDualSolution(
 
 // @param slc Mosek dual variables for linear and quadratic constraint lower
 // bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear and quadratic constraint upper
 // bound. See
-// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetQuadraticConstraintDualSolution(
     const std::vector<Binding<QuadraticConstraint>>& constraints,
     const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
