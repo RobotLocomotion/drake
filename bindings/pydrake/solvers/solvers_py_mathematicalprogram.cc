@@ -1131,19 +1131,16 @@ void BindMathematicalProgram(py::module m) {
             return self->AddPrincipalSubmatrixIsPsdConstraint(
                 vars, minor_indices);
           },
-          doc.MathematicalProgram
-              .AddPrincipalSubmatrixIsPsdConstraint
+          doc.MathematicalProgram.AddPrincipalSubmatrixIsPsdConstraint
               .doc_2args_symmetric_matrix_var_minor_indices)
       .def(
           "AddPrincipalSubmatrixIsPsdConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Expression>>& e,
               std::set<int> minor_indices) {
-            return self->AddPrincipalSubmatrixIsPsdConstraint(
-                e, minor_indices);
+            return self->AddPrincipalSubmatrixIsPsdConstraint(e, minor_indices);
           },
-          doc.MathematicalProgram
-              .AddPrincipalSubmatrixIsPsdConstraint
+          doc.MathematicalProgram.AddPrincipalSubmatrixIsPsdConstraint
               .doc_2args_e_minor_indices)
       .def(
           "AddLinearMatrixInequalityConstraint",
