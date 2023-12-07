@@ -6,8 +6,8 @@ def fcl_internal_repository(
     github_archive(
         name = name,
         repository = "flexible-collision-library/fcl",
-        commit = "3f3d98a366799900be044852dd36aa54d1391239",
-        sha256 = "318b6146df2213113abdca214d336857e12bed8973146a2005912444bd2f10ce",  # noqa
+        commit = "b03987c495b75b5d873f932b1ff3fc27c1494c87",
+        sha256 = "b055315cad3394b7bb1db8eead56a9063e95ed6cb0f43e12b244ab0bd2ce5be8",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/cassert.patch",

@@ -64,6 +64,7 @@ drake_cc_package_library(
         ":osqp_solver",
         ":program_attribute",
         ":rotation_constraint",
+        ":scs_clarabel_common",
         ":scs_solver",
         ":sdpa_free_format",
         ":semidefinite_relaxation",
@@ -972,9 +973,20 @@ drake_cc_variant_library(
         "//math:quadratic_form",
     ],
     deps_enabled = [
+        ":scs_clarabel_common",
         "//math:eigen_sparse_triplet",
         "//tools/workspace/clarabel_cpp_internal:serialize",
         "@clarabel_cpp_internal//:clarabel_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "scs_clarabel_common",
+    srcs = ["scs_clarabel_common.cc"],
+    hdrs = ["scs_clarabel_common.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
     ],
 )
 
@@ -995,6 +1007,7 @@ drake_cc_variant_library(
         "//math:quadratic_form",
     ],
     deps_enabled = [
+        ":scs_clarabel_common",
         "//common:scope_exit",
         "//math:eigen_sparse_triplet",
         "@scs_internal//:scsdir",

@@ -40,93 +40,92 @@ class PositionKinematicsCache {
   // Constructs a position kinematics cache entry for the given
   // MultibodyTreeTopology.
   explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
-      : num_nodes_(topology.num_bodies()) {
+      : num_mobods_(topology.num_mobods()) {
     Allocate();
   }
 
   // Returns a const reference to pose `X_WB` of the body B (associated with
-  // node @p body_node_index) as measured and expressed in the world frame W.
-  // @param[in] body_node_index The unique index for the computational
-  //                            BodyNode object associated with body B.
+  // mobilized body mobod_index) as measured and expressed in the world frame W.
+  // @param[in] mobod_index The unique index for the computational
+  //                        BodyNode object associated with body B.
 
   // @returns `X_WB` the pose of the body frame B measured and expressed in
   //                 the world frame W.
-  const RigidTransform<T>& get_X_WB(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return X_WB_pool_[body_node_index];
+  const RigidTransform<T>& get_X_WB(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_WB_pool_[mobod_index];
   }
 
   // See documentation on the const version get_X_WB() for details.
-  RigidTransform<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return X_WB_pool_[body_node_index];
+  RigidTransform<T>& get_mutable_X_WB(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_WB_pool_[mobod_index];
   }
 
   // Returns a const reference to the rotation matrix `R_WB` that relates the
   // orientation of the world frame W with the body frame B.
-  // @param[in] body_node_index The unique index for the computational
-  //                            BodyNode object associated with body B.
-  const math::RotationMatrix<T>& get_R_WB(BodyNodeIndex body_node_index) const {
-    const RigidTransform<T>& X_WB = get_X_WB(body_node_index);
+  // @param[in] mobod_index The unique index for the computational
+  //                        BodyNode object associated with body B.
+  const math::RotationMatrix<T>& get_R_WB(MobodIndex mobod_index) const {
+    const RigidTransform<T>& X_WB = get_X_WB(mobod_index);
     return X_WB.rotation();
   }
 
   // Returns a const reference to the pose `X_PB` of the body frame B
   // as measured and expressed in its parent body frame P.
-  // @param[in] body_node_id The unique identifier for the computational
-  //                         BodyNode object associated with body B.
+  // @param[in] mobod_index The unique identifier for the computational
+  //                        BodyNode object associated with body B.
   // @returns `X_PB` a const reference to the pose of the body frame B
   //                 measured and expressed in the parent body frame P.
-  const RigidTransform<T>& get_X_PB(BodyNodeIndex body_node_id) const {
-    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
-    return X_PB_pool_[body_node_id];
+  const RigidTransform<T>& get_X_PB(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_PB_pool_[mobod_index];
   }
 
   // See documentation on the const version get_X_PB() for details.
-  RigidTransform<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
-    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
-    return X_PB_pool_[body_node_id];
+  RigidTransform<T>& get_mutable_X_PB(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_PB_pool_[mobod_index];
   }
 
   // For the mobilizer associated with the body node indexed by
-  // `body_node_index`, this method returns a const reference to the pose
+  // `mobod_index`, this method returns a const reference to the pose
   // `X_FM` of the outboard frame M as measured and expressed in the inboard
   // frame F.
   //
-  // @param[in] body_node_index The unique index for the computational
-  //                            BodyNode object associated with the mobilizer
-  //                            of interest.
+  // @param[in] mobod_index The unique index for the computational BodyNode
+  //                        object associated with the mobilizer of interest.
   // @returns A const reference to the pose `X_FM` of the outboard frame M
   //          as measured and expressed in the inboard frame F.
-  const RigidTransform<T>& get_X_FM(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return X_FM_pool_[body_node_index];
+  const RigidTransform<T>& get_X_FM(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_FM_pool_[mobod_index];
   }
 
   // See documentation on the const version get_X_FM() for details.
-  RigidTransform<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return X_FM_pool_[body_node_index];
+  RigidTransform<T>& get_mutable_X_FM(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return X_FM_pool_[mobod_index];
   }
 
-  // Position of node B, with index `body_node_index`, measured in the inboard
+  // Position of node B, with index `mobod_index`, measured in the inboard
   // body frame P, expressed in the world frame W.
-  const Vector3<T>& get_p_PoBo_W(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return p_PoBo_W_pool_[body_node_index];
+  const Vector3<T>& get_p_PoBo_W(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return p_PoBo_W_pool_[mobod_index];
   }
 
   // Mutable version of get_p_PoBo_W().
-  Vector3<T>& get_mutable_p_PoBo_W(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return p_PoBo_W_pool_[body_node_index];
+  Vector3<T>& get_mutable_p_PoBo_W(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return p_PoBo_W_pool_[mobod_index];
   }
 
  private:
   // Pool types:
-  // Pools store entries in the same order multibody tree nodes are
-  // ordered in the tree, i.e. in DFT (Depth-First Traversal) order. Therefore
-  // clients of this class will access entries by BodyNodeIndex, see
+  // Pools store entries in the same order as the mobilized bodies (BodyNodes)
+  // in the multibody forest, i.e. in DFT (Depth-First Traversal) order.
+  // Therefore clients of this class will access entries by MobodIndex, see
   // `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
@@ -137,23 +136,23 @@ class PositionKinematicsCache {
 
   // Allocates resources for this position kinematics cache.
   void Allocate() {
-    X_WB_pool_.resize(num_nodes_);
+    X_WB_pool_.resize(num_mobods_);
     // Even though RigidTransform defaults to identity, we make it explicit.
     // This pose will never change after this initialization.
-    X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
+    X_WB_pool_[world_mobod_index()] = RigidTransform<T>::Identity();
 
-    X_PB_pool_.resize(num_nodes_);
-    X_PB_pool_[world_index()] = NaNPose();  // It should never be used.
+    X_PB_pool_.resize(num_mobods_);
+    X_PB_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
 
-    X_FM_pool_.resize(num_nodes_);
-    X_FM_pool_[world_index()] = NaNPose();  // It should never be used.
+    X_FM_pool_.resize(num_mobods_);
+    X_FM_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
 
-    X_MB_pool_.resize(num_nodes_);
-    X_MB_pool_[world_index()] = NaNPose();  // It should never be used.
+    X_MB_pool_.resize(num_mobods_);
+    X_MB_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
 
-    p_PoBo_W_pool_.resize(num_nodes_);
+    p_PoBo_W_pool_.resize(num_mobods_);
     // p_PoBo_W for the world body should never be used.
-    p_PoBo_W_pool_[world_index()].setConstant(
+    p_PoBo_W_pool_[world_mobod_index()].setConstant(
         std::numeric_limits<
             typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
@@ -168,9 +167,9 @@ class PositionKinematicsCache {
         Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
   }
 
-  // Number of body nodes in the corresponding MultibodyTree.
-  int num_nodes_{0};
-  // Pools indexed by BodyNodeIndex.
+  // Number of mobilized bodies in the corresponding multibody forest.
+  int num_mobods_{0};
+  // Pools indexed by MobodIndex.
   X_PoolType X_WB_pool_;
   X_PoolType X_PB_pool_;
   X_PoolType X_FM_pool_;

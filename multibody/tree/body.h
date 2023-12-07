@@ -229,11 +229,16 @@ class Body : public MultibodyElement<T> {
         .is_locked(context);
   }
 
-  /// (Advanced) Returns the index of the node in the underlying tree structure
-  /// of the parent MultibodyTree to which this body belongs.
-  internal::BodyNodeIndex node_index() const {
-    return topology_.body_node;
+  /// (Advanced) Returns the index of the mobilized body ("mobod") in the
+  /// computational directed forest structure of the owning MultibodyTree to
+  /// which this %Body belongs. This serves as the BodyNode index and the index
+  /// into all associated quantities.
+  internal::MobodIndex mobod_index() const {
+    return topology_.mobod_index;
   }
+
+  DRAKE_DEPRECATED("2024-03-01",  "Use mobod_index() instead.")
+  internal::MobodIndex node_index() const { return mobod_index(); }
 
   /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
@@ -411,7 +416,7 @@ class Body : public MultibodyElement<T> {
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
     DRAKE_THROW_UNLESS(
         forces.CheckHasRightSizeForModel(this->get_parent_tree()));
-    return forces.body_forces()[node_index()];
+    return forces.body_forces()[mobod_index()];
   }
 
   /// Adds the spatial force on `this` body B, applied at body B's origin Bo and
@@ -422,7 +427,7 @@ class Body : public MultibodyElement<T> {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    forces->mutable_body_forces()[node_index()] += F_Bo_W;
+    forces->mutable_body_forces()[mobod_index()] += F_Bo_W;
   }
 
   /// Adds the spatial force on `this` body B, applied at point P and

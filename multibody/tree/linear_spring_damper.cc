@@ -35,8 +35,8 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
     MultibodyForces<T>* forces) const {
   using std::sqrt;
 
-  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().mobod_index());
+  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().mobod_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -66,12 +66,12 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
 
   // p_PAo = p_WAo - p_WP
   const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
-  F_Bo_W_array[bodyA().node_index()] +=
+  F_Bo_W_array[bodyA().mobod_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), f_AP_W).Shift(p_PAo_W);
 
   // p_QBo = p_WBo - p_WQ
   const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
-  F_Bo_W_array[bodyB().node_index()] +=
+  F_Bo_W_array[bodyB().mobod_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), -f_AP_W).Shift(p_QBo_W);
 }
 
@@ -79,8 +79,8 @@ template <typename T>
 T LinearSpringDamper<T>::CalcPotentialEnergy(
     const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc) const {
-  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().mobod_index());
+  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().mobod_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -105,8 +105,8 @@ T LinearSpringDamper<T>::CalcConservativePower(
   //  Pc = -d(V)/dt
   // being positive when the potential energy decreases.
 
-  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().mobod_index());
+  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().mobod_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -194,8 +194,8 @@ template <typename T>
 T LinearSpringDamper<T>::CalcLengthTimeDerivative(
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
-  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().mobod_index());
+  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().mobod_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -212,12 +212,12 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
   // p_PAo = p_WAo - p_WP
   const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
   const SpatialVelocity<T>& V_WP =
-      vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
+      vc.get_V_WB(bodyA().mobod_index()).Shift(-p_PAo_W);
 
   // p_QBo = p_WBo - p_WQ
   const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
   const SpatialVelocity<T>& V_WQ =
-      vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
+      vc.get_V_WB(bodyB().mobod_index()).Shift(-p_QBo_W);
 
   // Relative velocity of P in Q, expressed in the world frame.
   const Vector3<T> v_PQ_W = V_WQ.translational() - V_WP.translational();

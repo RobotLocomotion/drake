@@ -38,82 +38,82 @@ class ArticulatedBodyInertiaCache {
   // Constructs an articulated body cache entry for the given
   // MultibodyTreeTopology.
   explicit ArticulatedBodyInertiaCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.num_bodies()) {
+      num_mobods_(topology.num_mobods()) {
     Allocate();
   }
 
   // Articulated body inertia `P_B_W` of the body taken about Bo and expressed
   // in W.
   const ArticulatedBodyInertia<T>& get_P_B_W(
-      BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return P_B_W_[body_node_index];
+      MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return P_B_W_[mobod_index];
   }
 
   // Mutable version of get_P_B_W().
   ArticulatedBodyInertia<T>& get_mutable_P_B_W(
-      BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return P_B_W_[body_node_index];
+      MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return P_B_W_[mobod_index];
   }
 
   // Articulated body inertia `Pplus_PB_W`, which can be thought of as the
   // articulated body inertia of parent body P as though it were inertialess,
   // but taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
-      BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Pplus_PB_W_[body_node_index];
+      MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return Pplus_PB_W_[mobod_index];
   }
 
   // Mutable version of get_Pplus_PB_W().
   ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
-      BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Pplus_PB_W_[body_node_index];
+      MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return Pplus_PB_W_[mobod_index];
   }
 
   // LLT factorization `llt_D_B` of the articulated body hinge inertia.
   const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_llt_D_B(
-      BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return llt_D_B_[body_node_index];
+      MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return llt_D_B_[mobod_index];
   }
 
   // Mutable version of get_llt_D_B().
   math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_llt_D_B(
-      BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return llt_D_B_[body_node_index];
+      MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return llt_D_B_[mobod_index];
   }
 
   // The Kalman gain `g_PB_W` of the body.
   const Matrix6xUpTo6<T>& get_g_PB_W(
-      BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return g_PB_W_[body_node_index];
+      MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return g_PB_W_[mobod_index];
   }
 
   // Mutable version of get_g_PB_W().
   Matrix6xUpTo6<T>& get_mutable_g_PB_W(
-      BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return g_PB_W_[body_node_index];
+      MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return g_PB_W_[mobod_index];
   }
 
  private:
   // Allocates resources for this articulated body cache.
   void Allocate() {
-    P_B_W_.resize(num_nodes_);
-    Pplus_PB_W_.resize(num_nodes_);
-    llt_D_B_.resize(num_nodes_);
-    g_PB_W_.resize(num_nodes_);
+    P_B_W_.resize(num_mobods_);
+    Pplus_PB_W_.resize(num_mobods_);
+    llt_D_B_.resize(num_mobods_);
+    g_PB_W_.resize(num_mobods_);
 
     // Initialize entries corresponding to world index to NaNs, since they
     // should not be used.
-    P_B_W_[world_index()] = ArticulatedBodyInertia<T>();
-    Pplus_PB_W_[world_index()] = ArticulatedBodyInertia<T>();
-    g_PB_W_[world_index()] = Matrix6<T>::Constant(nan());
+    P_B_W_[world_mobod_index()] = ArticulatedBodyInertia<T>();
+    Pplus_PB_W_[world_mobod_index()] = ArticulatedBodyInertia<T>();
+    g_PB_W_[world_mobod_index()] = Matrix6<T>::Constant(nan());
   }
 
   // Helper method for NaN initialization.
@@ -122,10 +122,10 @@ class ArticulatedBodyInertiaCache {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // Number of body nodes in the corresponding MultibodyTree.
-  int num_nodes_{0};
+  // Number of mobilized bodies in the corresponding multibody forest.
+  int num_mobods_{0};
 
-  // Pools indexed by BodyNodeIndex.
+  // Pools indexed by MobodIndex.
   std::vector<ArticulatedBodyInertia<T>> P_B_W_;
   std::vector<ArticulatedBodyInertia<T>> Pplus_PB_W_;
   std::vector<math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>> llt_D_B_;

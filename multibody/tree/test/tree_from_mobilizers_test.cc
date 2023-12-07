@@ -236,10 +236,9 @@ class PendulumTests : public ::testing::Test {
       const PositionKinematicsCache<T>& pc,
       const Body<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    const BodyNodeIndex body_node_index =
-        topology.get_body(body.index()).body_node;
-    return RigidTransform<T>(pc.get_X_WB(body_node_index));
+    // Cache entries are accessed by MobodIndex for fast traversals.
+    const MobodIndex mobod_index = topology.get_body(body.index()).mobod_index;
+    return RigidTransform<T>(pc.get_X_WB(mobod_index));
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -253,8 +252,8 @@ class PendulumTests : public ::testing::Test {
       const VelocityKinematicsCache<double>& vc,
       const Body<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.index()).body_node);
+    // Cache entries are accessed by MobodIndex for fast traversals.
+    return vc.get_V_WB(topology.get_body(body.index()).mobod_index);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
@@ -268,8 +267,8 @@ class PendulumTests : public ::testing::Test {
       const MultibodyTree<double>& tree,
       const AccelerationKinematicsCache<double>& ac, const Body<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.index()).body_node);
+    // Cache entries are accessed by MobodIndex for fast traversals.
+    return ac.get_A_WB(topology.get_body(body.index()).mobod_index);
   }
 
  protected:
@@ -277,7 +276,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
+    pc->get_mutable_X_WB(MobodIndex(1)) = X_WL_;
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -825,9 +824,9 @@ class PendulumKinematicTests : public PendulumTests {
         get_body_spatial_acceleration_in_world(tree(), ac, *lower_link_);
     // From inverse dynamics.
     const SpatialAcceleration<double>& A_WUcm_id =
-        A_WB_array[upper_link_->node_index()];
+        A_WB_array[upper_link_->mobod_index()];
     const SpatialAcceleration<double>& A_WL_id =
-        A_WB_array[lower_link_->node_index()];
+        A_WB_array[lower_link_->mobod_index()];
     EXPECT_TRUE(A_WUcm_id.IsApprox(A_WUcm_ac, kTolerance));
     EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
 
@@ -886,10 +885,10 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       tree().CalcPositionKinematicsCache(*context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
-      const BodyNodeIndex shoulder_node =
-          shoulder_mobilizer_->get_topology().body_node;
-      const BodyNodeIndex elbow_node =
-          elbow_mobilizer_->get_topology().body_node;
+      const MobodIndex shoulder_node =
+          shoulder_mobilizer_->get_topology().mobod_index;
+      const MobodIndex elbow_node =
+          elbow_mobilizer_->get_topology().mobod_index;
 
       // Expected poses of the outboard frames measured in the inboard frame.
       RigidTransformd X_SiSo(RotationMatrixd::MakeZRotation(shoulder_angle));
