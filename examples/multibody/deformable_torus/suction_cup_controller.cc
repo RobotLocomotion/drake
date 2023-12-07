@@ -22,10 +22,11 @@ SuctionCupController::SuctionCupController(double initial_height,
       DeclareVectorOutputPort("desired state", BasicVector<double>(2),
                               &SuctionCupController::CalcDesiredState)
           .get_index();
-  signal_port_index_ = DeclareVectorOutputPort(
-                           "scaling of suction force", BasicVector<double>(1),
-                           &SuctionCupController::CalcSignal)
-                           .get_index();
+  maximum_force_port_index_ =
+      DeclareVectorOutputPort("maximum suction force [N]",
+                              BasicVector<double>(1),
+                              &SuctionCupController::CalcMaxForce)
+          .get_index();
 }
 
 void SuctionCupController::CalcDesiredState(
@@ -54,13 +55,13 @@ void SuctionCupController::CalcDesiredState(
   desired_state->set_value(state_value);
 }
 
-void SuctionCupController::CalcSignal(const Context<double>& context,
-                                      BasicVector<double>* signal) const {
+void SuctionCupController::CalcMaxForce(const Context<double>& context,
+                                      BasicVector<double>* max_force) const {
   const double time = context.get_time();
   if (time >= pick_time_ && time <= drop_time_) {
-    (*signal)[0] = 1.0;
+    (*max_force)[0] = 2.0e5;
   } else {
-    (*signal)[0] = 0.0;
+    (*max_force)[0] = 0.0;
   }
 }
 

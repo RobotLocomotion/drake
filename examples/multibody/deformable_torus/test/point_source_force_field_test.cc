@@ -24,24 +24,23 @@ GTEST_TEST(PointSourceForceFieldTest, EvaluateAt) {
   /* The fixed offset from the body origin B to the point source of
    the force field C. */
   const Vector3d p_BC(0, 0, 0.123);
-  const double max_force_magnitude = 42;
   const double max_distance = 0.2;
-  PointSourceForceField force_field(plant, box, p_BC, max_force_magnitude,
-                                    max_distance);
+  PointSourceForceField force_field(plant, box, p_BC, max_distance);
   force_field.DeclareSystemResources(&plant);
   plant.Finalize();
 
   auto context = plant.CreateDefaultContext();
   const RigidTransformd X_WB(RollPitchYawd(1, 2, 3), Vector3d(3, 4, 5));
   plant.SetFreeBodyPose(context.get(), box, X_WB);
+  const double max_force = 42.0;
   /* Turn the force on. */
-  force_field.signal_input_port().FixValue(context.get(), 1.0);
+  force_field.maximum_force_input_port().FixValue(context.get(), max_force);
   const Vector3d p_WC = X_WB * p_BC;
   /* Inside the non-zero range. */
   const Vector3d p_CQ1_W = Vector3d(0, 0, 0.1);
   const Vector3d p_WQ1 = p_WC + p_CQ1_W;
   Vector3d expected_force =
-      0.1 / max_distance * max_force_magnitude * -p_CQ1_W.normalized();
+      -0.1 / max_distance * max_force * p_CQ1_W.normalized();
   EXPECT_TRUE(CompareMatrices(force_field.EvaluateAt(*context, p_WQ1),
                               expected_force, 1e-13));
   /* Outside the non-zero range. */
@@ -50,7 +49,7 @@ GTEST_TEST(PointSourceForceFieldTest, EvaluateAt) {
   EXPECT_TRUE(CompareMatrices(force_field.EvaluateAt(*context, p_WQ2),
                               Vector3d::Zero()));
   /* Turn the force off. */
-  force_field.signal_input_port().FixValue(context.get(), 0.0);
+  force_field.maximum_force_input_port().FixValue(context.get(), 0.0);
   EXPECT_TRUE(CompareMatrices(force_field.EvaluateAt(*context, p_WQ1),
                               Vector3d::Zero()));
 }
