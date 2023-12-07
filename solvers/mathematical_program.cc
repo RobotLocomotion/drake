@@ -1149,12 +1149,15 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 namespace {
 
 template <typename T>
-MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
-                     const std::set<int>& minor_indices) {
+// Extract the principal submatirx from the ordered set of minor_indices. This
+// method makes no assumptions about the symmetry of the matrix, nor that the
+// matrix is square.
+MatrixX<T> MakePrincipalSubmatrix(const Eigen::Ref<const MatrixX<T>>& mat,
+                                  const std::set<int>& minor_indices) {
   // In Debug builds, check if the minor_indices are valid.
   if (kDrakeAssertIsArmed) {
     auto elt_is_in_bounds = [&mat](int elt) {
-      return elt >= 0 && elt < mat.rows();
+      return elt >= 0 && elt < mat.rows() && elt < mat.cols();
     };
     DRAKE_ASSERT(std::all_of(minor_indices.begin(), minor_indices.end(),
                              elt_is_in_bounds));
@@ -1178,19 +1181,24 @@ MatrixX<T> MakeMinor(const Eigen::Ref<const MatrixX<T>>& mat,
 }  // namespace
 
 Binding<PositiveSemidefiniteConstraint>
-MathematicalProgram::AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
     const std::set<int>& minor_indices) {
+  // The call to AddPositiveSemidefiniteConstraint will throw if
+  // symmetric_matrix_var is not symmetric and we are in debug mode.
   return AddPositiveSemidefiniteConstraint(
-      MakeMinor<symbolic::Variable>(symmetric_matrix_var, minor_indices));
+      MakePrincipalSubmatrix<symbolic::Variable>(symmetric_matrix_var,
+                                                 minor_indices));
 }
 
 Binding<PositiveSemidefiniteConstraint>
-MathematicalProgram::AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
     const std::set<int>& minor_indices) {
+  // The call to AddPositiveSemidefiniteConstraint will throw if
+  // symmetric_matrix_var is not symmetric and we are in debug mode.
   return AddPositiveSemidefiniteConstraint(
-      MakeMinor<symbolic::Expression>(e, minor_indices));
+      MakePrincipalSubmatrix<symbolic::Expression>(e, minor_indices));
 }
 
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(

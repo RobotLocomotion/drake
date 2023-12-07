@@ -2594,13 +2594,13 @@ class MathematicalProgram {
    * composed of the indices in minor_indices is positive semidefinite.
    *
    * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
-   * symmetric or if minor_indices contains an larger than
+   * symmetric or if minor_indices contains a value larger than or equal to
    * symmetric_matrix_var.rows() or smaller than 0.
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    * @see AddPositiveSemidefiniteConstraint.
    */
   Binding<PositiveSemidefiniteConstraint>
-  AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+  AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
       const std::set<int>& minor_indices);
 
@@ -2610,13 +2610,13 @@ class MathematicalProgram {
    * semidefinite.
    *
    * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
-   * symmetric or if minor_indices contains an larger than
+   * symmetric or if minor_indices contains a value larger than or equal to
    * symmetric_matrix_var.rows() or smaller than 0.
    * @param e Imposes constraint "e is positive semidefinite".
    * @see AddPositiveSemidefiniteConstraint.
    */
   Binding<PositiveSemidefiniteConstraint>
-  AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+  AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 

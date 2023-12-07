@@ -2976,7 +2976,7 @@ GTEST_TEST(TestMathematicalProgram, AddPositiveSemidefiniteConstraint) {
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddPrincipalMinorIsPositiveSemidefiniteConstraintVariable) {
+           AddPrincipalSubmatrixIsPsdConstraintVariable) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
 
@@ -2989,7 +2989,7 @@ GTEST_TEST(TestMathematicalProgram,
   // clang-format on
 
   auto psd_cnstr =
-      prog.AddPrincipalMinorIsPositiveSemidefiniteConstraint(X, minor_indices)
+      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices)
           .evaluator();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(prog.GetAllConstraints().size(), 1);
@@ -3000,7 +3000,7 @@ GTEST_TEST(TestMathematicalProgram,
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddPrincipalMinorIsPositiveSemidefiniteConstraintExpression) {
+           AddPrincipalSubmatrixIsPsdConstraintExpression) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
   std::set<int> minor_indices{0, 1, 3};
@@ -3011,7 +3011,7 @@ GTEST_TEST(TestMathematicalProgram,
                   X(3, 0), X(3, 1), X(3, 3);
   // clang-format on
 
-  auto psd_cnstr = prog.AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+  auto psd_cnstr = prog.AddPrincipalSubmatrixIsPsdConstraint(
                            2 * Matrix4d::Identity() * X, minor_indices)
                        .evaluator();
 

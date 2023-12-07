@@ -1124,26 +1124,26 @@ void BindMathematicalProgram(py::module m) {
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args_e)
       .def(
-          "AddPrincipalMinorIsPositiveSemidefiniteConstraint",
+          "AddPrincipalSubmatrixIsPsdConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars,
               std::set<int> minor_indices) {
-            return self->AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+            return self->AddPrincipalSubmatrixIsPsdConstraint(
                 vars, minor_indices);
           },
           doc.MathematicalProgram
-              .AddPrincipalMinorIsPositiveSemidefiniteConstraint
+              .AddPrincipalSubmatrixIsPsdConstraint
               .doc_2args_symmetric_matrix_var_minor_indices)
       .def(
-          "AddPrincipalMinorIsPositiveSemidefiniteConstraint",
+          "AddPrincipalSubmatrixIsPsdConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Expression>>& e,
               std::set<int> minor_indices) {
-            return self->AddPrincipalMinorIsPositiveSemidefiniteConstraint(
+            return self->AddPrincipalSubmatrixIsPsdConstraint(
                 e, minor_indices);
           },
           doc.MathematicalProgram
-              .AddPrincipalMinorIsPositiveSemidefiniteConstraint
+              .AddPrincipalSubmatrixIsPsdConstraint
               .doc_2args_e_minor_indices)
       .def(
           "AddLinearMatrixInequalityConstraint",
