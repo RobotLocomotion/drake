@@ -2594,8 +2594,8 @@ class MathematicalProgram {
    * composed of the indices in minor_indices is positive semidefinite.
    *
    * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
-   * @pre The pass @p minor_indices contains a value larger than or equal to
-   * symmetric_matrix_var.rows() or smaller than 0.0.
+   * @pre All values in  `minor_indices` lie in the range [0,
+   * symmetric_matrix_var.rows() - 1].
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    * @see AddPositiveSemidefiniteConstraint.
    */
@@ -2609,8 +2609,8 @@ class MathematicalProgram {
    * semidefinite.
    *
    * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
-   * @pre The pass @p minor_indices contains a value larger than or equal to
-   * symmetric_matrix_var.rows() or smaller than 0.0.
+   * @pre All values in  `minor_indices` lie in the range [0,
+   * symmetric_matrix_var.rows() - 1].
    * @param e Imposes constraint "e is positive semidefinite".
    * @see AddPositiveSemidefiniteConstraint.
    */

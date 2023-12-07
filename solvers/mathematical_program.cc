@@ -1152,6 +1152,7 @@ template <typename T>
 // Extract the principal submatrix from the ordered set of minor_indices. The
 // minor_indices must be in monotonically increasing order. This method makes no
 // assumptions about the symmetry of the matrix, nor that the matrix is square.
+// TODO(hongkai.dai)  move this to matrix_utils.h
 MatrixX<T> MakePrincipalSubmatrix(const Eigen::Ref<const MatrixX<T>>& mat,
                                   const std::set<int>& minor_indices) {
   // In Debug builds, check if the minor_indices are valid.
