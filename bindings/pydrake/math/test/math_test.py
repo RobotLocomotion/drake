@@ -532,6 +532,15 @@ class TestMath(unittest.TestCase):
         np.testing.assert_array_equal(
             symmetric_mat, np.array([[1, 2, 3], [2, 4, 5], [3, 5, 6]]))
 
+        lower_triangular2 = mut.ToLowerTriangularColumnsFromMatrix(
+            symmetric_mat)
+        np.testing.assert_array_equal(lower_triangular, lower_triangular2)
+
+        minor_indices = {0,2}
+        minor = mut.ExtractPrincipalSubmatrix(symmetric_mat, minor_indices)
+        np.testing.assert_array_equal(
+            minor, minor_indices[np.ix_(minor_indices, minor_indices)])
+
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])
         X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)

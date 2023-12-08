@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <iostream>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -225,10 +225,7 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
       }
       last_idx = i;
     }
-    intervals.emplace_back(last_idx, *indices.rbegin()+1);
-    for (const auto& [i, j] : intervals) {
-      std::cout << "(" << i << ", " << j << ")" << std::endl;
-    }
+    intervals.emplace_back(last_idx, *indices.rbegin() + 1);
 
     MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
     int minor_row_count = 0;
@@ -236,7 +233,8 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
          ++row_it) {
       int minor_col_count = 0;
       const int cur_block_row_size = row_it->second - row_it->first;
-      for (auto col_it = intervals.begin(); col_it != intervals.cend(); ++col_it) {
+      for (auto col_it = intervals.begin(); col_it != intervals.cend();
+           ++col_it) {
         const int cur_block_col_size = col_it->second - col_it->first;
         minor.block(minor_row_count, minor_col_count, cur_block_row_size,
                     cur_block_col_size) =
