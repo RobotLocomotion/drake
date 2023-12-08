@@ -41,7 +41,6 @@ PYBIND11_MODULE(analysis, m) {
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
   py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.solvers");
 
   {
     using Class = SimulatorConfig;
@@ -406,35 +405,28 @@ Parameter ``interruptible``:
         py::arg("num_samples"), py::arg("generator"),
         doc.MonteCarloSimulation.doc);
 
-    {
-      using Class = RegionOfAttractionOptions;
-      constexpr auto& cls_doc = doc.RegionOfAttractionOptions;
-      py::class_<Class, std::shared_ptr<Class>> cls(
-          m, "RegionOfAttractionOptions", cls_doc.doc);
-      cls.def(py::init<>(), cls_doc.ctor.doc)
-          // TODO(jeremy.nimmer): replace the def_readwrite with
-          // DefAttributesUsingSerialize when we fix binding a
-          // VectorX<symbolic::Variable> state_variables to a numpy array of
-          // objects.
-          .def_readwrite("lyapunov_candidate",
-              &RegionOfAttractionOptions::lyapunov_candidate,
-              doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
-          .def_readwrite("state_variables",
-              &RegionOfAttractionOptions::state_variables,
-              // dtype = object arrays must be copied, and cannot be referenced.
-              py_rvp::copy, doc.RegionOfAttractionOptions.state_variables.doc)
-          .def_readwrite("use_implicit_dynamics",
-              &RegionOfAttractionOptions::use_implicit_dynamics,
-              doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)
-          .def_readwrite("solver_id", &RegionOfAttractionOptions::solver_id,
-              doc.RegionOfAttractionOptions.solver_id.doc)
-          .def_readwrite("solver_options",
-              &RegionOfAttractionOptions::solver_options,
-              doc.RegionOfAttractionOptions.solver_options.doc);
-
-      DefReprUsingSerialize(&cls);
-      DefCopyAndDeepCopy(&cls);
-    }
+    py::class_<RegionOfAttractionOptions>(
+        m, "RegionOfAttractionOptions", doc.RegionOfAttractionOptions.doc)
+        .def(py::init<>(), doc.RegionOfAttractionOptions.ctor.doc)
+        .def_readwrite("lyapunov_candidate",
+            &RegionOfAttractionOptions::lyapunov_candidate,
+            doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
+        .def_readwrite("state_variables",
+            &RegionOfAttractionOptions::state_variables,
+            // dtype = object arrays must be copied, and cannot be referenced.
+            py_rvp::copy, doc.RegionOfAttractionOptions.state_variables.doc)
+        .def_readwrite("use_implicit_dynamics",
+            &RegionOfAttractionOptions::use_implicit_dynamics,
+            doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)
+        .def("__repr__", [](const RegionOfAttractionOptions& self) {
+          return py::str(
+              "RegionOfAttractionOptions("
+              "lyapunov_candidate={}, "
+              "state_variables={}, "
+              "use_implicit_dynamics={})")
+              .format(self.lyapunov_candidate, self.state_variables,
+                  self.use_implicit_dynamics);
+        });
 
     m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),

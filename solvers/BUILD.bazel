@@ -958,7 +958,7 @@ drake_cc_variant_library(
 
 drake_cc_variant_library(
     name = "clarabel_solver",
-    opt_out_condition = "//tools:no_clarabel",
+    opt_in_condition = "//tools:with_clarabel",
     srcs_always = ["clarabel_solver_common.cc"],
     srcs_enabled = ["clarabel_solver.cc"],
     srcs_disabled = ["no_clarabel.cc"],
