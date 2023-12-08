@@ -130,9 +130,17 @@ struct IrisOptions {
   configuration space is <= 3 dimensional.*/
   std::shared_ptr<Meshcat> meshcat{};
 
-  /** A callback function to determine whether the iterations in IRIS should
-  continue. If the callback returns false, the iteration will stop. */
-  std::optional<std::function<bool(const HPolyhedron&)>> callback_func {};
+  /** A user-defined callback function for the computed HPolyhedron to determine
+  whether the iterations should continue. If the callback returns false, the
+  iterations will stop. Therefore, it is highly recommended that the callback
+  function is only used when it has a monotonic property such that if P_1 ⊆ P_2,
+  then if the callback function returns true for P_1 implies that it returns
+  true for P_2. An example of such a callback function is to check whether
+  multiple configurations are contained in the IRIS region. A failing example is
+  to check whether the HPolyhedron does not intersect with another region. Such
+  a callback function is not monotonic and an error may be thrown if it is used.
+  */
+  std::optional<std::function<bool(const HPolyhedron&)>> callback_func{};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -206,7 +214,7 @@ the IRIS regions are collision free but can also significantly increase the
 run-time of the algorithm. The same goes for
 `options.num_additional_constraints_infeasible_samples`.
 
-Using this algorithm requires 
+Using this algorithm requires
 
 @throws std::exception if the sample configuration in @p context is infeasible.
 @ingroup geometry_optimization
@@ -216,21 +224,21 @@ HPolyhedron IrisInConfigurationSpace(
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
 
-/** Modifies the options in @p options to be appropriate for finding a region
-that contains the edge between two configuration @p x_1 and @p x_2. 
-It modifies @options.starting_ellipse to be a hyperellipsoid that contains the edge
-and is centered at the midpoint of the edge, and extends at other directions by 
-a small number @p epsilon. It also sets @p options.callback_func such that IRIS
-iterations terminate before the edge is no longer contained in the IRIS region.
+/** Modifies the options in @p options to find a region
+that contains the edge between two configuration @p x_1 and @p x_2.
+Under the hood, it setts @p options.starting_ellipse to be a hyperellipsoid that
+contains the edge and is centered at the midpoint of the edge, and extends at
+other directions by a small number @p epsilon. It also sets @p
+options.callback_func such that IRIS iterations terminate before the edge is no
+longer contained in the IRIS region.
 @param tol to check PointInSet.
 @pre x_1.size() == x_2.size().
 @pre epsilon > 0. */
-void SetIrisOptionsForEdge(
-    IrisOptions* options,
-    const Eigen::Ref<const Eigen::VectorXd>& x_1, 
-    const Eigen::Ref<const Eigen::VectorXd>& x_2,
-    const double epsilon = 1e-3,
-    const double tol = 1e-6);
+void SetIrisOptionsForEdge(IrisOptions* options,
+                           const Eigen::Ref<const Eigen::VectorXd>& x_1,
+                           const Eigen::Ref<const Eigen::VectorXd>& x_2,
+                           const double epsilon = 1e-3,
+                           const double tol = 1e-6);
 
 /** Defines a standardized representation for (named) IrisRegions, which can be
 serialized in both C++ and Python. */

@@ -10,12 +10,12 @@
 #include <vector>
 
 #include "drake/common/symbolic/expression.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/iris_internal.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/vpolytope.h"
-#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -55,9 +55,11 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
   if (options.callback_func) {
-      if (!(*options.callback_func)(P)) {
-        throw std::runtime_error("Iris: The callback function on domain failed. The domain must be feasible.");
-      }
+    if (!(*options.callback_func)(P)) {
+      throw std::runtime_error(
+          "Iris: The callback function on domain failed. The domain must be "
+          "feasible.");
+    }
   }
 
   if (options.bounding_region) {
@@ -119,7 +121,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
 
     if (options.callback_func) {
       if (!(*options.callback_func)(HPolyhedron(A.topRows(num_constraints),
-                                           b.head(num_constraints)))) {
+                                                b.head(num_constraints)))) {
         break;
       }
     }
@@ -614,10 +616,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   if (options.callback_func) {
-    drake::log()->info("IrisInConfigurationSpace: Calling callback function on domain A = \n{}\nb = \n{}\n", P.A(), P.b());
-      if (!(*options.callback_func)(P)) {
-        throw std::runtime_error("IrisInConfigurationSpace: The callback function on domain failed. The domain must be feasible.");
-      }
+    if (!(*options.callback_func)(P)) {
+      throw std::runtime_error(
+          "IrisInConfigurationSpace: The provided callback function on the "
+          "domain failed. Make sure the callback function satisfies the "
+          "domain.");
+    }
   }
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
@@ -638,15 +642,25 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   Vector3d point_to_draw = Vector3d::Zero();
   int num_points_drawn = 0;
 
-  drake::log()->info("num_initial_constraints = {}", num_initial_constraints);
+  const std::string seed_point_error_msg =
+      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
+      "the seed point exited the initial region. Does the provided "
+      "starting_ellipse not contain the seed point?";
+  const std::string seed_point_msg =
+      "IrisInConfigurationSpace: terminating iterations because the seed point "
+      "is no longer in the region.";
+  const std::string callback_error_msg =
+      "IrisInConfigurationSpace: the callback function returned false on the "
+      "computation of the initial region. Are the provided starting_ellipse "
+      "and callback function compatible?";
+  const std::string callback_msg =
+      "IrisInConfigurationSpace: terminating iterations because the continue "
+      "callback function returned false.";
 
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
-    bool seed_point_requirement = true;
-    bool callback_continue = true;
     HPolyhedron P_candidate = P;
-    drake::log()->info("IrisInConfigurationSpace: P_candidate.A() = \n{}\nP_candidate.b() = \n{}\n", P_candidate.A(), P_candidate.b());
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
 
@@ -670,27 +684,34 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           const VectorXd point = closest_points.col(scaling[i].second);
           AddTangentToPolytope(E, point, 0.0, &A, &b, &num_constraints);
           if (options.require_sample_point_is_contained) {
-            seed_point_requirement =
+            const bool seed_point_requirement =
                 A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
-            if (!seed_point_requirement) break;
+            if (!seed_point_requirement) {
+              if (iteration == 0) {
+                throw std::runtime_error(seed_point_error_msg);
+              }
+              log()->info(seed_point_msg);
+              return P;
+            }
           }
           if (options.callback_func) {
-            callback_continue = (*options.callback_func)(
-                HPolyhedron(A.topRows(num_constraints),
-                            b.head(num_constraints)));
-            if (!callback_continue) break;
+            const bool callback_continue = (*options.callback_func)(HPolyhedron(
+                A.topRows(num_constraints), b.head(num_constraints)));
+            if (!callback_continue) {
+              if (iteration == 0) {
+                throw std::runtime_error(callback_error_msg);
+              }
+              log()->info(callback_msg);
+              return P;
+            }
           }
         }
       }
-
-      if (!seed_point_requirement || !callback_continue) break;
 
       P_candidate =
           HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
       MakeGuessFeasible(P_candidate, &guess);
     }
-
-    if (!seed_point_requirement || !callback_continue) break;
 
     // Use the fast nonlinear optimizer until it fails
     // num_collision_infeasible_samples consecutive times.
@@ -751,14 +772,27 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           P_candidate =
               HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
           MakeGuessFeasible(P_candidate, &guess);
-          if (options.callback_func) {
-            callback_continue = (*options.callback_func)(P_candidate);
-            if (!callback_continue) break;
-          }
           if (options.require_sample_point_is_contained) {
-            seed_point_requirement =
+            const bool seed_point_requirement =
                 A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
-            if (!seed_point_requirement || !callback_continue) break;
+            if (!seed_point_requirement) {
+              if (iteration == 0) {
+                throw std::runtime_error(seed_point_error_msg);
+              }
+              log()->info(seed_point_msg);
+              return P;
+            }
+          }
+          if (options.callback_func) {
+            const bool callback_continue =
+                (*options.callback_func)(HPolyhedron(P_candidate));
+            if (!callback_continue) {
+              if (iteration == 0) {
+                throw std::runtime_error(callback_error_msg);
+              }
+              log()->info(callback_msg);
+              return P;
+            }
           }
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
@@ -800,10 +834,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             inspector.GetName(pair_w_distance.geomB),
             counter_example_searches_for_this_pair);
       }
-      if (!seed_point_requirement || !callback_continue) break;
     }
-
-    if (!seed_point_requirement || !callback_continue) break;
 
     if (options.prog_with_additional_constraints) {
       counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
@@ -833,14 +864,28 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                 P_candidate = HPolyhedron(A.topRows(num_constraints),
                                           b.head(num_constraints));
                 MakeGuessFeasible(P_candidate, &guess);
-                if (options.callback_func) {
-                  callback_continue = (*options.callback_func)(P_candidate);
-                  if (!callback_continue) break;
-                }
                 if (options.require_sample_point_is_contained) {
-                  seed_point_requirement = A.row(num_constraints - 1) * seed <=
-                                           b(num_constraints - 1);
-                  if (!seed_point_requirement || !callback_continue) break;
+                  const bool seed_point_requirement =
+                      A.row(num_constraints - 1) * seed <=
+                      b(num_constraints - 1);
+                  if (!seed_point_requirement) {
+                    if (iteration == 0) {
+                      throw std::runtime_error(seed_point_error_msg);
+                    }
+                    log()->info(seed_point_msg);
+                    return P;
+                  }
+                }
+                if (options.callback_func) {
+                  const bool callback_continue =
+                      (*options.callback_func)(HPolyhedron(P_candidate));
+                  if (!callback_continue) {
+                    if (iteration == 0) {
+                      throw std::runtime_error(callback_error_msg);
+                    }
+                    log()->info(callback_msg);
+                    return P;
+                  }
                 }
                 counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
                                                      b.head(num_constraints));
@@ -851,16 +896,18 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             }
           }
         }
-        if (!seed_point_requirement || !callback_continue) break;
       }
     }
-
-    if (!seed_point_requirement || !callback_continue) break;
 
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
 
     iteration++;
     if (iteration >= options.iteration_limit) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the iteration limit "
+          "{} has "
+          "been reached.",
+          options.iteration_limit);
       break;
     }
 
@@ -868,9 +915,19 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const double volume = E.Volume();
     const double delta_volume = volume - best_volume;
     if (delta_volume <= options.termination_threshold) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "volume change {} is "
+          "below the threshold {}.",
+          delta_volume, options.termination_threshold);
       break;
-    }
-    if (delta_volume / best_volume <= options.relative_termination_threshold) {
+    } else if (delta_volume / best_volume <=
+               options.relative_termination_threshold) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "relative volume change "
+          "{} is below the threshold {}.",
+          delta_volume / best_volume, options.relative_termination_threshold);
       break;
     }
     best_volume = volume;
@@ -878,18 +935,15 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   return P;
 }
 
-void SetIrisOptionsForEdge(
-    IrisOptions* options,
-    const Eigen::Ref<const Eigen::VectorXd>& x_1, 
-    const Eigen::Ref<const Eigen::VectorXd>& x_2,
-    const double epsilon,
-    const double tol){
+void SetIrisOptionsForEdge(IrisOptions* options,
+                           const Eigen::Ref<const Eigen::VectorXd>& x_1,
+                           const Eigen::Ref<const Eigen::VectorXd>& x_2,
+                           const double epsilon, const double tol) {
   // Set the options for IRIS
-  // drake::log()->info("Checking if {} and {} are in the polytope", x_1.transpose(), x_2.transpose());
-  std::function<bool(const HPolyhedron&)> func = [=](const HPolyhedron& polytope) {
-    return polytope.PointInSet(x_1, tol) && polytope.PointInSet(x_2, tol);
-  };
-  // drake::log()->info("AGAIN Checking if {} and {} are in the polytope", x_1.transpose(), x_2.transpose());
+  std::function<bool(const HPolyhedron&)> func =
+      [=](const HPolyhedron& polytope) {
+        return polytope.PointInSet(x_1, tol) && polytope.PointInSet(x_2, tol);
+      };
   const auto ab = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
   const auto hyperellipsoid = Hyperellipsoid(ab);
   options->starting_ellipse = hyperellipsoid;

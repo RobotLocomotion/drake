@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -275,9 +276,8 @@ GTEST_TEST(IrisTest, CallbackFunc) {
   // failure case
   const Vector2d q3{3.0, 0};
   SetIrisOptionsForEdge(&options, q1, q3, 1e-3);
-  EXPECT_THROW_WITH_MESSAGE(
-      Iris(obstacles, sample, domain, options), std::runtime_error,
-      ".* The domain must be feasible *.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Iris(obstacles, sample, domain, options),
+                              ".* The domain must be feasible *.");
 }
 
 GTEST_TEST(IrisTest, BallInBoxNDims) {
@@ -361,25 +361,27 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
 
 GTEST_TEST(IrisOptionsTest, SetIrisOptionsForEdge) {
   IrisOptions options;
-  const Vector2d x_1 = Vector2d::Ones() * 2.0;
-  const Vector2d x_2 = Vector2d::Ones();
+  const Vector2d x_1{0.0, 1.0};
+  const Vector2d x_2{1.0, 3.0};
   const double epsilon = 1e-3;
   const double tol = 1e-9;
+  // default options should not have starting_ellipse or callback_func.
   EXPECT_FALSE(options.starting_ellipse.has_value());
   EXPECT_FALSE(options.callback_func.has_value());
   SetIrisOptionsForEdge(&options, x_1, x_2, epsilon, tol);
   EXPECT_TRUE(options.starting_ellipse.has_value());
   EXPECT_TRUE(options.callback_func.has_value());
   const Hyperellipsoid& E = options.starting_ellipse.value();
+  // The ellipse should contain both endpoints.
   EXPECT_TRUE(E.PointInSet(x_1, tol));
   EXPECT_TRUE(E.PointInSet(x_2, tol));
   const auto callback = options.callback_func.value();
-  // make a box that only contains upto half of the line segment.
-  const HPolyhedron would_not_contain = HPolyhedron::MakeBox(Vector2d::Zero(), (x_1+x_2)/2);
-  EXPECT_FALSE(callback(would_not_contain));
+  // make a box that only contains up to half of the line segment.
+  const auto half_box = HPolyhedron::MakeBox(Vector2d::Zero(), (x_1 + x_2) / 2);
+  EXPECT_FALSE(callback(half_box));
   // Make a box that contains the line segment.
-  const HPolyhedron would_contain = HPolyhedron::MakeBox(x_1, x_2);
-  EXPECT_TRUE(callback(would_contain));
+  const auto all_box = HPolyhedron::MakeBox(x_1, x_2);
+  EXPECT_TRUE(callback(all_box));
 }
 
 class SceneGraphTester : public ::testing::Test {

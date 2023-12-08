@@ -90,7 +90,8 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
 }
 
 double AffineBall::DoCalcVolume() const {
-  return volume_of_unit_sphere(ambient_dimension()) * std::abs(B_.determinant());
+  return volume_of_unit_sphere(ambient_dimension()) *
+         std::abs(B_.determinant());
 }
 
 AffineBall AffineBall::MakeAxisAligned(
@@ -114,13 +115,14 @@ AffineBall AffineBall::MakeUnitBall(int dim) {
 }
 
 AffineBall AffineBall::MakeAffineBallFromLineSegment(
-      const Eigen::Ref<const Eigen::VectorXd>& x_1, 
-      const Eigen::Ref<const Eigen::VectorXd>& x_2,
-      const double epsilon){
+    const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon) {
   DRAKE_THROW_UNLESS(x_1.size() == x_2.size());
   DRAKE_THROW_UNLESS(epsilon >= 0.0);
-  if ((x_1 - x_2).norm() < 1e-6){
-    throw std::runtime_error("AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same point within 1e-6 tolerance.");
+  if ((x_1 - x_2).norm() < 1e-6) {
+    throw std::runtime_error(
+        "AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same "
+        "point within 1e-6 tolerance.");
   }
   DRAKE_THROW_UNLESS((x_1 - x_2).norm() >= 1e-6);
   const int dim = x_1.size();
@@ -131,24 +133,26 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
   // this is similar to the Gram-Schmidt process
   // see https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
   // with the small modification that we construct an orhtonormal basis
-  // from u_0, e_0, e_1, ..., e_{dim-1}, where e_i is the i-th standard basis vector,
-  // and know that the result will have one less vector than the input.
+  // from u_0, e_0, e_1, ..., e_{dim-1}, where e_i is the i-th standard basis
+  // vector, and know that the result will have one less vector than the input.
   Eigen::MatrixXd I = Eigen::MatrixXd::Identity(dim, dim);
   Eigen::MatrixXd R = Eigen::MatrixXd::Zero(dim, dim);
   R.col(0) = r_0;
   int k = 0;
   int i = 1;
-  while(k < dim){
-    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: k = {}, R = \n{}", k, R);
+  while (k < dim) {
+    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: k = {}, R =
+    // \n{}", k, R);
     Eigen::VectorXd v = I.col(k);
-    for (int j = 0; j < i; ++j){
+    for (int j = 0; j < i; ++j) {
       v -= R.col(j)(k) * R.col(j);
     }
-    if (v.norm() > 1e-6){
+    if (v.norm() > 1e-6) {
       R.col(i) = v.normalized();
       ++i;
     }
-    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: i = {}, v = \n{}", i, v);
+    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: i = {}, v =
+    // \n{}", i, v);
     ++k;
   }
   // this should never fail

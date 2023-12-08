@@ -371,7 +371,8 @@ double Hyperellipsoid::DoCalcVolume() const {
     return std::numeric_limits<double>::infinity();
   }
   // Note: this will (correctly) return infinity if the determinant is zero.
-  return volume_of_unit_sphere(ambient_dimension()) / std::abs(A_.determinant());
+  return volume_of_unit_sphere(ambient_dimension()) /
+         std::abs(A_.determinant());
 }
 
 void Hyperellipsoid::CheckInvariants() const {
