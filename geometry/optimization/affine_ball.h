@@ -97,14 +97,13 @@ class AffineBall final : public ConvexSet {
   static AffineBall MinimumVolumeCircumscribedEllipsoid(
       const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
 
-  /** Constructs an affine ball such that it's main diameter is a given line
-  segment, and all other diameters are at epsilon-length. This is useful for
-  constructing affine balls or hyperellipsoids from a line segment.
-  @param x_1 is the first point of the line segment.
-  @param x_2 is the second point of the line segment.
-    @param epsilon is the length of the minor diameters.
-    @pre x_1.size() == x_2.size().
-    @pre epsilon >= 0. */
+  /** Constructs an affine ball such that its main diameter is the line segment
+  from @p x_1 to @p x_2, and the length of all other diameters are 2 * @p
+  epsilon.
+  @pre x_1.size() == x_2.size().
+  @pre epsilon >= 0.
+  @throws std::runtime_error if @p x_1 and @p x_2 are the same point within 1e-6
+  tolerance. */
   static AffineBall MakeAffineBallFromLineSegment(
       const Eigen::Ref<const Eigen::VectorXd>& x_1,
       const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon = 0.0);

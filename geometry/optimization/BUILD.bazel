@@ -479,8 +479,8 @@ drake_cc_googletest(
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/yaml",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
     ],
 )
 

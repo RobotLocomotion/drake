@@ -141,8 +141,6 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
   int k = 0;
   int i = 1;
   while (k < dim) {
-    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: k = {}, R =
-    // \n{}", k, R);
     Eigen::VectorXd v = I.col(k);
     for (int j = 0; j < i; ++j) {
       v -= R.col(j)(k) * R.col(j);
@@ -151,8 +149,6 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
       R.col(i) = v.normalized();
       ++i;
     }
-    // drake::log()->info("AffineBall:MakeAffineBallFromLineSegment: i = {}, v =
-    // \n{}", i, v);
     ++k;
   }
   // this should never fail
