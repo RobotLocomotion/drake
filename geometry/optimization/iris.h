@@ -224,13 +224,12 @@ HPolyhedron IrisInConfigurationSpace(
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
 
-/** Modifies the @p options to facilitate finding a region
-that contains the edge between two configuration @p x_1 and @p x_2.
-Under the hood, it sets @p options.starting_ellipse to be a hyperellipsoid that
-contains the edge and is centered at the midpoint of the edge, and extends in
-other directions by a small number @p epsilon. It also sets @p
-options.callback_func such that IRIS iterations terminate when the edge is no
-longer contained in the IRIS region.
+/** Modifies the @p options to facilitate finding a region that contains the
+edge between two configuration @p x_1 and @p x_2. Under the hood, it sets @p
+options.starting_ellipse to be a hyperellipsoid that contains the edge and is
+centered at the midpoint of the edge, and extends in other directions by a small
+number @p epsilon. It also sets @p options.callback_func such that IRIS
+iterations terminate when the edge is no longer contained in the IRIS region.
 @param tol to check PointInSet.
 @pre x_1.size() == x_2.size().
 @pre epsilon > 0. */

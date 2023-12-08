@@ -272,7 +272,6 @@ GTEST_TEST(IrisTest, CallbackFunc) {
   EXPECT_TRUE(region.PointInSet(q1));
   EXPECT_TRUE(region.PointInSet(q2));
   EXPECT_TRUE(options.callback_func.value()(region));
-  drake::log()->info("region A: \n{}, b: \n{}", region.A(), region.b());
   // failure case
   const Vector2d q3{3.0, 0};
   SetIrisOptionsForEdge(&options, q1, q3, 1e-3);

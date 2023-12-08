@@ -449,7 +449,7 @@ GTEST_TEST(AffineBallTest, MakeAffineBallFromLineSegment) {
   EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, varepsilon, 0}, 1e-9));
   EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, 0, varepsilon}, 1e-9));
   // let's check the volume of the affine ball, should be 4/3*pi*r_1*r_2*r_3,
-  // where r_1 2.5 (half the distance between x_1 and x_2), r_2 and r_3 are
+  // where r_1 = 2.5 (half the distance between x_1 and x_2), r_2 and r_3 are
   // epsilon
   EXPECT_NEAR(a_1.CalcVolume(),
               4.0 / 3 * M_PI * segment_length / 2.0 * std::pow(epsilon, 2),
