@@ -210,43 +210,40 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
 template <typename Derived>
 MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
     const Eigen::MatrixBase<Derived>& mat, const std::set<int>& indices) {
-  {
-    // Stores the contiguous intervals of the index set of the minor. These
-    // intervals include the first index but exclude the last, i.e.
-    // [intervals[i][0], intervals[i][1]).
-    std::vector<std::pair<int, int>> intervals;
-    int interval_start{0};
-    int last_idx{*indices.begin()};
-    DRAKE_ASSERT(last_idx >= 0);
-    for (const auto& i : indices) {
-      DRAKE_ASSERT(i < mat.rows() && i < mat.cols());
-      if (i - last_idx > 1) {
-        intervals.emplace_back(interval_start, last_idx + 1);
-        interval_start = i;
-      }
-      last_idx = i;
+  // Stores the contiguous intervals of the index set of the minor. These
+  // intervals include the first index but exclude the last, i.e.
+  // [intervals[i][0], intervals[i][1]).
+  std::vector<std::pair<int, int>> intervals;
+  int interval_start{*indices.begin()};
+  int last_idx{*indices.begin()};
+  DRAKE_ASSERT(last_idx >= 0);
+  for (const auto& i : indices) {
+    DRAKE_ASSERT(i < mat.rows() && i < mat.cols());
+    if (i - last_idx > 1) {
+      intervals.emplace_back(interval_start, last_idx + 1);
+      interval_start = i;
     }
-    intervals.emplace_back(last_idx, *indices.rbegin() + 1);
-
-    MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
-    int minor_row_count = 0;
-    for (auto row_it = intervals.begin(); row_it != intervals.cend();
-         ++row_it) {
-      int minor_col_count = 0;
-      const int cur_block_row_size = row_it->second - row_it->first;
-      for (auto col_it = intervals.begin(); col_it != intervals.cend();
-           ++col_it) {
-        const int cur_block_col_size = col_it->second - col_it->first;
-        minor.block(minor_row_count, minor_col_count, cur_block_row_size,
-                    cur_block_col_size) =
-            mat.block(row_it->first, col_it->first, cur_block_row_size,
-                      cur_block_col_size);
-        minor_col_count += cur_block_col_size;
-      }
-      minor_row_count += cur_block_row_size;
-    }
-    return minor;
+    last_idx = i;
   }
+  intervals.emplace_back(last_idx, *indices.rbegin() + 1);
+
+  MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
+  int minor_row_count = 0;
+  for (auto row_it = intervals.begin(); row_it != intervals.cend(); ++row_it) {
+    int minor_col_count = 0;
+    const int cur_block_row_size = row_it->second - row_it->first;
+    for (auto col_it = intervals.begin(); col_it != intervals.cend();
+         ++col_it) {
+      const int cur_block_col_size = col_it->second - col_it->first;
+      minor.block(minor_row_count, minor_col_count, cur_block_row_size,
+                  cur_block_col_size) =
+          mat.block(row_it->first, col_it->first, cur_block_row_size,
+                    cur_block_col_size);
+      minor_col_count += cur_block_col_size;
+    }
+    minor_row_count += cur_block_row_size;
+  }
+  return minor;
 }
 
 }  // namespace math

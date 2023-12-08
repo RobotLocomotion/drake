@@ -536,7 +536,7 @@ class TestMath(unittest.TestCase):
             symmetric_mat)
         np.testing.assert_array_equal(lower_triangular, lower_triangular2)
 
-        minor_indices = {0,2}
+        minor_indices = {0, 2}
         minor = mut.ExtractPrincipalSubmatrix(symmetric_mat, minor_indices)
         np.testing.assert_array_equal(
             minor, minor_indices[np.ix_(minor_indices, minor_indices)])
