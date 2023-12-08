@@ -11,10 +11,4 @@ build:clang --host_action_env=CC=clang-12
 build:clang --host_action_env=CXX=clang++-12
 
 # The tools on Focal are too old to support Clarabel.
-build:everything --define=WITH_CLARABEL=OFF
-build:asan_everything --define=WITH_CLARABEL=OFF
-build:kcov_everything --define=WITH_CLARABEL=OFF
-build:lsan_everything --define=WITH_CLARABEL=OFF
-build:memcheck_everything --define=WITH_CLARABEL=OFF
-build:tsan_everything --define=WITH_CLARABEL=OFF
-build:ubsan_everything --define=WITH_CLARABEL=OFF
+build --define=NO_CLARABEL=ON

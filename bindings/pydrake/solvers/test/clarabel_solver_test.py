@@ -30,3 +30,9 @@ class TestClarabelSolver(unittest.TestCase):
         self.assertIsInstance(details.solve_time, float)
         self.assertIsInstance(details.iterations, int)
         self.assertEqual(details.status, "Solved")
+
+    def unavailable(self):
+        """Per the BUILD file, this test is only run when Clarabel is
+        disabled."""
+        solver = ClarabelSolver()
+        self.assertFalse(solver.available())
