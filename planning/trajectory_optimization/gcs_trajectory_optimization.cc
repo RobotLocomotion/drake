@@ -13,6 +13,9 @@
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/math/matrix_util.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -36,6 +39,11 @@ using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Intersection;
 using geometry::optimization::Point;
+using multibody::Joint;
+using multibody::JointIndex;
+using multibody::MultibodyPlant;
+using multibody::PlanarJoint;
+using multibody::RevoluteJoint;
 using solvers::Binding;
 using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
@@ -1054,6 +1062,41 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
     }
   }
   return CompositeTrajectory<double>(normalized_bezier_curves);
+}
+
+std::vector<int> GetContinuousRevoluteJointIndices(
+    const multibody::MultibodyPlant<double>& plant) {
+  std::vector<int> indices;
+  for (int i = 0; i < plant.num_joints(); ++i) {
+    const Joint<double>& joint = plant.get_joint(JointIndex(i));
+    // The first possibility we check for is a revolute joint with no joint
+    // limits.
+    if (joint.type_name() == "revolute") {
+      if (joint.position_lower_limits()[0] ==
+              -std::numeric_limits<float>::infinity() &&
+          joint.position_upper_limits()[0] ==
+              std::numeric_limits<float>::infinity()) {
+        indices.push_back(joint.position_start());
+      }
+      continue;
+    }
+    // The second possibility we check for is a planar joint. If it is (and the
+    // angle component has no joint limits), we only add the third entry of the
+    // position vector, corresponding to theta.
+    if (joint.type_name() == "planar") {
+      if (joint.position_lower_limits()[2] ==
+              -std::numeric_limits<float>::infinity() &&
+          joint.position_upper_limits()[2] ==
+              std::numeric_limits<float>::infinity()) {
+        indices.push_back(joint.position_start() + 2);
+      }
+      continue;
+    }
+    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint) can be
+    // handled appropriately with wraparound edges, and if so, return their
+    // indices as well.
+  }
+  return indices;
 }
 
 }  // namespace trajectory_optimization

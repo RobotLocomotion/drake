@@ -13,6 +13,7 @@ from pydrake.planning import (
     DirectTranscription,
     GcsTrajectoryOptimization,
     KinematicTrajectoryOptimization,
+    GetContinuousRevoluteJointIndices
 )
 from pydrake.geometry.optimization import (
     GraphOfConvexSetsOptions,
@@ -21,6 +22,7 @@ from pydrake.geometry.optimization import (
     Point,
     VPolytope,
 )
+from pydrake.multibody.plant import MultibodyPlant
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
@@ -545,3 +547,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                   order=1,
                                   edges_between_regions=[[0, 1]],
                                   edge_offsets=[[2*np.pi]])
+        plant = MultibodyPlant(0.0)
+        plant.Finalize()
+        indices = GetContinuousRevoluteJointIndices(plant=plant)
+        self.assertEqual(len(indices), 0)
