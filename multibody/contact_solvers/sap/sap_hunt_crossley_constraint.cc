@@ -1,7 +1,6 @@
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 
 #include <algorithm>
-#include <iostream>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -51,7 +50,8 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
   const T Rt = sigma * wt;  // SAP's regularization.
 
   SapHuntCrossleyConstraintData<T> data;
-  typename SapHuntCrossleyConstraintData<T>::ConstData& p = data.const_data;
+  typename SapHuntCrossleyConstraintData<T>::InvariantData& p =
+      data.invariant_data;
   p.dt = time_step;
   const T& fe0 = configuration_.fe;
   const T& vn0 = configuration_.vn;
@@ -60,13 +60,6 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
   p.n0 = ne0 * damping;
   const T sap_stiction_tolerance = mu * Rt * p.n0;
   p.epsilon_soft = max(stiction_tolerance, sap_stiction_tolerance);
-
-  switch (parameters_.model) {
-    case SapHuntCrossleyApproximation::kSimilar:
-      break;
-    case SapHuntCrossleyApproximation::kLagged:
-      break;
-  }
 
   return AbstractValue::Make(data);
 }
@@ -79,14 +72,14 @@ T SapHuntCrossleyConstraint<T>::CalcDiscreteHuntCrossleyAntiderivative(
   // The discrete impulse is modeled as:
   //   n(v; fₑ₀) = (fₑ₀ - δt⋅k⋅v)₊⋅(1 - d⋅v)₊.
   // We see that n(v; fe0) = 0 for v ≥ v̂, with v̂ = min(vx, vd) and:
-  //  - vx = x₀/δt
-  //  - vd = 1/d
+  //  vx = x₀/δt
+  //  vd = 1/d
   // Then for v < v̂, n(v; fₑ₀) is positive and we can verify that:
-  //   N⁺(v; fe₀) = δt⋅[v⋅(f₀ + 1/2⋅Δf)-d⋅v²/2⋅(f₀ + 2/3⋅Δf)],
+  //   N⁺(v; fe₀) = δt⋅[v⋅(fₑ₀ + 1/2⋅Δf)-d⋅v²/2⋅(fₑ₀ + 2/3⋅Δf)],
   // with Δf = -δt⋅k⋅v, is its antiderivative.
-  // Since n(v; fe0) = 0 for v ≥ v̂, then N(v; fe₀) must be constant.
+  // Since n(v; fₑ₀) = 0 for v ≥ v̂, then N(v; fₑ₀) must be constant for v ≥ v̂.
   // Therefore we define it as:
-  //   N(v; fe₀) = N⁺(min(vn, v̂); fe₀)
+  //   N(v; fₑ₀) = N⁺(min(vn, v̂); fₑ₀)
 
   // Parameters:
   const T& k = parameters_.stiffness;
@@ -99,7 +92,7 @@ T SapHuntCrossleyConstraint<T>::CalcDiscreteHuntCrossleyAntiderivative(
   const T vd = 1.0 / (d + 1.0e-20);
 
   // Similarly, we define vx as the velocity at which the elastic term goes
-  // to zero. Using a small tolerance so that it goes to a ver large
+  // to zero. Using a small tolerance so that it goes to a very large
   // number in the limit to k = 0 (e.g. from discrete hydroelastic).
   const T vx = fe0 / dt / (k + 1.0e-20);
 
@@ -110,14 +103,13 @@ T SapHuntCrossleyConstraint<T>::CalcDiscreteHuntCrossleyAntiderivative(
   // Clamp vn to v̂.
   const T vn_clamped = min(vn, v_hat);
 
-  // Antiderivative for when n(v; fₑ₀) > 0, or v < v̂:
-  auto N_plus = [&k, &d, &fe0, &dt](const T& v) {
-    const T df = -dt * k * v;
-    return dt * (v * (fe0 + 1.0 / 2.0 * df) -
-                 d * v * v / 2.0 * (fe0 + 2.0 / 3.0 * df));
-  };
+  // From the derivation above, N(v; fₑ₀) = N⁺(vn_clamped; fₑ₀).
+  const T& v = vn_clamped;  // Alias to shorten notation.
+  const T df = -dt * k * v;
+  const T N = dt * (v * (fe0 + 1.0 / 2.0 * df) -
+                    d * v * v / 2.0 * (fe0 + 2.0 / 3.0 * df));
 
-  return N_plus(vn_clamped);
+  return N;
 }
 
 template <typename T>
@@ -170,8 +162,8 @@ void SapHuntCrossleyConstraint<T>::DoCalcData(
 
   // Parameters:
   const T& mu = parameters_.friction;
-  const T& dt = data.const_data.dt;
-  const T& epsilon_soft = data.const_data.epsilon_soft;
+  const T& dt = data.invariant_data.dt;
+  const T& epsilon_soft = data.invariant_data.epsilon_soft;
 
   // Computations dependent on vc.
   data.vc = vc;
@@ -187,7 +179,7 @@ void SapHuntCrossleyConstraint<T>::DoCalcData(
       // This effectively evaluates n and N at z = vn for the lagged model.
       data.z = data.vn;
       break;
-  };
+  }
   data.nz = CalcDiscreteHuntCrossleyImpulse(dt, data.z);
   data.Nz = CalcDiscreteHuntCrossleyAntiderivative(dt, data.z);
 }
@@ -200,14 +192,12 @@ T SapHuntCrossleyConstraint<T>::DoCalcCost(
   switch (parameters_.model) {
     case SapHuntCrossleyApproximation::kSimilar:
       return -data.Nz;
-      break;
     case SapHuntCrossleyApproximation::kLagged:
       const T& mu = parameters_.friction;
-      const T& n0 = data.const_data.n0;
+      const T& n0 = data.invariant_data.n0;
       const T& N = data.Nz;
       const T& vt_soft = data.vt_soft;
       return -N + mu * vt_soft * n0;
-      break;
   }
   DRAKE_UNREACHABLE();
 }
@@ -218,7 +208,7 @@ void SapHuntCrossleyConstraint<T>::DoCalcImpulse(
   const auto& data =
       abstract_data.get_value<SapHuntCrossleyConstraintData<T>>();
   const T& mu = parameters_.friction;
-  const T& n0 = data.const_data.n0;
+  const T& n0 = data.invariant_data.n0;
   const T& n = data.nz;
   const Vector2<T>& t_soft = data.t_soft;
   // Value of n(vn) used in the friction model.
@@ -233,13 +223,12 @@ void SapHuntCrossleyConstraint<T>::DoCalcCostHessian(
     const AbstractValue& abstract_data, MatrixX<T>* G) const {
   const auto& data =
       abstract_data.get_value<SapHuntCrossleyConstraintData<T>>();
-  using std::max;
 
   // Const data.
   const T& mu = parameters_.friction;
-  const T& dt = data.const_data.dt;
-  const T& epsilon_soft = data.const_data.epsilon_soft;
-  const T& n0 = data.const_data.n0;
+  const T& dt = data.invariant_data.dt;
+  const T& epsilon_soft = data.invariant_data.epsilon_soft;
+  const T& n0 = data.invariant_data.n0;
 
   // Tangential velocity and its soft norm.
   const T vt_soft = data.vt_soft;

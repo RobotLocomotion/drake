@@ -18,13 +18,14 @@ namespace internal {
 template <typename T>
 struct SapHuntCrossleyConstraintData {
   // Unlike the rest of the data stored in this struct, this data is not a
-  // function of constraint velocity vc but it remains const after MakeData().
-  struct ConstData {
+  // function of the constraint velocity vc. Thus it remains invariant after
+  // MakeData().
+  struct InvariantData {
     T dt;            // Time step.
     T n0;            // Normal impulse evaluated at previous time step.
     T epsilon_soft;  // Regularization parameter, εₛ.
   };
-  ConstData const_data;
+  InvariantData invariant_data;
 
   Vector3<T> vc;      // Contact velocity, defined as v_AcBc_C.
   T vn{};             // Normal component of vc, i.e. vn = vc(2).
@@ -32,7 +33,8 @@ struct SapHuntCrossleyConstraintData {
   T vt_soft{};        // Soft norm of vt, see SoftNorm().
   Vector2<T> t_soft;  // (soft) tangent vector, t_soft = vt / (vt_soft + εₛ).
   T z{};              // For Similar, z = vn - mu * vt_soft. For Lagged, z = vn.
-  T nz{}, Nz{};       // n(z), N(z). Impulse and its antiderivative at z.
+  T nz{};             // Impulse n(z) at z.
+  T Nz{};             // Antiderivative of n(z) at z, N(z).
 };
 
 /* Model approximations implemented by SapHuntCrossleyConstraint. */
@@ -66,16 +68,16 @@ enum class SapHuntCrossleyApproximation {
  Regularized Friction:
    Friction is regularized according to:
      γₜ = −μ⋅γₙ⋅t̂ₛ
-   where μ is the coefficient of friction and t̂ₛ is a "soft" approximation of
-   according to t̂ = vₜ/‖vₜ‖ₛ, with ‖vₜ‖ₛ the "soft norm" of the tangential
-   velocity vector defined as:
+   where μ is the coefficient of friction and t̂ₛ is a "soft" approximation of t̂
+   according to t̂ₛ = vₜ/(‖vₜ‖ₛ + εₛ), with ‖vₜ‖ₛ the "soft norm" of the
+   tangential velocity vector defined as:
      ‖vₜ‖ₛ = sqrt(‖vₜ‖² + εₛ²) - εₛ
    with εₛ a regularization parameter.
 
    For vₜ ≠ 0 This model can also be written as:
      γₜ = −μ⋅f(‖vₜ‖/εₛ)⋅γₙ⋅t̂
    with the regularizer function f(s) = s/sqrt(1+s²). Therefore the model
-   obeys the principle of maximum dissipaition (friction opposes slip) and
+   obeys the principle of maximum dissipation (friction opposes slip) and
    satisfies Coulomb's law ‖γₜ‖ ≤ μ⋅γₙ.
 
  Convexity:
@@ -90,11 +92,12 @@ enum class SapHuntCrossleyApproximation {
  the constraint. The contact frame is defined such that vₙ is positive for
  breaking contact. Therefore, ẋ = -vₙ.
 
- [Castro et al., 2023]
-   TODO: update with reference to arxiv draft of the paper.
-   [Castro et al., 2022] Castro, A.M., Permenter, F.N. and Han, X., 2022. An
-   unconstrained convex formulation of compliant contact. IEEE Transactions on
-   Robotics, 39(2), pp.1301-1320.
+ [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory of
+   Irrotational Contact Fields. Available online at
+   https://arxiv.org/abs/2312.03908
+ [Castro et al., 2022]
+   Castro A., Permenter F., and Han X., 2022. An unconstrained convex
+   formulation of compliant contact. IEEE Transactions on Robotics, 39(2).
 
  @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -122,17 +125,20 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
     /* Parameter of Hunt & Crossley dissipation d. It must be non-negative. */
     T dissipation{0.0};
     /* Stiction tolerance vₛ, in m/s. */
-    double stiction_tolerance{1.0e-3};
+    double stiction_tolerance{1.0e-4};
     /* SAP friction regularization parameter. Regularization is given by εₛ =
-     max(vₛ, μ⋅Rₜ⋅n₀), where Rₜ is SAP's regularization and n₀ is the impulse
+     max(vₛ, μ⋅σ⋅wₜ⋅n₀), where wₜ is the Delassus operator approximation for
+     this constraint, σ is SAP's regularization parameter and n₀ is the impulse
      computed at the previous time step. Regularization is dominated by the SAP
-     term μ⋅Rₜ⋅n₀ for cases with impacts at large time steps. When there are no
-     impacts this term is 𝒪(δt) and the user specified stiction tolerance
+     term μ⋅σ⋅wₜ⋅n₀ for cases with impacts at large time steps. When there are
+     no impacts this term is 𝒪(δt) and the user specified stiction tolerance
      determines regularization. This effectively softens the approximation of
      friction during sudden transients only, leading to a better conditioned
      system of equations and improved performance. See [Castro et al., 2023] for
-     details. */
-    double sigma{0.0};  // Typically 1.0e-3 for SAP.
+     details. SAP's regularization is parameterized by a single dimensionless
+     parameter, estimated to be σ = 10⁻³ for a tight approximation of stiction,
+     [Castro et al., 2022]. */
+    double sigma{1.0e-3};
   };
 
   /* Constructor for a H&C contact constraint between two objects A and B. The
@@ -205,16 +211,19 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
                                    const Eigen::Ref<const VectorX<T>>& gamma,
                                    SpatialForce<T>* F) const final;
 
-  // Computes antiderivative N(vn; fe0) such that n(vn; fe0) = N'(vn; fe0).
+  // Computes antiderivative N(vₙ; fₑ₀) such that n(vₙ; fe0) = N'(vₙ; fₑ₀).
   // @param dt The fixed time step size.
   // @param vn Normal component of the contact velocity.
   T CalcDiscreteHuntCrossleyAntiderivative(const T& dt, const T& vn) const;
 
-  // Computes discrete impulse function n(vn; fe0) = dN(vn; fe0)/dvn.
+  // Computes discrete impulse function n(vₙ; fₑ₀) = N'(vₙ; fₑ₀).
+  // @param dt The fixed time step size.
+  // @param vn Normal component of the contact velocity.
   T CalcDiscreteHuntCrossleyImpulse(const T& dt, const T& vn) const;
 
-  // Computes gradient of the discrete impulse function:
-  //   n'(vn; fe0) = dn(vn; fe0)/dvn.
+  // Computes derivative n'(vₙ; fₑ₀) of the discrete impulse function.
+  // @param dt The fixed time step size.
+  // @param vn Normal component of the contact velocity.
   T CalcDiscreteHuntCrossleyImpulseGradient(const T& dt, const T& vn) const;
 
   Parameters parameters_;

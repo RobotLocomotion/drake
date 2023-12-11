@@ -78,6 +78,7 @@ from pydrake.multibody.plant import (
     ContactResultsToLcmSystem,
     CoulombFriction_,
     DeformableModel,
+    DiscreteContactApproximation,
     DiscreteContactSolver,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
@@ -2697,6 +2698,19 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(plant.get_discrete_contact_solver(), model)
         plant.get_sap_near_rigid_threshold()
         plant.set_sap_near_rigid_threshold(near_rigid_threshold=0.03)
+
+    def test_discrete_contact_approximation(self):
+        plant = MultibodyPlant_[float](0.1)
+        approximations = [
+            DiscreteContactApproximation.kTamsi,
+            DiscreteContactApproximation.kSap,
+            DiscreteContactApproximation.kLagged,
+            DiscreteContactApproximation.kSimilar,
+        ]
+        for approximation in approximations:
+            plant.set_discrete_contact_approximation(approximation)
+            self.assertEqual(plant.get_discrete_contact_approximation(),
+                             approximation)
 
     def test_contact_surface_representation(self):
         for time_step in [0.0, 0.1]:
