@@ -137,7 +137,7 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrix) {
     }
   }
   // A non-contiguous set of indices
-  std::set<int> submatrix_indices{0, 1, 3, 4, 5, 7};
+  const std::set<int> submatrix_indices{0, 1, 3, 4, 5, 7};
   drake::MatrixX<symbolic::Variable> submatrix_manual(submatrix_indices.size(),
                                                       submatrix_indices.size());
   // clang-format off
@@ -159,6 +159,27 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrix) {
   for (int r = 0; r < submatrix.rows(); ++r) {
     for (int c = 0; c < submatrix.cols(); ++c) {
       EXPECT_TRUE(submatrix(r, c).equal_to(submatrix_manual(r, c)));
+    }
+  }
+
+  const std::set<int> submatrix_indices2{2, 3, 5, 7};
+  drake::MatrixX<symbolic::Variable> submatrix_manual2(
+      submatrix_indices2.size(), submatrix_indices2.size());
+  auto submatrix2 = ExtractPrincipalSubmatrix(X, submatrix_indices2);
+  // clang-format off
+  submatrix_manual2 << X(2, 2), X(2, 3), X(2, 5), X(2, 7),
+                       X(3, 2), X(3, 3), X(3, 5), X(3, 7),
+                       X(5, 2), X(5, 3), X(5, 5), X(5, 7),
+                       X(7, 2), X(7, 3), X(7, 5), X(7, 7);
+  // clang-format on
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(submatrix2),
+                                       drake::MatrixX<symbolic::Variable>);
+  EXPECT_EQ(submatrix2.rows(), submatrix2.cols());
+  EXPECT_EQ(static_cast<int>(submatrix2.rows()),
+            static_cast<int>(submatrix_indices2.size()));
+  for (int r = 0; r < submatrix2.rows(); ++r) {
+    for (int c = 0; c < submatrix2.cols(); ++c) {
+      EXPECT_TRUE(submatrix2(r, c).equal_to(submatrix_manual2(r, c)));
     }
   }
 }
