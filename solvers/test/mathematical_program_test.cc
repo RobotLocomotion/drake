@@ -3821,7 +3821,7 @@ GTEST_TEST(TestMathematicalProgram, TestNonlinearExpressionConstraints) {
 
   prog.AddConstraint(x.transpose() * x == 1.);
 
-  if (SnoptSolver().available()) {
+  if (SnoptSolver().available() && SnoptSolver().enabled()) {
     // Add equivalent constraints using all of the other entry points.
     // Note: restricted to SNOPT because IPOPT complains about the redundant
     // constraints.

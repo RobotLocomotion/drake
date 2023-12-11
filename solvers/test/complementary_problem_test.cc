@@ -46,7 +46,7 @@ GTEST_TEST(TestComplementaryProblem, bard1) {
   prog.AddLinearComplementarityConstraint(M, q, {x, y, l});
 
   SnoptSolver snopt_solver;
-  if (snopt_solver.available()) {
+  if (snopt_solver.available() && snopt_solver.enabled()) {
     auto result = snopt_solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     auto x_val = result.GetSolution(x);
@@ -82,7 +82,7 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   prog.AddLinearComplementarityConstraint(M, q, {x, y});
   prog.AddBoundingBoxConstraint(0, 10, x);
   SnoptSolver snopt_solver;
-  if (snopt_solver.available()) {
+  if (snopt_solver.available() && snopt_solver.enabled()) {
     MathematicalProgramResult result = Solve(prog);
     EXPECT_TRUE(result.is_success());
     const auto x_val = result.GetSolution(x);

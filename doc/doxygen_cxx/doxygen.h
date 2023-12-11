@@ -220,6 +220,7 @@ namespace solvers {
  - <b>\ref drake::Parallelism "DRAKE_NUM_THREADS"</b>
  - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
+ - <b>\ref drake::solvers::SnoptSolver "DRAKE_SNOPT_SOLVER_ENABLED"</b>
  - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also 
    <a href="https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic-">upstream documentation</a>)
  - <b>\ref drake::solvers::GurobiSolver "GUROBI_NUM_THREADS"</b>
