@@ -35,8 +35,11 @@ int do_main(int argc, char* argv[]) {
   auto bad_triangles = DetectInteriorTriangleWithAllBoundaryVertices(mesh);
   auto bad_edges = DetectInteriorEdgeWithAllBoundaryVertices(mesh);
 
-  drake::log()->info("Found {} bad tets, {} bad triangles, and {} bad edges.",
-                     bad_tets.size(), bad_triangles.size(), bad_edges.size());
+  drake::log()->info(
+      "Found {} bad tets, {} bad triangles, and {} bad edges."
+      "The mesh has {} tets and {} vertices.",
+      bad_tets.size(), bad_triangles.size(), bad_edges.size(),
+      mesh.tetrahedra().size(), mesh.vertices().size());
   bool found_bad =
       (!bad_tets.empty() || !bad_triangles.empty() || !bad_edges.empty());
   if (!found_bad) {
@@ -59,7 +62,11 @@ int do_main(int argc, char* argv[]) {
 
   WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
                        "refined by mesh_refiner_manual_test");
-  drake::log()->info("wrote refined mesh to file '{}'", outfile.string());
+  drake::log()->info(
+      "wrote refined mesh to file '{}' with {} tets and {} "
+      "vertices.",
+      outfile.string(), refined_mesh.tetrahedra().size(),
+      refined_mesh.vertices().size());
   return 0;
 }
 
