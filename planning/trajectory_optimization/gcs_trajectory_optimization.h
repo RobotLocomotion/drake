@@ -551,6 +551,32 @@ class GcsTrajectoryOptimization final {
   std::vector<int> global_continuity_constraints_{};
 };
 
+/* Given a convex set, and a list of indices corresponding to continuous
+revolute joints, return a list of convex sets that respect the convexity
+radius, and whose union is the given convex set. Respecting the convexity radius
+entails that each convex set has a width of stricty less than π along each
+dimension corresponding to a continuous revolute joint. In practice, this is
+implemented as having a width less than or equal to π-ϵ.
+@param epsilon is the ϵ value used for the convexity radius inequality. The
+partitioned sets are made to overlap by ϵ/2 along each dimension, for numerical
+purposes.
+@throws std::exception if ϵ <= 0.
+@throws std::exception if the input convex set is unbounded.
+*/
+geometry::optimization::ConvexSets PartitionConvexSet(
+    const geometry::optimization::ConvexSet& convex_set,
+    const std::vector<int>& continuous_revolute_joints,
+    const double epsilon = 1e-5);
+
+/* Function overload to take in a list of convex sets, and partition all so as
+to respect the convexity radius. Every set must be bounded and have the same
+ambient dimension.
+@throws std::exception if ϵ <= 0. */
+geometry::optimization::ConvexSets PartitionConvexSet(
+    geometry::optimization::ConvexSets convex_sets,
+    const std::vector<int>& continuous_revolute_joints,
+    const double epsilon = 1e-5);
+
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake

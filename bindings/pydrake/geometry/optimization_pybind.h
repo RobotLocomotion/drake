@@ -26,5 +26,23 @@ geometry::optimization::ConvexSets CloneConvexSets(
   return sets;
 }
 
+/** Deep-copies the ConvexSet copyable_unique_ptrs in the given list into a
+Python-compatible list of ConvexSet pointers. This is useful to return
+Python-natural values out of the C++ API, which would otherwise return the more
+complex type. */
+std::vector<geometry::optimization::ConvexSet*> CloneConvexSets(
+    geometry::optimization::ConvexSets sets_in) {
+  std::vector<geometry::optimization::ConvexSet*> sets_out;
+  sets_out.reserve(sets_in.size());
+  for (const auto& set : sets_in) {
+    if (set == nullptr) {
+      sets_out.push_back(nullptr);
+    } else {
+      sets_out.push_back(set->Clone().get());
+    }
+  }
+  return sets_out;
+}
+
 }  // namespace pydrake
 }  // namespace drake
