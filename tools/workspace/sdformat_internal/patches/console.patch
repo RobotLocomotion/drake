@@ -154,12 +154,13 @@ diff --git src/Console.cc src/Console.cc
 index c0f4c4ed..a2f82f5d 100644
 --- src/Console.cc
 +++ src/Console.cc
-@@ -26,12 +26,15 @@
+@@ -26,14 +26,15 @@
  #include "sdf/Types.hh"
  #include "sdf/sdf_config.h"
  
+-#include <gz/utils/Environment.hh>
 +#include "drake/common/text_logging.h"
-+
+ 
  using namespace sdf;
  
  /// Static pointer to the console.

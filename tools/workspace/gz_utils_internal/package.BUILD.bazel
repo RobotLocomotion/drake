@@ -42,10 +42,8 @@ generate_file(
 )
 
 _MOST_PUBLIC_HDRS = [
-    "include/gz/utils/Environment.hh",
     "include/gz/utils/ImplPtr.hh",
     "include/gz/utils/NeverDestroyed.hh",
-    "include/gz/utils/Subprocess.hh",
     "include/gz/utils/SuppressWarning.hh",
     "include/gz/utils/detail/DefaultOps.hh",
     "include/gz/utils/detail/ImplPtr.hh",
@@ -53,7 +51,6 @@ _MOST_PUBLIC_HDRS = [
 ]
 
 _SRCS = [
-    "src/Environment.cc",
 ]
 
 check_lists_consistency(
@@ -63,6 +60,12 @@ check_lists_consistency(
         "src/**/*.cc",
     ],
     glob_exclude = [
+        # These features are inappropriate for use by Drake. (The sdformat
+        # parser should not be launching subprocesses, nor checking or setting
+        # environment variables.) We exclude them to prevent accidental use.
+        "include/gz/utils/Environment.hh",
+        "include/gz/utils/Subprocess.hh",
+        "src/Environment.cc",
         # These are test utilities, not for use by library code.
         "include/gz/utils/ExtraTestMacros.hh",
         "include/gz/utils/detail/ExtraTestMacros.hh",

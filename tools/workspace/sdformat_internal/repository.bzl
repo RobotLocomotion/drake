@@ -15,6 +15,7 @@ def sdformat_internal_repository(
         patches = [
             ":patches/console.patch",
             ":patches/deprecation_unit_testing.patch",
+            ":patches/environment.patch",
             ":patches/no_global_config.patch",
             ":patches/no_urdf.patch",
         ],
