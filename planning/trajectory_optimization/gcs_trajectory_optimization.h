@@ -11,6 +11,7 @@
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace planning {
@@ -550,6 +551,12 @@ class GcsTrajectoryOptimization final {
       global_velocity_bounds_{};
   std::vector<int> global_continuity_constraints_{};
 };
+
+/* Returns a list of indices in the plant's internal position vector which
+ * correspond to a continuous revolute joint (a revolute joint with no joint
+ * limits). This includes the revolute component of a planar joint */
+std::vector<int> GetContinuousRevoluteJointIndices(
+    const multibody::MultibodyPlant<double>& plant);
 
 }  // namespace trajectory_optimization
 }  // namespace planning
