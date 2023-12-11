@@ -91,7 +91,6 @@ enum class SapHuntCrossleyApproximation {
  breaking contact. Therefore, ẋ = -vₙ.
 
  [Castro et al., 2023]
-   TODO: update with reference to arxiv draft of the paper.
    [Castro et al., 2022] Castro, A.M., Permenter, F.N. and Han, X., 2022. An
    unconstrained convex formulation of compliant contact. IEEE Transactions on
    Robotics, 39(2), pp.1301-1320.

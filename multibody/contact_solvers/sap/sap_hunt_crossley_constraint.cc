@@ -1,7 +1,6 @@
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 
 #include <algorithm>
-#include <iostream>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -187,7 +186,7 @@ void SapHuntCrossleyConstraint<T>::DoCalcData(
       // This effectively evaluates n and N at z = vn for the lagged model.
       data.z = data.vn;
       break;
-  };
+  }
   data.nz = CalcDiscreteHuntCrossleyImpulse(dt, data.z);
   data.Nz = CalcDiscreteHuntCrossleyAntiderivative(dt, data.z);
 }

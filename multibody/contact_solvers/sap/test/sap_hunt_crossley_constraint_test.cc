@@ -72,7 +72,7 @@ ContactConfiguration<T> MakeArbitraryConfiguration() {
   const T vn0 = -0.1;
   RotationMatrix<T> R_WC;
   return ContactConfiguration<T>{
-      objectA, std::move(p_AoC_W), objectB, std::move(p_BoC_W), phi0, fe0, vn0,
+      objectA, std::move(p_AoC_W), objectB, std::move(p_BoC_W), phi0, vn0, fe0,
       R_WC};
 }
 
@@ -215,20 +215,15 @@ class SapHuntCrossleyConstraintTest
  public:
   // This method validates analytical gradients implemented by
   // SapHuntCrossleyConstraint using automatic differentiation.
-  void ValidateGradients(
-      const SapHuntCrossleyConstraint<double>::Parameters& p,
-      const Vector3d& vc) {
+  void ValidateGradients(const SapHuntCrossleyConstraint<double>::Parameters& p,
+                         const Vector3d& vc) {
     const SapHuntCrossleyApproximation approximation =
         this->GetParam().approximation;
 
     // Instantiate constraint on AutoDiffXd for automatic differentiation.
     SapHuntCrossleyConstraint<AutoDiffXd>::Parameters p_ad{
-        approximation,
-        p.friction,
-        p.stiffness,
-        p.dissipation,
-        p.stiction_tolerance,
-        p.sigma};
+        approximation, p.friction,           p.stiffness,
+        p.dissipation, p.stiction_tolerance, p.sigma};
 
     // The Jacobian is irrelevant for this tests. Therefore we set to garbage.
     const int clique = 0;

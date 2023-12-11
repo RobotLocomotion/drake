@@ -175,6 +175,31 @@ enum class DiscreteContactSolver {
   kSap,
 };
 
+/// The type of the contact approximation used for a discrete MultibodyPlant
+/// model.
+///
+/// <h2>References</h2>
+/// - [Castro et al., 2019] Castro A., Qu A., Kuppuswamy N., Alspach A.,
+///   Sherman M, 2019. A Transition-Aware Method for the Simulation of
+///   Compliant Contact with Regularized Friction. Available online at
+///   https://arxiv.org/abs/1909.05700.
+/// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
+///   Unconstrained Convex Formulation of Compliant Contact. Available online at
+///   https://arxiv.org/abs/2110.10107.
+/// - [Castro et al., 2023] Castro A.,  Han X., and Masterjohn J., 2023.
+///   TODO: Add arxiv link.
+enum class DiscreteContactApproximation {
+  /// TAMSI solver approximation, see [Castro et al., 2019].
+  kTamsi,
+  /// SAP solver model approximation, see [Castro et al., 2022].
+  kSap,
+  /// Similarity approximation found in [Castro et al., 2023].
+  kSimilar,
+  /// Approximation in which the normal force is lagged in Coulomb's law, such
+  /// that ‖γₜ‖ ≤ μ γₙ₀, [Castro et al., 2023].
+  kLagged,
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -2136,6 +2161,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  ///
+  /// @note Calling this method also sets a default discrete approximation of
+  /// contact (see set_discrete_contact_approximation()) according to:
+  /// - When the solver is kTamsi the approximation is set to
+  ///   DiscreteContactApproximation::kTamsi.
+  /// - When solver is kSap the approximation is set to
+  ///   DiscreteContactSolver::kSap.
+  ///
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
@@ -2143,6 +2176,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
   DiscreteContactSolver get_discrete_contact_solver() const;
+
+  /// Sets the discrete contact model approximation.
+  ///
+  /// @note Calling this method also sets the contact solver type (see
+  /// set_discrete_contact_solver()) according to:
+  /// - When the discrete approximation is kTamsi the solver is set to
+  ///   DiscreteContactSolver::kTamsi.
+  /// - When the discrete approximation is kSap, kSimilar or kLagged  the solver
+  ///   is set to  DiscreteContactSolver::kSap.
+  /// @warning This function is a no-op for continuous models (when
+  /// is_discrete() is false.)
+  /// @throws std::exception iff called post-finalize.
+  void set_discrete_contact_approximation(
+      DiscreteContactApproximation approximation);
+
+  /// @returns the discrete contact solver approximation.
+  DiscreteContactApproximation get_discrete_contact_approximation() const;
 
   /// Non-negative dimensionless number typically in the range [0.0, 1.0],
   /// though larger values are allowed even if uncommon. This parameter controls
@@ -5683,6 +5733,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
+
+  // This default must be consistent with contact_solver_enum_. That is, the
+  // solver specified by contact_solver_enum_ must be able to handle the
+  // discrete approximation specified by discrete_contact_approximation_.
+  DiscreteContactApproximation discrete_contact_approximation_{
+      DiscreteContactApproximation::kTamsi};
 
   // Near rigid regime parameter from [Castro et al., 2021]. Refer to
   // set_near_rigid_threshold() for details.

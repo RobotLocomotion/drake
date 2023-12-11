@@ -14,6 +14,7 @@
 #include "drake/systems/framework/context.h"
 
 using drake::systems::Context;
+using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -1066,6 +1067,90 @@ INSTANTIATE_TEST_SUITE_P(
     TestLineSearchMethods, SapNewtonIterationTest,
     testing::Values(SapSolverParameters::LineSearchType::kBackTracking,
                     SapSolverParameters::LineSearchType::kExact));
+
+class ConstantForceConstraint final : public SapConstraint<double> {
+ public:
+  // Constructs a constraints the produces a constant impulse g.
+  ConstantForceConstraint(SapConstraintJacobian<double> J, VectorXd g)
+      : SapConstraint<double>(std::move(J), {}), g_(std::move(g)) {}
+
+ private:
+  ConstantForceConstraint(const ConstantForceConstraint&) = default;
+
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const double&, const Eigen::Ref<const VectorXd>&) const final {
+    // We'll store the constraint velocity in our data.
+    VectorXd vc(this->num_constraint_equations());
+    return SapConstraint<double>::MoveAndMakeAbstractValue(std::move(vc));
+  }
+  void DoCalcData(const Eigen::Ref<const VectorXd>& vc,
+                  AbstractValue* abstract_data) const final {
+    abstract_data->get_mutable_value<VectorXd>() = vc;
+  }
+  double DoCalcCost(const AbstractValue& abstract_data) const final {
+    // Recall that γ = −∂ℓ/\∂vc.
+    const auto& vc = abstract_data.get_value<VectorXd>();
+    return -g_.dot(vc);
+  }
+  void DoCalcImpulse(const AbstractValue&,
+                     EigenPtr<VectorXd> gamma) const final {
+    // Constant value provided at construction.
+    *gamma = g_;
+  }
+  void DoCalcCostHessian(const AbstractValue&, MatrixXd* G) const final {
+    // The cost is linear, therefore its Hessian is Zero.
+    const int ne = num_constraint_equations();
+    G->setZero(ne, ne);
+  }
+  std::unique_ptr<SapConstraint<double>> DoClone() const final {
+    return std::unique_ptr<ConstantForceConstraint>(
+        new ConstantForceConstraint(*this));
+  }
+
+  VectorXd g_;  // Constant impulse.
+};
+
+GTEST_TEST(SapSolver, ConstraintWithNegativeCost) {
+  // Problem data: time step, matrix A and constant impulse g.
+  const double time_step = 0.1;
+  const Vector2d g(1.0, 2.0);
+  const Eigen::Matrix2d S22 = (Eigen::Matrix2d() << 2, 1, 1, 2).finished();
+
+  // Make contact problem.
+  std::vector<MatrixX<double>> A = {S22};
+  SapContactProblem<double> problem(time_step, std::move(A), Vector2d::Zero());
+  SapConstraintJacobian<double> J(0 /* the one clique */, Matrix2d::Identity());
+  problem.AddConstraint(
+      std::make_unique<ConstantForceConstraint>(std::move(J), g));
+
+  // Initial guess that procudes a negative cost ℓ = −‖g‖².
+  VectorXd v_guess = g;
+
+  // Solve problem.
+  SapSolver<double> solver;
+  SapSolverResults<double> result;
+  const SapSolverStatus status =
+      solver.SolveWithGuess(problem, v_guess, &result);
+  EXPECT_EQ(status, SapSolverStatus::kSuccess);
+
+  // Since the cost is a combination of a quadratic term (from A) and a linear
+  // term (from the constant impulse constraint), we expect the solver achieve
+  // convergence in a single Newton iteration.
+  const SapSolver<double>::SolverStats& stats = solver.get_statistics();
+  EXPECT_EQ(stats.num_iters, 1);
+  // Since the problem is quadratic, we expect the exact line search to
+  // take only one iteration.
+  EXPECT_EQ(stats.num_line_search_iters, 1);
+  // This problem is very well conditioned, we expect convergence on the
+  // optimality condition.
+  EXPECT_TRUE(stats.optimality_criterion_reached);
+
+  // The momentum equation (the optimality condition) for this case is simply
+  // A⋅v = g, from where we know the solution is:
+  const VectorXd v_expected = S22.llt().solve(g);
+  EXPECT_TRUE(CompareMatrices(result.v, v_expected, 4 * kEps,
+                              MatrixCompareType::relative));
+}
 
 }  // namespace internal
 }  // namespace contact_solvers
