@@ -13,6 +13,7 @@ from pydrake.planning import (
     DirectTranscription,
     GcsTrajectoryOptimization,
     KinematicTrajectoryOptimization,
+    PartitionConvexSet
 )
 from pydrake.geometry.optimization import (
     GraphOfConvexSetsOptions,
@@ -545,3 +546,14 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                   order=1,
                                   edges_between_regions=[[0, 1]],
                                   edge_offsets=[[2*np.pi]])
+        big_convex_set = VPolytope(np.array([[0, 4]]))
+        PartitionConvexSet(big_convex_set, [0])
+        PartitionConvexSet(big_convex_set, [0], 1e-5)
+        PartitionConvexSet(convex_set=big_convex_set,
+                           continuous_revolute_joints=[0],
+                           epsilon=1e-5)
+        PartitionConvexSet([big_convex_set], [0])
+        PartitionConvexSet([big_convex_set], [0], 1e-5)
+        PartitionConvexSet(convex_sets=[big_convex_set],
+                           continuous_revolute_joints=[0],
+                           epsilon=1e-5)

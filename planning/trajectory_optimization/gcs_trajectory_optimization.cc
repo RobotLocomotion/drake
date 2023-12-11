@@ -10,6 +10,7 @@
 #include "drake/common/symbolic/decompose.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/math/matrix_util.h"
@@ -34,6 +35,7 @@ using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperrectangle;
 using geometry::optimization::Intersection;
 using geometry::optimization::Point;
 using solvers::Binding;
@@ -188,7 +190,8 @@ void Subgraph::ThrowsForInvalidConvexityRadius() const {
             "along dimension {}, so it doesn't respect the convexity radius! "
             "To add this set, separate it into smaller pieces so that along "
             "dimensions corresponding to continuous revolute joints, its width "
-            "is strictly smaller than π.",
+            "is strictly smaller than π. This can be done manually, or with "
+            "the helper function PartitionConvexSet.",
             i, j));
       }
     }
@@ -1054,6 +1057,72 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
     }
   }
   return CompositeTrajectory<double>(normalized_bezier_curves);
+}
+
+ConvexSets PartitionConvexSet(
+    const ConvexSet& convex_set,
+    const std::vector<int>& continuous_revolute_joints, const double epsilon) {
+  DRAKE_THROW_UNLESS(epsilon > 0);
+  // Unboundedness will be asserted by
+  // Hyperrectangle::MaybeCalcAxisAlignedBoundingBox.
+
+  ConvexSets sets = MakeConvexSets(convex_set);
+  const double convexity_radius_step = M_PI - 2 * epsilon;
+  const int dim = convex_set.ambient_dimension();
+  const auto bbox_maybe =
+      Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(convex_set);
+  DRAKE_THROW_UNLESS(bbox_maybe.has_value());
+  const Hyperrectangle bbox = bbox_maybe.value();
+  // The overall structure is to partition the set along each dimension
+  // corresponding to a continuous revolute joint. The partitioning is done by
+  // constructing axis-aligned bounding boxes, and intersecting them with the
+  // original set.
+  for (const int& i : continuous_revolute_joints) {
+    const double min_value = bbox.lb()[i];
+    const double max_value = bbox.ub()[i];
+    if (max_value - min_value >= M_PI) {
+      const int j_max = sets.size();
+      for (int j = 0; j < j_max; ++j) {
+        for (double k = min_value + convexity_radius_step;
+             k < max_value + convexity_radius_step;
+             k += convexity_radius_step) {
+          Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, dim);
+          Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+          A(0, i) = 1;
+          b[0] = k + (epsilon / 2.0);
+          A(1, i) = -1;
+          b[1] = -(k - convexity_radius_step - (epsilon / 2.0));
+          HPolyhedron chunk_bbox(A, b);
+          sets.push_back(copyable_unique_ptr<ConvexSet>(
+              Intersection(*sets[j], chunk_bbox)));
+        }
+      }
+      sets.erase(sets.begin(), sets.begin() + j_max);
+    }
+  }
+  return sets;
+}
+
+ConvexSets PartitionConvexSet(
+    ConvexSets convex_sets, const std::vector<int>& continuous_revolute_joints,
+    const double epsilon) {
+  DRAKE_THROW_UNLESS(convex_sets.size() > 0);
+  DRAKE_THROW_UNLESS(convex_sets[0] != nullptr);
+
+  int ambient_dimension = convex_sets[0]->ambient_dimension();
+  for (int i = 1; i < ssize(convex_sets); ++i) {
+    DRAKE_THROW_UNLESS(convex_sets[i] != nullptr);
+    DRAKE_THROW_UNLESS(convex_sets[i]->ambient_dimension() ==
+                       ambient_dimension);
+  }
+
+  ConvexSets sets;
+  for (int i = 0; i < ssize(convex_sets); ++i) {
+    ConvexSets new_sets = PartitionConvexSet(
+        *convex_sets[i], continuous_revolute_joints, epsilon);
+    sets.insert(sets.end(), new_sets.begin(), new_sets.end());
+  }
+  return sets;
 }
 
 }  // namespace trajectory_optimization
