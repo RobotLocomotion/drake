@@ -204,7 +204,7 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
 }
 
 /// Extracts the principal submatrix from the ordered set of indices. The
-/// minor_indices must be in monotonically increasing order. This method makes
+/// indices must be in monotonically increasing order. This method makes
 /// no assumptions about the symmetry of the matrix, nor that the matrix is
 /// square.
 template <typename Derived>
