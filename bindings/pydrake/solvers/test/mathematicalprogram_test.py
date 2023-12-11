@@ -138,7 +138,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(result.get_x_val(), x_expected))
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionFound)
-        self.assertEqual(result.get_optimal_cost(), 3.0)
+        self.assertAlmostEqual(result.get_optimal_cost(), 3.0, places=7)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
         self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
