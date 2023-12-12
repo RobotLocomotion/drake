@@ -40,7 +40,7 @@ std::map<BodyIndex, JointIndex> GetBodyToJointMap(
 
 std::unordered_set<BodyIndex> GetWeldToWorldBodyIndexSet(
     const MultibodyPlant<double>& plant) {
-  const std::vector<const Body<double>*> weld_to_world_bodies =
+  const std::vector<const RigidBody<double>*> weld_to_world_bodies =
       plant.GetBodiesWeldedTo(plant.world_body());
   std::unordered_set<BodyIndex> weld_to_world_body_index_set;
   for (const auto weld_body : weld_to_world_bodies) {
@@ -102,7 +102,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   auto dummy_plant_context = plant_.CreateDefaultContext();
   // First go through each body to assign the pose variables.
   for (BodyIndex body_idx{1}; body_idx < num_bodies; ++body_idx) {
-    const Body<double>& body = plant_.get_body(body_idx);
+    const RigidBody<double>& body = plant_.get_body(body_idx);
     const string body_R_name = body.name() + "_R";
     const string body_pos_name = body.name() + "_pos";
     p_WBo_[body_idx] = prog_.NewContinuousVariables<3>(body_pos_name);
@@ -117,7 +117,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   // Now go through each body to add the kinematic constraint between each body
   // and its parent.
   for (BodyIndex body_idx{1}; body_idx < num_bodies; ++body_idx) {
-    const Body<double>& body = plant_.get_body(body_idx);
+    const RigidBody<double>& body = plant_.get_body(body_idx);
     // If the body is fixed to the world, then fix the decision variables on
     // the body position and orientation.
     if (weld_to_world_body_index_set.count(body_idx) > 0) {
@@ -248,7 +248,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
     const std::unordered_set<BodyIndex>& weld_to_world_body_index_set,
     Eigen::Ref<Eigen::VectorXd> q,
     std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const {
-  const Body<double>& body = plant_.get_body(body_idx);
+  const RigidBody<double>& body = plant_.get_body(body_idx);
   const Matrix3d R_WC = result.GetSolution(R_WB_[body_idx]);
   if (body.is_floating()) {
     // p_WBi is the position of the body frame in the world frame.
@@ -274,7 +274,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
   // the world.
   auto dummy_plant_context = plant_.CreateDefaultContext();
   const Joint<double>& joint = plant_.get_joint(body_to_joint_map.at(body_idx));
-  const Body<double>& parent = joint.parent_body();
+  const RigidBody<double>& parent = joint.parent_body();
   if (weld_to_world_body_index_set.count(body_idx) == 0) {
     // R_WP is the rotation matrix of parent frame to the world frame.
     const Matrix3d& R_WP = reconstruct_R_WB->at(parent.index());
@@ -638,7 +638,7 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
         fmt::format("The body {} is not the child of any joint in the plant.",
                     plant_.get_body(body_index).name()));
   }
-  const Body<double>& parent = joint->parent_body();
+  const RigidBody<double>& parent = joint->parent_body();
   const int parent_idx = parent.index();
   const RigidTransformd X_PJp =
       joint->frame_on_parent().GetFixedPoseInBodyFrame();

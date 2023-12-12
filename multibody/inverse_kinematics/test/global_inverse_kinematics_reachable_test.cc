@@ -74,8 +74,8 @@ TEST_F(KukaTest, ReachableTest) {
     //     {q_global_ik}, q_global_ik, 1);
 
     // Now tighten the joint limits, the problem should be feasible.
-    const Body<double>& iiwa_link_2 = plant_->GetBodyByName("iiwa_link_2");
-    const Body<double>& iiwa_link_3 = plant_->GetBodyByName("iiwa_link_3");
+    const RigidBody<double>& iiwa_link_2 = plant_->GetBodyByName("iiwa_link_2");
+    const RigidBody<double>& iiwa_link_3 = plant_->GetBodyByName("iiwa_link_3");
     global_ik_.AddJointLimitConstraint(iiwa_link_2.index(), 0.5, 0.5);
     global_ik_.AddJointLimitConstraint(iiwa_link_3.index(), -0.5, -0.4);
     result = gurobi_solver.Solve(global_ik_.prog());

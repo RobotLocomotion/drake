@@ -23,9 +23,9 @@ using Eigen::VectorXd;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using multibody::Body;
 using multibody::MultibodyPlant;
 using multibody::Parser;
+using multibody::RigidBody;
 using multibody::SpatialVelocity;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -162,7 +162,7 @@ class MultibodyQuadrotor: public Diagram<double> {
 
  private:
   MultibodyPlant<double>* plant_{};
-  const Body<double>* body_{};
+  const RigidBody<double>* body_{};
 };
 
 void TestPassiveBehavior(const VectorXd& x0) {

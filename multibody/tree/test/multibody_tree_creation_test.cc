@@ -66,7 +66,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   EXPECT_EQ(model->num_bodies(), 1);
 
   // Retrieves the world body.
-  const Body<double>& world_body = model->world_body();
+  const RigidBody<double>& world_body = model->world_body();
 
   // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
   // pendulum. Using a NaN spatial inertia is ok so far since we are still
@@ -77,7 +77,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 
   // Adds a new body to the world.
   const RigidBody<double>& pendulum =
-      model->AddBody<RigidBody>("pendulum", M_Bo_B);
+      model->AddRigidBody("pendulum", M_Bo_B);
   EXPECT_EQ(pendulum.scoped_name().get_full(),
             "DefaultModelInstance::pendulum");
   EXPECT_EQ(pendulum.body_frame().scoped_name().get_full(),
@@ -105,7 +105,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 
   // Adds a second pendulum.
   const RigidBody<double>& pendulum2 =
-      model->AddBody<RigidBody>("pendulum2", M_Bo_B);
+      model->AddRigidBody("pendulum2", M_Bo_B);
   model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
@@ -133,21 +133,21 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   EXPECT_THROW(model->Finalize(), std::exception);
 
   // Verifies that after compilation no more bodies can be added.
-  EXPECT_THROW(model->AddBody<RigidBody>("B", M_Bo_B), std::exception);
+  EXPECT_THROW(model->AddRigidBody("B", M_Bo_B), std::exception);
 }
 
 // Tests the basic MultibodyTree API to add bodies and joints.
 // Tests we cannot create graph loops. See previous test for notes.
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();
-  const Body<double>& world_body = model->world_body();
+  const RigidBody<double>& world_body = model->world_body();
   SpatialInertia<double> M_Bo_B;
   const RigidBody<double>& pendulum =
-      model->AddBody<RigidBody>("pendulum", M_Bo_B);
+      model->AddRigidBody("pendulum", M_Bo_B);
   model->AddJoint<RevoluteJoint>(
       "joint0", world_body, {}, pendulum, {}, Vector3d::UnitZ());
   const RigidBody<double>& pendulum2 =
-      model->AddBody<RigidBody>("pendulum2", M_Bo_B);
+      model->AddRigidBody("pendulum2", M_Bo_B);
   model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
@@ -293,7 +293,7 @@ class TreeTopologyTests : public ::testing::Test {
     // NaN SpatialInertia to instantiate the RigidBody objects.
     // It is safe here since this tests only focus on topological information.
     const SpatialInertia<double> M_Bo_B;
-    const RigidBody<double>* body = &model_->AddBody<RigidBody>(
+    const RigidBody<double>* body = &model_->AddRigidBody(
        fmt::format("TestBody_{}", i), M_Bo_B);
     bodies_.push_back(body);
     return body;
@@ -776,17 +776,17 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
 
   // Helper to add a joint between two bodies. For this test the actual type of
   // the joint is not relevant, only the fact that "is not" a WeldJoint.
-  auto AddJoint =
-      [&model](const std::string& name,
-               const Body<double>& parent, const Body<double>& child) {
-    model.AddJoint<RevoluteJoint>(
-        name, parent, {}, child, {}, Vector3<double>::UnitX());
+  auto AddJoint = [&model](const std::string& name,
+                           const RigidBody<double>& parent,
+                           const RigidBody<double>& child) {
+    model.AddJoint<RevoluteJoint>(name, parent, {}, child, {},
+                                  Vector3<double>::UnitX());
   };
 
   // Helper method to add a WeldJoint between two bodies.
   auto AddWeldJoint = [&model](const std::string& name,
-                               const Body<double>& parent,
-                               const Body<double>& child) {
+                               const RigidBody<double>& parent,
+                               const RigidBody<double>& child) {
     model.AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
                               math::RigidTransformd::Identity());
   };
@@ -979,26 +979,29 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
 
 // Helper function to add a x-axis prismatic joint between two bodies.
 void AddPrismaticJointX(MultibodyTree<double>* model, const std::string& name,
-               const Body<double>& parent, const Body<double>& child) {
-    DRAKE_DEMAND(model != nullptr);
-    model->AddJoint<PrismaticJoint>(name, parent, {}, child, {},
-        Vector3<double>::UnitX());
+                        const RigidBody<double>& parent,
+                        const RigidBody<double>& child) {
+  DRAKE_DEMAND(model != nullptr);
+  model->AddJoint<PrismaticJoint>(name, parent, {}, child, {},
+                                  Vector3<double>::UnitX());
 }
 
 // Helper function to add a z-axis revolute joint between two bodies.
 void AddRevoluteJointZ(MultibodyTree<double>* model, const std::string& name,
-               const Body<double>& parent, const Body<double>& child) {
-    DRAKE_DEMAND(model != nullptr);
-    model->AddJoint<RevoluteJoint>(name, parent, {}, child, {},
-        Vector3<double>::UnitZ());
+                       const RigidBody<double>& parent,
+                       const RigidBody<double>& child) {
+  DRAKE_DEMAND(model != nullptr);
+  model->AddJoint<RevoluteJoint>(name, parent, {}, child, {},
+                                 Vector3<double>::UnitZ());
 }
 
 // Helper function to add a weld joint between two bodies.
 void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
-               const Body<double>& parent, const Body<double>& child) {
-    DRAKE_DEMAND(model != nullptr);
-    model->AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
-                              math::RigidTransformd::Identity());
+                  const RigidBody<double>& parent,
+                  const RigidBody<double>& child) {
+  DRAKE_DEMAND(model != nullptr);
+  model->AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
+                             math::RigidTransformd::Identity());
 }
 
 // Verify MultibodyTree::ThrowDefaultMassInertiaError() throws an exception

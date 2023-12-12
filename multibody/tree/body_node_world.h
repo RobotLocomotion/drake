@@ -14,7 +14,7 @@ namespace internal {
 template <typename T>
 class BodyNodeWorld : public BodyNode<T> {
  public:
-  explicit BodyNodeWorld(const Body<T>* body) :
+  explicit BodyNodeWorld(const RigidBody<T>* body) :
       BodyNode<T>(nullptr, body, nullptr) {}
 };
 

@@ -30,7 +30,6 @@ using Eigen::Ref;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using math::RigidTransform;
-using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;

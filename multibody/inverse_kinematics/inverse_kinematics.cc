@@ -84,7 +84,7 @@ InverseKinematics::InverseKinematics(
 
   // Add the unit quaternion constraints.
   for (BodyIndex i{0}; i < plant.num_bodies(); ++i) {
-    const Body<double>& body = plant.get_body(i);
+    const RigidBody<double>& body = plant.get_body(i);
     if (body.has_quaternion_dofs()) {
       const int start = body.floating_positions_start();
       constexpr int size = 4;

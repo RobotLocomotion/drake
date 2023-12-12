@@ -48,7 +48,7 @@ class FrameTests : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
-    bodyB_ = &model->AddBody<RigidBody>("B", M_Bo_B);
+    bodyB_ = &model->AddRigidBody("B", M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
     // Joint connecting bodyB to the world.

@@ -32,30 +32,31 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 
   // The first body added defines the world's name and model instance.
   // We'll verify their values below.
-  graph.AddBody(kWorldBodyName, world_model_instance());
+  graph.AddRigidBody(kWorldBodyName, world_model_instance());
 
   // We'll add the chain to this model.
   const ModelInstanceIndex model_instance(5);
 
   // We cannot register to the world model instance, unless it's the first call
-  // to AddBody().
+  // to AddRigidBody().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddBody("InvalidBody", world_model_instance()),
-      fmt::format("AddBody\\(\\): Model instance index = {}.*",
+      graph.AddRigidBody("InvalidBody", world_model_instance()),
+      fmt::format("AddRigidBody\\(\\): Model instance index = {}.*",
                   world_model_instance()));
 
-  BodyIndex parent = graph.AddBody("body1", model_instance);
+  BodyIndex parent = graph.AddRigidBody("body1", model_instance);
   graph.AddJoint("pin1", model_instance, kRevoluteType, world_index(), parent);
   for (int i = 2; i <= 5; ++i) {
-    BodyIndex child = graph.AddBody("body" + std::to_string(i), model_instance);
+    BodyIndex child =
+        graph.AddRigidBody("body" + std::to_string(i), model_instance);
     graph.AddJoint("pin" + std::to_string(i), model_instance, kRevoluteType,
                    parent, child);
     parent = child;
   }
 
   // We cannot duplicate the name of a body or joint.
-  DRAKE_EXPECT_THROWS_MESSAGE(graph.AddBody("body3", model_instance),
-                              "AddBody\\(\\): Duplicate body name.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.AddRigidBody("body3", model_instance),
+                              "AddRigidBody\\(\\): Duplicate body name.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("pin3", model_instance, kRevoluteType, BodyIndex(1),
                      BodyIndex(2)),
@@ -156,14 +157,14 @@ GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {
   EXPECT_EQ(graph.num_joint_types(), 3);  // weld, revolute and prismatic.
 
   // The first body added defines the world's name and model instance.
-  graph.AddBody(kWorldBodyName, world_model_instance());
+  graph.AddRigidBody(kWorldBodyName, world_model_instance());
 
   // We'll add bodies and joints to this model instance.
   const ModelInstanceIndex model_instance(5);
 
   // Define the model.
   for (int i = 1; i <= 13; ++i) {
-    graph.AddBody("body" + std::to_string(i), model_instance);
+    graph.AddRigidBody("body" + std::to_string(i), model_instance);
   }
 
   // Add joints.
