@@ -1905,15 +1905,20 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   }
 
   // Test that solving with the known shortest path returns the same results.
-  auto active_edges_result = spp.SolveConvexRestriction(
-      spp.GetSolutionPath(*source, *target, result), options);
+  std::vector<const Edge*> path = spp.GetSolutionPath(*source, *target, result);
+  auto active_edges_result = spp.SolveConvexRestriction(path, options);
   ASSERT_TRUE(active_edges_result.is_success());
   // The optimal costs should match.
   EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
               3e-5);
-  for (const auto* v : spp.Vertices()) {
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                active_edges_result.GetSolution(v->x()), 2e-3));
+  // The vertex solutions should match on the shortest path.
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(source->x()),
+                              active_edges_result.GetSolution(source->x()),
+                              2e-3));
+  for (const auto* e : path) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(e->xv()),
+                                active_edges_result.GetSolution(e->xv()),
+                                2e-3));
   }
 
   // Test that forcing an edge not on the shortest path to be active yields a
