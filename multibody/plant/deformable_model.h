@@ -14,7 +14,7 @@
 #include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -129,7 +129,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws std::exception if no constraint is added (i.e. no vertex of the
            deformable body is inside the given `shape` with the given poses). */
   MultibodyConstraintId AddFixedConstraint(
-      DeformableBodyId body_A_id, const Body<T>& body_B,
+      DeformableBodyId body_A_id, const RigidBody<T>& body_B,
       const math::RigidTransform<double>& X_BA, const geometry::Shape& shape,
       const math::RigidTransform<double>& X_BG);
 

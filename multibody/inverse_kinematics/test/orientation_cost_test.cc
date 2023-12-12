@@ -28,8 +28,8 @@ auto ConstructTwoFreeBodiesCost(const math::RotationMatrix<double>& R_AbarA,
   struct ReturnValues {
     std::unique_ptr<MultibodyPlant<T>> plant;
     std::unique_ptr<Context<T>> context;
-    const Body<T>* body1{};
-    const Body<T>* body2{};
+    const RigidBody<T>* body1{};
+    const RigidBody<T>* body2{};
     std::unique_ptr<OrientationCost> cost;
   };
   ReturnValues v;

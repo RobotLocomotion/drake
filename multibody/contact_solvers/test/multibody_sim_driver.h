@@ -78,7 +78,7 @@ class MultibodySimDriver {
   // TODO(amcastro-tri): consider returning a std::pair<double, GeometryId>
   // when/if needed.
   std::vector<double> GetDynamicFrictionCoefficients(
-      const Body<double>& body) const;
+      const RigidBody<double>& body) const;
 
   // Retrieves contact results by evaluating MultibodyPlant's port.
   // Unless results are already cached, this computation will trigger the
@@ -97,7 +97,7 @@ class MultibodySimDriver {
   // that a constant force `f_Bo_W` is applied on `body`, at its origin Bo. The
   // force is expressed in the world frame.
   // @pre We called Initialize().
-  void FixAppliedForce(const Body<double>& body, const Vector3d& f_Bo_W) {
+  void FixAppliedForce(const RigidBody<double>& body, const Vector3d& f_Bo_W) {
     DRAKE_DEMAND(initialized_);
     std::vector<ExternallyAppliedSpatialForce<double>> forces(1);
     forces[0].body_index = body.index();
@@ -108,8 +108,8 @@ class MultibodySimDriver {
   }
 
  private:
-  void SetPointContactParameters(const Body<double>& body, double stiffness,
-                                 double damping);
+  void SetPointContactParameters(const RigidBody<double>& body,
+                                 double stiffness, double damping);
 
   // Helper to get an inspector pre-initialization (no context available) or
   // post-initialization (a context is available).

@@ -171,7 +171,7 @@ void Cassie<T>::SetUpNonZeroState() {
   context_->get_mutable_continuous_state_vector().SetFromVector(
       VectorX<T>::LinSpaced(nq_ + nv_, 0.1, 0.9));
   for (const BodyIndex& index : plant_->GetFloatingBaseBodies()) {
-    const Body<T>& body = plant_->get_body(index);
+    const RigidBody<T>& body = plant_->get_body(index);
     const RigidTransform<T> pose(
         RollPitchYaw<T>(0.1, 0.2, 0.3), Vector3<T>(0.4, 0.5, 0.6));
     plant_->SetFreeBodyPose(context_.get(), body, pose);

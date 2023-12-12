@@ -66,7 +66,7 @@ TEST_F(KukaTest, SetInitialGuess) {
 
   auto context = plant_->CreateDefaultContext();
   plant_->SetPositions(context.get(), q);
-  const Body<double>& link7 = plant_->GetBodyByName("iiwa_link_7");
+  const RigidBody<double>& link7 = plant_->GetBodyByName("iiwa_link_7");
   const RigidTransformd X_W7 = plant_->EvalBodyPoseInWorld(*context, link7);
   EXPECT_TRUE(CompareMatrices(global_ik_.prog().GetInitialGuess(
                                   global_ik_.body_position(link7.index())),

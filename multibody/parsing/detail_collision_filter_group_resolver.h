@@ -123,8 +123,8 @@ class CollisionFilterGroupResolver {
       const drake::internal::DiagnosticPolicy& diagnostic,
       const std::string& group_name) const;
 
-  const Body<double>* FindBody(std::string_view name,
-                               ModelInstanceIndex model_instance);
+  const RigidBody<double>* FindBody(std::string_view name,
+                                    ModelInstanceIndex model_instance);
 
   MultibodyPlant<double>* const plant_;
   std::map<std::string, geometry::GeometrySet> groups_;

@@ -454,8 +454,8 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     // skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
 
-    const Body<T>& body_A = plant().get_body(spec.body_A);
-    const Body<T>& body_B = plant().get_body(spec.body_B);
+    const RigidBody<T>& body_A = plant().get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant().get_body(spec.body_B);
     DRAKE_DEMAND(body_A.index() != body_B.index());
 
     const math::RigidTransform<T>& X_WA =
@@ -544,8 +544,8 @@ void SapDriver<T>::AddBallConstraints(
     // skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
 
-    const Body<T>& body_A = plant().get_body(spec.body_A);
-    const Body<T>& body_B = plant().get_body(spec.body_B);
+    const RigidBody<T>& body_A = plant().get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant().get_body(spec.body_B);
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
@@ -639,8 +639,8 @@ void SapDriver<T>::AddWeldConstraints(
     // skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
 
-    const Body<T>& body_A = plant().get_body(spec.body_A);
-    const Body<T>& body_B = plant().get_body(spec.body_B);
+    const RigidBody<T>& body_A = plant().get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant().get_body(spec.body_B);
 
     const math::RigidTransform<T>& X_WA = body_A.EvalPoseInWorld(context);
     const math::RigidTransform<T>& X_WB = body_B.EvalPoseInWorld(context);
@@ -667,8 +667,9 @@ void SapDriver<T>::AddWeldConstraints(
 
     // TODO(joemasterjohn) consolidate make_jacobian for use by other
     // constraints that need the same jacobian computed here.
-    auto make_constraint_jacobian = [this, &J_W_AmBm](const Body<T>& bodyA,
-                                                      const Body<T>& bodyB) {
+    auto make_constraint_jacobian = [this, &J_W_AmBm](
+                                        const RigidBody<T>& bodyA,
+                                        const RigidBody<T>& bodyB) {
       const TreeIndex treeA_index =
           tree_topology().body_to_tree_index(bodyA.index());
       const TreeIndex treeB_index =

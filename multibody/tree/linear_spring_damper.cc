@@ -4,16 +4,16 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
 
 template <typename T>
 LinearSpringDamper<T>::LinearSpringDamper(
-    const Body<T>& bodyA, const Vector3<double>& p_AP,
-    const Body<T>& bodyB, const Vector3<double>& p_BQ,
+    const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
+    const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
     double free_length, double stiffness, double damping) :
     ForceElement<T>(bodyA.model_instance()),
     bodyA_(bodyA),
@@ -142,9 +142,9 @@ template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearSpringDamper<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Body<ToScalar>& bodyA_clone =
+  const RigidBody<ToScalar>& bodyA_clone =
       tree_clone.get_body(bodyA().index());
-  const Body<ToScalar>& bodyB_clone =
+  const RigidBody<ToScalar>& bodyB_clone =
       tree_clone.get_body(bodyB().index());
 
   // Make the LinearSpringDamper<T> clone.

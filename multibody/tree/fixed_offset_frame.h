@@ -64,7 +64,7 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] bodyB The body whose BodyFrame B is to be F's parent frame.
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(
-      const std::string& name, const Body<T>& bodyB,
+      const std::string& name, const RigidBody<T>& bodyB,
       const math::RigidTransform<double>& X_BF);
 
   math::RigidTransform<T> CalcPoseInBodyFrame(
