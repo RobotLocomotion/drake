@@ -1,10 +1,7 @@
 #include "drake/multibody/tree/revolute_spring.h"
 
-#include <limits>
 #include <utility>
-#include <vector>
 
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {

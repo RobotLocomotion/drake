@@ -807,9 +807,9 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index().at(geometryA_id);
-    const Body<T>& bodyA = plant().get_body(bodyA_index);
+    const RigidBody<T>& bodyA = plant().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index().at(geometryB_id);
-    const Body<T>& bodyB = plant().get_body(bodyB_index);
+    const RigidBody<T>& bodyB = plant().get_body(bodyB_index);
 
     // Contact normal from point A into B.
     const Vector3<T>& nhat_W = -point_pair.nhat_BA_W;
@@ -1000,9 +1000,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
        ++point_pair_index) {
     const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
     const BodyIndex body_A_index = geometry_id_to_body_index().at(pair.id_A);
-    const Body<T>& body_A = plant().get_body(body_A_index);
+    const RigidBody<T>& body_A = plant().get_body(body_A_index);
     const BodyIndex body_B_index = geometry_id_to_body_index().at(pair.id_B);
-    const Body<T>& body_B = plant().get_body(body_B_index);
+    const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
     const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
     const TreeIndex treeB_index = topology.body_to_tree_index(body_B_index);
@@ -1109,9 +1109,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
     // Combine dissipation.
     const BodyIndex body_M_index = geometry_id_to_body_index().at(s.id_M());
-    const Body<T>& body_M = plant().get_body(body_M_index);
+    const RigidBody<T>& body_M = plant().get_body(body_M_index);
     const BodyIndex body_N_index = geometry_id_to_body_index().at(s.id_N());
-    const Body<T>& body_N = plant().get_body(body_N_index);
+    const RigidBody<T>& body_N = plant().get_body(body_N_index);
 
     const TreeIndex& treeM_index = topology.body_to_tree_index(body_M_index);
     const TreeIndex& treeN_index = topology.body_to_tree_index(body_N_index);

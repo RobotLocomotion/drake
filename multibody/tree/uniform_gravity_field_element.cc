@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -103,7 +103,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   const int num_bodies = model.num_bodies();
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
@@ -135,7 +135,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
@@ -168,7 +168,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;

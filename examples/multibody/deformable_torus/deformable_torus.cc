@@ -50,7 +50,6 @@ using drake::geometry::ProximityProperties;
 using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlant;
-using drake::multibody::Body;
 using drake::multibody::CoulombFriction;
 using drake::multibody::DeformableBodyId;
 using drake::multibody::DeformableModel;
@@ -59,6 +58,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
+using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::fem::DeformableBodyConfig;
 using drake::systems::BasicVector;
@@ -129,8 +129,8 @@ ModelInstanceIndex AddParallelGripper(
   /* Add collision geometries. */
   const RigidTransformd X_BG =
       RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
-  const Body<double>& left_finger = plant->GetBodyByName("left_finger");
-  const Body<double>& right_finger = plant->GetBodyByName("right_finger");
+  const RigidBody<double>& left_finger = plant->GetBodyByName("left_finger");
+  const RigidBody<double>& right_finger = plant->GetBodyByName("right_finger");
   /* The size of the fingers is set to match the visual geometries in
    simple_gripper.sdf. */
   Capsule capsule(0.01, 0.08);

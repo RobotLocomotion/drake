@@ -51,7 +51,7 @@ void ResetHelper(
   entries->clear();
   const int num_bodies = plant.num_bodies();
   for (BodyIndex i{0}; i < num_bodies; ++i) {
-    const Body<T>& body = plant.get_body(i);
+    const RigidBody<T>& body = plant.get_body(i);
     const auto& geometry_ids = plant.GetCollisionGeometriesForBody(body);
     if (geometry_ids.empty()) {
       continue;

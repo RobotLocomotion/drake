@@ -48,7 +48,7 @@ class UnimplementedCollisionChecker : public CollisionChecker {
       const CollisionCheckerContext&) const override;
 
   std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
-      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const std::string& group_name, const multibody::RigidBody<double>& bodyA,
       const geometry::Shape& shape,
       const math::RigidTransform<double>& X_AG) override;
 

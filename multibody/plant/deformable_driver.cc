@@ -259,7 +259,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
         fmt::format("deformable body with geometry id {}", surface.id_A()));
     const BodyIndex body_B_index =
         manager_->geometry_id_to_body_index().at(surface.id_B());
-    const Body<T>& body_B = manager_->plant().get_body(body_B_index);
+    const RigidBody<T>& body_B = manager_->plant().get_body(body_B_index);
     /* We use dt as the default dissipation constant so that the contact is in
      near-rigid regime and the compliance is only used as stabilization. */
     const T tau = GetCombinedDissipationTimeConstant(
@@ -378,7 +378,7 @@ void DeformableDriver<T>::AppendContactKinematics(
       const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
       const Vector3<T>& p_WC = surface.contact_points_W()[i];
       if (tree_index.is_valid()) {
-        const Body<T>& rigid_body = manager_->plant().get_body(index_B);
+        const RigidBody<T>& rigid_body = manager_->plant().get_body(index_B);
         const Frame<T>& frame_W = manager_->plant().world_frame();
         manager_->internal_tree().CalcJacobianTranslationalVelocity(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
@@ -487,7 +487,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
       /* The Jacobian block for the rigid body B. */
       const BodyIndex index_B = spec.body_B;
       const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
-      const Body<T>& rigid_body = manager_->plant().get_body(index_B);
+      const RigidBody<T>& rigid_body = manager_->plant().get_body(index_B);
       const math::RigidTransform<T>& X_WB =
           manager_->plant().EvalBodyPoseInWorld(context, rigid_body);
       /* The positions of the anchor points on the rigid body in world frame. */

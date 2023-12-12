@@ -257,12 +257,12 @@ void DoMain() {
   diagram->SetDefaultContext(diagram_context.get());
 
   // Set the position of object
-  const multibody::Body<double>& hand = plant.GetBodyByName("hand_root");
+  const multibody::RigidBody<double>& hand = plant.GetBodyByName("hand_root");
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
+  const multibody::RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
   const Eigen::Vector3d& p_WHand =
       plant.EvalBodyPoseInWorld(plant_context, hand).translation();
   RigidTransformd X_WM(

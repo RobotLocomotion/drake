@@ -4,14 +4,14 @@ namespace drake {
 namespace examples {
 namespace deformable_torus {
 
-using multibody::Body;
 using multibody::ForceDensityField;
 using multibody::MultibodyPlant;
+using multibody::RigidBody;
 using systems::BasicVector;
 using systems::Context;
 
 PointSourceForceField::PointSourceForceField(
-    const MultibodyPlant<double>& plant, const Body<double>& body,
+    const MultibodyPlant<double>& plant, const RigidBody<double>& body,
     const Vector3<double>& p_BC, double falloff_distance)
     : plant_(&plant),
       body_(body.index()),

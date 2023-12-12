@@ -33,7 +33,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
   const double kMass = 1.0;
   SpatialInertia<double> M_Bcm(kMass, Vector3<double>::Zero(), G_Bcm);
 
-  body_ = &this->mutable_tree().template AddBody<RigidBody>("B", M_Bcm);
+  body_ = &this->mutable_tree().AddRigidBody("B", M_Bcm);
   joint_ = &this->mutable_tree().template AddJoint<BallRpyJoint>(
           "ball_rpy_joint", tree().world_body(), {}, *body_, {});
 

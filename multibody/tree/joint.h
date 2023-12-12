@@ -50,8 +50,8 @@ class JointImplementationBuilder;
 /// @code
 /// MultibodyPlant<double> plant(0.0);
 /// // ... Code here to setup quantities below as mass, com, etc. ...
-/// const Body<double>& pendulum =
-///   plant.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+/// const RigidBody<double>& pendulum =
+///   plant.AddRigidBody(SpatialInertia<double>(mass, com, unit_inertia));
 /// // We will connect the pendulum body to the world using a RevoluteJoint.
 /// // In this simple case the parent body P is the model's world body and frame
 /// // F IS the world frame.
@@ -182,12 +182,12 @@ class Joint : public MultibodyElement<T> {
   const std::string& name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
-  const Body<T>& parent_body() const {
+  const RigidBody<T>& parent_body() const {
     return frame_on_parent_.body();
   }
 
   /// Returns a const reference to the child body B.
-  const Body<T>& child_body() const {
+  const RigidBody<T>& child_body() const {
     return frame_on_child_.body();
   }
 

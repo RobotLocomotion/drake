@@ -26,7 +26,7 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
   iiwa.Finalize();
 
   const std::string kEndEffectorLinkName = "iiwa_link_ee";
-  const Body<double>& end_effector =
+  const RigidBody<double>& end_effector =
       iiwa.GetBodyByName(kEndEffectorLinkName);
 
   ConstraintRelaxingIk ik_planner(kModelPath, kEndEffectorLinkName);

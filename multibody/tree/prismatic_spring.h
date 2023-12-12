@@ -10,9 +10,6 @@
 namespace drake {
 namespace multibody {
 
-template <typename T>
-class Body;
-
 /// This %ForceElement models a linear spring attached to a PrismaticJoint
 /// and applies a force to that joint according to
 /// <pre>
