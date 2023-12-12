@@ -206,7 +206,7 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
 /// Extracts the principal submatrix from the ordered set of indices. The
 /// indices must be in monotonically increasing order. This method makes
 /// no assumptions about the symmetry of the matrix, nor that the matrix is
-/// square.
+/// square. However, all indices must be valid for both rows and columns.
 template <typename Derived>
 MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
     const Eigen::MatrixBase<Derived>& mat, const std::set<int>& indices) {
@@ -217,7 +217,7 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
   int interval_start{*indices.begin()};
   int last_idx{*indices.begin()};
   DRAKE_ASSERT(last_idx >= 0);
-  for (const auto& i : indices) {
+  for (const int& i : indices) {
     DRAKE_ASSERT(i < mat.rows() && i < mat.cols());
     if (i - last_idx > 1) {
       intervals.emplace_back(interval_start, last_idx + 1);

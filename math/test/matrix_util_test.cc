@@ -85,8 +85,8 @@ GTEST_TEST(TestMatrixUtil, TestToLowerTriangularColumnFromMatrix) {
   x2 << 1, 2, 3, 4, 5, 6;
   Eigen::Matrix3d X2;
   // clang-format off
-  X2 << 1, 2, 3,
-        2, 4, 5,
+  X2 << 1, 7, 8,
+        2, 4, 9,
         3, 5, 6;
   // clang-format on
   EXPECT_TRUE(CompareMatrices(ToLowerTriangularColumnsFromMatrix(X2), x2));
