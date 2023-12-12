@@ -20,6 +20,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(penetration_allowance));
     a->Visit(DRAKE_NVP(stiction_tolerance));
     a->Visit(DRAKE_NVP(contact_model));
+    a->Visit(DRAKE_NVP(discrete_contact_approximation));
     a->Visit(DRAKE_NVP(discrete_contact_solver));
     a->Visit(DRAKE_NVP(sap_near_rigid_threshold));
     a->Visit(DRAKE_NVP(contact_surface_representation));
@@ -47,12 +48,38 @@ struct MultibodyPlantConfig {
   /// - "hydroelastic_with_fallback"
   std::string contact_model{"hydroelastic_with_fallback"};
 
+  // TODO(amcastro-tri): Deprecate. Use discrete_contact_approximation instead.
   /// Configures the MultibodyPlant::set_discrete_contact_solver().
   /// Refer to drake::multibody::DiscreteContactSolver for details.
   /// Valid strings are:
+  /// - "tamsi", uses the TAMSI model approximation.
+  /// - "sap"  , uses the SAP model approximation.
+  ///
+  /// @warning This option is ignored if discrete_contact_approximation is not
+  /// empty. discrete_contact_approximation is the preferred method to choose
+  /// contact model approximations and thus it has precedence over
+  /// discrete_contact_solver.
+  ///
+  /// @note This config option coordinates with discrete_contact_approximation.
+  /// Using "tamsi" solver has the same effect as setting the
+  /// "tamsi" approximation. Using the "sap" solver has the same effect as
+  /// setting the "sap" approximation.
+  std::string discrete_contact_solver{"tamsi"};
+
+  /// Configures the MultibodyPlant::set_discrete_contact_approximation().
+  /// Refer to drake::multibody::DiscreteContactApproximation for details.
+  /// Valid strings are:
   /// - "tamsi"
   /// - "sap"
-  std::string discrete_contact_solver{"tamsi"};
+  /// - "similar"
+  /// - "lagged"
+  ///
+  /// Refer to MultibodyPlant::set_discrete_contact_approximation() and the
+  /// references therein for further details.
+  ///
+  /// @note For backwards compatibility, an empty string means that the
+  /// approximation is determined by discrete_contact_solver.
+  std::string discrete_contact_approximation{""};
 
   // TODO(amcastro-tri): Change default to zero, or simply eliminate.
   /// Non-negative dimensionless number typically in the range [0.0, 1.0],
