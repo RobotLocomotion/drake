@@ -297,6 +297,11 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
                "hydroelastic_with_fallback");
   DRAKE_DEMAND(contact_solver_enum_ == DiscreteContactSolver::kTamsi);
   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "tamsi");
+  // By default, MultibodyPlantConfig::discrete_contact_approximation is empty
+  // and therefore the solver determines the contact model.
+  DRAKE_DEMAND(discrete_contact_approximation_ ==
+               DiscreteContactApproximation::kTamsi);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation == "");
 }
 
 template <typename T>
@@ -359,6 +364,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     num_collision_geometries_ = other.num_collision_geometries_;
     contact_model_ = other.contact_model_;
     contact_solver_enum_ = other.contact_solver_enum_;
+    discrete_contact_approximation_ = other.discrete_contact_approximation_;
     sap_near_rigid_threshold_ = other.sap_near_rigid_threshold_;
     contact_surface_representation_ = other.contact_surface_representation_;
     // geometry_query_port_ is set during DeclareSceneGraphPorts() below.
@@ -673,11 +679,43 @@ void MultibodyPlant<T>::set_discrete_contact_solver(
     DiscreteContactSolver contact_solver) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_solver_enum_ = contact_solver;
+  switch (contact_solver) {
+    case DiscreteContactSolver::kTamsi:
+      discrete_contact_approximation_ = DiscreteContactApproximation::kTamsi;
+      break;
+    case DiscreteContactSolver::kSap:
+      discrete_contact_approximation_ = DiscreteContactApproximation::kSap;
+      break;
+  }
 }
 
 template <typename T>
 DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver() const {
   return contact_solver_enum_;
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_discrete_contact_approximation(
+    DiscreteContactApproximation approximation) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(!is_discrete());
+  discrete_contact_approximation_ = approximation;
+  switch (approximation) {
+    case DiscreteContactApproximation::kTamsi:
+      contact_solver_enum_ = DiscreteContactSolver::kTamsi;
+      break;
+    case DiscreteContactApproximation::kSap:
+    case DiscreteContactApproximation::kSimilar:
+    case DiscreteContactApproximation::kLagged:
+      contact_solver_enum_ = DiscreteContactSolver::kSap;
+      break;
+  }
+}
+
+template <typename T>
+DiscreteContactApproximation
+MultibodyPlant<T>::get_discrete_contact_approximation() const {
+  return discrete_contact_approximation_;
 }
 
 template <typename T>
