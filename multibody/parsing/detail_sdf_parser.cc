@@ -161,7 +161,7 @@ bool StartsWith(const std::string_view str, const std::string_view prefix) {
 // world_model_instance, the local name of the body is prefixed with the model
 // name.
 std::string GetRelativeBodyName(
-    const Body<double>& body,
+    const RigidBody<double>& body,
     ModelInstanceIndex relative_to_model_instance,
     const MultibodyPlant<double>& plant) {
   const std::string& relative_to_model_absolute_name =
@@ -266,7 +266,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 }
 
 // Helper method to retrieve a Body given the name of the link specification.
-const Body<double>& GetBodyByLinkSpecificationName(
+const RigidBody<double>& GetBodyByLinkSpecificationName(
     const std::string& link_name,
     ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
   // SDF's convention to indicate a joint is connected to the world is to either
@@ -684,10 +684,10 @@ bool AddJointFromSpecification(
 
   // Axis elements should be fully supported, let sdformat validate those.
 
-  const Body<double>& parent_body = GetBodyByLinkSpecificationName(
+  const RigidBody<double>& parent_body = GetBodyByLinkSpecificationName(
       ResolveJointParentLinkName(diagnostic, joint_spec), model_instance,
       *plant);
-  const Body<double>& child_body = GetBodyByLinkSpecificationName(
+  const RigidBody<double>& child_body = GetBodyByLinkSpecificationName(
       ResolveJointChildLinkName(diagnostic, joint_spec), model_instance,
       *plant);
 
@@ -1288,11 +1288,11 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
   return &plant->GetFrameByName(search_frame_name, search_model_instance);
 }
 
-const Body<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
-                              const sdf::ElementPtr node,
-                              ModelInstanceIndex model_instance,
-                              MultibodyPlant<double>* plant,
-                              const char* element_name) {
+const RigidBody<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
+                                   const sdf::ElementPtr node,
+                                   ModelInstanceIndex model_instance,
+                                   MultibodyPlant<double>* plant,
+                                   const char* element_name) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1430,7 +1430,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
   // Throws an error if the tag does not exist or if the body does not exist in
   // the plant.
   auto read_body = [&diagnostic, node, model_instance, plant](
-                       const char* element_name) -> const Body<double>* {
+                       const char* element_name) -> const RigidBody<double>* {
     return ParseBody(diagnostic, node, model_instance, plant, element_name);
   };
 
@@ -1439,8 +1439,8 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 
 // Helper to determine if two links are welded together.
 bool AreWelded(
-    const MultibodyPlant<double>& plant, const Body<double>& a,
-    const Body<double>& b) {
+    const MultibodyPlant<double>& plant, const RigidBody<double>& a,
+    const RigidBody<double>& b) {
   for (auto* body : plant.GetBodiesWeldedTo(a)) {
     if (body == &b) {
       return true;

@@ -171,7 +171,8 @@ class InertiaVisualizerGeometryTest
     parser.SetStrictParsing();
     parser.AddModelsFromString(model, "sdf");
     plant_.Finalize();
-    const multibody::Body<double>& body = plant_.GetBodyByName("test_body");
+    const multibody::RigidBody<double>& body =
+        plant_.GetBodyByName("test_body");
     return CalculateInertiaGeometry(body, *plant_.CreateDefaultContext());
   }
 

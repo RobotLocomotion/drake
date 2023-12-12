@@ -11,15 +11,15 @@ namespace {
 
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
-using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
+using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::systems::Context;
 using Eigen::Vector3d;
 
 GTEST_TEST(PointSourceForceFieldTest, EvaluateAt) {
   MultibodyPlant<double> plant(0.01);
-  const Body<double>& box = plant.AddRigidBody(
+  const RigidBody<double>& box = plant.AddRigidBody(
       "box", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
   /* The fixed offset from the body origin B to the point source of
    the force field C. */

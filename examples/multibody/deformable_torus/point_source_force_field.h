@@ -31,7 +31,7 @@ class PointSourceForceField final
                             the point source beyond which the force density is
                             zero. Must be positive and finite. */
   PointSourceForceField(const multibody::MultibodyPlant<double>& plant,
-                        const multibody::Body<double>& body,
+                        const multibody::RigidBody<double>& body,
                         const Vector3<double>& p_BC, double falloff_distance);
 
   /* Input port for desired maximum force density with units of N/m³.

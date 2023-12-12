@@ -200,7 +200,7 @@ TEST_F(ExternallyAppliedForcesTest, CalcGeneralizedForcesDueToMultibodyForces) {
   MultibodyForces<double> forces(*plant_);
   for (const ExternallyAppliedSpatialForce<double>& a_force :
        externally_applied_spatial_forces) {
-    const Body<double>& body = plant_->get_body(a_force.body_index);
+    const RigidBody<double>& body = plant_->get_body(a_force.body_index);
 
     // Get the pose for this body in the world frame.
     const RigidTransform<double>& X_WB = body.EvalPoseInWorld(plant_context);

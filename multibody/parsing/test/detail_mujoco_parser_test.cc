@@ -766,7 +766,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
                         const std::string& body_name,
                         const UnitInertia<double>& unit_M_BBo_B) {
     SCOPED_TRACE(fmt::format("checking body {}", body_name));
-    const Body<double>& body = plant_.GetBodyByName(body_name);
+    const RigidBody<double>& body = plant_.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
         SpatialInertia<double>(2.53, Vector3d::Zero(), unit_M_BBo_B)
@@ -779,7 +779,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
                                 const SpatialInertia<double>& M_BBo_B,
                                 double tol = 1e-14) {
     SCOPED_TRACE(fmt::format("checking body {} (spatial)", body_name));
-    const Body<double>& body = plant_.GetBodyByName(body_name);
+    const RigidBody<double>& body = plant_.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
         M_BBo_B.CopyToFullMatrix6(), tol));
@@ -968,14 +968,14 @@ TEST_F(MujocoParserTest, Joint) {
 
   // Note: for free bodies Drake ignores the given Mujoco joint name and makes
   // its own floating joint named like the body.
-  const Body<double>& freejoint_body = plant_.GetBodyByName("freejoint");
+  const RigidBody<double>& freejoint_body = plant_.GetBodyByName("freejoint");
   EXPECT_FALSE(plant_.HasJointNamed("xfreejoint"));
   EXPECT_TRUE(plant_.HasJointNamed("freejoint"));
   EXPECT_TRUE(freejoint_body.is_floating());
   EXPECT_TRUE(plant_.GetFreeBodyPose(*context, freejoint_body)
                   .IsNearlyEqualTo(X_WB, 1e-14));
 
-  const Body<double>& free_body = plant_.GetBodyByName("free");
+  const RigidBody<double>& free_body = plant_.GetBodyByName("free");
   EXPECT_FALSE(plant_.HasJointNamed("xfree"));
   EXPECT_TRUE(plant_.HasJointNamed("free"));
   EXPECT_TRUE(free_body.is_floating());
@@ -1421,10 +1421,10 @@ TEST_F(MujocoParserTest, ContactThrows) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromString(fmt::format(xml_base, "QQQ", "body2"), "bad_body1"),
-      ".*no Body named 'QQQ' anywhere.*");
+      ".*no RigidBody named 'QQQ' anywhere.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromString(fmt::format(xml_base, "body1", "QQQ"), "bad_body2"),
-      ".*no Body named 'QQQ' anywhere.*");
+      ".*no RigidBody named 'QQQ' anywhere.*");
 }
 
 }  // namespace

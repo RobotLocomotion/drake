@@ -61,7 +61,6 @@ using geometry::Sphere;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RotationMatrixd;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::CoulombFriction;
 using multibody::default_model_instance;
@@ -135,7 +134,7 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   }
 
   optional<GeometryId> DoAddCollisionShapeToBody(
-      const std::string&, const Body<double>&, const Shape&,
+      const std::string&, const RigidBody<double>&, const Shape&,
       const RigidTransform<double>&) override {
     return added_shape_id_;
   }
@@ -1555,7 +1554,7 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
   // Given a pose of the free body and the angle theta between bodies b0 and b1,
   // returns the plant's q.
   auto get_q = [&plant](const RigidTransformd& X_B0, double theta) {
-    const Body<double>& body0 = plant.GetBodyByName("b0");
+    const RigidBody<double>& body0 = plant.GetBodyByName("b0");
     auto plant_context = plant.CreateDefaultContext();
     plant.SetFreeBodyPose(plant_context.get(), body0, X_B0);
     VectorXd positions = plant.GetPositions(*plant_context);
