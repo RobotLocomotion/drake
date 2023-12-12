@@ -175,6 +175,68 @@ enum class DiscreteContactSolver {
   kSap,
 };
 
+/// The type of the contact approximation used for a discrete MultibodyPlant
+/// model.
+///
+/// kTamsi, kSimilar and kLagged are all approximations to the same contact
+/// model --  Compliant contact with regularized friction, refer to
+/// @ref mbp_contact_modeling "Contact Modeling" for further details.
+/// The key difference however, is that the kSimilar and kLagged approximations
+/// are convex and therefore our contact solver has both theoretical and
+/// practical convergence guarantees ---  the solver will always succeed.
+/// Conversely, being non-convex, kTamsi can fail to find a solution.
+///
+/// kSap is also a convex model of compliant contact with regularized friction.
+/// There are a couple of key differences however:
+/// - Dissipation is modeled using a linear Kelvin–Voigt model, parameterized by
+///   a relaxation time constant.
+///   See @ref accessing_contact_properties "contact parameters".
+/// - Unlike kTamsi, kSimilar and kLagged where regularization of friction is
+///   parameterized by a stiction tolerance (see set_stiction_tolerance()), SAP
+///   determines regularization automatically solely based on numerics. Users
+///   have no control on the amount of regularization.
+///
+/// ## How to choose an approximation
+///
+/// The Hunt & Crossley model is based on physics, it is continuous and has been
+/// experimentally validated. Therefore it is the preferred model to capture the
+/// physics of contact.
+///
+/// Being approximations, kSap and kSimilar introduce a spurious
+/// effect of "gliding" in sliding contact, see [Castro et al., 2023]. This
+/// artifact is 𝒪(δt) but can be significant at large time steps and/or large
+/// slip velocities. kLagged does not suffer from this, but introduces a "weak"
+/// coupling of friction that can introduce non-negligible effects in the
+/// dynamics during impacts or strong transients.
+///
+/// Summarizing, kLagged is the preferred approximation when strong transients
+/// are not expected or don't need to be accurately resolved.
+/// If strong transients do need to be accurately resolved (unusual for robotics
+/// applications), kSimilar is the preferred approximation.
+///
+/// <h2>References</h2>
+/// - [Castro et al., 2019] Castro A., Qu A., Kuppuswamy N., Alspach A.,
+///   Sherman M, 2019. A Transition-Aware Method for the Simulation of
+///   Compliant Contact with Regularized Friction. Available online at
+///   https://arxiv.org/abs/1909.05700.
+/// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
+///   Unconstrained Convex Formulation of Compliant Contact. Available online at
+///   https://arxiv.org/abs/2110.10107.
+/// - [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory
+///   of Irrotational Contact Fields. Available online at
+///   https://arxiv.org/abs/2312.03908
+enum class DiscreteContactApproximation {
+  /// TAMSI solver approximation, see [Castro et al., 2019].
+  kTamsi,
+  /// SAP solver model approximation, see [Castro et al., 2022].
+  kSap,
+  /// Similarity approximation found in [Castro et al., 2023].
+  kSimilar,
+  /// Approximation in which the normal force is lagged in Coulomb's law, such
+  /// that ‖γₜ‖ ≤ μ γₙ₀, [Castro et al., 2023].
+  kLagged,
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -2136,6 +2198,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  ///
+  /// @note Calling this method also sets a default discrete approximation of
+  /// contact (see set_discrete_contact_approximation()) according to:
+  /// - DiscreteContactSolver::kTamsi sets the approximation to
+  ///   DiscreteContactApproximation::kTamsi.
+  /// - DiscreteContactSolver::kSap sets the approximation to
+  ///   DiscreteContactApproximation::kSap.
+  ///
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
@@ -2143,6 +2213,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
   DiscreteContactSolver get_discrete_contact_solver() const;
+
+  /// Sets the discrete contact model approximation.
+  ///
+  /// @note Calling this method also sets the contact solver type (see
+  /// set_discrete_contact_solver()) according to:
+  /// - DiscreteContactApproximation::kTamsi sets the solver to
+  ///   DiscreteContactSolver::kTamsi.
+  /// - DiscreteContactApproximation::kSap,
+  ///   DiscreteContactApproximation::kSimilar and
+  ///   DiscreteContactApproximation::kLagged set the solver to
+  ///   DiscreteContactSolver::kSap.
+  ///
+  /// @throws if `this` plant is continuous (i.e. is_discrete() is `false`.)
+  /// @throws std::exception iff called post-finalize.
+  void set_discrete_contact_approximation(
+      DiscreteContactApproximation approximation);
+
+  /// @returns the discrete contact solver approximation.
+  DiscreteContactApproximation get_discrete_contact_approximation() const;
 
   /// Non-negative dimensionless number typically in the range [0.0, 1.0],
   /// though larger values are allowed even if uncommon. This parameter controls
@@ -5683,6 +5772,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
+
+  // This default must be consistent with contact_solver_enum_. That is, the
+  // solver specified by contact_solver_enum_ must be able to handle the
+  // discrete approximation specified by discrete_contact_approximation_.
+  DiscreteContactApproximation discrete_contact_approximation_{
+      DiscreteContactApproximation::kTamsi};
 
   // Near rigid regime parameter from [Castro et al., 2021]. Refer to
   // set_near_rigid_threshold() for details.

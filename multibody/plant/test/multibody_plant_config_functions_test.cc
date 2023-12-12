@@ -63,6 +63,7 @@ penetration_allowance: 0.003
 stiction_tolerance: 0.004
 contact_model: hydroelastic
 discrete_contact_solver: sap
+discrete_contact_approximation: sap
 sap_near_rigid_threshold: 0.01
 contact_surface_representation: triangle
 adjacent_bodies_collision_filters: false
@@ -116,6 +117,56 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactRepresentationTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       GetContactSurfaceRepresentationFromString("nonsense"),
       ".*Unknown.*nonsense.*");
+}
+
+GTEST_TEST(MultibodyPlantConfigFunctionsTest,
+           DiscreteContactApproximationTest) {
+  std::vector<std::pair<const char*, DiscreteContactApproximation>>
+      known_values{
+          std::pair("tamsi", DiscreteContactApproximation::kTamsi),
+          std::pair("sap", DiscreteContactApproximation::kSap),
+          std::pair("similar", DiscreteContactApproximation::kSimilar),
+          std::pair("lagged", DiscreteContactApproximation::kLagged),
+      };
+
+  for (const auto& [name, value] : known_values) {
+    EXPECT_EQ(GetDiscreteContactApproximationFromString(name), value);
+    EXPECT_EQ(GetStringFromDiscreteContactApproximation(value), name);
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetDiscreteContactApproximationFromString("foobar"),
+      ".*Unknown.*foobar.*");
+}
+
+GTEST_TEST(MultibodyPlantConfigFunctionsTest,
+           DiscreteContactApproximationHasPrecedenceOverDiscreteContactSolver) {
+  MultibodyPlantConfig config;
+
+  // If the contact approximation is empty, discrete_contact_solver dictates
+  // both solver and approximation.
+  config.discrete_contact_approximation = "";
+  config.discrete_contact_solver = "sap";
+  {
+    MultibodyPlant<double> plant(config.time_step);
+    ApplyMultibodyPlantConfig(config, &plant);
+    EXPECT_EQ(plant.get_discrete_contact_approximation(),
+              DiscreteContactApproximation::kSap);
+    EXPECT_EQ(plant.get_discrete_contact_solver(), DiscreteContactSolver::kSap);
+  }
+
+  // If the approximation is non-empty, it has precedence over
+  // discrete_contact_solver.
+  config.discrete_contact_approximation = "lagged";
+  // Solver config will be ignored. SAP is used for the Lagged approximation.
+  config.discrete_contact_solver = "tamsi";
+  {
+    MultibodyPlant<double> plant(config.time_step);
+    ApplyMultibodyPlantConfig(config, &plant);
+    EXPECT_EQ(plant.get_discrete_contact_approximation(),
+              DiscreteContactApproximation::kLagged);
+    EXPECT_EQ(plant.get_discrete_contact_solver(), DiscreteContactSolver::kSap);
+  }
 }
 
 }  // namespace
