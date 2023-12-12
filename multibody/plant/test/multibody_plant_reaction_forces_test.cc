@@ -826,8 +826,8 @@ class WeldedBoxesTest : public ::testing::Test {
     EXPECT_EQ(F_Bcm_W.rotational(), t_Bcm_W_expected);
   }
 
-  const Body<double>* boxA_{nullptr};
-  const Body<double>* boxB_{nullptr};
+  const RigidBody<double>* boxA_{nullptr};
+  const RigidBody<double>* boxB_{nullptr};
   std::unique_ptr<MultibodyPlant<double>> plant_{nullptr};
   const WeldJoint<double>* weld1_{nullptr};
   const WeldJoint<double>* weld2_{nullptr};

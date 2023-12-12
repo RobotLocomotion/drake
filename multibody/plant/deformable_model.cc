@@ -106,7 +106,7 @@ void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyId id,
 
 template <typename T>
 MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
-    DeformableBodyId body_A_id, const Body<T>& body_B,
+    DeformableBodyId body_A_id, const RigidBody<T>& body_B,
     const math::RigidTransform<double>& X_BA, const geometry::Shape& shape,
     const math::RigidTransform<double>& X_BG) {
   this->ThrowIfSystemResourcesDeclared(__func__);

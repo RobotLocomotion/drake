@@ -27,7 +27,7 @@ InertiaVisualizer<T>::InertiaVisualizer(
   source_id_ = scene_graph->RegisterSource("inertia_visualizer");
 
   // For all MbP bodies, except for those welded to the world ...
-  const std::vector<const multibody::Body<T>*> world_bodies =
+  const std::vector<const multibody::RigidBody<T>*> world_bodies =
       plant.GetBodiesWeldedTo(plant.world_body());
   const int num_bodies = plant.num_bodies();
   for (multibody::BodyIndex i{0}; i < num_bodies; ++i) {
@@ -41,7 +41,7 @@ InertiaVisualizer<T>::InertiaVisualizer(
     if (welded) {
       continue;
     }
-    const multibody::Body<T>& body = plant.get_body(i);
+    const multibody::RigidBody<T>& body = plant.get_body(i);
 
     // Add a Bcm geometry frame.
     Item item;
@@ -117,7 +117,7 @@ void InertiaVisualizer<T>::UpdateItems(
     const multibody::MultibodyPlant<T>& plant, const Context<T>& plant_context,
     SceneGraph<T>* scene_graph) {
   for (auto& item : items_) {
-    const multibody::Body<T>& body = plant.get_body(item.body);
+    const multibody::RigidBody<T>& body = plant.get_body(item.body);
 
     auto [ellipsoid, X_BBcm] =
         internal::CalculateInertiaGeometry(body, plant_context);
@@ -147,7 +147,7 @@ namespace internal {
 // to match the body's mass.
 template <typename T>
 std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
-    const multibody::Body<T>& body, const Context<T>& plant_context) {
+    const multibody::RigidBody<T>& body, const Context<T>& plant_context) {
   // Interrogate the plant context for the spatial inertia of body B about its
   // origin Bo, expressed in body frame B.
   const SpatialInertia<T> M_BBo_B =

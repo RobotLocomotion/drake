@@ -82,7 +82,8 @@ int do_main() {
 
   // Verify the "pelvis" body is free and modeled with quaternions dofs before
   // moving on with that assumption.
-  const drake::multibody::Body<double>& pelvis = plant.GetBodyByName("pelvis");
+  const drake::multibody::RigidBody<double>& pelvis =
+      plant.GetBodyByName("pelvis");
   DRAKE_DEMAND(pelvis.is_floating());
   DRAKE_DEMAND(pelvis.has_quaternion_dofs());
   // Since there is a single floating body, we know that the positions for it

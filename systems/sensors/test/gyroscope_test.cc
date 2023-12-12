@@ -28,7 +28,7 @@ class GyroscopeTest : public ::testing::Test {
     parser.AddModels(urdf_name);
     plant_->Finalize();
 
-    const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");
+    const multibody::RigidBody<double>& arm_body = plant_->GetBodyByName("arm");
     const math::RotationMatrix<double> R_BS(
         drake::math::RollPitchYaw<double>(M_PI / 2, 0, 0));
     const math::RigidTransform<double> X_BS(R_BS, Eigen::Vector3d::Zero());

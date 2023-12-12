@@ -54,7 +54,7 @@ to the MultibodyTree once it is owned by %MultibodyTreeSystem. For example,
 @code{.cpp}
   // Create an empty model.
   auto mb_tree = std::make_unique<MultibodyTree<double>>
-  mb_tree->AddBody<RigidBody>(...);
+  mb_tree->AddRigidBody(...);
   mb_tree->AddMobilizer<RevoluteMobilizer>(...);
   // ...
   // Done adding modeling elements. Transfer tree to system, get Context.

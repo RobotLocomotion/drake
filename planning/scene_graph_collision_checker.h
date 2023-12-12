@@ -40,7 +40,7 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
       const CollisionCheckerContext& model_context) const final;
 
   std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
-      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const std::string& group_name, const multibody::RigidBody<double>& bodyA,
       const geometry::Shape& shape,
       const math::RigidTransform<double>& X_AG) final;
 

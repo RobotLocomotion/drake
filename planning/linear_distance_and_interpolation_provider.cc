@@ -10,23 +10,24 @@
 namespace drake {
 namespace planning {
 using common_robotics_utilities::math::InterpolateXd;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::MultibodyPlant;
+using multibody::RigidBody;
 
 namespace {
 
 std::vector<int> GetQuaternionDofStartIndices(
     const MultibodyPlant<double>& plant) {
-  // TODO(SeanCurtis-TRI) Body::has_quaternion_dofs() is actually a misnomer for
-  // is_quaternion_floating(). The name implies general quaternion awareness but
-  // its documentation doesn't guarantee that. We should re-express this in
-  // terms of joints so that we can catch quaternions in any kind of joint.
+  // TODO(SeanCurtis-TRI) RigidBody::has_quaternion_dofs() is actually a
+  // misnomer for is_quaternion_floating(). The name implies general quaternion
+  // awareness but its documentation doesn't guarantee that. We should
+  // re-express this in terms of joints so that we can catch quaternions in any
+  // kind of joint.
   std::vector<int> quaternion_dof_start_indices;
   for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
-    const Body<double>& body = plant.get_body(body_index);
+    const RigidBody<double>& body = plant.get_body(body_index);
     if (body.has_quaternion_dofs()) {
       quaternion_dof_start_indices.push_back(body.floating_positions_start());
     }

@@ -21,12 +21,12 @@ namespace multibody {
 namespace cart_pole {
 namespace {
 
-using drake::multibody::Body;
 using drake::multibody::JointActuator;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;
+using drake::multibody::RigidBody;
 using drake::multibody::UniformGravityFieldElement;
 using drake::systems::Context;
 

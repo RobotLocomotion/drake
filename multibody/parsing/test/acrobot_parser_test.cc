@@ -126,9 +126,11 @@ TEST_P(AcrobotModelTests, ModelBasics) {
             benchmark_plant_->num_multibody_states());
 
   // Get links by name.
-  const Body<double>& link1 = plant_->GetBodyByName(parameters_.link1_name());
+  const RigidBody<double>& link1 =
+      plant_->GetBodyByName(parameters_.link1_name());
   EXPECT_EQ(link1.name(), parameters_.link1_name());
-  const Body<double>& link2 = plant_->GetBodyByName(parameters_.link2_name());
+  const RigidBody<double>& link2 =
+      plant_->GetBodyByName(parameters_.link2_name());
   EXPECT_EQ(link2.name(), parameters_.link2_name());
 
   // Get joints by name.

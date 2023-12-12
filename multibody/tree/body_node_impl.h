@@ -41,7 +41,7 @@ class BodyNodeImpl : public BodyNode<T> {
   // @param[in] mobilizer The mobilizer associated with this `node`. It can
   //                      only be a `nullptr` for the **world** body.
   BodyNodeImpl(const internal::BodyNode<T>* parent_node,
-               const Body<T>* body, const Mobilizer<T>* mobilizer) :
+               const RigidBody<T>* body, const Mobilizer<T>* mobilizer) :
       BodyNode<T>(parent_node, body, mobilizer) {}
 
   // TODO(amcastro-tri): Implement methods for computing velocity kinematics

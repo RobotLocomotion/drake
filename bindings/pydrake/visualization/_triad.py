@@ -10,13 +10,13 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.tree import Body
+from pydrake.multibody.tree import RigidBody
 
 
 def AddFrameTriadIllustration(
     *,
     scene_graph: SceneGraph,
-    body: Body = None,
+    body: RigidBody = None,
     frame_id: FrameId = None,
     plant: MultibodyPlant = None,
     name: str = "frame",
@@ -28,7 +28,7 @@ def AddFrameTriadIllustration(
     """
     Adds illustration geometry representing the given frame using an RGB triad,
     with the x-axis drawn in red, the y-axis in green and the z-axis in blue.
-    The given frame can be either a geometry FrameId or a multibody Body.
+    The given frame can be either a geometry FrameId or a multibody RigidBody.
 
     Args:
       scene_graph: the SceneGraph where geometry will be added.

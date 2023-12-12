@@ -206,8 +206,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   }
 
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
-  // control over cache dependencies on parameters. For example,
-  // all_rigid_body_parameters, etc.
+  //  control over cache dependencies on parameters. For example,
+  //  all_rigid_body_parameters, etc.
 
   // Allocate position cache.
   cache_indexes_.position_kinematics = this->DeclareCacheEntry(
