@@ -27,9 +27,18 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
   plant->set_stiction_tolerance(config.stiction_tolerance);
   plant->set_contact_model(
       internal::GetContactModelFromString(config.contact_model));
-  plant->set_discrete_contact_solver(
-      internal::GetDiscreteContactSolverFromString(
-          config.discrete_contact_solver));
+  if (config.discrete_contact_approximation.empty()) {
+    // Solver is respected.
+    plant->set_discrete_contact_solver(
+        internal::GetDiscreteContactSolverFromString(
+            config.discrete_contact_solver));
+  } else {
+    // Contact model determines the solver to be used. Therefore
+    // discrete_contact_solver is ignored.
+    plant->set_discrete_contact_approximation(
+        internal::GetDiscreteContactApproximationFromString(
+            config.discrete_contact_approximation));
+  }
   plant->set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
   plant->set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
@@ -64,6 +73,19 @@ constexpr const char* EnumToChars(DiscreteContactSolver enum_value) {
       return "tamsi";
     case DiscreteContactSolver::kSap:
       return "sap";
+  }
+}
+
+constexpr const char* EnumToChars(DiscreteContactApproximation enum_value) {
+  switch (enum_value) {
+    case DiscreteContactApproximation::kTamsi:
+      return "tamsi";
+    case DiscreteContactApproximation::kSap:
+      return "sap";
+    case DiscreteContactApproximation::kSimilar:
+      return "similar";
+    case DiscreteContactApproximation::kLagged:
+      return "lagged";
   }
 }
 
@@ -102,6 +124,14 @@ constexpr std::array<NamedEnum<DiscreteContactSolver>, 2> kContactSolvers{{
     {DiscreteContactSolver::kTamsi},
     {DiscreteContactSolver::kSap},
 }};
+
+constexpr std::array<NamedEnum<DiscreteContactApproximation>, 4>
+    kDiscreteContactApproximations{{
+        {DiscreteContactApproximation::kTamsi},
+        {DiscreteContactApproximation::kSap},
+        {DiscreteContactApproximation::kSimilar},
+        {DiscreteContactApproximation::kLagged},
+    }};
 
 constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
     {ContactRep::kTriangle},
@@ -144,6 +174,28 @@ std::string GetStringFromDiscreteContactSolver(
     DiscreteContactSolver contact_solver) {
   for (const auto& [value, name] : kContactSolvers) {
     if (value == contact_solver) {
+      return name;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+DiscreteContactApproximation GetDiscreteContactApproximationFromString(
+    std::string_view discrete_contact_approximation) {
+  for (const auto& [value, name] : kDiscreteContactApproximations) {
+    if (name == discrete_contact_approximation) {
+      return value;
+    }
+  }
+  throw std::logic_error(
+      fmt::format("Unknown discrete_contact_approximation: '{}'",
+                  discrete_contact_approximation));
+}
+
+std::string GetStringFromDiscreteContactApproximation(
+    DiscreteContactApproximation contact_model) {
+  for (const auto& [value, name] : kDiscreteContactApproximations) {
+    if (value == contact_model) {
       return name;
     }
   }
