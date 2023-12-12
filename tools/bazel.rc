@@ -1,3 +1,6 @@
+# Don't use bzlmod yet.
+common --enable_bzlmod=false
+
 # Default to an optimized build.
 build -c opt
 
