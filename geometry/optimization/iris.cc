@@ -54,11 +54,10 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
-  if (options.callback_func) {
-    if (!(*options.callback_func)(P)) {
+  if (options.termination_func) {
+    if (options.termination_func(P)) {
       throw std::runtime_error(
-          "Iris: The callback function on domain failed. The domain must be "
-          "feasible.");
+          "Iris: The termination function on domain returned true.");
     }
   }
 
@@ -119,9 +118,9 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       break;
     }
 
-    if (options.callback_func) {
-      if (!(*options.callback_func)(HPolyhedron(A.topRows(num_constraints),
-                                                b.head(num_constraints)))) {
+    if (options.termination_func) {
+      if (options.termination_func(HPolyhedron(A.topRows(num_constraints),
+                                               b.head(num_constraints)))) {
         break;
       }
     }
@@ -615,12 +614,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     b.head(num_initial_constraints));
   }
 
-  if (options.callback_func) {
-    if (!(*options.callback_func)(P)) {
+  if (options.termination_func) {
+    if (options.termination_func(P)) {
       throw std::runtime_error(
-          "IrisInConfigurationSpace: The provided callback function on the "
-          "domain failed. Make sure the callback function satisfies the "
-          "domain.");
+          "IrisInConfigurationSpace: The termination function on domain "
+          "returned true.");
     }
   }
 
@@ -649,13 +647,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   const std::string seed_point_msg =
       "IrisInConfigurationSpace: terminating iterations because the seed point "
       "is no longer in the region.";
-  const std::string callback_error_msg =
-      "IrisInConfigurationSpace: the callback function returned false on the "
+  const std::string termination_error_msg =
+      "IrisInConfigurationSpace: the termination function returned false on "
+      "the "
       "computation of the initial region. Are the provided starting_ellipse "
-      "and callback function compatible?";
-  const std::string callback_msg =
+      "and termination function compatible?";
+  const std::string termination_msg =
       "IrisInConfigurationSpace: terminating iterations because the continue "
-      "callback function returned false.";
+      "termination function returned false.";
 
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
@@ -694,14 +693,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
               return P;
             }
           }
-          if (options.callback_func) {
-            const bool callback_continue = (*options.callback_func)(HPolyhedron(
+          if (options.termination_func) {
+            const bool termination = options.termination_func(HPolyhedron(
                 A.topRows(num_constraints), b.head(num_constraints)));
-            if (!callback_continue) {
+            if (termination) {
               if (iteration == 0) {
-                throw std::runtime_error(callback_error_msg);
+                throw std::runtime_error(termination_error_msg);
               }
-              log()->info(callback_msg);
+              log()->info(termination_msg);
               return P;
             }
           }
@@ -783,14 +782,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
               return P;
             }
           }
-          if (options.callback_func) {
-            const bool callback_continue =
-                (*options.callback_func)(HPolyhedron(P_candidate));
-            if (!callback_continue) {
+          if (options.termination_func) {
+            const bool termination =
+                options.termination_func(HPolyhedron(P_candidate));
+            if (termination) {
               if (iteration == 0) {
-                throw std::runtime_error(callback_error_msg);
+                throw std::runtime_error(termination_error_msg);
               }
-              log()->info(callback_msg);
+              log()->info(termination_msg);
               return P;
             }
           }
@@ -876,14 +875,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     return P;
                   }
                 }
-                if (options.callback_func) {
-                  const bool callback_continue =
-                      (*options.callback_func)(HPolyhedron(P_candidate));
-                  if (!callback_continue) {
+                if (options.termination_func) {
+                  const bool termination =
+                      options.termination_func(HPolyhedron(P_candidate));
+                  if (termination) {
                     if (iteration == 0) {
-                      throw std::runtime_error(callback_error_msg);
+                      throw std::runtime_error(termination_error_msg);
                     }
-                    log()->info(callback_msg);
+                    log()->info(termination_msg);
                     return P;
                   }
                 }
@@ -935,19 +934,17 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   return P;
 }
 
-void SetIrisOptionsForEdge(IrisOptions* options,
-                           const Eigen::Ref<const Eigen::VectorXd>& x_1,
-                           const Eigen::Ref<const Eigen::VectorXd>& x_2,
-                           const double epsilon, const double tol) {
+void SetEdgeContainmentTerminationCondition(
+    IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon,
+    const double tol) {
   // Set the options for IRIS
-  std::function<bool(const HPolyhedron&)> func =
-      [=](const HPolyhedron& polytope) {
-        return polytope.PointInSet(x_1, tol) && polytope.PointInSet(x_2, tol);
-      };
   const auto ab = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
   const auto hyperellipsoid = Hyperellipsoid(ab);
   options->starting_ellipse = hyperellipsoid;
-  options->callback_func = func;
+  options->termination_func = [=](const HPolyhedron& polytope) {
+    return !polytope.PointInSet(x_1, tol) || !polytope.PointInSet(x_2, tol);
+  };
 }
 
 }  // namespace optimization

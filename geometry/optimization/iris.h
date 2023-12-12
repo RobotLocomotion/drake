@@ -130,17 +130,33 @@ struct IrisOptions {
   configuration space is <= 3 dimensional.*/
   std::shared_ptr<Meshcat> meshcat{};
 
-  /** A user-defined callback function for the computed HPolyhedron to determine
-  whether the iterations should continue. If the callback returns false, the
-  iterations will stop. Therefore, it is highly recommended that the callback
-  function is only used when it has a monotonic property such that if P_1 ⊆ P_2,
-  then if the callback function returns true for P_1 implies that it returns
-  true for P_2. An example of such a callback function is to check whether
-  multiple configurations are contained in the IRIS region. A failing example is
-  to check whether the HPolyhedron does not intersect with another region. Such
-  a callback function is not monotonic and an error may be thrown if it is used.
+  /** A user-defined termination function for the computed HPolyhedron to
+  determine whether the iterations should stop. This function is called upon
+  obtaining each hyperplane of the HPolyhedron at every IRIS step. If the
+  function returns true, then the computations will stop and the last step
+  HPolyhedron will be returned. Therefore, it is highly recommended that the
+  termination function possesses a monotonic property such that for any two
+  HPolyhedrons A and B such that B ⊆ A, we have if termination(A) -->
+  termination(B). For example, a valid termination function is to check whether
+  if the HPolyhedron does not contain any of a set of desired points.
+  ```
+  auto termination_func = [](const HPolyhedron& set) {
+    for (const auto& point : desired_points) {
+      if (!set.PointInSet(point)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  ```
+  The algorithm will stop when the computed HPolyhedron leaves one of the
+  points, in a similar way to how @p require_sample_point_is_contained is
+  enforced.
+  @warning Using an inappropriate termination function may lead to the IRIS
+  algorithm throw an error. It is the user's responsibility to ensure the
+  validity of the termination function.
   */
-  std::optional<std::function<bool(const HPolyhedron&)>> callback_func{};
+  std::function<bool(const HPolyhedron&)> termination_func{};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -214,9 +230,9 @@ the IRIS regions are collision free but can also significantly increase the
 run-time of the algorithm. The same goes for
 `options.num_additional_constraints_infeasible_samples`.
 
-Using this algorithm requires
-
 @throws std::exception if the sample configuration in @p context is infeasible.
+@throws std::exception if termination_func is invalid on the domian. See
+IrisOptions.termination_func for more details.
 @ingroup geometry_optimization
 */
 HPolyhedron IrisInConfigurationSpace(
@@ -228,16 +244,15 @@ HPolyhedron IrisInConfigurationSpace(
 edge between two configuration @p x_1 and @p x_2. Under the hood, it sets @p
 options.starting_ellipse to be a hyperellipsoid that contains the edge and is
 centered at the midpoint of the edge, and extends in other directions by a small
-number @p epsilon. It also sets @p options.callback_func such that IRIS
+number @p epsilon. It also sets @p options.termination_func such that IRIS
 iterations terminate when the edge is no longer contained in the IRIS region.
-@param tol to check PointInSet.
+@param @p tol to check PointInSet for the two points.
 @pre x_1.size() == x_2.size().
 @pre epsilon > 0. */
-void SetIrisOptionsForEdge(IrisOptions* options,
-                           const Eigen::Ref<const Eigen::VectorXd>& x_1,
-                           const Eigen::Ref<const Eigen::VectorXd>& x_2,
-                           const double epsilon = 1e-3,
-                           const double tol = 1e-6);
+void SetEdgeContainmentTerminationCondition(
+    IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon = 1e-3,
+    const double tol = 1e-6);
 
 /** Defines a standardized representation for (named) IrisRegions, which can be
 serialized in both C++ and Python. */

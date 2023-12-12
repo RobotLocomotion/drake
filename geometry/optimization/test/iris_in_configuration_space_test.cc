@@ -329,7 +329,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
 /* Test if the starting ellipse is far away from the seed point, and the seed
 point exits the polytope before the computations are over,
 then an error will be thrown. */
-GTEST_TEST(IrisInConfigurationSpaceTest, InvalidEllipse) {
+GTEST_TEST(IrisInConfigurationSpaceTest, BadEllipseAndSample) {
   IrisOptions options;
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(0, 0), Vector2d(1, 1)));
@@ -370,10 +370,10 @@ const char boxes_in_2d_urdf_no_collisions[] = R"""(
   </joint>
 </robot>
 )""";
-/* Make callback function such that the region will contain q1, q2.
+/* Make termination function such that the region will contain q1, q2.
 This is meant to generate Iris regions from edges.
 */
-GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
+GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
   obstacles.emplace_back(
@@ -383,53 +383,53 @@ GTEST_TEST(IrisInConfigurationSpaceTest, CallbackFunc) {
   obstacles.emplace_back(
       HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
   const Vector2d sample{0, 0};  // center of the bounding box.
-  std::function<bool(const HPolyhedron&)> always_true =
+  std::function<bool(const HPolyhedron&)> always_false =
       [&](const HPolyhedron&) {
-        return true;
+        return false;
       };
   IrisOptions options;
   options.iteration_limit = 100;
   options.termination_threshold = -1;
   options.configuration_obstacles = obstacles;
-  HPolyhedron region_without_callback =
+  HPolyhedron region_without_termination =
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
-  options.callback_func = always_true;
-  HPolyhedron region_with_always_true =
+  options.termination_func = always_false;
+  HPolyhedron region_with_always_false =
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
-  // Region with always true callback function should be the same as region
-  // without the callback function
-  EXPECT_TRUE(region_with_always_true.ContainedIn(region_without_callback));
-  EXPECT_TRUE(region_without_callback.ContainedIn(region_with_always_true));
-  // now we add a callback function that will make the region contain q1, q2
+  // Region with always true termination function should be the same as region
+  // without the termination function
+  EXPECT_TRUE(region_with_always_false.ContainedIn(region_without_termination));
+  EXPECT_TRUE(region_without_termination.ContainedIn(region_with_always_false));
+  // now we add a termination function that will make the region contain q1, q2
   const Vector2d q1{0.15, -0.45};
   const Vector2d q2{-0.05, 0.75};
   for (const auto& obstacle : obstacles) {
     EXPECT_FALSE(obstacle->PointInSet(q1));
     EXPECT_FALSE(obstacle->PointInSet(q2));
   }
-  SetIrisOptionsForEdge(&options, q1, q2, 1e-3);
-  // Test that the callback function works with constraints as well
+  SetEdgeContainmentTerminationCondition(&options, q1, q2, 1e-3);
+  // Test that the termination function works with constraints as well
   solvers::MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(2, "q");
   prog.AddConstraint(q[0], -1, 0.16);
   options.prog_with_additional_constraints = &prog;
-  HPolyhedron region_with_callback =
+  HPolyhedron region_with_termination =
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
-  EXPECT_TRUE(region_with_callback.PointInSet(q1));
-  EXPECT_TRUE(region_with_callback.PointInSet(q2));
+  EXPECT_TRUE(region_with_termination.PointInSet(q1));
+  EXPECT_TRUE(region_with_termination.PointInSet(q2));
   // failure case when the provided edge is in collision
   const Vector2d q3{-0.85, 0.75};
-  SetIrisOptionsForEdge(&options, q1, q3, 1e-3);
+  SetEdgeContainmentTerminationCondition(&options, q1, q3, 1e-3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options),
-      ".*the callback function returned false on the computation of the "
+      ".*the termination function returned false on the computation of the "
       "initial region.*");
   // failure case when the provided edge is out of the domain
   const Vector2d q4{-0.85, 1.75};
-  SetIrisOptionsForEdge(&options, q1, q4, 1e-3);
+  SetEdgeContainmentTerminationCondition(&options, q1, q4, 1e-3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options),
-      ".*Make sure the callback function satisfies the domain.");
+      ".*The termination function on domain returned true.");
 }
 
 /* Box obstacles in one corner.

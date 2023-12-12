@@ -119,15 +119,15 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon) {
   DRAKE_THROW_UNLESS(x_1.size() == x_2.size());
   DRAKE_THROW_UNLESS(epsilon >= 0.0);
-  if ((x_1 - x_2).norm() < 1e-6) {
+  const double length = (x_1 - x_2).norm();
+  if (length < 1e-9) {
     throw std::runtime_error(
         "AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same "
-        "point within 1e-6 tolerance.");
+        "point.");
   }
-  DRAKE_THROW_UNLESS((x_1 - x_2).norm() >= 1e-6);
   const int dim = x_1.size();
   const Eigen::VectorXd center = (x_1 + x_2) / 2.0;
-  const Eigen::VectorXd r_0 = (x_1 - x_2).normalized();
+  const Eigen::VectorXd r_0 = (x_1 - x_2) / length;
   // construct r_1, ..., r_{dim-1} such that r_0, ..., r_{dim-1} are orthonormal
   // and r_0 is parallel to x_1 - x_2
   // this is similar to the Gram-Schmidt process
@@ -145,16 +145,16 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
     for (int j = 0; j < i; ++j) {
       v -= R.col(j)(k) * R.col(j);
     }
-    if (v.norm() > 1e-6) {
+    if (v.norm() > 1e-9) {
       R.col(i) = v.normalized();
       ++i;
     }
     ++k;
   }
   // this should never fail
-  DRAKE_THROW_UNLESS(i == dim);
+  DRAKE_DEMAND(i == dim);
   Eigen::MatrixXd scale_matrix = epsilon * Eigen::MatrixXd::Identity(dim, dim);
-  scale_matrix(0, 0) = (x_1 - x_2).norm() / 2.0;
+  scale_matrix(0, 0) = length / 2.0;
   return AffineBall(R * scale_matrix, center);
 }
 

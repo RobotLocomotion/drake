@@ -211,6 +211,17 @@ GTEST_TEST(AffineBallTest, NotAxisAligned) {
   EXPECT_TRUE(ab1.PointInSet(
       center + Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
 
+  // Negate the second column of B1: the resulting affine_ball
+  // should be the same as the first one.
+  Eigen::Matrix2d B1_negated = B1;
+  B1_negated.col(1) *= -1;
+  AffineBall ab1_negated(B1_negated, center);
+  // The determinant of B1_negated is is the nagation of the determinant of B1.
+  EXPECT_NEAR(ab1_negated.B().determinant(), -ab1.B().determinant(), kTol);
+  // However the volume is the same because we use the absolute value of the
+  // determinant.
+  EXPECT_NEAR(ab1_negated.CalcVolume(), ab1.CalcVolume(), kTol);
+
   // Same as B1, but one of the axes is dropped. This makes it just a line
   // segment from (1-2/sqrt(2), 1-2/sqrt(2)) to (1+2/sqrt(2), 1+2/sqrt(2)).
   Eigen::Matrix2d B2;
