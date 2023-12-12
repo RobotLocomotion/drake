@@ -103,8 +103,8 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
 
   void CheckCmTranslationalVelocity(const SpatialVelocity<double>& V_WS_W,
                                     const SpatialVelocity<double>& V_WT_W) {
-    const Body<double>& sphere = plant_.GetBodyByName("Sphere1");
-    const Body<double>& triangle = plant_.GetBodyByName("Triangle1");
+    const RigidBody<double>& sphere = plant_.GetBodyByName("Sphere1");
+    const RigidBody<double>& triangle = plant_.GetBodyByName("Triangle1");
     plant_.SetFreeBodySpatialVelocity(context_.get(), sphere, V_WS_W);
     plant_.SetFreeBodySpatialVelocity(context_.get(), triangle, V_WT_W);
 

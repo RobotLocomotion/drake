@@ -4,9 +4,9 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -20,7 +20,8 @@ FixedOffsetFrame<T>::FixedOffsetFrame(
     parent_frame_(P), X_PF_(X_PF) {}
 
 template <typename T>
-FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name, const Body<T>& B,
+FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name,
+                                      const RigidBody<T>& B,
                                       const math::RigidTransform<double>& X_BF)
     : Frame<T>(name, B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
 

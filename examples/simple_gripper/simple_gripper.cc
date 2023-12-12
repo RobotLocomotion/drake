@@ -30,13 +30,13 @@ using geometry::SceneGraph;
 using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using multibody::Body;
 using multibody::CoulombFriction;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using multibody::PrismaticJoint;
+using multibody::RigidBody;
 using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
@@ -123,7 +123,7 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // finger.
 // @param[in] finger the Body representing the finger
 void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
-                    const Body<double>& finger) {
+                    const RigidBody<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
   const double d_theta = 2 * M_PI / sample_count;
@@ -196,8 +196,8 @@ int do_main() {
   }
 
   // Add the pads.
-  const Body<double>& left_finger = plant.GetBodyByName("left_finger");
-  const Body<double>& right_finger = plant.GetBodyByName("right_finger");
+  const RigidBody<double>& left_finger = plant.GetBodyByName("left_finger");
+  const RigidBody<double>& right_finger = plant.GetBodyByName("right_finger");
 
   // Pads offset from the center of a finger. pad_offset = 0 means the center of
   // the spheres is located right at the center of the finger.
@@ -333,7 +333,7 @@ int do_main() {
   right_slider.set_translation(&plant_context, finger_offset);
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
+  const multibody::RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
   const Vector3d& p_WBr =
       plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
   const Vector3d& p_WBl =

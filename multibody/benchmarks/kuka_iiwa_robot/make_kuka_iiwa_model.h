@@ -71,9 +71,9 @@ class KukaIiwaModelBuilder {
   // @return RevoluteJoint from frame Ab on Body A to frame Ba on Body B.
   static const RevoluteJoint<T>& AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       const std::string& joint_name,
-      const Body<T>& A,
+      const RigidBody<T>& A,
       const Vector3<double>& q123A, const Vector3<double>& xyzA,
-      const Body<T>& B, const Vector3<double>& revolute_unit_vector,
+      const RigidBody<T>& B, const Vector3<double>& revolute_unit_vector,
       MultibodyTree<T>* model);
 
   // Model's parameters:

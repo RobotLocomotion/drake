@@ -194,7 +194,7 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 // returned nullptr.
 std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
-    const std::function<const Body<double>*(const char*)>& read_body,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant);
 
 // TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper

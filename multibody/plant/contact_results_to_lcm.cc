@@ -34,7 +34,7 @@ namespace {
  generator. */
 template <typename T>
 const std::vector<GeometryId>& GetCollisionGeometriesForBody(
-    const MultibodyPlant<T>& plant, const Body<T>& body,
+    const MultibodyPlant<T>& plant, const RigidBody<T>& body,
     bool warn_for_multi_geometry_body) {
   const std::vector<GeometryId>& geometries =
       plant.GetCollisionGeometriesForBody(body);
@@ -91,7 +91,7 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
   const std::function<std::string(GeometryId)>& namer =
       use_default_namer ? &id_as_label : geometry_name_lookup;
   for (BodyIndex i{0}; i < body_count; ++i) {
-    const Body<T>& body = plant.get_body(i);
+    const RigidBody<T>& body = plant.get_body(i);
     using std::to_string;
     body_names_.push_back(body.name() + "(" + to_string(body.model_instance()) +
                           ")");

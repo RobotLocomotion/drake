@@ -21,7 +21,7 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type);
 }  // namespace internal
 
 // Forward declarations.
-template<typename T> class Body;
+template<typename T> class RigidBody;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
 /// _physical frame_), meaning that the %Frame's origin is a material point of
@@ -56,7 +56,7 @@ class Frame : public FrameBase<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
 
   /// Returns a const reference to the body associated to this %Frame.
-  const Body<T>& body() const {
+  const RigidBody<T>& body() const {
     return body_;
   }
 
@@ -595,7 +595,7 @@ class Frame : public FrameBase<T> {
   /// object attached to `body` and puts the frame in the body's model
   /// instance.
   explicit Frame(
-      const std::string& name, const Body<T>& body,
+      const std::string& name, const RigidBody<T>& body,
       std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
@@ -655,7 +655,7 @@ class Frame : public FrameBase<T> {
   const std::string name_;
 
   // The body associated with this frame.
-  const Body<T>& body_;
+  const RigidBody<T>& body_;
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::FrameTopology topology_;

@@ -11,7 +11,7 @@ namespace internal {
 template <typename T, int  nq, int nv>
 std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
     const internal::BodyNode<T>* parent_node,
-    const Body<T>* body, const Mobilizer<T>* mobilizer) const {
+    const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const {
   return std::make_unique<internal::BodyNodeImpl<T, nq, nv>>(parent_node,
                                                              body, mobilizer);
 }

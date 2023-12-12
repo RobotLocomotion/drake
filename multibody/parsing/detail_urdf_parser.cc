@@ -90,8 +90,8 @@ class UrdfParser {
                          XMLElement* node);
   void ParseJoint(JointEffortLimits* joint_effort_limits, XMLElement* node);
   void ParseMimicTag(XMLElement* node);
-  const Body<double>* GetBodyForElement(const std::string& element_name,
-                                        const std::string& link_name);
+  const RigidBody<double>* GetBodyForElement(const std::string& element_name,
+                                             const std::string& link_name);
   void ParseJointDynamics(XMLElement* node, double* damping);
   void ParseJointLimits(XMLElement* node, double* lower, double* upper,
                         double* velocity, double* acceleration, double* effort);
@@ -423,7 +423,7 @@ void UrdfParser::ParseScrewJointThreadPitch(XMLElement* node,
   }
 }
 
-const Body<double>* UrdfParser::GetBodyForElement(
+const RigidBody<double>* UrdfParser::GetBodyForElement(
     const std::string& element_name,
     const std::string& link_name) {
   auto plant = w_.plant;
@@ -460,10 +460,10 @@ void UrdfParser::ParseJoint(
     return;
   }
 
-  const Body<double>* parent_body = GetBodyForElement(
+  const RigidBody<double>* parent_body = GetBodyForElement(
       name, parent_name);
   if (parent_body == nullptr) { return; }
-  const Body<double>* child_body = GetBodyForElement(
+  const RigidBody<double>* child_body = GetBodyForElement(
       name, child_name);
   if (child_body == nullptr) { return; }
 
@@ -902,7 +902,7 @@ void UrdfParser::ParseFrame(XMLElement* node) {
     return;
   }
 
-  const Body<double>* body = GetBodyForElement(
+  const RigidBody<double>* body = GetBodyForElement(
       name, body_name);
   if (body == nullptr) { return; }
 
@@ -993,7 +993,7 @@ void UrdfParser::ParseBallConstraint(XMLElement* node) {
   // improperly formed, or if it does not refer to a frame already in the
   // model.
   auto read_body =
-      [node, this](const char* element_name) -> const Body<double>* {
+      [node, this](const char* element_name) -> const RigidBody<double>* {
     XMLElement* value_node = node->FirstChildElement(element_name);
 
     if (value_node != nullptr) {

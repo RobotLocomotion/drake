@@ -59,7 +59,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   }
   // Add boxes and register collision geometry.
   for (int i = 0; i < num_boxes; ++i) {
-    const Body<T>* box_body;
+    const RigidBody<T>* box_body;
     math::RigidTransformd X_BBox;
     if (boxes_[i].X_WB.has_value()) {
       // register this box to the world frame.

@@ -33,13 +33,13 @@ using geometry::QueryObject;
 using geometry::SceneGraphInspector;
 using geometry::Shape;
 using math::RigidTransform;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+using multibody::RigidBody;
 using multibody::world_model_instance;
 using systems::Context;
 
@@ -179,7 +179,7 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
         plant.GetBodiesKinematicallyAffectedBy({joint_i});
     bool affects_robot = false;
     for (const BodyIndex& body_i : outboard_bodies) {
-      const Body<double>& body = plant.get_body(body_i);
+      const RigidBody<double>& body = plant.get_body(body_i);
       iter = std::find(robot.begin(), robot.end(), body.model_instance());
       if (iter != robot.end()) {
         affects_robot = true;
@@ -215,7 +215,7 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
 
 CollisionChecker::~CollisionChecker() = default;
 
-bool CollisionChecker::IsPartOfRobot(const Body<double>& body) const {
+bool CollisionChecker::IsPartOfRobot(const RigidBody<double>& body) const {
   const ModelInstanceIndex needle = body.model_instance();
   const auto& haystack = robot_model_instances_;
   return std::binary_search(haystack.begin(), haystack.end(), needle);
@@ -253,7 +253,7 @@ void CollisionChecker::PerformOperationAgainstAllModelContexts(
 
 bool CollisionChecker::AddCollisionShape(
     const std::string& group_name, const BodyShapeDescription& description) {
-  const Body<double>& body = plant().GetBodyByName(
+  const RigidBody<double>& body = plant().GetBodyByName(
       description.body_name(),
       plant().GetModelInstanceByName(description.model_instance_name()));
   return AddCollisionShapeToBody(group_name, body, description.shape(),
@@ -286,14 +286,14 @@ std::map<std::string, int> CollisionChecker::AddCollisionShapes(
 bool CollisionChecker::AddCollisionShapeToFrame(
     const std::string& group_name, const Frame<double>& frameA,
     const Shape& shape, const RigidTransform<double>& X_AG) {
-  const Body<double>& bodyA = frameA.body();
+  const RigidBody<double>& bodyA = frameA.body();
   const RigidTransform<double>& X_BA = frameA.GetFixedPoseInBodyFrame();
   const RigidTransform<double> X_BG = X_BA * X_AG;
   return AddCollisionShapeToBody(group_name, bodyA, shape, X_BG);
 }
 
 bool CollisionChecker::AddCollisionShapeToBody(
-    const std::string& group_name, const Body<double>& bodyA,
+    const std::string& group_name, const RigidBody<double>& bodyA,
     const Shape& shape, const RigidTransform<double>& X_AG) {
   const std::optional<GeometryId> maybe_geometry =
       DoAddCollisionShapeToBody(group_name, bodyA, shape, X_AG);
@@ -1128,7 +1128,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
     const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
 
-    const Body<double>& body_i = get_body(BodyIndex(i));
+    const RigidBody<double>& body_i = get_body(BodyIndex(i));
 
     const std::vector<GeometryId>& geometries_i =
         plant().GetCollisionGeometriesForBody(body_i);
@@ -1144,7 +1144,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
         continue;
       }
 
-      const Body<double>& body_j = get_body(BodyIndex(j));
+      const RigidBody<double>& body_j = get_body(BodyIndex(j));
 
       // Check if collisions between the geometries are already filtered.
       bool collisions_filtered = false;

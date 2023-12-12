@@ -216,7 +216,7 @@ class CollisionChecker {
 
   /** @returns a `const` body reference to a body in the full model's plant for
    the given `body_index`. */
-  const multibody::Body<double>& get_body(
+  const multibody::RigidBody<double>& get_body(
       multibody::BodyIndex body_index) const {
     return plant().get_body(body_index);
   }
@@ -229,7 +229,7 @@ class CollisionChecker {
   }
 
   /** @returns true if the indicated body is part of the robot. */
-  bool IsPartOfRobot(const multibody::Body<double>& body) const;
+  bool IsPartOfRobot(const multibody::RigidBody<double>& body) const;
 
   /** @returns true if the indicated body is part of the robot. */
   bool IsPartOfRobot(multibody::BodyIndex body_index) const;
@@ -403,7 +403,7 @@ class CollisionChecker {
    @param X_AG          The pose of the shape in body A's frame.
    @returns `true` if the shape was added. */
   bool AddCollisionShapeToBody(const std::string& group_name,
-                               const multibody::Body<double>& bodyA,
+                               const multibody::RigidBody<double>& bodyA,
                                const geometry::Shape& shape,
                                const math::RigidTransform<double>& X_AG);
 
@@ -522,8 +522,8 @@ class CollisionChecker {
   }
 
   /** Overload that uses body references. */
-  double GetPaddingBetween(const multibody::Body<double>& bodyA,
-                           const multibody::Body<double>& bodyB) const {
+  double GetPaddingBetween(const multibody::RigidBody<double>& bodyA,
+                           const multibody::RigidBody<double>& bodyB) const {
     return GetPaddingBetween(bodyA.index(), bodyB.index());
   }
 
@@ -535,8 +535,9 @@ class CollisionChecker {
                          multibody::BodyIndex bodyB_index, double padding);
 
   /** Overload that uses body references. */
-  void SetPaddingBetween(const multibody::Body<double>& bodyA,
-                         const multibody::Body<double>& bodyB, double padding) {
+  void SetPaddingBetween(const multibody::RigidBody<double>& bodyA,
+                         const multibody::RigidBody<double>& bodyB,
+                         double padding) {
     SetPaddingBetween(bodyA.index(), bodyB.index(), padding);
   }
 
@@ -668,8 +669,9 @@ class CollisionChecker {
                                   multibody::BodyIndex bodyB_index) const;
 
   /** Overload that uses body references. */
-  bool IsCollisionFilteredBetween(const multibody::Body<double>& bodyA,
-                                  const multibody::Body<double>& bodyB) const {
+  bool IsCollisionFilteredBetween(
+      const multibody::RigidBody<double>& bodyA,
+      const multibody::RigidBody<double>& bodyB) const {
     return IsCollisionFilteredBetween(bodyA.index(), bodyB.index());
   }
 
@@ -684,8 +686,8 @@ class CollisionChecker {
                                    bool filter_collision);
 
   /** Overload that uses body references. */
-  void SetCollisionFilteredBetween(const multibody::Body<double>& bodyA,
-                                   const multibody::Body<double>& bodyB,
+  void SetCollisionFilteredBetween(const multibody::RigidBody<double>& bodyA,
+                                   const multibody::RigidBody<double>& bodyB,
                                    bool filter_collision) {
     SetCollisionFilteredBetween(bodyA.index(), bodyB.index(), filter_collision);
   }
@@ -697,7 +699,8 @@ class CollisionChecker {
   void SetCollisionFilteredWithAllBodies(multibody::BodyIndex body_index);
 
   /** Overload that uses body references. */
-  void SetCollisionFilteredWithAllBodies(const multibody::Body<double>& body) {
+  void SetCollisionFilteredWithAllBodies(
+      const multibody::RigidBody<double>& body) {
     SetCollisionFilteredWithAllBodies(body.index());
   }
 
@@ -1186,7 +1189,7 @@ class CollisionChecker {
    checkers can choose to ignore the request, but must return `nullopt` if they
    do so. */
   virtual std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
-      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const std::string& group_name, const multibody::RigidBody<double>& bodyA,
       const geometry::Shape& shape,
       const math::RigidTransform<double>& X_AG) = 0;
 

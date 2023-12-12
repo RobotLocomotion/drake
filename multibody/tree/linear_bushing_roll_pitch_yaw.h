@@ -14,7 +14,7 @@
 namespace drake {
 namespace multibody {
 
-template <typename T> class Body;
+template <typename T> class RigidBody;
 
 /// This ForceElement models a massless flexible bushing that connects a frame A
 /// of a link (body) L0 to a frame C of a link (body) L1.  The bushing can apply
@@ -356,10 +356,10 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
                             const Vector3<double>& force_damping_constants);
 
   /// Returns link (body) L0 (frame A is welded to link L0).
-  const Body<T>& link0() const { return frameA().body(); }
+  const RigidBody<T>& link0() const { return frameA().body(); }
 
   /// Returns link (body) L1 (frame C is welded to link L1).
-  const Body<T>& link1() const { return frameC().body(); }
+  const RigidBody<T>& link1() const { return frameC().body(); }
 
   /// Returns frame A, which is the frame that is welded to link (body) L0 and
   /// attached to the bushing.
