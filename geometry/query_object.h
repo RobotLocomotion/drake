@@ -414,8 +414,8 @@ class QueryObject {
 
   /** Reports contact information among all deformable geometries. It includes
    contacts between two deformable geometries or contacts between a
-   deformable geometry and a rigid geometry. This function only supports
-   double as the scalar type.
+   deformable geometry and a non-deformable geometry. This function only
+   supports double as the scalar type.
    @param[out] deformable_contact
      Contains all deformable contact data on output. Any data passed in is
      cleared before the computation.
