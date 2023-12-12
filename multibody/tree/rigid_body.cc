@@ -7,18 +7,61 @@
 namespace drake {
 namespace multibody {
 
+// RigidBodyFrame function definitions.
+
+template <typename T>
+template <typename ToScalar>
+std::unique_ptr<Frame<ToScalar>> RigidBodyFrame<T>::TemplatedDoCloneToScalar(
+    const internal::MultibodyTree<ToScalar>& tree_clone) const {
+  const RigidBody<ToScalar>& body_clone =
+      tree_clone.get_body(this->body().index());
+  // RigidBodyFrame's constructor cannot be called from std::make_unique since
+  // it is private and therefore we use "new".
+  return std::unique_ptr<RigidBodyFrame<ToScalar>>(
+      new RigidBodyFrame<ToScalar>(body_clone));
+}
+
+template <typename T>
+std::unique_ptr<Frame<double>> RigidBodyFrame<T>::DoCloneToScalar(
+    const internal::MultibodyTree<double>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<Frame<AutoDiffXd>> RigidBodyFrame<T>::DoCloneToScalar(
+    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<Frame<symbolic::Expression>> RigidBodyFrame<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+// RigidBody function definitions.
+
+template <typename T>
+ScopedName RigidBody<T>::scoped_name() const {
+  return ScopedName(
+      this->get_parent_tree().GetModelInstanceName(this->model_instance()),
+      name_);
+}
+
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
-    : Body<T>(body_name, default_model_instance()),
-      default_spatial_inertia_(M) {}
+    : MultibodyElement<T>(default_model_instance()),
+      name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
+      body_frame_(*this), default_spatial_inertia_(M) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         ModelInstanceIndex model_instance,
                         const SpatialInertia<double>& M)
-    : Body<T>(body_name, model_instance),
-      default_spatial_inertia_(M) {}
+    : MultibodyElement<T>(model_instance),
+      name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
+      body_frame_(*this), default_spatial_inertia_(M) {}
 
 template <typename T>
 void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
@@ -98,6 +141,9 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::RigidBodyFrame)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::RigidBody)

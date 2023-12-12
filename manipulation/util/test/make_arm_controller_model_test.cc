@@ -22,7 +22,6 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::ModelInstanceIndex;

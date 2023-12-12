@@ -284,9 +284,9 @@ TEST_F(SdfParserTest, ModelInstanceTest) {
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot1));
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot2));
 
-  const Body<double>& acrobot1_link1 =
+  const RigidBody<double>& acrobot1_link1 =
       plant_.GetBodyByName("Link1", acrobot1);
-  const Body<double>& acrobot2_link1 =
+  const RigidBody<double>& acrobot2_link1 =
       plant_.GetBodyByName("Link1", acrobot2);
   EXPECT_NE(acrobot1_link1.index(), acrobot2_link1.index());
   EXPECT_EQ(acrobot1_link1.model_instance(), acrobot1);
@@ -3442,9 +3442,9 @@ TEST_F(SdfParserTest, WorldJoint) {
   EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
   EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
 
-  const Body<double>& parent_link =
+  const RigidBody<double>& parent_link =
       plant_.GetBodyByName("L_P", parent_instance);
-  const Body<double>& child_link =
+  const RigidBody<double>& child_link =
       plant_.GetBodyByName("L_C", child_instance);
   EXPECT_NE(parent_link.index(), child_link.index());
   EXPECT_EQ(parent_link.model_instance(), parent_instance);

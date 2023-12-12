@@ -12,7 +12,6 @@ namespace manipulation {
 namespace internal {
 
 using math::RigidTransform;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::ModelInstanceIndex;
@@ -101,13 +100,13 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     // gripper body, but there doesn't seem to be an existing way to do that
     // from MultibodyPlant.  MultibodyTreeTopology/BodyTopology have the needed
     // information, but it doesn't seem to be accessible.
-    std::vector<const Body<double>*> sim_gripper_welded_bodies =
+    std::vector<const RigidBody<double>*> sim_gripper_welded_bodies =
         simulation_plant.GetBodiesWeldedTo(G.body());
 
-    for (const Body<double>* welded_body : sim_gripper_welded_bodies) {
+    for (const RigidBody<double>* welded_body : sim_gripper_welded_bodies) {
       if ((welded_body->model_instance() != gripper_info->model_instance) &&
           (welded_body->model_instance() != arm_info.model_instance)) {
-        log()->debug("Adding BodyIndex of Body {}", welded_body->name());
+        log()->debug("Adding BodyIndex of RigidBody {}", welded_body->name());
         sim_gripper_body_indices.push_back(welded_body->index());
       }
     }

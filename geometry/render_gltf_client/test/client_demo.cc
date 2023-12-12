@@ -128,9 +128,9 @@ using Eigen::Vector3d;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using multibody::Body;
 using multibody::MultibodyPlant;
 using multibody::Parser;
+using multibody::RigidBody;
 using multibody::SpatialVelocity;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
@@ -297,7 +297,7 @@ int DoMain() {
   // Initialize the moving bottle's position and speed so we can observe motion.
   // The mustard bottle spins while climbing slightly.
   plant.mutable_gravity_field().set_gravity_vector({0, 0, 0});
-  const Body<double>& mustard_body = plant.GetBodyByName(
+  const RigidBody<double>& mustard_body = plant.GetBodyByName(
       "base_link_mustard",
       plant.GetModelInstanceByName("example_scene::mustard_bottle"));
   const RigidTransformd X_WMustardBottle(RollPitchYawd{-M_PI / 2, 0, -M_PI / 2},

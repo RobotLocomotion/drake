@@ -265,7 +265,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
 
 TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const Body<double>& world_body = plant_.world_body();
+  const RigidBody<double>& world_body = plant_.world_body();
   const Frame<double>& frame_W = plant_.world_frame();
   std::vector<BodyIndex> body_indexes;
 
@@ -279,7 +279,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
 
   // Verify spatial inertia for body_indexes is the spatial inertia of just
   // body A if body_indexes contains the world body and body A.
-  const Body<double>& body_A = plant_.GetBodyByName("BodyA");
+  const RigidBody<double>& body_A = plant_.GetBodyByName("BodyA");
   const Frame<double>& frame_A = body_A.body_frame();
   body_indexes.push_back(body_A.index());
   const SpatialInertia<double> M_SAo_A =
@@ -292,7 +292,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
 
   // Verify spatial inertia for body_indexes when body_indexes contains the
   // world body, body A, and body B.
-  const Body<double>& body_B = plant_.GetBodyByName("BodyB");
+  const RigidBody<double>& body_B = plant_.GetBodyByName("BodyB");
   const Frame<double>& frame_B = body_B.body_frame();
   body_indexes.push_back(body_B.index());
   SpatialInertia<double> M_SBo_B =

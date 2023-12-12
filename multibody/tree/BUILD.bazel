@@ -89,7 +89,6 @@ drake_cc_library(
     name = "multibody_tree_core",
     srcs = [
         "ball_rpy_joint.cc",
-        "body.cc",
         "body_node.cc",
         "body_node_impl.cc",
         "door_hinge.cc",

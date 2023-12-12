@@ -91,13 +91,13 @@ class DrakeKukaIIwaRobot {
     linkN_ = &tree().world_body();
 
     // Get this robot's seven links.
-    linkA_ = &tree().GetBodyByName("iiwa_link_1");
-    linkB_ = &tree().GetBodyByName("iiwa_link_2");
-    linkC_ = &tree().GetBodyByName("iiwa_link_3");
-    linkD_ = &tree().GetBodyByName("iiwa_link_4");
-    linkE_ = &tree().GetBodyByName("iiwa_link_5");
-    linkF_ = &tree().GetBodyByName("iiwa_link_6");
-    linkG_ = &tree().GetBodyByName("iiwa_link_7");
+    linkA_ = &tree().GetRigidBodyByName("iiwa_link_1");
+    linkB_ = &tree().GetRigidBodyByName("iiwa_link_2");
+    linkC_ = &tree().GetRigidBodyByName("iiwa_link_3");
+    linkD_ = &tree().GetRigidBodyByName("iiwa_link_4");
+    linkE_ = &tree().GetRigidBodyByName("iiwa_link_5");
+    linkF_ = &tree().GetRigidBodyByName("iiwa_link_6");
+    linkG_ = &tree().GetRigidBodyByName("iiwa_link_7");
 
     // Get this robot's seven joints.
     NA_joint_ =
@@ -274,16 +274,16 @@ class DrakeKukaIIwaRobot {
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
   std::unique_ptr<MultibodyPlant<T>> plant_;
-  const Body<T>* linkN_{nullptr};
+  const RigidBody<T>* linkN_{nullptr};
 
   // Rigid bodies (robot links).
-  const Body<T>* linkA_{nullptr};
-  const Body<T>* linkB_{nullptr};
-  const Body<T>* linkC_{nullptr};
-  const Body<T>* linkD_{nullptr};
-  const Body<T>* linkE_{nullptr};
-  const Body<T>* linkF_{nullptr};
-  const Body<T>* linkG_{nullptr};
+  const RigidBody<T>* linkA_{nullptr};
+  const RigidBody<T>* linkB_{nullptr};
+  const RigidBody<T>* linkC_{nullptr};
+  const RigidBody<T>* linkD_{nullptr};
+  const RigidBody<T>* linkE_{nullptr};
+  const RigidBody<T>* linkF_{nullptr};
+  const RigidBody<T>* linkG_{nullptr};
 
   // Joints.
   const RevoluteJoint<T>* NA_joint_{nullptr};

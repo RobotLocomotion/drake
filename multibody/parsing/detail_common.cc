@@ -157,11 +157,11 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 
 std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
-    const std::function<const Body<double>*(const char*)>& read_body,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant) {
-  const Body<double>* body_A = read_body("drake:ball_constraint_body_A");
+  const RigidBody<double>* body_A = read_body("drake:ball_constraint_body_A");
   if (!body_A) { return {}; }
-  const Body<double>* body_B = read_body("drake:ball_constraint_body_B");
+  const RigidBody<double>* body_B = read_body("drake:ball_constraint_body_B");
   if (!body_B) { return {}; }
 
   const Eigen::Vector3d p_AP = read_vector("drake:ball_constraint_p_AP");

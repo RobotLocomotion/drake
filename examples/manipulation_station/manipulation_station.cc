@@ -45,13 +45,13 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::Body;
 using multibody::ExternallyAppliedSpatialForce;
 using multibody::Joint;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
+using multibody::RigidBody;
 using multibody::SpatialForce;
 using multibody::SpatialInertia;
 
@@ -120,7 +120,7 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
       multibody::MultibodyForces<double> forces(*plant_);
       for (const ExternallyAppliedSpatialForce<double>& a_force :
            *applied_input) {
-        const Body<double>& body = plant_->get_body(a_force.body_index);
+        const RigidBody<double>& body = plant_->get_body(a_force.body_index);
 
         // Get the pose for this body in the world frame.
         const RigidTransform<double>& X_WB =
@@ -601,7 +601,7 @@ void ManipulationStation<T>::Finalize(
           y(-0.35, 0.35), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
-        const multibody::Body<T>& body = plant_->get_body(body_index);
+        const multibody::RigidBody<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
@@ -616,7 +616,7 @@ void ManipulationStation<T>::Finalize(
           y(-0.8, -.55), z(0.3, 0.35);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
-        const multibody::Body<T>& body = plant_->get_body(body_index);
+        const multibody::RigidBody<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
@@ -631,7 +631,7 @@ void ManipulationStation<T>::Finalize(
           y(0, 0), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
-        const multibody::Body<T>& body = plant_->get_body(body_index);
+        const multibody::RigidBody<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
       }
       break;
@@ -1071,7 +1071,7 @@ void ManipulationStation<T>::RegisterRgbdSensor(
   const geometry::SourceId source_id = plant_->get_source_id().value();
   for (const multibody::BodyIndex& body_index :
            plant_->GetBodyIndices(model_index)) {
-    const multibody::Body<T>& body = plant_->get_body(body_index);
+    const multibody::RigidBody<T>& body = plant_->get_body(body_index);
     for (const geometry::GeometryId& geometry_id :
              plant_->GetVisualGeometriesForBody(body)) {
       scene_graph_->RemoveRole(source_id, geometry_id,

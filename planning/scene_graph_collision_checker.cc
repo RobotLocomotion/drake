@@ -28,11 +28,11 @@ using geometry::SceneGraphInspector;
 using geometry::Shape;
 using geometry::SignedDistancePair;
 using math::RigidTransform;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
+using multibody::RigidBody;
 using systems::Context;
 
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
@@ -60,7 +60,7 @@ void SceneGraphCollisionChecker::DoUpdateContextPositions(
 }
 
 std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
-    const std::string& group_name, const Body<double>& bodyA,
+    const std::string& group_name, const RigidBody<double>& bodyA,
     const Shape& shape, const RigidTransform<double>& X_AG) {
   const FrameId body_frame_id = plant().GetBodyFrameIdOrThrow(bodyA.index());
 
@@ -131,8 +131,8 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     // Get the bodies corresponding to the distance pair.
     const FrameId frame_id_A = inspector.GetFrameId(distance_pair.id_A);
     const FrameId frame_id_B = inspector.GetFrameId(distance_pair.id_B);
-    const Body<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
-    const Body<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
+    const RigidBody<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
+    const RigidBody<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A != nullptr);
     DRAKE_THROW_UNLESS(body_B != nullptr);
     // Enforce that our collision filters are consistent with query results.
@@ -204,12 +204,14 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     const SceneGraphInspector<double>& inspector = query_object.inspector();
     const FrameId frame_id_A = inspector.GetFrameId(geometry_id_A);
     const FrameId frame_id_B = inspector.GetFrameId(geometry_id_B);
-    const Body<double>* body_A_maybe = plant().GetBodyFromFrameId(frame_id_A);
-    const Body<double>* body_B_maybe = plant().GetBodyFromFrameId(frame_id_B);
+    const RigidBody<double>* body_A_maybe =
+        plant().GetBodyFromFrameId(frame_id_A);
+    const RigidBody<double>* body_B_maybe =
+        plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A_maybe != nullptr);
     DRAKE_THROW_UNLESS(body_B_maybe != nullptr);
-    const Body<double>& body_A = *body_A_maybe;
-    const Body<double>& body_B = *body_B_maybe;
+    const RigidBody<double>& body_A = *body_A_maybe;
+    const RigidBody<double>& body_B = *body_B_maybe;
     const Frame<double>& frame_A = body_A.body_frame();
     const Frame<double>& frame_B = body_B.body_frame();
 
@@ -253,7 +255,7 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
 
     // Convert the witness points from body frame to world frame.
     // TODO(jwnimmer-tri) Instead of CalcPointsPositions, try either
-    // Body::EvalPoseInWorld or QueryObject::GetPoseInWorld.
+    // RigidBody::EvalPoseInWorld or QueryObject::GetPoseInWorld.
     Vector3d p_WCa;
     plant().CalcPointsPositions(plant_context, frame_A, p_ACa, frame_W, &p_WCa);
     Vector3d p_WCb;
@@ -312,8 +314,8 @@ SceneGraphCollisionChecker::DoClassifyContextBodyCollisions(
     // Get the bodies corresponding to the distance pair.
     const FrameId frame_id_A = inspector.GetFrameId(distance_pair.id_A);
     const FrameId frame_id_B = inspector.GetFrameId(distance_pair.id_B);
-    const Body<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
-    const Body<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
+    const RigidBody<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
+    const RigidBody<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A != nullptr);
     DRAKE_THROW_UNLESS(body_B != nullptr);
     // Ignore distance pair involving allowed collisions.
@@ -355,8 +357,8 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
   for (const auto& candidate : collision_candidates) {
     const FrameId frame_id_A = inspector.GetFrameId(candidate.first);
     const FrameId frame_id_B = inspector.GetFrameId(candidate.second);
-    const Body<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
-    const Body<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
+    const RigidBody<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
+    const RigidBody<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A != nullptr);
     DRAKE_THROW_UNLESS(body_B != nullptr);
 
