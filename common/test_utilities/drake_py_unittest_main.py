@@ -7,6 +7,7 @@ import argparse
 from importlib.machinery import SourceFileLoader
 import io
 import os
+from pathlib import Path
 import re
 import sys
 import trace
@@ -38,6 +39,10 @@ def _unittest_main(*, module, argv, testRunner):
         unittest.main(module=module, argv=argv, warnings=False,
                       testRunner=testRunner)
         return
+
+    # Affirm to the test environment that we are cognizant of sharding.
+    if "TEST_SHARD_STATUS_FILE" in os.environ:
+        Path(os.environ["TEST_SHARD_STATUS_FILE"]).touch()
 
     # Run only some of the tests, per the BUILD.bazel's shard_count.
     total_shards = int(os.environ["TEST_TOTAL_SHARDS"])
