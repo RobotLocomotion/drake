@@ -205,7 +205,6 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
     // TODO(russt): Avoid the symbolic computation here.
     // TODO(russt): Avoid the dense matrix.
-    // TODO(russt): Only add the lower triangular constraints
     // (MathematicalProgram::AddLinearEqualityConstraint has this option, but
     // AddLinearConstraint does not yet).
 
@@ -217,10 +216,10 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         AYAT - b * (A * y).transpose() - A * y * b.transpose();
     const MatrixXd bbT = -b * b.transpose();
 
-    const int flat_tril_size{
+    const int flat_lower_triangular_size{
         static_cast<int>((AYAT.rows() * (AYAT.rows() + 1)) / 2)};
-    VectorX<Expression> rhs_flat_tril(flat_tril_size);
-    VectorXd bbT_flat_tril(flat_tril_size);
+    VectorX<Expression> rhs_flat_tril(flat_lower_triangular_size);
+    VectorXd bbT_flat_tril(flat_lower_triangular_size);
     int count{0};
     for (int j = 0; j < rhs.rows(); ++j) {
       for (int i = j; i < rhs.cols(); ++i) {
@@ -229,10 +228,11 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         ++count;
       }
     }
-    DRAKE_ASSERT(count == flat_tril_size);
+    DRAKE_ASSERT(count == flat_lower_triangular_size);
 
-    relaxation->AddLinearConstraint(rhs_flat_tril, bbT_flat_tril,
-                                    VectorXd::Constant(flat_tril_size, kInf));
+    relaxation->AddLinearConstraint(
+        rhs_flat_tril, bbT_flat_tril,
+        VectorXd::Constant(flat_lower_triangular_size, kInf));
   }
 
   // Linear equality constraints.
