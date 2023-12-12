@@ -1146,41 +1146,6 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return AddConstraint(constraint, symmetric_matrix_var);
 }
 
-namespace {
-
-template <typename T>
-// Extract the principal submatrix from the ordered set of minor_indices. The
-// minor_indices must be in monotonically increasing order. This method makes no
-// assumptions about the symmetry of the matrix, nor that the matrix is square.
-// TODO(hongkai.dai)  move this to matrix_utils.h
-MatrixX<T> MakePrincipalSubmatrix(const Eigen::Ref<const MatrixX<T>>& mat,
-                                  const std::set<int>& minor_indices) {
-  // In Debug builds, check if the minor_indices are valid.
-  if (kDrakeAssertIsArmed) {
-    auto elt_is_in_bounds = [&mat](int elt) {
-      return elt >= 0 && elt < mat.rows() && elt < mat.cols();
-    };
-    DRAKE_ASSERT(std::all_of(minor_indices.begin(), minor_indices.end(),
-                             elt_is_in_bounds));
-  }
-
-  MatrixX<T> minor(minor_indices.size(), minor_indices.size());
-  int row_count = 0;
-  for (auto row_it = minor_indices.begin(); row_it != minor_indices.cend();
-       ++row_it) {
-    minor(row_count, row_count) = mat(*row_it, *row_it);
-    int col_count = row_count + 1;
-    for (auto col_it = next(row_it); col_it != minor_indices.cend(); ++col_it) {
-      minor(row_count, col_count) = mat(*row_it, *col_it);
-      minor(col_count, row_count) = mat(*col_it, *row_it);
-      ++col_count;
-    }
-    ++row_count;
-  }
-  return minor;
-}
-}  // namespace
-
 Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
@@ -1188,8 +1153,7 @@ MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
   // This function relies on AddPositiveSemidefiniteConstraint to validate the
   // documented symmetry prerequisite.
   return AddPositiveSemidefiniteConstraint(
-      MakePrincipalSubmatrix<symbolic::Variable>(symmetric_matrix_var,
-                                                 minor_indices));
+      math::ExtractPrincipalSubmatrix(symmetric_matrix_var, minor_indices));
 }
 
 Binding<PositiveSemidefiniteConstraint>
@@ -1199,7 +1163,7 @@ MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
   // This function relies on AddPositiveSemidefiniteConstraint to validate the
   // documented symmetry prerequisite.
   return AddPositiveSemidefiniteConstraint(
-      MakePrincipalSubmatrix<symbolic::Expression>(e, minor_indices));
+      math::ExtractPrincipalSubmatrix(e, minor_indices));
 }
 
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
