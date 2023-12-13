@@ -8,11 +8,6 @@
 
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/choose_best_solver.h"
-#include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/mosek_solver.h"
-#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -101,12 +96,6 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   auto x = prog.NewContinuousVariables(ambient_dimension());
   other.AddPointInSetConstraints(&prog, x);
 
-  // Specify a list of solvers by preference, to avoid IPOPT getting used for
-  // conic constraints.  See discussion at #15320.
-  // TODO(russt): Revisit this pending resolution of #15320.
-  std::vector<solvers::SolverId> preferred_solvers{solvers::MosekSolver::id(),
-                                                   solvers::GurobiSolver::id()};
-
   // If we have only linear constraints, then add a quadratic cost and solve the
   // QP.  Otherwise add a slack variable and solve the SOCP.
   bool has_only_linear_constraints = true;
@@ -118,7 +107,6 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   }
   if (has_only_linear_constraints) {
     prog.AddQuadraticErrorCost(A_.transpose() * A_, center_, x);
-    preferred_solvers.emplace_back(solvers::IpoptSolver::id());
   } else {
     auto slack = prog.NewContinuousVariables<1>("slack");
     prog.AddLinearCost(slack[0]);
@@ -132,11 +120,8 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     b[1] = 1;
     b.tail(A_.rows()) = -A_ * center_;
     prog.AddRotatedLorentzConeConstraint(A, b, {slack, x});
-    preferred_solvers.emplace_back(solvers::ScsSolver::id());
   }
-  auto solver = solvers::MakeFirstAvailableSolver(preferred_solvers);
-  solvers::MathematicalProgramResult result;
-  solver->Solve(prog, std::nullopt, std::nullopt, &result);
+  solvers::MathematicalProgramResult result = solvers::Solve(prog);
   if (!result.is_success()) {
     // Check if `other` is empty.
     MathematicalProgram prog2;

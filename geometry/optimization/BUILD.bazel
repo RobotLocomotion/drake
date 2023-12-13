@@ -67,12 +67,9 @@ drake_cc_library(
     ],
     deps = [
         "//geometry:read_obj",
-        "//solvers:choose_best_solver",
         "//solvers:get_program_type",
         "//solvers:gurobi_solver",
-        "//solvers:ipopt_solver",
         "//solvers:mosek_solver",
-        "//solvers:scs_solver",
         "//solvers:solve",
         "@qhull_internal//:qhull",
     ],
