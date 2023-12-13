@@ -399,5 +399,5 @@ class TestToppra(unittest.TestCase):
         toppra = Toppra(path=path, plant=plant, gridpoints=gridpoints)
 
         toppra.AddJointAccelerationLimit([-1.], [1.])
-        trajectory = toppra.SolvePathParameterization()
+        trajectory = toppra.SolvePathParameterization(solver_id=None)
         self.assertIsInstance(trajectory, PiecewisePolynomial)

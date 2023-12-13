@@ -192,6 +192,7 @@ PYBIND11_MODULE(optimization, m) {
         .def_static("CalcGridPoints", &Class::CalcGridPoints, py::arg("path"),
             py::arg("options"), cls_doc.CalcGridPoints.doc)
         .def("SolvePathParameterization", &Class::SolvePathParameterization,
+            py::arg("solver_id") = std::nullopt,
             cls_doc.SolvePathParameterization.doc)
         .def("AddJointVelocityLimit", &Class::AddJointVelocityLimit,
             py::arg("lower_limit"), py::arg("upper_limit"),
