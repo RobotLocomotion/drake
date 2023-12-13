@@ -44,25 +44,24 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
 
-  // Note that there will be a set of params for each type of geometry.
-  const std::vector<DrakeVisualizerParams> all_drake_params =
-      internal::ConvertVisualizationConfigToDrakeParams(config);
-  for (const DrakeVisualizerParams& params : all_drake_params) {
-    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, params);
-  }
-  if (config.publish_contacts) {
-    ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm,
-                                           config.publish_period);
+  // Add the LCM-based visualization, unless the user has opted out.
+  if (lcm->get_lcm_url() != LcmBuses::kLcmUrlMemqNull) {
+    // Note that there will be a set of params for each type of geometry.
+    const std::vector<DrakeVisualizerParams> all_drake_params =
+        internal::ConvertVisualizationConfigToDrakeParams(config);
+    for (const DrakeVisualizerParams& params : all_drake_params) {
+      DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, params);
+    }
+    if (config.publish_contacts) {
+      ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm,
+                                             config.publish_period);
+    }
   }
 
-  if (config.publish_inertia) {
-    InertiaVisualizer<double>::AddToBuilder(builder, plant, scene_graph);
-  }
-
+  // Add the Meshcat-based visualization, unless the user has opted out.
   if (meshcat == nullptr && config.enable_meshcat_creation) {
     meshcat = std::make_shared<geometry::Meshcat>();
   }
-
   if (meshcat != nullptr) {
     // Note that there will be a set of params for each type of geometry.
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
@@ -79,6 +78,12 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     if (config.publish_inertia && config.enable_alpha_sliders) {
       meshcat->SetSliderValue("inertia α", 0.5);
     }
+  }
+
+  // The inertia visualization layers atop SceneGraph, and therefore is not
+  // specific to LCM vs Meshcat.
+  if (config.publish_inertia) {
+    InertiaVisualizer<double>::AddToBuilder(builder, plant, scene_graph);
   }
 }
 
