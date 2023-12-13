@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -2209,6 +2210,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
+  DRAKE_DEPRECATED(
+      "2024-04-01",
+      "Use set_discrete_contact_approximation() to set the contact model "
+      "approximation. The underlying solver will be inferred automatically.")
   void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.

@@ -91,8 +91,10 @@ GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   MultibodyPlant<double> plant(0.01);
   auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
   plant.AddPhysicalModel(std::move(deformable_model));
-  // N.B. Currently the manager only supports SAP.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  // N.B. Deformables are only supported with the SAP solver.
+  // Thus for testing we choose one arbitrary contact approximation that uses
+  // the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   plant.Finalize();
   auto contact_manager = std::make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* contact_manager_ptr =
