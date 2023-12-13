@@ -170,6 +170,7 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrix) {
   // clang-format off
   submatrix_manual << X(0, 0), X(0, 2),
                       X(2, 0), X(2, 2);
+  // clang-format on
   submatrix = ExtractPrincipalSubmatrix(X, submatrix_indices);
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(submatrix),
                                        drake::MatrixX<symbolic::Variable>);
