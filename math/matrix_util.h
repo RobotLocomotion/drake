@@ -214,18 +214,23 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
   // intervals include the first index but exclude the last, i.e.
   // [intervals[i][0], intervals[i][1]).
   std::vector<std::pair<int, int>> intervals;
-  int interval_start{*indices.begin()};
-  int last_idx{*indices.begin()};
-  DRAKE_ASSERT(last_idx >= 0);
-  for (const int& i : indices) {
-    DRAKE_ASSERT(i < mat.rows() && i < mat.cols());
-    if (i - last_idx > 1) {
-      intervals.emplace_back(interval_start, last_idx + 1);
-      interval_start = i;
+  auto it = indices.begin();
+  int interval_start{*it};
+  int interval_end{*it};
+  DRAKE_ASSERT(interval_start >= 0);
+  // start iterating at the second element in the set.
+  ++it;
+  for (; it != indices.cend(); ++it) {
+    DRAKE_ASSERT(*it < mat.rows() && *it < mat.cols());
+    if (*it == interval_end + 1) {
+      interval_end = *it;
+    } else {
+      intervals.emplace_back(interval_start, interval_end + 1);
+      interval_start = *it;
+      interval_end = *it;
     }
-    last_idx = i;
   }
-  intervals.emplace_back(last_idx, *indices.rbegin() + 1);
+  intervals.emplace_back(interval_start, interval_end + 1);
 
   MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
   int minor_row_count = 0;
