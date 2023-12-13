@@ -25,6 +25,7 @@ drake_cc_library(
     deps = [
         ":stochastic",
         "//common:name_value",
+        "//common:overloaded",
         "//math:geometric_transform",
     ],
 )
@@ -37,6 +38,7 @@ drake_cc_library(
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
+        "//common:overloaded",
         "//common:random",
         "//common:unused",
         "//common/symbolic:expression",
