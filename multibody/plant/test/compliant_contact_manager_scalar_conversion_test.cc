@@ -52,12 +52,25 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
 constexpr double kTimeStep = 0.001;
 
 // Constructs a plant with a free rigid body and uses the SAP solver.
+// The argument `solver_type` allows to exercise the TAMSI and SAP solver
+// pipelines.
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> MakePlant(
     DiscreteContactSolver solver_type) {
   auto plant = std::make_unique<MultibodyPlant<T>>(kTimeStep);
   plant->AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
-  plant->set_discrete_contact_solver(solver_type);
+  // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+  // arbitrarily choose two model approximations to accomplish this.
+  switch (solver_type) {
+    case DiscreteContactSolver::kTamsi:
+      plant->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kTamsi);
+      break;
+    case DiscreteContactSolver::kSap:
+      plant->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+      break;
+  }
   plant->Finalize();
   return plant;
 }

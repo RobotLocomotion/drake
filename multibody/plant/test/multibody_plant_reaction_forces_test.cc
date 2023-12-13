@@ -134,7 +134,20 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
 
-    plant_->set_discrete_contact_solver(config.contact_solver);
+    if (plant_->is_discrete()) {
+      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+      // arbitrarily choose two model approximations to accomplish this.
+      switch (config.contact_solver) {
+        case DiscreteContactSolver::kTamsi:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kTamsi);
+          break;
+        case DiscreteContactSolver::kSap:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kSap);
+          break;
+      }
+    }
 
     plant_->Finalize();
 

@@ -142,7 +142,11 @@ class DeformableDriverContactKinematicsTest
                                  X_WF_, geometry::Box(10, 10, 1), X_BR);
     }
 
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    // N.B. Deformables are only supported with the SAP solver.
+    // Thus for testing we choose one arbitrary contact approximation that uses
+    // the SAP solver.
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
@@ -430,7 +434,10 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
       plant.world_body(), X_WR, geometry::Box(10, 10, 1),
       "static_collision_geometry", rigid_proximity_props);
 
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  // N.B. Deformables are only supported with the SAP solver.
+  // Thus for testing we choose one arbitrary contact approximation that uses
+  // the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   plant.Finalize();
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();
@@ -486,7 +493,10 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   model->AddFixedConstraint(
       body_id, plant.world_body(), RigidTransformd::Identity(),
       geometry::Box(10, 10, 10), RigidTransformd::Identity());
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  // N.B. Deformables are only supported with the SAP solver.
+  // Thus for testing we choose one arbitrary contact approximation that uses
+  // the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   plant.Finalize();
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();

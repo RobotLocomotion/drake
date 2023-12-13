@@ -68,7 +68,11 @@ class DeformableIntegrationTest : public ::testing::Test {
         RegisterDeformableOctahedron(deformable_model.get(), "deformable");
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    // N.B. Deformables are only supported with the SAP solver.
+    // Thus for testing we choose one arbitrary contact approximation that uses
+    // the SAP solver.
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     /* Register a rigid geometry that serves as an inclined plane. */
     ProximityProperties proximity_prop;
