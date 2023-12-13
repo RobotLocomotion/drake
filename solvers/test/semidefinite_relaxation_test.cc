@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/matrix_util.h"
 
 namespace drake {
 namespace solvers {
@@ -29,25 +30,6 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
   const MatrixXd X_expected = x_expected * x_expected.transpose();
   relaxation->SetInitialGuess(X, X_expected);
 }
-
-// TODO(Alexandre.Amice) Move this to common/math for general use.
-// Given a square matrix, extract the lower triangular part as a vector.
-template <typename Derived>
-VectorX<typename Derived::Scalar> ToLowerTriangularPartVectorFromMatrix(
-    const Eigen::MatrixBase<Derived>& matrix) {
-  DRAKE_ASSERT(matrix.rows() == matrix.rows());
-  int tril_size = (matrix.rows() * (matrix.rows() + 1)) / 2;
-  VectorX<typename Derived::Scalar> ret(tril_size);
-  int cur_row{0};
-  for (int j = 0; j < matrix.rows(); ++j) {
-    for (int i = j; i < matrix.rows(); ++i) {
-      ret(cur_row) = matrix(i, j);
-      ++cur_row;
-    }
-  }
-  return ret;
-}
-
 }  // namespace
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, NoCostsNorConstraints) {
@@ -169,10 +151,10 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, BoundingBoxConstraint) {
   VectorXd value = relaxation->EvalBindingAtInitialGuess(linear_constraint);
   MatrixXd expected_mat =
       (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
-  VectorXd expected = ToLowerTriangularPartVectorFromMatrix(expected_mat);
+  VectorXd expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
   EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   value = linear_constraint.evaluator()->lower_bound();
-  expected = ToLowerTriangularPartVectorFromMatrix(-b * b.transpose());
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
   EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 
@@ -234,10 +216,10 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
       relaxation->linear_constraints()[2]);
   MatrixXd expected_mat =
       (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
-  VectorXd expected = ToLowerTriangularPartVectorFromMatrix(expected_mat);
+  VectorXd expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
   EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   value = relaxation->linear_constraints()[2].evaluator()->lower_bound();
-  expected = ToLowerTriangularPartVectorFromMatrix(-b * b.transpose());
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
   EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 

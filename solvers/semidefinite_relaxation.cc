@@ -8,6 +8,7 @@
 
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
 
 namespace drake {
@@ -205,34 +206,20 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
     // TODO(russt): Avoid the symbolic computation here.
     // TODO(russt): Avoid the dense matrix.
-    // (MathematicalProgram::AddLinearEqualityConstraint has this option, but
-    // AddLinearConstraint does not yet).
 
     const MatrixX<Expression> AYAT =
         A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
     const VectorX<Variable> y = x.head(prog.num_vars());
 
-    const MatrixX<Expression> rhs =
-        AYAT - b * (A * y).transpose() - A * y * b.transpose();
-    const MatrixXd bbT = -b * b.transpose();
-
-    const int flat_lower_triangular_size{
-        static_cast<int>((AYAT.rows() * (AYAT.rows() + 1)) / 2)};
-    VectorX<Expression> rhs_flat_tril(flat_lower_triangular_size);
-    VectorXd bbT_flat_tril(flat_lower_triangular_size);
-    int count{0};
-    for (int j = 0; j < rhs.rows(); ++j) {
-      for (int i = j; i < rhs.cols(); ++i) {
-        rhs_flat_tril(count) = rhs(i, j);
-        bbT_flat_tril(count) = bbT(i, j);
-        ++count;
-      }
-    }
-    DRAKE_ASSERT(count == flat_lower_triangular_size);
+    const VectorX<Expression> rhs_flat_tril =
+        math::ToLowerTriangularColumnsFromMatrix(
+            AYAT - b * (A * y).transpose() - A * y * b.transpose());
+    const VectorXd bbT_flat_tril =
+        math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
 
     relaxation->AddLinearConstraint(
         rhs_flat_tril, bbT_flat_tril,
-        VectorXd::Constant(flat_lower_triangular_size, kInf));
+        VectorXd::Constant(bbT_flat_tril.size(), kInf));
   }
 
   // Linear equality constraints.
