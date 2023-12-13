@@ -39,7 +39,8 @@ class DeformableCollisionFilterTest : public ::testing::Test {
         deformable_model->GetGeometryId(deformable_body_id);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     /* Register a rigid body welded to the world. */
     ProximityProperties proximity_prop;

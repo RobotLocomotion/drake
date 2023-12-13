@@ -44,7 +44,8 @@ struct ContactTestConfig {
   // testing of cases using the hydroelastic contact model, whether point
   // contact is used or not.
   ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
-  DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
+  DiscreteContactApproximation approximation{
+      DiscreteContactApproximation::kTamsi};
 };
 
 // This provides the suffix for each test parameter: the test config
@@ -76,7 +77,7 @@ class RigidBodyOnCompliantGround
     DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
     plant_ = &items.plant;
-    plant_->set_discrete_contact_solver(config.contact_solver);
+    plant_->set_discrete_contact_approximation(config.approximation);
 
     // We change the default gravity magnitude so that numbers are simpler to
     // work with.

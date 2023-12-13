@@ -3873,7 +3873,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   // Set up a plant with 3 constraints with arbitrary parameters.
   MultibodyPlant<double> plant(0.01);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const Body<double>& body_A =
       plant.AddRigidBody("body_A", SpatialInertia<double>{});
   const Body<double>& body_B =
@@ -4761,7 +4761,10 @@ GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
 
   auto set_solver_and_check_approximation =
       [&plant](DiscreteContactSolver solver) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         plant.set_discrete_contact_solver(solver);
+#pragma GCC diagnostic pop
         EXPECT_EQ(plant.get_discrete_contact_solver(), solver);
         if (solver == DiscreteContactSolver::kTamsi) {
           // TAMSI can only solve the TAMSI approximation.

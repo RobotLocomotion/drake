@@ -27,17 +27,42 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
   plant->set_stiction_tolerance(config.stiction_tolerance);
   plant->set_contact_model(
       internal::GetContactModelFromString(config.contact_model));
-  if (config.discrete_contact_approximation.empty()) {
-    // Solver is respected.
-    plant->set_discrete_contact_solver(
-        internal::GetDiscreteContactSolverFromString(
-            config.discrete_contact_solver));
-  } else {
-    // Contact model determines the solver to be used. Therefore
-    // discrete_contact_solver is ignored.
-    plant->set_discrete_contact_approximation(
-        internal::GetDiscreteContactApproximationFromString(
-            config.discrete_contact_approximation));
+  // Only one of these can be non-empty at a time.
+  if (!config.discrete_contact_solver.empty() &&
+      !config.discrete_contact_approximation.empty()) {
+    throw std::logic_error(
+        "In a MultibodyPlantConfig, only one of discrete_contact_solver and "
+        "discrete_contact_approximation can be non-empty at a time.");
+  }
+  if (plant->is_discrete()) {
+    if (!config.discrete_contact_solver.empty()) {
+      // discrete_contact_approximation is empty, therefore
+      // discrete_contact_solver determines both model approximation and solver.
+      static const drake::internal::WarnDeprecated warn_once(
+          "2024-03-01",
+          "Use discrete_contact_approximation instead of "
+          "discrete_contact_solver.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // Until its removal, discrete_contact_solver has precedence over
+      // discrete_contact_approximation.
+      plant->set_discrete_contact_solver(
+          internal::GetDiscreteContactSolverFromString(
+              config.discrete_contact_solver));
+#pragma GCC diagnostic pop
+    } else if (!config.discrete_contact_approximation.empty()) {
+      // discrete_contact_solver is empty, therefore
+      // discrete_contact_approximation determines both model approximation and
+      // solver.
+      plant->set_discrete_contact_approximation(
+          internal::GetDiscreteContactApproximationFromString(
+              config.discrete_contact_approximation));
+    } else {
+      // Both discrete_contact_approximation and discrete_contact_solver are
+      // empty. Default to TAMSI.
+      plant->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kTamsi);
+    }
   }
   plant->set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
   plant->set_contact_surface_representation(

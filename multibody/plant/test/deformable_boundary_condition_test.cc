@@ -59,7 +59,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     deformable_model->SetWallBoundaryCondition(body_id_, p_WQ_, n_W_);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     /* Register a visual geometry for the "wall". */
     constexpr double box_height = 0.4;

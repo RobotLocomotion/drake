@@ -141,7 +141,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
 GTEST_TEST(MultiDofJointWithLimitsTest, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
   // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
@@ -176,7 +176,7 @@ GTEST_TEST(MultiDofJointWithLimitsTest,
            VerifyMultiDofJointsWithoutLimitsAreSupported) {
   MultibodyPlant<double> plant(1.0e-3);
   // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());

@@ -991,7 +991,7 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsing) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1031,7 +1031,7 @@ TEST_F(SdfParserTest, MimicSuccessfulParsing) {
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1071,7 +1071,8 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
 }
 
 TEST_F(SdfParserTest, MimicNoSap) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant_.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1102,7 +1103,7 @@ TEST_F(SdfParserTest, MimicNoSap) {
 }
 
 TEST_F(SdfParserTest, MimicNoJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1131,7 +1132,7 @@ TEST_F(SdfParserTest, MimicNoJoint) {
 }
 
 TEST_F(SdfParserTest, MimicBadJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1160,7 +1161,7 @@ TEST_F(SdfParserTest, MimicBadJoint) {
 }
 
 TEST_F(SdfParserTest, MimicSameJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1181,7 +1182,7 @@ TEST_F(SdfParserTest, MimicSameJoint) {
 }
 
 TEST_F(SdfParserTest, MimicNoMultiplier) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1210,7 +1211,7 @@ TEST_F(SdfParserTest, MimicNoMultiplier) {
 }
 
 TEST_F(SdfParserTest, MimicNoOffset) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1239,7 +1240,7 @@ TEST_F(SdfParserTest, MimicNoOffset) {
 }
 
 TEST_F(SdfParserTest, MimicOnlyOneDOFJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -2193,7 +2194,7 @@ TEST_F(SdfParserTest, BallConstraint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Test successful parsing.
   ParseTestString(R"""(
@@ -2235,7 +2236,7 @@ TEST_F(SdfParserTest, BallConstraintMissingBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2261,7 +2262,7 @@ TEST_F(SdfParserTest, BallConstraintMissingPoint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2287,7 +2288,7 @@ TEST_F(SdfParserTest, BallConstraintNonExistentBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>

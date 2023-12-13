@@ -1004,9 +1004,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_contact_model", &Class::set_contact_model, py::arg("model"),
             cls_doc.set_contact_model.doc)
         .def("get_contact_model", &Class::get_contact_model,
-            cls_doc.get_contact_model.doc)
-        .def("set_discrete_contact_solver", &Class::set_discrete_contact_solver,
-            py::arg("contact_solver"), cls_doc.set_discrete_contact_solver.doc)
+            cls_doc.get_contact_model.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_discrete_contact_solver",
+            WrapDeprecated(cls_doc.set_discrete_contact_solver.doc_deprecated,
+                &Class::set_discrete_contact_solver),
+            py::arg("contact_solver"));
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("get_discrete_contact_solver", &Class::get_discrete_contact_solver,
             cls_doc.get_discrete_contact_solver.doc)
         .def("set_discrete_contact_approximation",

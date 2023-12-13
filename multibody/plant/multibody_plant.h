@@ -2209,6 +2209,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
+  DRAKE_DEPRECATED(
+      "2024-03-01",
+      "Use set_discrete_contact_approximation() to set the contact model "
+      "approximation. The underlying solver will be inferred automatically.")
   void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.

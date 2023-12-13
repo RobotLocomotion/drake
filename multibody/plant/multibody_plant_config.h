@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 
 namespace drake {
@@ -55,16 +56,17 @@ struct MultibodyPlantConfig {
   /// - "tamsi", uses the TAMSI model approximation.
   /// - "sap"  , uses the SAP model approximation.
   ///
-  /// @warning This option is ignored if discrete_contact_approximation is not
-  /// empty. discrete_contact_approximation is the preferred method to choose
-  /// contact model approximations and thus it has precedence over
-  /// discrete_contact_solver.
+  /// @note If empty, the contact solver is determined by
+  /// discrete_contact_approximation, see
+  /// MultibodyPlant::set_discrete_contact_approximation(). If both
+  /// discrete_contact_solver and discrete_contact_approximation are empty, the
+  /// default model (and solver) is TAMSI.
   ///
-  /// @note This config option coordinates with discrete_contact_approximation.
-  /// Using "tamsi" solver has the same effect as setting the
-  /// "tamsi" approximation. Using the "sap" solver has the same effect as
-  /// setting the "sap" approximation.
-  std::string discrete_contact_solver{"tamsi"};
+  /// @warning discrete_contact_solver is deprecated.
+  /// Use discrete_contact_approximation to set the contact model approximation.
+  /// The underlying solver will be inferred automatically. The deprecated code
+  /// will be removed from Drake on or after 2024-03-01.
+  std::string discrete_contact_solver{""};
 
   /// Configures the MultibodyPlant::set_discrete_contact_approximation().
   /// Refer to drake::multibody::DiscreteContactApproximation for details.
@@ -77,8 +79,10 @@ struct MultibodyPlantConfig {
   /// Refer to MultibodyPlant::set_discrete_contact_approximation() and the
   /// references therein for further details.
   ///
-  /// @note For backwards compatibility, an empty string means that the
-  /// approximation is determined by discrete_contact_solver.
+  /// @note If empty, the contact approximation is determined by
+  /// discrete_contact_solver, see set_discrete_contact_solver(). If both
+  /// discrete_contact_solver and discrete_contact_approximation are empty, the
+  /// default model (and solver) is TAMSI.
   std::string discrete_contact_approximation{""};
 
   // TODO(amcastro-tri): Change default to zero, or simply eliminate.

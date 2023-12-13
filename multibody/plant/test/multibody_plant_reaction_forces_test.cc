@@ -66,8 +66,9 @@ struct LadderTestConfig {
   // Contact is modeled with hydroelastic contact if `true` or with
   // point contact if `false`.
   bool hydro_geometry{true};
-  // Discrete solver used in the update.
-  DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
+  // Discrete model approximation used in the update.
+  DiscreteContactApproximation approximation{
+      DiscreteContactApproximation::kTamsi};
   // The ladder is split into two pieces. We join them together using different
   // methods to verify the correctness of reaction forces on a variety of
   // constrained configurations.
@@ -134,12 +135,14 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
 
-    plant_->set_discrete_contact_solver(config.contact_solver);
+    if (plant_->is_discrete()) {
+      plant_->set_discrete_contact_approximation(config.approximation);
+    }
 
     plant_->Finalize();
 
     if (plant_->is_discrete() &&
-        config.contact_solver == DiscreteContactSolver::kSap) {
+        plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
       // When using the SAP solver, the solver convergence tolerance must be set
       // accordingly to the level of high accuracy used in these tests, dictated
       // by the fixture's parameter kTolerance.
@@ -582,44 +585,44 @@ std::vector<LadderTestConfig> MakeTestCases() {
       {.description = "WeldJointDiscretePointTamsi",
        .time_step = 2.0e-2,
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kTamsi,
+       .approximation = DiscreteContactApproximation::kTamsi,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscretePointTamsi",
        .time_step = 1.0e-2,  // N.B. TAMSI goes unstable if using a larger step.
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kTamsi,
+       .approximation = DiscreteContactApproximation::kTamsi,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
       {.description = "WeldJointDiscreteHydroelasticTamsi",
        .time_step = 2.0e-2,
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kTamsi,
+       .approximation = DiscreteContactApproximation::kTamsi,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscreteHydroelasticTamsi",
        .time_step = 1.0e-2,  // N.B. TAMSI goes unstable if using a larger step.
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kTamsi,
+       .approximation = DiscreteContactApproximation::kTamsi,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
 
       // Discrete SAP solver tests.
       {.description = "WeldJointDiscretePointSap",
        .time_step = 2.0e-2,
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kSap,
+       .approximation = DiscreteContactApproximation::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscretePointSap",
        .time_step = 2.0e-2,
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kSap,
+       .approximation = DiscreteContactApproximation::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
       {.description = "WeldJointDiscreteHydroelasticSap",
        .time_step = 2.0e-2,
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kSap,
+       .approximation = DiscreteContactApproximation::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscreteHydroelasticSap",
        .time_step = 2.0e-2,
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kSap,
+       .approximation = DiscreteContactApproximation::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
   };
 }

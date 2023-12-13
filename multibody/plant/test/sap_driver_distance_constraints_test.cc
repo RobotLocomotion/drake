@@ -64,7 +64,8 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
   // MultibodyPlant::AddDistanceConstraint() defaults for a hard constraint with
   // no dissipation.
   void MakeModel(bool anchor_bodyA, bool use_hard_constraint_defaults) {
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Arbitrary inertia values only used by the driver to build a valid contact
     // problem.
@@ -233,7 +234,7 @@ INSTANTIATE_TEST_SUITE_P(SapDistanceConstraintTests, TwoBodiesTest,
 
 GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -279,7 +280,8 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -305,7 +307,7 @@ GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -320,7 +322,7 @@ GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnInvalidSpecs) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =

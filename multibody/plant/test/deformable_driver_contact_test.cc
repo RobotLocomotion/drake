@@ -62,8 +62,10 @@ class DeformableDriverContactTest : public ::testing::Test {
                                              "deformable1");
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
-    /* Register the rigid box intersecting with both deformable octahedrons. */
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
+    /* Register a rigid collision geometry intersecting with the bottom half of
+     the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
     geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
