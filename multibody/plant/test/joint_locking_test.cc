@@ -297,11 +297,13 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
                          ::testing::Values(0, 1));
 
 struct TrajectoryTestConfig {
-  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+  DiscreteContactApproximation approximation{
+      DiscreteContactApproximation::kTamsi};
 };
 
 std::ostream& operator<<(std::ostream& out, const TrajectoryTestConfig& c) {
-  return out << internal::GetStringFromDiscreteContactSolver(c.solver);
+  return out << internal::GetStringFromDiscreteContactApproximation(
+             c.approximation);
 }
 
 // Fixture to construct two plants. Each containing a single double pendulum.
@@ -312,8 +314,8 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
  public:
   void SetUp() {
     TrajectoryTestConfig config = GetParam();
-    plant_welded_ = MakeDoublePendulumPlant(true, config.solver);
-    plant_locked_ = MakeDoublePendulumPlant(false, config.solver);
+    plant_welded_ = MakeDoublePendulumPlant(true, config.approximation);
+    plant_locked_ = MakeDoublePendulumPlant(false, config.approximation);
   }
 
   // Create a plant with a XZ-planar double pendulum where the masses are
@@ -325,10 +327,10 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
   // corresponding to the configuration (0, kElbowPosition) in the model with
   // two joints.
   std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
-      bool weld_elbow, DiscreteContactSolver solver) {
+      bool weld_elbow, DiscreteContactApproximation approximation) {
     std::unique_ptr<MultibodyPlant<double>> plant;
     plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
-    plant->set_discrete_contact_solver(solver);
+    plant->set_discrete_contact_approximation(approximation);
 
     const RigidBody<double>& body1 =
         plant->AddRigidBody("upper_arm", SpatialInertia<double>::MakeUnitary());
@@ -455,8 +457,8 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
 // Test joint locking with TAMSI and SAP.
 std::vector<TrajectoryTestConfig> MakeTrajectoryTestCases() {
   return std::vector<TrajectoryTestConfig>{
-      {.solver = DiscreteContactSolver::kTamsi},
-      {.solver = DiscreteContactSolver::kSap},
+      {.approximation = DiscreteContactApproximation::kTamsi},
+      {.approximation = DiscreteContactApproximation::kSap},
   };
 }
 
@@ -466,13 +468,15 @@ INSTANTIATE_TEST_SUITE_P(JointLockingTests, TrajectoryTest,
 
 struct FilteredContactResultsConfig {
   ContactModel contact_model{ContactModel::kPoint};
-  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+  DiscreteContactApproximation approximation{
+      DiscreteContactApproximation::kTamsi};
 };
 
 std::ostream& operator<<(std::ostream& out,
                          const FilteredContactResultsConfig& c) {
   return out << internal::GetStringFromContactModel(c.contact_model) << "_"
-             << internal::GetStringFromDiscreteContactSolver(c.solver);
+             << internal::GetStringFromDiscreteContactApproximation(
+                    c.approximation);
 }
 
 // Utility testing class to construct a plant with three stacked spheres in
@@ -486,7 +490,7 @@ class FilteredContactResultsTest
     systems::DiagramBuilder<double> builder;
     plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.01 /* time_step */).plant;
     plant_->set_contact_model(config.contact_model);
-    plant_->set_discrete_contact_solver(config.solver);
+    plant_->set_discrete_contact_approximation(config.approximation);
 
     const RigidBody<double>& ball_A = AddBall("ball_A");
     const RigidBody<double>& ball_B = AddBall("ball_B");
@@ -657,13 +661,13 @@ std::vector<FilteredContactResultsConfig>
 MakeFilteredContactResultsTestCases() {
   return std::vector<FilteredContactResultsConfig>{
       {.contact_model = ContactModel::kPoint,
-       .solver = DiscreteContactSolver::kTamsi},
+       .approximation = DiscreteContactApproximation::kTamsi},
       {.contact_model = ContactModel::kHydroelastic,
-       .solver = DiscreteContactSolver::kTamsi},
+       .approximation = DiscreteContactApproximation::kTamsi},
       {.contact_model = ContactModel::kPoint,
-       .solver = DiscreteContactSolver::kSap},
+       .approximation = DiscreteContactApproximation::kSap},
       {.contact_model = ContactModel::kHydroelastic,
-       .solver = DiscreteContactSolver::kSap},
+       .approximation = DiscreteContactApproximation::kSap},
   };
 }
 

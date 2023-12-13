@@ -42,6 +42,12 @@ using drake::internal::DiagnosticPolicy;
 using geometry::GeometryId;
 using geometry::SceneGraph;
 
+// Fixture to add test coverage for the URDF parser. Some features such as mimic
+// joints and ball constraints are only supported in discrete mode when using
+// the SAP solver. For testing such features, we set a model approximation that
+// uses the SAP solver. More specifically, we call
+// set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+// MultibodyPlant used for testing before parsing.
 class UrdfParserTest : public test::DiagnosticPolicyTestBase {
  public:
   UrdfParserTest() {
@@ -346,7 +352,8 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
 TEST_F(UrdfParserTest, MimicNoSap) {
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant_.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -366,7 +373,7 @@ TEST_F(UrdfParserTest, MimicNoSap) {
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -384,7 +391,7 @@ TEST_F(UrdfParserTest, MimicNoJoint) {
 
 TEST_F(UrdfParserTest, MimicBadJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -402,7 +409,7 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
 
 TEST_F(UrdfParserTest, MimicSameJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -420,7 +427,7 @@ TEST_F(UrdfParserTest, MimicSameJoint) {
 
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -443,7 +450,7 @@ TEST_F(UrdfParserTest, MimicMismatchedJoint) {
 
 TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -466,7 +473,7 @@ TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
 
 TEST_F(UrdfParserTest, MimicFloatingJoint) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -494,7 +501,7 @@ TEST_F(UrdfParserTest, MimicFloatingJoint) {
 // error.
 TEST_F(UrdfParserTest, MimicDifferentModelInstances) {
   // Currently the <mimic> tag is only supported by SAP.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -796,7 +803,7 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
 
 TEST_F(UrdfParserTest, JointParsingTest) {
   // We currently need kSap for the mimic element to parse without error.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"
       "joint_parsing_test.urdf");
@@ -1506,7 +1513,8 @@ class BallConstraintTest : public UrdfParserTest {
     // TODO(joemasterjohn): Currently ball constraints are only supported in
     // SAP.
     // Add coverage for other solvers and continuous mode when available.
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
   }
 
   void VerifyParameters(const std::string& body_A, const std::string& body_B,

@@ -72,7 +72,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     plant_ = std::make_unique<MultibodyPlant<double>>(0.01 /* update period */);
     // Use the SAP solver. Thus far only SAP support the modeling of PD
     // controllers.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     Parser parser(plant_.get());
 

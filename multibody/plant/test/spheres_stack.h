@@ -118,7 +118,8 @@ class SpheresStack {
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
     // N.B. Currently only SAP goes through the manager.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Add model of the ground.
     if (ground_params) {

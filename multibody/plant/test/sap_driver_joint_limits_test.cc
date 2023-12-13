@@ -87,7 +87,8 @@ class KukaIiwaArmTests : public ::testing::Test {
   // arbitrary non-zero values.
   void SetSingleRobotModel() {
     // Only SAP supports the modeling of constraints.
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Load robot model from files.
     const std::vector<ModelInstanceIndex> models = SetUpArmModel(&plant_);
@@ -533,7 +534,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
 // the coupler constraints specified in the MultibodyPlant model.
 TEST_F(KukaIiwaArmTests, CouplerConstraints) {
   // Only SAP supports the modeling of constraints.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Load two robot models.
   std::vector<ModelInstanceIndex> arm_gripper1 = SetUpArmModel(&plant_);
