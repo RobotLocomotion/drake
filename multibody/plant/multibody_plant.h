@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -663,11 +664,12 @@ the following properties for point contact modeling:
 
 ⁴ We allow to specify both hunt_crossley_dissipation and relaxation_time for a
   given geometry. However only one of these will get used, depending on the
-  configuration of the %MultibodyPlant. As an example, if the SAP solver is
-  specified (see set_discrete_contact_solver()) only the relaxation_time is used
-  while hunt_crossley_dissipation is ignored. Conversely, if the TAMSI solver is
-  used (see set_discrete_contact_solver()) only hunt_crossley_dissipation is
-  used while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
+  configuration of the %MultibodyPlant. As an example, if the SAP contact
+  approximation is specified (see set_discrete_contact_approximation()) only the
+  relaxation_time is used while hunt_crossley_dissipation is ignored.
+  Conversely, if the TAMSI, Similar or Lagged approximation is used (see
+  set_discrete_contact_approximation()) only hunt_crossley_dissipation is used
+  while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
   model will always use the Hunt & Crossley model and relaxation_time will be
   ignored.
 
@@ -1466,12 +1468,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// Currently constraints are only supported for discrete %MultibodyPlant
   /// models and not for all discrete solvers, see
-  /// set_discrete_contact_solver(). If the model contains constraints not
+  /// get_discrete_contact_solver(). If the model contains constraints not
   /// supported by the discrete solver, the plant will throw an exception at
-  /// Finalize() time. At this point the user has the option to either change
-  /// the contact solver with set_discrete_contact_solver() or in the
-  /// MultibodyPlantConfig, or to re-define the model so that such a constraint
-  /// is not needed.
+  /// Finalize() time. At this point the user has the option to select a contact
+  /// model approximation that uses a solver that supports constraints, or to
+  /// re-define the model so that such a constraint is not needed. A contact
+  /// model approximation can be set with set_discrete_contact_approximation()
+  /// or in the MultibodyPlantConfig.
   ///
   /// Each constraint is identified with a MultibodyConstraintId returned
   /// by the function used to add it (e.g. AddCouplerConstraint()). It is
@@ -2209,6 +2212,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
+  DRAKE_DEPRECATED(
+      "2024-04-01",
+      "Use set_discrete_contact_approximation() to set the contact model "
+      "approximation. The underlying solver will be inferred automatically.")
   void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.

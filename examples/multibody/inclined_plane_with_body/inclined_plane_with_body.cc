@@ -59,8 +59,9 @@ DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
 DEFINE_string(bodyB_type, "sphere", "Valid body types are "
               "'sphere', 'block', or 'block_with_4Spheres'");
-DEFINE_string(contact_solver, "tamsi", "Options are: "
-              "'tamsi', 'sap'");
+DEFINE_string(contact_approximation, "tamsi",
+              "Discrete contact approximation. Options are: 'tamsi', "
+              "'sap', 'similar', 'lagged'");
 
 using drake::multibody::MultibodyPlant;
 
@@ -71,7 +72,7 @@ int do_main() {
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_time_step;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
-  plant_config.discrete_contact_solver = FLAGS_contact_solver;
+  plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 

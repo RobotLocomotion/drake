@@ -156,8 +156,8 @@ int do_main() {
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_time_step;
-  /* Deformable simulation only works with SAP solver. */
-  plant_config.discrete_contact_solver = "sap";
+  /* Deformable simulation only works with SAP. */
+  plant_config.discrete_contact_approximation = "sap";
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 

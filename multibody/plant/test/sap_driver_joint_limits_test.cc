@@ -18,7 +18,13 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
-/* @file This file tests SapDriver's support for joint limits. */
+/* @file This file tests SapDriver's support for joint limits.
+
+  Constraints are only supported by the SAP solver. Therefore, to exercise the
+  relevant code paths, we arbitrarily choose one contact approximation that uses
+  the SAP solver. More precisely, in the unit tests below we call
+  set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+  MultibodyPlant used for testing, before constraints are added. */
 
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
@@ -87,7 +93,8 @@ class KukaIiwaArmTests : public ::testing::Test {
   // arbitrary non-zero values.
   void SetSingleRobotModel() {
     // Only SAP supports the modeling of constraints.
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Load robot model from files.
     const std::vector<ModelInstanceIndex> models = SetUpArmModel(&plant_);
@@ -533,7 +540,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
 // the coupler constraints specified in the MultibodyPlant model.
 TEST_F(KukaIiwaArmTests, CouplerConstraints) {
   // Only SAP supports the modeling of constraints.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Load two robot models.
   std::vector<ModelInstanceIndex> arm_gripper1 = SetUpArmModel(&plant_);

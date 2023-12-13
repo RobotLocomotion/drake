@@ -73,7 +73,7 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     MultibodyPlantConfig plant_config;
     plant_config.time_step = kDt;
-    plant_config.discrete_contact_solver = "sap";
+    plant_config.discrete_contact_approximation = "sap";
     std::tie(plant_, scene_graph_) = AddMultibodyPlant(plant_config, &builder);
 
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
