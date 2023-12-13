@@ -1106,6 +1106,9 @@ drake_cc_googletest(
     deps = [
         "@fmt",
     ],
+    linkopts = [
+        "-pthread",
+    ],
 )
 
 # Likewise (to the above test) for the ostream variation.
@@ -1125,6 +1128,9 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "@fmt",
+    ],
+    linkopts = [
+        "-pthread",
     ],
 )
 

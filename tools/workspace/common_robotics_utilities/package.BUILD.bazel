@@ -54,6 +54,9 @@ cc_library(
         "@eigen",
         "@zlib",
     ],
+    linkopts = [
+        "-pthread",
+    ],
 )
 
 # N.B. This test uses two threads even when OpenMP is not available.

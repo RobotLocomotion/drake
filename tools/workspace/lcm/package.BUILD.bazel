@@ -133,6 +133,9 @@ cc_binary(
         ":lcm",
         "@glib",
     ],
+    linkopts = [
+        "-pthread",
+    ],
 )
 
 cc_binary(
