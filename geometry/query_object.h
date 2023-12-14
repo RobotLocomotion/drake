@@ -596,6 +596,47 @@ class QueryObject {
    <!-- TODO(SeanCurtis-TRI): Support queries of halfspace-A, where A is _not_ a
    halfspace. See https://github.com/RobotLocomotion/drake/issues/10905 -->
 
+   @anchor query_object_compute_pairwise_distance_gradient_table
+   <h3>Characterizing the returned gradients</h3>
+
+   In most cases, the returned gradient vectors are the normalized
+   displacement vectors between two witness points. However, when two
+   geometries touch at zero distance, their witness points have a zero
+   displacement vector that we cannot normalize.
+
+   When two geometries touch at zero distance, we have special implementation
+   to choose reasonable gradients for some cases shown as "Ok" in the table
+   below. Otherwise, they are "NaN" in the table.  In general, we try to
+   choose the gradient, when two geometries touch, in the most consistent
+   way, but the problem sometimes doesn't have a unique solution. For
+   example, any direction is qualified to be the gradient for two concentric
+   spheres. Or two boxes touching at their vertices can pick a gradient from a
+   continuous family of directions.
+
+   <!-- Note to developers: there are a few places that set the gradients.
+     - shape_distance::CalcDistanceFallback<double>() in
+       distance_to_shape_callback.h for non-touching cases.
+     - DistancePairGeometry<T>::SphereShapeDistance() in
+       distance_to_shape_callback.h for Sphere-{Sphere, Box, Capsule, Cylinder,
+       Halfspace} distance. They do not give NaN gradient even with zero-radius
+       sphere.
+     - CalcGradientWhenTouching() in distance_to_shape_touching.h for
+       other touching cases.
+     This table is based on the above functions.
+   -->
+  |           | %Box | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+  | --------: | :--: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+  | Box       | Ok   |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+  | Capsule   | NaN  |  NaN     |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+  | Convex    | NaN  |  NaN     |  NaN    |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+  | Cylinder  | NaN  |  NaN     |  NaN    |  NaN      |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+  | Ellipsoid | NaN  |  NaN     |  NaN    |  NaN      |   NaN      |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+  | HalfSpace | NaN  |  NaN     |  NaN    |  NaN      |   NaN      |   NaN      |  ░░░░░  |  ░░░░░  |
+  | Mesh      | NaN  |  NaN     |  NaN    |  NaN      |   NaN      |   NaN      |  NaN    |  ░░░░░  |
+  | Sphere    | Ok   |  Ok      |  Okᵃ    |  Ok       |   Okᵃ      |   Ok       |  Okᵃ    |  Ok     |
+
+  - ᵃ Return the gradient as a Vector3d of NaN if the sphere has zero radius.
+
    @param max_distance  The maximum distance at which distance data is reported.
 
    @returns The signed distance (and supporting data) for all unfiltered
