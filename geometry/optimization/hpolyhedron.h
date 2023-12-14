@@ -115,7 +115,7 @@ class HPolyhedron final : public ConvexSet {
 
   /** TODO rhjiang write*/
 //   TODO rhjiang make private
-  [[nodiscard]] HPolyedron MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in,int i,std::vector<int>& N_cull) const;
+  [[nodiscard]] HPolyhedron MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const;
 
   /** TODO rhjiang write*/
 //   TODO rhjiang make private

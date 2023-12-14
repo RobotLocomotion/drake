@@ -637,12 +637,38 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
 //         bool do_affine_transform) const {
 
 // }
-HPolyedron MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int i,std::vector<int>& N_cull,std::vector<int>& redundant_indices, Eigen::VectorXd& hx) const{
+HPolyhedron HPolyhedron::MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const{
   moved_in[i] = true;
-  for (ind index : redundant_indices){
-    
+  std::vector<int> i_not_cull;
+  i_not_cull.reserve(A_.rows() - i_cull.size());
+  int num_cull_before_i = 0;
+  for (int j = 0; j < A_.rows(); ++j){
+    if (std::find(i_cull.begin(), i_cull.end(), j) == i_cull.end()) {
+      i_not_cull.push_back(j);
+    }
+    else if (*std::find(i_cull.begin(), i_cull.end(), j)<i){
+      ++num_cull_before_i;
+    }
   }
 
+  Eigen::MatrixXd Hx(i_not_cull.size(), A_.cols());
+  Eigen::VectorXd hx(i_not_cull.size());
+  std::vector<bool> moved_in_new;
+  std::vector<double> d_new;
+  moved_in_new.reserve(i_not_cull.size());
+  d_new.reserve(i_not_cull.size());
+  for (int j = 0; j < static_cast<int>(i_not_cull.size()); ++j) {
+    Hx.row(j) = A_.row(i_not_cull[j]);
+    hx(j) = hx_proposed(i_not_cull[j]);
+    moved_in_new.push_back(moved_in[i_not_cull[j]]);
+    d_new.push_back(d[i_not_cull[j]]);
+  }
+  HPolyhedron inbody = HPolyhedron(Hx,hx);
+  i = i - num_cull_before_i;
+
+  d = d_new;
+  moved_in = moved_in_new;
+  return inbody;
 }
 
 HPolyhedron HPolyhedron::ShuffleHyperplanes(std::vector<double>& d, std::vector<bool>& moved_in, int random_seed) const {
