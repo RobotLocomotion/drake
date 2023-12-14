@@ -67,6 +67,11 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 
   // Retrieves the world body.
   const RigidBody<double>& world_body = model->world_body();
+  EXPECT_EQ(world_body.name(), "world");
+
+  // Make sure the (dispreferred) Body alias is working.
+  const Body<double>& also_world_body = model->world_body();
+  EXPECT_EQ(also_world_body.name(), "world");
 
   // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
   // pendulum. Using a NaN spatial inertia is ok so far since we are still
