@@ -20,6 +20,7 @@ drake_py_binary(
         "wheel_builder/linux.py",
         "wheel_builder/linux_types.py",
         "wheel_builder/macos.py",
+        "wheel_builder/macos_types.py",
         "wheel_builder/main.py",
     ],
     main = "wheel_builder/main.py",
