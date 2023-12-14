@@ -208,6 +208,39 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrix) {
   TestSubmatrix(submatrix);
 }
 
+GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrixErrors) {
+  const int n = 8;
+  const int k = 4;
+  drake::MatrixX<symbolic::Variable> X(n, k);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < k; ++j) {
+      X(i, j) = symbolic::Variable(fmt::format("X({},{})", i, j));
+    }
+  }
+
+  // Index set is empty.
+  std::set<int> indices{};
+  EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
+
+  // First index is negative.
+  indices.insert(-1);
+  EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
+
+  indices.clear();
+  // First index is as large as the number of rows.
+  indices.insert(n);
+  EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
+
+  indices.clear();
+  indices.insert(k);
+  // First index is as large as the number of columns.
+  EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
+
+  indices.insert(0);
+  // First index is in range, but later indices are too large.
+  EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
+}
+
 }  // namespace test
 }  // namespace math
 }  // namespace drake
