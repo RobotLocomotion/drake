@@ -42,6 +42,9 @@ Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
 
 std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
     const ConvexSet& set) {
+  if (!set.IsBounded()) {
+    return std::nullopt;
+  }
   solvers::MathematicalProgram prog;
   int n = set.ambient_dimension();
   auto point = prog.NewContinuousVariables(n);
