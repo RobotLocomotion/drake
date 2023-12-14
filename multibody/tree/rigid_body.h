@@ -861,10 +861,10 @@ class RigidBody : public MultibodyElement<T> {
   systems::NumericParameterIndex spatial_inertia_parameter_index_;
 };
 
-// TODO(sherm1) Uncomment this alias for backwards compatibility after
-//  converting Drake to use RigidBody exclusively.
-// template <typename T>
-// using Body = RigidBody<T>;
+/// (Compatibility) Prefer RigidBody to Body, however this dispreferred alias
+/// is available to permit older code to continue working.
+template <typename T>
+using Body = RigidBody<T>;
 
 }  // namespace multibody
 }  // namespace drake
