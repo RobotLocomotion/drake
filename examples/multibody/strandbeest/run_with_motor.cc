@@ -127,8 +127,8 @@ int do_main() {
                               : "package://drake/examples/multibody/"
                                 "strandbeest/model/StrandbeestBushings.urdf");
   if (FLAGS_with_constraints) {
-    strandbeest.set_discrete_contact_solver(
-        drake::multibody::DiscreteContactSolver::kSap);
+    strandbeest.set_discrete_contact_approximation(
+        drake::multibody::DiscreteContactApproximation::kSap);
   }
   Parser parser(&strandbeest);
   parser.AddModelsFromUrl(urdf_url);

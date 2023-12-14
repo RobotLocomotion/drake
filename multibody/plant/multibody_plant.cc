@@ -295,11 +295,19 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   DRAKE_DEMAND(contact_model_ == ContactModel::kHydroelasticWithFallback);
   DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model ==
                "hydroelastic_with_fallback");
-  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "tamsi");
-  // By default, MultibodyPlantConfig::discrete_contact_approximation is empty
-  // and therefore the solver determines the contact model.
+  // By default, MultibodyPlantConfig::discrete_contact_approximation and
+  // MultibodyPlantConfig::discrete_contact_solver are empty, indicating that
+  // TAMSI is the default approximation and solver.
+  // TODO(amcastro-tri): Along the removal of
+  // MultibodyPlant::set_discrete_contact_solver() on or after 2024-04-01,
+  // the code below should be updated to:
+  //   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
+  //     "[approximation]");
+  // with [approximation] the name of the default contact approximation
+  // consistent with MultibodyPlantConfig.
   DRAKE_DEMAND(discrete_contact_approximation_ ==
                DiscreteContactApproximation::kTamsi);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "");
   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation == "");
 }
 
@@ -478,7 +486,8 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support coupler constraints. Use "
-        "set_discrete_contact_solver() to set a different solver type.");
+        "set_discrete_contact_approximation() to set a model approximation "
+        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
   }
 
   if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
@@ -521,9 +530,8 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support distance constraints. Use "
-        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
-        "SAP solver instead. For other solvers, refer to "
-        "DiscreteContactSolver.");
+        "set_discrete_contact_approximation() to set a model approximation "
+        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
   }
 
   const MultibodyConstraintId constraint_id =
@@ -565,9 +573,8 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support ball constraints. Use "
-        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
-        "SAP solver instead. For other solvers, refer to "
-        "DiscreteContactSolver.");
+        "set_discrete_contact_approximation() to set a model approximation "
+        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
   }
 
   const MultibodyConstraintId constraint_id =
@@ -609,9 +616,8 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support weld constraints. Use "
-        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
-        "SAP solver instead. For other solvers, refer to "
-        "DiscreteContactSolver.");
+        "set_discrete_contact_approximation() to set a model approximation "
+        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
   }
 
   const MultibodyConstraintId constraint_id =

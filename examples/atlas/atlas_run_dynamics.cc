@@ -21,8 +21,9 @@ DEFINE_double(
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model. When using TAMSI, a smaller "
     "time step of 1.0e-3 is recommended.");
-DEFINE_string(discrete_solver, "sap",
-              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
+DEFINE_string(contact_approximation, "sap",
+              "Discrete contact approximation. Options are: 'tamsi', 'sap', "
+              "'similar', 'lagged'");
 
 namespace drake {
 namespace examples {
@@ -47,7 +48,7 @@ int do_main() {
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
-  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 

@@ -13,7 +13,13 @@
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 
-/* @file This file tests SapDriver's support for distance constraints. */
+/* @file This file tests SapDriver's support for distance constraints.
+
+  Constraints are only supported by the SAP solver. Therefore, to exercise the
+  relevant code paths, we arbitrarily choose one contact approximation that uses
+  the SAP solver. More precisely, in the unit tests below we call
+  set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+  MultibodyPlant used for testing, before constraints are added. */
 
 using drake::math::RigidTransformd;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
@@ -64,7 +70,8 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
   // MultibodyPlant::AddDistanceConstraint() defaults for a hard constraint with
   // no dissipation.
   void MakeModel(bool anchor_bodyA, bool use_hard_constraint_defaults) {
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Arbitrary inertia values only used by the driver to build a valid contact
     // problem.
@@ -233,7 +240,7 @@ INSTANTIATE_TEST_SUITE_P(SapDistanceConstraintTests, TwoBodiesTest,
 
 GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -279,7 +286,8 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -305,7 +313,7 @@ GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -320,7 +328,7 @@ GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
 
 GTEST_TEST(DistanceConstraintTests, FailOnInvalidSpecs) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
