@@ -11,6 +11,8 @@ from .common import die, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
 from .common import test_root, find_tests
 
+from .macos_typs import PythonTarget
+
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
 # The platform alias is used for Docker tag names, and, when combined with the
@@ -19,19 +21,19 @@ from .common import test_root, find_tests
 # When updating this list, setup/mac/binary_distribution/Brewfile should also
 # be updated.
 python_targets = (
-    '3.11',
-    '3.12',
+    PythonTarget(3, 11),
+    PythonTarget(3, 12),
 )
 
 
-def _find_wheel(path, version, python_version):
+def _find_wheel(path, version, python_target):
     """
     Returns name of built wheel. Uses `glob` to find it, since trying to
     replicate the logic which determines the macOS platform name is not
     accessible and is very non-trivial to replicate.
     """
     pattern = wheel_name(
-        python_version=python_version.replace('.', ''),
+        python_version=python_target.tag,
         wheel_version=version,
         wheel_platform='*')
 
@@ -108,10 +110,10 @@ def _test_wheel(wheel, python_target, env):
     """
     setup_script = os.path.join(resource_root, 'macos',
                                 'provision-test-python.sh')
-    subprocess.check_call(['bash', setup_script, python_target], env=env)
+    subprocess.check_call(['bash', setup_script, python_target.tag], env=env)
 
     test_python_venv = os.path.join(test_root, 'python')
-    os.symlink(os.path.join(test_root, f'python{python_target}'),
+    os.symlink(os.path.join(test_root, f'python{python_target.tag}'),
                test_python_venv)
 
     # Install the wheel.
@@ -138,7 +140,7 @@ def build(options):
     # Collect set of wheels to be built.
     targets_to_build = []
     for t in python_targets:
-        if t.replace('.', '') in options.python_versions:
+        if t.tag in options.python_versions:
             targets_to_build.append(t)
 
     # Check if there is anything to do.
@@ -185,22 +187,23 @@ def build(options):
 
     # Build the wheel(s).
     for python_target in targets_to_build:
-        os.symlink(os.path.join(build_root, f'python{python_target}', 'wheel'),
+        python_tag = python_target.tag
+        os.symlink(os.path.join(build_root, f'python{python_tag}', 'wheel'),
                    wheel_root)
 
         build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
         build_command = ['bash', build_script]
         build_command.append(options.version)
-        build_command.append(python_target)
+        build_command.append(python_tag)
 
         subprocess.check_call(build_command, env=environment)
 
         # Find the built wheel and, if requested, test and/or extract it.
         wheel = _find_wheel(path=wheelhouse, version=options.version,
-                            python_version=python_target)
+                            python_target=python_target)
 
         if options.test:
-            _test_wheel(wheel, python_target, env=environment)
+            _test_wheel(wheel, python_target=python_target, env=environment)
 
         if options.extract:
             shutil.copy2(wheel, options.output_dir)
