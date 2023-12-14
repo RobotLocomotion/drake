@@ -262,6 +262,13 @@ GTEST_TEST(HyperrectangleTest, AxisAlignedBoundingBox) {
   }
 }
 
+GTEST_TEST(HyperrectangleTest, UnboundedEllipsoid) {
+  // Zero matrix in hyperellipsoid is unbounded.
+  Hyperellipsoid H(Eigen::MatrixXd::Zero(2, 2), Eigen::VectorXd::Zero(2));
+  const auto aabb = Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(H);
+  EXPECT_FALSE(aabb.has_value());
+}
+
 GTEST_TEST(HyperrectangleTest, Serialize) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
