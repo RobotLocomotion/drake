@@ -4,12 +4,12 @@
 #include <memory>
 
 #include <Eigen/Eigenvalues>
-#include <drake/solvers/clarabel_solver.h>
 #include <fmt/format.h>
 
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
