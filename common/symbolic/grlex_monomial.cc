@@ -4,162 +4,57 @@
 #include <map>
 namespace drake {
 namespace symbolic {
-//
-// std::unique_ptr<OrderedMonomial> GrLexMonomial::DoGetNextMonomial() const {
-//  std::map<Variable, int> powers{};
-//  if (total_degree_ == 0) {
-//    // Return the smallest monomial in the lexicographic order. Do this check
-//    // first to avoid having to iterate over all the variables in the monomial
-//    // if this has degree 0.
-//    powers = powers_;
-//    if (!powers.empty()) {
-//      powers.at(powers.cbegin()->first) += 1;
-//    }
-//    return std::unique_ptr<OrderedMonomial>(new GrLexMonomial(powers));
-//  }
-//  // Find the largest non-zero power in lex order monomial.
-//  auto powers_it = powers_.rbegin();
-//  while (powers_it->second == 0) {
-//    powers.emplace_hint(powers.cend(), powers_it->first, 0);
-//    ++powers_it;
-//  }
-//  // Since this is not the constant monomial, there must be a non-zero power.
-//  DRAKE_ASSERT(powers_it != powers_.crend());
-//  const Variable largest_non_zero_variable{powers_it->first};
-//  const int largest_non_zero_power{powers_it->second};
-//
-//  std::cout << "largest variable is " << largest_non_zero_variable <<
-//  std::endl;
-//
-//  if (largest_non_zero_variable.equal_to(powers_.crbegin()->first) &&
-//      largest_non_zero_power == total_degree_) {
-//    // If the largest monomial has total degree equal to the grade, we need to
-//    // increase the grade. The first variable at the next grade is the
-//    smallest
-//    // variable raise to the grade + 1.
-//    while (!powers_it->first.equal_to(
-//        powers_.cbegin()->first /* the smallest monomial */)) {
-//      powers.emplace_hint(powers.cbegin(), powers_it->first, 0);
-//      ++powers_it;
-//    }
-//    // We are now at the smallest monomial.
-//    powers.emplace_hint(powers.cbegin(), powers_it->first, total_degree_ + 1);
-//  } else if (largest_non_zero_variable.equal_to(powers_.cbegin()->first)) {
-//    // We are at the smallest monomial. So we increment the second smallest
-//    // monomial and decrement the smallest monomial.
-//    powers.at(prev(powers_it)->first) += 1;
-//    powers.emplace_hint(powers.cbegin(), powers_it->first,
-//                        powers_it->second - 1);
-//
-//  } else {
-//    ++powers_it;
-//    auto trailing_powers_it = powers_it;
-//    std::map<Variable, int> trailing_powers{};
-//    while (trailing_powers_it != powers_.crend()) {
-//      trailing_powers.emplace(trailing_powers_it->first,
-//                                   trailing_powers_it->second);
-//      ++trailing_powers_it;
-//    }
-//    // There must be monomials in the trailing powers since we have handled
-//    the
-//    // case of no trailing powers in the second clause of this if statement.
-//    DRAKE_ASSERT(trailing_powers.size() > 0);
-//    const GrLexMonomial trailing_variables_monomial{trailing_powers};
-//    std::unique_ptr<OrderedMonomial> next_trailing_monomial{
-//        trailing_variables_monomial.GetNextMonomial()};
-//
-//
-//    if (next_trailing_monomial->total_degree() >
-//        trailing_variables_monomial.total_degree()) {
-//      // The next trailing monomial increased the grade. This is a sign that
-//      we
-//      // actually need to increase the power of the largest_non_zero_variable
-//      // and reset the trailing variables to be all zero until the last
-//      // monomial.
-//      powers.emplace_hint(powers.cbegin(), largest_non_zero_variable,
-//                          largest_non_zero_power + 1);
-//      while (powers_it != powers_.crend()) {
-//        if (powers_it->first.equal_to(powers_.cbegin()->first)) {
-//          powers.emplace_hint(powers.cbegin(), powers_it->first, 1);
-//        } else {
-//          powers.emplace_hint(powers.cbegin(), powers_it->first, 0);
-//        }
-//        ++powers_it;
-//      }
-//    } else {
-//      powers.emplace_hint(powers.cbegin(), largest_non_zero_variable,
-//                          largest_non_zero_power);
-//      // Otherwise we set the rest of the monomial to the next trailing
-//      // monomial.
-//      while (powers_it != powers_.crend()) {
-//        powers.emplace_hint(powers.cbegin(), powers_it->first,
-//                            next_trailing_monomial->degree(powers_it->first));
-//        ++powers_it;
-//      }
-//    }
-//  }
-//  for (const auto& [v, p] : powers) {
-//    std::cout << fmt::format("powers before construction {} : {}", v, p)
-//              << std::endl;
-//  }
-//  return std::unique_ptr<OrderedMonomial>(new GrLexMonomial(powers));
-//}
 
 std::unique_ptr<OrderedMonomial> GrLexMonomial::DoGetNextMonomial() const {
-  std::map<Variable, int> powers{};
+  std::map<Variable, int> powers{powers_};
   if (powers_.crbegin()->second == total_degree_) {
     // If the largest monomial has degree equal to the grade, we need to
-    // increase the grade. The first variable at the next grade is the
-    for(const auto& [v, _]: powers_) {
-      powers.emplace_hint(powers.cend(), v, 0);
-    }
+    // increase the grade. The first monomial at the next grade is the smallest
+    // monomial with power = grade + 1.
     if (!powers.empty()) {
-      powers.at(powers.cbegin()->first) = total_degree_ + 1;
+      powers.at(powers_.crbegin()->first) = 0;
+      powers.at(powers_.cbegin()->first) = total_degree_ + 1;
     }
-    return std::unique_ptr<OrderedMonomial>(new GrLexMonomial(powers));
   } else {
     // Find the largest non-zero power in lex order monomial.
-    auto powers_it = powers_.rbegin();
+    auto powers_it = powers.rbegin();
     while (powers_it->second == 0) {
-      powers.emplace_hint(powers.cend(), powers_it->first, 0);
       ++powers_it;
     }
     // Since this is not the constant monomial, there must be a non-zero power.
-    DRAKE_ASSERT(powers_it != powers_.crend());
-    auto trailing_powers_it = powers_it;
-    ++trailing_powers_it;
-    std::map<Variable, int> trailing_powers{};
-    while (trailing_powers_it != powers_.crend()) {
-      trailing_powers.emplace(trailing_powers_it->first,
-                              trailing_powers_it->second);
-      ++trailing_powers_it;
-    }
-    const GrLexMonomial trailing_variables_monomial{trailing_powers};
-    std::unique_ptr<OrderedMonomial> next_trailing_monomial;
+    DRAKE_ASSERT(powers_it != powers.crend());
 
-    if (trailing_powers.size() == 0) {
-      next_trailing_monomial =
-          std::unique_ptr<OrderedMonomial>(new GrLexMonomial());
+    if (powers_it->second == total_degree_) {
+      // If the largest non-zero power is equal to the grade, then increment the
+      // next variable's power by one, reset the rest of the variables to zero,
+      // and set the smallest monomials power to grade - 1. Notice that there
+      // must be a "next variable", since we cannot be at the largest variable
+      // due to checking that first.
+      powers.at(std::prev(powers_it)->first) += 1;
+      powers.at(powers_it->first) = 0;
+      powers.at(powers.cbegin()->first) = total_degree_ - 1;
     } else {
-      next_trailing_monomial = trailing_variables_monomial.GetNextMonomial();
-    }
-    if (next_trailing_monomial->total_degree() == 0 ||
-        next_trailing_monomial->total_degree() >
-            trailing_variables_monomial.total_degree()) {
-      powers.at(prev(powers_it)->first) += 1;
-      while (powers_it != prev(powers_.crend())) {
-        //        powers.emplace_hint(powers.cend(), powers_it->first, 0);
-        powers.emplace(powers_it->first, 0);
-        ++powers_it;
-      }
-      //      powers.emplace_hint(powers.cend(), powers_it->first, total_degree_
-      //      - 1);
-      powers.emplace(powers_it->first, total_degree_ - 1);
-    } else {
-      powers.emplace_hint(powers.cend(), powers_it->first, powers_it->second);
-      for (const auto& [v, p] : next_trailing_monomial->get_powers()) {
-        //        powers.emplace_hint(powers.cend(), v, p);
-        powers.emplace(v, p);
+      // Otherwise form the trailing powers monomial. Let i be the index of the
+      // largest, non-zero power lex order of the current monomial. The trailing
+      // power monomial has the same variables as the current monomial, except
+      // that the power αⱼ is 0 if j ≤ i and αⱼ = αᵢ if j > i.
+      const int largest_monomial_power = powers_it->second;
+      powers.at(powers_it->first) = 0;
+      GrLexMonomial trailing_monomial{powers};
+      std::unique_ptr<OrderedMonomial> next_trailing_monomial =
+          trailing_monomial.GetNextMonomial();
+      powers.at(powers_it->first) =
+          largest_monomial_power +
+          next_trailing_monomial->degree(powers_it->first);
+      const bool grade_increased{powers.at(powers_it->first) > total_degree_};
+      for (++powers_it; powers_it != powers.crend(); ++powers_it) {
+        // If adding the powers of the next trailing monomial would increase the
+        // grade, then zero out the remaining powers. Otherwise, the next
+        // monomial has the same trailing powers as the next trailing monomials
+        // powers.
+        powers.at(powers_it->first) =
+            grade_increased ? 0
+                            : next_trailing_monomial->degree(powers_it->first);
       }
     }
   }
@@ -169,7 +64,64 @@ std::unique_ptr<OrderedMonomial> GrLexMonomial::DoGetNextMonomial() const {
 
 std::optional<std::unique_ptr<OrderedMonomial>>
 GrLexMonomial::DoMaybeGetPreviousMonomial() const {
-  return std::nullopt;
+  // We only need to handle the case when the total degree is more than 0.
+  std::map<Variable, int> powers{powers_};
+  if (powers.cbegin()->second == total_degree_) {
+    // If the smallest monomial has degree equal to the grade, we need to
+    // decrease the grade. The first monomial at the next grade is the largest
+    // monomial with power = grade - 1.
+    if (!powers.empty()) {
+      powers.at(powers_.crbegin()->first) = total_degree_ - 1;
+      powers.at(powers_.cbegin()->first) = 0;
+    }
+  } else {
+    // Find the largest non-zero power in lex order monomial
+    auto powers_it = powers.rbegin();
+    while (powers_it->second == 0) {
+      ++powers_it;
+    }
+    DRAKE_ASSERT(powers_it != powers.crend());
+    const int largest_monomial_power = powers_it->second;
+
+    // Form the trailing powers monomial. Let i be the index of the
+    // largest, non-zero power lex order of the current monomial. The trailing
+    // power monomial has the same variables as the current monomial, except
+    // that the power αⱼ is 0 if j ≤ i and αⱼ = αᵢ if j > i.
+    powers.at(powers_it->first) = 0;
+    GrLexMonomial trailing_monomial{powers};
+    std::optional<std::unique_ptr<OrderedMonomial>> prev_trailing_monomial =
+        trailing_monomial.MaybeGetPreviousMonomial();
+    if (!prev_trailing_monomial.has_value()) {
+      powers.at(powers_it->first) = largest_monomial_power - 1;
+      powers.at((++powers_it)->first) += 1;
+      for (++powers_it; powers_it != powers.crend(); ++powers_it) {
+        powers.at(powers_it->first) = 0;
+      }
+    } else if (prev_trailing_monomial->get()->total_degree() ==
+               trailing_monomial.total_degree()) {
+      powers.at(powers_it->first) = largest_monomial_power;
+      for (++powers_it; powers_it != powers.crend(); ++powers_it) {
+        powers.at(powers_it->first) =
+            prev_trailing_monomial->get()->degree(powers_it->first);
+      }
+    } else {
+      powers.at(powers_it->first) = largest_monomial_power - 1;
+      powers.at((++powers_it) -> first) = 1 + trailing_monomial.total_degree();
+//      if (powers.at(powers_it->first) == 0) {
+//        powers.at((++powers_it)->first) = total_degree_;
+//        for (++powers_it; powers_it != powers.crend(); ++powers_it) {
+//          powers.at(powers_it->first) = 0;
+//        }
+//      } else {
+//        powers.at((++powers_it)->first) += 1;
+//        for (++powers_it; powers_it != powers.crend(); ++powers_it) {
+//          powers.at(powers_it->first) =
+//              prev_trailing_monomial->get()->degree(powers_it->first);
+//        }
+//      }
+    }
+  }
+  return std::unique_ptr<OrderedMonomial>(new GrLexMonomial(powers));
 }
 
 bool GrLexMonomial::DoLessThanComparison(const OrderedMonomial& m) const {

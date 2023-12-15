@@ -100,17 +100,15 @@ TEST_F(LexMonomialTest, TestMaybeGetPreviousMonomial) {
                   next_monomial->degree(var_y_));
         EXPECT_EQ(monomials_.at(i).degree(var_z_),
                   next_monomial->degree(var_z_));
-      }
-      // Leading variable is y so decrease y
-      else if (monomials_.at(i).degree(var_y_) > 1) {
+      } else if (monomials_.at(i).degree(var_y_) > 1) {
+        // Leading variable is y so decrease y
         EXPECT_EQ(next_monomial->degree(var_x_), 0);
         EXPECT_EQ(monomials_.at(i).degree(var_y_) - 1,
                   next_monomial->degree(var_y_));
         EXPECT_EQ(monomials_.at(i).degree(var_z_),
                   next_monomial->degree(var_z_));
-      }
-      // Leading variable is z so decrease z
-      else {
+      } else {
+        // Leading variable is z so decrease z
         EXPECT_EQ(next_monomial->degree(var_x_), 0);
         EXPECT_EQ(next_monomial->degree(var_y_), 0);
         EXPECT_EQ(monomials_.at(i).degree(var_z_) - 1,
