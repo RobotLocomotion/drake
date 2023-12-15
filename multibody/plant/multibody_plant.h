@@ -1980,40 +1980,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @name                    Contact modeling
   /// Use methods in this section to choose the contact model and to provide
   /// parameters for that model. Currently Drake supports an advanced compliant
-  /// contact model we call _Hydroelastic contact_ and a penalty-based point
-  /// contact model as a reliable fallback.
+  /// model of continuous surface patches we call _Hydroelastic contact_ and a
+  /// compliant point contact model as a reliable fallback.
   ///
   /// @anchor mbp_hydroelastic_materials_properties
   ///                      #### Hydroelastic contact
   ///
-  /// To understand how material properties enter into the modeling of contact
-  /// traction in the hydroelastic model, the user is referred to [R. Elandt
-  /// 2019] for details.
-  /// For brevity, here we limit ourselves to state the relationship between the
-  /// material properties and the computation of the normal traction or
-  /// "pressure" `p(x)` at each point `x` in the contact patch.
-  /// Given two bodies A and B, with hydroelastic moduli `Eᵃ` and `Eᵇ`
-  /// respectively and dissipation `dᵃ` and `dᵇ` respectively, we define the
-  /// effective material properties of the pair according to: <pre>
-  ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
-  ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
-  /// </pre>
-  /// The effective hydroelastic modulus computation is based on that of the
-  /// effective elastic modulus in the Hertz theory of contact.
-  /// Dissipation is weighted in accordance with the
-  /// fact that the softer material will deform more and faster and thus the
-  /// softer material dissipation is given more importance. Hydroelastic
-  /// modulus has units of pressure, i.e. `Pa (N/m²)`. The hydroelastic modulus
-  /// is often estimated based on the Young's modulus of the material though in
-  /// the hydroelastic model it represents an effective elastic property. For
-  /// instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the P-wave
-  /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
-  /// ratio, consistent with the theory of layered solids in which plane
+  /// The purpose of this documentation is to provide a quick overview of our
+  /// contact models and their modeling parameters. More details are provided in
+  /// Drake's @ref hydroelastic_user_guide "Hydroelastic Contact User Guide" and
+  /// references therein.
+  ///
+  /// In a nutshell, each hydroelastic body defines a body centric pressure
+  /// field that increases towards the inside of the body. How quickly this
+  /// pressure field increases towards the inside is parameterized by a
+  /// “Hydroelastic modulus”, see @ref hug_hydro_theory "Hydroelastic Contact".
+  /// When two of these hydroelastic bodies come into contact (i.e. they
+  /// overlap), a contact patch is defined by the surface of equal hydroelastic
+  /// pressure within the volume of intersection. Forces and moments are then
+  /// computed by integrating these pressure contributions over the contact
+  /// surface.
+  ///
+  /// The Hydroelastic modulus has units of pressure, i.e. `Pa (N/m²)`. The
+  /// hydroelastic modulus is often estimated based on the Young's modulus of
+  /// the material though in the hydroelastic model it represents an effective
+  /// elastic property. For instance, [R. Elandt 2019] chooses to use `E = G`,
+  /// with `G` the P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the
+  /// Poisson ratio, consistent with the theory of layered solids in which plane
   /// sections remain planar after compression. Another possibility is to
   /// specify `E = E*`, with `E*` the effective elastic modulus given by the
   /// Hertz theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
   /// estimation of `hydroelastic_modulus` starts with the Young's modulus of
-  /// the material.
+  /// the material. However, due to numerical conditioning, much smaller values
+  /// are used in practice for hard materials such as steel. While Young's
+  /// modulus of steel is about 200 GPa (2×10¹¹ Pa), hydroelastic modulus values
+  /// of about 10⁵−10⁶ Pa lead to good approximations of rigid contact, with no
+  /// practical reason to use higher values.
   ///
   /// @note `hydroelastic_modulus` has units of stress/strain, measured in
   /// Pascal or N/m² like the more-familiar elastic moduli discussed above.
@@ -2023,6 +2025,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// We use a Hunt & Crossley dissipation model parameterized by a dissipation
   /// constant with units of inverse of velocity, i.e. `s/m`. See
   /// @ref mbp_dissipation_model "Modeling Dissipation" for more detail.
+  /// For two hydroelastic bodies A and B, with hydroelastic moduli `Eᵃ` and
+  /// `Eᵇ` respectively and dissipation `dᵃ` and `dᵇ` respectively, an effective
+  /// dissipation is defined according to the combination law: <pre>
+  ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
+  ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
+  /// </pre>
+  /// thus dissipation is weighted in accordance with the fact that the softer
+  /// material will deform more and faster and thus the softer material
+  /// dissipation is given more importance.
   ///
   /// The dissipation can be specified in one of two ways:
   ///
@@ -2038,26 +2049,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   geometry::AddCompliantHydroelasticPropertiesForHalfSpace(), or
   /// - define it in an input URDF/SDFormat file as detailed here:
   ///   @ref tag_drake_hydroelastic_modulus.
-  ///
-  /// With the effective properties of the pair defined as above, the
-  /// hydroelastic model pressure field is computed according to:
-  /// <pre>
-  ///   p(x) = E⋅ε(x)⋅(1 - d⋅vₙ(x))₊
-  /// </pre>
-  /// where we defined the effective strain: <pre>
-  ///   ε(x) = εᵃ(x) + εᵇ(x)
-  /// </pre>
-  /// which relates to the quasi-static pressure field p₀(x) (i.e. when velocity
-  /// is neglected) by: <pre>
-  ///   p₀(x) = E⋅ε(x) = Eᵃ⋅εᵃ(x) = Eᵇ⋅εᵇ(x)
-  /// </pre>
-  /// that is, the hydroelastic model computes the contact patch assuming
-  /// quasi-static equilibrium.
-  /// The separation speed `vₙ(x)` is computed as the component in the
-  /// direction of the contact surface's normal `n̂(x)` of the relative velocity
-  /// between points `Ax` and `Bx` at point `x` instantaneously moving with body
-  /// frames A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
-  /// `n̂(x)` points from body A into body B.
   ///
   /// [Elandt 2019] R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A
   ///   pressure field model for fast, robust approximation of net contact force
