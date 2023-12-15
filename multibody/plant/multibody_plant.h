@@ -2050,11 +2050,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// - define it in an input URDF/SDFormat file as detailed here:
   ///   @ref tag_drake_hydroelastic_modulus.
   ///
-  /// [Elandt 2019] R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A
-  ///   pressure field model for fast, robust approximation of net contact force
-  ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
-  ///   on Intelligent Robots and Systems (IROS), 2019.
-  ///
   /// @anchor mbp_compliant_point_contact
   ///                   #### Compliant point contact model
   ///
@@ -2090,7 +2085,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// with default values match those estimated using the user-supplied
   /// "penetration allowance", as described below.
   ///
-  /// When modeling stiff materials such as steel or ceramics, these model
+  /// @note When modeling stiff materials such as steel or ceramics, these model
   /// parameters often need to be tuned as a trade-off between numerical
   /// stiffness and physical accuracy. Stiffer materials lead to a harder to
   /// solve system of equations, affecting the overall performance of the
@@ -2165,9 +2160,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// To be more precise, compliant point contact forces are modeled as a
   /// function of state x: <pre>
-  ///   f(x) = f₀(x)⋅(1 - d⋅vₙ(x))₊
+  ///   f(x) = fₑ(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
-  /// where here `f₀(x)` denotes the elastic forces, vₙ(x) is the contact
+  /// where here `fₑ(x)` denotes the elastic forces, vₙ(x) is the contact
   /// velocity in the normal direction (negative when objects approach) and
   /// `(a)₊` denotes "the positive part of a". The model parameter `d ` is the
   /// Hunt & Crossley dissipation constant, in s/m. The Hunt & Crossley term
@@ -2177,10 +2172,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the stress level, rather than forces. That is, pressure `p(x)` at a
   /// specific point on the contact surface is replaces the force `f(x)` in the
   /// point contact model: <pre>
-  ///   p(x) = p₀(x)⋅(1 - d⋅vₙ(x))₊
+  ///   p(x) = pₑ(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
-  /// where `p₀(x)` is the (elastic) hydroelastic pressure and once more the
+  /// where `pₑ(x)` is the (elastic) hydroelastic pressure and once more the
   /// term `(1 - d⋅vₙ(x))₊` models Hunt & Crossley dissipation.
+  ///
+  /// This is our prefered model of dissipation for several reasons:
+  /// 1. It is based on physics and has been developed based on experimental
+  ///    observations.
+  /// 2. It is a continous function of state, as in the real phyisical world.
+  ///    Moreover, this continuity leads to better conditioned systems of
+  ///    equations.
+  /// 3. The bounce velocity after an impact is bounded by 1/d, giving a quick
+  ///    physical intuition when setting this parameter.
+  /// 4. Typical values are in the range [0; 100] s/m, with a value of 20 s/m
+  ///    being typical.
+  /// 5. Values larger than 500 s/m are unphysical and usually lead to numerical
+  ///    problems when using discrete approximations given how time is
+  ///    discretized.
+  ///
+  /// The Hunt & Crossley model is supported by the
+  /// DiscreteContactApproximation::kTamsi,
+  /// DiscreteContactApproximation::kSimilar, and
+  /// DiscreteContactApproximation::kLagged model approximations. In particular,
+  /// DiscreteContactApproximation::kSimilar and
+  /// DiscreteContactApproximation::kLagged are convex approximations of
+  /// contact, using a solver with theoretical and practical convergence
+  /// guarantees.
   ///
   /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
   ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
