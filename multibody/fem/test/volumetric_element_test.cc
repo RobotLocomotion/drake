@@ -351,7 +351,7 @@ TEST_F(VolumetricElementTest, MassMatrixSumUpToTotalMass) {
 
 /* Tests that when applying the gravity force density field, the result agrees
  with analytic solution. */
-TEST_F(VolumetricElementTest, ExternalForce) {
+TEST_F(VolumetricElementTest, PerReferenceVolumeExternalForce) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   const auto& data = EvalElementData(*fem_state);
   const AD mass_density = 2.7;
@@ -376,6 +376,65 @@ TEST_F(VolumetricElementTest, ExternalForce) {
   const Vector3<AD> expected_gravity_force =
       reference_volume()[0] * gravity_vector * mass_density;
   EXPECT_TRUE(CompareMatrices(total_force, expected_gravity_force, kEpsilon));
+}
+
+/* Tests that when applying a per current volume force density field, the result
+ agrees with analytic solution. The only reason we use AutoDiffXd here is
+ because we are reusing an AutoDiffXd fixture previously used to compute
+ gradients. This unit test in particular does not use AutoDiffXd to
+ compute gradients. */
+TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
+  /* We scale the reference positions to get the current positions so we have
+   precise control of the current volume. */
+  const double scale = 1.23;
+  const Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X_matrix =
+      reference_positions();
+  const Eigen::Matrix<AD, kSpatialDimension, kNumNodes> x_matrix =
+      scale * X_matrix;
+  Vector<double, kNumDofs> x_double(Eigen::Map<Vector<double, kNumDofs>>(
+      math::DiscardGradient(x_matrix).data(), x_matrix.size()));
+  Vector<AD, kNumDofs> x(x_double);
+  const Vector<AD, kNumDofs> v = Vector<AD, kNumDofs>::Zero();
+  const Vector<AD, kNumDofs> a = Vector<AD, kNumDofs>::Zero();
+  unique_ptr<FemState<AD>> fem_state = MakeFemState(x, v, a);
+  const auto& data = EvalElementData(*fem_state);
+
+  const Vector3<AD> force_per_current_volume(4, 5, 6);
+  /* A constant per current volume force density field. */
+  class ConstantForceDensityField final : public ForceDensityField<AD> {
+   public:
+    explicit ConstantForceDensityField(const Vector3<AD>& f) : f_(f) {}
+
+   private:
+    Vector3<AD> DoEvaluateAt(const systems::Context<AD>& context,
+                             const Vector3<AD>& p_WQ) const final {
+      return f_;
+    };
+
+    std::unique_ptr<ForceDensityField<AD>> DoClone() const final {
+      return std::make_unique<ConstantForceDensityField>(*this);
+    }
+
+    const Vector3<AD> f_;
+  };
+  ConstantForceDensityField external_force_field(force_per_current_volume);
+  /* The constant force field doesn't depend on Context, but a Context is needed
+   formally. So we create a dummy Context that's otherwise unused. */
+  MultibodyPlant<AD> plant(0.01);
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  fem::FemPlantData<AD> plant_data{*context, {&external_force_field}};
+
+  VectorX<AD> external_force = VectorX<AD>::Zero(kNumDofs);
+  element().AddScaledExternalForces(data, plant_data, 1.0, &external_force);
+  Vector3<AD> total_force = Vector3<AD>::Zero();
+  for (int i = 0; i < kNumNodes; ++i) {
+    total_force += external_force.segment<3>(3 * i);
+  }
+
+  const AD current_volume = reference_volume()[0] * scale * scale * scale;
+  const Vector3<AD> expected_force = current_volume * force_per_current_volume;
+  EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
 }
 
 }  // namespace

@@ -505,6 +505,36 @@ class Meshcat {
   void SetCameraPose(const Eigen::Vector3d& camera_in_world,
                      const Eigen::Vector3d& target_in_world);
 
+  /** Returns the most recently received camera pose.
+
+   A meshcat browser session can be configured to transmit its camera pose.
+   It is enabled by appending a url parameter. For example, if the url for the
+   meshcat server is:
+
+       http://localhost:7000
+
+   A particular browser can be configured to transmit its camera pose back to
+   Drake by supplying the following url:
+
+       http://localhost:7000/?tracked_camera=on
+
+   It is possible to use that URL in multiple browsers simultaneously. A
+   particular view will only transmit its camera position when its camera
+   position actually *changes*. As such, the returned camera pose will reflect
+   the pose of the camera from that most-recently manipulated browser.
+
+   std::nullopt is returned if:
+
+     - No meshcat session has transmitted its camera pose.
+     - The meshcat session that last transmitted its pose is no longer
+       connected.
+     - The meshcat session transmitting has an orthographic camera.
+
+  <!-- Note to developer. This logic is tested in the python test
+   meshcat_camera_tracking_test.py. -->
+   */
+  std::optional<math::RigidTransformd> GetTrackedCameraPose() const;
+
   // TODO(SeanCurtis-TRI): Consider the API:
   //  void SetCameraPose(const RigidTransformd& X_WC, bool target_distance = 1);
   // We'll have to confirm that picking arbitrary rotations R_WC doesn't
@@ -826,7 +856,10 @@ class Meshcat {
   way to save and share your 3D content.
 
   Note that controls (e.g. sliders and buttons) are not included in the HTML
-  output, because their usefulness relies on a connection to the server. */
+  output, because their usefulness relies on a connection to the server.
+
+  You can also use your browser to download this file, by typing "/download"
+  on the end of the URL (i.e., accessing `web_url() + "/download"`). */
   std::string StaticHtml();
 
   /** Sets a flag indicating that subsequent calls to SetTransform and

@@ -5,6 +5,7 @@
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -36,8 +37,10 @@ namespace {
 //   subject to (V-rho)*(x'*x)^d - Lambda*Vdot is SOS.
 // If we cannot confirm negative definiteness, then we must ask instead for
 // Vdot >=0 => V >= rho (or x=0).
-Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
-                               const Expression& V, const Expression& Vdot) {
+Expression FixedLyapunovConvex(
+    const solvers::VectorXIndeterminate& x, const Expression& V,
+    const Expression& Vdot, const std::optional<solvers::SolverId>& solver_id,
+    const std::optional<solvers::SolverOptions>& solver_options) {
   // Check if the Hessian of Vdot is negative definite.
   Environment env;
   for (int i = 0; i < x.size(); i++) {
@@ -52,11 +55,11 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   if (Vdot_is_locally_negative_definite) {
     // Then "balance" V and Vdot.
     const Eigen::MatrixXd S =
-      symbolic::Evaluate(symbolic::Jacobian(V.Jacobian(x), x), env);
+        symbolic::Evaluate(symbolic::Jacobian(V.Jacobian(x), x), env);
     const Eigen::MatrixXd T = math::BalanceQuadraticForms(S, -P);
-    const VectorX<Expression> Tx = T*x;
+    const VectorX<Expression> Tx = T * x;
     Substitution subs;
-    for (int i=0; i<static_cast<int>(x.size()); i++) {
+    for (int i = 0; i < static_cast<int>(x.size()); i++) {
       subs.emplace(x(i), Tx(i));
     }
     V_balanced = Polynomial(V.Substitute(subs));
@@ -75,7 +78,7 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   // TODO(russt): Add this as an option once I have an example that needs it.
   // This is a reasonable guess: we want the multiplier to be able to compete
   // with terms in Vdot, and to be even (since it may be SOS below).
-  const int lambda_degree = std::ceil(Vdot_degree/2.0) * 2;
+  const int lambda_degree = std::ceil(Vdot_degree / 2.0) * 2;
   const auto lambda = prog.NewFreePolynomial(Variables(x), lambda_degree);
 
   const auto rho = prog.NewContinuousVariables<1>("rho")[0];
@@ -93,7 +96,13 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   }
 
   prog.AddCost(-rho);
-  const auto result = Solve(prog);
+  solvers::MathematicalProgramResult result;
+  if (solver_id.has_value()) {
+    const auto solver = solvers::MakeSolver(solver_id.value());
+    solver->Solve(prog, std::nullopt, solver_options, &result);
+  } else {
+    result = Solve(prog, std::nullopt, solver_options);
+  }
 
   DRAKE_THROW_UNLESS(result.is_success());
 
@@ -128,8 +137,7 @@ Expression FixedLyapunovConvexImplicit(
   y << x, xdot;
   const Eigen::MatrixXd P =
       symbolic::Evaluate(symbolic::Jacobian(Vdot.Jacobian(y), y), env);
-  const Eigen::MatrixXd G =
-      symbolic::Evaluate(symbolic::Jacobian(g, y), env);
+  const Eigen::MatrixXd G = symbolic::Evaluate(symbolic::Jacobian(g, y), env);
   Eigen::FullPivLU<MatrixXd> lu(G);
   MatrixXd N = lu.kernel();
   const double tolerance = 1e-8;
@@ -150,7 +158,7 @@ Expression FixedLyapunovConvexImplicit(
   // TODO(russt): Add this as an option once I have an example that needs it.
   // This is a reasonable guess: we want the multiplier to be able to compete
   // with terms in Vdot, and to be even (since it may be SOS below).
-  const int lambda_degree = std::ceil(Vdot_degree/2.0) * 2;
+  const int lambda_degree = std::ceil(Vdot_degree / 2.0) * 2;
   const Polynomial lambda = prog.NewFreePolynomial(Variables(y), lambda_degree);
   VectorX<Polynomial> lambda_g(g.size());
   VectorX<Polynomial> g_poly(g.size());
@@ -182,7 +190,8 @@ Expression FixedLyapunovConvexImplicit(
   DRAKE_THROW_UNLESS(result.is_success());
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
-  return V / result.GetSolution(rho);}
+  return V / result.GetSolution(rho);
+}
 
 }  // namespace
 
@@ -239,7 +248,13 @@ Expression RegionOfAttraction(const System<double>& system,
 
     // Check that V is positive definite.
     prog.AddSosConstraint(V);
-    const auto result = Solve(prog);
+    solvers::MathematicalProgramResult result;
+    if (options.solver_id.has_value()) {
+      auto solver = solvers::MakeSolver(options.solver_id.value());
+      solver->Solve(prog, std::nullopt, options.solver_options, &result);
+    } else {
+      result = Solve(prog, std::nullopt, options.solver_options);
+    }
     DRAKE_THROW_UNLESS(result.is_success());
   } else {
     // Solve a Lyapunov equation to find a candidate.
@@ -272,7 +287,8 @@ Expression RegionOfAttraction(const System<double>& system,
             .get_vector()
             .CopyToVector();
     const Expression Vdot = V.Jacobian(x_bar).dot(f);
-    V = FixedLyapunovConvex(x_bar, V, Vdot);
+    V = FixedLyapunovConvex(x_bar, V, Vdot, options.solver_id,
+                            options.solver_options);
   }
 
   // Put V back into global coordinates.

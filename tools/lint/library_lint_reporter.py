@@ -63,7 +63,7 @@ def main():
         # Filter out false positives.  All C++ code is OK to depend on these.
         item for item in extra_deps
         if not (item.startswith("//tools/cc_toolchain:")
-                or item.startswith("@bazel_tools//"))
+                or "@bazel_tools//" in item)
     ]
     if extra_deps:
         print(("ERROR: Extra deps in {}'s drake_cc_package_library.").format(

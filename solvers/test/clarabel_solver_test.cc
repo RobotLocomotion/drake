@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -184,6 +185,41 @@ TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   }
 }
 
+GTEST_TEST(TestLPDualSolution1, Test) {
+  ClarabelSolver solver;
+  if (solver.is_available()) {
+    TestLPDualSolution1(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution2, Test) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution2(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution3, Test) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution3(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution4, Test) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution4(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution5, Test) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution5(solver, kTol);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   ClarabelSolver solver;
   if (solver.available()) {
@@ -268,6 +304,28 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, kTol);
 }
 
+GTEST_TEST(TestSOCP, LorentzConeDual) {
+  ClarabelSolver solver;
+  SolverOptions solver_options;
+  TestSocpDualSolution1(solver, solver_options, kTol);
+}
+
+GTEST_TEST(TestSOCP, RotatedLorentzConeDual) {
+  ClarabelSolver solver;
+  SolverOptions solver_options;
+  TestSocpDualSolution2(solver, solver_options, kTol);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  ClarabelSolver solver;
+  TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
+  ClarabelSolver solver;
+  TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ClarabelSolver solver;
   if (solver.available()) {
@@ -339,6 +397,34 @@ GTEST_TEST(TestSos, UnivariateNonnegative1) {
   if (solver.is_available()) {
     const auto result = solver.Solve(dut.prog());
     dut.CheckResult(result, kTol);
+  }
+}
+
+GTEST_TEST(TestOptions, SetMaxIter) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_TRUE(result.is_success());
+    ASSERT_GT(result.get_solver_details<ClarabelSolver>().iterations, 1);
+    // Now change the max iteration to 1.
+    solver_options.SetOption(solver.id(), "max_iter", 1);
+    result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  }
+}
+
+GTEST_TEST(TestOptions, unrecognized) {
+  SimpleSos1 dut;
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        solver.Solve(dut.prog(), std::nullopt, solver_options),
+        ".*unrecognized solver options bad_unrecognized.*");
   }
 }
 }  // namespace test

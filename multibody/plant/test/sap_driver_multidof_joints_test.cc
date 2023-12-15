@@ -10,7 +10,13 @@
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
 
 /* @file This file provides testing for the SapDriver's limited support for
-joint limits on joints with multiple degrees of freedom. */
+joint limits on joints with multiple degrees of freedom.
+
+    Constraints are only supported by the SAP solver. Therefore, to exercise the
+  relevant code paths, we arbitrarily choose one contact approximation that uses
+  the SAP solver. More precisely, in the unit tests below we call
+  set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+  MultibodyPlant used for testing, before constraints are added. */
 
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::systems::Context;
@@ -141,7 +147,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
 GTEST_TEST(MultiDofJointWithLimitsTest, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
   // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
@@ -176,7 +182,7 @@ GTEST_TEST(MultiDofJointWithLimitsTest,
            VerifyMultiDofJointsWithoutLimitsAreSupported) {
   MultibodyPlant<double> plant(1.0e-3);
   // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());

@@ -175,7 +175,7 @@ def _determine_macos(repository_ctx):
 
     # Match supported macOS release(s).
     (macos_release,) = sw_vers.stdout.strip().split(".")[:1]
-    if macos_release not in ["12", "13"]:
+    if macos_release not in ["12", "13", "14"]:
         print("WARNING: unsupported macOS '%s'" % macos_release)
 
     # Check which arch we should be using.
@@ -301,6 +301,7 @@ def _os_impl(repo_ctx):
         fail(os_result.error)
 
     constants = """
+print("The @drake_detected_os repository is deprecated and will be removed on 2024-03-01")  # noqa
 TARGET = {target}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}

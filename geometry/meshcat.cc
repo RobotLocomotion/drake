@@ -54,7 +54,7 @@ std::string LoadResource(const std::string& resource_name) {
   return content.str();
 }
 
-const std::string& GetUrlContent(std::string_view url_path) {
+const std::string& GetStaticResource(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
   static const drake::never_destroyed<std::string> stats_js(
@@ -227,7 +227,7 @@ class SceneTreeElement {
 
   // Returns a string which implements the entire tree directly in javascript.
   // This is intended for use in generating a "static html" of the scene.
-  std::string CreateCommands() {
+  std::string CreateCommands() const {
     std::string html;
     if (object_) {
       html += CreateCommand(*object_);
@@ -570,6 +570,31 @@ Eigen::Vector3d MeshcatYUpPosition(const Eigen::Vector3d& p_WP) {
   return Eigen::Vector3d(p_WP.x(), p_WP.z(), -p_WP.y());
 }
 
+// Creates a Drake camera pose from a meshcat camera pose (encoded as an array
+// of 16 values).
+// @pre the 16 values form a valid rigid transform (i.e., the rotation matrix
+// is properly orthonormal -- the scale is the Identity, etc.).
+RigidTransformd MakeDrakePoseFromMeshcatPoseForCamera(
+    const std::vector<double>& values) {
+  DRAKE_DEMAND(values.size() == 16);
+  Eigen::Map<const Eigen::Matrix4d> matrix(values.data());
+  // The pose of the meshcat camera in meshcat's y-up world frame M. We're
+  // treating the bottom row of the matrix as [0, 0, 0, 1] but otherwise
+  // ignoring it.
+  const RigidTransformd X_MCm(matrix.block<3, 4>(0, 0));
+  DRAKE_DEMAND(X_MCm.rotation().IsValid());
+
+  // Meshcat (aka three.js) cameras are y-up. Rotate to be z-up for Drake.
+  const auto R_WM = RotationMatrixd::MakeXRotation(M_PI / 2);
+  const Eigen::Vector3d p_WC = R_WM * X_MCm.translation();
+
+  // Meshcat camera aims in the -Cz direction with Cy up. Drake renders in the
+  // +Cy direction with -Cy up. So, we need to rotate again.
+  const auto R_CdCm = RotationMatrixd(math::RollPitchYawd(0, M_PI, M_PI));
+  const auto R_WCd = R_WM * X_MCm.rotation() * R_CdCm;
+  return RigidTransformd(R_WCd, p_WC);
+}
+
 }  // namespace
 
 class Meshcat::Impl {
@@ -617,7 +642,7 @@ class Meshcat::Impl {
     }
 
     // Fetch the index once to be sure that we preload the content.
-    GetUrlContent("/");
+    GetStaticResource("/");
 
     std::promise<std::tuple<int, bool>> app_promise;
     std::future<std::tuple<int, bool>> app_future =
@@ -1308,12 +1333,19 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   void SetCameraPose(const Eigen::Vector3d& p_WC, const Eigen::Vector3d& p_WT) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     SetCameraTarget(p_WT, false /* only_perspective */);
     SetTransform("/Cameras/default", math::RigidTransformd());
     // The camera position in meshcat's y-up world.
     const Eigen::Vector3d p_WC_y = MeshcatYUpPosition(p_WC);
     SetProperty("/Cameras/default/rotated/<object>", "position",
                 std::vector<double>{p_WC_y.x(), p_WC_y.y(), p_WC_y.z()});
+  }
+
+  std::optional<RigidTransformd> GetTrackedCameraPose() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return camera_pose_;
   }
 
   // This function is public via the PIMPL.
@@ -1564,45 +1596,50 @@ class Meshcat::Impl {
     return gamepad_;
   }
 
-  // This function is public via the PIMPL.
-  std::string StaticHtml() {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    std::string html = GetUrlContent("/");
-
-    std::promise<std::string> p;
-    std::future<std::string> f = p.get_future();
-    Defer([this, p = std::move(p)]() mutable {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      std::string commands = scene_tree_root_.CreateCommands();
-      if (!animation_.empty()) {
-        commands += CreateCommand(animation_);
-      }
-      if (!camera_target_message_.empty()) {
-        commands += CreateCommand(camera_target_message_);
-      }
-      p.set_value(std::move(commands));
-    });
-
-    // Replace the javascript code in the original html file which connects via
-    // websockets with the static javascript commands.
-    std::regex block_re(
-        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
-    html = std::regex_replace(html, block_re, f.get());
+  // This function is for use by the websocket thread. The Meshcat::StaticHtml()
+  // outer function calls into here using appropriate deferred handling.
+  std::string CalcStandaloneHtml() const {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    std::string html = GetStaticResource("/");
 
     // Insert the javascript directly into the html.
     std::vector<std::pair<std::string, std::string>> js_paths{
         {" src=\"meshcat.js\"", "/meshcat.js"},
         {" src=\"stats.min.js\"", "/stats.min.js"},
     };
-
     for (const auto& [src_link, url] : js_paths) {
       const size_t js_pos = html.find(src_link);
       DRAKE_DEMAND(js_pos != std::string::npos);
       html.erase(js_pos, src_link.size());
-      html.insert(js_pos+1, GetUrlContent(url));
+      html.insert(js_pos + 1, GetStaticResource(url));
     }
 
+    // Replace the javascript code in the original html file which connects via
+    // websockets with the static javascript commands.
+    std::string commands = scene_tree_root_.CreateCommands();
+    if (!animation_.empty()) {
+      commands += CreateCommand(animation_);
+    }
+    if (!camera_target_message_.empty()) {
+      commands += CreateCommand(camera_target_message_);
+    }
+    std::regex block_re(
+        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
+    html = std::regex_replace(html, block_re, commands);
+
     return html;
+  }
+
+  // This function is public via the PIMPL.
+  std::string StaticHtml() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    Defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      p.set_value(CalcStandaloneHtml());
+    });
+    return f.get();
   }
 
   // This function is public via the PIMPL.
@@ -1802,19 +1839,14 @@ class Meshcat::Impl {
       HandleMessage(ws, message);
     };
 
-    uWS::App app =
-        uWS::App()
-            .get("/*",
-                 [&](uWS::HttpResponse<kSsl>* res, uWS::HttpRequest* req) {
-                   DRAKE_DEMAND(IsThread(websocket_thread_id_));
-                   const std::string& content = GetUrlContent(req->getUrl());
-                   if (content.substr(0, 15) == "<!DOCTYPE html>") {
-                     res->writeHeader("Content-Type",
-                                      "text/html; charset=utf-8");
-                   }
-                   res->end(content);
-                 })
-            .ws<PerSocketData>("/*", std::move(behavior));
+    uWS::App app = uWS::App()
+                       .get("/*",
+                            [this](uWS::HttpResponse<kSsl>* response,
+                                   uWS::HttpRequest* request) {
+                              DRAKE_DEMAND(IsThread(websocket_thread_id_));
+                              this->HandleHttpGet(request->getUrl(), response);
+                            })
+                       .ws<PerSocketData>("/*", std::move(behavior));
     app_ = &app;
 
     // Search for an open port.
@@ -1923,6 +1955,31 @@ class Meshcat::Impl {
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
+    if (ws == camera_pose_source_) {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      camera_pose_source_ = nullptr;
+      camera_pose_ = std::nullopt;
+    }
+  }
+
+  // This function is called from uWS when it needs to service a GET request.
+  void HandleHttpGet(std::string_view url_path,
+                     uWS::HttpResponse<kSsl>* response) const {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    drake::log()->debug("Meshcat GET on {}", url_path);
+    if (url_path == "/download") {
+      const std::string output = CalcStandaloneHtml();
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      response->writeHeader("Content-Disposition",
+                            "attachment; filename=\"meshcat.html\"");
+      response->end(output);
+      return;
+    }
+    const std::string& content = GetStaticResource(url_path);
+    if (content.substr(0, 15) == "<!DOCTYPE html>") {
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+    }
+    response->end(content);
   }
 
   // This function is a callback from a WebSocketBehavior. However, unit tests
@@ -1973,6 +2030,23 @@ class Meshcat::Impl {
       gamepad_.index = data.gamepad->index;
       gamepad_.button_values = std::move(data.gamepad->button_values);
       gamepad_.axes = std::move(data.gamepad->axes);
+      return;
+    }
+    if (data.type == "camera_pose" && data.camera_pose.size() == 16 &&
+        data.is_perspective.has_value()) {
+      if (camera_pose_source_ != nullptr && camera_pose_source_ != ws) {
+        static const logging::Warn log_once(
+            "More than one meshcat client is attempting to broadcast its "
+            "camera pose. The view rendered will be that of the browser whose "
+            "camera was last modified.");
+      }
+      camera_pose_source_ = ws;
+      if (*data.is_perspective) {
+        camera_pose_ =
+            MakeDrakePoseFromMeshcatPoseForCamera(std::move(data.camera_pose));
+      } else {
+        camera_pose_ = std::nullopt;
+      }
       return;
     }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
@@ -2049,6 +2123,9 @@ class Meshcat::Impl {
   Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
+  // The socket for the browser that is sending the camera pose.
+  WebSocket* camera_pose_source_{};
+  std::optional<math::RigidTransformd> camera_pose_;
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
@@ -2437,6 +2514,10 @@ void Meshcat::SetCameraTarget(const Eigen::Vector3d& target_in_world) {
 void Meshcat::SetCameraPose(const Eigen::Vector3d& camera_in_world,
                             const Eigen::Vector3d& target_in_world) {
   impl().SetCameraPose(camera_in_world, target_in_world);
+}
+
+std::optional<RigidTransformd> Meshcat::GetTrackedCameraPose() const {
+  return impl().GetTrackedCameraPose();
 }
 
 void Meshcat::AddButton(std::string name, std::string keycode) {

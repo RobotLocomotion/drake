@@ -101,8 +101,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "clarabel_solver_test",
     args = select({
-        "//tools:with_clarabel": [],
-        "//conditions:default": ["TestClarabelSolver.test_attributes"],
+        "//tools:no_clarabel": ["TestClarabelSolver.unavailable"],
+        "//conditions:default": [],
     }),
     deps = [
         ":solvers",

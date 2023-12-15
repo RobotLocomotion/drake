@@ -272,7 +272,7 @@ def github_download_and_extract(
 
     upgrade_advice = "\n".join(
         [line.strip() for line in upgrade_advice.strip().split("\n")],
-    )
+    ).replace("\\\n", "\\\n    ")
 
     # Create a summary file for Drake maintainers.
     generate_repository_metadata(

@@ -345,8 +345,7 @@ class RenderEngineGlTest : public ::testing::Test {
   // Verifies the "outlier" pixels for the given camera belong to the terrain.
   // If images are provided, the given images will be tested, otherwise the
   // member images will be tested.
-  void VerifyOutliers(const RenderEngineGl& renderer,
-                      const DepthRenderCamera& camera,
+  void VerifyOutliers(const DepthRenderCamera& camera,
                       const ImageRgba8U* color_in = nullptr,
                       const ImageDepth32F* depth_in = nullptr,
                       const ImageLabel16I* label_in = nullptr) const {
@@ -479,15 +478,14 @@ class RenderEngineGlTest : public ::testing::Test {
     ImageLabel16I label(w, h);
     Render(renderer, &cam, &color, &depth, &label);
 
-    VerifyCenterShapeTest(*renderer, cam, color, depth, label);
+    VerifyCenterShapeTest(cam, color, depth, label);
   }
 
-  void VerifyCenterShapeTest(const RenderEngineGl& renderer,
-                             const DepthRenderCamera& camera,
+  void VerifyCenterShapeTest(const DepthRenderCamera& camera,
                              const ImageRgba8U& color,
                              const ImageDepth32F& depth,
                              const ImageLabel16I& label) const {
-    VerifyOutliers(renderer, camera, &color, &depth, &label);
+    VerifyOutliers(camera, &color, &depth, &label);
 
     // Verifies inside the sphere.
     const ScreenCoord inlier = GetInlier(camera.core().intrinsics());
@@ -871,7 +869,7 @@ TEST_F(RenderEngineGlTest, CapsuleRotatedTest) {
   Render(renderer_.get());
 
   SCOPED_TRACE("Capsule rotated test");
-  VerifyOutliers(*renderer_, depth_camera_);
+  VerifyOutliers(depth_camera_);
 
   // Verifies the inliers towards the ends of the capsule and ensures its
   // length attribute is respected as opposed to just its radius. This
@@ -1497,7 +1495,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   EXPECT_NO_THROW(Render());
 }
 
-// Tests the ability to configure the RenderEngineGl's default render label.
+// Tests that RenderEngineGl's default render label is kDontCare.
 TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
   // A variation of PopulateSphereTest(), but uses an empty set of properties.
   // The result should be compatible with the running the sphere test.
@@ -1511,56 +1509,15 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
     engine->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
   };
 
-  // Case: The engine's default is "don't care".
-  {
-    RenderEngineGl renderer;
-    InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
+  // The engine's default is "don't care".
+  RenderEngineGl renderer;
+  InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
 
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
+  DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
+  expected_label_ = RenderLabel::kDontCare;
+  expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
 
-    SCOPED_TRACE("Default properties; don't care label");
-    PerformCenterShapeTest(&renderer);
-  }
-
-  // Case: Change render engine's default to explicitly be unspecified; must
-  // throw.
-  {
-    RenderEngineGl renderer{{.default_label = RenderLabel::kUnspecified}};
-    InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
-  }
-
-  // Case: Change render engine's default to don't care. Label image should
-  // report don't care.
-  {
-    ResetExpectations();
-    RenderEngineGlParams params;
-    params.default_label = RenderLabel::kDontCare;
-    RenderEngineGl renderer{params};
-    InitializeRenderer(X_WR_, true /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
-
-    SCOPED_TRACE("Default properties; don't care label");
-    PerformCenterShapeTest(&renderer);
-  }
-
-  // Case: Change render engine's default to invalid default value; must throw.
-  {
-    for (RenderLabel label :
-         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineGl({.default_label = label}),
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
-    }
-  }
+  PerformCenterShapeTest(&renderer);
 }
 
 // Tests to see if the two images are *exactly* equal - down to the last bit.

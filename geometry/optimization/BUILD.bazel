@@ -68,6 +68,7 @@ drake_cc_library(
     deps = [
         "//geometry:read_obj",
         "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
         "//solvers:get_program_type",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
@@ -419,6 +420,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
         "//solvers:clp_solver",
         "//solvers:csdp_solver",
         "//solvers:gurobi_solver",

@@ -175,9 +175,33 @@ int do_main() {
                           RigidTransformd(Vector3d{++x, -0.25, 0}));
   }
 
-  std::cout << R"""(
-Open up your browser to the URL above.
+  std::cout << "\nDo *not* open up your browser to the URL above. Instead use "
+            << "the following URL\n\n"
+            << meshcat->web_url() << "?tracked_camera=on\n\n";
 
+  MaybePauseForUser();
+
+  // Note: this tests that the parameter on the html page is enough to enable
+  // camera tracking. Full camera tracking protocols are tested in
+  // meshcat_camera_tracking_test.py.
+  if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+    std::cout << "Meshcat isn't receiving tracked camera poses from your "
+              << "browser. Are you sure your browser is using the full URL?\n"
+              << "\n    " << meshcat->web_url() << "?tracked_camera=on\n\n"
+              << "If not, use the url with the 'tracked_camera' parameter.\n\n";
+
+    MaybePauseForUser();
+
+    if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+      std::cout << "  !!! ERROR !!! It appears that camera tracking isn't "
+                << "working!\n";
+      return 1;
+    } else {
+      std::cout << "That did it. Now we can move on.\n";
+    }
+  }
+
+  std::cout << R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a red sphere
@@ -416,34 +440,29 @@ Open up your browser to the URL above.
     MaybePauseForUser();
   }
 
+  std::cout
+      << "Now we'll add back an environment map and move the camera, in\n"
+         "preparation for testing the standalone HTML download ...\n\n";
+
   meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
   meshcat->SetCameraTarget(Vector3d{-0.4, 0, 0});
-  const std::string html_filename(temp_directory() + "/meshcat_static.html");
-  std::ofstream html_file(html_filename);
-  html_file << meshcat->StaticHtml();
-  html_file.close();
-  meshcat->SetEnvironmentMap("");
-  meshcat->SetCameraPose(Vector3d{-1.0, -1.0, 1.5}, Vector3d{0, 0, 0.5});
 
-  std::cout << "A standalone HTML file capturing this scene. In addition the "
-               "standalone file includes:\n"
-               "   - the animation shown here\n"
-               "   - an additional environment map (not shown here)\n"
-               "   - the camera moved to focus on the contact point between "
-               "robot and table\n"
-               "The file has been written to:\n"
-            << "  file://" << html_filename
-            << "\nOpen that location in your browser now and confirm that "
-               "the iiwa is visible, the animation plays, the environment map "
-               "is present, and the camera is positioned as indicated."
-            << std::endl;
+  std::cout
+      << "Now we'll check the standalone HTML file capturing this scene.\n"
+         "Open this link to download an HTML file:\n\n"
+      << "  " << meshcat->web_url() << "/download\n\n"
+      << "Open the downloaded file in a new browser tab confirm that:\n"
+         "- the camera is focused on the contact point between the robot and "
+         "table,\n"
+         "- the iiwa is visible,\n"
+         "- the animation plays, and\n"
+         "- the environment map is present.\n";
 
   MaybePauseForUser();
 
-  std::remove(html_filename.c_str());
-  std::cout
-      << "Note: I've deleted the temporary HTML file (it's several Mb).\n\n";
+  meshcat->SetEnvironmentMap("");
+  meshcat->SetCameraPose(Vector3d{-1.0, -1.0, 1.5}, Vector3d{0, 0, 0.5});
 
   meshcat->AddButton("ButtonTest");
   meshcat->AddButton("Press t Key");

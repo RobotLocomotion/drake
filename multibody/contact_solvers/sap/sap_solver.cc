@@ -167,7 +167,7 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
       // N.B. Notice the check for monotonic convergence is placed AFTER the
       // check for convergence. This is done puposedly to avoid round-off errors
       // in the cost near convergence when the gradient is almost zero.
-      const double ell_scale = 0.5 * (ell + ell_previous);
+      const double ell_scale = 0.5 * (abs(ell) + abs(ell_previous));
       const double ell_slop =
           parameters_.relative_slop * std::max(1.0, ell_scale);
       if (ell > ell_previous + ell_slop) {
@@ -221,7 +221,7 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
     ell_previous = ell;
     ell = model_->EvalCost(*context);
 
-    const double ell_scale = (ell + ell_previous) / 2.0;
+    const double ell_scale = 0.5 * (abs(ell) + abs(ell_previous));
     // N.B. Even though theoretically we expect ell < ell_previous, round-off
     // errors might make the difference ell_previous - ell negative, within
     // machine epsilon. Therefore we take the absolute value here.
@@ -393,7 +393,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // N.B. ell = 0 implies v = v* and gamma = 0, the solver would've exited
   // trivially and we would've never gotten to this point. Thus we know
   // ell_scale != 0.
-  const double ell_scale = ExtractDoubleOrThrow(0.5 * (ell + ell0));
+  const double ell_scale = ExtractDoubleOrThrow(0.5 * (abs(ell) + abs(ell0)));
 
   // N.B. SAP checks that the cost decreases monotonically using a slop to avoid
   // false negatives due to round-off errors. Therefore if we are going to exit

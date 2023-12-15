@@ -46,12 +46,8 @@ constexpr bool NeedsBgrSwizzle() {
     case PixelType::kRgb8U:
     case PixelType::kRgba8U:
       return false;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case PixelType::kExpr:
-      return false;
-#pragma GCC diagnostic pop
   }
+  DRAKE_UNREACHABLE();
 }
 
 /* Returns the VTK scalar type enum for the given PixelType. */
@@ -68,6 +64,7 @@ constexpr int GetVtkScalarType() {
       // As a backwards compatibility hack, we save 16I data into 16U.
       return VTK_TYPE_UINT16;
   }
+  DRAKE_UNREACHABLE();
 }
 
 /* Returns the Drake image scalar enum for the given VTK scalar type enum. */

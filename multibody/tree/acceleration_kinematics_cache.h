@@ -39,35 +39,35 @@ class AccelerationKinematicsCache {
   explicit AccelerationKinematicsCache(const MultibodyTreeTopology& topology) {
     Allocate(topology);
     DRAKE_ASSERT_VOID(InitializeToNaN());
-    // Sets defaults: drake::multibody::world_index() defines the unique index
-    // to the world body and is defined in multibody_tree_indexes.h.
+    // Sets defaults: drake::multibody::world_mobod_index() defines the unique
+    // index to the world body and is defined in multibody_tree_indexes.h.
     // World's acceleration is always zero.
-    A_WB_pool_[world_index()].SetZero();
+    A_WB_pool_[world_mobod_index()].SetZero();
     vdot_.setZero();
   }
 
-  // For the body B associated with node @p body_node_index, returns A_WB,
+  // For the body B associated with mobilized body `mobod_index`, returns A_WB,
   // body B's spatial acceleration in the world frame W.
-  // This method aborts in Debug builds if `body_node_index` does not
+  // This method aborts in Debug builds if `mobod_index` does not
   // correspond to a valid BodyNode in the MultibodyTree.
-  // @param[in] body_node_index The unique index for the computational
-  //                            BodyNode object associated with body B.
+  // @param[in] mobod_index The unique index for the computational
+  //                        BodyNode object associated with body B.
   // @retval A_WB_W body B's spatial acceleration in the world frame W,
   // expressed in W (for point Bo, the body's origin).
-  const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
-    return A_WB_pool_[body_node_index];
+  const SpatialAcceleration<T>& get_A_WB(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < get_num_mobods());
+    return A_WB_pool_[mobod_index];
   }
 
   // Mutable version of get_A_WB().
-  SpatialAcceleration<T>& get_mutable_A_WB(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
-    return A_WB_pool_[body_node_index];
+  SpatialAcceleration<T>& get_mutable_A_WB(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < get_num_mobods());
+    return A_WB_pool_[mobod_index];
   }
 
   // Returns a const reference to the pool of body accelerations.
   // The pool is returned as a `std::vector` of SpatialAcceleration objects
-  // ordered by BodyNodeIndex.
+  // ordered by MobodIndex.
   // Most users should not need to call this method.
   const std::vector<SpatialAcceleration<T>>& get_A_WB_pool() const {
     return A_WB_pool_;
@@ -90,21 +90,20 @@ class AccelerationKinematicsCache {
   }
 
  private:
-  // Pools store entries in the same order that multibody tree nodes are
-  // ordered in the tree, i.e. in DFT (Depth-First Traversal) order. Therefore
-  // clients of this class will access entries by BodyNodeIndex, see
+  // Pools store entries in the same order as the mobilized bodies (BodyNodes)
+  // in the multibody forest, i.e. in DFT (Depth-First Traversal) order.
+  // Therefore clients of this class will access entries by MobodIndex, see
   // `get_A_WB()` for instance.
 
-  // Helper method to return the number of nodes in this multibody tree cache.
-  // It eliminates having to use static_cast<int>() when requesting a pool size.
-  int get_num_nodes() const {
+  // Return the number of mobilized bodies in this multibody tree cache.
+  int get_num_mobods() const {
     return static_cast<int>(A_WB_pool_.size());
   }
 
   // Allocates resources for this acceleration kinematics cache.
   void Allocate(const MultibodyTreeTopology& topology) {
-    const int num_nodes = topology.num_bodies();
-    A_WB_pool_.resize(num_nodes);
+    const int num_mobods = topology.num_mobods();
+    A_WB_pool_.resize(num_mobods);
     const int num_velocities = topology.num_velocities();
     vdot_.resize(num_velocities);
   }
@@ -112,14 +111,14 @@ class AccelerationKinematicsCache {
   // Initializes all pools to have NaN values to ease bug detection when entries
   // are accidentally left uninitialized.
   void InitializeToNaN() {
-    for (BodyNodeIndex body_node_index(0); body_node_index < get_num_nodes();
-         ++body_node_index) {
-      A_WB_pool_[body_node_index].SetNaN();
+    for (MobodIndex mobod_index(0); mobod_index < get_num_mobods();
+         ++mobod_index) {
+      A_WB_pool_[mobod_index].SetNaN();
     }
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
-  std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by MobodIndex.
   VectorX<T> vdot_;
 };
 

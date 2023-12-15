@@ -389,7 +389,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
     const Vector3d bg_rgb{kBgColor.r / 255., kBgColor.g / 255.,
                           kBgColor.b / 255.};
-    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    RenderEngineVtkParams params{{}, bg_rgb};
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
@@ -564,7 +564,7 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
   std::vector<ColorI> backgrounds{{10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
   for (const auto& bg : backgrounds) {
     RenderEngineVtkParams params{
-        {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
+        {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
     RenderEngineVtk engine(params);
     Render(&engine);
     VerifyUniformColor(bg, 255u);
@@ -1503,7 +1503,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
   }
 }
 
-// Tests the ability to configure the RenderEngineVtk's default render label.
+// Tests that RenderEngineVtk's default render label is kDontCare.
 TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   // A variation of PopulateSphereTest(), but uses an empty set of properties.
   // The result should be compatible with the running the sphere test.
@@ -1518,52 +1518,15 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   };
 
   // Case: The engine's default is "don't care".
-  {
-    ResetExpectations();
-    RenderEngineVtk renderer;
-    InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
+  ResetExpectations();
+  RenderEngineVtk renderer;
+  InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
 
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.default_diffuse());
+  DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
+  expected_label_ = RenderLabel::kDontCare;
+  expected_color_ = RgbaColor(renderer.default_diffuse());
 
-    PerformCenterShapeTest(&renderer, "Default properties; don't care label");
-  }
-
-  // Case: Change render engine's default to explicitly be unspecified; must
-  // throw.
-  {
-    RenderEngineVtk renderer{{RenderLabel::kUnspecified, {}}};
-    InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
-  }
-
-  // Case: Change render engine's default to don't care. Label image should
-  // report don't care.
-  {
-    ResetExpectations();
-    RenderEngineVtk renderer{{RenderLabel::kDontCare, {}}};
-    InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
-
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.default_diffuse());
-
-    PerformCenterShapeTest(&renderer, "Default properties; don't care label");
-  }
-
-  // Case: Change render engine's default to invalid default value; must throw.
-  {
-    for (RenderLabel label :
-         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineVtk({label, {}}),
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
-    }
-  }
+  PerformCenterShapeTest(&renderer, "Default properties; don't care label");
 }
 
 // This class exists solely for the purpose of injecting an arbitrary texture
@@ -2084,7 +2047,7 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
 // This test we'll simply confirm that the introduction of a glTF shows an
 // illumination change without any other step (indicating material promotion).
 TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
-  auto test_sphere_color = [this](bool matches_default,
+  auto test_sphere_color = [this](const RgbaColor expected_color,
                                   RenderEngineVtk* renderer) {
     const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
     ImageRgba8U image(camera.core().intrinsics().width(),
@@ -2096,9 +2059,9 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     renderer->RenderColorImage(camera, &image);
 
     const RgbaColor sampled_color(image.at(cx, cy));
-    EXPECT_EQ(IsColorNear(sampled_color, default_color_), matches_default)
+    EXPECT_TRUE(IsColorNear(sampled_color, expected_color))
         << "  rendered color: " << sampled_color << "\n"
-        << "  expected color: " << default_color_;
+        << "  expected color: " << expected_color;
   };
 
   // Baseline test; sphere only reproduces the phong color at the center.
@@ -2113,15 +2076,16 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
                                        .environment_map = EnvironmentMap()};
     auto renderer = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
-    PopulateSphereTest(renderer.get());
-    test_sphere_color(/* matches_default = */ true, renderer.get());
+    PopulateSphereTest(renderer.get(), true);
+    const RgbaColor texture_color(kTextureColor, 255);
+    test_sphere_color(texture_color, renderer.get());
   }
 
   // Add a glTF file; material promoted to PBR no longer matches Phong color.
   {
     SCOPED_TRACE("glTF added");
     Init(X_WC_, true);
-    PopulateSphereTest(renderer_.get());
+    PopulateSphereTest(renderer_.get(), true);
 
     // Place a glTF mesh far away from the origin; we can't see it but it
     // should still change how things render.
@@ -2133,7 +2097,10 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
                               RigidTransformd(Vector3d(30, 0, 0)),
                               false /* needs update */);
 
-    test_sphere_color(/* matches_default = */ false, renderer_.get());
+    // We should still basically be green (because of the green texture), but
+    // the saturation and brightness changes in the presence of PBR material.
+    const RgbaColor pbr_texture_color(ColorI{66, 152, 68}, 255);
+    test_sphere_color(pbr_texture_color, renderer_.get());
   }
 }
 

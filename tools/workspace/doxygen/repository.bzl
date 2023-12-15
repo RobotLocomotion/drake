@@ -1,18 +1,10 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("//tools/workspace:os.bzl", "determine_os")
-
 def _impl(repo_ctx):
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-
-    # Add the BUILD file -- same for both platforms.
     repo_ctx.symlink(
         Label("@drake//tools/workspace/doxygen:package.BUILD.bazel"),
         "BUILD.bazel",
     )
 
-    if os_result.is_ubuntu:
+    if repo_ctx.os.name == "linux":
         # Download and extract Drake's pre-compiled Doxygen binary.
         archive = "doxygen-1.8.15-focal-x86_64.tar.gz"
         url = [
@@ -31,11 +23,9 @@ def _impl(repo_ctx):
         repo_ctx.file("doxygen", "# Doxygen is not supported on this platform")
 
 doxygen_repository = repository_rule(
+    doc = """Provides a @doxygen//:doxygen binary only supported on Ubuntu.""",
     attrs = {
         "mirrors": attr.string_list_dict(),
     },
     implementation = _impl,
 )
-"""Provides a library target for @doxygen//:doxygen.  On macOS, uses homebrew;
-on Ubuntu, downloads and extracts a precompiled binary release of Doxygen.
-"""

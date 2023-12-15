@@ -393,8 +393,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             subgraph_edges_doc.AddPathContinuityConstraints.doc);
 
     gcs_traj_opt  // BR
-        .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
+        .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),
+            py::arg("continuous_revolute_joints") = std::vector<int>(),
+            cls_doc.ctor.doc)
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
+        .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
+            cls_doc.continuous_revolute_joints.doc)
         .def("GetGraphvizString", &Class::GetGraphvizString,
             py::arg("result") = std::nullopt, py::arg("show_slack") = true,
             py::arg("precision") = 3, py::arg("scientific") = false,
@@ -404,15 +408,18 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             [](Class& self,
                 const std::vector<geometry::optimization::ConvexSet*>& regions,
                 const std::vector<std::pair<int, int>>& edges_between_regions,
-                int order, double h_min, double h_max,
-                std::string name) -> Class::Subgraph& {
+                int order, double h_min, double h_max, std::string name,
+                std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
+                -> Class::Subgraph& {
               return self.AddRegions(CloneConvexSets(regions),
-                  edges_between_regions, order, h_min, h_max, std::move(name));
+                  edges_between_regions, order, h_min, h_max, std::move(name),
+                  edge_offsets);
             },
             py_rvp::reference_internal, py::arg("regions"),
             py::arg("edges_between_regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
-            py::arg("name") = "", cls_doc.AddRegions.doc_6args)
+            py::arg("name") = "", py::arg("edge_offsets") = std::nullopt,
+            cls_doc.AddRegions.doc_7args)
         .def(
             "AddRegions",
             [](Class& self,

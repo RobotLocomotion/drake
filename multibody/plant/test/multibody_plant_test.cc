@@ -3873,7 +3873,9 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   // Set up a plant with 3 constraints with arbitrary parameters.
   MultibodyPlant<double> plant(0.01);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const Body<double>& body_A =
       plant.AddRigidBody("body_A", SpatialInertia<double>{});
   const Body<double>& body_B =
@@ -4752,6 +4754,66 @@ GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(plant.RenameModelInstance(models[0], "too_late"),
                               ".*finalized.*");
+}
+
+// Verify the proper coordination of discrete contact approximations with their
+// corresponding solvers.
+GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
+  MultibodyPlant<double> plant(0.01);
+
+  auto set_solver_and_check_approximation =
+      [&plant](DiscreteContactSolver solver) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        plant.set_discrete_contact_solver(solver);
+#pragma GCC diagnostic pop
+        EXPECT_EQ(plant.get_discrete_contact_solver(), solver);
+        if (solver == DiscreteContactSolver::kTamsi) {
+          // TAMSI can only solve the TAMSI approximation.
+          EXPECT_EQ(plant.get_discrete_contact_approximation(),
+                    DiscreteContactApproximation::kTamsi);
+        } else {
+          // SAP can solve all approximations other than TAMSI.
+          EXPECT_EQ(plant.get_discrete_contact_approximation(),
+                    DiscreteContactApproximation::kSap);
+        }
+      };
+
+  auto set_approximation_and_check_solver =
+      [&plant](DiscreteContactApproximation approximation) {
+        plant.set_discrete_contact_approximation(approximation);
+        EXPECT_EQ(plant.get_discrete_contact_approximation(), approximation);
+        if (approximation == DiscreteContactApproximation::kTamsi) {
+          // Only the TAMSI solver can be used with the TAMSI approximation.
+          EXPECT_EQ(plant.get_discrete_contact_solver(),
+                    DiscreteContactSolver::kTamsi);
+        } else {
+          // Approximations other than TAMSI use the SAP solver.
+          EXPECT_EQ(plant.get_discrete_contact_solver(),
+                    DiscreteContactSolver::kSap);
+        }
+      };
+
+  // Verify that setting the solver sets a consistent contact approximation.
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_solver_and_check_approximation(DiscreteContactSolver::kSap);
+
+  // Verify that setting an apprximation sets the proper solver.
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kSap);
+
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kLagged);
+
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kSimilar);
+
+  // Post-finalize calls to set_discrete_contact_approximation() throws.
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kTamsi),
+      "Post-finalize calls to '.*' are not allowed; .*");
 }
 
 }  // namespace

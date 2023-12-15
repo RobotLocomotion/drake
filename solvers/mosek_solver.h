@@ -18,15 +18,15 @@ namespace solvers {
  */
 struct MosekSolverDetails {
   /// The MOSEK™ optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
-  /// https://docs.mosek.com/10.0/capi/constants.html?highlight=msk_dinf_optimizer_time
+  /// https://docs.mosek.com/10.1/capi/constants.html?highlight=msk_dinf_optimizer_time
   double optimizer_time{};
   /// The response code returned from MOSEK™ solver. Check
-  /// https://docs.mosek.com/10.0/capi/response-codes.html for the meaning on
+  /// https://docs.mosek.com/10.1/capi/response-codes.html for the meaning on
   /// the response code.
   int rescode{};
   /// The solution status after solving the problem. Check
-  /// https://docs.mosek.com/10.0/capi/accessing-solution.html and
-  /// https://docs.mosek.com/10.0/capi/constants.html#mosek.solsta for the
+  /// https://docs.mosek.com/10.1/capi/accessing-solution.html and
+  /// https://docs.mosek.com/10.1/capi/constants.html#mosek.solsta for the
   /// meaning on the solution status.
   int solution_status{};
 };
@@ -54,19 +54,19 @@ struct MosekSolverDetails {
  * (MOSEK™ might change the values of the integer/binary variables in the
  * subsequent iterations.) If the specified integer solution is infeasible or
  * incomplete, MOSEK™ will simply ignore it. For more details, check
- * https://docs.mosek.com/10.0/capi/tutorial-mio-shared.html?highlight=initial
+ * https://docs.mosek.com/10.1/capi/tutorial-mio-shared.html?highlight=initial
  *
  * MOSEK™ supports many solver parameters. You can refer to the full list of
  * parameters in
- * https://docs.mosek.com/10.0/capi/param-groups.html#doc-param-groups. On top
+ * https://docs.mosek.com/10.1/capi/param-groups.html#doc-param-groups. On top
  * of these parameters, we also provide the following additional parameters
  *
  * - "writedata"
  *    set to a file name so that MOSEK™ solver will write the
  *    optimization model to this file. check
- *    https://docs.mosek.com/10.0/capi/solver-io.html#saving-a-problem-to-a-file
+ *    https://docs.mosek.com/10.1/capi/solver-io.html#saving-a-problem-to-a-file
  *    for more details. The supported file extensions are listed in
- *    https://docs.mosek.com/10.0/capi/supported-file-formats.html#doc-shared-file-formats.
+ *    https://docs.mosek.com/10.1/capi/supported-file-formats.html#doc-shared-file-formats.
  *    Set this parameter to "" if you don't want to write to a file. Default is
  *    not to write to a file.
  */

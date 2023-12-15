@@ -376,7 +376,11 @@ TEST_F(SpheresStackTest, EvalContactSolverResults) {
 // recalculates the cached SapContactProblem with constraint parameters change.
 GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
   MultibodyPlant<double> plant(0.01);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  // Constraints are only supported by the SAP solver. Therefore, to exercise
+  // the relevant code paths, we arbitrarily choose one contact approximation
+  // that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Add two bodies and two joints in order to cover all constraint types.
   // We aren't doing any physics in this test, just checking that constraint

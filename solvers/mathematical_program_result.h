@@ -295,7 +295,7 @@ class MathematicalProgramResult final {
    *    GurobiSolver solver;
    *    // Explicitly tell the solver to compute the dual solution for Lorentz
    *    // cone or rotated Lorentz cone constraint, check
-   *    // https://www.gurobi.com/documentation/10.0/refman/qcpdual.html for
+   *    // https://www.gurobi.com/documentation/10.1/refman/qcpdual.html for
    *    // more information.
    *    SolverOptions options;
    *    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
@@ -314,7 +314,7 @@ class MathematicalProgramResult final {
    *    solution to the (rotated) Lorentz cone constraint doesn't have the
    *    "shadow price" interpretation, but should lie in the dual cone, and
    *    satisfy the KKT condition. For more information, refer to
-   *    https://docs.mosek.com/10.0/capi/prob-def-conic.html#duality-for-conic-optimization
+   *    https://docs.mosek.com/10.1/capi/prob-def-conic.html#duality-for-conic-optimization
    *    as an explanation.
    *
    * The interpretation for the dual variable to conic constraint x ∈ K can be

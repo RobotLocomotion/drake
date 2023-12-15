@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -586,10 +587,10 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 2e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              2e-5);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -613,10 +614,10 @@ TEST_F(ThreePoints, QuadraticCost3) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 5e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              2e-4);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -1566,10 +1567,14 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   for (size_t ii = 0; ii < edges.size(); ++ii) {
     if (ii < 6) {
       // Some solvers do not balance the two paths as closely as other solvers.
+      // I am not sure why these solvers perform badly on this problem.
       const double tol =
           (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
-          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
-              ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
+              ? 1e-3  // We tried to tighten the optimality/feasibility
+                      // tolerance of Clarabel but the optimal solution still
+                      // match with the balanced solution very precisely.
               : 1e-5;
       EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
     } else if (ii < 10) {
@@ -1900,15 +1905,20 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   }
 
   // Test that solving with the known shortest path returns the same results.
-  auto active_edges_result = spp.SolveConvexRestriction(
-      spp.GetSolutionPath(*source, *target, result), options);
+  std::vector<const Edge*> path = spp.GetSolutionPath(*source, *target, result);
+  auto active_edges_result = spp.SolveConvexRestriction(path, options);
   ASSERT_TRUE(active_edges_result.is_success());
   // The optimal costs should match.
   EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
               3e-5);
-  for (const auto* v : spp.Vertices()) {
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                active_edges_result.GetSolution(v->x()), 2e-3));
+  // The vertex solutions should match on the shortest path.
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(source->x()),
+                              active_edges_result.GetSolution(source->x()),
+                              2e-3));
+  for (const auto* e : path) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(e->xv()),
+                                active_edges_result.GetSolution(e->xv()),
+                                2e-3));
   }
 
   // Test that forcing an edge not on the shortest path to be active yields a

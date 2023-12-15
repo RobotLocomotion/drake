@@ -47,14 +47,16 @@ const MatrixXd J34 =
 
 template <typename T = double>
 ContactConfiguration<T> MakeArbitraryConfiguration() {
-  const int objectA = 12;
-  Vector3<T> p_AoC_W(1., 2., 3.);
-  const int objectB = 5;
-  Vector3<T> p_BoC_W(4., 5., 6.);
-  const T phi0 = -2.5e-3;
-  RotationMatrix<T> R_WC;
-  return ContactConfiguration<T>{
-      objectA, std::move(p_AoC_W), objectB, std::move(p_BoC_W), phi0, R_WC};
+  // N.B. vn and fe in the configuration are not used by
+  // SapFrictionConeConstraint. We set them to NAN.
+  return ContactConfiguration<T>{.objectA = 12,
+                                 .p_ApC_W = Vector3<T>(1., 2., 3.),
+                                 .objectB = 5,
+                                 .p_BqC_W = Vector3<T>(4., 5., 6.),
+                                 .phi = -2.5e-3,
+                                 .vn = NAN,
+                                 .fe = NAN,
+                                 .R_WC = RotationMatrix<T>::Identity()};
 }
 
 template <typename T = double>

@@ -41,25 +41,49 @@ const InputPort<T>& ConcatenateImages<T>::get_input_port(int row,
 template <typename T>
 void ConcatenateImages<T>::CalcOutput(const Context<T>& context,
                                       ImageRgba8U* output) const {
-  constexpr int kNumChannels = ImageRgba8U::kNumChannels;
-  const ImageRgba8U& cell = inputs_(0, 0)->template Eval<ImageRgba8U>(context);
-  const int cell_width = cell.width();
-  const int cell_height = cell.height();
-  const int overall_width = cell_width * cols_;
-  const int overall_height = cell_height * rows_;
-  if (output->width() != overall_width || output->height() != overall_height) {
-    output->resize(overall_width, overall_height);
-  }
+  // Gather the the input images and their dimensions.
+  const ImageRgba8U empty;
+  MatrixX<const ImageRgba8U*> images(rows_, cols_);
+  MatrixX<int> cell_widths(rows_, cols_);
+  MatrixX<int> cell_heights(rows_, cols_);
   for (int row = 0; row < rows_; ++row) {
     for (int col = 0; col < cols_; ++col) {
-      const ImageRgba8U& image =
-          inputs_(row, col)->template Eval<ImageRgba8U>(context);
-      DRAKE_THROW_UNLESS(image.width() == cell_width);
-      DRAKE_THROW_UNLESS(image.height() == cell_height);
-      const int v_offset = row * cell_height;
-      const int u_offset = col * cell_width;
-      for (int v = 0; v < cell_height; ++v) {
-        for (int u = 0; u < cell_width; ++u) {
+      const InputPort<T>& input = *inputs_(row, col);
+      if (input.HasValue(context)) {
+        images(row, col) = &input.template Eval<ImageRgba8U>(context);
+        cell_widths(row, col) = images(row, col)->width();
+        cell_heights(row, col) = images(row, col)->height();
+      } else {
+        images(row, col) = &empty;
+        cell_widths(row, col) = 0;
+        cell_heights(row, col) = 0;
+      }
+    }
+  }
+
+  // Compute the tile layout. The height of each row (width of each column) will
+  // be the largest value within that individual row (column).
+  for (int row = 0; row < rows_; ++row) {
+    cell_heights.row(row).array() = cell_heights.row(row).maxCoeff();
+  }
+  for (int col = 0; col < cols_; ++col) {
+    cell_widths.col(col).array() = cell_widths.col(col).maxCoeff();
+  }
+  const int overall_width = cell_widths.row(0).sum();
+  const int overall_height = cell_heights.col(0).sum();
+
+  // Zero the output.
+  output->resize(overall_width, overall_height);
+
+  // Copy each input image into the output at the appropriate offset location.
+  constexpr int kNumChannels = ImageRgba8U::kNumChannels;
+  for (int row = 0; row < rows_; ++row) {
+    for (int col = 0; col < cols_; ++col) {
+      const ImageRgba8U& image = *images(row, col);
+      const int u_offset = cell_widths.row(0).head(col).sum();
+      const int v_offset = cell_heights.col(0).head(row).sum();
+      for (int v = 0; v < image.height(); ++v) {
+        for (int u = 0; u < image.width(); ++u) {
           for (int ch = 0; ch < kNumChannels; ++ch) {
             output->at(u_offset + u, v_offset + v)[ch] = image.at(u, v)[ch];
           }

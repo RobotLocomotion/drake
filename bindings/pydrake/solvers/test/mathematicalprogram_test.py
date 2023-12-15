@@ -138,7 +138,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(result.get_x_val(), x_expected))
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionFound)
-        self.assertEqual(result.get_optimal_cost(), 3.0)
+        self.assertAlmostEqual(result.get_optimal_cost(), 3.0, places=7)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
         self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
@@ -538,11 +538,18 @@ class TestMathematicalProgram(unittest.TestCase):
         S = prog.NewSymmetricContinuousVariables(3, "S")
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
+        minor_indices = {0, 2}
         self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
         self.assertEqual(
             prog.positive_semidefinite_constraints()[0].evaluator().
             matrix_rows(), 3)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S, minor_indices)
+        self.assertEqual(len(prog.positive_semidefinite_constraints()), 2)
+        self.assertEqual(
+            prog.positive_semidefinite_constraints()[1].evaluator().
+            matrix_rows(), 2)
         prog.AddPositiveSemidefiniteConstraint(S+S)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S+S, minor_indices)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S+S)

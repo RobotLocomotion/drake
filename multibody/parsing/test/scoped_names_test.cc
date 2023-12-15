@@ -33,17 +33,17 @@ GTEST_TEST(ScopedNamesTest, GetScopedFrameByName) {
   full_name = "foo";
   EXPECT_EQ(GetScopedFrameByNameMaybe(plant, full_name), nullptr);
   DRAKE_EXPECT_THROWS_MESSAGE(GetScopedFrameByName(plant, full_name),
-                              ".*no.*foo.*names are.*world.*");
+                              ".*no.*foo.*valid names .*world.*");
 
   full_name = "scoped_names_model::foo";
   EXPECT_EQ(GetScopedFrameByNameMaybe(plant, full_name), nullptr);
   DRAKE_EXPECT_THROWS_MESSAGE(GetScopedFrameByName(plant, full_name),
-                              ".*no.*foo.*names are.*base.*");
+                              ".*no.*foo.*valid names .*base.*");
 
   full_name = "scoped_names_model::inner_model::foo";
   EXPECT_EQ(GetScopedFrameByNameMaybe(plant, full_name), nullptr);
   DRAKE_EXPECT_THROWS_MESSAGE(GetScopedFrameByName(plant, full_name),
-                              ".*no.*foo.*names are.*inner_frame.*");
+                              ".*no.*foo.*valid names .*inner_frame.*");
 
   full_name = "bar_model::foo";
   EXPECT_EQ(GetScopedFrameByNameMaybe(plant, full_name), nullptr);

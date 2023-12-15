@@ -289,12 +289,13 @@ class AlgebraicLoopDetection
  public:
   // Makes a system containing a multibody plant. When with_algebraic_loop =
   // true the model includes a feedback system that creates an algebraic loop.
-  void MakeDiagram(bool with_algebraic_loop, std::string_view solver_type) {
+  void MakeDiagram(bool with_algebraic_loop,
+                   std::string_view contact_approximation) {
     systems::DiagramBuilder<double> builder;
 
     MultibodyPlantConfig plant_config;
     plant_config.time_step = 1.0e-3;
-    plant_config.discrete_contact_solver = solver_type;
+    plant_config.discrete_contact_approximation = contact_approximation;
     std::tie(plant_, scene_graph_) =
         multibody::AddMultibodyPlant(plant_config, &builder);
     plant_->Finalize();
@@ -363,10 +364,12 @@ INSTANTIATE_TEST_SUITE_P(AlgebraicLoopTests, AlgebraicLoopDetection,
                          ::testing::Combine(::testing::Bool(),
                                             ::testing::Values("tamsi", "sap")));
 
+// N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+// arbitrarily choose two model approximations to accomplish this.
 TEST_P(AlgebraicLoopDetection, LoopDetectionTest) {
-  const auto& [with_algebraic_loop, solver_type] = GetParam();
+  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
 
-  MakeDiagram(with_algebraic_loop, solver_type);
+  MakeDiagram(with_algebraic_loop, contact_approximation);
   if (with_algebraic_loop) {
     VerifyLoopIsDetected();
   } else {
@@ -384,9 +387,9 @@ TEST_P(AlgebraicLoopDetection, LoopDetectionTest) {
 }
 
 TEST_P(AlgebraicLoopDetection, LoopDetectionTestWhenCachingIsDisabled) {
-  const auto& [with_algebraic_loop, solver_type] = GetParam();
+  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
 
-  MakeDiagram(with_algebraic_loop, solver_type);
+  MakeDiagram(with_algebraic_loop, contact_approximation);
   diagram_context_->DisableCaching();
 
   if (with_algebraic_loop) {

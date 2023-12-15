@@ -1,6 +1,9 @@
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image_file_format.h"
+#include "drake/systems/sensors/image_io.h"
 #include "drake/systems/sensors/image_writer.h"
 
 namespace drake {
@@ -19,6 +22,78 @@ void DefineSensorsImageIo(py::module m) {
         .value("kJpeg", ImageFileFormat::kJpeg)
         .value("kPng", ImageFileFormat::kPng)
         .value("kTiff", ImageFileFormat::kTiff);
+  }
+
+  {
+    using Class = ImageIo;
+    constexpr auto& cls_doc = doc.ImageIo;
+    py::class_<Class> cls(m, "ImageIo", cls_doc.doc);
+
+    {
+      py::class_<Class::Metadata> metadata_cls(
+          cls, "Metadata", cls_doc.Metadata.doc);
+      metadata_cls.def(ParamInit<Class::Metadata>());
+      DefAttributesUsingSerialize(&metadata_cls, cls_doc.Metadata);
+      DefReprUsingSerialize(&metadata_cls);
+      DefCopyAndDeepCopy(&metadata_cls);
+    }
+
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("LoadMetadata",
+            overload_cast_explicit<std::optional<Class::Metadata>,
+                const std::filesystem::path&>(&Class::LoadMetadata),
+            py::arg("path"), cls_doc.LoadMetadata.doc_1args_path)
+        .def(
+            "LoadMetadata",
+            [](const Class& self, py::bytes buffer) {
+              const std::string_view view{buffer};
+              return self.LoadMetadata(
+                  Class::ByteSpan{view.data(), view.size()});
+            },
+            py::arg("buffer"), cls_doc.LoadMetadata.doc_1args_buffer)
+        .def(
+            "Load",
+            [](const Class& self, const std::filesystem::path& path,
+                std::optional<ImageFileFormat> format) {
+              return self.Load(path, format);
+            },
+            py::arg("path"), py::arg("format") = std::nullopt,
+            cls_doc.Load.doc_2args_path_format)
+        .def(
+            "Load",
+            [](const Class& self, py::bytes buffer,
+                std::optional<ImageFileFormat> format) {
+              const std::string_view view{buffer};
+              return self.Load(
+                  Class::ByteSpan{view.data(), view.size()}, format);
+            },
+            py::arg("buffer"), py::arg("format") = std::nullopt,
+            cls_doc.Load.doc_2args_buffer_format)
+        .def(
+            "Save",
+            [](const Class& self, const ImageAny& image_any,
+                const std::filesystem::path& path,
+                std::optional<ImageFileFormat> format) {
+              std::visit(
+                  [&self, &path, &format](
+                      const auto& image) { self.Save(image, path, format); },
+                  image_any);
+            },
+            py::arg("image"), py::arg("path"), py::arg("format") = std::nullopt,
+            cls_doc.Save.doc_3args)
+        .def(
+            "Save",
+            [](const Class& self, const ImageAny& image_any,
+                ImageFileFormat format) {
+              const std::vector<uint8_t> result = std::visit(
+                  [&self, &format](
+                      const auto& image) { return self.Save(image, format); },
+                  image_any);
+              return py::bytes(
+                  reinterpret_cast<const char*>(result.data()), result.size());
+            },
+            py::arg("image"), py::arg("format"), cls_doc.Save.doc_2args);
   }
 
   {

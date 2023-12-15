@@ -28,7 +28,6 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="allegro_hand_left">
   <!-- Base link -->
   <link name="hand_root">
-    <origin xyz="0 0 0"/>
   </link>
   <joint name="root_to_base" type="fixed">
     <parent link="hand_root"/>

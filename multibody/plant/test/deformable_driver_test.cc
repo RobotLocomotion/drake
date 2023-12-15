@@ -38,8 +38,11 @@ class DeformableDriverTest : public ::testing::Test {
     plant_->AddPhysicalModel(std::move(deformable_model));
     const RigidBody<double>& body = plant_->AddRigidBody(
         "rigid_body", SpatialInertia<double>::SolidSphereWithMass(1.0, 1.0));
-    // N.B. Currently the manager only supports SAP.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    // N.B. Deformables are only supported with the SAP solver.
+    // Thus for testing we choose one arbitrary contact approximation that uses
+    // the SAP solver.
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();

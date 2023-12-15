@@ -15,8 +15,8 @@ def rules_rust_repository(
         An upgrade to @rules_rust also requires re-pinning the toolchain.
         Run `drake/tools/workspace/rust_toolchain/upgrade.py`.
         """,
-        commit = "0.30.0",
-        sha256 = "984def6785d76487c27087048b59639900f8e0ddba4fc9c265eb9134c50c0b50",  # noqa
+        commit = "0.32.0",
+        sha256 = "2d42ff62c076674bfcaea3d6dea76004db36f118f1773002fd9f23538babccd9",  # noqa
         patches = (extra_patches or []) + [
             ":patches/license_filegroup.patch",
         ],
