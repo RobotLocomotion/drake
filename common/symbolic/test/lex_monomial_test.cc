@@ -75,49 +75,6 @@ TEST_F(LexMonomialTest, TestGetNextMonomial) {
   }
 }
 
-TEST_F(LexMonomialTest, TestMaybeGetPreviousMonomial) {
-  // The first monomial is the 0 monomial, which always returns nullopt.
-  EXPECT_EQ(monomials_.at(0).MaybeGetPreviousMonomial(), std::nullopt);
-  for (int i = 1; i < ssize(monomials_); ++i) {
-    std::optional<std::unique_ptr<OrderedMonomial>> next_monomial_ordered =
-        monomials_.at(i).MaybeGetPreviousMonomial();
-    // Cases where we cannot get the previous monomial since it would require
-    // infinite degree to represent.
-    if (monomials_.at(i).degree(var_x_) == 1 ||
-        (monomials_.at(i).degree(var_x_) == 0 &&
-         monomials_.at(i).degree(var_y_) == 1)) {
-      EXPECT_EQ(next_monomial_ordered, std::nullopt);
-    } else {
-      EXPECT_TRUE(next_monomial_ordered.has_value());
-      LexMonomial* next_monomial =
-          dynamic_cast<LexMonomial*>(next_monomial_ordered.value().get());
-      EXPECT_EQ(monomials_.at(i).GetVariables(), next_monomial->GetVariables());
-      // Leading variable is x so decrease x
-      if (monomials_.at(i).degree(var_x_) > 1) {
-        EXPECT_EQ(monomials_.at(i).degree(var_x_) - 1,
-                  next_monomial->degree(var_x_));
-        EXPECT_EQ(monomials_.at(i).degree(var_y_),
-                  next_monomial->degree(var_y_));
-        EXPECT_EQ(monomials_.at(i).degree(var_z_),
-                  next_monomial->degree(var_z_));
-      } else if (monomials_.at(i).degree(var_y_) > 1) {
-        // Leading variable is y so decrease y
-        EXPECT_EQ(next_monomial->degree(var_x_), 0);
-        EXPECT_EQ(monomials_.at(i).degree(var_y_) - 1,
-                  next_monomial->degree(var_y_));
-        EXPECT_EQ(monomials_.at(i).degree(var_z_),
-                  next_monomial->degree(var_z_));
-      } else {
-        // Leading variable is z so decrease z
-        EXPECT_EQ(next_monomial->degree(var_x_), 0);
-        EXPECT_EQ(next_monomial->degree(var_y_), 0);
-        EXPECT_EQ(monomials_.at(i).degree(var_z_) - 1,
-                  next_monomial->degree(var_z_));
-      }
-    }
-  }
-}
-
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

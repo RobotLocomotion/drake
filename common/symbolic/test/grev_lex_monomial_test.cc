@@ -143,23 +143,6 @@ TEST_F(GrevLexMonomialTest, TestGetNextMonomial) {
   }
 }
 
-TEST_F(GrevLexMonomialTest, TestMaybeGetPreviousMonomial) {
-  // The first monomial is the 0 monomial, which always returns nullopt.
-  EXPECT_EQ(monomials_.at(0).MaybeGetPreviousMonomial(), std::nullopt);
-  for (int i = 1; i < ssize(monomials_); ++i) {
-    std::optional<std::unique_ptr<OrderedMonomial>> prev_monomial_ordered =
-        monomials_.at(i).MaybeGetPreviousMonomial();
-    // There is always a previous monomial in the grev lex order that we can
-    // get.
-    EXPECT_TRUE(prev_monomial_ordered.has_value());
-    GrevLexMonomial* prev_monomial =
-        dynamic_cast<GrevLexMonomial*>(prev_monomial_ordered.value().get());
-    // The list provided monomials are the first n monomials in grev_lex
-    // order.
-    EXPECT_EQ(monomials_.at(i - 1), *prev_monomial);
-  }
-}
-
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

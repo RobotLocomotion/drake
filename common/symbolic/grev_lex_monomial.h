@@ -20,8 +20,7 @@ class GrevLexMonomial : public OrderedMonomial {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GrevLexMonomial)
  protected:
   std::unique_ptr<OrderedMonomial> DoGetNextMonomial() const final;
-  std::optional<std::unique_ptr<OrderedMonomial>> DoMaybeGetPreviousMonomial()
-      const final;
+
   bool DoLessThanComparison(const OrderedMonomial& m) const final;
 };
 

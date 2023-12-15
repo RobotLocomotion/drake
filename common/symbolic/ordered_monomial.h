@@ -38,29 +38,10 @@ class OrderedMonomial : public Monomial {
    */
   std::unique_ptr<OrderedMonomial> GetNextMonomial() const;
 
-  /**
-   * Returns the previous monomial according to the prescribed order.
-   * Specifically, we return the unique monomial m such that m < this and there
-   * does not exists any other monomial n such that m < n < this.
-   *
-   * In some orders, it may not be possible to explicitly represent the previous
-   * monomial. For example, in the lexicographic order with x < y, the previous
-   * monomial for x³y is x to an arbitrarily high power. This is because xⁿ <
-   * x³y for every n.
-   *
-   * In this case, this method return nullopt. Also return nullopt if called on
-   * the constant monomial.
-   *
-   */
-  std::optional<std::unique_ptr<OrderedMonomial>> MaybeGetPreviousMonomial()
-      const;
-
  protected:
   /** Non-virtual interface implementation for DoGetNextMonomial().*/
   virtual std::unique_ptr<OrderedMonomial> DoGetNextMonomial() const = 0;
-  /** Non-virtual interface implementation for DoMaybeGetPreviousMonomial().*/
-  virtual std::optional<std::unique_ptr<OrderedMonomial>>
-  DoMaybeGetPreviousMonomial() const = 0;
+
   /** Non-virtual interface implementation for the < operator.*/
   virtual bool DoLessThanComparison(const OrderedMonomial& m) const = 0;
   // We put the copy/move/assignment constructors as protected to avoid copy

@@ -23,13 +23,5 @@ std::unique_ptr<OrderedMonomial> OrderedMonomial::GetNextMonomial() const {
   return DoGetNextMonomial();
 }
 
-std::optional<std::unique_ptr<OrderedMonomial>>
-OrderedMonomial::MaybeGetPreviousMonomial() const {
-  if (total_degree_ == 0) {
-    return std::nullopt;
-  }
-  return DoMaybeGetPreviousMonomial();
-}
-
 }  // namespace symbolic
 }  // namespace drake

@@ -58,63 +58,6 @@ std::unique_ptr<OrderedMonomial> GrevLexMonomial::DoGetNextMonomial() const {
   return std::unique_ptr<OrderedMonomial>(new GrevLexMonomial(powers));
 }
 
-std::optional<std::unique_ptr<OrderedMonomial>>
-GrevLexMonomial::DoMaybeGetPreviousMonomial() const {
-  std::map<Variable, int> powers{};
-  if (total_degree_ == 0) {
-    return std::nullopt;
-  }
-  // Find the largest non-zero power in lex order monomial.
-  auto powers_it = powers_.rbegin();
-  while (powers_it->second == 0) {
-    powers.emplace_hint(powers.cbegin(), powers_it->first, 0);
-    ++powers_it;
-  }
-  // Since this is not the constant monomial, there must be a non-zero power.
-  DRAKE_ASSERT(powers_it != powers_.crend());
-  const Variable largest_non_zero_variable{powers_it->first};
-
-  // If the largest non-zero power is the smallest variable, then we need to
-  // decrease the grade. The first monomial at the next grade is the largest
-  // monomial raised to the power of grade - 1.
-  if (largest_non_zero_variable.equal_to(powers_.cbegin()->first)) {
-    powers.emplace_hint(powers.cbegin(), powers_it->first, 0);
-    powers.at(powers.crbegin()->first) = total_degree_ - 1;
-  } else {
-    powers.emplace_hint(powers.cbegin(), powers_it->first, powers_it->second);
-    // Powers contains the largest variables and their powers right now. Compute
-    // the previous monomial of this current map.
-    const GrevLexMonomial leading_variable_monomial{powers};
-    std::optional<std::unique_ptr<OrderedMonomial>> prev_leading_monomial{
-        leading_variable_monomial.DoMaybeGetPreviousMonomial()};
-    // prev_leading_monomial will always have value since we passed in a
-    // non-constant monomial.
-    DRAKE_ASSERT(prev_leading_monomial.has_value());
-
-    for (const auto& [v, p] : prev_leading_monomial.value()->get_powers()) {
-      powers.at(v) = p;
-    }
-
-    ++powers_it;
-    if (prev_leading_monomial.value()->total_degree() <
-        leading_variable_monomial.total_degree()) {
-      // If the leading monomial dropped grade, we need to increment the power
-      // of the next monomial to balance the grade.
-      powers.emplace_hint(powers.cend(), powers_it->first,
-                          powers_it->second + 1);
-      // Increment the counter.
-      ++powers_it;
-    }
-    // The remaining variables keep the same powers. This includes the largest
-    // non-zero power variable if the leading monomial did not drop grade.
-    while (powers_it != powers_.crend()) {
-      powers.emplace_hint(powers.cbegin(), powers_it->first, powers_it->second);
-      ++powers_it;
-    }
-  }
-  return std::unique_ptr<OrderedMonomial>(new GrevLexMonomial(powers));
-}
-
 bool GrevLexMonomial::DoLessThanComparison(const OrderedMonomial& m) const {
   // We have already checked that this and @p m have the same variables.
   // Moreover, the powers are stored as a map and therefore the variables are
