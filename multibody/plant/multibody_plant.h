@@ -653,8 +653,8 @@ the following properties for point contact modeling:
 
 ² If the property is missing, %MultibodyPlant will use
   a heuristic value as the default. Refer to the
-  section @ref mbp_penalty_method "Penalty method point contact" for further
-  details.
+  section @ref mbp_compliant_point_contact "Penalty method point contact" for
+  further details.
 
 ³ When using a linear Kelvin–Voigt model of dissipation (for instance when
   selecting the SAP solver), collision geometry is required to be registered
@@ -2055,30 +2055,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
   ///   on Intelligent Robots and Systems (IROS), 2019.
   ///
-  /// @anchor mbp_penalty_method
-  ///                   #### Penalty method point contact
+  /// @anchor mbp_compliant_point_contact
+  ///                   #### Compliant point contact model
   ///
-  /// Currently %MultibodyPlant uses a rigid contact model that is, bodies in
-  /// the model are infinitely stiff or ideal rigid bodies. Therefore, the
-  /// mathematical description of the rigid contact model needs to include
-  /// non-penetration constraints among bodies in the formulation. There are
-  /// several numerical methods to impose and solve these constraints.
-  /// In a penalty method approach, we allow for a certain amount of
+  /// We provide a brief discussion of this model here to introduce users to
+  /// model parameters and APIs. For a more detailed discussion, refer to
+  /// @ref hug_point_contact_theory "Compliant Point Contact".
+  ///
+  /// In a compliant point contact model, we allow for a certain amount of
   /// interpenetration and we compute contact forces according to a simple law
   /// of the form: <pre>
-  ///   fₙ = k(1+dẋ)x
+  ///   fₙ = k(x)₊(1 + dẋ)₊
   /// </pre>
-  /// where the normal contact force `fₙ` is made a continuous function of the
-  /// penetration distance x between the bodies (defined to be positive when
-  /// the bodies are in contact) and the penetration distance rate ẋ (with ẋ >
-  /// 0 meaning the penetration distance is increasing and therefore the
-  /// interpenetration between the bodies is also increasing).  k and d are the
-  /// combined penalty method coefficients for stiffness and dissipation, given
-  /// a pair of colliding geometries. Dissipation is modeled using a Hunt &
-  /// Crossley model of dissipation, see
-  /// @ref mbp_dissipation_model "Modeling Dissipation" for
-  /// details.  For flexibility of parameterization, stiffness and dissipation
-  /// are set on a per-geometry basis
+  /// with `(a)₊ = max(0, a)`. The normal contact force `fₙ` is made a
+  /// continuous function of the penetration distance x between the bodies
+  /// (defined to be positive when the bodies are in contact) and the
+  /// penetration distance rate ẋ (with ẋ > 0 meaning the penetration distance
+  /// is increasing and therefore the interpenetration between the bodies is
+  /// also increasing). Stiffness `k` and dissipation `d` are the combined
+  /// penalty method coefficients for stiffness and dissipation, given a pair of
+  /// contacting geometries. Dissipation is modeled using a Hunt & Crossley
+  /// model of dissipation, see @ref mbp_dissipation_model "Modeling
+  /// Dissipation" for details.  For flexibility of parameterization, stiffness
+  /// and dissipation are set on a per-geometry basis
   /// (@ref accessing_contact_properties). Given two geometries with individual
   /// stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we define the
   /// rule for combined stiffness (k) and dissipation (d) as: <pre>
@@ -2091,25 +2090,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// with default values match those estimated using the user-supplied
   /// "penetration allowance", as described below.
   ///
-  /// These are ad-hoc parameters which need to be tuned as a trade-off between:
-  /// - The accuracy of the numerical approximation to rigid contact, which
-  ///   requires a stiffness that approaches infinity, and
-  /// - the computational cost of the numerical integration, which will
-  ///   require smaller time steps for stiffer systems.
+  /// When modeling stiff materials such as steel or ceramics, these model
+  /// parameters often need to be tuned as a trade-off between numerical
+  /// stiffness and physical accuracy. Stiffer materials lead to a harder to
+  /// solve system of equations, affecting the overall performance of the
+  /// simulation. The convex approximation provided in Drake are very robust
+  /// even at high stiffness values, please refer to [Castro et al., 2023] in
+  /// DiscreteContactApproximation for a study on the effect of stiffness on
+  /// solver performance.
   ///
-  /// There is no exact procedure for choosing these coefficients, and
-  /// estimating them manually can be cumbersome since in general they will
-  /// depend on the scale of the problem including masses, speeds and even
-  /// body sizes. However, %MultibodyPlant aids the estimation of these
-  /// coefficients using a heuristic function based on a user-supplied
-  /// "penetration allowance", see set_penetration_allowance(). The penetration
-  /// allowance is a number in meters that specifies the order of magnitude of
-  /// the average penetration between bodies in the system that the user is
-  /// willing to accept as reasonable for the problem being solved. For
-  /// instance, in the robotics manipulation of ordinary daily objects the user
-  /// might set this number to 1 millimeter. However, the user might want to
-  /// increase it for the simulation of heavy walking robots for which an
-  /// allowance of 1 millimeter would result in a very stiff system.
+  /// While we strongly recommend setting these parameters accordingly for your
+  /// model, %MultibodyPlant aids the estimation of these coefficients using a
+  /// heuristic function based on a user-supplied "penetration allowance", see
+  /// set_penetration_allowance(). This heuristics offers a good starting point
+  /// when setting a simulation for the first time. Users can then set material
+  /// properties for specific geometries once they observe the results of a
+  /// first simulation with these defaults. The penetration allowance is a
+  /// number in meters that specifies the order of magnitude of the average
+  /// penetration between bodies in the system that the user is willing to
+  /// accept as reasonable for the problem being solved. For instance, in the
+  /// robotics manipulation of ordinary daily objects the user might set this
+  /// number to 1 millimeter. However, the user might want to increase it for
+  /// the simulation of heavy walking robots for which an allowance of 1
+  /// millimeter would result in a very stiff system.
   ///
   /// As for the dissipation coefficient in the simple law above,
   /// %MultibodyPlant chooses the dissipation coefficient d to model inelastic
@@ -2346,8 +2349,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // camel case per GSG.
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
-  /// section @ref mbp_penalty_method "Contact by penalty method" for further
-  /// details.
+  /// section @ref mbp_compliant_point_contact "Contact by penalty method" for
+  /// further details.
   ///
   /// @throws std::exception if penetration_allowance is not positive.
   void set_penetration_allowance(
