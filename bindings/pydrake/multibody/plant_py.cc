@@ -1004,11 +1004,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_contact_model", &Class::set_contact_model, py::arg("model"),
             cls_doc.set_contact_model.doc)
         .def("get_contact_model", &Class::get_contact_model,
-            cls_doc.get_contact_model.doc)
-        .def("set_discrete_contact_solver", &Class::set_discrete_contact_solver,
-            py::arg("contact_solver"), cls_doc.set_discrete_contact_solver.doc)
+            cls_doc.get_contact_model.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_discrete_contact_solver",
+            WrapDeprecated(cls_doc.set_discrete_contact_solver.doc_deprecated,
+                &Class::set_discrete_contact_solver),
+            py::arg("contact_solver"),
+            cls_doc.set_discrete_contact_solver.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("get_discrete_contact_solver", &Class::get_discrete_contact_solver,
             cls_doc.get_discrete_contact_solver.doc)
+        .def("set_discrete_contact_approximation",
+            &Class::set_discrete_contact_approximation,
+            py::arg("approximation"),
+            cls_doc.set_discrete_contact_approximation.doc)
+        .def("get_discrete_contact_approximation",
+            &Class::get_discrete_contact_approximation,
+            cls_doc.get_discrete_contact_approximation.doc)
         .def("set_sap_near_rigid_threshold",
             &Class::set_sap_near_rigid_threshold,
             py::arg("near_rigid_threshold") =
@@ -1524,6 +1539,16 @@ PYBIND11_MODULE(plant, m) {
     py::enum_<Class>(m, "DiscreteContactSolver", cls_doc.doc)
         .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
         .value("kSap", Class::kSap, cls_doc.kSap.doc);
+  }
+
+  {
+    using Class = DiscreteContactApproximation;
+    constexpr auto& cls_doc = doc.DiscreteContactApproximation;
+    py::enum_<Class>(m, "DiscreteContactApproximation", cls_doc.doc)
+        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
+        .value("kSap", Class::kSap, cls_doc.kSap.doc)
+        .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)
+        .value("kLagged", Class::kLagged, cls_doc.kLagged.doc);
   }
 
   {

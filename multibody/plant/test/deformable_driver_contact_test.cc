@@ -25,6 +25,7 @@ using drake::multibody::fem::FemState;
 using drake::systems::Context;
 using drake::systems::DiscreteStateIndex;
 using Eigen::MatrixXd;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
 
@@ -33,12 +34,13 @@ namespace multibody {
 namespace internal {
 
 /* This fixture tests DeformableDriver member functions associated with the
- concept of contact. In particular, it sets up two identical and overlapping
- deformable octahedron bodies centered at world origin, each with 8 elements,
- 7 vertices, and 21 dofs. A rigid rectangle is added so that its top face
- intersects the bottom half of each deformable octahedron. As a result, each
- deformable body has 6 participating vertices (all vertices except the top
- vertex) and 18 participating dofs. */
+ concept of contact. In particular, it sets up two identical, non-overlapping
+ deformable octahedron bodies, each with 8 elements, 7 vertices, and 21 dofs. A
+ rigid box is added so that its top face intersects the bottom half of
+ one deformable octahedron and its bottom face intersects the top half of the
+ other deformable octahedron. As a result, each deformable body has 6
+ participating vertices (all vertices except the top/bottom vertex) and 18
+ participating dofs. */
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
@@ -48,13 +50,23 @@ class DeformableDriverContactTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    body_id0_ =
-        RegisterDeformableOctahedron(deformable_model.get(), "deformable0");
-    body_id1_ =
-        RegisterDeformableOctahedron(deformable_model.get(), "deformable1");
+    /* Move the first deformable up so that the bottom half of it intersects the
+     * rigid box. */
+    const RigidTransformd X_WD0(Vector3d(0, 0, 1.25));
+    body_id0_ = RegisterDeformableOctahedron(X_WD0, deformable_model.get(),
+                                             "deformable0");
+    /* Move the second deformable down so that the top half of it intersects the
+     * rigid box. */
+    const RigidTransformd X_WD1(Vector3d(0, 0, -1.25));
+    body_id1_ = RegisterDeformableOctahedron(X_WD1, deformable_model.get(),
+                                             "deformable1");
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    // N.B. Deformables are only supported with the SAP solver.
+    // Thus for testing we choose one arbitrary contact approximation that uses
+    // the SAP solver.
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
@@ -64,10 +76,9 @@ class DeformableDriverContactTest : public ::testing::Test {
     //  as the trigger for contact with deformable bodies.
     proximity_prop.AddProperty(geometry::internal::kHydroGroup,
                                geometry::internal::kRezHint, 1.0);
-    RigidTransformd X_WG(Vector3<double>(0, 0, -0.75));
     rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
-        plant_->world_body(), X_WG, geometry::Box(10, 10, 1),
-        "rigid_collision_geometry", proximity_prop);
+        plant_->world_body(), RigidTransformd::Identity(),
+        geometry::Box(10, 10, 1), "rigid_collision_geometry", proximity_prop);
     plant_->Finalize();
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
@@ -175,10 +186,13 @@ class DeformableDriverContactTest : public ::testing::Test {
   GeometryId rigid_geometry_id_;
 
  private:
-  DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
+  /* Registers a deformable octahedron with 8 vertices with pose `X_WD` to the
+   given `model`. */
+  DeformableBodyId RegisterDeformableOctahedron(const RigidTransformd& X_WD,
+                                                DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(1.0), std::move(name));
+        X_WD, make_unique<Sphere>(1.0), std::move(name));
     geometry::ProximityProperties props;
     geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                  &props);
@@ -209,7 +223,7 @@ TEST_F(DeformableDriverContactTest, EvalDeformableContact) {
   EXPECT_EQ(contact.contact_surfaces()[0].id_B(), rigid_geometry_id_);
   EXPECT_EQ(contact.contact_surfaces()[1].id_B(), rigid_geometry_id_);
 
-  /* All but the top vertex in each octahedron should participate in contact. */
+  /* All but the top/bottom vertex in each octahedron participate in contact. */
   GeometryId geometry_id0 = model_->GetGeometryId(body_id0_);
   GeometryId geometry_id1 = model_->GetGeometryId(body_id1_);
   EXPECT_EQ(
@@ -277,7 +291,7 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingFreeMotionVelocities) {
   const PartialPermutation& p0 =
       EvalDofPermutation(plant_context, DeformableBodyIndex(0));
   const PartialPermutation& p1 =
-      EvalDofPermutation(plant_context, DeformableBodyIndex(0));
+      EvalDofPermutation(plant_context, DeformableBodyIndex(1));
   VectorXd participating_v0_star(p0.permuted_domain_size());
   VectorXd participating_v1_star(p1.permuted_domain_size());
   p0.Apply(v0_star, &participating_v0_star);
@@ -286,8 +300,9 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingFreeMotionVelocities) {
   const int num_participating_dofs_per_body = num_participating_vertices * 3;
   VectorXd expected_participating_v_star(2 * num_participating_dofs_per_body);
   expected_participating_v_star << participating_v0_star, participating_v1_star;
-  EXPECT_EQ(expected_participating_v_star,
-            EvalParticipatingFreeMotionVelocities(plant_context));
+  EXPECT_TRUE(
+      CompareMatrices(expected_participating_v_star,
+                      EvalParticipatingFreeMotionVelocities(plant_context)));
 }
 
 TEST_F(DeformableDriverContactTest,
@@ -399,10 +414,15 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
     const DiscreteContactPair<double>& pair = contact_pairs[i];
     EXPECT_TRUE(pair.id_A == id0 || pair.id_A == id1);
     EXPECT_EQ(pair.id_B, rigid_geometry_id_);
-    /* The contact point is on the z = -0.25 plane, the top surface of the rigid
-     box. */
-    EXPECT_EQ(pair.p_WC(2), -0.25);
-    EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, 1)));
+    /* The contact points are on the z = -0.5 and z = 0.5 planes, the top and
+     bottom surfaces of the rigid box. */
+    if (pair.id_A == id0) {
+      EXPECT_EQ(pair.p_WC(2), 0.5);
+      EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, 1)));
+    } else {
+      EXPECT_EQ(pair.p_WC(2), -0.5);
+      EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, -1)));
+    }
     EXPECT_EQ(pair.stiffness, expected_k);
     EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
     EXPECT_EQ(pair.friction_coefficient, 1.0);
@@ -480,9 +500,9 @@ TEST_F(DeformableDriverContactTest, CalcNextFemStateWithContact) {
      ‖A⋅(v−v*)−Jᵀγ‖ < εᵣ‖D⋅A⋅v‖₂. */
   const VectorXd D = A.diagonal().cwiseInverse().cwiseSqrt();
   const double scale = (D.asDiagonal() * (A * v_next)).norm();
-  const double relative_tolerance = 1e-6;  // The default SAP tolerance.
-  EXPECT_TRUE(CompareMatrices(A * (v_next - v_star), tau * kDt,
-                              scale * relative_tolerance));
+  const double relative_tolerance = 1e-6;
+  EXPECT_LT((D.asDiagonal() * (A * (v_next - v_star) - tau * kDt)).norm(),
+            scale * relative_tolerance);
 }
 
 }  // namespace

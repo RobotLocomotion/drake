@@ -11,6 +11,7 @@
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace planning {
@@ -551,7 +552,7 @@ class GcsTrajectoryOptimization final {
   std::vector<int> global_continuity_constraints_{};
 };
 
-/* Given a convex set, and a list of indices corresponding to continuous
+/** Given a convex set, and a list of indices corresponding to continuous
 revolute joints, return a list of convex sets that respect the convexity
 radius, and whose union is the given convex set. Respecting the convexity radius
 entails that each convex set has a width of stricty less than π along each
@@ -576,6 +577,12 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     geometry::optimization::ConvexSets convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
+
+/** Returns a list of indices in the plant's generalized positions which
+correspond to a continuous revolute joint (a revolute joint with no joint
+limits). This includes the revolute component of a planar joint */
+std::vector<int> GetContinuousRevoluteJointIndices(
+    const multibody::MultibodyPlant<double>& plant);
 
 }  // namespace trajectory_optimization
 }  // namespace planning

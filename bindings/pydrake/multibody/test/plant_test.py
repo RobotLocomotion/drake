@@ -78,6 +78,7 @@ from pydrake.multibody.plant import (
     ContactResultsToLcmSystem,
     CoulombFriction_,
     DeformableModel,
+    DiscreteContactApproximation,
     DiscreteContactSolver,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
@@ -2329,7 +2330,8 @@ class TestPlant(unittest.TestCase):
     def test_coupler_constraint_api(self):
         # Create a MultibodyPlant with only a WSG gripper.
         plant = MultibodyPlant_[float](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
         Parser(plant).AddModelsFromUrl(
             "package://drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
@@ -2350,7 +2352,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_distance_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add a distance constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2371,7 +2374,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_ball_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add ball constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2391,7 +2395,8 @@ class TestPlant(unittest.TestCase):
 
     def test_constraint_active_status_api(self):
         plant = MultibodyPlant_[float](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Since we won't be performing dynamics computations,
         # using garbage inertia is ok for this test.
@@ -2481,7 +2486,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_weld_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add weld constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2686,6 +2692,9 @@ class TestPlant(unittest.TestCase):
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
 
+    # N.B. MultibodyPlant::set_discrete_contact_solver() is deprecated and will
+    # be removed on or after 2024-04-01. This entire unit test can be removed
+    # entirely with the removal of discrete_contact_solver().
     def test_discrete_contact_solver(self):
         plant = MultibodyPlant_[float](0.1)
         models = [
@@ -2693,10 +2702,25 @@ class TestPlant(unittest.TestCase):
             DiscreteContactSolver.kSap,
         ]
         for model in models:
-            plant.set_discrete_contact_solver(model)
+            with catch_drake_warnings(expected_count=1) as w:
+                plant.set_discrete_contact_solver(model)
             self.assertEqual(plant.get_discrete_contact_solver(), model)
+
+    def test_discrete_contact_approximation(self):
+        plant = MultibodyPlant_[float](0.1)
+        approximations = [
+            DiscreteContactApproximation.kTamsi,
+            DiscreteContactApproximation.kSap,
+            DiscreteContactApproximation.kLagged,
+            DiscreteContactApproximation.kSimilar,
+        ]
+        for approximation in approximations:
+            plant.set_discrete_contact_approximation(approximation)
+            self.assertEqual(plant.get_discrete_contact_approximation(),
+                             approximation)
         plant.get_sap_near_rigid_threshold()
         plant.set_sap_near_rigid_threshold(near_rigid_threshold=0.03)
+        plant.get_discrete_contact_solver()
 
     def test_contact_surface_representation(self):
         for time_step in [0.0, 0.1]:
@@ -3034,7 +3058,8 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(len(registered_models), 1)
         self.assertEqual(registered_models[0].num_bodies(), 1)
         # Turn on SAP and finalize.
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
         plant.Finalize()
 
         # Post-finalize operations.

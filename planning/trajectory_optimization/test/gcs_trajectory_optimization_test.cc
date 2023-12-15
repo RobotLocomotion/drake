@@ -10,6 +10,9 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 
@@ -33,6 +36,11 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
+using multibody::MultibodyPlant;
+using multibody::PlanarJoint;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
 using solvers::MathematicalProgram;
 
 bool GurobiOrMosekSolverAvailable() {
@@ -1401,6 +1409,47 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
   // Epsilon must be strictly positive.
   EXPECT_THROW(PartitionConvexSet(v, continuous_revolute_joints, 0.0),
                std::exception);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& first_body =
+      plant.AddRigidBody("first_body", SpatialInertia<double>());
+  const RigidBody<double>& second_body =
+      plant.AddRigidBody("second_body", SpatialInertia<double>());
+  const RigidBody<double>& third_body =
+      plant.AddRigidBody("third_body", SpatialInertia<double>());
+  const RigidBody<double>& fourth_body =
+      plant.AddRigidBody("fourth_body", SpatialInertia<double>());
+
+  // Add a planar joint without limits
+  plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
+                              {}, Eigen::Matrix<double, 3, 1>::Zero());
+
+  // Add a planar joint with limits
+  std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
+      "second_joint", first_body.body_frame(), second_body.body_frame(),
+      Eigen::Matrix<double, 3, 1>::Zero()));
+  second_joint_ptr->set_position_limits(Eigen::Vector3d{-1.0, -1.0, -1.0},
+                                        Eigen::Vector3d{1.0, 1.0, 1.0});
+  plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
+
+  // Add a revolute joint without limits
+  plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
+
+  // Add a revolute joint with limits
+  plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
+                                -1.0, 1.0);
+
+  plant.Finalize();
+
+  const std::vector<int> continuous_joint_indices =
+      trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
+  ASSERT_EQ(continuous_joint_indices.size(), 2);
+  EXPECT_EQ(continuous_joint_indices[0], 2);
+  EXPECT_EQ(continuous_joint_indices[1], 6);
 }
 
 }  // namespace

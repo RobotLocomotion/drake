@@ -58,12 +58,12 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
   };
 
   // Sets a model with PD controllers as specified by `model_config`. The
-  // MultibodyPlant model is discrete and uses the SAP solver by default, but
-  // this can be changed with `config`.
+  // MultibodyPlant model is discrete and uses the SAP model approximation by
+  // default, but this can be changed with `config`.
   void SetUpModel(
       ModelConfiguration model_config = ModelConfiguration::kArmIsNotControlled,
       const MultibodyPlantConfig& config = MultibodyPlantConfig{
-          .time_step = 0.01, .discrete_contact_solver = "sap"}) {
+          .time_step = 0.01, .discrete_contact_approximation = "sap"}) {
     const char kArmSdfPath[] =
         "drake/manipulation/models/iiwa_description/iiwa7/"
         "iiwa7_no_collision.sdf";
@@ -649,7 +649,7 @@ TEST_F(ActuatedIiiwaArmTest,
        ActuationOutputForDiscreteNonSapModelsFeedsThroughActuationInput) {
   SetUpModel(ModelConfiguration::kNoPdControl,
              MultibodyPlantConfig{.time_step = 0.01,
-                                  .discrete_contact_solver = "tamsi"});
+                                  .discrete_contact_approximation = "tamsi"});
   VerifyActuationOutputFeedsThroughActuationInputs();
 }
 
@@ -659,7 +659,7 @@ TEST_F(ActuatedIiiwaArmTest,
        ActuationOutputForDiscreteSapModelsFeedsThroughActuationInput) {
   SetUpModel(ModelConfiguration::kNoPdControl,
              MultibodyPlantConfig{.time_step = 0.01,
-                                  .discrete_contact_solver = "sap"});
+                                  .discrete_contact_approximation = "sap"});
   VerifyActuationOutputFeedsThroughActuationInputs();
 }
 

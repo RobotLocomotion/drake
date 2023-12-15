@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -173,6 +174,68 @@ enum class DiscreteContactSolver {
   kTamsi,
   /// SAP solver, see [Castro et al., 2022].
   kSap,
+};
+
+/// The type of the contact approximation used for a discrete MultibodyPlant
+/// model.
+///
+/// kTamsi, kSimilar and kLagged are all approximations to the same contact
+/// model --  Compliant contact with regularized friction, refer to
+/// @ref mbp_contact_modeling "Contact Modeling" for further details.
+/// The key difference however, is that the kSimilar and kLagged approximations
+/// are convex and therefore our contact solver has both theoretical and
+/// practical convergence guarantees ---  the solver will always succeed.
+/// Conversely, being non-convex, kTamsi can fail to find a solution.
+///
+/// kSap is also a convex model of compliant contact with regularized friction.
+/// There are a couple of key differences however:
+/// - Dissipation is modeled using a linear Kelvin–Voigt model, parameterized by
+///   a relaxation time constant.
+///   See @ref accessing_contact_properties "contact parameters".
+/// - Unlike kTamsi, kSimilar and kLagged where regularization of friction is
+///   parameterized by a stiction tolerance (see set_stiction_tolerance()), SAP
+///   determines regularization automatically solely based on numerics. Users
+///   have no control on the amount of regularization.
+///
+/// ## How to choose an approximation
+///
+/// The Hunt & Crossley model is based on physics, it is continuous and has been
+/// experimentally validated. Therefore it is the preferred model to capture the
+/// physics of contact.
+///
+/// Being approximations, kSap and kSimilar introduce a spurious
+/// effect of "gliding" in sliding contact, see [Castro et al., 2023]. This
+/// artifact is 𝒪(δt) but can be significant at large time steps and/or large
+/// slip velocities. kLagged does not suffer from this, but introduces a "weak"
+/// coupling of friction that can introduce non-negligible effects in the
+/// dynamics during impacts or strong transients.
+///
+/// Summarizing, kLagged is the preferred approximation when strong transients
+/// are not expected or don't need to be accurately resolved.
+/// If strong transients do need to be accurately resolved (unusual for robotics
+/// applications), kSimilar is the preferred approximation.
+///
+/// <h2>References</h2>
+/// - [Castro et al., 2019] Castro A., Qu A., Kuppuswamy N., Alspach A.,
+///   Sherman M, 2019. A Transition-Aware Method for the Simulation of
+///   Compliant Contact with Regularized Friction. Available online at
+///   https://arxiv.org/abs/1909.05700.
+/// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
+///   Unconstrained Convex Formulation of Compliant Contact. Available online at
+///   https://arxiv.org/abs/2110.10107.
+/// - [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory
+///   of Irrotational Contact Fields. Available online at
+///   https://arxiv.org/abs/2312.03908
+enum class DiscreteContactApproximation {
+  /// TAMSI solver approximation, see [Castro et al., 2019].
+  kTamsi,
+  /// SAP solver model approximation, see [Castro et al., 2022].
+  kSap,
+  /// Similarity approximation found in [Castro et al., 2023].
+  kSimilar,
+  /// Approximation in which the normal force is lagged in Coulomb's law, such
+  /// that ‖γₜ‖ ≤ μ γₙ₀, [Castro et al., 2023].
+  kLagged,
 };
 
 /// @cond
@@ -601,11 +664,12 @@ the following properties for point contact modeling:
 
 ⁴ We allow to specify both hunt_crossley_dissipation and relaxation_time for a
   given geometry. However only one of these will get used, depending on the
-  configuration of the %MultibodyPlant. As an example, if the SAP solver is
-  specified (see set_discrete_contact_solver()) only the relaxation_time is used
-  while hunt_crossley_dissipation is ignored. Conversely, if the TAMSI solver is
-  used (see set_discrete_contact_solver()) only hunt_crossley_dissipation is
-  used while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
+  configuration of the %MultibodyPlant. As an example, if the SAP contact
+  approximation is specified (see set_discrete_contact_approximation()) only the
+  relaxation_time is used while hunt_crossley_dissipation is ignored.
+  Conversely, if the TAMSI, Similar or Lagged approximation is used (see
+  set_discrete_contact_approximation()) only hunt_crossley_dissipation is used
+  while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
   model will always use the Hunt & Crossley model and relaxation_time will be
   ignored.
 
@@ -1404,12 +1468,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// Currently constraints are only supported for discrete %MultibodyPlant
   /// models and not for all discrete solvers, see
-  /// set_discrete_contact_solver(). If the model contains constraints not
+  /// get_discrete_contact_solver(). If the model contains constraints not
   /// supported by the discrete solver, the plant will throw an exception at
-  /// Finalize() time. At this point the user has the option to either change
-  /// the contact solver with set_discrete_contact_solver() or in the
-  /// MultibodyPlantConfig, or to re-define the model so that such a constraint
-  /// is not needed.
+  /// Finalize() time. At this point the user has the option to select a contact
+  /// model approximation that uses a solver that supports constraints, or to
+  /// re-define the model so that such a constraint is not needed. A contact
+  /// model approximation can be set with set_discrete_contact_approximation()
+  /// or in the MultibodyPlantConfig.
   ///
   /// Each constraint is identified with a MultibodyConstraintId returned
   /// by the function used to add it (e.g. AddCouplerConstraint()). It is
@@ -2136,13 +2201,44 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  ///
+  /// @note Calling this method also sets a default discrete approximation of
+  /// contact (see set_discrete_contact_approximation()) according to:
+  /// - DiscreteContactSolver::kTamsi sets the approximation to
+  ///   DiscreteContactApproximation::kTamsi.
+  /// - DiscreteContactSolver::kSap sets the approximation to
+  ///   DiscreteContactApproximation::kSap.
+  ///
   /// @warning This function is a no-op for continuous models (when
   /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
+  DRAKE_DEPRECATED(
+      "2024-04-01",
+      "Use set_discrete_contact_approximation() to set the contact model "
+      "approximation. The underlying solver will be inferred automatically.")
   void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
   DiscreteContactSolver get_discrete_contact_solver() const;
+
+  /// Sets the discrete contact model approximation.
+  ///
+  /// @note Calling this method also sets the contact solver type (see
+  /// set_discrete_contact_solver()) according to:
+  /// - DiscreteContactApproximation::kTamsi sets the solver to
+  ///   DiscreteContactSolver::kTamsi.
+  /// - DiscreteContactApproximation::kSap,
+  ///   DiscreteContactApproximation::kSimilar and
+  ///   DiscreteContactApproximation::kLagged set the solver to
+  ///   DiscreteContactSolver::kSap.
+  ///
+  /// @throws iff `this` plant is continuous (i.e. is_discrete() is `false`.)
+  /// @throws std::exception iff called post-finalize.
+  void set_discrete_contact_approximation(
+      DiscreteContactApproximation approximation);
+
+  /// @returns the discrete contact solver approximation.
+  DiscreteContactApproximation get_discrete_contact_approximation() const;
 
   /// Non-negative dimensionless number typically in the range [0.0, 1.0],
   /// though larger values are allowed even if uncommon. This parameter controls
@@ -5679,10 +5775,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kHydroelasticWithFallback};
 
-  // The solver type used by a discrete plant. Keep this in sync
-  // with the default value in multibody_plant_config.h; there are already
-  // assertions in the cc file that enforce this.
-  DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
+  // The contact model approximation used by discrete MultibodyPlant models.
+  DiscreteContactApproximation discrete_contact_approximation_{
+      DiscreteContactApproximation::kTamsi};
 
   // Near rigid regime parameter from [Castro et al., 2021]. Refer to
   // set_near_rigid_threshold() for details.

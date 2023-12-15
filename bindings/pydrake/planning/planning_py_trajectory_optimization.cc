@@ -487,6 +487,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("epsilon") = 1e-5, py_rvp::take_ownership,
       doc.PartitionConvexSet.doc);
+
+  m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
+      py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
 }
 
 }  // namespace internal

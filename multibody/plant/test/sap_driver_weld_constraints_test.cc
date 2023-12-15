@@ -14,7 +14,13 @@
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 
-/* @file This file tests SapDriver's support for weld constraints. */
+/* @file This file tests SapDriver's support for weld constraints.
+
+  Constraints are only supported by the SAP solver. Therefore, to exercise the
+  relevant code paths, we arbitrarily choose one contact approximation that uses
+  the SAP solver. More precisely, in the unit tests below we call
+  set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+  MultibodyPlant used for testing, before constraints are added. */
 
 using drake::math::RigidTransformd;
 using drake::math::RotationMatrixd;
@@ -67,7 +73,8 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
   // @param[in] anchor_bodyA If true, body A will be anchored to the world.
   // Otherwise body A has 6 DOFs as body B does.
   void MakeModel(bool anchor_bodyA) {
-    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Arbitrary inertia values only used by the driver to build a valid contact
     // problem.
@@ -270,7 +277,7 @@ INSTANTIATE_TEST_SUITE_P(SapWeldConstraintTests, TwoBodiesTest,
 
 GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -312,7 +319,8 @@ GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
 
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -337,7 +345,7 @@ GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
 
 GTEST_TEST(WeldConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
@@ -351,7 +359,7 @@ GTEST_TEST(WeldConstraintTests, FailOnFinalized) {
 
 GTEST_TEST(WeldConstraintTests, FailOnSameBody) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   DRAKE_EXPECT_THROWS_MESSAGE(
