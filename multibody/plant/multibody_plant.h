@@ -642,8 +642,8 @@ the following properties for point contact modeling:
 |Group name|Property Name|Required|Property Type|Property Description|
 |:--------:|:-----------:|:------:|:----------------:|:-------------------|
 |material|coulomb_friction|yes¹|CoulombFriction<T>|Static and Dynamic friction.|
-|material|point_contact_stiffness|no²|T| Penalty method stiffness.|
-|material|hunt_crossley_dissipation |no²⁴|T| Penalty method dissipation.|
+|material|point_contact_stiffness|no²|T| Compliant point contact stiffness.|
+|material|hunt_crossley_dissipation |no²⁴|T| Compliant contact dissipation.|
 |material|relaxation_time|yes³⁴|T|Linear Kelvin–Voigt model parameter.|
 
 ¹ Collision geometry is required to be registered with a
@@ -653,8 +653,8 @@ the following properties for point contact modeling:
 
 ² If the property is missing, %MultibodyPlant will use
   a heuristic value as the default. Refer to the
-  section @ref mbp_penalty_method "Penalty method point contact" for further
-  details.
+  section @ref mbp_compliant_point_contact "Compliant point contact model" for
+  further details.
 
 ³ When using a linear Kelvin–Voigt model of dissipation (for instance when
   selecting the SAP solver), collision geometry is required to be registered
@@ -1980,40 +1980,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @name                    Contact modeling
   /// Use methods in this section to choose the contact model and to provide
   /// parameters for that model. Currently Drake supports an advanced compliant
-  /// contact model we call _Hydroelastic contact_ and a penalty-based point
-  /// contact model as a reliable fallback.
+  /// model of continuous surface patches we call _Hydroelastic contact_ and a
+  /// compliant point contact model as a reliable fallback.
   ///
   /// @anchor mbp_hydroelastic_materials_properties
   ///                      #### Hydroelastic contact
   ///
-  /// To understand how material properties enter into the modeling of contact
-  /// traction in the hydroelastic model, the user is referred to [R. Elandt
-  /// 2019] for details.
-  /// For brevity, here we limit ourselves to state the relationship between the
-  /// material properties and the computation of the normal traction or
-  /// "pressure" `p(x)` at each point `x` in the contact patch.
-  /// Given two bodies A and B, with hydroelastic moduli `Eᵃ` and `Eᵇ`
-  /// respectively and dissipation `dᵃ` and `dᵇ` respectively, we define the
-  /// effective material properties of the pair according to: <pre>
-  ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
-  ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
-  /// </pre>
-  /// The effective hydroelastic modulus computation is based on that of the
-  /// effective elastic modulus in the Hertz theory of contact.
-  /// Dissipation is weighted in accordance with the
-  /// fact that the softer material will deform more and faster and thus the
-  /// softer material dissipation is given more importance. Hydroelastic
-  /// modulus has units of pressure, i.e. `Pa (N/m²)`. The hydroelastic modulus
-  /// is often estimated based on the Young's modulus of the material though in
-  /// the hydroelastic model it represents an effective elastic property. For
-  /// instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the P-wave
-  /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
-  /// ratio, consistent with the theory of layered solids in which plane
+  /// The purpose of this documentation is to provide a quick overview of our
+  /// contact models and their modeling parameters. More details are provided in
+  /// Drake's @ref hydroelastic_user_guide "Hydroelastic Contact User Guide" and
+  /// references therein.
+  ///
+  /// In a nutshell, each hydroelastic body defines a body centric pressure
+  /// field that increases towards the inside of the body. How quickly this
+  /// pressure field increases towards the inside is parameterized by a
+  /// “Hydroelastic modulus”, see @ref hug_hydro_theory "Hydroelastic Contact".
+  /// When two of these hydroelastic bodies come into contact (i.e. they
+  /// overlap), a contact patch is defined by the surface of equal hydroelastic
+  /// pressure within the volume of intersection. Forces and moments are then
+  /// computed by integrating these pressure contributions over the contact
+  /// surface.
+  ///
+  /// The Hydroelastic modulus has units of pressure, i.e. `Pa (N/m²)`. The
+  /// hydroelastic modulus is often estimated based on the Young's modulus of
+  /// the material though in the hydroelastic model it represents an effective
+  /// elastic property. For instance, [R. Elandt 2019] chooses to use `E = G`,
+  /// with `G` the P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the
+  /// Poisson ratio, consistent with the theory of layered solids in which plane
   /// sections remain planar after compression. Another possibility is to
   /// specify `E = E*`, with `E*` the effective elastic modulus given by the
   /// Hertz theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
   /// estimation of `hydroelastic_modulus` starts with the Young's modulus of
-  /// the material.
+  /// the material. However, due to numerical conditioning, much smaller values
+  /// are used in practice for hard materials such as steel. While Young's
+  /// modulus of steel is about 200 GPa (2×10¹¹ Pa), hydroelastic modulus values
+  /// of about 10⁵−10⁶ Pa lead to good approximations of rigid contact, with no
+  /// practical reason to use higher values.
   ///
   /// @note `hydroelastic_modulus` has units of stress/strain, measured in
   /// Pascal or N/m² like the more-familiar elastic moduli discussed above.
@@ -2023,6 +2025,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// We use a Hunt & Crossley dissipation model parameterized by a dissipation
   /// constant with units of inverse of velocity, i.e. `s/m`. See
   /// @ref mbp_dissipation_model "Modeling Dissipation" for more detail.
+  /// For two hydroelastic bodies A and B, with hydroelastic moduli `Eᵃ` and
+  /// `Eᵇ` respectively and dissipation `dᵃ` and `dᵇ` respectively, an effective
+  /// dissipation is defined according to the combination law: <pre>
+  ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
+  ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
+  /// </pre>
+  /// thus dissipation is weighted in accordance with the fact that the softer
+  /// material will deform more and faster and thus the softer material
+  /// dissipation is given more importance.
   ///
   /// The dissipation can be specified in one of two ways:
   ///
@@ -2039,58 +2050,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// - define it in an input URDF/SDFormat file as detailed here:
   ///   @ref tag_drake_hydroelastic_modulus.
   ///
-  /// With the effective properties of the pair defined as above, the
-  /// hydroelastic model pressure field is computed according to:
-  /// <pre>
-  ///   p(x) = E⋅ε(x)⋅(1 - d⋅vₙ(x))₊
-  /// </pre>
-  /// where we defined the effective strain: <pre>
-  ///   ε(x) = εᵃ(x) + εᵇ(x)
-  /// </pre>
-  /// which relates to the quasi-static pressure field p₀(x) (i.e. when velocity
-  /// is neglected) by: <pre>
-  ///   p₀(x) = E⋅ε(x) = Eᵃ⋅εᵃ(x) = Eᵇ⋅εᵇ(x)
-  /// </pre>
-  /// that is, the hydroelastic model computes the contact patch assuming
-  /// quasi-static equilibrium.
-  /// The separation speed `vₙ(x)` is computed as the component in the
-  /// direction of the contact surface's normal `n̂(x)` of the relative velocity
-  /// between points `Ax` and `Bx` at point `x` instantaneously moving with body
-  /// frames A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
-  /// `n̂(x)` points from body A into body B.
+  /// @anchor mbp_compliant_point_contact
+  ///                   #### Compliant point contact model
   ///
-  /// [Elandt 2019] R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A
-  ///   pressure field model for fast, robust approximation of net contact force
-  ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
-  ///   on Intelligent Robots and Systems (IROS), 2019.
+  /// We provide a brief discussion of this model here to introduce users to
+  /// model parameters and APIs. For a more detailed discussion, refer to
+  /// @ref hug_point_contact_theory "Compliant Point Contact".
   ///
-  /// @anchor mbp_penalty_method
-  ///                   #### Penalty method point contact
-  ///
-  /// Currently %MultibodyPlant uses a rigid contact model that is, bodies in
-  /// the model are infinitely stiff or ideal rigid bodies. Therefore, the
-  /// mathematical description of the rigid contact model needs to include
-  /// non-penetration constraints among bodies in the formulation. There are
-  /// several numerical methods to impose and solve these constraints.
-  /// In a penalty method approach, we allow for a certain amount of
+  /// In a compliant point contact model, we allow for a certain amount of
   /// interpenetration and we compute contact forces according to a simple law
   /// of the form: <pre>
-  ///   fₙ = k(1+dẋ)x
+  ///   fₙ = k(x)₊(1 + dẋ)₊
   /// </pre>
-  /// where the normal contact force `fₙ` is made a continuous function of the
-  /// penetration distance x between the bodies (defined to be positive when
-  /// the bodies are in contact) and the penetration distance rate ẋ (with ẋ >
-  /// 0 meaning the penetration distance is increasing and therefore the
-  /// interpenetration between the bodies is also increasing).  k and d are the
-  /// combined penalty method coefficients for stiffness and dissipation, given
-  /// a pair of colliding geometries. Dissipation is modeled using a Hunt &
-  /// Crossley model of dissipation, see
-  /// @ref mbp_dissipation_model "Modeling Dissipation" for
-  /// details.  For flexibility of parameterization, stiffness and dissipation
-  /// are set on a per-geometry basis
-  /// (@ref accessing_contact_properties). Given two geometries with individual
-  /// stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we define the
-  /// rule for combined stiffness (k) and dissipation (d) as: <pre>
+  /// with `(a)₊ = max(0, a)`. The normal contact force `fₙ` is made a
+  /// continuous function of the penetration distance x between the bodies
+  /// (defined to be positive when the bodies are in contact) and the
+  /// penetration distance rate ẋ (with ẋ > 0 meaning the penetration distance
+  /// is increasing and therefore the interpenetration between the bodies is
+  /// also increasing). Stiffness `k` and dissipation `d` are the combined
+  /// of stiffness and dissipation, given a pair of contacting geometries.
+  /// Dissipation is modeled using a Hunt & Crossley model of dissipation, see
+  /// @ref mbp_dissipation_model "Modeling Dissipation" for details.  For
+  /// flexibility of parameterization, stiffness and dissipation are set on a
+  /// per-geometry basis (@ref accessing_contact_properties). Given two
+  /// geometries with individual stiffness and dissipation parameters (k₁, d₁)
+  /// and (k₂, d₂), we define the rule for combined stiffness (k) and
+  /// dissipation (d) as: <pre>
   ///     k = (k₁⋅k₂)/(k₁+k₂)
   ///     d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
   /// </pre>
@@ -2100,44 +2085,48 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// with default values match those estimated using the user-supplied
   /// "penetration allowance", as described below.
   ///
-  /// These are ad-hoc parameters which need to be tuned as a trade-off between:
-  /// - The accuracy of the numerical approximation to rigid contact, which
-  ///   requires a stiffness that approaches infinity, and
-  /// - the computational cost of the numerical integration, which will
-  ///   require smaller time steps for stiffer systems.
+  /// @note When modeling stiff materials such as steel or ceramics, these model
+  /// parameters often need to be tuned as a trade-off between numerical
+  /// stiffness and physical accuracy. Stiffer materials lead to a harder to
+  /// solve system of equations, affecting the overall performance of the
+  /// simulation. The convex approximation provided in Drake are very robust
+  /// even at high stiffness values, please refer to [Castro et al., 2023] in
+  /// DiscreteContactApproximation for a study on the effect of stiffness on
+  /// solver performance.
   ///
-  /// There is no exact procedure for choosing these coefficients, and
-  /// estimating them manually can be cumbersome since in general they will
-  /// depend on the scale of the problem including masses, speeds and even
-  /// body sizes. However, %MultibodyPlant aids the estimation of these
-  /// coefficients using a heuristic function based on a user-supplied
-  /// "penetration allowance", see set_penetration_allowance(). The penetration
-  /// allowance is a number in meters that specifies the order of magnitude of
-  /// the average penetration between bodies in the system that the user is
-  /// willing to accept as reasonable for the problem being solved. For
-  /// instance, in the robotics manipulation of ordinary daily objects the user
-  /// might set this number to 1 millimeter. However, the user might want to
-  /// increase it for the simulation of heavy walking robots for which an
-  /// allowance of 1 millimeter would result in a very stiff system.
+  /// While we strongly recommend setting these parameters accordingly for your
+  /// model, %MultibodyPlant aids the estimation of these coefficients using a
+  /// heuristic function based on a user-supplied "penetration allowance", see
+  /// set_penetration_allowance(). This heuristics offers a good starting point
+  /// when setting a simulation for the first time. Users can then set material
+  /// properties for specific geometries once they observe the results of a
+  /// first simulation with these defaults. The penetration allowance is a
+  /// number in meters that specifies the order of magnitude of the average
+  /// penetration between bodies in the system that the user is willing to
+  /// accept as reasonable for the problem being solved. For instance, in the
+  /// robotics manipulation of ordinary daily objects the user might set this
+  /// number to 1 millimeter. However, the user might want to increase it for
+  /// the simulation of heavy walking robots for which an allowance of 1
+  /// millimeter would result in a very stiff system.
   ///
   /// As for the dissipation coefficient in the simple law above,
   /// %MultibodyPlant chooses the dissipation coefficient d to model inelastic
   /// collisions and therefore sets it so that the penetration distance x
   /// behaves as a critically damped oscillator. That is, at the limit of ideal
-  /// rigid contact (very stiff penalty coefficient k or equivalently the
-  /// penetration allowance goes to zero), this method behaves as a unilateral
-  /// constraint on the penetration distance, which models a perfect inelastic
-  /// collision. For most applications, such as manipulation and walking, this
-  /// is the desired behavior.
+  /// rigid contact (very high stiffness k or equivalently the penetration
+  /// allowance goes to zero), this method behaves as a unilateral constraint on
+  /// the penetration distance, which models a perfect inelastic collision. For
+  /// most applications, such as manipulation and walking, this is the desired
+  /// behavior.
   ///
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
-  /// reasonable penalty method coefficients as a function of the input
-  /// penetration allowance. Users will want to run their simulation a number of
-  /// times and assess they are satisfied with the level of inter-penetration
-  /// actually observed in the simulation; if the observed penetration is too
-  /// large, the user will want to set a smaller penetration allowance. If the
-  /// system is too stiff and the time integration requires very small time
-  /// steps while at the same time the user can afford larger
+  /// reasonable stiffness and dissipation coefficients as a function of the
+  /// input penetration allowance. Users will want to run their simulation a
+  /// number of times and assess they are satisfied with the level of
+  /// inter-penetration actually observed in the simulation; if the observed
+  /// penetration is too large, the user will want to set a smaller penetration
+  /// allowance. If the system is too stiff and the time integration requires
+  /// very small time steps while at the same time the user can afford larger
   /// inter-penetrations, the user will want to increase the penetration
   /// allowance. Typically, the observed penetration will be
   /// proportional to the penetration allowance. Thus scaling the penetration
@@ -2171,9 +2160,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// To be more precise, compliant point contact forces are modeled as a
   /// function of state x: <pre>
-  ///   f(x) = f₀(x)⋅(1 - d⋅vₙ(x))₊
+  ///   f(x) = fₑ(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
-  /// where here `f₀(x)` denotes the elastic forces, vₙ(x) is the contact
+  /// where here `fₑ(x)` denotes the elastic forces, vₙ(x) is the contact
   /// velocity in the normal direction (negative when objects approach) and
   /// `(a)₊` denotes "the positive part of a". The model parameter `d ` is the
   /// Hunt & Crossley dissipation constant, in s/m. The Hunt & Crossley term
@@ -2183,10 +2172,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the stress level, rather than forces. That is, pressure `p(x)` at a
   /// specific point on the contact surface is replaces the force `f(x)` in the
   /// point contact model: <pre>
-  ///   p(x) = p₀(x)⋅(1 - d⋅vₙ(x))₊
+  ///   p(x) = pₑ(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
-  /// where `p₀(x)` is the (elastic) hydroelastic pressure and once more the
+  /// where `pₑ(x)` is the (elastic) hydroelastic pressure and once more the
   /// term `(1 - d⋅vₙ(x))₊` models Hunt & Crossley dissipation.
+  ///
+  /// This is our prefered model of dissipation for several reasons:
+  /// 1. It is based on physics and has been developed based on experimental
+  ///    observations.
+  /// 2. It is a continous function of state, as in the real phyisical world.
+  ///    Moreover, this continuity leads to better conditioned systems of
+  ///    equations.
+  /// 3. The bounce velocity after an impact is bounded by 1/d, giving a quick
+  ///    physical intuition when setting this parameter.
+  /// 4. Typical values are in the range [0; 100] s/m, with a value of 20 s/m
+  ///    being typical.
+  /// 5. Values larger than 500 s/m are unphysical and usually lead to numerical
+  ///    problems when using discrete approximations given how time is
+  ///    discretized.
+  ///
+  /// The Hunt & Crossley model is supported by the
+  /// DiscreteContactApproximation::kTamsi,
+  /// DiscreteContactApproximation::kSimilar, and
+  /// DiscreteContactApproximation::kLagged model approximations. In particular,
+  /// DiscreteContactApproximation::kSimilar and
+  /// DiscreteContactApproximation::kLagged are convex approximations of
+  /// contact, using a solver with theoretical and practical convergence
+  /// guarantees.
   ///
   /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
   ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
@@ -2355,8 +2367,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // camel case per GSG.
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
-  /// section @ref mbp_penalty_method "Contact by penalty method" for further
-  /// details.
+  /// section @ref mbp_compliant_point_contact "Compliant point contact model"
+  /// for further details.
   ///
   /// @throws std::exception if penetration_allowance is not positive.
   void set_penetration_allowance(
@@ -2365,15 +2377,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a time-scale estimate `tc` based on the requested penetration
   /// allowance δ set with set_penetration_allowance().
-  /// For the penalty method in use to enforce non-penetration, this time scale
-  /// relates to the time it takes the relative normal velocity between two
-  /// bodies to go to zero. This time scale `tc` is artificially introduced by
-  /// the penalty method and goes to zero in the limit to ideal rigid contact.
-  /// Since numerical integration methods for continuum systems must be able to
-  /// resolve a system's dynamics, the time step used by an integrator must in
-  /// general be much smaller than the time scale `tc`. How much smaller will
-  /// depend on the details of the problem and the convergence characteristics
-  /// of the integrator and should be tuned appropriately.
+  /// For the compliant contact model to enforce non-penetration, this time
+  /// scale relates to the time it takes the relative normal velocity between
+  /// two bodies to go to zero. This time scale `tc` is a global estimate of the
+  /// dynamics introduced by the compliant contact model and goes to zero in the
+  /// limit to ideal rigid contact. Since numerical integration methods for
+  /// continuum systems must be able to resolve a system's dynamics, the time
+  /// step used by an integrator must in general be much smaller than the time
+  /// scale `tc`. How much smaller will depend on the details of the problem and
+  /// the convergence characteristics of the integrator and should be tuned
+  /// appropriately.
   /// Another factor to take into account for setting up the simulation's time
   /// step is the speed of the objects in your simulation. If `vn` represents a
   /// reference velocity scale for the normal relative velocity between bodies,
