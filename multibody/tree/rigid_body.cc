@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 
 #include <memory>
+#include "iostream"
 
 #include "drake/multibody/tree/model_instance.h"
 
@@ -28,14 +29,18 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
   const T& x = center_of_mass_position(0);
   const T& y = center_of_mass_position(1);
   const T& z = center_of_mass_position(2);
+//   std::cout << "SetCenterOfMassInBodyFrameNoModifyInertia: x = " << x
+            // << ", y = " << y << ", z = " << z << std::endl << std::endl;
   systems::BasicVector<T>& spatial_inertia_parameter =
       context->get_mutable_numeric_parameter(spatial_inertia_parameter_index_);
+  auto mass = spatial_inertia_parameter.GetAtIndex(
+      internal::parameter_conversion::SpatialInertiaIndex::k_mass);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_com_x, x);
+      internal::parameter_conversion::SpatialInertiaIndex::k_com_x, mass*x);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_com_y, y);
+      internal::parameter_conversion::SpatialInertiaIndex::k_com_y, mass*y);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_com_z, z);
+      internal::parameter_conversion::SpatialInertiaIndex::k_com_z, mass*z);
 }
 
 template <typename T>
@@ -49,20 +54,26 @@ void RigidBody<T>::SetUnitInertiaAboutBodyOrigin(
   const T& Gxy = G_BBo_B(0, 1);
   const T& Gxz = G_BBo_B(0, 2);
   const T& Gyz = G_BBo_B(1, 2);
+//   std::cout << "SetUnitInertiaAboutBodyOrigin: Gxx = " << Gxx
+            // << ", Gyy = " << Gyy << ", Gzz = " << Gzz << ", Gxy = " << Gxy
+            // << ", Gxz = " << Gxz << ", Gyz = " << Gyz << std::endl
+            // << std::endl << std::endl;
   systems::BasicVector<T>& spatial_inertia_parameter =
       context->get_mutable_numeric_parameter(spatial_inertia_parameter_index_);
+  auto mass = spatial_inertia_parameter.GetAtIndex(
+      internal::parameter_conversion::SpatialInertiaIndex::k_mass);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gxx, Gxx);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gxx, mass*Gxx);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gyy, Gyy);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gyy, mass*Gyy);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gzz, Gzz);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gzz, mass*Gzz);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gxy, Gxy);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gxy, mass*Gxy);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gxz, Gxz);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gxz, mass*Gxz);
   spatial_inertia_parameter.SetAtIndex(
-      internal::parameter_conversion::SpatialInertiaIndex::k_Gyz, Gyz);
+      internal::parameter_conversion::SpatialInertiaIndex::k_Gyz, mass*Gyz);
 }
 
 template <typename T>
@@ -89,6 +100,10 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
   // returns to its initial location Boi with the final call below to:
   // SetCenterOfMassInBodyFrameNoModifyInertia(context, pf_BoBcm_B);
   // Hint: Drawing a picture can help speed making sense of this.
+
+//   std::cout << "SetCenterOfMassInBodyFrameAndPreserveCentralInertia: CoM = ["
+    // << pf_BoBcm_B(0) << ", " << pf_BoBcm_B(1) << ", " << pf_BoBcm_B(2) << "]"
+    // << std::endl << std::endl;
 
   // Modify the context. Update B's unit inertia about Bo.
   // Modify the context. Update B's center of mass position from Bo.

@@ -502,7 +502,7 @@ class SpatialInertia {
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E,
       const bool skip_validity_check = false) :
-      mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E), h_PScm_E_(mass*p_PScm_E), I_SP_E_(mass*G_SP_E) {
+      mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E), h_PScm_E_(mass*p_PScm_E), I_SP_E_(mass*G_SP_E), has_lumped_params_(true) {
     // std::cout << "SpatialInertia constructor with mass = " << mass << std::endl << std::endl;
     if (!skip_validity_check) {
       CheckInvariants();

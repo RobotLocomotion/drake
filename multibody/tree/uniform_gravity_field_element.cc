@@ -149,7 +149,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context)/mass;
     const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
@@ -182,7 +182,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context)/mass;
     const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.

@@ -2001,9 +2001,10 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     total_mass += body_mass;
 
     // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
+    // CalcCenterOfMassInBodyFrame returns body_mass * pi_BoBcm_B
     const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
-    sum_mi_pi += body_mass * pi_WoBcm_W;
+    sum_mi_pi += pi_WoBcm_W;
   }
 
   if (total_mass <= 0) {
@@ -2049,9 +2050,10 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
+      // CalcCenterOfMassInBodyFrame returns body_mass * pi_BoBcm_B
       const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
       const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
-      sum_mi_pi += body_mass * pi_WoBcm_W;
+      sum_mi_pi += pi_WoBcm_W;
     }
   }
 
@@ -3001,12 +3003,13 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   T composite_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
     MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
+    const T& body_mass = body.get_mass(context);
+    pi_BoBcm /= body_mass;
     CalcJacobianTranslationalVelocity(
         context, with_respect_to, body.body_frame(),
         body.body_frame(), pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
-    const T& body_mass = body.get_mass(context);
     *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
@@ -3066,7 +3069,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
       // Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
       // frame E (Bcm is the center of mass of the iᵗʰ body).
-      const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context) / body_mass;
       MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
       CalcJacobianTranslationalVelocity(context,
                                         with_respect_to,
@@ -3115,10 +3118,10 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   Vector3<T> asBias_ACcm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    const T& body_mass = body.get_mass(context);
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context)/body_mass;
     const SpatialAcceleration<T> AsBiasi_ACcm_E = CalcBiasSpatialAcceleration(
        context, with_respect_to, body.body_frame(), pi_BoBcm, frame_A, frame_E);
-    const T& body_mass = body.get_mass(context);
     asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
     composite_mass += body_mass;
   }

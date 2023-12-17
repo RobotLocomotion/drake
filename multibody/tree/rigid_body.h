@@ -159,7 +159,8 @@ class RigidBody : public Body<T> {
         body_B.EvalSpatialVelocityInWorld(context);
 
     // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
-    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
+    T mass = body_B.get_mass(context);
+    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context)/mass;
     const math::RotationMatrix<T> R_WB =
         frame_B.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
