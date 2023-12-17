@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "iostream"
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -180,6 +181,9 @@ class RigidBody : public Body<T> {
       const systems::Context<T>& context) const override {
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
+    // std::cout << "CalcSpatialInertiaInBodyFrame ("<<Body<T>::name()<<")" << std::endl << std::endl;
+    // std::cout << "spatial_inertia_parameter:\n"
+              // << spatial_inertia_parameter << std::endl << std::endl;
     return internal::parameter_conversion::ToSpatialInertia(
         spatial_inertia_parameter);
   }
@@ -193,6 +197,7 @@ class RigidBody : public Body<T> {
   /// @throws std::exception if context is null.
   void SetMass(systems::Context<T>* context, const T& mass) const {
     DRAKE_THROW_UNLESS(context != nullptr);
+    // std::cout << "SetMass ("<<Body<T>::name()<<"): mass = " << mass << std::endl << std::endl;
     systems::BasicVector<T>& spatial_inertia_parameter =
         context->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);
@@ -249,11 +254,16 @@ class RigidBody : public Body<T> {
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
     DRAKE_THROW_UNLESS(context != nullptr);
+    // std::cout << "SetSpatialInertiaInBodyFrame ("<<Body<T>::name()<<")" << std::endl << std::endl;
+    // std::cout << "M_Bo_B:\n"
+              // << M_Bo_B << std::endl;
     systems::BasicVector<T>& spatial_inertia_parameter =
         context->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);
     spatial_inertia_parameter.SetFrom(
         internal::parameter_conversion::ToBasicVector(M_Bo_B));
+    // std::cout << "spatial_inertia_parameter:\n"
+              // << spatial_inertia_parameter << std::endl << std::endl;
   }
 
   /// @name Methods to access position kinematics quantities.
@@ -391,6 +401,8 @@ class RigidBody : public Body<T> {
   void DoSetDefaultBodyParameters(
       systems::Parameters<T>* parameters) const final {
     // Set the default spatial inertia.
+    // NOTE: This currently sets incorrect default values as we are now storing m, h, I
+    // instead of m, p, G
     systems::BasicVector<T>& spatial_inertia_parameter =
         parameters->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);

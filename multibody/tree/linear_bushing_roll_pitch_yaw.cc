@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include "iostream"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -100,6 +100,8 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>& /* pc */,
     const internal::VelocityKinematicsCache<T>& /* vc */,
     MultibodyForces<T>* forces) const {
+
+  std::cout << "DoCalcAndAddForceContribution LinearBushingRollPitchYaw" << std::endl;
 
   // Form F_Ao_A, the spatial force at point Ao of frame A due to the bushing.
   const SpatialForce<T> F_Ao_A = CalcBushingSpatialForceOnFrameA(context);

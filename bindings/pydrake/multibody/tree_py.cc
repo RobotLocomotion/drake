@@ -1059,6 +1059,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_velocities.doc)
         .def("generalized_forces", &Class::generalized_forces,
             cls_doc.generalized_forces.doc)
+        .def("body_forces", &Class::body_forces,
+            cls_doc.body_forces.doc)
         .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
             py_rvp::reference_internal, cls_doc.mutable_generalized_forces.doc)
         // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
@@ -1281,6 +1283,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("HollowSphereWithMass", &Class::HollowSphereWithMass,
             py::arg("mass"), py::arg("radius"),
             cls_doc.HollowSphereWithMass.doc)
+        .def("MakeFromLumpedParameters", &Class::MakeFromLumpedParameters,
+            py::arg("mass"), py::arg("h_PScm_E"), py::arg("I_SP_E"),
+            py::arg("skip_validity_check") = false,
+            cls_doc.MakeFromLumpedParameters.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),

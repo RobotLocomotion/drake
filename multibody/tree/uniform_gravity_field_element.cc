@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <vector>
+#include "iostream"
 
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -94,8 +95,13 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
+  // std::cout << "DoCalcAndAddForceContribution UniformGravityFieldElement" << std::endl;
   // Alias to the array of applied body forces:
   std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
+  // for (int i=0; i<F_Bo_W_array.size(); i++) {
+  //   std::cout << "F_Bo_W["<<i<<"]: " << F_Bo_W_array[i] << std::endl;
+  // }
+  // std::cout << std::endl;
 
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
@@ -113,13 +119,13 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> h_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context); // Return h=mp with current hack
     const math::RotationMatrix<T> R_WB = pc.get_R_WB(mobod_index);
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    const Vector3<T> h_BoBcm_W = R_WB * h_BoBcm_B;
 
-    const Vector3<T> f_Bcm_W = mass * gravity_vector();
-    const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
+    const Vector3<T> f_Bcm_W = gravity_vector();
+    const SpatialForce<T> F_Bo_W(h_BoBcm_W.cross(f_Bcm_W), mass*f_Bcm_W);
     F_Bo_W_array[mobod_index] += F_Bo_W;
   }
 }

@@ -48,6 +48,24 @@ SpatialInertia<T> SpatialInertia<T>::MakeFromCentralInertia(const T& mass,
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::MakeFromLumpedParameters(const T& mass,
+    const Vector3<T>& h_PScm_E, const RotationalInertia<T>& I_SP_E,
+    const bool skip_validity_check) {
+    mass_ = mass;
+    h_PScm_E_ = h_PScm_E;
+    I_SP_E_ = I_SP_E;
+    has_lumped_params_ = true;
+    p_PScm_E_ = h_PScm_E_ / mass;
+    UnitInertia<T> G_SScm_E;
+    G_SScm_E.SetFromRotationalInertia(I_SP_E, mass);
+    G_SP_E_ = G_SScm_E;
+    if (!skip_validity_check) {
+      CheckInvariants();
+    }
+    return *this;
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
   const T mass = 1;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
@@ -326,6 +344,21 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
   return SpatialInertia<T>(mass, p_BoBcm, G_BBo);
 }
 
+// template <typename T>
+// SpatialInertia<T>::SpatialInertia(const T& mass, const Vector3<T>& h_PScm_E,
+//     const RotationalInertia<T>& I_SP_E, const bool skip_validity_check) {
+//     mass_ = mass;
+//     h_PScm_E_ = h_PScm_E;
+//     I_SP_E_ = I_SP_E;
+//     has_lumped_params_ = true;
+//     p_PScm_E_ = h_PScm_E_ / mass;
+//     UnitInertia<T> G_SScm_E;
+//     G_SScm_E.SetFromRotationalInertia(I_SP_E, mass);
+//     if (!skip_validity_check) {
+//       CheckInvariants();
+//     }
+// }
+
 template <typename T>
 boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   // This spatial inertia is not physically valid if the mass is negative or
@@ -411,14 +444,19 @@ SpatialForce<T> SpatialInertia<T>::operator*(
     const SpatialAcceleration<T>& A_WB_E) const {
   const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
   const Vector3<T>& a_WBo_E = A_WB_E.translational();
-  const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+  Vector3<T> mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+  RotationalInertia<T> I_Bo_E = CalcRotationalInertia();
+  if (has_lumped_params_) {
+    mp_BoBcm_E = h_PScm_E_;
+    I_Bo_E = I_SP_E_;
+  }
   // Return (see class's documentation):
   // ⌈ tau_Bo_E ⌉   ⌈    I_Bo_E     | m * p_BoBcm× ⌉   ⌈ alpha_WB_E ⌉
   // |          | = |               |              | * |            |
   // ⌊  f_Bo_E  ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊  a_WBo_E   ⌋
   return SpatialForce<T>(
       /* rotational */
-      CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
+      I_Bo_E * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
       /* translational: notice the order of the cross product is the reversed
        * of the documentation above and thus no minus sign is needed. */
       alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
@@ -429,14 +467,19 @@ SpatialMomentum<T> SpatialInertia<T>::operator*(
     const SpatialVelocity<T>& V_WBp_E) const {
   const Vector3<T>& w_WB_E = V_WBp_E.rotational();
   const Vector3<T>& v_WP_E = V_WBp_E.translational();
-  const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+  Vector3<T> mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+  RotationalInertia<T> I_Bo_E = CalcRotationalInertia();
+  if (has_lumped_params_) {
+    mp_BoBcm_E = h_PScm_E_;
+    I_Bo_E = I_SP_E_;
+  }
   // Return (see class's documentation):
   // ⌈ h_WB  ⌉   ⌈     I_Bp      | m * p_BoBcm× ⌉   ⌈ w_WB ⌉
   // |       | = |               |              | * |      |
   // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP ⌋
   return SpatialMomentum<T>(
       // Rotational
-      CalcRotationalInertia() * w_WB_E + mp_BoBcm_E.cross(v_WP_E),
+      I_Bo_E * w_WB_E + mp_BoBcm_E.cross(v_WP_E),
       // Translational: notice the order of the cross product is the reversed
       // of the documentation above and thus no minus sign is needed.
       w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
@@ -531,8 +574,12 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   // (rotational inertia about P) without validity checks such as
   // IsPhysicallyValid().  Hence, this method works for error messages.
   const UnitInertia<T>& G_BP = M.get_unit_inertia();
-  const RotationalInertia<T> I_BP =
+  RotationalInertia<T> I_BP =
       G_BP.MultiplyByScalarSkipValidityCheck(mass);
+
+  if (M.has_lumped_params()) {
+    I_BP = M.get_rotational_inertia();
+  }
 
   // Write B's rotational inertia about point P.
   out << " Inertia about point P, I_BP =\n" << I_BP;

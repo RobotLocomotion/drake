@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include "iostream"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -1176,6 +1177,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(M_B_W_all->size()) ==
       topology_.num_mobods());
+  // std::cout << "CalcSpatialInertiasInWorld" << std::endl;
 
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
@@ -1192,6 +1194,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     // Spatial inertia of body B about Bo and expressed in the body frame B.
     // This call has zero cost for rigid bodies.
     const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
+    // std::cout << "SpatialInertiaInBodyFrame M_B:\n" << M_B << std::endl << std::endl;
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_B_W = (*M_B_W_all)[body.mobod_index()];
     M_B_W = M_B.ReExpress(R_WB);
@@ -1316,8 +1319,15 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
   DRAKE_THROW_UNLESS(static_cast<int>(Fb_Bo_W_all->size()) ==
       topology_.num_mobods());
 
+  // std::cout << "CalcDynamicBiasForces" << std::endl;
+
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
+  // for (int i=0; i<spatial_inertia_in_world_cache.size(); ++i) {
+  //   std::cout << "spatial_inertia_in_world_cache[" << i << "]:\n"
+  //     << spatial_inertia_in_world_cache[i] << std::endl;
+  // }
+  // std::cout << std::endl;
 
   const VelocityKinematicsCache<T>& vc = this->EvalVelocityKinematics(context);
 
@@ -1327,21 +1337,36 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
 
     const SpatialInertia<T>& M_B_W =
         spatial_inertia_in_world_cache[body.mobod_index()];
+    
+    // std::cout << "spatial_inertia_in_world_cache[" << body.name() << "]:\n"
+    //   << M_B_W << std::endl << std::endl;
 
-    const T& mass = M_B_W.get_mass();
-    // B's center of mass measured in B and expressed in W.
-    const Vector3<T>& p_BoBcm_W = M_B_W.get_com();
-    // B's unit rotational inertia about Bo, expressed in W.
-    const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
+    if (M_B_W.has_lumped_params()) {
+      const Vector3<T>& mp_BoBcm_W = M_B_W.get_hcom();
+      const RotationalInertia<T>& I_Bo_W = M_B_W.get_rotational_inertia();
 
-    // Gyroscopic spatial force Fb_Bo_W(q, v) on body B about Bo, expressed in
-    // W.
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
-    const Vector3<T>& w_WB = V_WB.rotational();
-    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.mobod_index()];
-    Fb_Bo_W = mass * SpatialForce<T>(
-                        w_WB.cross(G_B_W * w_WB), /* rotational */
-                        w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
+      const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
+      const Vector3<T>& w_WB = V_WB.rotational();
+      SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.mobod_index()];
+      Fb_Bo_W = SpatialForce<T>(
+                          w_WB.cross(I_Bo_W * w_WB), /* rotational */
+                          w_WB.cross(w_WB.cross(mp_BoBcm_W)) /* translational */);
+    } else {
+      const T& mass = M_B_W.get_mass();
+      // B's center of mass measured in B and expressed in W.
+      const Vector3<T>& p_BoBcm_W = M_B_W.get_com();
+      // B's unit rotational inertia about Bo, expressed in W.
+      const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
+
+      // Gyroscopic spatial force Fb_Bo_W(q, v) on body B about Bo, expressed in
+      // W.
+      const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
+      const Vector3<T>& w_WB = V_WB.rotational();
+      SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.mobod_index()];
+      Fb_Bo_W = mass * SpatialForce<T>(
+                          w_WB.cross(G_B_W * w_WB), /* rotational */
+                          w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
+    }
   }
 }
 
@@ -1466,6 +1491,8 @@ void MultibodyTree<T>::CalcInverseDynamics(
 
   DRAKE_DEMAND(tau_array->size() == num_velocities());
 
+  // std::cout << "CalcInverseDynamics" << std::endl;
+
   // Compute body spatial accelerations given the generalized accelerations are
   // known.
   CalcSpatialAccelerationsFromVdot(context, known_vdot, ignore_velocities,
@@ -1519,6 +1546,8 @@ void MultibodyTree<T>::CalcInverseDynamics(
         Fapplied_Bo_W = Fapplied_Bo_W_array[mobod_index];
       }
 
+      // std::cout << "Fapplied_Bo_W:\n" << Fapplied_Bo_W << std::endl << std::endl;
+
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
@@ -1549,6 +1578,12 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   for (const auto& force_element : owned_force_elements_) {
     force_element->CalcAndAddForceContribution(context, pc, vc, forces);
   }
+
+  // std::cout << "CalcForceElementsContribution" << std::endl;
+  // for (auto body_force : forces->body_forces()) {
+    // std::cout << "body_force:\n" << body_force << std::endl;
+  // }
+  // std::cout << std::endl;
 
   // TODO(amcastro-tri): Remove this call once damping is implemented in terms
   //  of force elements.
@@ -2041,7 +2076,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const std::vector<BodyIndex>& body_indexes) const {
-
+  // std::cout << "CalcSpatialInertia" << std::endl;
   // Check if there are repeated BodyIndex in body_indexes by converting the
   // vector to a set (to eliminate duplicates) and see if their sizes differ.
   const std::set<BodyIndex> without_duplicate_bodies(

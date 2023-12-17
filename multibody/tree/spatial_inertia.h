@@ -6,6 +6,7 @@
 #include <ostream>
 #include <string>
 #include <utility>
+#include <iostream>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -131,6 +132,10 @@ class SpatialInertia {
   /// @retval M_SP_E S's spatial inertia about point P, expressed in frame E.
   static SpatialInertia<T> MakeFromCentralInertia(const T& mass,
       const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E);
+
+  SpatialInertia<T> MakeFromLumpedParameters(const T& mass,
+    const Vector3<T>& h_PScm_E, const RotationalInertia<T>& I_SP_E,
+    const bool skip_validity_check = false);
 
   /// (Internal use only) Creates a spatial inertia whose mass is 1, position
   /// vector to center of mass is zero, and whose rotational inertia has
@@ -497,11 +502,16 @@ class SpatialInertia {
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E,
       const bool skip_validity_check = false) :
-      mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
+      mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E), h_PScm_E_(mass*p_PScm_E), I_SP_E_(mass*G_SP_E) {
+    // std::cout << "SpatialInertia constructor with mass = " << mass << std::endl << std::endl;
     if (!skip_validity_check) {
       CheckInvariants();
     }
   }
+
+//   SpatialInertia(
+//       const T& mass, const Vector3<T>& h_PScm_E, const RotationalInertia<T>& I_SP_E,
+//       const bool skip_validity_check = false);
 
   /// Returns a new %SpatialInertia object templated on `Scalar` initialized
   /// from the value of `this` spatial inertia.
@@ -524,6 +534,8 @@ class SpatialInertia {
         true);  // Skip validity check since this inertia is already valid.
   }
 
+  bool has_lumped_params() const { return has_lumped_params_;}
+
   /// Get a constant reference to the mass of this spatial inertia.
   const T& get_mass() const { return mass_;}
 
@@ -531,6 +543,8 @@ class SpatialInertia {
   /// _about point_ P to the center of mass `Scm` of the body or composite body
   /// S, expressed in frame E. See the documentation of this class for details.
   const Vector3<T>& get_com() const { return p_PScm_E_;}
+
+  const Vector3<T>& get_hcom() const { return h_PScm_E_;}
 
   /// Computes the center of mass moment vector `mass * p_PScm_E` given the
   /// position vector `p_PScm_E` from the _about point_ P to the center of mass
@@ -542,6 +556,8 @@ class SpatialInertia {
   /// spatial inertia, computed about point P and expressed in frame E. See the
   /// documentation of this class for details.
   const UnitInertia<T>& get_unit_inertia() const { return G_SP_E_;}
+
+  const RotationalInertia<T>& get_rotational_inertia() const { return I_SP_E_;}
 
   /// Computes the rotational inertia `I_SP_E = mass * G_SP_E` of this
   /// spatial inertia, computed about point P and expressed in frame E. See the
@@ -636,8 +652,19 @@ class SpatialInertia {
   Matrix6<T> CopyToFullMatrix6() const {
     using drake::math::VectorToSkewSymmetric;
     Matrix6<T> M;
-    M.template block<3, 3>(0, 0) = mass_ * G_SP_E_.CopyToFullMatrix3();
-    M.template block<3, 3>(0, 3) = mass_ * VectorToSkewSymmetric(p_PScm_E_);
+    // if (!has_lumped_params_) {
+    //     M.template block<3, 3>(0, 0) = mass_ * G_SP_E_.CopyToFullMatrix3();
+    //     M.template block<3, 3>(0, 3) = mass_ * VectorToSkewSymmetric(p_PScm_E_);
+    //     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
+    //     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
+    // } else {
+    //     M.template block<3, 3>(0, 0) = I_SP_E_.CopyToFullMatrix3();
+    //     M.template block<3, 3>(0, 3) = VectorToSkewSymmetric(h_PScm_E_);
+    //     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
+    //     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
+    // }
+    M.template block<3, 3>(0, 0) = I_SP_E_.CopyToFullMatrix3();
+    M.template block<3, 3>(0, 3) = VectorToSkewSymmetric(h_PScm_E_);
     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
     return M;
@@ -848,9 +875,12 @@ class SpatialInertia {
   // Position vector from point P to the center of mass of body or composite
   // body S, expressed in a frame E.
   Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
+  Vector3<T> h_PScm_E_{Vector3<T>::Constant(nan())};
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
+  RotationalInertia<T> I_SP_E_{};  // Defaults to NaN initialized inertia.
+  bool has_lumped_params_{false}; // Shouldn't have this
 
   // Appends text to an existing string with information about a SpatialInertia.
   // If the position vector p_PBcm from about-point P to Bcm (body B's center of

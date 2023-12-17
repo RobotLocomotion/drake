@@ -31,17 +31,33 @@ struct SpatialInertiaIndex {
 template <typename T>
 systems::BasicVector<T> ToBasicVector(
     const SpatialInertia<T>& spatial_inertia) {
-  const Vector3<T>& com = spatial_inertia.get_com();
-  const UnitInertia<T>& unit_inertia = spatial_inertia.get_unit_inertia();
-  return systems::BasicVector<T>(
-      {
-      // mass
-      spatial_inertia.get_mass(),
-      // center of mass
-      com(0), com(1), com(2),
-      // unit inertia
-      unit_inertia(0, 0), unit_inertia(1, 1), unit_inertia(2, 2),
-      unit_inertia(0, 1), unit_inertia(0, 2), unit_inertia(1, 2)});
+  if (spatial_inertia.has_lumped_params()) {
+    const Vector3<T>& hcom = spatial_inertia.get_hcom();
+    const RotationalInertia<T>& rotational_inertia = spatial_inertia.get_rotational_inertia();
+    return systems::BasicVector<T>(
+        {
+        // mass
+        spatial_inertia.get_mass(),
+        // center of mass
+        hcom(0), hcom(1), hcom(2),
+        // spatial inertia
+        rotational_inertia(0,0), rotational_inertia(1,1), rotational_inertia(2,2),
+        rotational_inertia(0,1), rotational_inertia(0,2), rotational_inertia(1,2)
+        });
+  } else {
+    const Vector3<T>& com = spatial_inertia.get_com();
+    const UnitInertia<T>& unit_inertia = spatial_inertia.get_unit_inertia();
+    return systems::BasicVector<T>(
+        {
+        // mass
+        spatial_inertia.get_mass(),
+        // center of mass
+        com(0), com(1), com(2),
+        // unit inertia
+        unit_inertia(0, 0), unit_inertia(1, 1), unit_inertia(2, 2),
+        unit_inertia(0, 1), unit_inertia(0, 2), unit_inertia(1, 2)
+        });
+  }
 }
 
 // Extracts the mass from the BasicVector<T> representing a SpatialInertia<T> as
@@ -60,6 +76,7 @@ Vector3<T> GetCenterOfMass(
     const systems::BasicVector<T>& spatial_inertia_vector) {
   DRAKE_DEMAND(spatial_inertia_vector.size() ==
                SpatialInertiaIndex::k_num_coordinates);
+  // auto mass = GetMass(spatial_inertia_vector);
   return Vector3<T>(
       spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
       spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
@@ -73,6 +90,22 @@ SpatialInertia<T> ToSpatialInertia(
   DRAKE_DEMAND(spatial_inertia_basic_vector.size() ==
                SpatialInertiaIndex::k_num_coordinates);
   const auto& spatial_inertia_vector = spatial_inertia_basic_vector.get_value();
+  if (true) { // Bad temporary hack to get around that cannot store type of parameters in fixed size vector
+    const Vector3<T> hcom(
+        spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
+        spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
+        spatial_inertia_vector[SpatialInertiaIndex::k_com_z]);
+    const RotationalInertia<T> rotational_inertia(
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gxx],
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gyy],
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gzz],
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gxy],
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gxz],
+        spatial_inertia_vector[SpatialInertiaIndex::k_Gyz]);
+    return SpatialInertia<T>().MakeFromLumpedParameters(
+        spatial_inertia_vector[SpatialInertiaIndex::k_mass], hcom,
+        rotational_inertia, true);
+  }
   return SpatialInertia<T>(
       spatial_inertia_vector[SpatialInertiaIndex::k_mass],
       Vector3<T>(spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
