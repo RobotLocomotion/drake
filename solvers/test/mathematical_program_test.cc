@@ -4756,6 +4756,44 @@ GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
   EXPECT_EQ(prog.exponential_cone_constraints().size(), 3);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
 }
+
+
+class ApproximateLmiConstraint : public ::testing::Test {
+  // An arbitrary semidefinite program with 2 PSD constraints, 2 linear
+  // constraints, and 1 equality constraint for testing the
+  // Replace/TightenPsdConstraint methods.
+ public:
+  ApproximateLmiConstraint()
+      : prog_(),
+        X_{prog_.NewSymmetricContinuousVariables<3>()},
+        Y_{prog_.NewSymmetricContinuousVariables<4>()},
+        psd_constraint_X_{prog_.AddPositiveSemidefiniteConstraint(X_)},
+        psd_constraint_Y_{prog_.AddPositiveSemidefiniteConstraint(Y_)} {
+    // Add an arbitrary linear constraint on X.
+    Eigen::MatrixXd A(2, 3);
+    // clang-format off
+    A << 1,  0, 1,
+         0, -1, 1;
+    // clang-format on
+    Eigen::VectorXd lb(2);
+    lb << -10, -7;
+    Eigen::VectorXd ub(2);
+    ub << 11, 9;
+
+    prog_.AddLinearConstraint(A * X_ * Eigen::VectorXd::Ones(3) <= ub);
+    prog_.AddLinearConstraint(A * X_ * Eigen::VectorXd::Ones(3) >= lb);
+    prog_.AddLinearEqualityConstraint(Y_ == Eigen::MatrixXd::Identity(4, 4));
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixXDecisionVariable X_;
+  MatrixXDecisionVariable Y_;
+  Binding<PositiveSemidefiniteConstraint> psd_constraint_X_;
+  Binding<PositiveSemidefiniteConstraint> psd_constraint_Y_;
+};
+
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
