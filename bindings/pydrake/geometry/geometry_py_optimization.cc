@@ -26,6 +26,7 @@
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -321,6 +322,30 @@ void DefineGeometryOptimization(py::module m) {
             },
             [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
               return Hyperellipsoid(std::get<0>(args), std::get<1>(args));
+            }));
+  }
+
+  // Hyperrectangle
+  {
+    const auto& cls_doc = doc.Hyperrectangle;
+    py::class_<Hyperrectangle, ConvexSet>(m, "Hyperrectangle", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("lb"), py::arg("ub"), cls_doc.ctor.doc_2args)
+        .def("lb", &Hyperrectangle::lb, cls_doc.lb.doc)
+        .def("ub", &Hyperrectangle::ub, cls_doc.ub.doc)
+        .def("UniformSample", &Hyperrectangle::UniformSample,
+            py::arg("generator"), cls_doc.UniformSample.doc)
+        .def("Center", &Hyperrectangle::Center, cls_doc.Center.doc)
+        .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
+            cls_doc.MakeHPolyhedron.doc)
+        .def(py::pickle(
+            [](const Hyperrectangle& self) {
+              return std::make_pair(self.lb(), self.ub());
+            },
+            [](std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
+              return Hyperrectangle(std::get<0>(args), std::get<1>(args));
             }));
   }
 
