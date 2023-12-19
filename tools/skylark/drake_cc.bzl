@@ -955,7 +955,7 @@ def drake_cc_googletest_linux_only(
     private.
     """
 
-    # We need add the source file to an intermediate cc_library so that our
+    # We need to add the source file to an intermediate cc_library so that our
     # linters will find it. The library will not be compiled on non-Linux.
     srcs = ["test/{}.cc".format(name)]
     drake_cc_library(
@@ -986,11 +986,14 @@ def drake_cc_googletest_linux_only(
     )
     drake_cc_googletest(
         name = name,
-        srcs = ["_{}_empty.h".format(name)],
+        srcs = select({
+            "@drake//tools/skylark:linux": srcs,
+            "//conditions:default": ["_{}_empty.h".format(name)],
+        }),
         tags = tags + ["nolint"],
         data = data,
         deps = select({
-            "@drake//tools/skylark:linux": [":_{}_compile".format(name)],
+            "@drake//tools/skylark:linux": deps,
             "//conditions:default": [],
         }),
         visibility = visibility,
