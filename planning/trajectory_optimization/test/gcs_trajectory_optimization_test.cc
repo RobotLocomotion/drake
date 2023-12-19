@@ -1332,7 +1332,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
       "interval.*");
 }
 
-bool PointInASet(ConvexSets sets, Eigen::VectorXd point, double kTol) {
+bool PointInASet(const ConvexSets& sets, Eigen::VectorXd point, double kTol) {
   for (int i = 0; i < ssize(sets); ++i) {
     if (sets[i]->PointInSet(point, kTol)) {
       return true;
@@ -1342,6 +1342,7 @@ bool PointInASet(ConvexSets sets, Eigen::VectorXd point, double kTol) {
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
+  // Example 1: partition along both dimensions.
   Eigen::Matrix<double, 2, 4> vertices;
   // clang-format off
   vertices << 0.0, 4.0, 0.0, 4.0,
@@ -1350,6 +1351,11 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
   VPolytope v(vertices);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
+
+  EXPECT_TRUE(CheckIfSatisfiesConvexityRadius(v, std::vector<int>{}));
+  EXPECT_FALSE(CheckIfSatisfiesConvexityRadius(v, std::vector<int>{0}));
+  EXPECT_FALSE(CheckIfSatisfiesConvexityRadius(v, std::vector<int>{1}));
+  EXPECT_FALSE(CheckIfSatisfiesConvexityRadius(v, continuous_revolute_joints));
 
   ConvexSets sets = PartitionConvexSet(v, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets.size(), 4);
@@ -1370,9 +1376,47 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
         Eigen::Vector2d(M_PI - 2.0 * epsilon, M_PI - 2.0 * epsilon), kTol));
   }
 
-  ConvexSets sets2 = PartitionConvexSet(MakeConvexSets(v, v),
+  // Example 2: Partition along one dimension.
+  Eigen::Matrix<double, 2, 4> vertices2;
+  // clang-format off
+  vertices2 << 0.0, 2.0, 0.0, 2.0,
+               0.0, 0.0, 4.0, 4.0;
+  // clang-format on
+  VPolytope v2(vertices2);
+
+  ConvexSets sets2 =
+      PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
+  EXPECT_EQ(sets2.size(), 2);
+  DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets2, 1));
+
+  // Example 3: partition along no dimensions.
+  Eigen::Matrix<double, 2, 4> vertices3;
+  // clang-format off
+  vertices3 << 0.0, 2.0, 0.0, 2.0,
+               0.0, 0.0, 2.0, 2.0;
+  // clang-format on
+  VPolytope v3(vertices3);
+
+  ConvexSets sets3 =
+      PartitionConvexSet(v3, continuous_revolute_joints, epsilon);
+  EXPECT_EQ(sets3.size(), 1);
+  DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets3, 1));
+
+  // Example 4: partition along one dimension, with not all joints continuous
+  // revolute.
+  std::vector<int> only_one_continuous_revolute_joint{1};
+  ConvexSets sets4 = PartitionConvexSet(v, only_one_continuous_revolute_joint);
+  EXPECT_EQ(sets4.size(), 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(sets4, 1),
+                              ".*doesn't respect the convexity radius.*");
+  DRAKE_EXPECT_NO_THROW(
+      GcsTrajectoryOptimization(2, only_one_continuous_revolute_joint)
+          .AddRegions(sets4, 1));
+
+  // Test the function overload that takes in multiple convex sets.
+  ConvexSets sets5 = PartitionConvexSet(MakeConvexSets(v, v),
                                         continuous_revolute_joints, epsilon);
-  EXPECT_EQ(sets2.size(), 8);
+  EXPECT_EQ(sets5.size(), 8);
   DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets, 1));
 
   // List of convex sets must have at least one entry.
@@ -1401,10 +1445,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
                std::exception);
 
   // List of convex sets must have matching ambient dimension.
-  VPolytope v2(Eigen::MatrixXd::Zero(3, 1));
-  EXPECT_THROW(
-      PartitionConvexSet(MakeConvexSets(v, v2), continuous_revolute_joints),
-      std::exception);
+  VPolytope v_wrong_dimension(Eigen::MatrixXd::Zero(3, 1));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PartitionConvexSet(MakeConvexSets(v, v_wrong_dimension),
+                         continuous_revolute_joints),
+      ".*convex_sets\\[i\\]->ambient_dimension.*");
+  EXPECT_THROW(PartitionConvexSet(MakeConvexSets(v, v_wrong_dimension),
+                                  continuous_revolute_joints),
+               std::exception);
 
   // Epsilon must be strictly positive.
   EXPECT_THROW(PartitionConvexSet(v, continuous_revolute_joints, 0.0),
