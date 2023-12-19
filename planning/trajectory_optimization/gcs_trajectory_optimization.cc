@@ -68,6 +68,62 @@ using EdgeId = GraphOfConvexSets::EdgeId;
 
 const double kInf = std::numeric_limits<double>::infinity();
 
+namespace {
+/* Computes the minimum and maximum values that can be attained along a certain
+dimension for a point constrained to lie within a convex set. */
+const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, int dimension) {
+  // TODO(cohnt) centralize this function in geometry/optimization, by making it
+  // a member of ConvexSet. Also potentially only compute the value once, and
+  // then return the pre-computed value instead of re-computing.
+  DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
+  MathematicalProgram prog;
+  VectorXDecisionVariable y =
+      prog.NewContinuousVariables(region.ambient_dimension());
+  VectorXDecisionVariable z =
+      prog.NewContinuousVariables(region.ambient_dimension());
+  region.AddPointInSetConstraints(&prog, y);
+  region.AddPointInSetConstraints(&prog, z);
+  VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
+  objective_vector[dimension] = 1;
+  prog.AddLinearCost(objective_vector.dot(y - z));
+
+  auto result = Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "GcsTrajectoryOptimization: Failed to compute upper and lower bounds "
+        "of a convex set!");
+  }
+
+  return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
+}
+
+/** Given a convex set, and a list of indices corresponding to continuous
+revolute joints, check whether or not the set satisfies the convexity radius.
+Respecting the convexity radius entails that each convex set has a width of
+strictly less than π along each dimension corresponding to a continuous
+revolute joint. */
+void ThrowsForInvalidContinuousJointsList(
+    int num_positions, const std::vector<int>& continuous_revolute_joints) {
+  for (int i = 0; i < ssize(continuous_revolute_joints); ++i) {
+    // Make sure the unbounded revolute joints point to valid indices.
+    if (continuous_revolute_joints[i] < 0 ||
+        continuous_revolute_joints[i] >= num_positions) {
+      throw std::runtime_error(fmt::format(
+          "Each joint index in continuous_revolute_joints must lie in the "
+          "interval [0, {}). Joint index {} (located at {}) violates this.",
+          num_positions, continuous_revolute_joints[i], i));
+    }
+  }
+  std::unordered_set<int> comparison(continuous_revolute_joints.begin(),
+                                     continuous_revolute_joints.end());
+  if (comparison.size() != continuous_revolute_joints.size()) {
+    throw std::runtime_error(fmt::format(
+        "continuous_revolute_joints must not contain duplicate entries."));
+  }
+}
+}  // namespace
+
 Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
@@ -159,39 +215,11 @@ Subgraph::Subgraph(
 
 Subgraph::~Subgraph() = default;
 
-const std::pair<double, double>
-GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
-    const ConvexSet& region, int dimension) const {
-  // TODO(cohnt) centralize this function in geometry/optimization, by making it
-  // a member of ConvexSet. Also potentially only compute the value once, and
-  // then return the pre-computed value instead of re-computing.
-  DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
-  MathematicalProgram prog;
-  VectorXDecisionVariable y =
-      prog.NewContinuousVariables(region.ambient_dimension());
-  VectorXDecisionVariable z =
-      prog.NewContinuousVariables(region.ambient_dimension());
-  region.AddPointInSetConstraints(&prog, y);
-  region.AddPointInSetConstraints(&prog, z);
-  VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
-  objective_vector[dimension] = 1;
-  prog.AddLinearCost(objective_vector.dot(y - z));
-
-  auto result = Solve(prog);
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        "GcsTrajectoryOptimization: Failed to compute upper and lower bounds "
-        "of a convex set!");
-  }
-
-  return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
-}
-
 void Subgraph::ThrowsForInvalidConvexityRadius() const {
   for (int i = 0; i < ssize(regions_); ++i) {
     for (const int& j : continuous_revolute_joints()) {
       auto [min_value, max_value] =
-          traj_opt_.GetMinimumAndMaximumValueAlongDimension(*regions_[i], j);
+          GetMinimumAndMaximumValueAlongDimension(*regions_[i], j);
       if (max_value - min_value >= M_PI) {
         throw std::runtime_error(fmt::format(
             "GcsTrajectoryOptimization: Region at index {} is wider than π "
@@ -659,22 +687,8 @@ GcsTrajectoryOptimization::GcsTrajectoryOptimization(
     : num_positions_(num_positions),
       continuous_revolute_joints_(std::move(continuous_revolute_joints)) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
-  for (int i = 0; i < ssize(continuous_revolute_joints_); ++i) {
-    // Make sure the unbounded revolute joints point to valid indices.
-    if (continuous_revolute_joints_[i] < 0 ||
-        continuous_revolute_joints_[i] >= num_positions) {
-      throw std::runtime_error(fmt::format(
-          "Each joint index in continuous_revolute_joints must lie in the "
-          "interval [0, {}). Joint index {} (located at {}) violates this.",
-          num_positions, continuous_revolute_joints_[i], i));
-    }
-  }
-  std::unordered_set<int> comparison(continuous_revolute_joints_.begin(),
-                                     continuous_revolute_joints_.end());
-  if (comparison.size() != continuous_revolute_joints_.size()) {
-    throw std::runtime_error(fmt::format(
-        "continuous_revolute_joints must not contain duplicate entries."));
-  }
+  ThrowsForInvalidContinuousJointsList(num_positions,
+                                       continuous_revolute_joints_);
 }
 
 GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
@@ -1067,20 +1081,36 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
   return CompositeTrajectory<double>(normalized_bezier_curves);
 }
 
+bool CheckIfSatisfiesConvexityRadius(
+    const ConvexSet& convex_set, std::vector<int> continuous_revolute_joints) {
+  for (const int& j : continuous_revolute_joints) {
+    auto [min_value, max_value] =
+        GetMinimumAndMaximumValueAlongDimension(convex_set, j);
+    if (max_value - min_value >= M_PI) {
+      return false;
+    }
+  }
+  return true;
+}
+
 ConvexSets PartitionConvexSet(
     const ConvexSet& convex_set,
     const std::vector<int>& continuous_revolute_joints, const double epsilon) {
   DRAKE_THROW_UNLESS(epsilon > 0);
+  ThrowsForInvalidContinuousJointsList(convex_set.ambient_dimension(),
+                                       continuous_revolute_joints);
   // Unboundedness will be asserted by
   // Hyperrectangle::MaybeCalcAxisAlignedBoundingBox.
 
   ConvexSets sets = MakeConvexSets(convex_set);
-  const double convexity_radius_step = M_PI - 2 * epsilon;
+  const double convexity_radius_step = M_PI - epsilon;
   const int dim = convex_set.ambient_dimension();
+  // TODO(cohnt): Don't calculate bounding box components for joints that aren't
+  // revolute, since it's an unnecessary calculation.
   const auto bbox_maybe =
       Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(convex_set);
   DRAKE_THROW_UNLESS(bbox_maybe.has_value());
-  const Hyperrectangle bbox = bbox_maybe.value();
+  const Hyperrectangle& bbox = bbox_maybe.value();
   // The overall structure is to partition the set along each dimension
   // corresponding to a continuous revolute joint. The partitioning is done by
   // constructing axis-aligned bounding boxes, and intersecting them with the
@@ -1089,22 +1119,31 @@ ConvexSets PartitionConvexSet(
     const double min_value = bbox.lb()[i];
     const double max_value = bbox.ub()[i];
     if (max_value - min_value >= M_PI) {
+      // Since we operate along one dimension at a time, all of the elements of
+      // sets will potentially violate the convexity radius, and thus must be
+      // partitioned. Sets which end up being empty are dropped. Because we are
+      // adding the new ConvexSets into sets, we track where the list of old
+      // sets ended, to prevent the infinite loop, and for later deletion.
       const int j_max = sets.size();
       for (int j = 0; j < j_max; ++j) {
-        for (double k = min_value + convexity_radius_step;
-             k < max_value + convexity_radius_step;
-             k += convexity_radius_step) {
+        for (double k = min_value; k < max_value;
+             k += convexity_radius_step - epsilon) {
           Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, dim);
           Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
           A(0, i) = 1;
-          b[0] = k + (epsilon / 2.0);
+          b[0] = k + convexity_radius_step;
           A(1, i) = -1;
-          b[1] = -(k - convexity_radius_step - (epsilon / 2.0));
+          b[1] = -k;
           HPolyhedron chunk_bbox(A, b);
-          sets.push_back(copyable_unique_ptr<ConvexSet>(
-              Intersection(*sets[j], chunk_bbox)));
+          Intersection candidate_set(*sets[j], chunk_bbox);
+          if (!candidate_set.IsEmpty()) {
+            sets.push_back(copyable_unique_ptr<ConvexSet>(candidate_set));
+          }
         }
       }
+      // The sets which we have now partitioned are still stored between index 0
+      // and index j_max. We can now delete them, since we've replaced them with
+      // smaller pieces.
       sets.erase(sets.begin(), sets.begin() + j_max);
     }
   }
@@ -1116,6 +1155,8 @@ ConvexSets PartitionConvexSet(
     const double epsilon) {
   DRAKE_THROW_UNLESS(convex_sets.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets[0] != nullptr);
+  ThrowsForInvalidContinuousJointsList(convex_sets[0]->ambient_dimension(),
+                                       continuous_revolute_joints);
 
   int ambient_dimension = convex_sets[0]->ambient_dimension();
   for (int i = 1; i < ssize(convex_sets); ++i) {
