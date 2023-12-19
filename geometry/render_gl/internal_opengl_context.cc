@@ -231,7 +231,8 @@ class OpenGlContext::Impl {
   void DisplayWindow(const int width, const int height) {
     if (width != window_width_ || height != window_height_) {
       XResizeWindow(display(), window_, width, height);
-      WaitForExposeEvent();
+      // If the window isn't viewable, it won't send an expose event.
+      if (IsWindowViewable()) WaitForExposeEvent();
       window_width_ = width;
       window_height_ = height;
     }
@@ -302,13 +303,13 @@ class OpenGlContext::Impl {
 
   // The associated window to support display of rendering results.
   Window window_;
-  // The window's current size. We default it to an arbitrary 640x480.
-  // XCreateWindow (called in the constructor) has undocumented behavior for
-  // zero-area windows, or even very small windows (causing the constructor to
-  // fail or hang). Empirically, 640x480 allows things to work. The reason is
+  // The window's current size. We default it to an arbitrary 10x10 (a size a
+  // user is unlikely to call). XCreateWindow (called in the constructor) has
+  // undocumented behavior for zero-area windows, causing the constructor to
+  // fail or hang. Empirically, 10x10 allows things to work. The reason is
   // not yet understood.
-  int window_width_{640};
-  int window_height_{480};
+  int window_width_{10};
+  int window_height_{10};
 
   const bool debug_{};
 };
