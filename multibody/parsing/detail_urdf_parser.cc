@@ -16,10 +16,12 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_schema_checker.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
@@ -1135,6 +1137,27 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
   return std::make_pair(model_instance_, model_name);
 }
 
+bool CheckDocumentAgainstUrdfSchema(
+    const ParsingWorkspace& workspace,
+    const DataSource& data_source) {
+  std::string schema_file =
+      FindResourceOrThrow("drake/multibody/parsing/urdf.rnc");
+  if (data_source.IsFilename()) {
+    return CheckDocumentFileAgainstRncSchemaFile(
+        workspace.diagnostic,
+        schema_file,
+        data_source.GetAbsolutePath());
+  } else {
+    DRAKE_ASSERT(data_source.IsContents());
+    return CheckDocumentStringAgainstRncSchemaFile(
+        workspace.diagnostic,
+        schema_file,
+        data_source.contents(),
+        data_source.GetStem() + ".urdf");
+  }
+  DRAKE_UNREACHABLE();
+}
+
 std::pair<std::optional<ModelInstanceIndex>, std::string>
 AddOrMergeModelFromUrdf(
     const DataSource& data_source, const std::string& model_name_in,
@@ -1164,10 +1187,15 @@ AddOrMergeModelFromUrdf(
     }
   }
 
+  // Checks that the document is conforming Drake-flavored URDF.
+  if (!CheckDocumentAgainstUrdfSchema(workspace, data_source)) {
+    return std::make_pair(std::nullopt, "");
+  }
+
   UrdfParser parser(&data_source, model_name_in, parent_model_name,
                     merge_into_model_instance, data_source.GetRootDir(),
                     &xml_doc, workspace);
-  return parser.Parse();;
+  return parser.Parse();
 }
 }  // namespace
 
