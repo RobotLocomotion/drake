@@ -1151,6 +1151,29 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
     EXPECT_EQ(traj1.get_number_of_segments(), 2);
     EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
     EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
+
+    // Now check that the wraparound is supported when adding edges between
+    // subgraphs.
+    Vector1d start_alternate(start[0] - 4.0 * M_PI);
+    Vector1d goal_alternate(goal[0] + 6.0 * M_PI);
+    auto& source1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(start_alternate)), 0);
+    auto& target1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(goal_alternate)), 0);
+
+    gcs1.AddEdges(source1_alternate, regions1);
+    gcs1.AddEdges(regions1, target1_alternate);
+
+    // source1_alternate and target1_alternate should each be connected to one
+    // set in regions1, so there should now be 10 edges.
+    EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 10);
+
+    auto [traj1_alternate, result1_alternate] =
+        gcs1.SolvePath(source1, target1);
+    ASSERT_TRUE(result1_alternate.is_success());
+    EXPECT_NEAR(result1_alternate.get_optimal_cost(), expected_cost_wraparound,
+                tol);
+    EXPECT_EQ(traj1_alternate.get_number_of_segments(), 2);
   }
 
   // Now no wraparound
@@ -1221,6 +1244,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
     std::vector<int> continuous_joints;
     double expected_cost{};
     int edge_count{};
+    Eigen::Vector2d start_offset_works;
+    Eigen::Vector2d start_offset_fails;
   };
 
   const std::vector<TestConfig> configs{
@@ -1230,13 +1255,17 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
        // edges Edges crossing the corners gives us 8 more bidirectional edges
        // (16 edges) The start and goal are each connected to one set, so 42
        // total.
-       .edge_count = 42},
+       .edge_count = 42,
+       .start_offset_works = {0.0, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 2.0 * M_PI}},
       {.name = "One wraparound",
        .continuous_joints = {0},
        .expected_cost = expected_cost_one_wraparound,
        // One wraparound adds 3 new edges wrapping around along the rows, and
        // also 4 new edges crossing the rows, so 14 new directional edges.
-       .edge_count = 56},
+       .edge_count = 56,
+       .start_offset_works = {-2.0 * M_PI, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 4.0 * M_PI}},
       {.name = "Two wraparound",
        .continuous_joints = {0, 1},
        .expected_cost = expected_cost_both_wraparound,
@@ -1244,7 +1273,11 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
        // columns, and also 4 new edges crossing the columns, and finally 2 more
        // edges connecting the opposite corners (e.g. top-left to bottom-right),
        // so 18 new directional edges.
-       .edge_count = 74}};
+       .edge_count = 74,
+       .start_offset_works = {-2.0 * M_PI, 4.0 * M_PI},
+       .start_offset_fails = {0.0, 0.0}}};
+  // For two wraparound, none fail, so we use a conditional
+  // check in the test body to skip this case.
   for (const TestConfig& config : configs) {
     SCOPED_TRACE(config.name);
     GcsTrajectoryOptimization gcs(2, config.continuous_joints);
@@ -1265,6 +1298,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
     EXPECT_NEAR(result.get_optimal_cost(), config.expected_cost, tol);
     EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
     EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+    auto& source2 = gcs.AddRegions(
+        MakeConvexSets(Point(start + config.start_offset_works)), 0);
+    gcs.AddEdges(source2, regions);
+
+    auto [traj2, result2] = gcs.SolvePath(source2, target, options);
+    EXPECT_TRUE(result2.is_success());
+    EXPECT_NEAR(result2.get_optimal_cost(), config.expected_cost, tol);
+
+    if (config.continuous_joints.size() != 2) {
+      // When both dimensions are continuous revolute, any start offset will
+      // work, so we want to skip it.
+      auto& source3 = gcs.AddRegions(
+          MakeConvexSets(Point(start + config.start_offset_fails)), 0);
+      gcs.AddEdges(source3, regions);
+
+      auto [traj3, result3] = gcs.SolvePath(source3, target, options);
+      EXPECT_FALSE(result3.is_success());
+    }
   }
 }
 

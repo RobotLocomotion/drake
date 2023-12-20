@@ -98,7 +98,7 @@ const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
   return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
 }
 
-/** Given a convex set, and a list of indices corresponding to continuous
+/* Given a convex set, and a list of indices corresponding to continuous
 revolute joints, check whether or not the set satisfies the convexity radius.
 Respecting the convexity radius entails that each convex set has a width of
 strictly less than π along each dimension corresponding to a continuous
@@ -121,6 +121,136 @@ void ThrowsForInvalidContinuousJointsList(
     throw std::runtime_error(fmt::format(
         "continuous_revolute_joints must not contain duplicate entries."));
   }
+}
+
+/* Computes the pairwise intersections of sets in convex_sets_A with sets in
+convex_sets_B. Returns a list of tuples, where each tuple describes an edge: the
+first entry is the index of the first set in convex_sets_A, the second entry is
+the index of the second set in convex_sets_B, and the third entry is the
+translation that is applied to the first convex set to bring it into the
+coordinate system of the second. To compute the pairwise intersections within
+convex_set_A, pass an empty vector for convex_sets_B. convex_sets_A must have at
+least one element, and continuous_revolute_joints must pass
+ThrowsForInvalidContinuousJointsList. */
+const std::vector<std::tuple<int, int, Eigen::VectorXd>>
+PairwiseIntersectionsContinuousJoints(
+    ConvexSets convex_sets_A, ConvexSets convex_sets_B,
+    const std::vector<int>& continuous_revolute_joints) {
+  DRAKE_DEMAND(convex_sets_A.size() > 0);
+  const int dimension = convex_sets_A[0]->ambient_dimension();
+  ThrowsForInvalidContinuousJointsList(dimension, continuous_revolute_joints);
+
+  std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
+
+  // Region bounding boxes along dimensions corresponding to continuous
+  // revolute joints. We make region_minimum_and_maximum_values_B a reference
+  // type, so if convex_sets_B is not provided (and we want to do pairwise
+  // intersections within convex_sets_A), we can simply point it to
+  // region_minimum_and_maximum_values_A and not have to copy the data over. If
+  // convex_sets_B is provided, then we point it to
+  // maybe_region_minimum_and_maximum_values_B, and store the data there.
+  std::vector<std::vector<std::pair<double, double>>>
+      region_minimum_and_maximum_values_A;
+  std::vector<std::vector<std::pair<double, double>>>
+      maybe_region_minimum_and_maximum_values_B;
+  std::vector<std::vector<std::pair<double, double>>>&
+      region_minimum_and_maximum_values_B =
+          maybe_region_minimum_and_maximum_values_B;
+
+  // Compute the bounding boxes.
+  for (int i = 0; i < ssize(convex_sets_A); ++i) {
+    region_minimum_and_maximum_values_A.emplace_back(
+        std::vector<std::pair<double, double>>());
+    for (const int& k : continuous_revolute_joints) {
+      region_minimum_and_maximum_values_A[i].emplace_back(
+          GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i], k));
+    }
+  }
+
+  bool compute_intersections_within_A = convex_sets_B.size() == 0;
+  if (compute_intersections_within_A) {
+    // If convex_sets_B.size() == 0, then we want to compute the pairwise
+    // intersections within convex_sets_A, so we can just copy over the data.
+    convex_sets_B = convex_sets_A;
+    region_minimum_and_maximum_values_B = region_minimum_and_maximum_values_A;
+  } else {
+    for (int i = 0; i < ssize(convex_sets_B); ++i) {
+      maybe_region_minimum_and_maximum_values_B.emplace_back(
+          std::vector<std::pair<double, double>>());
+      for (const int& k : continuous_revolute_joints) {
+        maybe_region_minimum_and_maximum_values_B[i].emplace_back(
+            GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i], k));
+      }
+    }
+  }
+
+  VectorXd offset = Eigen::VectorXd::Zero(dimension);
+  for (int i = 0; i < ssize(convex_sets_A); ++i) {
+    for (int j = 0; j < ssize(convex_sets_B); ++j) {
+      if (compute_intersections_within_A && j <= i) {
+        // If we're computing intersections within convex_sets_A and j <= i,
+        // then we've already checked if we need to add an edge when i and j
+        // were flipped, and that set has already been added.
+        continue;
+      }
+
+      offset.setZero();
+
+      // First, we compute what the offset that should be applied to
+      // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
+      for (const int& k : continuous_revolute_joints) {
+        if (region_minimum_and_maximum_values_A[i][k].first <
+            region_minimum_and_maximum_values_B[j][k].first) {
+          // In this case, the minimum value of convex_sets_A[i] along dimension
+          // k is smaller than the minimum value of convex_sets_B[j] along
+          // dimension k, so we must translate by a positive amount. By the
+          // convexity radius property (which has already been checked), we know
+          // that the width of each set is strictly less than π. So we need to
+          // translate convex_sets_A[i] by some multiple of 2π such that the
+          // difference between the maximum value in convex_sets_B[j] and the
+          // minimum value in convex_sets_A[i] is less than 2π. This is computed
+          // by taking that difference, dividing by 2π, and truncating.
+          offset[k] = 2 * M_PI *
+                      static_cast<int>(
+                          (region_minimum_and_maximum_values_B[j][k].second -
+                           region_minimum_and_maximum_values_A[i][k].first) /
+                          (2 * M_PI));
+        } else {
+          // In this case, the minimum value of convex_sets_B[j] along dimension
+          // k is smaller than the minimum value of convex_sets_A[i] along
+          // dimension k. We do the same thing as above, but flip the order of
+          // the sets. As a result, we also flip the sign of the resulting
+          // translation.
+          offset[k] = -2 * M_PI *
+                      static_cast<int>(
+                          (region_minimum_and_maximum_values_A[i][k].second -
+                           region_minimum_and_maximum_values_B[j][k].first) /
+                          (2 * M_PI));
+        }
+      }
+
+      // Now that we know the offset that is for each dimension, we actually
+      // check if the sets intersect.
+      MathematicalProgram prog;
+      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
+      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
+      prog.AddLinearConstraint(x + offset == y);
+      convex_sets_A[i]->AddPointInSetConstraints(&prog, x);
+      convex_sets_B[j]->AddPointInSetConstraints(&prog, y);
+      const auto result = Solve(prog);
+      if (result.is_success()) {
+        // Regions are overlapping, add edge (i, j). If we're adding edges
+        // within convex_sets_A, also add edge (j, i), since edges are
+        // considered bidirectional in that context.
+        edges.emplace_back(i, j, offset);
+        if (compute_intersections_within_A) {
+          edges.emplace_back(j, i, -offset);
+        }
+      }
+    }
+  }
+
+  return edges;
 }
 }  // namespace
 
@@ -413,11 +543,12 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       throw std::runtime_error("Subspace must be a Point or HPolyhedron.");
     }
   }
-  if (!continuous_revolute_joints().empty()) {
-    // Wraparound edges are not yet implemented for EdgesBetweenSubgraphs.
+  if (!continuous_revolute_joints().empty() && subspace != nullptr) {
+    // Wraparound edges are not yet implemented for EdgesBetweenSubgraphs when a
+    // subspace is given.
     drake::log()->warn(
         "The wraparound edges used for continuous revolute joints are not yet "
-        "implemented for EdgesBetweenSubgraphs.");
+        "implemented for EdgesBetweenSubgraphs when a subspace is given.");
   }
 
   ur_trajectory_ = BezierCurve<double>(
@@ -436,49 +567,79 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
-  const auto path_continuity_constraint =
-      std::make_shared<LinearEqualityConstraint>(
-          A, VectorXd::Zero(num_positions()));
+  if (subspace == nullptr) {
+    const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
+        PairwiseIntersectionsContinuousJoints(from_subgraph.regions(),
+                                              to_subgraph.regions(),
+                                              continuous_revolute_joints());
+    for (const auto& edge : edge_data) {
+      int i = std::get<0>(edge);
+      int j = std::get<1>(edge);
+      Eigen::VectorXd edge_offset = std::get<2>(edge);
 
-  // TODO(wrangelvid) this can be parallelized.
-  for (int i = 0; i < ssize(from_subgraph); ++i) {
-    for (int j = 0; j < ssize(to_subgraph); ++j) {
-      if (from_subgraph.regions()[i]->IntersectsWith(
-              *to_subgraph.regions()[j])) {
-        if (subspace != nullptr) {
-          // Check if the regions are connected through the subspace.
-          if (!RegionsConnectThroughSubspace(*from_subgraph.regions()[i],
-                                             *to_subgraph.regions()[j],
-                                             *subspace)) {
-            continue;
+      // Add edge.
+      Vertex* u = from_subgraph.vertices_[i];
+      Vertex* v = to_subgraph.vertices_[j];
+      Edge* uv_edge = traj_opt_.AddEdge(u, v);
+      edges_.emplace_back(uv_edge);
+
+      // Add path continuity constraints. We instead enforce the constraint
+      // u - v = -tau_uv, via Ax = -edge_offset, A = [I, -I],
+      // x = [u_controls.col(order); v_controls.col(0)].
+      const auto path_continuity_constraint =
+          std::make_shared<LinearEqualityConstraint>(A, -edge_offset);
+      uv_edge->AddConstraint(Binding<Constraint>(
+          path_continuity_constraint,
+          ConcatenateVariableRefList(
+              {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
+               GetControlPointsV(*uv_edge).col(0)})));
+    }
+  } else {
+    const auto path_continuity_constraint =
+        std::make_shared<LinearEqualityConstraint>(
+            A, VectorXd::Zero(num_positions()));
+
+    // TODO(wrangelvid) this can be parallelized.
+    for (int i = 0; i < ssize(from_subgraph); ++i) {
+      for (int j = 0; j < ssize(to_subgraph); ++j) {
+        if (from_subgraph.regions()[i]->IntersectsWith(
+                *to_subgraph.regions()[j])) {
+          if (subspace != nullptr) {
+            // Check if the regions are connected through the subspace.
+            if (!RegionsConnectThroughSubspace(*from_subgraph.regions()[i],
+                                               *to_subgraph.regions()[j],
+                                               *subspace)) {
+              continue;
+            }
           }
-        }
 
-        // Add edge.
-        Vertex* u = from_subgraph.vertices_[i];
-        Vertex* v = to_subgraph.vertices_[j];
-        Edge* uv_edge = traj_opt_.AddEdge(u, v);
-        edges_.emplace_back(uv_edge);
+          // Add edge.
+          Vertex* u = from_subgraph.vertices_[i];
+          Vertex* v = to_subgraph.vertices_[j];
+          Edge* uv_edge = traj_opt_.AddEdge(u, v);
+          edges_.emplace_back(uv_edge);
 
-        // Add path continuity constraints.
-        uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
-            path_continuity_constraint,
-            ConcatenateVariableRefList(
-                {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
-                 GetControlPointsV(*uv_edge).col(0)})));
+          // Add path continuity constraints.
+          uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
+              path_continuity_constraint,
+              ConcatenateVariableRefList(
+                  {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
+                   GetControlPointsV(*uv_edge).col(0)})));
 
-        if (subspace != nullptr) {
-          // Add subspace constraints to the first control point of the v
-          // vertex. Since we are using zeroth order continuity, the last
-          // control point
-          const auto vars = v->x().segment(0, num_positions());
-          solvers::MathematicalProgram prog;
-          const VectorX<symbolic::Variable> x =
-              prog.NewContinuousVariables(num_positions(), "x");
-          subspace->AddPointInSetConstraints(&prog, x);
-          for (const auto& binding : prog.GetAllConstraints()) {
-            const std::shared_ptr<Constraint>& constraint = binding.evaluator();
-            uv_edge->AddConstraint(Binding<Constraint>(constraint, vars));
+          if (subspace != nullptr) {
+            // Add subspace constraints to the first control point of the v
+            // vertex. Since we are using zeroth order continuity, the last
+            // control point
+            const auto vars = v->x().segment(0, num_positions());
+            solvers::MathematicalProgram prog;
+            const VectorX<symbolic::Variable> x =
+                prog.NewContinuousVariables(num_positions(), "x");
+            subspace->AddPointInSetConstraints(&prog, x);
+            for (const auto& binding : prog.GetAllConstraints()) {
+              const std::shared_ptr<Constraint>& constraint =
+                  binding.evaluator();
+              uv_edge->AddConstraint(Binding<Constraint>(constraint, vars));
+            }
           }
         }
       }
@@ -739,74 +900,19 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 std::string name) {
   // TODO(wrangelvid): This is O(n^2) and can be improved.
   DRAKE_DEMAND(regions.size() > 0);
-  const int dimension = regions[0]->ambient_dimension();
+
+  const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
+      PairwiseIntersectionsContinuousJoints(regions, {},
+                                            continuous_revolute_joints());
 
   std::vector<std::pair<int, int>> edges_between_regions;
-  std::vector<std::vector<std::pair<double, double>>>
-      region_minimum_and_maximum_values;
-  for (int i = 0; i < ssize(regions); ++i) {
-    region_minimum_and_maximum_values.emplace_back(
-        std::vector<std::pair<double, double>>());
-    for (const int& k : continuous_revolute_joints()) {
-      region_minimum_and_maximum_values[i].emplace_back(
-          GetMinimumAndMaximumValueAlongDimension(*regions[i], k));
-    }
-  }
-  std::vector<VectorXd> edge_offsets;
-  VectorXd offset = Eigen::VectorXd::Zero(dimension);
-  for (int i = 0; i < ssize(regions); ++i) {
-    for (int j = i + 1; j < ssize(regions); ++j) {
-      offset.setZero();
-
-      // First, we compute what the offset that should be applied to regions[i]
-      // to potentially make it overlap with regions[j].
-      for (const int& k : continuous_revolute_joints()) {
-        if (region_minimum_and_maximum_values[i][k].first <
-            region_minimum_and_maximum_values[j][k].first) {
-          // In this case, the minimum value of regions[i] along dimension k is
-          // smaller than the minimum value of regions[j] along dimension k, so
-          // we must translate by a positive amount. By the convexity radius
-          // property (which has already been checked), we know that the width
-          // of each set is strictly less than π. So we need to translate
-          // regions[i] by some multiple of 2π such that the difference between
-          // the maximum value in regions[j] and the minimum value in regions[i]
-          // is less than 2π. This is computed by taking that difference,
-          // dividing by 2π, and truncating.
-          offset[k] =
-              2 * M_PI *
-              static_cast<int>((region_minimum_and_maximum_values[j][k].second -
-                                region_minimum_and_maximum_values[i][k].first) /
-                               (2 * M_PI));
-        } else {
-          // In this case, the minimum value of regions[j] along dimension k is
-          // smaller than the minimum value of regions[i] along dimension k. We
-          // do the same thing as above, but flip the order of the sets. As a
-          // result, we also flip the sign of the resulting translation.
-          offset[k] =
-              -2 * M_PI *
-              static_cast<int>((region_minimum_and_maximum_values[i][k].second -
-                                region_minimum_and_maximum_values[j][k].first) /
-                               (2 * M_PI));
-        }
-      }
-
-      // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect.
-      MathematicalProgram prog;
-      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
-      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-      prog.AddLinearConstraint(x + offset == y);
-      regions[i]->AddPointInSetConstraints(&prog, x);
-      regions[j]->AddPointInSetConstraints(&prog, y);
-      const auto result = Solve(prog);
-      if (result.is_success()) {
-        // Regions are overlapping, add edge.
-        edges_between_regions.emplace_back(i, j);
-        edge_offsets.emplace_back(offset);
-        edges_between_regions.emplace_back(j, i);
-        edge_offsets.emplace_back(-offset);
-      }
-    }
+  std::vector<Eigen::VectorXd> edge_offsets;
+  edges_between_regions.reserve(edge_data.size());
+  edge_offsets.reserve(edge_data.size());
+  for (int i = 0; i < ssize(edge_data); ++i) {
+    edges_between_regions.emplace_back(std::get<0>(edge_data[i]),
+                                       std::get<1>(edge_data[i]));
+    edge_offsets.emplace_back(std::get<2>(edge_data[i]));
   }
 
   return GcsTrajectoryOptimization::AddRegions(regions, edges_between_regions,
