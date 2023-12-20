@@ -1,0 +1,32 @@
+[rnv] Avoid calling exit(1)
+
+As offered, rnv builds a number of command line programs. Drake uses
+portions of it as a library.  This patch fixes some rare error handling
+branches to call abort() instead of exit(1). In the unlikely event that
+Drake usage causes defective memory allocation, the result will be an
+obvious crash and possible crash dump file, instead of a somewhat
+mysterious orderly exit.
+
+This patch should not be upstreamed to rnv as-is -- it will change the
+error behavior of the command-line programs.
+
+--- m.c
++++ m.c
+@@ -29,7 +29,7 @@ void *m_alloc(int length,int size) {
+   pmp=mp; mp+=(n+sizeof(int)-1)/sizeof(int)*sizeof(int);
+   if(mp>=memory+M_STATIC) {
+     (*er_printf)("failed to allocate %i bytes of memory\n",length*size);
+-    exit(1);
++    abort();
+   }
+   if(M_FILL!=-1) while(q!=mp) *(q++)=M_FILL;
+   return (char*)p;
+@@ -45,7 +45,7 @@ void *m_alloc(int length,int size) {
+   void *p=malloc(length*size);
+   if(p==NULL) {
+     (*er_printf)("failed to allocate %i bytes of memory\n",length*size);
+-    exit(1);
++    abort();
+   }
+   return p;
+ }
