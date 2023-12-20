@@ -1,0 +1,28 @@
+commit 31c25cf206894a35674a5f67622145a4015f41c8
+Author: Rick Poyner <rick.poyner@tri.global>
+Date:   Fri Dec 15 17:08:13 2023 -0500
+
+    wip
+
+diff --git m.c m.c
+index 701179c..f9a6ebb 100644
+--- m.c
++++ m.c
+@@ -29,7 +29,7 @@ void *m_alloc(int length,int size) {
+   pmp=mp; mp+=(n+sizeof(int)-1)/sizeof(int)*sizeof(int);
+   if(mp>=memory+M_STATIC) {
+     (*er_printf)("failed to allocate %i bytes of memory\n",length*size);
+-    exit(1);
++    abort();
+   }
+   if(M_FILL!=-1) while(q!=mp) *(q++)=M_FILL;
+   return (char*)p;
+@@ -45,7 +45,7 @@ void *m_alloc(int length,int size) {
+   void *p=malloc(length*size);
+   if(p==NULL) {
+     (*er_printf)("failed to allocate %i bytes of memory\n",length*size);
+-    exit(1);
++    abort();
+   }
+   return p;
+ }

@@ -1,0 +1,14 @@
+diff --git s.c s.c
+index 1337ec1..231ec56 100644
+--- s.c
++++ s.c
+@@ -55,7 +55,8 @@ char *s_abspath(char *r,char *b) {
+     for(;;) {if(!(*c)) break; if(*c++=='/') sep=c;}
+     if(sep) {
+       char *p=r,*q;
+-      while(*p++); q=p+(sep-b);
++      while(*p++);
++      q=p+(sep-b);
+       do *(--q)=*(--p); while(p!=r);
+       while(b!=sep) *r++=*b++;
+     }
