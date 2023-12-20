@@ -68,11 +68,12 @@ _logger = logging.getLogger("drake")
 
 def _main():
     _configure_logging()
-    geom_inertia_role_order_str_default = [
-        _inertia_fixer.role_to_str(x)
-        for x in _inertia_fixer.GEOM_INERTIA_ROLE_ORDER_DEFAULT
-    ]
-    geom_role_choices_str = ["proximity", "illustration", "perception"]
+    geom_inertia_role_order_str_default = _inertia_fixer.role_list_to_str_list(
+        _inertia_fixer.GEOM_INERTIA_ROLE_ORDER_DEFAULT
+    )
+    geom_role_choices_str = _inertia_fixer.role_list_to_str_list(
+        _inertia_fixer.GEOM_INERTIA_ROLE_AVAILABLE
+    )
 
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -100,11 +101,9 @@ def _main():
     if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
         os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
-    geom_inertia_role_order = [
-        _inertia_fixer.str_to_role(x)
-        for x in args.geom_inertia_role_order
-    ]
-
+    geom_inertia_role_order = _inertia_fixer.str_list_to_role_list(
+        args.geom_inertia_role_order
+    )
     fixer = _inertia_fixer.InertiaFixer(
         input_file=args.input_file,
         output_file=args.output_file,

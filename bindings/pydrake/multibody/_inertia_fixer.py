@@ -549,9 +549,12 @@ class XmlInertiaMapper:
             pose, mass, mom, prod)
 
 
-GEOM_INERTIA_ROLE_ORDER_DEFAULT = [
+# Roles avialable for ordering.
+GEOM_INERTIA_ROLE_AVAILABLE = [
     Role.kProximity, Role.kIllustration, Role.kPerception
 ]
+# The default ordering happens to be the same as the available roles.
+GEOM_INERTIA_ROLE_ORDER_DEFAULT = GEOM_INERTIA_ROLE_AVAILABLE
 
 
 class InertiaProcessor:
@@ -662,12 +665,12 @@ _role_to_str = {
 _str_to_role = {v: k for k, v in _role_to_str.items()}
 
 
-def role_to_str(role):
-    return _role_to_str[role]
+def role_list_to_str_list(roles):
+    return [_role_to_str[x] for x in roles]
 
 
-def str_to_role(name):
-    return _str_to_role[name]
+def str_list_to_role_list(names):
+    return [_str_to_role[x] for x in names]
 
 
 def _is_unique(x):

@@ -354,7 +354,9 @@ class TestFixInertiaFromString(unittest.TestCase):
         Tests using geom_inertia_role_order for a body with two very different
         visual geometries.
 
-        Note that the com
+        Note that the sizes are different between the visual (illustration)
+        and collision (proximity) geometries, and that is reflected by the
+        resulant computed inertia.
         """
         input_text = """\
 <robot name="a">
