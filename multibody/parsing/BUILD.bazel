@@ -64,6 +64,22 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+# Convert the compact schema to a C-style header defining its contents as a
+# data block. Use `sed` stream editing to remove directory structure noise from
+# the defined symbols, and to add a linter-required `#pragma once` line.
+_HEADER_CONVERT_COMMAND = r"""
+( echo '#pragma once' ; xxd -i $< ) \
+| sed 's# [a-z_]*\(multibody_.*_rnc\)# \1#g' > $@
+"""
+
+genrule(
+    name = "urdf_rnc_h",
+    srcs = ["urdf.rnc"],
+    outs = ["urdf_rnc.h"],
+    cmd = _HEADER_CONVERT_COMMAND,
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_library(
     name = "package_map",
     srcs = ["package_map.cc"],
