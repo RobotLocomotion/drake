@@ -500,7 +500,16 @@ class TestFixInertiaProcess(FileHandlingFixture):
         self._old_env = os.environ.copy()
 
     def tearDown(self):
-        os.environ = self._old_env
+        # os.environ is not actually a dict(), but the copy made previously is
+        # a dict(). Therefore, restore things piecewise to preserve
+        # os.environ's additional behavior.
+        assert isinstance(self._old_env, dict)
+        assert not isinstance(os.environ, dict)
+        added = set(os.environ.keys()) - set(self._old_env.keys())
+        for k in added:
+            del os.environ[k]
+        for k in self._old_env.keys():
+            os.environ[k] = self._old_env[k]
         super().tearDown()
 
     def subprocess_fix_inertia(
