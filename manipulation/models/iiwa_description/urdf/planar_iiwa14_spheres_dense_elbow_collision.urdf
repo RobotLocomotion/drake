@@ -41,7 +41,6 @@
       <geometry>
         <cylinder length="0.17" radius="0.139"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <self_collision_checking>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -74,7 +73,6 @@
       <geometry>
         <sphere radius="0.07959901601"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_1 and link_2 -->
@@ -113,14 +111,12 @@
       <geometry>
         <sphere radius="0.06602481863"/>
       </geometry>
-      <material name="Orange"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="3.940519658e-019 -0.003217678485 0.05239182903"/>
       <geometry>
         <sphere radius="0.07959901601"/>
       </geometry>
-      <material name="Orange"/>
     </collision>
   </link>
   <!-- joint between link_2 and link_3 -->
@@ -163,63 +159,54 @@
       <geometry>
         <sphere radius="0.075"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0.01 0.023 0.0855"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0.01 0.048 0.1255"/>
       <geometry>
         <sphere radius="0.055"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0.01 0.056 0.1755"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.01 0.023 0.0855"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.01 0.048 0.1255"/>
       <geometry>
         <sphere radius="0.055"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.01 0.056 0.1755"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.045 0.2155"/>
       <geometry>
         <sphere radius="0.075"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.2155"/>
       <geometry>
         <sphere radius="0.075"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_3 and link_4 -->
@@ -258,42 +245,36 @@
       <geometry>
         <sphere radius="0.078"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0.01 0.06 0.052"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0.01 0.12 0.034"/>
       <geometry>
         <sphere radius="0.065"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.01 0.06 0.052"/>
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.01 0.12 0.034"/>
       <geometry>
         <sphere radius="0.065"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.184 0"/>
       <geometry>
         <sphere radius="0.075"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_4 and link_5 -->
@@ -368,14 +349,12 @@
       <geometry>
         <sphere radius="0.055"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.0 0"/>
       <geometry>
         <sphere radius="0.08"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_6 and link_7 -->
@@ -404,7 +383,6 @@
       <geometry>
         <sphere radius="0.06"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <joint name="iiwa_joint_ee" type="fixed">

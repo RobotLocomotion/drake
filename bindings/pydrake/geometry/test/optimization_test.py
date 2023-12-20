@@ -841,15 +841,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
                      <collision>
                        <geometry><box size="0.1 0.1 0.1"/></geometry>
                      </collision>
-                      <geometry>
-                          <cylinder length="0.1" radius="0.2"/>
-                     </geometry>
-                     <geometry>
-                          <capsule length="0.1" radius="0.2"/>
-                     </geometry>
-                     <geometry>
-                          <sphere radius="0.2"/>
-                     </geometry>
                    </link>
                    <link name="unmovable">
                      <collision>
