@@ -1,0 +1,196 @@
+[rnv] Expose schema validation via library functions
+
+As offered, rnv builds a number of command line programs. Drake uses
+portions of it as a library. This patch re-organizes and exposes schema
+parsing and document validation via library functions, with shared
+internal global state. The resulting interface is not thread-safe;
+clients should take the necessary precautions.
+
+--- xcl.c
++++ xcl.c
+@@ -1,4 +1,5 @@
+ /* $Id$ */
++#include "xcl.h"
+ 
+ #include <stdlib.h>
+ #include <stdarg.h>
+@@ -103,11 +104,20 @@ static void init(void) {
+   }
+ }
+ 
++void xcl_init(void) {
++  /* Configure the same defaults as main() does. */
++  verbose = 1;
++  nexp = NEXP;
++  init();
++}
++
+ static void clear(void) {
+   if(len_txt>LIM_T) {m_free(text); text=(char*)m_alloc(len_txt=LEN_T,sizeof(char));}
+   windup();
+ }
+ 
++void xcl_clear(void) { clear(); }
++
+ static void windup(void) {
+   text[n_txt=0]='\0';
+   level=0; lastline=lastcol=-1;
+@@ -156,7 +166,7 @@ static void characters(void *userData,const char *s,int len) {
+ static void processingInstruction(void *userData,
+     const char *target,const char *data) {
+   if(strcmp(PIXGFILE,target)==0) {
+-    if(xgfile) m_free(xgfile); 
++    if(xgfile) m_free(xgfile);
+     xgfile=s_clone((char*)data);
+   } else if(strcmp(PIXGPOS,target)==0) {
+     if(xgpos) m_free(xgpos);
+@@ -173,11 +183,13 @@ static int pipeout(void *buf,int len) {
+   }
+ }
+ 
+-static int process(int fd) {
++typedef int (*READABLE_FN)(void*, void*, int);
++
++static int process_readable(void* read_data, READABLE_FN read_fn) {
+   void *buf; int len;
+   for(;;) {
+     buf=XML_GetBuffer(expat,BUFSIZE);
+-    len=read(fd,buf,BUFSIZE);
++    len=read_fn(read_data,buf,BUFSIZE);
+     if(len<0) {
+       error_handler(XCL_ER_IO,xml,strerror(errno));
+       goto ERROR;
+@@ -190,18 +202,52 @@ static int process(int fd) {
+ 
+ PARSE_ERROR:
+   error_handler(XCL_ER_XML,XML_ErrorString(XML_GetErrorCode(expat)));
+-  while(peipe&&(len=read(fd,buf,BUFSIZE))!=0) peipe=peipe&&pipeout(buf,len);
++  while(peipe&&(len=read_fn(read_data,buf,BUFSIZE))!=0) {
++    peipe=peipe&&pipeout(buf,len);
++  }
+ ERROR:
+   return 0;
+ }
+ 
++static int fd_read(void* read_data, void* buf, int len) {
++  int fd = *(int*)read_data;
++  return read(fd, buf, len);
++}
++
++static int process(int fd) {
++  return process_readable(&fd, fd_read);
++}
++
++struct MemBlock {
++  const void* buf;
++  int len;
++  int cursor;
++} MemBlock;
++
++static int memory_read(void* read_data, void* buf, int len) {
++  struct MemBlock* mem_block = (struct MemBlock*)read_data;
++  int remaining = mem_block->len - mem_block->cursor;
++  if (remaining <= 0) { return 0; }
++  int result;
++  if (remaining > len) {
++    result = len;
++  } else {
++    result = remaining;
++  }
++  memcpy(buf, (char*)(mem_block->buf) + mem_block->cursor, result);
++  mem_block->cursor += result;
++  return result;
++}
++
+ static int externalEntityRef(XML_Parser p,const char *context,
+     const char *base,const char *systemId,const char *publicId) {
+   error_handler(XCL_ER_XENT);
+   return 1;
+ }
+ 
+-static void validate(int fd) {
++static void validate_readable(void* read_data, READABLE_FN read_fn,
++                                  const char* document_filename) {
++  xml = (char*)document_filename;  /* const_cast */
+   previous=current=start;
+   expat=XML_ParserCreateNS(NULL,':');
+   XML_SetParamEntityParsing(expat,XML_PARAM_ENTITY_PARSING_ALWAYS);
+@@ -209,10 +255,37 @@ static void validate(int fd) {
+   XML_SetCharacterDataHandler(expat,&characters);
+   XML_SetExternalEntityRefHandler(expat,&externalEntityRef);
+   XML_SetProcessingInstructionHandler(expat,&processingInstruction);
+-  ok=process(fd);
++  ok=process_readable(read_data, read_fn);
+   XML_ParserFree(expat);
+ }
+ 
++void xcl_validate_memory(const void* inbuf, int inlen,
++                         const char* document_filename) {
++  struct MemBlock mem_block = { inbuf, inlen, 0 };
++  validate_readable(&mem_block, memory_read, document_filename);
++}
++
++void xcl_validate_fd(int fd, const char* document_filename) {
++  validate_readable(&fd, fd_read, document_filename);
++}
++
++static void validate(int fd) {
++  xcl_validate_fd(fd, xml);
++}
++
++void xcl_rnl_fd(const char* schema_filename, int fd) {
++  start = rnl_fd((char*)schema_filename, fd);  /* const_cast */
++}
++
++void xcl_rnl_s(const char* schema_filename,
++               const char* schema_contents,
++               int schema_len) {
++  start = rnl_s((char*)schema_filename,  /* const_cast */
++                (char*)schema_contents,  /* const_cast */
++                schema_len);
++}
++
++
+ static void version(void) {(*er_printf)("rnv version %s\n",RNV_VERSION);}
+ static void usage(void) {(*er_printf)("usage: rnv {-[qnspc"
+ #if DXL_EXC
+diff --git xcl.h xcl.h
+new file mode 100644
+index 0000000..fd9f92f
+--- /dev/null
++++ xcl.h
+@@ -0,0 +1,34 @@
++/* $Id$ */
++
++#ifndef XCL_H
++#define XCL_H 1
++
++/* Prepare the validation library for use. The must be called before any other
++ * functions, and again to use the library after having called xcl_clear(). */
++extern void xcl_init(void);
++
++/* Release internally held resources. */
++extern void xcl_clear(void);
++
++/* Parse a schema, provided as an open file descriptor, and prepare internal
++ * resources for validating documents against it. The schema_filename is just a
++ * string to use in error messages. */
++extern void xcl_rnl_fd(const char* schema_filename, int fd);
++
++/* Parse a schema, provided as an in-memory string, and prepare internal
++ * resources for validating documents against it. The schema_filename is just a
++ * string to use in error messages. */
++extern void xcl_rnl_s(const char* schema_filename,
++                      const char* schema_contents,
++                      int schema_len);
++
++/* Validate a document, provided as an open file descriptor. The
++ * document_filename is just a string to use in error messages. */
++extern void xcl_validate_fd(int fd, const char* document_filename);
++
++/* Validate a document, provided as a memory buffer. The document_filename is
++ * just a string to use in error messages. */
++extern void xcl_validate_memory(const void* buf, int size,
++                                const char* document_filename);
++
++#endif
