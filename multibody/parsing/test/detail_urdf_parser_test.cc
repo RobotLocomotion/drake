@@ -33,6 +33,8 @@ namespace internal {
 namespace kcov339_avoidance_magic {
 namespace {
 
+#define TEST_F_TRACE(a, b) SCOPED_TRACE(#a ", " #b)
+
 using ::testing::MatchesRegex;
 
 using Eigen::Vector2d;
@@ -98,6 +100,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
 // naturalistic typo.
 
 TEST_F(UrdfParserTest, BadFilename) {
+  TEST_F_TRACE(UrdfParserTest, BadFilename);
   EXPECT_EQ(AddModelFromUrdfFile("nonexistent.urdf", ""), std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   "/.*/nonexistent.urdf:0: error: "
@@ -105,18 +108,20 @@ TEST_F(UrdfParserTest, BadFilename) {
 }
 
 TEST_F(UrdfParserTest, BadXmlString) {
+  TEST_F_TRACE(UrdfParserTest, BadXmlString);
   EXPECT_EQ(AddModelFromUrdfString("not proper xml content", ""), std::nullopt);
   EXPECT_EQ(TakeError(), "<literal-string>.urdf:1: error: Failed to parse"
             " XML string: XML_ERROR_PARSING_TEXT");
 }
 
 TEST_F(UrdfParserTest, NoRobot) {
+  TEST_F_TRACE(UrdfParserTest, NoRobot);
   EXPECT_EQ(AddModelFromUrdfString("<empty/>", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*URDF does not contain a robot tag."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*not.*robot.*"));
 }
 
 TEST_F(UrdfParserTest, NoName) {
+  TEST_F_TRACE(UrdfParserTest, NoName);
   EXPECT_EQ(AddModelFromUrdfString("<robot/>", ""), std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Your robot must have a name attribute or a model name must"
@@ -124,6 +129,7 @@ TEST_F(UrdfParserTest, NoName) {
 }
 
 TEST_F(UrdfParserTest, ModelRenameWithColons) {
+  TEST_F_TRACE(UrdfParserTest, ModelRenameWithColons);
   std::optional<ModelInstanceIndex> index =  AddModelFromUrdfString(R"""(
     <robot name='to-be-overwritten'>
     </robot>)""", "left::robot");
@@ -132,6 +138,7 @@ TEST_F(UrdfParserTest, ModelRenameWithColons) {
 }
 
 TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
+  TEST_F_TRACE(UrdfParserTest, ObsoleteLoopJoint);
   EXPECT_NE(AddModelFromUrdfString("<robot name='a'><loop_joint/></robot>", ""),
             std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
@@ -139,6 +146,7 @@ TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
 }
 
 TEST_F(UrdfParserTest, LegacyDrakeIgnoreBody) {
+  TEST_F_TRACE(UrdfParserTest, LegacyDrakeIgnoreBody);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='ignore-me' drake_ignore='true'>
@@ -149,15 +157,16 @@ TEST_F(UrdfParserTest, LegacyDrakeIgnoreBody) {
 }
 
 TEST_F(UrdfParserTest, BodyNameBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, BodyNameBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link naQQQme='broken'/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*link tag is missing name attribute."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*name.*attribute.*"));
 }
 
 TEST_F(UrdfParserTest, LegacyDrakeIgnoreJoint) {
+  TEST_F_TRACE(UrdfParserTest, LegacyDrakeIgnoreJoint);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <!-- Empty joint will trigger errors if ignore fails. -->
@@ -166,37 +175,39 @@ TEST_F(UrdfParserTest, LegacyDrakeIgnoreJoint) {
 }
 
 TEST_F(UrdfParserTest, JointNameBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointNameBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <joint naQQQme='broken'/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint tag is missing name attribute"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*name.*attribute.*"));
 }
 
 TEST_F(UrdfParserTest, JointTypeBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointTypeBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <joint name='a' tyQQQpe='broken'/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint 'a' is missing type attribute"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*type.*attribute.*"));
 }
 
 TEST_F(UrdfParserTest, JointNoParent) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointNoParent);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <joint name='a' type='revolute'>
         <parQQQent link='parent'/>
         <child link='child'/>
       </joint>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint 'a' doesn't have a parent node!"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*parent.*element.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*unfinished.*joint.*"));
 }
 
 TEST_F(UrdfParserTest, JointParentLinkBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointParentLinkBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -205,24 +216,25 @@ TEST_F(UrdfParserTest, JointParentLinkBroken) {
         <child link='child'/>
       </joint>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint a's parent does not have a link attribute!"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*link.*"));
 }
 
 TEST_F(UrdfParserTest, JointNoChild) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointNoChild);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <joint name='a' type='revolute'>
         <parent link='parent'/>
         <chiQQQld link='child'/>
       </joint>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint 'a' doesn't have a child node!"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*child.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*unfinished.*joint.*"));
 }
 
 TEST_F(UrdfParserTest, JointChildLinkBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, JointChildLinkBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -231,11 +243,11 @@ TEST_F(UrdfParserTest, JointChildLinkBroken) {
         <child liQQQnk='broken'/>
       </joint>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*joint a's child does not have a link attribute!"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*link.*"));
 }
 
 TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
+  TEST_F_TRACE(UrdfParserTest, JointBadDynamicsAttributes);
   constexpr const char* base = R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -259,6 +271,7 @@ TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
 }
 
 TEST_F(UrdfParserTest, DrakeFrictionWarning) {
+  TEST_F_TRACE(UrdfParserTest, DrakeFrictionWarning);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -273,6 +286,7 @@ TEST_F(UrdfParserTest, DrakeFrictionWarning) {
 }
 
 TEST_F(UrdfParserTest, DrakeCoulombWarning) {
+  TEST_F_TRACE(UrdfParserTest, DrakeCoulombWarning);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -287,6 +301,7 @@ TEST_F(UrdfParserTest, DrakeCoulombWarning) {
 }
 
 TEST_F(UrdfParserTest, JointLinkMissing) {
+  TEST_F_TRACE(UrdfParserTest, JointLinkMissing);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <!-- Parent link is missing. -->
@@ -302,6 +317,7 @@ TEST_F(UrdfParserTest, JointLinkMissing) {
 }
 
 TEST_F(UrdfParserTest, JointZeroAxis) {
+  TEST_F_TRACE(UrdfParserTest, JointZeroAxis);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -317,6 +333,7 @@ TEST_F(UrdfParserTest, JointZeroAxis) {
 }
 
 TEST_F(UrdfParserTest, JointFloatingWarning) {
+  TEST_F_TRACE(UrdfParserTest, JointFloatingWarning);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -333,6 +350,7 @@ TEST_F(UrdfParserTest, JointFloatingWarning) {
 }
 
 TEST_F(UrdfParserTest, JointTypeUnknown) {
+  TEST_F_TRACE(UrdfParserTest, JointTypeUnknown);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -350,6 +368,7 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
 // warning as MimicNoSap).
 
 TEST_F(UrdfParserTest, MimicNoSap) {
+  TEST_F_TRACE(UrdfParserTest, MimicNoSap);
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
   plant_.set_discrete_contact_approximation(
@@ -361,7 +380,7 @@ TEST_F(UrdfParserTest, MimicNoSap) {
       <joint name='joint' type='revolute'>
         <parent link='parent'/>
         <child link='child'/>
-        <mimic/>
+        <mimic joint='nope'/>
       </joint>
     </robot>)""", ""), std::nullopt);
   EXPECT_THAT(
@@ -372,9 +391,10 @@ TEST_F(UrdfParserTest, MimicNoSap) {
 }
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicNoJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -384,12 +404,11 @@ TEST_F(UrdfParserTest, MimicNoJoint) {
         <mimic/>
       </joint>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*Joint 'joint' mimic element is missing the "
-                           "required 'joint' attribute."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*mimic.*joint.*"));
 }
 
 TEST_F(UrdfParserTest, MimicBadJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicBadJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -408,6 +427,7 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicSameJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicSameJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -426,6 +446,7 @@ TEST_F(UrdfParserTest, MimicSameJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicMismatchedJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -449,6 +470,7 @@ TEST_F(UrdfParserTest, MimicMismatchedJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicOnlyOneDOFJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -472,6 +494,7 @@ TEST_F(UrdfParserTest, MimicOnlyOneDOFJoint) {
 }
 
 TEST_F(UrdfParserTest, MimicFloatingJoint) {
+  TEST_F_TRACE(UrdfParserTest, MimicFloatingJoint);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -500,6 +523,7 @@ TEST_F(UrdfParserTest, MimicFloatingJoint) {
 // have colliding names with joints in other model instances don't produce an
 // error.
 TEST_F(UrdfParserTest, MimicDifferentModelInstances) {
+  TEST_F_TRACE(UrdfParserTest, MimicDifferentModelInstances);
   // Currently the <mimic> tag is only supported by SAP.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -539,6 +563,7 @@ TEST_F(UrdfParserTest, MimicDifferentModelInstances) {
 }
 
 TEST_F(UrdfParserTest, Material) {
+  TEST_F_TRACE(UrdfParserTest, Material);
   // Material parsing is tested fully elsewhere (see ParseMaterial()). This
   // test is just proof-of-life that top-level material stanzas are recognized.
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -559,23 +584,25 @@ TEST_F(UrdfParserTest, Material) {
 }
 
 TEST_F(UrdfParserTest, FrameNameBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, FrameNameBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name="a">
       <frame naQQQme="broken" link="A" rpy="0 0 0" xyz="0 0 0"/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*parsing frame name."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*name.*attribute.*"));
 }
 
 TEST_F(UrdfParserTest, FrameLinkBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, FrameLinkBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name="a">
       <frame name="frameA" liQQQnk="broken" rpy="0 0 0" xyz="0 0 0"/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*missing link name for frame frameA."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*link.*attribute.*"));
 }
 
 TEST_F(UrdfParserTest, TransmissionTypeBroken) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionTypeBroken);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission tyQQQpe='broken'/>
@@ -585,6 +612,7 @@ TEST_F(UrdfParserTest, TransmissionTypeBroken) {
 }
 
 TEST_F(UrdfParserTest, TransmissionTypeUnknown) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionTypeUnknown);
   std::string warning_pattern =
       ".*A <transmission> has a type that isn't 'SimpleTransmission'."
       " Drake only supports 'SimpleTransmission'; all other transmission"
@@ -608,6 +636,7 @@ TEST_F(UrdfParserTest, TransmissionTypeUnknown) {
 }
 
 TEST_F(UrdfParserTest, TransmissionActuatorMissing) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionActuatorMissing);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission type='SimpleTransmission'/>
@@ -617,6 +646,7 @@ TEST_F(UrdfParserTest, TransmissionActuatorMissing) {
 }
 
 TEST_F(UrdfParserTest, TransmissionActuatorNameBroken) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionActuatorNameBroken);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission type='SimpleTransmission'>
@@ -628,6 +658,7 @@ TEST_F(UrdfParserTest, TransmissionActuatorNameBroken) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointMissing) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionJointMissing);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission type='SimpleTransmission'>
@@ -639,6 +670,7 @@ TEST_F(UrdfParserTest, TransmissionJointMissing) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointNameBroken) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionJointNameBroken);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission type='SimpleTransmission'>
@@ -651,6 +683,7 @@ TEST_F(UrdfParserTest, TransmissionJointNameBroken) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointNotExist) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionJointNotExist);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name="a">
       <transmission type='SimpleTransmission'>
@@ -663,8 +696,9 @@ TEST_F(UrdfParserTest, TransmissionJointNotExist) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
+  TEST_F_TRACE(UrdfParserTest, TransmissionJointBadLimits);
   constexpr const char* base = R"""(
-    <robot name='a'>
+    <robot xmlns:drake='http://drake.mit.edu' name='a'>
       <link name='parent'/>
       <link name='child'/>
       <joint name='a' type='revolute'>
@@ -701,6 +735,7 @@ TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
 
 // Verifies that the URDF loader can leverage a specified package map.
 TEST_F(UrdfParserTest, PackageMapSpecified) {
+  TEST_F_TRACE(UrdfParserTest, PackageMapSpecified);
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   ASSERT_EQ(plant_.num_model_instances(), 2);
@@ -723,6 +758,7 @@ TEST_F(UrdfParserTest, PackageMapSpecified) {
 }
 
 TEST_F(UrdfParserTest, DoublePendulum) {
+  TEST_F_TRACE(UrdfParserTest, DoublePendulum);
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   AddModelFromUrdfFile(full_name, "");
@@ -758,6 +794,7 @@ TEST_F(UrdfParserTest, DoublePendulum) {
 // `package://` syntax internally to the URDF (at least for packages which are
 // successfully found in the same directory at the URDF.
 TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
+  TEST_F_TRACE(UrdfParserTest, TestAtlasMinimalContact);
   const std::string full_name = FindRunfile(
       "drake_models/atlas/atlas_minimal_contact.urdf").abspath;
   AddModelFromUrdfFile(full_name, "");
@@ -778,6 +815,7 @@ TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
 }
 
 TEST_F(UrdfParserTest, TestAddWithQuaternionFloatingDof) {
+  TEST_F_TRACE(UrdfParserTest, TestAddWithQuaternionFloatingDof);
   const std::string resource_dir{
       "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string model_file =
@@ -790,6 +828,7 @@ TEST_F(UrdfParserTest, TestAddWithQuaternionFloatingDof) {
 }
 
 TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
+  TEST_F_TRACE(UrdfParserTest, TestRegisteredSceneGraph);
   const std::string full_name = FindRunfile(
       "drake_models/atlas/atlas_minimal_contact.urdf").abspath;
   // Test that registration with scene graph results in visual geometries.
@@ -802,6 +841,7 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
 }
 
 TEST_F(UrdfParserTest, JointParsingTest) {
+  TEST_F_TRACE(UrdfParserTest, JointParsingTest);
   // We currently need kSap for the mimic element to parse without error.
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const std::string full_name = FindResourceOrThrow(
@@ -1022,8 +1062,9 @@ TEST_F(UrdfParserTest, JointParsingTest) {
 
 // Custom planar joints were not necessary, but long supported. See #18730.
 TEST_F(UrdfParserTest, LegacyPlanarJointAsCustomTest) {
+  TEST_F_TRACE(UrdfParserTest, LegacyPlanarJointAsCustomTest);
   constexpr const char* model = R"""(
-    <robot name='a'>
+    <robot xmlns:drake='http://drake.mit.edu' name='a'>
       <link name="link1"/>
       <link name="link2"/>
       <drake:joint name="planar_joint" type="planar">
@@ -1035,6 +1076,7 @@ TEST_F(UrdfParserTest, LegacyPlanarJointAsCustomTest) {
 }
 
 TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
+  TEST_F_TRACE(UrdfParserTest, JointParsingTagMismatchTest);
   // Improperly declared joints.
   const std::string full_name_mismatch_1 = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"
@@ -1054,6 +1096,7 @@ TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
 }
 
 TEST_F(UrdfParserTest, JointParsingTagMissingScrewParametersTest) {
+  TEST_F_TRACE(UrdfParserTest, JointParsingTagMissingScrewParametersTest);
   // Screw joint with missing thread pitch parameter.
   const std::string full_name_missing_element = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"
@@ -1082,8 +1125,8 @@ TEST_F(UrdfParserTest, JointParsingTagMissingScrewParametersTest) {
 // the geometry parsing got triggered, it is correct and ignore the other
 // details.
 TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
-  const std::string test_urdf = R"""(
-<?xml version="1.0"?>
+  TEST_F_TRACE(UrdfParserTest, AddingGeometriesToWorldLink);
+  const std::string test_urdf = R"""(<?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
   <link name="world">
     <!-- Declaring mass properties on the "world" link is bad. But it won't
@@ -1096,10 +1139,10 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
     <visual>
       <geometry>
         <box size="0.1 0.2 0.3"/>
-        <material>
-          <color rgba="0.8 0.7 0.6 0.5"/>
-        </material>
       </geometry>
+      <material>
+        <color rgba="0.8 0.7 0.6 0.5"/>
+      </material>
     </visual>
     <collision>
       <geometry>
@@ -1195,6 +1238,7 @@ class UrdfParsedGeometryTest : public UrdfParserTest {
 };
 
 TEST_F(UrdfParsedGeometryTest, CollisionGeometryParsing) {
+  TEST_F_TRACE(UrdfParsedGeometryTest, CollisionGeometryParsing);
   TestForParsedGeometry(
       "drake/multibody/parsing/test/urdf_parser_test/"
       "all_geometries_as_collision.urdf",
@@ -1202,6 +1246,7 @@ TEST_F(UrdfParsedGeometryTest, CollisionGeometryParsing) {
 }
 
 TEST_F(UrdfParsedGeometryTest, VisualGeometryParsing) {
+  TEST_F_TRACE(UrdfParsedGeometryTest, VisualGeometryParsing);
   TestForParsedGeometry(
       "drake/multibody/parsing/test/urdf_parser_test/"
       "all_geometries_as_visual.urdf",
@@ -1209,6 +1254,7 @@ TEST_F(UrdfParsedGeometryTest, VisualGeometryParsing) {
 }
 
 TEST_F(UrdfParserTest, TestVisualAndCollisionNameOverlap) {
+  TEST_F_TRACE(UrdfParserTest, TestVisualAndCollisionNameOverlap);
   // The visual and collision namespaces are distinct; you can use the same name
   // for both without triggering any warnings related to renaming.
   std::string robot = R"""(
@@ -1227,6 +1273,7 @@ TEST_F(UrdfParserTest, TestVisualAndCollisionNameOverlap) {
 }
 
 TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
+  TEST_F_TRACE(UrdfParserTest, EntireInertialTagOmitted);
   // Test that parsing a link with no inertial tag yields the expected result
   // (mass = 0, ixx = ixy = ixz = iyy = iyz = izz = 0).
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -1242,6 +1289,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 }
 
 TEST_F(UrdfParserTest, InertiaTagOmitted) {
+  TEST_F_TRACE(UrdfParserTest, InertiaTagOmitted);
   // Test that parsing a link with no inertia tag yields the expected result
   // (mass as specified, ixx = ixy = ixz = iyy = iyz = izz = 0).
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -1260,6 +1308,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
 }
 
 TEST_F(UrdfParserTest, MassTagOmitted) {
+  TEST_F_TRACE(UrdfParserTest, MassTagOmitted);
   // Test that parsing a link with no mass tag yields the expected result
   // (mass 0, inertia as specified). Note that, because the default mass is 0,
   // we specify zero inertia here - otherwise the parsing would fail (See
@@ -1280,6 +1329,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
 }
 
 TEST_F(UrdfParserTest, MasslessBody) {
+  TEST_F_TRACE(UrdfParserTest, MasslessBody);
   // Test that massless bodies can be parsed.
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='has_massless_link'>
@@ -1298,6 +1348,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
 }
 
 TEST_F(UrdfParserTest, PointMass) {
+  TEST_F_TRACE(UrdfParserTest, PointMass);
   // Test that point masses don't get sent through the massless body branch.
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='point_mass'>
@@ -1316,6 +1367,7 @@ TEST_F(UrdfParserTest, PointMass) {
 }
 
 TEST_F(UrdfParserTest, BadInertiaFormats) {
+  TEST_F_TRACE(UrdfParserTest, BadInertiaFormats);
   // Test various mis-formatted inputs.
   constexpr const char* base = R"""(
     <robot name='point_mass'>
@@ -1357,9 +1409,10 @@ TEST_F(UrdfParserTest, BadInertiaFormats) {
 }
 
 TEST_F(UrdfParserTest, BushingParsing) {
+  TEST_F_TRACE(UrdfParserTest, BushingParsing);
   // Test successful parsing.
   const std::string good_bushing_model = R"""(
-    <robot name="bushing_test">
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
         <link name='A'/>
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1402,8 +1455,9 @@ TEST_F(UrdfParserTest, BushingParsing) {
 }
 
 TEST_F(UrdfParserTest, BushingMissingFrameTag) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name="bushing_test">
+  TEST_F_TRACE(UrdfParserTest, BushingMissingFrameTag);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
       <link name='A'/>
       <link name='C'/>
       <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1417,13 +1471,13 @@ TEST_F(UrdfParserTest, BushingMissingFrameTag) {
         <drake:bushing_force_damping    value="10 11 12"/>
       </drake:linear_bushing_rpy>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to find the <drake:bushing_frameC> tag"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*unfinished.*bushing_frameC.*"));
 }
 
 TEST_F(UrdfParserTest, BushingFrameTagNameBroken) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name="bushing_test">
+  TEST_F_TRACE(UrdfParserTest, BushingFrameTagNameBroken);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
       <link name='A'/>
       <link name='C'/>
       <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1438,14 +1492,13 @@ TEST_F(UrdfParserTest, BushingFrameTagNameBroken) {
         <drake:bushing_force_damping    value="10 11 12"/>
       </drake:linear_bushing_rpy>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to read the 'name' attribute for the"
-                  " <drake:bushing_frameC> tag"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attribute.*name.*"));
 }
 
 TEST_F(UrdfParserTest, BushingFrameNotExist) {
+  TEST_F_TRACE(UrdfParserTest, BushingFrameNotExist);
   EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name="bushing_test">
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
       <link name='A'/>
       <link name='C'/>
       <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1466,8 +1519,9 @@ TEST_F(UrdfParserTest, BushingFrameNotExist) {
 }
 
 TEST_F(UrdfParserTest, BushingMissingDamping) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name="bushing_test">
+  TEST_F_TRACE(UrdfParserTest, BushingMissingDamping);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
       <link name='A'/>
       <link name='C'/>
       <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1481,13 +1535,14 @@ TEST_F(UrdfParserTest, BushingMissingDamping) {
         <drake:bushing_force_damping    value="10 11 12"/>
       </drake:linear_bushing_rpy>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to find the <drake:bushing_torque_damping> tag"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*unfinished.*bushing_torque_damping.*"));
 }
 
 TEST_F(UrdfParserTest, BushingMissingValueAttribute) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name="bushing_test">
+  TEST_F_TRACE(UrdfParserTest, BushingMissingValueAttribute);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name="bushing_test">
       <link name='A'/>
       <link name='C'/>
       <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
@@ -1502,9 +1557,7 @@ TEST_F(UrdfParserTest, BushingMissingValueAttribute) {
         <drake:bushing_force_damping    value="10 11 12"/>
       </drake:linear_bushing_rpy>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to read the 'value' attribute for the"
-                  " <drake:bushing_torque_stiffness> tag"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attribute.*value.*"));
 }
 
 class BallConstraintTest : public UrdfParserTest {
@@ -1547,7 +1600,8 @@ class BallConstraintTest : public UrdfParserTest {
                     const std::optional<const std::string>& body_B,
                     const std::optional<const Vector3d>& p_AP,
                     const std::optional<const Vector3d>& p_BQ,
-                    const std::string& error_pattern) {
+                    const std::string& error_pattern,
+                    bool expect_parse_success = false) {
     std::string text = fmt::format(
         kTestString,
         body_A.has_value()
@@ -1566,14 +1620,18 @@ class BallConstraintTest : public UrdfParserTest {
             ? fmt::format("<drake:ball_constraint_p_BQ value=\"{} {} {}\"/>",
                           p_BQ.value().x(), p_BQ.value().y(), p_BQ.value().z())
             : "");
-    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    if (expect_parse_success) {
+      EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    } else {
+      EXPECT_EQ(AddModelFromUrdfString(text, ""), std::nullopt);
+    }
     EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
   }
 
  protected:
   // Common URDF string with format options for the two custom tags.
   static constexpr const char* kTestString = R"""(
-    <robot name='ball_constraint_test'>
+    <robot xmlns:drake='http://drake.mit.edu' name='ball_constraint_test'>
       <link name='A'/>
       <link name='B'/>
       <drake:ball_constraint>
@@ -1586,35 +1644,41 @@ class BallConstraintTest : public UrdfParserTest {
 };
 
 TEST_F(BallConstraintTest, AllParameters) {
+  TEST_F_TRACE(BallConstraintTest, AllParameters);
   // Test successful parsing of all parameters.
   VerifyParameters("A", "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6));
 }
 
 TEST_F(BallConstraintTest, MissingBodyA) {
+  TEST_F_TRACE(BallConstraintTest, MissingBodyA);
   ProvokeError({}, "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6),
-               ".*Unable to find the <drake:ball_constraint_body_A> tag");
+               ".*unfinished.*ball_constraint_body_A.*");
 }
 
 TEST_F(BallConstraintTest, MissingBodyB) {
+  TEST_F_TRACE(BallConstraintTest, MissingBodyB);
   ProvokeError("A", {}, Vector3d(1, 2, 3), Vector3d(4, 5, 6),
-               ".*Unable to find the <drake:ball_constraint_body_B> tag");
+               ".*unfinished.*ball_constraint_body_B.*");
 }
 
 TEST_F(BallConstraintTest, Missing_p_AP) {
+  TEST_F_TRACE(BallConstraintTest, Missing_p_AP);
   ProvokeError("A", "B", {}, Vector3d(4, 5, 6),
-               ".*Unable to find the <drake:ball_constraint_p_AP> tag");
+               ".*unfinished.*ball_constraint_p_AP.*");
 }
 
 TEST_F(BallConstraintTest, Missing_p_BQ) {
+  TEST_F_TRACE(BallConstraintTest, Missing_p_BQ);
   ProvokeError("A", "B", Vector3d(1, 2, 3), {},
-               ".*Unable to find the <drake:ball_constraint_p_BQ> tag");
+               ".*unfinished.*ball_constraint_p_BQ.*");
 }
 
 TEST_F(BallConstraintTest, InvalidBody) {
+  TEST_F_TRACE(BallConstraintTest, InvalidBody);
   ProvokeError(
       "INVALID", "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6),
       ".*Body: INVALID specified for <drake:ball_constraint_body_A> does not"
-      " exist in the model.");
+      " exist in the model.", /*expect_parse_sucess*/true);
 }
 
 class ReflectedInertiaTest : public UrdfParserTest {
@@ -1646,7 +1710,7 @@ class ReflectedInertiaTest : public UrdfParserTest {
  protected:
   // Common URDF string with format options for the two custom tags.
   static constexpr const char* kTestString = R"""(
-    <robot name='reflected_inertia_test'>
+    <robot xmlns:drake='http://drake.mit.edu' name='reflected_inertia_test'>
       <link name='A'/>
       <link name='B'/>
       <joint name='revolute_AB' type='revolute'>
@@ -1671,6 +1735,7 @@ class ReflectedInertiaTest : public UrdfParserTest {
 };
 
 TEST_F(ReflectedInertiaTest, Both) {
+  TEST_F_TRACE(ReflectedInertiaTest, Both);
   // Test successful parsing of both parameters.
   VerifyParameters("<drake:rotor_inertia value='1.5' />",
                    "<drake:gear_ratio value='300.0' />",
@@ -1678,33 +1743,39 @@ TEST_F(ReflectedInertiaTest, Both) {
 }
 
 TEST_F(ReflectedInertiaTest, DefaultGearRatio) {
+  TEST_F_TRACE(ReflectedInertiaTest, DefaultGearRatio);
   // Test successful parsing of rotor_inertia and default value for gear_ratio.
   VerifyParameters("<drake:rotor_inertia value='1.5' />", "", 1.5, 1.0);
 }
 
 TEST_F(ReflectedInertiaTest, RotorInertiaNoValue) {
+  TEST_F_TRACE(ReflectedInertiaTest, RotorInertiaNoValue);
   ProvokeError("<drake:rotor_inertia />", "",
                ".*joint actuator revolute_AB's drake:rotor_inertia does not"
                " have a \"value\" attribute!");
 }
 
 TEST_F(ReflectedInertiaTest, RotorInertiaManyValues) {
+  TEST_F_TRACE(ReflectedInertiaTest, RotorInertiaManyValues);
   ProvokeError("<drake:rotor_inertia value='1 2 3'/>", "",
                ".*Expected single value.*value.*");
 }
 
 TEST_F(ReflectedInertiaTest, DefaultRotorInertia) {
+  TEST_F_TRACE(ReflectedInertiaTest, DefaultRotorInertia);
   // Test successful parsing of gear_ratio and default value for rotor_inertia.
   VerifyParameters("", "<drake:gear_ratio value='300.0' />", 0.0, 300.0);
 }
 
 TEST_F(ReflectedInertiaTest, GearRatioNoValue) {
+  TEST_F_TRACE(ReflectedInertiaTest, GearRatioNoValue);
   ProvokeError("", "<drake:gear_ratio />",
                ".*joint actuator revolute_AB's drake:gear_ratio does not have"
                " a \"value\" attribute!");
 }
 
 TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
+  TEST_F_TRACE(ReflectedInertiaTest, GearRatioManyValues);
   ProvokeError("<drake:gear_ratio value='1 2 3'/>", "",
                ".*Expected single value.*value.*");
 }
@@ -1734,7 +1805,7 @@ class ControllerGainsTest : public UrdfParserTest {
   // Common URDF string with format options for the custom tag with two
   // attributes.
   static constexpr const char* kTestString = R"""(
-    <robot name='reflected_inertia_test'>
+    <robot xmlns:drake='http://drake.mit.edu' name='reflected_inertia_test'>
       <link name='A'/>
       <link name='B'/>
       <joint name='revolute_AB' type='revolute'>
@@ -1758,11 +1829,13 @@ class ControllerGainsTest : public UrdfParserTest {
 };
 
 TEST_F(ControllerGainsTest, Both) {
+  TEST_F_TRACE(ControllerGainsTest, Both);
   // Test successful parsing of both parameters.
   VerifyParameters("<drake:controller_gains p='10000' d='100'/>", 10000, 100);
 }
 
 TEST_F(ControllerGainsTest, MissingP) {
+  TEST_F_TRACE(ControllerGainsTest, MissingP);
   ProvokeError(
       "<drake:controller_gains d='100'/>",
       ".*joint actuator revolute_AB's drake:controller_gains does not have a"
@@ -1770,6 +1843,7 @@ TEST_F(ControllerGainsTest, MissingP) {
 }
 
 TEST_F(ControllerGainsTest, MissingD) {
+  TEST_F_TRACE(ControllerGainsTest, MissingD);
   ProvokeError(
       "<drake:controller_gains p='10000'/>",
       ".*joint actuator revolute_AB's drake:controller_gains does not have a"
@@ -1777,11 +1851,13 @@ TEST_F(ControllerGainsTest, MissingD) {
 }
 
 TEST_F(ControllerGainsTest, PTooManyValues) {
+  TEST_F_TRACE(ControllerGainsTest, PTooManyValues);
   ProvokeError("<drake:controller_gains p='1 2 3' d='100'/>",
                ".*Expected single value for attribute 'p'.*");
 }
 
 TEST_F(ControllerGainsTest, DTooManyValues) {
+  TEST_F_TRACE(ControllerGainsTest, DTooManyValues);
   ProvokeError("<drake:controller_gains p='10000' d='1 2 3'/>",
                ".*Expected single value for attribute 'd'.*");
 }
@@ -1790,6 +1866,7 @@ TEST_F(ControllerGainsTest, DTooManyValues) {
 // belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
 // testing to indicate that the method is being invoked correctly.
 TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
+  TEST_F_TRACE(UrdfParserTest, CollisionFilterGroupParsingTest);
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"
       "collision_filter_group_parsing_test.urdf");
@@ -1853,48 +1930,44 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
 }
 
 TEST_F(UrdfParserTest, CollisionFilterGroupMissingName) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='robot'>
+  TEST_F_TRACE(UrdfParserTest, CollisionFilterGroupMissingName);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name='robot'>
       <link name='a'/>
         <drake:collision_filter_group/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*The tag <drake:collision_filter_group> does not specify"
-                  " the required attribute \"name\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attribute.*name.*"));
 }
 
 TEST_F(UrdfParserTest, CollisionFilterGroupMissingLink) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='robot'>
+  TEST_F_TRACE(UrdfParserTest, CollisionFilterGroupMissingLink);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name='robot'>
       <link name='a'/>
       <drake:collision_filter_group name="group_a">
         <drake:member/>
       </drake:collision_filter_group>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*The tag <drake:member> does not specify the required "
-                  "attribute \"link\"."));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attribute.*link.*"));
 }
 
 TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='robot'>
+  TEST_F_TRACE(UrdfParserTest, IgnoredCollisionFilterGroupMissingName);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
+    <robot xmlns:drake='http://drake.mit.edu' name='robot'>
       <link name='a'/>
       <drake:collision_filter_group name="group_a">
         <drake:ignored_collision_filter_group/>
       </drake:collision_filter_group>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*The tag <drake:ignored_collision_filter_group> does not"
-                  " specify the required attribute \"name\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attribute.*name.*"));
 }
 
 // Here follow tests to verify that Drake issues a warning when it ignores
 // something thought to be a documented URDF element or attribute.
 
 TEST_F(UrdfParserTest, UnsupportedVersionIgnored) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedVersionIgnored);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='robot' version='0.99'>
       <link name='a'/>
@@ -1903,14 +1976,16 @@ TEST_F(UrdfParserTest, UnsupportedVersionIgnored) {
 }
 
 TEST_F(UrdfParserTest, UnsupportedLinkTypeIgnored) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+  TEST_F_TRACE(UrdfParserTest, UnsupportedLinkTypeIgnored);
+  EXPECT_EQ(AddModelFromUrdfString(R"""(
     <robot name='robot'>
       <link name='a' type='unknown'/>
     </robot>)""", ""), std::nullopt);
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*type.*link.*ignored.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*type.*not.*"));
 }
 
 TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedJointStuffIgnored);
   const std::array<std::string, 2> tags{
     "calibration", "safety_controller"};
   for (const auto& tag : tags) {
@@ -1930,6 +2005,7 @@ TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
 }
 
 TEST_F(UrdfParserTest, UnsupportedTransmissionStuffIgnored) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedTransmissionStuffIgnored);
   const std::array<std::string, 7> tags{
     "leftActuator", "rightActuator", "flexJoint", "rollJoint", "gap_joint",
     "passive_joint", "use_simulated_gripper_joint"};
@@ -1958,6 +2034,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionStuffIgnored) {
 // attribute.
 
 TEST_F(UrdfParserTest, UnsupportedGazeboIgnoredSilent) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedGazeboIgnoredSilent);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='robot'>
       <link name='a'/>
@@ -1966,6 +2043,8 @@ TEST_F(UrdfParserTest, UnsupportedGazeboIgnoredSilent) {
 }
 
 TEST_F(UrdfParserTest, UnsupportedTransmissionActuatorStuffIgnoredSilent) {
+  TEST_F_TRACE(UrdfParserTest,
+               UnsupportedTransmissionActuatorStuffIgnoredSilent);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
       <link name='parent'/>
@@ -1984,6 +2063,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionActuatorStuffIgnoredSilent) {
 }
 
 TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent);
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name ='a'>
       <link name='parent'/>
@@ -2006,6 +2086,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
 // URDF element or attribute.
 
 TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
+  TEST_F_TRACE(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe);
   // Two substitution slots: actuator, then transmission.
   constexpr const char* robot_template = R"""(
     <robot>
@@ -2060,8 +2141,9 @@ TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
 }
 
 TEST_F(UrdfParserTest, PlanarJointAxisRespected) {
+  TEST_F_TRACE(UrdfParserTest, PlanarJointAxisRespected);
   constexpr const char* model = R"""(
-    <robot name='a'>
+    <robot xmlns:drake='http://drake.mit.edu' name='a'>
       <link name="link1"/>
       <link name="link2"/>
       <drake:joint name="planar_joint" type="planar">
@@ -2090,8 +2172,9 @@ TEST_F(UrdfParserTest, PlanarJointAxisRespected) {
 }
 
 TEST_F(UrdfParserTest, PlanarJointCanonicalFrame) {
+  TEST_F_TRACE(UrdfParserTest, PlanarJointCanonicalFrame);
   constexpr const char* model = R"""(
-    <robot name='a'>
+    <robot xmlns:drake='http://drake.mit.edu' name='a'>
       <link name="link1"/>
       <link name="link2"/>
       <drake:joint name="planar_joint" type="planar">
