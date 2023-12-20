@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<robot name="panda_hand">
+<robot xmlns:drake='http://drake.mit.edu' name="panda_hand">
   <link name="panda_hand">
     <inertial>
       <mass value="0.73"/>
