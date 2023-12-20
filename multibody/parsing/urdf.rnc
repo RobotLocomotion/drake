@@ -118,10 +118,11 @@ grammar {
    Calibration = element calibration { Anything }
 
    Inertial = element inertial {
-      # The URDF language reference marks the inertia tag as required, but many
-      # Drake files treat it as optional. TODO(#20840) decide which disposition
-      # (required or optional) is best, and implement that.
-      (Origin? & Mass & Inertia?)
+      # The URDF language reference marks the mass and inertia tags as
+      # required, but many Drake files treat them as optional. TODO(#20840)
+      # decide which disposition (required or optional) is best, and implement
+      # that.
+      (Origin? & Mass? & Inertia?)
    }
    Visual = element visual {
       Name?, (Origin? & Geometry & Material? & DrakeAcceptingRenderer* )

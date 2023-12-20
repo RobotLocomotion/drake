@@ -6,6 +6,6 @@
     <axis xyz="1 0 0"/>
     <parent link="link1"/>
     <child link="link2"/>
-    <drake:screw_thread_pitch value="1"/>
+    <drake:screw_thread_pitch/>
   </drake:joint>
 </robot>
