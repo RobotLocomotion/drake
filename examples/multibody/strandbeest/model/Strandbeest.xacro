@@ -11,7 +11,7 @@
 
      https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
 -->
-<robot xmlns:drake="http://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacro="http://ros.org/wiki/xacro" xsi:schemaLocation="../../doc/drakeURDF.xsd" name="Strandbeest">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://ros.org/wiki/xacro" name="Strandbeest">
   <xacro:macro name="strandbeest" params="with_constraints">
     <xacro:include filename="Macros.xacro"/>
     <xacro:include filename="LegPair.xacro"/>
