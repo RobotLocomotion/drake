@@ -299,6 +299,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_schema_checker",
+    srcs = ["detail_schema_checker.cc"],
+    hdrs = ["detail_schema_checker.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:diagnostic_policy",
+        "//common:scope_exit",
+        "@rnv_internal//:rnv",
+    ],
+)
+
+drake_cc_library(
     name = "detail_select_parser",
     srcs = ["detail_select_parser.cc"],
     hdrs = ["detail_select_parser.h"],
@@ -443,6 +456,26 @@ drake_cc_binary(
     ],
     deps = [
         ":parser",
+        "//common:add_text_logging_gflags",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "schema_validator",
+    testonly = 1,
+    srcs = ["schema_validator.cc"],
+    add_test_rule = 1,
+    data = [
+        "urdf.rnc",
+        ":test_models",
+    ],
+    test_rule_args = [
+        "multibody/parsing/urdf.rnc",
+        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
+    ],
+    deps = [
+        ":detail_schema_checker",
         "//common:add_text_logging_gflags",
         "@gflags",
     ],
