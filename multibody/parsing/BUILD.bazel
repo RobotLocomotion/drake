@@ -226,13 +226,15 @@ drake_cc_library(
     hdrs = [
         "detail_urdf_geometry.h",
         "detail_urdf_parser.h",
+        "urdf_rnc.h",
     ],
     internal = True,
     visibility = ["//visibility:private"],
-    deps = [
+    interface_deps = [
         ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
+        ":detail_schema_checker",
         ":scoped_names",
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
