@@ -1,0 +1,25 @@
+diff --git rnl.c rnl.c
+index 65d899c..559d396 100644
+--- rnl.c
++++ rnl.c
+@@ -1,6 +1,7 @@
+ /* $Id$ */
+ 
+ #include <stdarg.h>
++#include <string.h>
+ #include "erbit.h"
+ #include "rn.h"
+ #include "rnc.h"
+@@ -46,10 +47,12 @@ int rnl_fn(char *fn) {
+ 
+ int rnl_fd(char *fn,int fd) {
+   struct rnc_source src;
++  memset(&src, 0, sizeof(src));
+   rnc_bind(&src,fn,fd); return load(&src);
+ }
+ 
+ int rnl_s(char *fn,char *s,int len) {
+   struct rnc_source src;
++  memset(&src, 0, sizeof(src));
+   rnc_stropen(&src,fn,s,len); return load(&src);
+ }
