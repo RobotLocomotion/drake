@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" xmlns:drake="https://drake.mit.edu">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" xmlns:drake="http://drake.mit.edu">
 
 <!--
   Author: Felix Messmer
@@ -548,7 +548,6 @@
     </joint>
 
     <link name="${prefix}wrist_2_link">
-      <origin rpy="${pi / 2} 0 0" xyz="0.0 0.0 0.0"/>
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
