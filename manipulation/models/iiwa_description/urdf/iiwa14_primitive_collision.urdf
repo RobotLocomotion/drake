@@ -66,7 +66,6 @@
       <geometry>
         <cylinder length="0.17" radius="0.139"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
     <self_collision_checking>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -102,7 +101,6 @@
       <geometry>
         <cylinder length="0.29" radius="0.101"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_1 and link_2 -->
@@ -141,7 +139,6 @@
       <geometry>
         <cylinder length="0.29" radius="0.101"/>
       </geometry>
-      <material name="Orange"/>
     </collision>
   </link>
   <!-- joint between link_2 and link_3 -->
@@ -187,7 +184,6 @@
       <geometry>
         <cylinder length="0.29" radius="0.092"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_3 and link_4 -->
@@ -226,7 +222,6 @@
       <geometry>
         <cylinder length="0.25" radius="0.092"/>
       </geometry>
-      <material name="Orange"/>
     </collision>
   </link>
   <!-- joint between link_4 and link_5 -->
@@ -272,7 +267,6 @@
       <geometry>
         <cylinder length="0.29" radius="0.07"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <!-- joint between link_5 and link_6 -->
@@ -313,7 +307,6 @@
             used despite being in "primitive" mode. -->
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_6.obj"/>
       </geometry>
-      <material name="Orange"/>
     </collision>
   </link>
   <!-- joint between link_6 and link_7 -->
@@ -347,7 +340,6 @@
             used despite being in "primitive" mode. -->
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7.obj"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <joint name="iiwa_joint_ee" type="fixed">
