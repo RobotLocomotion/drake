@@ -72,7 +72,7 @@ namespace {
 /* Computes the minimum and maximum values that can be attained along a certain
 dimension for a point constrained to lie within a convex set. */
 const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
-    const ConvexSet& region, int dimension) {
+    const ConvexSet& region, const int dimension) {
   // TODO(cohnt) centralize this function in geometry/optimization, by making it
   // a member of ConvexSet. Also potentially only compute the value once, and
   // then return the pre-computed value instead of re-computing.
@@ -80,22 +80,31 @@ const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
   MathematicalProgram prog;
   VectorXDecisionVariable y =
       prog.NewContinuousVariables(region.ambient_dimension());
-  VectorXDecisionVariable z =
-      prog.NewContinuousVariables(region.ambient_dimension());
   region.AddPointInSetConstraints(&prog, y);
-  region.AddPointInSetConstraints(&prog, z);
   VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
   objective_vector[dimension] = 1;
-  prog.AddLinearCost(objective_vector.dot(y - z));
+  auto objective = prog.AddLinearCost(objective_vector, y);
 
   auto result = Solve(prog);
   if (!result.is_success()) {
     throw std::runtime_error(
-        "GcsTrajectoryOptimization: Failed to compute upper and lower bounds "
-        "of a convex set!");
+        "GcsTrajectoryOptimization: Failed to compute lower bound of a convex "
+        "set!");
   }
+  const double lower_bound = result.GetSolution(y)[dimension];
 
-  return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
+  objective_vector[dimension] = -1;
+  objective.evaluator()->UpdateCoefficients(objective_vector);
+
+  result = Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "GcsTrajectoryOptimization: Failed to compute upper bound of a convex "
+        "set!");
+  }
+  const double upper_bound = result.GetSolution(y)[dimension];
+
+  return {lower_bound, upper_bound};
 }
 
 /** Given a convex set, and a list of indices corresponding to continuous
@@ -1082,7 +1091,8 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
 }
 
 bool CheckIfSatisfiesConvexityRadius(
-    const ConvexSet& convex_set, std::vector<int> continuous_revolute_joints) {
+    const ConvexSet& convex_set,
+    const std::vector<int>& continuous_revolute_joints) {
   for (const int& j : continuous_revolute_joints) {
     auto [min_value, max_value] =
         GetMinimumAndMaximumValueAlongDimension(convex_set, j);
@@ -1126,14 +1136,14 @@ ConvexSets PartitionConvexSet(
       // sets ended, to prevent the infinite loop, and for later deletion.
       const int j_max = sets.size();
       for (int j = 0; j < j_max; ++j) {
-        for (double k = min_value; k < max_value;
-             k += convexity_radius_step - epsilon) {
+        for (double lower_bound = min_value; lower_bound < max_value;
+             lower_bound += convexity_radius_step - epsilon) {
           Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, dim);
           Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
           A(0, i) = 1;
-          b[0] = k + convexity_radius_step;
+          b[0] = lower_bound + convexity_radius_step;
           A(1, i) = -1;
-          b[1] = -k;
+          b[1] = -lower_bound;
           HPolyhedron chunk_bbox(A, b);
           Intersection candidate_set(*sets[j], chunk_bbox);
           if (!candidate_set.IsEmpty()) {
@@ -1151,8 +1161,8 @@ ConvexSets PartitionConvexSet(
 }
 
 ConvexSets PartitionConvexSet(
-    ConvexSets convex_sets, const std::vector<int>& continuous_revolute_joints,
-    const double epsilon) {
+    const ConvexSets& convex_sets,
+    const std::vector<int>& continuous_revolute_joints, const double epsilon) {
   DRAKE_THROW_UNLESS(convex_sets.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets[0] != nullptr);
   ThrowsForInvalidContinuousJointsList(convex_sets[0]->ambient_dimension(),

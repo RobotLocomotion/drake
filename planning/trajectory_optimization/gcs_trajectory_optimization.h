@@ -554,10 +554,10 @@ general definition of convexity radius. When dealing with continuous revolute
 joints, respecting the convexity radius entails that each convex set has a width
 of stricty less than π along each dimension corresponding to a continuous
 revolute joint. Each entry in continuous_revolute_joints must be non-negative,
-less than num_positions, and unique. */
+less than convex_set's ambient dimension, and unique. */
 bool CheckIfSatisfiesConvexityRadius(
     const geometry::optimization::ConvexSet& convex_set,
-    std::vector<int> continuous_revolute_joints);
+    const std::vector<int>& continuous_revolute_joints);
 
 /** Partitions a convex set into (smaller) convex sets whose union is the
 original set and that each respect the convexity radius as in
@@ -566,8 +566,9 @@ partitioning sets into pieces whose width is less than or equal to π-ϵ. Each
 entry in continuous_revolute_joints must be non-negative, less than
 num_positions, and unique.
 @param epsilon is the ϵ value used for the convexity radius inequality. The
-partitioned sets are made to overlap by ϵ along each dimension, for numerical
-purposes.
+partitioned sets are made by intersecting convex_set with axis-aligned
+bounding boxes that respect the convexity radius. These boxes are made to
+overlap by ϵ along each dimension, for numerical purposes.
 @return the vector of convex sets that each respect convexity radius.
 @throws std::exception if ϵ <= 0.
 @throws std::exception if the input convex set is unbounded.
@@ -585,7 +586,7 @@ non-negative, less than num_positions, and unique.
 ambient dimension.
 @throws std::exception if ϵ <= 0. */
 geometry::optimization::ConvexSets PartitionConvexSet(
-    geometry::optimization::ConvexSets convex_sets,
+    const geometry::optimization::ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 

@@ -8,6 +8,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -33,6 +35,8 @@ using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
+using geometry::optimization::Hyperrectangle;
+using geometry::optimization::Intersection;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
@@ -1332,7 +1336,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
       "interval.*");
 }
 
-bool PointInASet(const ConvexSets& sets, Eigen::VectorXd point, double kTol) {
+bool PointInASet(const ConvexSets& sets, const Eigen::VectorXd& point,
+                 const double kTol) {
   for (int i = 0; i < ssize(sets); ++i) {
     if (sets[i]->PointInSet(point, kTol)) {
       return true;
@@ -1388,6 +1393,19 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
       PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets2.size(), 2);
   DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets2, 1));
+
+  // Check that sets overlap by epsilon.
+  const auto maybe_intersection_bbox =
+      Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
+          Intersection(*sets2[0], *sets2[1]));
+  ASSERT_TRUE(maybe_intersection_bbox.has_value());
+  const Hyperrectangle intersection_bbox = maybe_intersection_bbox.value();
+  for (int i = 0; i < intersection_bbox.ambient_dimension(); ++i) {
+    // Due to solve numerics, the overlap may be slightly less than the given
+    // epsilon value.
+    EXPECT_TRUE(intersection_bbox.ub()[i] - intersection_bbox.lb()[i] >=
+                epsilon - (epsilon * 1e5));
+  }
 
   // Example 3: partition along no dimensions.
   Eigen::Matrix<double, 2, 4> vertices3;
