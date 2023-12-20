@@ -1,0 +1,253 @@
+# Schema for URDF as seen and used by Drake.
+# Relax NG Compact Syntax. See https://relaxng.org/
+#
+# URDF language reference:
+# https://wiki.ros.org/urdf/XML
+#
+# Not particularly authoritative URDF schema:
+# https://github.com/ros/urdfdom/blob/4.0.0/xsd/urdf.xsd
+#
+#
+# An external-to-drake way to validate:
+#  $ apt install jing
+#  $ jing -c urdf.rnc [ROBOT-FILE...]
+#
+# A faster way (that could maybe get linked directly into drake later):
+#   $ git clone git@github.com:hartwork/rnv.git
+#   $ cd rnv
+#   $ apt install asciidoc-base  # could skip, with some patching
+#   $ apt install libexpat1-dev
+#   $ ./bootstrap
+#   $ ./configure
+#   $ make
+#   $ ./rnv urdf.rnc [ROBOT-FILE]
+#
+
+# Enumerate the drake namespace and the anonymous URDF-spec "local" namespace.
+namespace drake = "http://drake.mit.edu"
+namespace local = ""
+
+# Define the grammar for URDF, drake namespaced (e.g. drake:joint) and legacy
+# (e.g. frame) extensions, and indicate where other foreign namespace
+# extensions are permitted. As a rule, URDF-specified nodes are open to foreign
+# extensions, drake-specified nodes are not.
+grammar {
+   start = Robot
+   Robot = element robot {
+      Name?,
+      # The version attribute is proposed in urdf.xsd, but not documented
+      # elsehwere.
+      attribute version { text }?,
+      ForeignAttributes,
+      (Joint* &
+         LinkE* &
+         Frame* &
+         MaterialGlobal* &
+         Transmission* &
+         DrakeBallConstraint* &
+         DrakeJoint* &
+         DrakeLinearBushingRpy* &
+         DrakeCollisionFilterGroup* &
+         Gazebo* &
+         ForeignElements)
+   }
+
+   # TODO(#20837): Frame is a legacy Drake extension that is not properly
+   # namespaced.
+   Frame = element frame { Name, LinkA, Pose }
+
+
+   Joint = element joint {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse?, Type, ForeignAttributes,
+         (JointSubElements &
+         ForeignElements))
+   }
+
+   DrakeJoint = element drake:joint {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse?, Type,
+         (JointSubElements &
+            DrakeScrewThreadPitch?))
+   }
+   DrakeLinearBushingRpy = element drake:linear_bushing_rpy {
+      element drake:bushing_frameA { Name } &
+      element drake:bushing_frameC { Name } &
+      element drake:bushing_torque_stiffness { Value } &
+      element drake:bushing_torque_damping { Value } &
+      element drake:bushing_force_stiffness { Value } &
+      element drake:bushing_force_damping { Value }
+   }
+   JointSubElements = Origin? &
+      Parent &
+      Child &
+      Axis? &
+      Dynamics? &
+      Limit? &
+      Calibration? &
+      SafetyController? &
+      Mimic?
+
+   # Drake ignores these, but gives better error messages within the parser
+   # than schema checking would.
+   Gazebo = element gazebo { Anything }
+   Calibration = element calibration { Anything }
+   SafetyController = element safety_controller { Anything }
+
+   LinkE = element link {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse?,
+         # The link@type attribute is seen in the urdf.xsd, but not documented
+         # elsewhere.
+         Type?,
+         ForeignAttributes,
+      (Inertial? & Visual* & Collision* & SelfCollisionChecking* &
+         ForeignElements))
+   }
+
+   MaterialGlobal = element material {
+      Name, ForeignAttributes, (Color? & Texture? & ForeignElements) }
+
+   Material = element material {
+      Name?, ForeignAttributes, (Color? & Texture? & ForeignElements) }
+
+   # Transmission specs seem contradictory and full of lies; best to give up.
+   Transmission = element transmission { Anything }
+
+   Origin = element origin { Pose, ForeignNodes }
+   Parent = element parent { LinkA, ForeignNodes }
+   Child = element child { LinkA, ForeignNodes }
+   Axis = element axis { attribute xyz { text }?, ForeignNodes }
+   Dynamics = element dynamics {
+      attribute damping { text }?,
+      attribute friction { text }?,
+      ForeignNodes
+   }
+
+   Limit = element limit {
+      attribute lower { text }?,
+      attribute upper { text }?,
+      attribute effort { text }?,
+      attribute velocity { text }?,
+      attribute drake:acceleration { text }?,
+      ForeignNodes
+   }
+
+   Mimic = element mimic {
+      attribute joint { text },
+      attribute multiplier { text }?,
+      attribute offset { text }?,
+      ForeignNodes
+   }
+
+   Inertial = element inertial {
+      ForeignAttributes,
+      # The URDF language reference marks the mass and inertia tags as
+      # required, but many Drake files treat them as optional. TODO(#20840)
+      # decide which disposition (required or optional) is best, and implement
+      # that.
+      (Origin? & Mass? & Inertia? & ForeignElements)
+   }
+   Visual = element visual {
+      Name?, ForeignAttributes,
+      (Origin? & Geometry & Material? & DrakeAcceptingRenderer* &
+         ForeignElements)
+   }
+
+   DrakeAcceptingRenderer = element drake:accepting_renderer { Name }
+   Collision = element collision {
+      Name?, ForeignAttributes,
+      (Origin? & Geometry & Verbose? & DrakeProximityProperties? &
+         ForeignElements)
+   }
+
+   SelfCollisionChecking = element self_collision_checking {
+      Name?, ForeignAttributes,
+      (Origin? & Geometry & Material? & Verbose? &
+         ForeignElements)
+   }
+
+   Geometry = element geometry {
+      ForeignAttributes,
+      # Capsule is non-standard magic: bullet has it, ROS is torn.
+      ((Box | Cylinder | Sphere | Mesh | Capsule | DrakeCapsule | DrakeEllipsoid) &
+         ForeignElements)
+   }
+
+   Inertia = element inertia {
+      attribute ixx { text }?,
+      attribute ixy { text }?,
+      attribute ixz { text }?,
+      attribute iyy { text }?,
+      attribute iyz { text }?,
+      attribute izz { text }?,
+      ForeignNodes
+   }
+
+   Box = element box { attribute size { text }, ForeignNodes }
+   Capsule = element capsule { CapsuleContents, ForeignNodes }
+   DrakeCapsule = element drake:capsule { CapsuleContents }
+   CapsuleContents = ( attribute radius { text }, attribute length { text} )
+   Cylinder = element cylinder {
+      attribute radius { text }, attribute length { text},
+      ForeignNodes
+   }
+   Mesh = element mesh {
+      attribute filename { text }, attribute scale { text }?,
+      DrakeDeclareConvex?, ForeignNodes }
+   DrakeDeclareConvex = element drake:declare_convex { empty }
+   Sphere = element sphere { attribute radius { text }, ForeignNodes }
+   DrakeEllipsoid = element drake:ellipsoid {
+      attribute a { text }, attribute b { text }, attribute c { text } }
+
+   Color = element color { attribute rgba { text }, ForeignNodes }
+   Mass = element mass { Value, ForeignNodes }
+   Texture = element texture { attribute filename { text }, ForeignNodes }
+   Verbose = element verbose { Value, ForeignNodes }
+
+   # drake_ignore is legacy and should go away.
+   DrakeIgnoreFalse = attribute drake_ignore { string - "true" }
+   DrakeIgnoreTrue = attribute drake_ignore { "true" }
+
+   LinkA = attribute link { text }
+   Pose = attribute xyz { text }?, attribute rpy { text }?
+   Name = attribute name { text }
+   Type = attribute type { text }
+   Value = attribute value { text }
+
+   DrakeBallConstraint = element drake:ball_constraint {
+      element drake:ball_constraint_body_A { Name } &
+      element drake:ball_constraint_body_B { Name } &
+      element drake:ball_constraint_p_AP { Value } &
+      element drake:ball_constraint_p_BQ { Value }
+   }
+
+   DrakeCollisionFilterGroup = element drake:collision_filter_group {
+      Name, attribute ignore { text }?,
+      (DrakeMember* & DrakeMemberGroup* & DrakeIgnoredCollisionFilterGroup* )
+   }
+   DrakeMember = element drake:member { LinkA }
+   DrakeMemberGroup = element drake:member_group { Name }
+   DrakeIgnoredCollisionFilterGroup = element drake:ignored_collision_filter_group { Name }
+
+   DrakeProximityProperties = element drake:proximity_properties {
+      ( element drake:compliant_hydroelastic { empty } |
+         element drake:rigid_hydroelastic { empty } )? &
+      element drake:hunt_crossley_dissipation { Value }? &
+      element drake:hydroelastic_modulus { Value }? &
+      element drake:mesh_resolution_hint { Value }? &
+      element drake:mu_dynamic { Value }? &
+      element drake:mu_static { Value }? &
+      element drake:point_contact_stiffness { Value }?
+   }
+   DrakeScrewThreadPitch = element drake:screw_thread_pitch { Value }
+
+   # Patterns for things we pass over in silence.
+   Anything = ( element * { Anything } | attribute * { text } | text )*
+   AnyE = ( element * { Anything } )*
+
+   # Support for foreign namespaced nodes.
+   ForeignElements = element * - (local:* | drake:*) { Anything }*
+   ForeignAttributes = attribute * - (local:* | drake:*) { text }*
+   ForeignNodes = ( ForeignAttributes | ForeignElements )*
+}
