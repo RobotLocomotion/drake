@@ -24,9 +24,7 @@
       Positive origin axes extend "forward" for X and "left" for Y, with
       respect to the robot arm origins.
   -->
-  <link name="homecart_base_link">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </link>
+  <link name="homecart_base_link"/>
   <xacro:property name="arm_mount_cantilever_length" value="0.254"/>
   <xacro:property name="arm_mount_cantilever_height" value="0.015"/>
   <xacro:property name="arm_mount_stack_plate_side" value="0.1275"/>
@@ -104,9 +102,7 @@
       <parent link="${side}arm_mount_cantilever_link"/>
       <child link="${side}arm_mount_stack_link"/>
     </joint>
-    <link name="${side}arm_base_link">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-    </link>
+    <link name="${side}arm_base_link"/>
     <joint name="${side}arm_base_joint" type="fixed">
       <origin xyz="0 0 ${num_plates*0.02}" rpy="0 0 0"/>
       <parent link="${side}arm_mount_stack_link"/>
@@ -222,7 +218,7 @@
       <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
     </inertial>
     <visual>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/tri_homecart/homecart_bimanual_upper_structure.obj"/>
       </geometry>
