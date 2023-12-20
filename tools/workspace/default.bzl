@@ -75,6 +75,7 @@ load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
+load("//tools/workspace/rnv_internal:repository.bzl", "rnv_internal_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/rules_cc:repository.bzl", "rules_cc_repository")  # noqa
 load("//tools/workspace/rules_license:repository.bzl", "rules_license_repository")  # noqa
@@ -271,6 +272,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     if "qhull_internal" not in excludes:
         qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
+    if "rnv_internal" not in excludes:
+        rnv_internal_repository(name = "rnv_internal", mirrors = mirrors)
     if "ros_xacro_internal" not in excludes:
         ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
     if "rules_cc" not in excludes:

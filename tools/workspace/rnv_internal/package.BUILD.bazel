@@ -1,0 +1,73 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_linkonly_library",
+)
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:private"])
+
+# Group the headers exported by this library.
+cc_library(
+    name = "hdrs",
+    hdrs = ["er.h", "rnl.h", "xcl.h"],
+)
+
+# Compile the code (using both its exported headers and its private headers).
+cc_library(
+    name = "compiled",
+    srcs = glob(
+        ["*.c"],
+        exclude = ["arx.c", "rvp.c", "test.c", "xsdck.c"],
+        allow_empty = False,
+    ),
+    hdrs = glob(["rx_cls_*.c", "*.h"], allow_empty = False),
+    copts = [
+        "-Wno-all",
+        "-Wno-empty-body",
+        "-fvisibility=hidden",
+    ],
+    defines = [
+        "EXPAT_H=<expat.h>",
+        "UNISTD_H=<unistd.h>",
+        "SUPPRESS_MAIN",
+        'ARX_VERSION=\\"dontcare\\"',
+        'RNV_VERSION=\\"dontcare\\"',
+        'RVP_VERSION=\\"dontcare\\"',
+    ],
+    linkstatic = True,
+    deps = [":hdrs"],
+)
+
+# Strip the private headers out; we just want the object code.
+cc_linkonly_library(
+    name = "archive",
+    deps = [":compiled"],
+)
+
+# Combine the public headers with the object code.
+# This does not provide the private headers.
+cc_library(
+    name = "rnv",
+    linkstatic = True,
+    deps = [
+        ":archive",
+        ":hdrs",
+        "@expat_internal//:expat",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["COPYING"],
+    visibility = ["//visibility:public"],
+)
