@@ -35,6 +35,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "urdf_schema",
+    srcs = ["urdf.rnc"],
+    visibility = ["//visibility:public"],
+)
+
 _DM_CONTROL_MUJOCO_FILES = forward_files(
     srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
     dest_prefix = "",
@@ -62,6 +68,22 @@ genrule(
     outs = ["drake_models.json"],
     cmd = "cp $< $@",
     visibility = ["//visibility:public"],
+)
+
+# Convert the compact schema to a C-style header defining its contents as a
+# data block. Use `sed` stream editing to remove directory structure noise from
+# the defined symbols, and to add a linter-required `#pragma once` line.
+_HEADER_CONVERT_COMMAND = r"""
+( echo '#pragma once' ; xxd -i $< ) \
+| sed 's# [a-z_]*\(multibody_.*_rnc\)# \1#g' > $@
+"""
+
+genrule(
+    name = "urdf_rnc_h",
+    srcs = ["urdf.rnc"],
+    outs = ["urdf_rnc.h"],
+    cmd = _HEADER_CONVERT_COMMAND,
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(

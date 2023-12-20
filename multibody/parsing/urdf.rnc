@@ -1,0 +1,202 @@
+# Schema for URDF as seen and used by Drake.
+# Relax NG Compact Syntax.
+#
+# An easy but runtime-slow way to validate:
+#  $ apt install jing
+#  $ jing -c urdf.rnc [ROBOT-FILE...]
+#
+# A faster way (that could maybe get linked directly into drake later):
+#   $ git clone git@github.com:hartwork/rnv.git
+#   $ cd rnv
+#   $ apt install asciidoc-base  # could skip, with some patching
+#   $ apt install libexpat1-dev
+#   $ ./bootstrap
+#   $ ./configure
+#   $ make
+#   $ ./rnv urdf.rnc [ROBOT-FILE]
+#
+# TODO proper Drake tag checking
+# TODO refine open schema tricks
+namespace drake = "http://drake.mit.edu"
+
+grammar {
+   start = Robot
+   Robot = element robot {
+      Name?, attribute version { text }?,
+      (Joint* &
+         LinkE* &
+         Frame* &
+         MaterialGlobal* &
+         Transmission* &
+         DrakeBallConstraint* &
+         DrakeJoint* &
+         DrakeLinearBushingRpy* &
+         DrakeCollisionFilterGroup* &
+         Gazebo* &
+         ObsoleteLoopJoint* &
+         Force*)
+   }
+
+   # This appears to be a bullet extension.
+   Force = element force_element { Anything }
+
+   # Extension back doors.
+   Gazebo = element gazebo { Anything }
+   ObsoleteLoopJoint = element loop_joint { Anything }
+
+   Frame = element frame { Name, LinkA, Pose }
+
+   Joint = element joint {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse? , Type,
+         (Origin? &
+            Parent &
+            Child &
+            Axis? &
+            Calibration? &
+            Dynamics? &
+            Limit? &
+            SafetyController? &
+            Mimic?))
+   }
+   DrakeJoint = element drake:joint {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse? , Type,
+         (Origin? &
+            Parent &
+            Child &
+            Axis? &
+            Calibration? &
+            Dynamics? &
+            Limit? &
+            SafetyController? &
+            Mimic? &
+            DrakeScrewThreadPitch?))
+   }
+   DrakeLinearBushingRpy = element drake:linear_bushing_rpy {
+      element drake:bushing_frameA { Name } &
+      element drake:bushing_frameC { Name } &
+      element drake:bushing_torque_stiffness { Value } &
+      element drake:bushing_torque_damping { Value } &
+      element drake:bushing_force_stiffness { Value } &
+      element drake:bushing_force_damping { Value }
+   }
+
+   LinkE = element link {
+      (Name, DrakeIgnoreTrue, AnyE) |
+      (Name, DrakeIgnoreFalse? ,
+      (Inertial? & Visual* & Collision* & SelfCollisionChecking*))
+   }
+   MaterialGlobal = element material { Name, (Color? & Texture?) }
+   Material = element material { Name?, (Color? & Texture?) }
+   # Transmission specs seem contradictory and full of lies; best to give up.
+   Transmission = element transmission { Anything }
+
+   Origin = element origin { Pose }
+   Parent = element parent { LinkA }
+   Child = element child { LinkA }
+   Axis = element axis { attribute xyz { text }? }
+   Calibration = element calibration {
+      attribute reference_position { text }?,
+      attribute rising { text }?,
+      attribute falling { text }?
+   }
+   Dynamics = element dynamics {
+      attribute damping { text }?,
+      attribute friction { text }?,
+      # Paleo-Drake extension; now ignored. Perhaps it should go.
+      attribute coulomb_window { text }?
+   }
+   Limit = element limit {
+      attribute lower { text }?,
+      attribute upper { text }?,
+      attribute effort { text }?,
+      attribute velocity { text }?,
+      attribute drake:acceleration { text }?
+   }
+   # Drake ignores this, so don't police it here.
+   SafetyController = element safety_controller { Anything }
+   Mimic = element mimic {
+      attribute joint { text },
+      attribute multiplier { text }?,
+      attribute offset { text }?
+   }
+
+   Inertial = element inertial {
+      (Origin? & Mass? & Inertia?)
+   }
+   Visual = element visual {
+      Name?, (Origin? & Geometry & Material? & DrakeAcceptingRenderer? )
+   }
+   DrakeAcceptingRenderer = element drake:accepting_renderer { Name }
+   Collision = element collision {
+      Name?, (Origin? & Geometry & Material? & Verbose? & DrakeProximityProperties? )
+   }
+   SelfCollisionChecking = element self_collision_checking {
+      Name?, (Origin? & Geometry & Material? & Verbose?)
+   }
+
+   Geometry = element geometry {
+      # Capsule is non-standard magic: bullet has it, ROS is torn.
+      (Box | Cylinder | Sphere | Mesh | Capsule | DrakeCapsule | DrakeEllipsoid )
+   }
+
+   Inertia = element inertia {
+      attribute ixx { text }?,
+      attribute ixy { text }?,
+      attribute ixz { text }?,
+      attribute iyy { text }?,
+      attribute iyz { text }?,
+      attribute izz { text }?
+   }
+
+   Box = element box { attribute size { text }? }
+   Capsule = element capsule { CapsuleContents }
+   DrakeCapsule = element drake:capsule { CapsuleContents }
+   CapsuleContents = ( attribute radius { text }, attribute length { text} )
+   Cylinder = element cylinder { attribute radius { text }, attribute length { text} }
+   Mesh = element mesh { attribute filename { text }, attribute scale { text }?,
+      DrakeDeclareConvex? }
+   DrakeDeclareConvex = element drake:declare_convex { empty }
+   Sphere = element sphere { attribute radius { text } }
+   DrakeEllipsoid = element drake:ellipsoid {
+      attribute a { text }, attribute b { text }, attribute c { text } }
+
+   Color = element color { attribute rgba { text }? }
+   Mass = element mass { Value? }
+   Texture = element texture { attribute filename { text } }
+   Verbose = element verbose { Value }
+
+   # drake_ignore is dumb and should go away.
+   DrakeIgnoreFalse = attribute drake_ignore { string - "true" }
+   DrakeIgnoreTrue = attribute drake_ignore { "true" }
+
+   LinkA = attribute link { text }
+   Pose = attribute xyz { text }?, attribute rpy { text }?
+   Name = attribute name { text }
+   Type = attribute type { text }
+   Value = attribute value { text }
+
+   DrakeBallConstraint = element drake:ball_constraint {
+      element drake:ball_constraint_body_A { Name } &
+      element drake:ball_constraint_body_B { Name } &
+      element drake:ball_constraint_p_AP { Value } &
+      element drake:ball_constraint_p_BQ { Value }
+   }
+
+   DrakeCollisionFilterGroup = element drake:collision_filter_group {
+      Name, attribute ignore { text }?,
+      (DrakeMember* & DrakeIgnoredCollisionFilterGroup* )
+   }
+   DrakeMember = element drake:member { LinkA }
+   DrakeIgnoredCollisionFilterGroup = element drake:ignored_collision_filter_group { Name }
+
+   # TBD
+   DrakeProximityProperties = element drake:proximity_properties { Anything }
+   DrakeScrewThreadPitch = element drake:screw_thread_pitch { Anything }
+
+   # Patterns for things we pass over in silence.
+   Anything = ( element * { Anything } | attribute * { text } | text )*
+   AnyA = ( attribute * { Anything } )*
+   AnyE = ( element * { Anything } )*
+}
