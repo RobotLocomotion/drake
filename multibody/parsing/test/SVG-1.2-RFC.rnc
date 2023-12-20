@@ -1,0 +1,1676 @@
+#   SVG-1.2-RFC.rnc
+#
+#   SVG 1.2 RFC RNC schema as specified in RFC 7996.
+#
+#   This schema is automatically included by the parent RFCXML v3 RNC schema
+#   and so needs to be present for succesful validation but does not need to 
+#   be specified separately.
+#
+#   Documentation is at https://authors.ietf.org/en/templates-and-schemas
+#
+#   Nevil Brownlee, Tue Jan 16 2018 (NZDT)
+
+default namespace = "http://www.w3.org/2000/svg"
+namespace xlink = "http://www.w3.org/1999/xlink"
+
+rfc-color = (  # SVG-1.2-RFC doesn't allow "color or grey-scale"
+  "black" | "white" | "#000000" | "#FFFFFF" | "#ffffff" |
+  "currentColor" | "inherit" )
+
+start = svg
+
+svg =
+  element svg {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"}?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute width { xsd:string }?,
+    attribute height { xsd:string }?,
+    attribute preserveAspectRatio {
+      xsd:string { pattern = "\s*(none|xMidYMid)\s*(meet)?\s*" }
+    }?,
+    attribute viewBox { text }?,
+    attribute version {
+      xsd:string "1.0" | xsd:string "1.1" | xsd:string "1.2"
+    }?,
+    attribute baseProfile {
+      xsd:string "none"
+      | xsd:string "tiny"
+      | xsd:string "basic"
+      | xsd:string "full"
+    }?,
+    attribute snapshotTime { xsd:string "none" | xsd:string }?,
+    (desc
+     | svgTitle
+     | path
+     | rect
+     | circle
+     | line
+     | ellipse
+     | polyline
+     | polygon
+     | solidColor
+     | textArea
+     | \text
+     | g
+     | defs
+     | use
+     | a)*
+  }
+
+desc =
+  element desc {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    ((attribute display {
+        "inline"
+        | "block"
+        | "list-item"
+        | "run-in"
+        | "compact"
+        | "marker"
+        | "table"
+        | "inline-table"
+        | "table-row-group"
+        | "table-header-group"
+        | "table-footer-group"
+        | "table-row"
+        | "table-column-group"
+        | "table-column"
+        | "table-cell"
+        | "table-caption"
+        | "none"
+        | "inherit"
+      }?,
+      attribute visibility { "visible" | "hidden" | "collapse" | "inherit" }?,
+      attribute image-rendering {
+        "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+      }?,
+      attribute shape-rendering {
+        "auto"
+        | "optimizeSpeed"
+        | "crispEdges"
+        | "geometricPrecision"
+        | "inherit"
+      }?,
+      attribute text-rendering {
+        "auto"
+        | "optimizeSpeed"
+        | "optimizeLegibility"
+        | "geometricPrecision"
+        | "inherit"
+      }?,
+      attribute buffered-rendering {
+        "auto" | "dynamic" | "static" | "inherit"
+      }?)
+     & (attribute viewport-fill { "none" | rfc-color }?,
+        attribute viewport-fill-opacity { "inherit" | xsd:string }?)),
+    text
+  }
+
+svgTitle =
+  element title {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    ((attribute display {
+        "inline"
+        | "block"
+        | "list-item"
+        | "run-in"
+        | "compact"
+        | "marker"
+        | "table"
+        | "inline-table"
+        | "table-row-group"
+        | "table-header-group"
+        | "table-footer-group"
+        | "table-row"
+        | "table-column-group"
+        | "table-column"
+        | "table-cell"
+        | "table-caption"
+        | "none"
+        | "inherit"
+      }?,
+      attribute visibility { "visible" | "hidden" | "collapse" | "inherit" }?,
+      attribute image-rendering {
+        "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+      }?,
+      attribute shape-rendering {
+        "auto"
+        | "optimizeSpeed"
+        | "crispEdges"
+        | "geometricPrecision"
+        | "inherit"
+      }?,
+      attribute text-rendering {
+        "auto"
+        | "optimizeSpeed"
+        | "optimizeLegibility"
+        | "geometricPrecision"
+        | "inherit"
+      }?,
+      attribute buffered-rendering {
+        "auto" | "dynamic" | "static" | "inherit"
+      }?)
+     & (attribute viewport-fill { "none" | rfc-color }?,
+        attribute viewport-fill-opacity { "inherit" | xsd:string }?)),
+    text
+  }
+
+path =
+  element path {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute d { xsd:string }?,
+    attribute pathLength { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+rect =
+  element rect {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute x { xsd:string }?,
+    attribute y { xsd:string }?,
+    attribute width { xsd:string }?,
+    attribute height { xsd:string }?,
+    attribute rx { xsd:string }?,
+    attribute ry { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+circle =
+  element circle {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute cx { xsd:string }?,
+    attribute cy { xsd:string }?,
+    attribute r { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+line =
+  element line {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute x1 { xsd:string }?,
+    attribute y1 { xsd:string }?,
+    attribute x2 { xsd:string }?,
+    attribute y2 { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+ellipse =
+  element ellipse {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute rx { xsd:string }?,
+    attribute ry { xsd:string }?,
+    attribute cx { xsd:string }?,
+    attribute cy { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+polyline =
+  element polyline {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute points { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+polygon =
+  element polygon {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute points { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+solidColor =
+  element solidColor {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    (desc
+     | svgTitle)*
+  }
+
+textArea =
+  element textArea {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    attribute x { xsd:string }?,
+    attribute y { xsd:string }?,
+    attribute width { xsd:string | "auto" }?,
+    attribute height { xsd:string | "auto" }?,
+    (tspan
+     | desc
+     | svgTitle
+     | tspan_2
+     | text
+     | a_2)+
+  }
+
+\text =
+  element text {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    attribute x { xsd:string }?,
+    attribute y { xsd:string }?,
+    attribute rotate { xsd:string }?,
+    (desc
+     | svgTitle
+     | tspan_2
+     | text
+     | a_2)+
+  }
+
+g =
+  element g {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    (desc
+     | svgTitle
+     | path
+     | rect
+     | circle
+     | line
+     | ellipse
+     | polyline
+     | polygon
+     | solidColor
+     | textArea
+     | \text
+     | g
+     | defs
+     | use
+     | a)*
+  }
+
+defs =
+  element defs {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    (desc
+     | svgTitle
+     | path
+     | rect
+     | circle
+     | line
+     | ellipse
+     | polyline
+     | polygon
+     | solidColor
+     | textArea
+     | \text
+     | g
+     | defs
+     | use
+     | a)*
+  }
+
+use =
+  element use {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute transform { xsd:string | "none" }?,
+    attribute xlink:show { "embed" }?,
+    attribute xlink:actuate { "onLoad" }?,
+    attribute xlink:type { "simple" }?,
+    attribute xlink:role { xsd:anyURI | xsd:string }?,
+    attribute xlink:arcrole { xsd:anyURI | xsd:string }?,
+    attribute xlink:title { text }?,
+    attribute xlink:href { xsd:anyURI | xsd:string }?,
+    attribute x { xsd:string }?,
+    attribute y { xsd:string }?,
+    (desc
+     | svgTitle)*
+  }
+
+a =
+  element a {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute transform { xsd:string | "none" }?,
+    attribute xlink:show { "new" | "replace" }?,
+    attribute xlink:actuate { "onRequest" }?,
+    attribute xlink:type { "simple" }?,
+    attribute xlink:role { xsd:anyURI | xsd:string }?,
+    attribute xlink:arcrole { xsd:anyURI | xsd:string }?,
+    attribute xlink:title { text }?,
+    attribute xlink:href { xsd:anyURI | xsd:string }?,
+    attribute target {
+      "_replace" | "_self" | "_parent" | "_top" | "_blank" | xsd:Name
+    }?,
+    (desc
+     | svgTitle
+     | path
+     | rect
+     | circle
+     | line
+     | ellipse
+     | polyline
+     | polygon
+     | solidColor
+     | textArea
+     | \text
+     | g
+     | defs
+     | use)*
+  }
+
+tspan =
+  element tspan {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute x { xsd:string }?,  # For SVG-1.2-RFC
+    attribute y { xsd:string }?,
+    (tbreak
+     | desc
+     | svgTitle
+     | tspan_2
+     | text
+     | a_2)+
+  }
+
+tspan_2 =
+  element tspan {
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    attribute x { xsd:string }?,  # For SVG-1.2-RFC
+    attribute y { xsd:string }?,
+    (desc
+     | svgTitle
+     | tspan_2
+     | text
+     | a_2)+
+  }
+
+a_2 =
+  element a {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?,
+    ((attribute fill-opacity { "inherit" | xsd:string }?,
+      attribute stroke-opacity { "inherit" | xsd:string }?)
+     & (attribute fill { "none" | rfc-color }?,
+        attribute fill-rule { "inherit" | "nonzero" | "evenodd" }?,
+        attribute stroke { rfc-color }?,
+        attribute stroke-dasharray { "inherit" | "none" | xsd:string }?,
+        attribute stroke-dashoffset { "inherit" | xsd:string }?,
+        attribute stroke-linecap {
+          "butt" | "round" | "square" | "inherit"
+        }?,
+        attribute stroke-linejoin {
+          "miter" | "round" | "bevel" | "inherit"
+        }?,
+        attribute stroke-miterlimit { "inherit" | xsd:string }?,
+        attribute stroke-width { "inherit" | xsd:string }?,
+        attribute color { rfc-color }?,
+        attribute color-rendering {
+          "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit"
+        }?)
+     & attribute vector-effect {
+         "none" | "non-scaling-stroke" | "inherit"
+       }?
+     & (attribute direction { "ltr" | "rtl" | "inherit" }?,
+        attribute unicode-bidi {
+          "normal" | "embed" | "bidi-override" | "inherit"
+        }?)
+     & (attribute solid-color { rfc-color }?,
+        attribute solid-opacity { "inherit" | xsd:string }?)
+     & (attribute display-align {
+          "auto" | "before" | "center" | "after" | "inherit"
+        }?,
+        attribute line-increment { "auto" | "inherit" | xsd:string }?)
+     & (attribute stop-color { rfc-color }?,
+        attribute stop-opacity { "inherit" | xsd:string }?)
+     & (attribute font-family { "serif" | "sans-serif" | "monospace"
+         | "inherit" }?,
+        attribute font-size { "inherit" | xsd:string }?,
+        attribute font-style {
+          "normal" | "italic" | "oblique" | "inherit"
+        }?,
+        attribute font-variant { "normal" | "small-caps" | "inherit" }?,
+        attribute font-weight {
+          "normal"
+          | "bold"
+          | "bolder"
+          | "lighter"
+          | "inherit"
+        }?,
+        attribute text-anchor {
+          "start" | "middle" | "end" | "inherit"
+        }?,
+        attribute text-align {
+          "start" | "center" | "end" | "inherit"
+        }?)),
+    attribute transform { xsd:string | "none" }?,
+    attribute xlink:show { "new" | "replace" }?,
+    attribute xlink:actuate { "onRequest" }?,
+    attribute xlink:type { "simple" }?,
+    attribute xlink:role { xsd:anyURI | xsd:string }?,
+    attribute xlink:arcrole { xsd:anyURI | xsd:string }?,
+    attribute xlink:title { text }?,
+    attribute xlink:href { xsd:anyURI | xsd:string }?,
+    attribute target {
+      "_replace" | "_self" | "_parent" | "_top" | "_blank" | xsd:Name
+    }?,
+    (desc
+     | svgTitle
+     | tspan_2
+     | text)+
+  }
+
+tbreak =
+  element tbreak {
+    (attribute id { xsd:NCName }
+     | attribute xml:id { xsd:NCName })?,
+    attribute xml:base { xsd:anyURI | xsd:string }?,
+    attribute xml:lang { xsd:language? }?,
+    attribute class { xsd:NMTOKENS }?,
+    attribute role { xsd:string }?,
+    attribute rel { xsd:string }?,
+    attribute rev { xsd:string }?,
+    attribute typeof { xsd:string }?,
+    attribute content { xsd:string }?,
+    attribute datatype { xsd:string }?,
+    attribute resource { xsd:string }?,
+    attribute about { xsd:string }?,
+    attribute property { xsd:string }?,
+    attribute xml:space { "default" | "preserve" }?
+  }
+
+#---  End of SVG 1.2 RFC rnc schema
