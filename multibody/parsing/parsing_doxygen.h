@@ -238,7 +238,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint().
 @subsection tag_drake_ball_constraint_body_A drake:ball_constraint_body_A
 
 - SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_A`
-- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@value`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@name`
 - Syntax: String.
 
 @subsection tag_drake_ball_constraint_body_A_semantics Semantics
@@ -253,7 +253,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 @subsection tag_drake_ball_constraint_body_B drake:ball_constraint_body_B
 
 - SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_B`
-- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@value`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@name`
 - Syntax: String.
 
 @subsection tag_drake_ball_constraint_body_B_semantics Semantics
