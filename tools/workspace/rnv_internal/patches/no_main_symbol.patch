@@ -1,0 +1,20 @@
+[rnv] Avoid main symbol for use as a library
+
+As offered, rnv builds a number of command line programs. Drake uses
+portions of it as a library. It is necessary to prevent useful modules
+from occupying the magic `main` symbol.
+
+This patch should not be upstreamed to rnv as-is -- it will break the
+upstream build.
+
+--- xcl.c
++++ xcl.c
+@@ -223,7 +223,7 @@ static void usage(void) {(*er_printf)("usage: rnv {-[qnspc"
+ #endif
+ "vh?]} schema.rnc {document.xml}\n");}
+ 
+-int main(int argc,char **argv) {
++int xcl_main(int argc,char **argv) {
+   init();
+ 
+   peipe=0; verbose=1; nexp=NEXP; rnck=0;
