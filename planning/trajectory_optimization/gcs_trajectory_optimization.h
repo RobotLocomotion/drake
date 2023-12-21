@@ -553,8 +553,9 @@ See §6.5.3 of "A Panoramic View of Riemannian Geometry", Marcel Berger for a
 general definition of convexity radius. When dealing with continuous revolute
 joints, respecting the convexity radius entails that each convex set has a width
 of stricty less than π along each dimension corresponding to a continuous
-revolute joint. Each entry in continuous_revolute_joints must be non-negative,
-less than convex_set's ambient dimension, and unique. */
+revolute joint.
+@throws std::exception if continuous_revolute_joints has repeated entries, or if
+any entry is outside the interval [0, convex_set.ambient_dimension()). */
 bool CheckIfSatisfiesConvexityRadius(
     const geometry::optimization::ConvexSet& convex_set,
     const std::vector<int>& continuous_revolute_joints);
@@ -572,7 +573,8 @@ overlap by ϵ along each dimension, for numerical purposes.
 @return the vector of convex sets that each respect convexity radius.
 @throws std::exception if ϵ <= 0.
 @throws std::exception if the input convex set is unbounded.
-*/
+@throws std::exception if continuous_revolute_joints has repeated entries, or if
+any entry is outside the interval [0, convex_set.ambient_dimension()). */
 geometry::optimization::ConvexSets PartitionConvexSet(
     const geometry::optimization::ConvexSet& convex_set,
     const std::vector<int>& continuous_revolute_joints,
@@ -583,8 +585,10 @@ to respect the convexity radius. Every set must be bounded and have the same
 ambient dimension. Each entry in continuous_revolute_joints must be
 non-negative, less than num_positions, and unique.
 @throws std::exception unless every ConvexSet in convex_sets has the same
-ambient dimension.
-@throws std::exception if ϵ <= 0. */
+ambient_dimension.
+@throws std::exception if ϵ <= 0.
+@throws std::exception if continuous_revolute_joints has repeated entries, or if
+any entry is outside the interval [0, ambient_dimension). */
 geometry::optimization::ConvexSets PartitionConvexSet(
     const geometry::optimization::ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,

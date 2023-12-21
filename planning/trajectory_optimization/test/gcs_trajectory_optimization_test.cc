@@ -1346,7 +1346,7 @@ bool PointInASet(const ConvexSets& sets, const Eigen::VectorXd& point,
   return false;
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet1) {
   // Example 1: partition along both dimensions.
   Eigen::Matrix<double, 2, 4> vertices;
   // clang-format off
@@ -1356,6 +1356,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
   VPolytope v(vertices);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
+  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
 
   EXPECT_TRUE(CheckIfSatisfiesConvexityRadius(v, std::vector<int>{}));
   EXPECT_FALSE(CheckIfSatisfiesConvexityRadius(v, std::vector<int>{0}));
@@ -1365,7 +1366,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
   ConvexSets sets = PartitionConvexSet(v, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets.size(), 4);
 
-  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), 1),
                               ".*doesn't respect the convexity radius.*");
 
@@ -1380,7 +1380,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
     EXPECT_TRUE(sets[i]->PointInSet(
         Eigen::Vector2d(M_PI - 2.0 * epsilon, M_PI - 2.0 * epsilon), kTol));
   }
+}
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet2) {
   // Example 2: Partition along one dimension.
   Eigen::Matrix<double, 2, 4> vertices2;
   // clang-format off
@@ -1388,6 +1390,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
                0.0, 0.0, 4.0, 4.0;
   // clang-format on
   VPolytope v2(vertices2);
+  std::vector<int> continuous_revolute_joints{0, 1};
+  const double epsilon = 1e-5;
+  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
 
   ConvexSets sets2 =
       PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
@@ -1401,12 +1406,17 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
   ASSERT_TRUE(maybe_intersection_bbox.has_value());
   const Hyperrectangle intersection_bbox = maybe_intersection_bbox.value();
   for (int i = 0; i < intersection_bbox.ambient_dimension(); ++i) {
-    // Due to solve numerics, the overlap may be slightly less than the given
-    // epsilon value.
+    // Due to solver numerics, the overlap may be slightly less than the given
+    // epsilon value. So we instead require that the overlap be at least
+    // epsilon - delta, where delta is a small constant.
+    const double delta = 1e-7;
+    DRAKE_DEMAND(delta < epsilon);
     EXPECT_TRUE(intersection_bbox.ub()[i] - intersection_bbox.lb()[i] >=
-                epsilon - (epsilon * 1e5));
+                epsilon - delta);
   }
+}
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet3) {
   // Example 3: partition along no dimensions.
   Eigen::Matrix<double, 2, 4> vertices3;
   // clang-format off
@@ -1414,28 +1424,53 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet) {
                0.0, 0.0, 2.0, 2.0;
   // clang-format on
   VPolytope v3(vertices3);
+  std::vector<int> continuous_revolute_joints{0, 1};
+  const double epsilon = 1e-5;
+  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
 
   ConvexSets sets3 =
       PartitionConvexSet(v3, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets3.size(), 1);
   DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets3, 1));
+}
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSet4) {
   // Example 4: partition along one dimension, with not all joints continuous
   // revolute.
+  Eigen::Matrix<double, 2, 4> vertices;
+  // clang-format off
+  vertices << 0.0, 4.0, 0.0, 4.0,
+              0.0, 0.0, 4.0, 4.0;
+  // clang-format on
+  VPolytope v(vertices);
+  std::vector<int> continuous_revolute_joints{0, 1};
+  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
   std::vector<int> only_one_continuous_revolute_joint{1};
+  GcsTrajectoryOptimization gcs2(2, only_one_continuous_revolute_joint);
+
   ConvexSets sets4 = PartitionConvexSet(v, only_one_continuous_revolute_joint);
   EXPECT_EQ(sets4.size(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(sets4, 1),
                               ".*doesn't respect the convexity radius.*");
-  DRAKE_EXPECT_NO_THROW(
-      GcsTrajectoryOptimization(2, only_one_continuous_revolute_joint)
-          .AddRegions(sets4, 1));
+  DRAKE_EXPECT_NO_THROW(gcs2.AddRegions(sets4, 1));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSetAPI) {
+  Eigen::Matrix<double, 2, 4> vertices;
+  // clang-format off
+  vertices << 0.0, 4.0, 0.0, 4.0,
+              0.0, 0.0, 4.0, 4.0;
+  // clang-format on
+  VPolytope v(vertices);
+  std::vector<int> continuous_revolute_joints{0, 1};
+  const double epsilon = 1e-5;
+  GcsTrajectoryOptimization gcs(2, continuous_revolute_joints);
 
   // Test the function overload that takes in multiple convex sets.
   ConvexSets sets5 = PartitionConvexSet(MakeConvexSets(v, v),
                                         continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets5.size(), 8);
-  DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets, 1));
+  DRAKE_EXPECT_NO_THROW(gcs.AddRegions(sets5, 1));
 
   // List of convex sets must have at least one entry.
   EXPECT_THROW(PartitionConvexSet(MakeConvexSets(), continuous_revolute_joints),
