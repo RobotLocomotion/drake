@@ -244,8 +244,15 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
         .def("FindRedundant", &HPolyhedron::FindRedundant,
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
+        .def("SimplifyByIncrementalFaceTranslation", &HPolyhedron::SimplifyByIncrementalFaceTranslation,
+            py::arg("min_v_ratio"),py::arg("max_loops"),py::arg("intersecting_polytopes"),py::arg("intersection_pad"),
+            py::arg("conservative_intersections"),py::arg("points_to_contain"),py::arg("do_affine_transform"),py::arg("random_seed"))
         .def("ShuffleHyperplanes", &HPolyhedron::ShuffleHyperplanes,
             py::arg("d"),py::arg("moved_in"),py::arg("random_seed"), cls_doc.ShuffleHyperplanes.doc)
+        .def("MoveFaceAndCull", &HPolyhedron::MoveFaceAndCull,
+            py::arg("d"),py::arg("moved_in"),py::arg("i"),py::arg("i_cull"),py::arg("hx_proposed"), cls_doc.MoveFaceAndCull.doc)
+        .def ("OptimizeAffineTransformInCircumbody", &HPolyhedron::OptimizeAffineTransformInCircumbody,
+            py::arg("circumbody"))
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
