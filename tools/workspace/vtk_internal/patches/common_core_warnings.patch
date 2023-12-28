@@ -2,7 +2,10 @@
 
 vtkVariantInlineOperators: -Wlogical-op
 
-TODO(jwnimmer-tri) We should try to upstream some flavor of this patch.
+This patch has been upstreamed and can likely be dropped in a future
+update to Drake's VTK.
+
+See https://gitlab.kitware.com/vtk/vtk/-/merge_requests/10773.
 
 --- Common/Core/vtkVariantInlineOperators.h
 +++ Common/Core/vtkVariantInlineOperators.h
