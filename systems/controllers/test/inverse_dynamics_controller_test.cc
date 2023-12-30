@@ -85,11 +85,6 @@ class InverseDynamicsControllerTest : public ::testing::Test {
     const BasicVector<double>* output_vector = output->get_vector_data(0);
     EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
                                 1e-10, MatrixCompareType::absolute));
-
-    // Ditto check the deprecated output port.
-    output_vector = output->get_vector_data(1);
-    EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
-                                1e-10, MatrixCompareType::absolute));
   }
 };
 

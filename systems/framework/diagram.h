@@ -11,7 +11,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
@@ -232,20 +231,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// diagram.
   const State<T>& GetSubsystemState(const System<T>& subsystem,
                                     const State<T>& state) const;
-
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling this function, call GetGraphvizFragment().")
-  void GetGraphvizInputPortToken(const InputPort<T>& port,
-                                 int max_depth,
-                                 std::stringstream* dot) const final;
-
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling this function, call GetGraphvizFragment()")
-  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
-                                  int max_depth,
-                                  std::stringstream* dot) const final;
 
   /// Returns the index of the given @p sys in this diagram, or aborts if @p sys
   /// is not a member of the diagram.

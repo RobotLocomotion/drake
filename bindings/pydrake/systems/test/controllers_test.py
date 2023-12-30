@@ -148,9 +148,6 @@ class TestControllers(unittest.TestCase):
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
                               OutputPort)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(controller.get_output_port_force(),
-                                  OutputPort)
         self.assertFalse(controller.is_pure_gravity_compensation())
 
         controller = InverseDynamics(
@@ -160,9 +157,6 @@ class TestControllers(unittest.TestCase):
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
                               OutputPort)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(controller.get_output_port_force(),
-                                  OutputPort)
         self.assertTrue(controller.is_pure_gravity_compensation())
 
     def test_inverse_dynamics_controller(self):
