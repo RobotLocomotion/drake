@@ -2506,6 +2506,30 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
+    def test_remove_constraint(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
+
+        # Add weld constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        X_AP = RigidTransform_[float]()
+        X_BQ = RigidTransform_[float]()
+        id = plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
+
+        plant.RemoveConstraint(id=id)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 0)
+
+    @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         MultibodyForces = MultibodyForces_[T]

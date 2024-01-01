@@ -1716,6 +1716,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body_A, const math::RigidTransform<double>& X_AP,
       const Body<T>& body_B, const math::RigidTransform<double>& X_BQ);
 
+  /// Removes the constraint `id` from the plant.
+  ///
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  /// @throws std::exception if `id` does not identify any multibody constraint
+  /// in this plant.
+  void RemoveConstraint(MultibodyConstraintId id);
+
   /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
 

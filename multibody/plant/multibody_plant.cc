@@ -640,6 +640,25 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
 }
 
 template <typename T>
+void MultibodyPlant<T>::RemoveConstraint(MultibodyConstraintId id) {
+  // N.B. The manager and parameters are set up at Finalize() and therefore we
+  // must require constraints to be removed pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  int num_removed = 0;
+  num_removed += coupler_constraints_specs_.erase(id);
+  num_removed += distance_constraints_specs_.erase(id);
+  num_removed += ball_constraints_specs_.erase(id);
+  num_removed += weld_constraints_specs_.erase(id);
+  if (num_removed != 1) {
+    throw std::runtime_error(
+        fmt::format("RemoveConstraint(): The constraint id {} does not match "
+                    "any constraint registered with this plant.",
+                    id));
+  }
+}
+
+template <typename T>
 std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
   std::string graphviz = "digraph MultibodyPlant {\n";
   graphviz += "label=\"" + this->get_name() + "\";\n";

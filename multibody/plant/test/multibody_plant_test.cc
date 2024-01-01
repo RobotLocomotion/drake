@@ -3929,6 +3929,58 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
 }
 
+GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
+  // Set up a plant with 3 constraints with arbitrary parameters.
+  MultibodyPlant<double> plant(0.01);
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const Body<double>& body_A =
+      plant.AddRigidBody("body_A", SpatialInertia<double>{});
+  const Body<double>& body_B =
+      plant.AddRigidBody("body_B", SpatialInertia<double>{});
+  const RevoluteJoint<double>& world_A =
+      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
+                                    body_A, std::nullopt, Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  MultibodyConstraintId coupler_id =
+      plant.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant.AddBallConstraint(
+      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+      body_A, RigidTransformd(), body_B, RigidTransformd());
+
+  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+  EXPECT_EQ(plant.num_distance_constraints(), 1);
+  EXPECT_EQ(plant.num_ball_constraints(), 1);
+  EXPECT_EQ(plant.num_weld_constraints(), 1);
+  plant.RemoveConstraint(coupler_id);
+  plant.RemoveConstraint(distance_id);
+  plant.RemoveConstraint(ball_id);
+  plant.RemoveConstraint(weld_id);
+  EXPECT_EQ(plant.num_coupler_constraints(), 0);
+  EXPECT_EQ(plant.num_distance_constraints(), 0);
+  EXPECT_EQ(plant.num_ball_constraints(), 0);
+  EXPECT_EQ(plant.num_weld_constraints(), 0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
+                              ".*does not match any constraint.*");
+
+  // Add a new coupler constraint
+  MultibodyConstraintId coupler_id2 =
+      plant.AddCouplerConstraint(world_A, A_B, 2.3);
+  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+
+  plant.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RemoveConstraint(coupler_id2),
+      ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
+}
+
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   MultibodyPlant<double> plant(0.0);
   const Body<double>& body_B =
