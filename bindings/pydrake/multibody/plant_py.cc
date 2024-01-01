@@ -285,7 +285,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
-            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc);
+            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
+        .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
+            cls_doc.RemoveConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(

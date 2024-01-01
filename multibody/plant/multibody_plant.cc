@@ -640,6 +640,26 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
 }
 
 template <typename T>
+void MultibodyPlant<T>::RemoveConstraint(MultibodyConstraintId id) {
+  // N.B. The manager and parameters are set up at Finalize() and therefore we
+  // must require constraints to be removed pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  int num_removed = 0;
+  num_removed += coupler_constraints_specs_.erase(id);
+  num_removed += distance_constraints_specs_.erase(id);
+  num_removed += ball_constraints_specs_.erase(id);
+  num_removed += weld_constraints_specs_.erase(id);
+  if (num_removed != 1) {
+    throw std::runtime_error(fmt::format(
+        "RemoveConstraint(): The constraint id {} does not match "
+        "any constraint registered with this plant. Note that this method does "
+        "not check constraints registered with DeformableModel.",
+        id));
+  }
+}
+
+template <typename T>
 std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
   std::string graphviz = "digraph MultibodyPlant {\n";
   graphviz += "label=\"" + this->get_name() + "\";\n";
@@ -684,6 +704,13 @@ void MultibodyPlant<T>::set_discrete_contact_solver(
   DRAKE_MBP_THROW_IF_FINALIZED();
   switch (contact_solver) {
     case DiscreteContactSolver::kTamsi:
+      if (num_constraints() > 0) {
+        throw std::runtime_error(fmt::format(
+            "You selected TAMSI as the solver, but you have constraints "
+            "registered with this model (num_constraints() == {}). TAMSI does "
+            "not support constraints.",
+            num_constraints()));
+      }
       discrete_contact_approximation_ = DiscreteContactApproximation::kTamsi;
       break;
     case DiscreteContactSolver::kSap:
@@ -706,6 +733,16 @@ void MultibodyPlant<T>::set_discrete_contact_approximation(
     DiscreteContactApproximation approximation) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
+
+  if (approximation == DiscreteContactApproximation::kTamsi &&
+      num_constraints() > 0) {
+    throw std::runtime_error(fmt::format(
+        "You selected TAMSI as the contact approximation, but you have "
+        "constraints registered with this model (num_constraints() == {}). "
+        "TAMSI does not support constraints.",
+        num_constraints()));
+  }
+
   discrete_contact_approximation_ = approximation;
 }
 
