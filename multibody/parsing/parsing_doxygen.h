@@ -720,9 +720,9 @@ The provided (dimensionless) value sets the static friction parameter for
 CoulombFriction. Refer to @ref stribeck_approximation for details on the
 friction model.
 
-@warning This value is ignored when modeling the multibody system with discrete
-dynamics, refer to MultibodyPlant's constructor documentation for details, in
-particular the parameter `time_step`.
+@warning Both `mu_dynamic` and `mu_static` are used by MultibodyPlant when the plant 
+`time_step=0`, but only `mu_dynamic` is used when `time_step>0`. Refer to 
+MultibodyPlant's constructor documentation for details.
 
 @see @ref tag_drake_proximity_properties, drake::multibody::CoulombFriction,
 @ref stribeck_approximation
