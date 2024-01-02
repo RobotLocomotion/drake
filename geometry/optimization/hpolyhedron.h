@@ -108,16 +108,21 @@ class HPolyhedron final : public ConvexSet {
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
   /** TODO rhjiang write*/
-  [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(double min_v_ratio = 0.1, int max_loops = 5, 
-        const std::vector<drake::geometry::optimization::HPolyhedron>& intersecting_polytopes = std::vector<HPolyhedron>(), 
-        double intersection_pad = 1e-4, bool conservative_intersections = false, const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
-        bool do_affine_transform = true, int random_seed = 0) const;
+  [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
+    double min_v_ratio = 0.1, int max_iterations = 5, 
+    const std::vector<drake::geometry::optimization::HPolyhedron>& 
+    intersecting_polytopes = std::vector<HPolyhedron>(), 
+    double intersection_pad = 1e-4, bool conservative_intersections = false, 
+    const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+    bool do_affine_transform = true, int random_seed = 0) const;
 
   /** TODO rhjiang write*/
 //   TODO rhjiang make private
 // extra outputs just for testing
   // [[nodiscard]] std::tuple<HPolyhedron, std::vector<double>, std::vector<bool>,int> MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const;
-  [[nodiscard]] HPolyhedron MoveFaceAndCull(Eigen::VectorXd& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const;
+  [[nodiscard]] HPolyhedron MoveFaceAndCull(Eigen::VectorXd& d, 
+    std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, 
+    Eigen::VectorXd& hx_proposed) const;
 
   /** TODO rhjiang write*/
 //   TODO rhjiang make private

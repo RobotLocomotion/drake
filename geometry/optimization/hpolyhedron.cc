@@ -631,10 +631,11 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
   return redundant_indices;
 }
 
-HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio, int max_loops, 
-        const std::vector<HPolyhedron>& intersecting_polytopes, 
-        double intersection_pad, bool conservative_intersections, const Eigen::MatrixXd& points_to_contain,
-        bool do_affine_transform, int random_seed) const {
+HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio, 
+        bool do_affine_transform, int max_iterations,  
+        const Eigen::MatrixXd& points_to_contain, 
+        const std::vector<HPolyhedron>& intersecting_polytopes, bool keep_whole_intersection, 
+        double intersection_pad, int random_seed) const {
   HPolyhedron circumbody = this->ReduceInequalities(0);
   MatrixXd Hy = circumbody.A();
   VectorXd hy = circumbody.b();
@@ -651,31 +652,17 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
     DRAKE_DEMAND(circumbody.PointInSet(points_to_contain.col(i)));
   }
 
-  // const VectorXd c = circumbody.ChebyshevCenter();
   const VectorXd c = circumbody.MaximumVolumeInscribedEllipsoid().center();
-  // VectorXd d = hy - Hy * c;
   VectorXd d;
   d.resize(hy.rows());
   
   for (int i = 0; i < hy.rows(); ++i){
     d(i) = hy(i) - Hy.row(i) * c;
   }
-  // for (int i = 0; i < Hy.rows(); ++i){
-  //   log()->info("b[{}] = {}", i, hy(i));
-  // }
-  // for (int i = 0; i < Hy.rows(); ++i){
-  //   log()->info("d[{}] = {}", i, d(i));
-  // }
-  // for (int i = 0; i < c.rows(); ++i){
-  //   log()->info("c[{}] = {}", i, c(i));
-  // }
-  // for (int i = 0; i < Hy.cols(); ++i){
-  //   log()->info("Hy[0,{}] = {}", i, Hy.row(0)(i));
-  // }
   const double alpha = 1 - std::pow(min_v_ratio, 1.0/ambient_dimension());
 
   int cost_multiplier;
-  if (conservative_intersections){
+  if (keep_whole_intersection){
     cost_multiplier = -1;
   }else{
     cost_multiplier = 1;
@@ -686,12 +673,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
   for (size_t i = 0; i < intersecting_polytopes.size(); ++i){
     if (!scaled_circumbody.IntersectsWith(intersecting_polytopes[i])){
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
-    }else{ // TODO rhjiang remove when done testing
-      log()->info("Removing trivially intersecting polytope at index {}", i);
     }
   }
 
-  HPolyhedron inbody = HPolyhedron(Hy,hy); // initialize with circumbocircumbody.MaximumVolumeInscribedEllipsoid()
+  HPolyhedron inbody = HPolyhedron(Hy,hy); // initialize with circumbody
   // Initialize prog with arbitrary cost and constraint, will be cleared in first loop iteration
   MathematicalProgram prog; // will be used for finding how far each hyperplane can be moved inward
   solvers::VectorXDecisionVariable x = prog.NewContinuousVariables(ambient_dimension(),"x");
@@ -709,7 +694,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
   double hx_i_min;
   int i;
   HPolyhedron inter;
-  while (any_moved && loops < max_loops){
+  while (any_moved && loops < max_iterations){
     any_moved = false;
     i = 0;
     inbody = inbody.ShuffleHyperplanes(d, moved_in, random_seed);
@@ -720,19 +705,14 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
         prog.RemoveCost(hyperplane_prog_cost);
         hyperplane_prog_cost = prog.AddLinearCost(cost_multiplier * inbody.A().row(i),0,x);
 
-        // log()->info("d[i] = {}, hx_i_min initially = {}", d(i), hx_i_min);
         for (int inter_ind = 0; inter_ind < static_cast<int> (reduced_intersecting_polytopes.size()); ++inter_ind){
           inter = inbody.Intersection(reduced_intersecting_polytopes[inter_ind]);
           for (int i_constraint = 0; i_constraint < num_constraints; ++i_constraint){
             prog.RemoveConstraint(hyperplane_prog_constraints[i_constraint]);
           }
           num_constraints = inter.A().rows();
-          // hyperplane_prog_constraints.resize(num_constraints);
-          // std::vector<Binding<LinearConstraint>> hyperplane_prog_constraints;
           hyperplane_prog_constraints.clear();
           for (int i_constraint = 0; i_constraint < num_constraints; ++i_constraint) {
-            // hyperplane_prog_constraints[i_constraint] = prog.AddLinearConstraint(
-                // inter.A().row(i_constraint), -kInf, inter.b()[i_constraint], x);
             hyperplane_prog_constraints.push_back(prog.AddLinearConstraint(
             inter.A().row(i_constraint), -kInf, inter.b()[i_constraint], x));
           }
@@ -746,9 +726,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
             log()->warn("Intersection program did not solve properly.  Will not move in hyperplane.");
             hx_i_min = inbody.b()(i);
           }
-          // log()->info("hx_i_min now = {}", hx_i_min);
         }
-        // log()->info("hx_i_min finally = {}", hx_i_min);
         
         for (int i_point = 0; i_point < points_to_contain.cols(); ++i_point){
           hx_i_min = std::max(hx_i_min, inbody.A().row(i).dot(points_to_contain.col(i_point)));
@@ -757,22 +735,12 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
 
         HPolyhedron inbody_proposed = HPolyhedron(inbody.A(),hx_proposed);
 
-        // log()->info("lHS {}", hx_proposed(i));
-        // log()->info("b[i] =  {}", inbody.b()(i));
-        // log()->info("alpha =  {}", alpha);
-        // log()->info("d[i] =  {}", d[i]);
-        // log()->info("RHS {}", inbody.b()(i) - alpha*d(i));
-        DRAKE_DEMAND (hx_proposed(i) >= inbody.b()(i) - alpha*d(i) - 1e-8); // TODO rhjiang remove when done testing
-
         std::set<int> i_redundant_set = inbody_proposed.FindRedundant(0);
         std::vector<int> i_redundant(i_redundant_set.begin(), i_redundant_set.end());
 
         if (i_redundant.size() > 0){
           any_moved = true;
-          // log()->info("Culling {} faces", i_redundant.size());
-          // log()->info("{} inbody faces, 4", inbody.b().size());
           inbody = inbody.MoveFaceAndCull(d, moved_in, i, i_redundant, hx_proposed);
-          // log()->info("{} inbody faces, 5", inbody.b().size());
         }
       }
       ++i;
@@ -808,8 +776,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(double min_v_ratio
   }
   return inbody;
 }
-//  returning more things for debugging
-// std::tuple<HPolyhedron, std::vector<double>, std::vector<bool>,int> HPolyhedron::MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const{
+
 HPolyhedron HPolyhedron::MoveFaceAndCull(Eigen::VectorXd& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const{
   moved_in[i] = true;
   std::vector<int> i_not_cull;
@@ -842,8 +809,6 @@ HPolyhedron HPolyhedron::MoveFaceAndCull(Eigen::VectorXd& d, std::vector<bool>& 
   d = d_new;
   moved_in = moved_in_new;
 
-  // returning more things for debugging
-  // return std::make_tuple(inbody, d, moved_in, i);
   return inbody;
 }
 
@@ -879,9 +844,7 @@ HPolyhedron HPolyhedron::OptimizeAffineTransformInCircumbody(HPolyhedron circumb
 
   solvers::MatrixXDecisionVariable Lambda = prog.NewContinuousVariables(Ny,Nx,"Lambda");
   prog.AddBoundingBoxConstraint(0,kInf,Lambda);
-  // for (int i = 0; i < Ny; ++i){
-  //   prog.AddLinearEqualityConstraint(Lambda.row(i) * A_ - circumbody.A().row(i) * Tx,VectorXd::Zero(ambient_dimension()));
-  // }
+
   prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx, MatrixXd::Zero(Ny,ambient_dimension()));
   prog.AddLinearConstraint(Lambda * this->b()-circumbody.b()+circumbody.A() * tx,VectorXd::Constant(Ny,-kInf),VectorXd::Zero(Ny));
   const solvers::MathematicalProgramResult result = Solve(prog);
