@@ -610,36 +610,6 @@ std::vector<std::string> Diagram<T>::GetGraphvizPortLabels(bool input) const {
                                                                     input);
 }
 
-// Remove this deprecated function on 2024-01-01.
-template <typename T>
-void Diagram<T>::GetGraphvizInputPortToken(const InputPort<T>& port,
-                                           int max_depth,
-                                           std::stringstream* dot) const {
-  DRAKE_DEMAND(&port.get_system() == this);
-  *dot << fmt::format("s{}{}:u{}", this->get_system_id().get_value(),
-                      (max_depth > 0) ? "in" : 0, port.get_index());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Call the base class to trigger the console log warning.
-  System<T>::GetGraphvizInputPortToken(port, max_depth, dot);
-#pragma GCC diagnostic pop
-}
-
-// Remove this deprecated function on 2024-01-01.
-template <typename T>
-void Diagram<T>::GetGraphvizOutputPortToken(const OutputPort<T>& port,
-                                            int max_depth,
-                                            std::stringstream* dot) const {
-  DRAKE_DEMAND(&port.get_system() == this);
-  *dot << fmt::format("s{}{}:u{}", this->get_system_id().get_value(),
-                      (max_depth > 0) ? "out" : 0, port.get_index());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Call the base class to trigger the console log warning.
-  System<T>::GetGraphvizOutputPortToken(port, max_depth, dot);
-#pragma GCC diagnostic pop
-}
-
 template <typename T>
 SubsystemIndex Diagram<T>::GetSystemIndexOrAbort(const System<T>* sys) const {
   auto it = system_index_map_.find(sys);
