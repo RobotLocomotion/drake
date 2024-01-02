@@ -262,6 +262,43 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   drake_lcm.HandleSubscriptions(1);
 }
 
+// When LCM is opted-out, the LCM-related systems are not added.
+GTEST_TEST(VisualizationConfigFunctionsTest, ApplyWithoutLcm) {
+  // Configure LcmBuses to only use the null bus.
+  DrakeLcm drake_lcm(LcmBuses::kLcmUrlMemqNull);
+  LcmBuses lcm_buses;
+  lcm_buses.Add("default", &drake_lcm);
+
+  // Add MbP and SG, then visualization.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  VisualizationConfig config;
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+
+  // Check that no LCM-related objects are created.
+  for (const auto* system : builder.GetSystems()) {
+    const std::string& name = system->get_name();
+    // Allow the MbP basics.
+    if (name == "plant" || name == "scene_graph") {
+      continue;
+    }
+    // Allow anything meshcat-related.
+    if (name.find("meshcat") != std::string::npos) {
+      continue;
+    }
+    // This is relevant no matter which visualizer(s) are enabled.
+    if (name == "inertia_visualizer") {
+      continue;
+    }
+    GTEST_FAIL() << name << " should not exist in the diagram";
+  }
+
+  // Smoke test that nothing crashes.
+  Simulator<double> simulator(builder.Build());
+  simulator.AdvanceTo(0.25);
+}
+
 // Check that the update period is obeyed. No publish events are allowed to be
 // scheduled with a period other than what the config specifies.
 GTEST_TEST(VisualizationConfigFunctionsTest, UpdatePeriod) {
