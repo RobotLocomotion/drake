@@ -9,6 +9,10 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/test/example_structs.h"
 
+// This test suite is the C++ flavor of the Python test suite at
+//  drake/bindings/pydrake/common/test/yaml_typed_test.py
+// and should be roughly kept in sync with the test cases in that file.
+
 namespace drake {
 namespace yaml {
 namespace test {
