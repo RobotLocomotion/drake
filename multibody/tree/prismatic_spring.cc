@@ -1,7 +1,7 @@
 #include "drake/multibody/tree/prismatic_spring.h"
 
 #include <memory>
-
+#include "iostream"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -39,6 +39,7 @@ void PrismaticSpring<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
+  // std::cout << "DoCalcAndAddForceContribution PrismaticSpring" << std::endl;
   const T delta = nominal_position_ - joint().get_translation(context);
   const T force = stiffness_ * delta;
   joint().AddInForce(context, force, forces);

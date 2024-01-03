@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 
 #include <filesystem>
+#include <iostream>
 
 #include "drake/common/drake_assert.h"
 
@@ -304,6 +305,7 @@ SpatialInertia<double> ParseSpatialInertia(
     I_BBcm_Bi = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
             inertia_Bi_Bi.ixx, inertia_Bi_Bi.iyy, inertia_Bi_Bi.izz,
             inertia_Bi_Bi.ixy, inertia_Bi_Bi.ixz, inertia_Bi_Bi.iyz);
+    // std::cout << "Parser: I_BBcm_Bi =\n" << I_BBcm_Bi << std::endl << std::endl;
   } catch (const std::exception& e) {
     diagnostic.Warning(
         fmt::format("While parsing inertia matrix: {}", e.what()));

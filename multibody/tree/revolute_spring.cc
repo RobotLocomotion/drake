@@ -3,7 +3,7 @@
 #include <limits>
 #include <utility>
 #include <vector>
-
+#include "iostream"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -44,6 +44,8 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
   const T delta = nominal_angle_ - joint().get_angle(context);
   const T torque = stiffness_ * delta;
   joint().AddInTorque(context, torque, forces);
+  // std::cout << "DoCalcAndAddForceContribution RevoluteSpring" << std::endl;
+  // std::cout << "torque: " << torque << std::endl << std::endl;
 }
 
 template <typename T>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "iostream"
 #include <memory>
 #include <vector>
 
@@ -93,14 +94,13 @@ class BodyNode : public MultibodyElement<T> {
   // Reference used below:
   // - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
   //                algorithms. Springer Science & Business Media.
-  BodyNode(const BodyNode<T>* parent_node,
-           const Body<T>* body, const Mobilizer<T>* mobilizer)
+  BodyNode(const BodyNode<T>* parent_node, const Body<T>* body,
+           const Mobilizer<T>* mobilizer)
       : MultibodyElement<T>(body->model_instance()),
         parent_node_(parent_node),
         body_(body),
         mobilizer_(mobilizer) {
-    DRAKE_DEMAND(!(parent_node == nullptr &&
-        body->index() != world_index()));
+    DRAKE_DEMAND(!(parent_node == nullptr && body->index() != world_index()));
     DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
@@ -111,14 +111,10 @@ class BodyNode : public MultibodyElement<T> {
   // via calls to this method.
   // Used by MultibodyTree at creation of a BodyNode during the
   // MultibodyTree::Finalize() method call.
-  void add_child_node(const BodyNode<T>* child) {
-    children_.push_back(child);
-  }
+  void add_child_node(const BodyNode<T>* child) { children_.push_back(child); }
 
   // Returns this element's unique index.
-  MobodIndex index() const {
-    return this->template index_impl<MobodIndex>();
-  }
+  MobodIndex index() const { return this->template index_impl<MobodIndex>(); }
 
   // Returns a constant reference to the body B associated with this node.
   const Body<T>& body() const {
@@ -136,9 +132,7 @@ class BodyNode : public MultibodyElement<T> {
 
   // Returns a const pointer to the parent (inboard) body node or nullptr if
   // `this` is the world node, which has no inboard parent node.
-  const BodyNode<T>* parent_body_node() const {
-    return parent_node_;
-  }
+  const BodyNode<T>* parent_body_node() const { return parent_node_; }
 
   // Returns a constant reference to the mobilizer associated with this node.
   // Aborts if called on the root node corresponding to the _world_ body, for
@@ -240,8 +234,7 @@ class BodyNode : public MultibodyElement<T> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
   void CalcVelocityKinematicsCache_BaseToTip(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       VelocityKinematicsCache<T>* vc) const {
     // This method must not be called for the "world" body node.
@@ -378,10 +371,8 @@ class BodyNode : public MultibodyElement<T> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
   void CalcSpatialAcceleration_BaseToTip(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>* vc,
-      const VectorX<T>& mbt_vdot,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>* vc, const VectorX<T>& mbt_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const {
     // This method must not be called for the "world" body node.
     DRAKE_DEMAND(topology_.body != world_index());
@@ -515,7 +506,7 @@ class BodyNode : public MultibodyElement<T> {
           A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                   V_PB_W, A_PB_W);
     } else {
-      const SpatialAcceleration<T> A_PB_W =   // Eq. (4), with w_FM = 0.
+      const SpatialAcceleration<T> A_PB_W =  // Eq. (4), with w_FM = 0.
           R_WF * A_FM.ShiftWithZeroAngularVelocity(p_MB_F);
       // Velocities are zero. No need to compute terms that become zero.
       get_mutable_A_WB_from_array(&A_WB_array) =
@@ -592,8 +583,7 @@ class BodyNode : public MultibodyElement<T> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
   void CalcInverseDynamics_TipToBase(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
       const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
@@ -603,12 +593,10 @@ class BodyNode : public MultibodyElement<T> {
       EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
-    DRAKE_DEMAND(
-        tau_applied.size() == get_num_mobilizer_velocities() ||
-        tau_applied.size() == 0);
+    DRAKE_DEMAND(tau_applied.size() == get_num_mobilizer_velocities() ||
+                 tau_applied.size() == 0);
     DRAKE_DEMAND(tau_array != nullptr);
-    DRAKE_DEMAND(tau_array->size() ==
-        this->get_parent_tree().num_velocities());
+    DRAKE_DEMAND(tau_array->size() == this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -659,6 +647,8 @@ class BodyNode : public MultibodyElement<T> {
     // where the spatial force F_BMo must be re-expressed in the inboard frame F
     // before the projection can be performed.
 
+    // std::cout << "CalcInverseDynamics_TipToBase() for body " << body().name() << std::endl;
+
     // This node's body B.
     const Body<T>& body_B = body();
 
@@ -689,6 +679,7 @@ class BodyNode : public MultibodyElement<T> {
 
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
+    // std::cout << "  F_BMo_W start= " << F_BMo_W << std::endl << std::endl;
     for (const BodyNode<T>* child_node : children_) {
       MobodIndex child_node_index = child_node->index();
 
@@ -717,16 +708,19 @@ class BodyNode : public MultibodyElement<T> {
       //  - B becomes C, the child node's body.
       //  - Mo becomes Mc, body C's inboard frame origin.
       const SpatialForce<T>& F_CMc_W = F_BMo_W_array[child_node_index];
+      // std::cout << "  F_CMc_W = " << F_CMc_W << std::endl << std::endl;
 
       // Shift to this node's mobilizer origin Mo (still, F_CMo is the force
       // acting on the child body C):
       const SpatialForce<T>& F_CMo_W = F_CMc_W.Shift(p_McMo_W);
+      // std::cout << "  F_CMo_W = " << F_CMo_W << std::endl << std::endl;
       // From Eq. (3), this force is added (with positive sign) to the force
       // applied by this body's mobilizer:
       F_BMo_W += F_CMo_W;
     }
     // Add applied forces contribution.
     F_BMo_W -= Fapplied_Bo_W.Shift(p_BoMo_W);
+    // std::cout << "  F_BMo_W after Fapplied_Bo_W subtraction = " << F_BMo_W << std::endl << std::endl;
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
@@ -737,6 +731,7 @@ class BodyNode : public MultibodyElement<T> {
     //  velocity kinematics.
     const math::RotationMatrix<T> R_WF = R_WP * R_PF;
     const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
+    // std::cout << "  F_BMo_F = " << F_BMo_F << std::endl << std::endl;
 
     // Generalized velocities and forces use the same indexing.
     auto tau = get_mutable_generalized_forces_from_array(tau_array);
@@ -751,8 +746,13 @@ class BodyNode : public MultibodyElement<T> {
     // Project as: tau = H_FMᵀ(q) * F_BMo_F, Eq. (4).
     get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
 
+    // std::cout << "  tau = " << fmt::format("{}",fmt_eigen(tau)) << std::endl << std::endl;
+
     // Include the contribution of applied generalized forces.
     if (tau_applied.size() != 0) tau -= tau_applied;
+
+    // std::cout << "  tau after tau_applied subtraction = " << fmt::format("{}",fmt_eigen(tau)) << std::endl << std::endl;
+    // std::cout << std::endl << std::endl;
   }
 
   // Returns the topology information for this body node.
@@ -772,8 +772,7 @@ class BodyNode : public MultibodyElement<T> {
   // @pre The position kinematics cache `pc` was already updated to be in sync
   // with `context` by MultibodyTree::CalcPositionKinematicsCache().
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
     // Checks on the input arguments.
     DRAKE_DEMAND(topology_.body != world_index());
@@ -837,7 +836,7 @@ class BodyNode : public MultibodyElement<T> {
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
-        this->get_parent_tree().num_velocities());
+                 this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     DRAKE_DEMAND(num_velocities == 0 ||
@@ -899,11 +898,9 @@ class BodyNode : public MultibodyElement<T> {
   //  - Prismatic: [0 0 0 x y z]
   //  - Ball: 3x3 blocks of zeroes.
   void CalcArticulatedBodyInertiaCache_TipToBase(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      const SpatialInertia<T>& M_B_W,
-      const VectorX<T>& diagonal_inertias,
+      const SpatialInertia<T>& M_B_W, const VectorX<T>& diagonal_inertias,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
@@ -992,8 +989,8 @@ class BodyNode : public MultibodyElement<T> {
       const Vector3<T> p_CoBo_W = -p_BoCo_W;
 
       // Pull Pplus_BC_W from cache (which is Pplus_PB_W for child).
-      const ArticulatedBodyInertia<T>& Pplus_BC_W
-          = child->get_Pplus_PB_W(*abic);
+      const ArticulatedBodyInertia<T>& Pplus_BC_W =
+          child->get_Pplus_PB_W(*abic);
 
       // Shift Pplus_BC_W to Pplus_BCb_W.
       // This is known to be one of the most expensive operations of ABA and
@@ -1030,7 +1027,7 @@ class BodyNode : public MultibodyElement<T> {
 
       // Compute the LLT factorization of D_B as llt_D_B.
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
-        get_mutable_llt_D_B(abic);
+          get_mutable_llt_D_B(abic);
       CalcArticulatedBodyHingeInertiaMatrixFactorization(D_B, &llt_D_B);
 
       // Compute the Kalman gain, g_PB_W, using (6).
@@ -1093,13 +1090,10 @@ class BodyNode : public MultibodyElement<T> {
   // @throws when called on the _root_ node or `aba_force_cache` is
   // nullptr.
   void CalcArticulatedBodyForceCache_TipToBase(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>*,
-      const SpatialForce<T>& Fb_Bo_W,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>*, const SpatialForce<T>& Fb_Bo_W,
       const ArticulatedBodyInertiaCache<T>& abic,
-      const SpatialForce<T>& Zb_Bo_W,
-      const SpatialForce<T>& Fapplied_Bo_W,
+      const SpatialForce<T>& Zb_Bo_W, const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       ArticulatedBodyForceCache<T>* aba_force_cache) const {
@@ -1145,8 +1139,7 @@ class BodyNode : public MultibodyElement<T> {
       const Matrix6xUpTo6<T>& g_PB_W = get_g_PB_W(abic);
 
       // Compute the projected articulated body force bias Zplus_PB_W.
-      get_mutable_Zplus_PB_W(aba_force_cache) +=
-          SpatialForce<T>(g_PB_W * e_B);
+      get_mutable_Zplus_PB_W(aba_force_cache) += SpatialForce<T>(g_PB_W * e_B);
     }
   }
 
@@ -1185,8 +1178,7 @@ class BodyNode : public MultibodyElement<T> {
   // predecessor nodes in the tree.)
   // @throws when called on the _root_ node of `ac` or `vdot` is nullptr.
   void CalcArticulatedBodyAccelerations_BaseToTip(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyForceCache<T>& aba_force_cache,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
@@ -1251,8 +1243,7 @@ class BodyNode : public MultibodyElement<T> {
   // for the children nodes (and, by recursive precondition, all outboard nodes
   // in the tree.)
   void CalcCompositeBodyInertia_TipToBase(
-      const SpatialInertia<T>& M_B_W,
-      const PositionKinematicsCache<T>& pc,
+      const SpatialInertia<T>& M_B_W, const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& Mc_B_W_all,
       SpatialInertia<T>* Mc_B_W) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
@@ -1400,15 +1391,15 @@ class BodyNode : public MultibodyElement<T> {
   // For the root node, corresponding to the world body, this method returns an
   // invalid body index. Attempts to using invalid indexes leads to an exception
   // being thrown in Debug builds.
-  BodyIndex get_parent_body_index() const { return topology_.parent_body;}
+  BodyIndex get_parent_body_index() const { return topology_.parent_body; }
 
   // =========================================================================
   // Helpers to access the state.
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().get_state_segment(context,
-        topology_.mobilizer_velocities_start_in_state,
+    return this->get_parent_tree().get_state_segment(
+        context, topology_.mobilizer_velocities_start_in_state,
         topology_.num_mobilizer_velocities);
   }
 
@@ -1519,8 +1510,7 @@ class BodyNode : public MultibodyElement<T> {
   }
 
   // Mutable version of get_V_FM().
-  SpatialVelocity<T>& get_mutable_V_FM(
-      VelocityKinematicsCache<T>* vc) const {
+  SpatialVelocity<T>& get_mutable_V_FM(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_FM(topology_.index);
   }
 
@@ -1532,8 +1522,7 @@ class BodyNode : public MultibodyElement<T> {
   }
 
   // Mutable version of get_V_PB_W().
-  SpatialVelocity<T>& get_mutable_V_PB_W(
-      VelocityKinematicsCache<T>* vc) const {
+  SpatialVelocity<T>& get_mutable_V_PB_W(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_PB_W(topology_.index);
   }
 
@@ -1823,8 +1812,8 @@ class BodyNode : public MultibodyElement<T> {
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
       const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-      const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
-  const {
+      const SpatialAcceleration<T>& A_WB,
+      SpatialForce<T>* Ftot_BBo_W_ptr) const {
     DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
 
     // Output spatial force applied on Body B, at Bo, measured in W.
@@ -1835,17 +1824,21 @@ class BodyNode : public MultibodyElement<T> {
 
     // Body B spatial inertia about Bo expressed in world W.
     const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
+    // std::cout << "M_B_W:\n" << M_B_W << std::endl << std::endl;
 
     // Equations of motion for a rigid body written at a generic point Bo not
     // necessarily coincident with the body's center of mass. This corresponds
     // to Eq. 2.26 (p. 27) in A. Jain's book.
     Ftot_BBo_W = M_B_W * A_WB;
+    // std::cout << "Ftot_BBo_W = " << Ftot_BBo_W << std::endl << std::endl;
 
     // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
     if (Fb_Bo_W_cache != nullptr) {
       // Dynamic bias for body B.
       const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
+      // std::cout << "Fb_Bo_W = " << Fb_Bo_W << std::endl << std::endl;
       Ftot_BBo_W += Fb_Bo_W;
+      // std::cout << "Ftot_BBo_W after Fb_Bo_W addition = " << Ftot_BBo_W << std::endl << std::endl;
     }
   }
 

@@ -3,7 +3,7 @@
 #include <limits>
 #include <utility>
 #include <vector>
-
+#include "iostream"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -34,6 +34,8 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
     const internal::VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
   using std::sqrt;
+
+  // std::cout << "DoCalcAndAddForceContribution LinearSpringDamper" << std::endl;
 
   const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().mobod_index());
   const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().mobod_index());
