@@ -27,7 +27,9 @@ void DefineSensorsLcm(py::module m) {
         .def("color_image_output_port", &Class::color_image_output_port,
             py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
         .def("depth_image_output_port", &Class::depth_image_output_port,
-            py_rvp::reference_internal, cls_doc.depth_image_output_port.doc);
+            py_rvp::reference_internal, cls_doc.depth_image_output_port.doc)
+        .def("label_image_output_port", &Class::label_image_output_port,
+            py_rvp::reference_internal, cls_doc.label_image_output_port.doc);
   }
 
   {
