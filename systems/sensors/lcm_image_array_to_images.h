@@ -23,6 +23,7 @@ namespace sensors {
 /// output_ports:
 /// - color_image
 /// - depth_image
+/// - label_image
 /// @endsystem
 class LcmImageArrayToImages : public LeafSystem<double> {
  public:
@@ -54,15 +55,26 @@ class LcmImageArrayToImages : public LeafSystem<double> {
     return this->get_output_port(depth_image_output_port_index_);
   }
 
+  /// Returns the abstract valued output port that contains an ImageLabel16I.
+  /// The image will be empty if no label image was received in the most
+  /// recent message (so, for example, sending color and label in different
+  /// messages will not produce useful results).
+  const OutputPort<double>& label_image_output_port() const {
+    return this->get_output_port(label_image_output_port_index_);
+  }
+
  private:
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;
   void CalcDepthImage(const Context<double>& context,
                       ImageDepth32F* depth_image) const;
+  void CalcLabelImage(const Context<double>& context,
+                      ImageLabel16I* label_image) const;
 
-  const InputPortIndex image_array_t_input_port_index_{};
-  const OutputPortIndex color_image_output_port_index_{};
-  const OutputPortIndex depth_image_output_port_index_{};
+  const InputPortIndex image_array_t_input_port_index_;
+  const OutputPortIndex color_image_output_port_index_;
+  const OutputPortIndex depth_image_output_port_index_;
+  const OutputPortIndex label_image_output_port_index_;
 };
 
 }  // namespace sensors
