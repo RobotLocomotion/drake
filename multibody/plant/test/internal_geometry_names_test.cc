@@ -58,7 +58,7 @@ class GeometryNamesTest : public ::testing::Test {
   const std::vector<GeometryId>& GetGeometryIds(
       std::string_view body_name,
       std::optional<std::string_view> model_name = {}) const {
-    const Body<double>* body{};
+    const RigidBody<double>* body{};
     if (model_name.has_value()) {
       ModelInstanceIndex index = plant_->GetModelInstanceByName(*model_name);
       body = &(plant_->GetBodyByName(body_name, index));

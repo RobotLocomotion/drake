@@ -85,8 +85,8 @@ class SlidingBoxTest : public ::testing::Test {
           contact_results.point_pair_contact_info(0);
 
       // Verify the bodies referenced by the contact info.
-      const Body<double>& ground = the_plant.GetBodyByName("ground");
-      const Body<double>& box = the_plant.GetBodyByName("box");
+      const RigidBody<double>& ground = the_plant.GetBodyByName("ground");
+      const RigidBody<double>& box = the_plant.GetBodyByName("box");
       EXPECT_TRUE((point_pair_contact_info.bodyA_index() == box.index() &&
                    point_pair_contact_info.bodyB_index() == ground.index()) ||
                   (point_pair_contact_info.bodyB_index() == box.index() &&

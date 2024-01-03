@@ -91,7 +91,7 @@ namespace internal {
 given body's moments of inertia. */
 template <typename T>
 std::pair<geometry::Ellipsoid, math::RigidTransform<double>>
-CalculateInertiaGeometry(const multibody::Body<T>& body,
+CalculateInertiaGeometry(const multibody::RigidBody<T>& body,
                          const systems::Context<T>& plant_context);
 }  // namespace internal
 

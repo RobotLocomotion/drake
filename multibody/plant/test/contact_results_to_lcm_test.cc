@@ -107,7 +107,8 @@ class MultibodyPlantTester {
   /* Adds the given geometry `id` to the given `body` as one of its collision
    geometries. */
   template <typename T>
-  static void AddCollisionGeometryToBody(GeometryId id, const Body<T>& body,
+  static void AddCollisionGeometryToBody(GeometryId id,
+                                         const RigidBody<T>& body,
                                          MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(body.index() < plant->num_bodies());
     plant->collision_geometries_[body.index()].push_back(id);

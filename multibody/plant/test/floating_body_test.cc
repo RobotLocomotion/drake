@@ -18,7 +18,7 @@ class MultibodyTreeTester {
  public:
   MultibodyTreeTester() = delete;
   static const QuaternionFloatingMobilizer<double>& get_floating_mobilizer(
-      const MultibodyTree<double>& model, const Body<double>& body) {
+      const MultibodyTree<double>& model, const RigidBody<double>& body) {
     return model.GetFreeBodyMobilizerOrThrow(body);
   }
 };

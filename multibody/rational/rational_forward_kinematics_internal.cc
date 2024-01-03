@@ -40,7 +40,7 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
     if (current == end) {
       break;
     }
-    const BodyTopology& current_node = topology.get_body(current);
+    const RigidBodyTopology& current_node = topology.get_body(current);
     if (current != world_index()) {
       const BodyIndex parent = current_node.parent_body;
       visit_edge(current, parent);
@@ -71,7 +71,8 @@ std::vector<MobilizerIndex> FindMobilizersOnPath(
   mobilizers_on_path.reserve(path.size() - 1);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
-    const BodyTopology& body_topology = tree.get_topology().get_body(path[i]);
+    const RigidBodyTopology& body_topology =
+        tree.get_topology().get_body(path[i]);
     if (path[i] != world_index() && body_topology.parent_body == path[i + 1]) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i]'s inboard mobilizer.

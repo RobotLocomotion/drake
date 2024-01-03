@@ -6,9 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {

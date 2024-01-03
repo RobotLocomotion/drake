@@ -59,8 +59,8 @@ TEST_F(IiwaKinematicConstraintTest, SpatialVelocityConstraint) {
   // the double values match; the gradients are computed via a straight-forward
   // application of autodiff.
   plant_->SetPositionsAndVelocities(plant_context_, x);
-  const Body<double>& bodyA = plant_->GetBodyByName("iiwa_link_7");
-  const Body<double>& bodyB = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& bodyA = plant_->GetBodyByName("iiwa_link_7");
+  const RigidBody<double>& bodyB = plant_->GetBodyByName("iiwa_link_3");
   const auto V_AW_W = plant_->world_frame().CalcSpatialVelocity(
       *plant_context_, bodyA.body_frame(), plant_->world_frame());
   const auto V_WB_W = bodyB.EvalSpatialVelocityInWorld(*plant_context_);

@@ -1153,7 +1153,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] name
   ///   A string that identifies the new body to be added to `this` model. A
   ///   std::runtime_error is thrown if a body named `name` already is part of
-  ///   @p model_instance. See HasBodyNamed(), Body::name().
+  ///   @p model_instance. See HasBodyNamed(), RigidBody::name().
   /// @param[in] model_instance
   ///   A model instance index which this body is part of.
   /// @param[in] M_BBo_B
@@ -1200,7 +1200,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   A string that identifies the new body to be added to `this` model. A
   ///   std::runtime_error is thrown if a body named `name` already is part of
   ///   the model in the default model instance. See HasBodyNamed(),
-  ///   Body::name().
+  ///   RigidBody::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
@@ -1305,7 +1305,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///     plant.AddRigidBody("Body1", SpatialInertia<double>(...));
   ///   const RigidBody<double>& body_2 =
   ///     plant.AddRigidBody("Body2", SpatialInertia<double>(...));
-  ///   // Body 1 serves as parent, Body 2 serves as child.
+  ///   // RigidBody 1 serves as parent, RigidBody 2 serves as child.
   ///   // Define the pose X_BM of a frame M rigidly attached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     plant.AddJoint<RevoluteJoint>(
@@ -1326,9 +1326,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// is defined.
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
-      const std::string& name, const Body<T>& parent,
+      const std::string& name, const RigidBody<T>& parent,
       const std::optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child,
+      const RigidBody<T>& child,
       const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
     // TODO(Mitiguy) Per discussion in PR# 13961 and issues #12789 and #13040,
     //  consider changing frame F to frame Jp and changing frame M to frame Jc.
@@ -1632,9 +1632,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   ///    f = −stiffness ⋅ d − damping ⋅ ḋ
   ///
-  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] body_A RigidBody to which point P is rigidly attached.
   /// @param[in] p_AP Position of point P in body A's frame.
-  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] body_B RigidBody to which point Q is rigidly attached.
   /// @param[in] p_BQ Position of point Q in body B's frame.
   /// @param[in] distance Fixed length of the distance constraint, in meters. It
   /// must be strictly positive.
@@ -1668,8 +1668,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddDistanceConstraint(
-      const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
-      const Vector3<double>& p_BQ, double distance,
+      const RigidBody<T>& body_A, const Vector3<double>& p_AP,
+      const RigidBody<T>& body_B, const Vector3<double>& p_BQ, double distance,
       double stiffness = std::numeric_limits<double>::infinity(),
       double damping = 0.0);
 
@@ -1677,9 +1677,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// all times with point Q affixed to body B, effectively modeling a
   /// ball-and-socket joint.
   ///
-  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] body_A RigidBody to which point P is rigidly attached.
   /// @param[in] p_AP Position of point P in body A's frame.
-  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] body_B RigidBody to which point Q is rigidly attached.
   /// @param[in] p_BQ Position of point Q in body B's frame.
   /// @returns the id of the newly added constraint.
   ///
@@ -1690,18 +1690,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
-  MultibodyConstraintId AddBallConstraint(const Body<T>& body_A,
+  MultibodyConstraintId AddBallConstraint(const RigidBody<T>& body_A,
                                           const Vector3<double>& p_AP,
-                                          const Body<T>& body_B,
+                                          const RigidBody<T>& body_B,
                                           const Vector3<double>& p_BQ);
 
   /// Defines a constraint such that frame P affixed to body A is coincident at
   /// all times with frame Q affixed to body B, effectively modeling a weld
   /// joint.
   ///
-  /// @param[in] body_A Body to which frame P is rigidly attached.
+  /// @param[in] body_A RigidBody to which frame P is rigidly attached.
   /// @param[in] X_AP Pose of frame P in body A's frame.
-  /// @param[in] body_B Body to which frame Q is rigidly attached.
+  /// @param[in] body_B RigidBody to which frame Q is rigidly attached.
   /// @param[in] X_BQ Pose of frame Q in body B's frame.
   /// @returns the id of the newly added constraint.
   ///
@@ -1713,8 +1713,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddWeldConstraint(
-      const Body<T>& body_A, const math::RigidTransform<double>& X_AP,
-      const Body<T>& body_B, const math::RigidTransform<double>& X_BQ);
+      const RigidBody<T>& body_A, const math::RigidTransform<double>& X_AP,
+      const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BQ);
 
   /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
@@ -1769,7 +1769,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// const SceneGraphInspector<T>& inspector =  ...;
   /// const GeometryId g_id = id_from_some_query;
   /// const FrameId f_id = inspector.GetFrameId(g_id);
-  /// const Body<T>* body = plant.GetBodyFromFrameId(f_id);
+  /// const RigidBody<T>* body = plant.GetBodyFromFrameId(f_id);
   /// ```
   /// See documentation of geometry::SceneGraphInspector on where to get an
   /// inspector.
@@ -1780,8 +1780,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// when %MultibodyPlant registers the corresponding SceneGraph frame, it is
   /// named with a "scoped name". This is a concatenation of
   /// `[model instance name]::[body name]`. Searching for a frame with just the
-  /// name `body name` will fail. (See Body::name() and GetModelInstanceName()
-  /// for those values.)
+  /// name `body name` will fail. (See RigidBody::name() and
+  /// GetModelInstanceName() for those values.)
   /// @{
 
   /// Registers `this` plant to serve as a source for an instance of
@@ -1831,7 +1831,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instance with which RegisterAsSourceForSceneGraph() was called.
   /// @returns the id for the registered geometry.
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties);
 
@@ -1840,7 +1840,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::DrakeVisualizer-compatible set of
   /// geometry::IllustrationProperties.
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color);
 
@@ -1848,7 +1848,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::IllustrationProperties _consumer_ to provide default parameter
   /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
 
   /// Returns an array of GeometryId's identifying the different visual
@@ -1858,7 +1858,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Post-finalize calls will always return the same value.
   /// @see RegisterVisualGeometry(), Finalize()
   const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
-      const Body<T>& body) const;
+      const RigidBody<T>& body) const;
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
@@ -1880,14 +1880,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called post-finalize or if the properties are
   /// missing the coulomb friction property (or if it is of the wrong type).
   geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       geometry::ProximityProperties properties);
 
   // TODO(SeanCurtis-TRI): Deprecate this in favor of simply passing properties.
   /// Overload which specifies a single property: coulomb_friction.
   geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction);
 
@@ -1898,7 +1898,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Post-finalize calls will always return the same value.
   /// @see RegisterCollisionGeometry(), Finalize()
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
-      const Body<T>& body) const;
+      const RigidBody<T>& body) const;
 
   /// Excludes the rigid collision geometries between two given collision filter
   /// groups. Note that collisions involving deformable geometries are not
@@ -1939,11 +1939,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant was not
   /// registered with a SceneGraph.
   geometry::GeometrySet CollectRegisteredGeometries(
-      const std::vector<const Body<T>*>& bodies) const;
+      const std::vector<const RigidBody<T>*>& bodies) const;
 
   /// Given a geometry frame identifier, returns a pointer to the body
   /// associated with that id (nullptr if there is no such body).
-  const Body<T>* GetBodyFromFrameId(geometry::FrameId frame_id) const {
+  const RigidBody<T>* GetBodyFromFrameId(geometry::FrameId frame_id) const {
     const auto it = frame_id_to_body_index_.find(frame_id);
     if (it == frame_id_to_body_index_.end()) return nullptr;
     return &internal_tree().get_body(it->second);
@@ -3093,8 +3093,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @anchor mbp_working_with_free_bodies
   /// @name                Working with free bodies
   ///
-  /// A %MultibodyPlant user adds sets of Body and Joint objects to `this` plant
-  /// to build a physical representation of a mechanical model.
+  /// A %MultibodyPlant user adds sets of RigidBody and Joint objects to `this`
+  /// plant to build a physical representation of a mechanical model.
   /// At Finalize(), %MultibodyPlant builds a mathematical representation of
   /// such system, consisting of a tree representation. In this
   /// representation each body is assigned a Mobilizer, which grants a certain
@@ -3104,12 +3104,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// tree. If the root body has six degrees of freedom with respect to the
   /// world, it is called a "free body" (sometimes called a "floating body").
   /// A user can request the set of all free bodies with a call to
-  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a Body is
-  /// free (floating) or not with Body::is_floating().
+  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a
+  /// RigidBody is free (floating) or not with RigidBody::is_floating().
   /// For many applications, a user might need to work with indexes in the
   /// multibody state vector. For such applications,
-  /// Body::floating_positions_start() and
-  /// Body::floating_velocities_start_in_v() offer the additional level of
+  /// RigidBody::floating_positions_start() and
+  /// RigidBody::floating_velocities_start_in_v() offer the additional level of
   /// introspection needed.
   ///
   /// It is sometimes convenient for users to perform operations on Bodies
@@ -3118,8 +3118,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
   /// (setting  state, changing parameters, etc.) has the same effect as using
   /// the free body APIs below. Each implicitly created joint is named the same
-  /// as the free body, as reported by `Body::name()`. In the rare case that
-  /// there is already some (unrelated) joint with that name, we'll prepend
+  /// as the free body, as reported by `RigidBody::name()`. In the rare case
+  /// that there is already some (unrelated) joint with that name, we'll prepend
   /// underscores to the name until it is unique.
   /// @{
 
@@ -3135,7 +3135,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
-                                          const Body<T>& body) const {
+                                          const RigidBody<T>& body) const {
     this->ValidateContext(context);
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
@@ -3147,7 +3147,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
-  void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
+  void SetFreeBodyPose(systems::Context<T>* context, const RigidBody<T>& body,
                        const math::RigidTransform<T>& X_WB) const {
     this->ValidateContext(context);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
@@ -3162,7 +3162,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodyPose(const systems::Context<T>& context,
-                       systems::State<T>* state, const Body<T>& body,
+                       systems::State<T>* state, const RigidBody<T>& body,
                        const math::RigidTransform<T>& X_WB) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
@@ -3174,10 +3174,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// effect of the call is that the value will be echoed back in
   /// GetDefaultFreeBodyPose().
   /// @param[in] body
-  ///   Body whose default pose will be set.
+  ///   RigidBody whose default pose will be set.
   /// @param[in] X_WB
   ///   Default pose of the body.
-  void SetDefaultFreeBodyPose(const Body<T>& body,
+  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
                               const math::RigidTransform<double>& X_WB) {
     this->mutable_tree().SetDefaultFreeBodyPose(body, X_WB);
   }
@@ -3185,9 +3185,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose(). If no
   /// pose is specified for the body, returns the identity pose.
   /// @param[in] body
-  ///   Body whose default pose will be retrieved.
+  ///   RigidBody whose default pose will be retrieved.
   math::RigidTransform<double> GetDefaultFreeBodyPose(
-      const Body<T>& body) const {
+      const RigidBody<T>& body) const {
     return internal_tree().GetDefaultFreeBodyPose(body);
   }
 
@@ -3199,7 +3199,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodySpatialVelocity(systems::Context<T>* context,
-                                  const Body<T>& body,
+                                  const RigidBody<T>& body,
                                   const SpatialVelocity<T>& V_WB) const {
     this->ValidateContext(context);
     internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
@@ -3214,7 +3214,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodySpatialVelocity(const systems::Context<T>& context,
-                                  systems::State<T>* state, const Body<T>& body,
+                                  systems::State<T>* state,
+                                  const RigidBody<T>& body,
                                   const SpatialVelocity<T>& V_WB) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
@@ -3227,7 +3228,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomPositionDistribution(
-      const Body<T>& body, const Vector3<symbolic::Expression>& position) {
+      const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
     this->mutable_tree().SetFreeBodyRandomPositionDistributionOrThrow(body,
                                                                       position);
   }
@@ -3237,7 +3238,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomRotationDistribution(
-      const Body<T>& body,
+      const RigidBody<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation) {
     this->mutable_tree().SetFreeBodyRandomRotationDistributionOrThrow(body,
                                                                       rotation);
@@ -3247,7 +3248,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// body's rotation with respect to World using uniformly random rotations.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
-  void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body);
+  void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
 
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
@@ -3263,7 +3264,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
-                                   const Body<T>& body,
+                                   const RigidBody<T>& body,
                                    const math::RigidTransform<T>& X_WB) const;
 
   /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
@@ -3275,7 +3276,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if frame F is not anchored to the world.
   void SetFreeBodyPoseInAnchoredFrame(
       systems::Context<T>* context, const Frame<T>& frame_F,
-      const Body<T>& body, const math::RigidTransform<T>& X_FB) const;
+      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const;
 
   /// If there exists a unique base body that belongs to the model given by
   /// `model_instance` and that unique base body is free
@@ -3284,7 +3285,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `model_instance` is not valid.
   /// @throws std::exception if HasUniqueFreeBaseBody(model_instance) == false.
-  const Body<T>& GetUniqueFreeBaseBodyOrThrow(
+  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
       ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().GetUniqueFreeBaseBodyOrThrowImpl(model_instance);
@@ -3322,7 +3323,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
-      const systems::Context<T>& context, const Body<T>& body_B) const {
+      const systems::Context<T>& context, const RigidBody<T>& body_B) const {
     this->ValidateContext(context);
     return internal_tree().EvalBodyPoseInWorld(context, body_B);
   }
@@ -3330,12 +3331,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Evaluates V_WB, body B's spatial velocity in the world frame W.
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body B for which the spatial velocity is requested.
-  /// @retval V_WB_W Body B's spatial velocity in the world frame W,
+  /// @retval V_WB_W RigidBody B's spatial velocity in the world frame W,
   ///   expressed in W (for point Bo, the body's origin).
   /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
-      const systems::Context<T>& context, const Body<T>& body_B) const {
+      const systems::Context<T>& context, const RigidBody<T>& body_B) const {
     this->ValidateContext(context);
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
@@ -3343,7 +3344,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Evaluates A_WB, body B's spatial acceleration in the world frame W.
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body for which spatial acceleration is requested.
-  /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
+  /// @retval A_WB_W RigidBody B's spatial acceleration in the world frame W,
   ///   expressed in W (for point Bo, the body's origin).
   /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
@@ -3351,7 +3352,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalBodySpatialAccelerationInWorld(
-      const systems::Context<T>& context, const Body<T>& body_B) const;
+      const systems::Context<T>& context, const RigidBody<T>& body_B) const;
 
   /// Evaluates all point pairs of contact for a given state of the model stored
   /// in `context`.
@@ -3786,7 +3787,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// spatial forces F on each body, refer to documentation in MultibodyForces
   /// for details. Users of MultibodyForces will use
   /// MultibodyForces::mutable_generalized_forces() to mutate the stored
-  /// generalized forces directly and will use Body::AddInForceInWorld() to
+  /// generalized forces directly and will use RigidBody::AddInForceInWorld() to
   /// append spatial forces.
   ///
   /// For a given set of forces stored as MultibodyForces, this method will
@@ -4531,7 +4532,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a constant reference to the *world* frame.
-  const BodyFrame<T>& world_frame() const {
+  const RigidBodyFrame<T>& world_frame() const {
     return internal_tree().world_frame();
   }
 
@@ -4543,14 +4544,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns a constant reference to the body with unique index `body_index`.
   /// @throws std::exception if `body_index` does not correspond to a body in
   /// this model.
-  const Body<T>& get_body(BodyIndex body_index) const {
+  const RigidBody<T>& get_body(BodyIndex body_index) const {
     return internal_tree().get_body(body_index);
   }
 
   /// Returns `true` if @p body is anchored (i.e. the kinematic path between
   /// @p body and the world only contains weld joints.)
   /// @throws std::exception if called pre-finalize.
-  bool IsAnchored(const Body<T>& body) const {
+  bool IsAnchored(const RigidBody<T>& body) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().get_topology().IsBodyAnchored(body.index());
   }
@@ -4587,8 +4588,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instances.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
-  const Body<T>& GetBodyByName(std::string_view name) const {
-    return internal_tree().GetBodyByName(name);
+  const RigidBody<T>& GetBodyByName(std::string_view name) const {
+    return internal_tree().GetRigidBodyByName(name);
   }
 
   /// Returns a constant reference to the body that is uniquely identified
@@ -4596,9 +4597,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
-  const Body<T>& GetBodyByName(std::string_view name,
-                               ModelInstanceIndex model_instance) const {
-    return internal_tree().GetBodyByName(name, model_instance);
+  const RigidBody<T>& GetBodyByName(std::string_view name,
+                                    ModelInstanceIndex model_instance) const {
+    return internal_tree().GetRigidBodyByName(name, model_instance);
   }
 
   /// Returns a list of body indices associated with `model_instance`.
@@ -4662,7 +4663,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @returns all bodies rigidly fixed to `body`. This does not return the
   /// bodies in any prescribed order.
   /// @throws std::exception if `body` is not part of this plant.
-  std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
+  std::vector<const RigidBody<T>*> GetBodiesWeldedTo(
+      const RigidBody<T>& body) const;
 
   /// Returns all bodies whose kinematics are transitively affected by the given
   /// vector of joints. The affected bodies are returned in increasing order of
@@ -5503,7 +5505,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
 
   // Registers a geometry frame for every body. If the body already has a
@@ -5511,14 +5513,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // This requires RegisterAsSourceForSceneGraph() was called on `this` plant.
   void RegisterGeometryFramesForAllBodies();
 
-  bool body_has_registered_frame(const Body<T>& body) const {
+  bool body_has_registered_frame(const RigidBody<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=
            body_index_to_frame_id_.end();
   }
 
   // Registers the given body with this plant's SceneGraph instance (if it has
   // one).
-  void RegisterRigidBodyWithSceneGraph(const Body<T>& body);
+  void RegisterRigidBodyWithSceneGraph(const RigidBody<T>& body);
 
   // Calc method for the multibody state vector output port. It only copies the
   // multibody state [q, v], ignoring any miscellaneous state z if present.

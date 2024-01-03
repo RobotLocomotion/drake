@@ -161,7 +161,8 @@ int do_main() {
 
   // Overwrite B's default initial position so it is somewhere above the
   // inclined plane provided `0 < inclined_plane_angle < 40`.
-  const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
+  const drake::multibody::RigidBody<double>& bodyB =
+      plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);

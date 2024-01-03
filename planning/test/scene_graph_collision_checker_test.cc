@@ -20,8 +20,8 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::SceneGraphInspector;
-using multibody::Body;
 using multibody::BodyIndex;
+using multibody::RigidBody;
 using testing::ElementsAre;
 
 enum class MakeCheckerOptions { kMakeNone, kMakeProvider, kMakeFunction };
@@ -67,13 +67,13 @@ Eigen::MatrixXi GenerateFilteredCollisionMatrixFromSceneGraphOnly(
 
   // Loop variables below use `int` for Eigen indexing compatibility.
   for (int i = 0; i < num_bodies; ++i) {
-    const Body<double>& body_i = checker.get_body(BodyIndex(i));
+    const RigidBody<double>& body_i = checker.get_body(BodyIndex(i));
 
     const std::vector<GeometryId>& geometries_i =
         checker.plant().GetCollisionGeometriesForBody(body_i);
 
     for (int j = i; j < num_bodies; ++j) {
-      const Body<double>& body_j = checker.get_body(BodyIndex(j));
+      const RigidBody<double>& body_j = checker.get_body(BodyIndex(j));
 
       // Check if collisions between the geometries are already filtered.
       bool collisions_filtered = false;

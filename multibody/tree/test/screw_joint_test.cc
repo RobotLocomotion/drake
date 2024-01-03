@@ -32,7 +32,7 @@ class ScrewJointTest : public ::testing::Test {
   // screw joint.
   void SetUp() override {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    body_ = &model->AddBody<RigidBody>("Body", SpatialInertia<double>{});
+    body_ = &model->AddRigidBody("Body", SpatialInertia<double>{});
 
     // Add a screw joint between the world and body1:
     joint_ = &model->AddJoint<ScrewJoint>("Joint", model->world_body(),

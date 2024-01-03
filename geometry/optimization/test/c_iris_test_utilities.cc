@@ -48,7 +48,8 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
   // body0
   body_indices_.push_back(
       plant_->AddRigidBody("body0", spatial_inertia).index());
-  const multibody::Body<double>& body0 = plant_->get_body(body_indices_[0]);
+  const multibody::RigidBody<double>& body0 =
+      plant_->get_body(body_indices_[0]);
   plant_->AddJoint<multibody::WeldJoint>(
       "joint0", plant_->world_body(),
       math::RigidTransformd(Eigen::Vector3d(0.1, 0.2, 0)), body0,
@@ -65,7 +66,8 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
   // body1
   body_indices_.push_back(
       plant_->AddRigidBody("body1", spatial_inertia).index());
-  const multibody::Body<double>& body1 = plant_->get_body(body_indices_[1]);
+  const multibody::RigidBody<double>& body1 =
+      plant_->get_body(body_indices_[1]);
   const auto& joint1 = plant_->AddJoint<multibody::RevoluteJoint>(
       "joint1", body0,
       math::RigidTransformd(math::RollPitchYawd(0.1, 0.2, -0.1),
