@@ -467,6 +467,12 @@ if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
+option(WITH_OPENMP "Build with support for OpenMP" OFF)
+
+if(WITH_OPENMP)
+  string(APPEND BAZEL_CONFIG " --config=omp")
+endif()
+
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
