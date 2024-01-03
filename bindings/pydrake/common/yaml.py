@@ -86,8 +86,16 @@ def yaml_load(*, data=None, filename=None, private=False):
     without any schema checking nor default values. To load with respect to
     a schema with defaults, see ``yaml_load_typed()``.
     """
-    if sum(bool(x) for x in [data, filename]) != 1:
-        raise RuntimeError("Must specify exactly one of data= and filename=")
+    has_data = data is not None
+    has_filename = filename is not None
+    if has_data and has_filename:
+        raise RuntimeError(
+            "Exactly one of `data=...` or `filename=...` must be provided, "
+            "but both were non-None")
+    if not has_data and not has_filename:
+        raise RuntimeError(
+            "Exactly one of `data=...` or `filename=...` must be provided, "
+            "but both were None")
     if data:
         return yaml_load_data(data, private=private)
     else:
