@@ -32,8 +32,6 @@ command line.
 
 import argparse
 import getpass
-import git
-import github3
 import hashlib
 import json
 import logging
@@ -43,12 +41,21 @@ import shlex
 import subprocess
 import time
 import urllib
-
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
 from typing import List, Optional
 
+import git
+
+import github3
+
 from drake.tools.workspace.metadata import read_repository_metadata
+
+logger = logging.getLogger('new_release')
+logger.setLevel(logging.INFO)
+
+warn = logger.warning
+info = logger.info
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
@@ -126,7 +133,7 @@ def _is_prerelease(commit, workspace):
     development_stages = ["alpha", "beta", "rc", "pre"]
     prerelease = any(stage in commit for stage in development_stages)
     if prerelease:
-        print("Skipping prerelease {} for {}".format(commit, workspace))
+        logging.debug(f"Skipping prerelease {commit} for {workspace}")
     return prerelease
 
 
@@ -135,7 +142,7 @@ def _latest_tag(gh_repo, workspace):
         if _is_prerelease(tag.name, workspace):
             continue
         return tag.name
-    print("Could not find any matching tags for {}".format(workspace))
+    warn(f"Could not find any matching tags for {workspace}")
     return None
 
 
@@ -204,25 +211,25 @@ def _check_for_upgrades(gh, args, metadata):
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
         elif key == "crate_universe":
             # For details, see drake/tools/workspace/crate_universe/README.md.
-            print(f"Ignoring {workspace_name} from rules_rust")
+            logging.debug(f"Ignoring {workspace_name} from rules_rust")
             continue
         elif workspace_name == "buildifier":
             assert key == "manual"
             old_commit, new_commit = _handle_buildifier(gh, data)
         elif key == "manual":
-            print("{} version {} needs manual inspection".format(
-                workspace_name, data.get("version", "???")))
+            warn(f"{workspace_name} version %s needs manual inspection",
+                 data.get("version", "???"))
             continue
         else:
-            raise RuntimeError("Bad key " + key)
+            raise RuntimeError(f"Bad key {key} in {workspace_name}")
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
-            print("{} needs upgrade from {} to {}".format(
-                workspace_name, old_commit, new_commit))
+            info(f"{workspace_name} needs upgrade"
+                 f" from {old_commit} to {new_commit}")
         else:
-            print("{} version {} needs manual inspection".format(
-                workspace_name, old_commit))
+            warn(f"{workspace_name} version {old_commit}"
+                 " needs manual inspection")
 
 
 def _is_modified(repo, path):
@@ -242,16 +249,16 @@ def _do_commit(local_drake_checkout, actually_commit,
         path_args = zip(['-o'] * len(paths), paths)
         local_drake_checkout.git.commit(
             *path_args, '-m', "[workspace] " + message)
-        print("\n" + ("*" * 72))
-        print(f"Done.  Changes for {names} were committed.")
-        print("Be sure to review the changes and amend the commit if needed.")
-        print(("*" * 72) + "\n")
+        info("\n" + ("*" * 72))
+        info(f"Done.  Changes for {names} were committed.")
+        info("Be sure to review the changes and amend the commit if needed.")
+        info(("*" * 72) + "\n")
     else:
-        print("\n" + ("*" * 72))
-        print("Done.  Be sure to review and commit the changes:")
-        print(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
-        print(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
-        print(("*" * 72) + "\n")
+        info("\n" + ("*" * 72))
+        info("Done.  Be sure to review and commit the changes:")
+        info(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
+        info(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
+        info(("*" * 72) + "\n")
 
 
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
@@ -272,8 +279,8 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     # Determine if we should and can commit the changes made.
     if local_drake_checkout is not None:
         if _is_modified(local_drake_checkout, bzl_filename):
-            print(f"{bzl_filename} has local changes.")
-            print(f"Changes made for {workspace_name} will NOT be committed.")
+            warn(f"{bzl_filename} has local changes.")
+            warn(f"Changes made for {workspace_name} will NOT be committed.")
             can_commit = False
         else:
             can_commit = True
@@ -286,8 +293,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         return UpgradeResult(False)
     elif new_commit is None:
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    print("Upgrading {} from {} to {}".format(
-        workspace_name, old_commit, new_commit))
+    info(f"Upgrading {workspace_name} from {old_commit} to {new_commit}")
 
     # Locate the two hexadecimal lines we need to edit.
     commit_line_re = re.compile(
@@ -309,7 +315,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     assert checksum_line_num is not None
 
     # Download the new source archive.
-    print("Downloading new archive...")
+    info("Downloading new archive...")
     new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
     hasher = hashlib.sha256()
     new_commit_filename = new_commit.replace("/", "_")
@@ -334,14 +340,14 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     os.rename(bzl_filename + ".new", bzl_filename)
 
     # Copy the downloaded tarball into the repository cache.
-    print("Populating repository cache ...")
+    info("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
     # Check for additional instructions.
     if len(upgrade_advice):
-        print("\n" + ("*" * 72))
-        print(upgrade_advice)
-        print(("*" * 72) + "\n")
+        warn("\n" + ("*" * 72))
+        warn(upgrade_advice)
+        warn(("*" * 72) + "\n")
 
     message = f"Upgrade {workspace_name} to latest"
     if _smells_like_a_git_commit(new_commit):
@@ -383,7 +389,7 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
         cohort = ', '.join(modified_workspace_names)
 
         if not can_commit:
-            print(f"Changes made for {cohort} will NOT be committed.")
+            warn(f"Changes made for {cohort} will NOT be committed.")
 
         message = f"Upgrade {cohort} to latest\n\n"
         message += "- " + "\n- ".join(commit_messages)
@@ -431,12 +437,15 @@ def main():
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(message)s")
+
     if args.use_password and not args.user:
         parser.error("Couldn't guess github username; you must supply --user.")
 
     # Log in to github.
     if args.use_password:
-        prompt = "Password for https://{}@github.com: ".format(args.user)
+        prompt = f"Password for https://{args.user}@github.com: "
         gh = github3.login(
             username=args.user,
             password=getpass.getpass(prompt))
@@ -467,10 +476,10 @@ def main():
         local_drake_checkout = None
 
     # Grab the workspace metadata.
-    print("Collecting bazel repository details...")
+    info("Collecting bazel repository details...")
     metadata = read_repository_metadata(repositories=workspaces)
     if args.verbose:
-        print(json.dumps(metadata, sort_keys=True, indent=2))
+        logging.debug(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
         visited_workspaces = set()
@@ -492,7 +501,7 @@ def main():
                 visited_workspaces.update(cohort_workspaces)
     else:
         # Run our report of what's available.
-        print("Checking for new releases...")
+        info("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
 
     if args.lint:
