@@ -1,5 +1,6 @@
 #include "drake/manipulation/util/make_arm_controller_model.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,11 @@ using multibody::parsing::ModelInstanceInfo;
 using systems::Context;
 
 namespace {
+
+template <typename Container, typename Item>
+bool Contains(const Container& haystack, const Item& needle) {
+  return std::find(haystack.begin(), haystack.end(), needle) != haystack.end();
+}
 
 bool AreFramesWelded(const MultibodyPlant<double>& plant,
                      const Frame<double>& A, const Frame<double>& B) {
@@ -79,6 +85,12 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
       plant->GetFrameByName(arm_info.child_frame_name, arm_model_index),
       arm_X_WC);
 
+  const auto sim_arm_bodies = simulation_plant.GetBodyIndices(arm_model_index);
+  std::set<BodyIndex> sim_bodies_accounted_for;
+  for (const BodyIndex& sim_body_index : sim_arm_bodies) {
+    sim_bodies_accounted_for.insert(sim_body_index);
+  }
+
   // Get all models that are gripper-related. This includes all of the bodies
   // that are part of the gripper's model instance and anything welded to the
   // gripper (for example, the calibration checkerboard).
@@ -110,6 +122,10 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
         log()->debug("Adding BodyIndex of Body {}", welded_body->name());
         sim_gripper_body_indices.push_back(welded_body->index());
       }
+    }
+
+    for (const BodyIndex& sim_body_index : sim_gripper_body_indices) {
+      sim_bodies_accounted_for.insert(sim_body_index);
     }
 
     // `C` is the composite body for the gripper.
@@ -153,6 +169,41 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
       // frame in `plant`) should be equal to X_GF.
       plant->AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
           "grasp_frame", C.body_frame(), X_GF));
+    }
+  }
+
+  // For any body on the arm, account for attached mass that is not part of the
+  // arm's model instance.
+  // TODO(eric.cousineau): Is it possible to iterate directly through welded
+  // subgraphs?
+  for (const BodyIndex& sim_body_index : sim_arm_bodies) {
+    const Body<double>& sim_body = simulation_plant.get_body(sim_body_index);
+    const std::vector<const Body<double>*> sim_welded_bodies =
+        simulation_plant.GetBodiesWeldedTo(sim_body);
+    // Do not incorporate world-welded information.
+    if (Contains(sim_welded_bodies, &simulation_plant.world_body())) {
+      continue;
+    }
+    std::vector<BodyIndex> sim_to_calc_inertia;
+    for (const Body<double>* sim_welded_body : sim_welded_bodies) {
+      if (sim_bodies_accounted_for.count(sim_welded_body->index()) > 0) {
+        continue;
+      }
+      sim_bodies_accounted_for.insert(sim_welded_body->index());
+      sim_to_calc_inertia.push_back(sim_welded_body->index());
+    }
+    if (sim_to_calc_inertia.size() > 0) {
+      const Body<double>& body =
+          plant->GetBodyByName(sim_body.name(), arm_model_index);
+      // `C` is the new (composite) body.
+      const SpatialInertia<double> M_CBo_B =
+          simulation_plant.CalcSpatialInertia(
+              *sim_context, sim_body.body_frame(), sim_to_calc_inertia);
+      const std::string temp_body_name =
+          fmt::format("_{}_attached_mass", body.name());
+      const RigidBody<double>& new_body =
+          plant->AddRigidBody(temp_body_name, arm_model_index, M_CBo_B);
+      plant->WeldFrames(body.body_frame(), new_body.body_frame());
     }
   }
 

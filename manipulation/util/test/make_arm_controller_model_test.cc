@@ -296,6 +296,38 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
                        *sim_plant_context);
 }
 
+TEST_F(MakeArmControllerModelTest, AdditionalAttachedModels) {
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      "drake/manipulation/util/test/iiwa7_wsg_cameras.dmd.yaml"));
+  Parser parser{sim_plant_};
+  std::vector<ModelInstanceInfo> models_from_directives =
+      multibody::parsing::ProcessModelDirectives(directives, &parser);
+  sim_plant_->mutable_gravity_field().set_gravity_vector(
+      Eigen::Vector3d(0.1, 0.2, -0.3));
+  sim_plant_->Finalize();
+
+  // Query the ModelInstanceInfo(s) from the directives.
+  ModelInstanceInfo iiwa7_info;
+  ModelInstanceInfo wsg_info;
+  for (const ModelInstanceInfo& model_info : models_from_directives) {
+    if (model_info.model_name == "iiwa7") {
+      iiwa7_info = model_info;
+    } else if (model_info.model_name == "schunk_wsg") {
+      wsg_info = model_info;
+    }
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> control_plant =
+      MakeArmControllerModel(*sim_plant_, iiwa7_info, wsg_info);
+  ASSERT_NE(control_plant, nullptr);
+
+  std::unique_ptr<Context<double>> sim_plant_context =
+      sim_plant_->CreateDefaultContext();
+
+  CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
+                       *sim_plant_context);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace manipulation
