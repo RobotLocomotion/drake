@@ -18,13 +18,15 @@ namespace internal {
 
  The returned plant will contain an arm model loaded from @p arm_info.model_path
  and welded to the world at @p arm_info.child_frame_name at the same pose as
- @p simulation_plant.
+ @p simulation_plant. All bodies welded directly to bodies of the arm will be
+ replaced with lumped masses.
 
  If @p gripper_info is provided, this function will use @p simulation_plant
  to measure the gripper's inertia and attach a single non-articulated rigid body
- that matches the gripper's inertia. Additionally, if `grasp_frame` is present
- in the gripper model and welded to @p gripper_info.child_frame_name, a
- `grasp_frame` Frame will be added at the same pose as @p simulation_plant.
+ that matches the gripper's inertia, including any bodies welded to the gripper.
+ Additionally, if `grasp_frame` is present in the gripper model and welded to
+ @p gripper_info.child_frame_name, a `grasp_frame` Frame will be added at the
+ same pose as @p simulation_plant.
 
  This function requires that (a) most intermediate frames / bodies can be
  recreated by loading the URDF / SDFormat file dictated by ModelInstanceInfo and
