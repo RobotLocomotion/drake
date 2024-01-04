@@ -453,6 +453,12 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
 
+    def test_AddMinimumDistanceUpperBoundConstraint(self):
+        ik = self.ik_two_bodies
+        ik.AddMinimumDistanceUpperBoundConstraint(
+            bound=0.1,
+            influence_distance_offset=0.01)
+
     def test_AddDistanceConstraint(self):
         ik = self.ik_two_bodies
         W = self.plant.world_frame()
