@@ -100,10 +100,12 @@ class MujocoParser {
       return {};
     }
 
-    Vector4d quat;  // MuJoCo uses w,x,y,z order.
-    if (ParseVectorAttribute(node, "quat", &quat)) {
-      return RigidTransformd(
-          Eigen::Quaternion<double>(quat[0], quat[1], quat[2], quat[3]), pos);
+    {
+      Vector4d quat;  // MuJoCo uses w,x,y,z order.
+      if (ParseVectorAttribute(node, "quat", &quat)) {
+        return RigidTransformd(
+            Eigen::Quaternion<double>(quat[0], quat[1], quat[2], quat[3]), pos);
+      }
     }
 
     Vector4d axisangle;
@@ -120,8 +122,32 @@ class MujocoParser {
       if (angle_ == kDegree) {
         euler *= (M_PI / 180.0);
       }
-      // Default is extrinsic xyz.  See eulerseq compiler option.
-      return RigidTransformd(math::RollPitchYawd(euler), pos);
+      Quaternion<double> quat(1, 0, 0, 0);
+      DRAKE_DEMAND(eulerseq_.size() == 3);
+      for (int i = 0; i < 3; ++i) {
+        Quaternion<double> this_quat(cos(euler[i] / 2.0), 0, 0, 0);
+        double sa = sin(euler[i] / 2.0);
+
+        if (eulerseq_[i] == 'x' || eulerseq_[i] == 'X') {
+          this_quat.x() = sa;
+        } else if (eulerseq_[i] == 'y' || eulerseq_[i] == 'Y') {
+          this_quat.y() = sa;
+        } else {
+          // We already confirmed that eulerseq_ only has 'xyzXYZ' when it was
+          // parsed.
+          DRAKE_DEMAND(eulerseq_[i] == 'z' || eulerseq_[i] == 'Z');
+          this_quat.z() = sa;
+        }
+
+        if (eulerseq_[i] == 'x' || eulerseq_[i] == 'y' || eulerseq_[i] == 'z') {
+          // moving axes: post-multiply
+          quat = quat * this_quat;
+        } else {
+          // fixed axes: pre-multiply
+          quat = this_quat * quat;
+        }
+      }
+      return RigidTransformd(RotationMatrixd(quat), pos);
     }
 
     Vector6d xyaxes;
@@ -1133,7 +1159,23 @@ class MujocoParser {
     }
 
     WarnUnsupportedAttribute(*node, "fitaabb");
-    WarnUnsupportedAttribute(*node, "eulerseq");
+
+    std::string eulerseq;
+    if (ParseStringAttribute(node, "eulerseq", &eulerseq)) {
+      if (eulerseq.size() != 3 ||
+          eulerseq.find_first_not_of("xyzXYZ") != std::string::npos) {
+        Error(
+            *node,
+            fmt::format(
+                "Illegal value '{}' for the eulerseq in {}. Valid eulerseq are "
+                "exactly three characters from the set [x,y,z,X,Y,Z]",
+                eulerseq, node->Name()));
+
+      } else {
+        eulerseq_ = eulerseq;
+      }
+    }
+
     WarnUnsupportedAttribute(*node, "texturedir");
     WarnUnsupportedAttribute(*node, "discardvisual");
     WarnUnsupportedAttribute(*node, "convexhull");
@@ -1430,6 +1472,7 @@ class MujocoParser {
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
   std::optional<std::filesystem::path> meshdir_{};
+  std::string eulerseq_{"xyz"};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_;
