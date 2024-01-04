@@ -567,6 +567,9 @@ drake_cc_googletest(
         "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//geometry/test_utilities:meshcat_environment",
+        "//visualization",
     ],
 )
 
