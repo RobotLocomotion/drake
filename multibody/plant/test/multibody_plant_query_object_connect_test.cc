@@ -30,7 +30,6 @@ using systems::DiagramBuilder;
 using systems::System;
 
 constexpr char kModelWithCollisions[] = R"""(
-<?xml version="1.0"?>
 <robot name="box">
   <link name="box">
     <inertial>
@@ -47,7 +46,6 @@ constexpr char kModelWithCollisions[] = R"""(
 )""";
 
 constexpr char kModelWithoutCollisions[] = R"""(
-<?xml version="1.0"?>
 <robot name="box">
   <link name="box">
     <inertial>
