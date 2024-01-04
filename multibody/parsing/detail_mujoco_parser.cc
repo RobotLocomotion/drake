@@ -872,6 +872,26 @@ class MujocoParser {
     }
   }
 
+  // Parse sub-elements of `<default>`, for a particular `element name`,
+  // updating `default_map`. Implements the inheritance mechanism for
+  // defaults; see
+  // https://mujoco.readthedocs.io/en/latest/modeling.html#cdefault
+  void ParseClassDefaults(XMLElement* node,
+                          const std::string& class_name,
+                          const std::string& parent_default,
+                          const std::string& element_name,
+                          std::map<std::string, XMLElement*>* default_map) {
+    const char* elt_name = element_name.c_str();
+    for (XMLElement* e = node->FirstChildElement(elt_name); e;
+         e = e->NextSiblingElement(elt_name)) {
+      (*default_map)[class_name] = e;
+      if (!parent_default.empty() &&
+          default_map->count(parent_default) > 0) {
+        ApplyDefaultAttributes(*default_map->at(parent_default), e);
+      }
+    }
+  }
+
   void ParseDefault(XMLElement* node, const std::string& parent_default = "") {
     std::string class_name;
     if (!ParseStringAttribute(node, "class", &class_name)) {
@@ -885,27 +905,17 @@ class MujocoParser {
       }
     }
 
-    auto ParseClassDefaults =
+    // This sugar forwards common local arguments to ParseClassDefaults().
+    auto parse_class_defaults =
         [&](const std::string& element_name,
             std::map<std::string, XMLElement*>* default_map) {
-          for (XMLElement* e = node->FirstChildElement(type.c_str()); e;
-               e = e->NextSiblingElement(type.c_str())) {
-            (*default_map_)[class_name] = e;
-            if (!parent_default.empty() &&
-                default_map_->count(parent_default) > 0) {
-              ApplyDefaultAttributes(*default_map_.at(parent_default), e);
-            }
-          }
-        }
+          ParseClassDefaults(node, class_name, parent_default, element_name,
+                             default_map);
+    };
 
-    // Parse default geometries.
-    ParseClassDefaults("geom", &default_geometry_);
-
-    // Parse default joints.
-    ParseClassDefaults("joint", &default_joint_);
-
-    // Parse default mesh.
-    ParseClassDefaults("mesh", &default_mesh_);
+    parse_class_defaults("geom", &default_geometry_);
+    parse_class_defaults("joint", &default_joint_);
+    parse_class_defaults("mesh", &default_mesh_);
 
     // Parse child defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
