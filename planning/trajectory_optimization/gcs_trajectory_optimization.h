@@ -569,9 +569,9 @@ num_positions, and unique.
 @param epsilon is the ϵ value used for the convexity radius inequality. The
 partitioned sets are made by intersecting convex_set with axis-aligned
 bounding boxes that respect the convexity radius. These boxes are made to
-overlap by ϵ along each dimension, for numerical purposes.
+overlap by ϵ radians along each dimension, for numerical purposes.
 @return the vector of convex sets that each respect convexity radius.
-@throws std::exception if ϵ <= 0.
+@throws std::exception if ϵ <= 0 or ϵ >= π.
 @throws std::exception if the input convex set is unbounded.
 @throws std::exception if continuous_revolute_joints has repeated entries, or if
 any entry is outside the interval [0, convex_set.ambient_dimension()). */
@@ -586,7 +586,7 @@ ambient dimension. Each entry in continuous_revolute_joints must be
 non-negative, less than num_positions, and unique.
 @throws std::exception unless every ConvexSet in convex_sets has the same
 ambient_dimension.
-@throws std::exception if ϵ <= 0.
+@throws std::exception if ϵ <= 0 or ϵ >= π.
 @throws std::exception if continuous_revolute_joints has repeated entries, or if
 any entry is outside the interval [0, ambient_dimension). */
 geometry::optimization::ConvexSets PartitionConvexSet(

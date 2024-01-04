@@ -107,11 +107,10 @@ const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
   return {lower_bound, upper_bound};
 }
 
-/** Given a convex set, and a list of indices corresponding to continuous
-revolute joints, check whether or not the set satisfies the convexity radius.
-Respecting the convexity radius entails that each convex set has a width of
-strictly less than π along each dimension corresponding to a continuous
-revolute joint. */
+/* Helper function to assert that a given list of continuous revolute joint
+ * indices satisfies the requirements for the constructor to
+ * GcsTrajectoryOptimization, as well as any static functions that may take in
+ * such a list. */
 void ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints) {
   for (int i = 0; i < ssize(continuous_revolute_joints); ++i) {
@@ -1107,6 +1106,7 @@ ConvexSets PartitionConvexSet(
     const ConvexSet& convex_set,
     const std::vector<int>& continuous_revolute_joints, const double epsilon) {
   DRAKE_THROW_UNLESS(epsilon > 0);
+  DRAKE_THROW_UNLESS(epsilon < M_PI);
   ThrowsForInvalidContinuousJointsList(convex_set.ambient_dimension(),
                                        continuous_revolute_joints);
   // Unboundedness will be asserted by

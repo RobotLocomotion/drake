@@ -17,6 +17,7 @@ from pydrake.planning import (
     GetContinuousRevoluteJointIndices
 )
 from pydrake.geometry.optimization import (
+    ConvexSet,
     GraphOfConvexSetsOptions,
     GraphOfConvexSets,
     HPolyhedron,
@@ -557,7 +558,10 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
     def test_partition_convex_set(self):
         big_convex_set = VPolytope(np.array([[0, 4]]))
-        PartitionConvexSet(big_convex_set, [0])
+        out = PartitionConvexSet(big_convex_set, [0])
+        self.assertEqual(len(out), 2)
+        self.assertTrue(isinstance(out[0], ConvexSet))
+
         PartitionConvexSet(big_convex_set, [0], 1e-5)
         PartitionConvexSet(convex_set=big_convex_set,
                            continuous_revolute_joints=[0],
