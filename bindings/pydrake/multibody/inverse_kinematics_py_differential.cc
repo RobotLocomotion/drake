@@ -153,6 +153,22 @@ void DefineIkDifferential(py::module m) {
       "DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
           const systems::Context<double>& context,
+          const Vector6<double>& V_AE_desired,
+          const multibody::Frame<double>& frame_A,
+          const multibody::Frame<double>& frame_E,
+          const DifferentialInverseKinematicsParameters& parameters) {
+        return DoDifferentialInverseKinematics(
+            robot, context, V_AE_desired, frame_A, frame_E, parameters);
+      },
+      py::arg("robot"), py::arg("context"), py::arg("V_AE_desired"),
+      py::arg("frame_A"), py::arg("frame_E"), py::arg("parameters"),
+      doc.DoDifferentialInverseKinematics
+          .doc_6args_robot_context_V_AE_desired_frame_A_frame_E_parameters);
+
+  m.def(
+      "DoDifferentialInverseKinematics",
+      [](const multibody::MultibodyPlant<double>& robot,
+          const systems::Context<double>& context,
           const math::RigidTransform<double>& X_WE_desired,
           const multibody::Frame<double>& frame_E,
           const DifferentialInverseKinematicsParameters& parameters) {
@@ -163,6 +179,22 @@ void DefineIkDifferential(py::module m) {
       py::arg("frame_E"), py::arg("parameters"),
       doc.DoDifferentialInverseKinematics
           .doc_5args_robot_context_X_WE_desired_frame_E_parameters);
+
+  m.def(
+      "DoDifferentialInverseKinematics",
+      [](const multibody::MultibodyPlant<double>& robot,
+          const systems::Context<double>& context,
+          const math::RigidTransform<double>& X_AE_desired,
+          const multibody::Frame<double>& frame_A,
+          const multibody::Frame<double>& frame_E,
+          const DifferentialInverseKinematicsParameters& parameters) {
+        return DoDifferentialInverseKinematics(
+            robot, context, X_AE_desired, frame_A, frame_E, parameters);
+      },
+      py::arg("robot"), py::arg("context"), py::arg("X_AE_desired"),
+      py::arg("frame_A"), py::arg("frame_E"), py::arg("parameters"),
+      doc.DoDifferentialInverseKinematics
+          .doc_6args_robot_context_X_AE_desired_frame_A_frame_E_parameters);
 
   {
     using Class = DifferentialInverseKinematicsIntegrator;
