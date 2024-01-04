@@ -27,23 +27,23 @@ geometry::optimization::ConvexSets CloneConvexSets(
   return sets;
 }
 
-/** Deep-copies the ConvexSet copyable_unique_ptrs in the given list into a
-Python-compatible list of ConvexSet unique_ptrs. This is useful to return
+/** Moves the data from ConvexSet copyable_unique_ptrs in the given list into a
+Python-compatible vector of ConvexSet unique_ptrs. This is useful to return
 Python-natural values out of the C++ API, which would otherwise return the more
 complex type. */
-std::vector<std::unique_ptr<geometry::optimization::ConvexSet>> CloneConvexSets(
-    geometry::optimization::ConvexSets sets_in) {
-  std::vector<std::unique_ptr<geometry::optimization::ConvexSet>> sets_out;
-  sets_out.reserve(sets_in.size());
-  for (const auto& set : sets_in) {
-    if (set == nullptr) {
-      sets_out.push_back(nullptr);
-    } else {
-      sets_out.push_back(set->Clone());
-    }
-  }
-  return sets_out;
-}
+// std::vector<std::unique_ptr<geometry::optimization::ConvexSet>>
+// MoveConvexSetsToUniquePtrVector(geometry::optimization::ConvexSets sets_in) {
+//   std::vector<std::unique_ptr<geometry::optimization::ConvexSet>> sets_out;
+//   sets_out.reserve(sets_in.size());
+//   for (const auto& set : sets_in) {
+//     if (set == nullptr) {
+//       sets_out.push_back(nullptr);
+//     } else {
+//       sets_out.push_back(set->Move());
+//     }
+//   }
+//   return sets_out;
+// }
 
 }  // namespace pydrake
 }  // namespace drake

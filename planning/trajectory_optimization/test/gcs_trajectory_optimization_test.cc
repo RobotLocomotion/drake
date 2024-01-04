@@ -1510,6 +1510,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSetAPI) {
   // Epsilon must be strictly positive.
   EXPECT_THROW(PartitionConvexSet(v, continuous_revolute_joints, 0.0),
                std::exception);
+
+  // Epsilon must be less than π.
+  EXPECT_THROW(PartitionConvexSet(v, continuous_revolute_joints, M_PI),
+               std::exception);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
