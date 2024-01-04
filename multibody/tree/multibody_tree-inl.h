@@ -134,9 +134,9 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->is_floating() &&
       mobilizer->inboard_frame().body().index() == world_body().index();
 
-  topology_.get_mutable_body(outboard_body_index).is_floating =
+  topology_.get_mutable_rigid_body(outboard_body_index).is_floating =
       is_body_floating;
-  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+  topology_.get_mutable_rigid_body(outboard_body_index).has_quaternion_dofs =
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
@@ -181,10 +181,7 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     gravity_field_ = gravity_element;
   }
 
-  ForceElementIndex force_element_index = topology_.add_force_element();
-  // This test MUST be performed BEFORE owned_force_elements_.push_back()
-  // below. Do not move it around!
-  DRAKE_DEMAND(force_element_index == num_force_elements());
+  const ForceElementIndex force_element_index(num_force_elements());
   DRAKE_DEMAND(force_element->model_instance().is_valid());
   force_element->set_parent_tree(this, force_element_index);
 

@@ -515,7 +515,7 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
 
   BodyIndex body_index(0);
   FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_body();
+  std::tie(body_index, body_frame_index) = topology_.add_rigid_body();
   // These tests MUST be performed BEFORE frames_.push_back() and
   // owned_rigid_bodies_.push_back() below. Do not move them around!
   DRAKE_DEMAND(body_index == num_bodies());
@@ -706,7 +706,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     const RigidBodyTopology& body_topology =
-        get_topology().get_body(body.index());
+        get_topology().get_rigid_body(body.index());
     if (body_topology.inboard_mobilizer.is_valid()) continue;
     std::string floating_joint_name = body.name();
     // Loop must terminate since there are only a finite number of joints.
@@ -736,7 +736,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const RigidBodyTopology& body_topology =
-      get_topology().get_body(body.index());
+      get_topology().get_rigid_body(body.index());
   const QuaternionFloatingMobilizer<T>* mobilizer =
       dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
           &get_mobilizer(body_topology.inboard_mobilizer));
@@ -865,9 +865,10 @@ template <typename T>
 void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
   const BodyNodeTopology& node_topology =
       topology_.get_body_node(mobod_index);
-  const BodyIndex body_index = node_topology.body;
+  const BodyIndex body_index = node_topology.rigid_body;
 
-  const RigidBody<T>* body = owned_rigid_bodies_[node_topology.body].get();
+  const RigidBody<T>* body =
+      owned_rigid_bodies_[node_topology.rigid_body].get();
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
@@ -3281,7 +3282,7 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     const std::set<BodyIndex>& welded_body = welded_bodies_list[i];
     const BodyIndex parent_body_index = *welded_body.begin();
     const RigidBodyTopology& parent_body_topology =
-        tree_topology.get_body(parent_body_index);
+        tree_topology.get_rigid_body(parent_body_index);
     const MobilizerIndex& parent_mobilizer_index =
         parent_body_topology.inboard_mobilizer;
     const Mobilizer<T>& parent_mobilizer =
@@ -3763,7 +3764,8 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const auto& body : owned_rigid_bodies_) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_body(body->index()).parent_body == world_index())) {
+        (topology_.get_rigid_body(body->index()).parent_body ==
+         world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.
         return std::nullopt;

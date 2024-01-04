@@ -766,7 +766,7 @@ class RigidBody : public MultibodyElement<T> {
   // from the parent MultibodyTree.
   void DoSetTopology(
       const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body(this->index());
+    topology_ = tree_topology.get_rigid_body(this->index());
     body_frame_.SetTopology(tree_topology);
   }
 
