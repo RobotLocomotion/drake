@@ -44,9 +44,14 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         "iiwa_description/sdf/iiwa14_no_collision.sdf");
     parser.AddModels(filename);
     if (!floating) {
+      math::RigidTransform<double> X_WA =
+       math::RigidTransform<double>(
+          math::RotationMatrix<double>::MakeZRotation(M_PI / 10.0),
+          Vector3d(-0.1, -0.2, 0.3));
       plant_->WeldFrames(
           plant_->world_frame(),
-          plant_->GetFrameByName("iiwa_link_0"));
+          plant_->GetFrameByName("iiwa_link_0"),
+          X_WA);
     }
     // Add the EE frame.
     const math::RigidTransformd X_7E(AngleAxis<double>(M_PI, Vector3d::UnitZ()),
@@ -127,6 +132,40 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     drake::log()->info("V_WE = {}", fmt_eigen(V_WE.get_coeffs().transpose()));
     EXPECT_TRUE(CompareMatrices(V_WE_actual.get_coeffs().normalized(),
                                 V_WE.get_coeffs().normalized(), 1e-6));
+
+    const int num_velocities{plant_->num_velocities()};
+    ASSERT_EQ(result.joint_velocities->size(), num_velocities);
+    const double dt = params_->get_time_step();
+    const auto& q_bounds = *(params_->get_joint_position_limits());
+    const auto& v_bounds = *(params_->get_joint_velocity_limits());
+    for (int i = 0; i < num_velocities; ++i) {
+      EXPECT_GE(q(i) + dt * (*result.joint_velocities)(i), q_bounds.first(i));
+      EXPECT_LE(q(i) + dt * (*result.joint_velocities)(i), q_bounds.second(i));
+      EXPECT_GE((*result.joint_velocities)(i), v_bounds.first(i));
+      EXPECT_LE((*result.joint_velocities)(i), v_bounds.second(i));
+    }
+  }
+
+  void CheckPositiveResult(const multibody::SpatialVelocity<double>& V_AB,
+                            const Frame<double>& frame_A,
+                            const Frame<double>& frame_B,
+                           const DifferentialInverseKinematicsResult& result) {
+    ASSERT_TRUE(result.joint_velocities != std::nullopt);
+    drake::log()->info("result.joint_velocities = {}",
+                       fmt_eigen(result.joint_velocities->transpose()));
+
+    const VectorXd q = plant_->GetPositions(*context_);
+    auto temp_context = plant_->CreateDefaultContext();
+    plant_->SetPositions(temp_context.get(), q);
+    plant_->SetVelocities(temp_context.get(), result.joint_velocities.value());
+
+    const multibody::SpatialVelocity<double> V_AB_actual =
+         frame_B.CalcSpatialVelocity(*temp_context, frame_A, frame_A);
+    drake::log()->info("V_AB_actual = {}",
+                       fmt_eigen(V_AB_actual.get_coeffs().transpose()));
+    drake::log()->info("V_AB = {}", fmt_eigen(V_AB.get_coeffs().transpose()));
+    EXPECT_TRUE(CompareMatrices(V_AB_actual.get_coeffs().normalized(),
+                                V_AB.get_coeffs().normalized(), 1e-6));
 
     const int num_velocities{plant_->num_velocities()};
     ASSERT_EQ(result.joint_velocities->size(), num_velocities);
@@ -318,6 +357,41 @@ TEST_F(DifferentialInverseKinematicsTest, FloatingBaseNoJointCentering) {
             DifferentialInverseKinematicsStatus::kSolutionFound);
 }
 
+TEST_F(DifferentialInverseKinematicsTest, PositiveTestIiwaFrame) {
+  SetUpRobot();
+  const multibody::Frame<double>& frame_A =
+    plant_->GetFrameByName("iiwa_link_0");
+  const multibody::SpatialVelocity<double> V_AE_A(Vector3d(1.0, 2.0, 3.0),
+                                                  Vector3d(4.0, 5.0, 6.0));
+  DifferentialInverseKinematicsResult result =
+  DoDifferentialInverseKinematics(*plant_, *context_, V_AE_A.get_coeffs(),
+                                  frame_A, *frame_E_, *params_);
+  CheckPositiveResult(V_AE_A, frame_A, *frame_E_, result);
+}
+
+TEST_F(DifferentialInverseKinematicsTest, SimpleTrackerIiwaFrame) {
+  SetUpRobot();
+  const multibody::Frame<double>& frame_A =
+    plant_->GetFrameByName("iiwa_link_0");
+  math::RigidTransform<double> X_AE = frame_E_->CalcPose(*context_, frame_A);
+  math::RigidTransform<double> X_AE_desired =
+      math::RigidTransform<double>(Vector3d(-0.02, -0.01, -0.03)) * X_AE;
+  for (int iteration = 0; iteration < 60; ++iteration) {
+    const DifferentialInverseKinematicsResult result =
+    DoDifferentialInverseKinematics(
+        *plant_, *context_, X_AE_desired, frame_A, *frame_E_, *params_);
+    ASSERT_EQ(result.status,
+              DifferentialInverseKinematicsStatus::kSolutionFound);
+
+    const VectorXd q = plant_->GetPositions(*context_);
+    const VectorXd v = result.joint_velocities.value();
+    const double dt = params_->get_time_step();
+    plant_->SetPositions(context_, q + v * dt);
+  }
+  X_AE = frame_E_->CalcPose(*context_, frame_A);
+  EXPECT_TRUE(CompareMatrices(X_AE.GetAsMatrix4(), X_AE_desired.GetAsMatrix4(),
+                              1e-5, MatrixCompareType::absolute));
+}
 
 // Test various throw conditions.
 GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {

@@ -98,6 +98,9 @@ class TestPlanner(unittest.TestCase):
 
         context = plant.CreateDefaultContext()
         frame = plant.GetFrameByName("Link2")
+
+        world_frame = plant.world_frame()
+
         parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
 
         mut.DoDifferentialInverseKinematics(plant, context,
@@ -105,6 +108,12 @@ class TestPlanner(unittest.TestCase):
 
         mut.DoDifferentialInverseKinematics(plant, context, RigidTransform(),
                                             frame, parameters)
+
+        mut.DoDifferentialInverseKinematics(plant, context, np.zeros(6),
+                                            world_frame, frame, parameters)
+
+        mut.DoDifferentialInverseKinematics(plant, context, RigidTransform(),
+                                            world_frame, frame, parameters)
 
     def test_diff_ik_integrator(self):
         file_name = FindResourceOrThrow(
