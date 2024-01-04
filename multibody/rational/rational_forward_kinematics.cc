@@ -69,7 +69,7 @@ RationalForwardKinematics::RationalForwardKinematics(
   for (BodyIndex body_index(1); body_index < plant_.num_bodies();
        ++body_index) {
     const internal::RigidBodyTopology& body_topology =
-        tree.get_topology().get_body(body_index);
+        tree.get_topology().get_rigid_body(body_index);
     const internal::Mobilizer<double>* mobilizer =
         &(tree.get_mobilizer(body_topology.inboard_mobilizer));
     if (IsRevolute(*mobilizer)) {
@@ -231,9 +231,9 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // X_M'C' = X_PF.inverse()
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
   const internal::RigidBodyTopology& parent_topology =
-      tree.get_topology().get_body(parent);
+      tree.get_topology().get_rigid_body(parent);
   const internal::RigidBodyTopology& child_topology =
-      tree.get_topology().get_body(child);
+      tree.get_topology().get_rigid_body(child);
   internal::MobilizerIndex mobilizer_index;
   bool is_order_reversed;
   if (parent_topology.parent_body.is_valid() &&

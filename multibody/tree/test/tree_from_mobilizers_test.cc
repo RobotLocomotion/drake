@@ -231,7 +231,8 @@ class PendulumTests : public ::testing::Test {
       const RigidBody<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    const MobodIndex mobod_index = topology.get_body(body.index()).mobod_index;
+    const MobodIndex mobod_index =
+        topology.get_rigid_body(body.index()).mobod_index;
     return RigidTransform<T>(pc.get_X_WB(mobod_index));
   }
 
@@ -243,7 +244,7 @@ class PendulumTests : public ::testing::Test {
       const RigidBody<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.index()).mobod_index);
+    return vc.get_V_WB(topology.get_rigid_body(body.index()).mobod_index);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
@@ -255,7 +256,7 @@ class PendulumTests : public ::testing::Test {
       const RigidBody<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.index()).mobod_index);
+    return ac.get_A_WB(topology.get_rigid_body(body.index()).mobod_index);
   }
 
  protected:
