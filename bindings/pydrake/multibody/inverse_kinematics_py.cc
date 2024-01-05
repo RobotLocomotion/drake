@@ -135,6 +135,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             &Class::AddMinimumDistanceLowerBoundConstraint, py::arg("bound"),
             py::arg("influence_distance_offset") = 0.01,
             cls_doc.AddMinimumDistanceLowerBoundConstraint.doc)
+        .def("AddMinimumDistanceUpperBoundConstraint",
+            &Class::AddMinimumDistanceUpperBoundConstraint, py::arg("bound"),
+            py::arg("influence_distance_offset"),
+            cls_doc.AddMinimumDistanceUpperBoundConstraint.doc)
         .def("AddDistanceConstraint", &Class::AddDistanceConstraint,
             py::arg("geometry_pair"), py::arg("distance_lower"),
             py::arg("distance_upper"), cls_doc.AddDistanceConstraint.doc)
