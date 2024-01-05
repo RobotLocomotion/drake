@@ -898,6 +898,26 @@ class MujocoParser {
     }
   }
 
+  // Parse sub-elements of `<default>`, for a particular `element name`,
+  // updating `default_map`. Implements the inheritance mechanism for
+  // defaults; see
+  // https://mujoco.readthedocs.io/en/latest/modeling.html#cdefault
+  void ParseClassDefaults(XMLElement* node,
+                          const std::string& class_name,
+                          const std::string& parent_default,
+                          const std::string& element_name,
+                          std::map<std::string, XMLElement*>* default_map) {
+    const char* elt_name = element_name.c_str();
+    for (XMLElement* e = node->FirstChildElement(elt_name); e;
+         e = e->NextSiblingElement(elt_name)) {
+      (*default_map)[class_name] = e;
+      if (!parent_default.empty() &&
+          default_map->count(parent_default) > 0) {
+        ApplyDefaultAttributes(*default_map->at(parent_default), e);
+      }
+    }
+  }
+
   void ParseDefault(XMLElement* node, const std::string& parent_default = "") {
     std::string class_name;
     if (!ParseStringAttribute(node, "class", &class_name)) {
@@ -911,27 +931,17 @@ class MujocoParser {
       }
     }
 
-    // Parse default geometries.
-    for (XMLElement* geom_node = node->FirstChildElement("geom"); geom_node;
-         geom_node = geom_node->NextSiblingElement("geom")) {
-      default_geometry_[class_name] = geom_node;
-      if (!parent_default.empty() &&
-          default_geometry_.count(parent_default) > 0) {
-        ApplyDefaultAttributes(*default_geometry_.at(parent_default),
-                               geom_node);
-      }
-    }
+    // This sugar forwards common local arguments to ParseClassDefaults().
+    auto parse_class_defaults =
+        [&](const std::string& element_name,
+            std::map<std::string, XMLElement*>* default_map) {
+          ParseClassDefaults(node, class_name, parent_default, element_name,
+                             default_map);
+    };
 
-    // Parse default joints.
-    for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
-         joint_node = joint_node->NextSiblingElement("joint")) {
-      default_joint_[class_name] = joint_node;
-      if (!parent_default.empty() &&
-          default_joint_.count(parent_default) > 0) {
-        ApplyDefaultAttributes(*default_joint_.at(parent_default),
-                               joint_node);
-      }
-    }
+    parse_class_defaults("geom", &default_geometry_);
+    parse_class_defaults("joint", &default_joint_);
+    parse_class_defaults("mesh", &default_mesh_);
 
     // Parse child defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
@@ -941,7 +951,6 @@ class MujocoParser {
     }
 
     WarnUnsupportedElement(*node, "include");
-    WarnUnsupportedElement(*node, "mesh");
     WarnUnsupportedElement(*node, "material");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
@@ -971,7 +980,13 @@ class MujocoParser {
 
     for (XMLElement* mesh_node = node->FirstChildElement("mesh"); mesh_node;
          mesh_node = mesh_node->NextSiblingElement("mesh")) {
-      WarnUnsupportedAttribute(*mesh_node, "class");
+      std::string class_name;
+      if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
+        class_name = "main";
+      }
+      if (default_mesh_.count(class_name) > 0) {
+        ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
+      }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
       WarnUnsupportedAttribute(*mesh_node, "vertex");
       // Note: "normal" and "face" are not supported either, but that lack of
@@ -1153,8 +1168,15 @@ class MujocoParser {
       }
     }
 
+    std::string assetdir;
+    if (ParseStringAttribute(node, "assetdir", &assetdir)) {
+      // assetdir sets both meshdir and texturedir, but texturedir is not
+      // supported.
+      meshdir_ = assetdir;
+    }
     std::string meshdir;
     if (ParseStringAttribute(node, "meshdir", &meshdir)) {
+      // meshdir takes priority over assetdir.
       meshdir_ = meshdir;
     }
 
@@ -1387,17 +1409,18 @@ class MujocoParser {
       ParseOption(option_node);
     }
 
-    // Parses the assets.
-    for (XMLElement* asset_node = node->FirstChildElement("asset"); asset_node;
-         asset_node = asset_node->NextSiblingElement("asset")) {
-      ParseAsset(asset_node);
-    }
-
     // Parse the defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
          default_node;
          default_node = default_node->NextSiblingElement("default")) {
       ParseDefault(default_node);
+    }
+
+    // Parse the assets. This must happen after parsing the defaults (which
+    // could set the assetdir).
+    for (XMLElement* asset_node = node->FirstChildElement("asset"); asset_node;
+         asset_node = asset_node->NextSiblingElement("asset")) {
+      ParseAsset(asset_node);
     }
 
     // Parses the model's world link elements.
@@ -1468,6 +1491,7 @@ class MujocoParser {
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
   std::map<std::string, XMLElement*> default_joint_{};
+  std::map<std::string, XMLElement*> default_mesh_{};
   enum InertiaFromGeometry { kFalse, kTrue, kAuto };
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
