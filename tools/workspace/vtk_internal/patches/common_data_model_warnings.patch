@@ -3,6 +3,7 @@
 vtkBoundingBox: -Wold-style-cast
 
 TODO(jwnimmer-tri) We should upstream this patch.
+TODO(kwryankrattiger) This patch is no longer needed upstream and should be removed
 
 --- Common/DataModel/vtkBoundingBox.h
 +++ Common/DataModel/vtkBoundingBox.h
