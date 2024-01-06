@@ -4857,8 +4857,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `actuator_index` does not correspond to a joint
   /// actuator in this tree.
   JointActuator<T>& get_mutable_joint_actuator(
-      JointActuatorIndex actuator_index) const {
-    return internal_tree().get_mutable_joint_actuator(actuator_index);
+      JointActuatorIndex actuator_index) {
+    return mutable_tree().get_mutable_joint_actuator(actuator_index);
   }
 
   /// @returns `true` if an actuator named `name` was added to this model.
@@ -5169,6 +5169,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
  private:
   using internal::MultibodyTreeSystem<T>::internal_tree;
+  using internal::MultibodyTreeSystem<T>::mutable_tree;
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.

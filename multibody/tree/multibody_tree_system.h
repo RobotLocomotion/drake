@@ -297,7 +297,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /* Returns a mutable reference to the MultibodyTree owned by this class. */
-  MultibodyTree<T>& mutable_tree() const;
+  MultibodyTree<T>& mutable_tree();
 
   /* Finalize the tree if that hasn't already been done, complete System
   construction, and declare any needed Context resources for the tree. You must
