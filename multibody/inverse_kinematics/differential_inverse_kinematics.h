@@ -390,8 +390,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @param robot A MultibodyPlant model.
  * @param context Must be the Context of the MultibodyPlant. Contains the
  * current generalized position and velocity.
- * @param V_AE_desired Desired @p frame_A spatial velocity of @p frame_E.
- * @param frame_A Reference frame.
+ * @param V_AE_desired Desired spatial velocity of @p frame_E in @p frame A.
+ * @param frame_A Reference frame (inertial or non-inertial).
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and
  * constants.
@@ -442,8 +442,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @param robot A MultibodyPlant model.
  * @param context Must be the Context of the MultibodyPlant. Contains the
  * current generalized position and velocity.
- * @param X_WE_desired Desired pose of @p frame_E in the world frame.
- * @param frame_A Reference frame.
+ * @param X_AE_desired Desired pose of @p frame_E in @p frame_A.
+ * @param frame_A Reference frame (inertial or non-inertial).
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and
  * constants.
