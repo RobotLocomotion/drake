@@ -622,7 +622,7 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   JointActuator<T>& get_mutable_joint_actuator(
-      JointActuatorIndex actuator_index) const {
+      JointActuatorIndex actuator_index) {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
     return *owned_actuators_[actuator_index];
   }
