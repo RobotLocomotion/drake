@@ -246,15 +246,14 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
         .def("SimplifyByIncrementalFaceTranslation", 
             &HPolyhedron::SimplifyByIncrementalFaceTranslation,
-            py::arg("min_v_ratio"),py::arg("do_affine_transform"),
-            py::arg("max_iterations"),py::arg("points_to_contain"),
-            py::arg("intersecting_polytopes"),py::arg("keep_whole_intersection"),
-            py::arg("intersection_pad"),py::arg("random_seed"))
-        .def("ShuffleHyperplanes", &HPolyhedron::ShuffleHyperplanes,
-            py::arg("d"),py::arg("moved_in"),py::arg("random_seed"), cls_doc.ShuffleHyperplanes.doc)
-        .def("MoveFaceAndCull", &HPolyhedron::MoveFaceAndCull,
-            py::arg("d"),py::arg("moved_in"),py::arg("i"),py::arg("i_cull"),py::arg("hx_proposed"), cls_doc.MoveFaceAndCull.doc)
-        .def ("OptimizeAffineTransformInCircumbody", &HPolyhedron::OptimizeAffineTransformInCircumbody,
+            py::arg("min_v_ratio") = 0.1, py::arg("do_affine_transform") = true,
+            py::arg("max_iterations") = 5, 
+            py::arg("points_to_contain") = Eigen::MatrixXd(),
+            py::arg("intersecting_polytopes") = std::vector<HPolyhedron>(),
+            py::arg("keep_whole_intersection") = false,
+            py::arg("intersection_pad") = 1e-4, py::arg("random_seed") = 0)
+        .def ("OptimizeAffineTransformationInCircumbody", 
+            &HPolyhedron::OptimizeAffineTransformationInCircumbody,
             py::arg("circumbody"))
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,

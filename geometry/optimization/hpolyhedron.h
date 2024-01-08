@@ -107,29 +107,61 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
-  /** TODO rhjiang write*/
+  /** Returns an inner approximation of the HPolyhedron, aiming to use fewer 
+  faces.  Proceeds by incrementally translating faces inward and removing other
+  faces that become redundant upon doing so.
+  @param min_v_ratio is a lower bound for the ratio of the volume of the 
+  returned inbody and the volume of `this`.
+  @param do_affine_transformation specifies whether to call 
+  OptimizeAffineTransformationInCircumbody(), to take an affine transformation 
+  of `this` to maximize its volume.  The affine transformation is reverted
+  if the resulting inbody violates conditions related to @p points_to_contain or 
+  @p intersecting_polytopes.
+  @param max_iterations is the maximum number of times to loop through all 
+  faces.
+  @param points_to_contain is an optional matrix whose columns are points that 
+  must be contained in the returned inbody.
+  @param intersecting_polytopes is an optional list of HPolyhedrons that must
+  intersect with the returned inbody.
+  @param keep_whole_intersection specifies whether the face translation
+  step of the algorithm is prohibited from reducing the intersections with the
+  HPolyhedrons in @p intersecting_polytopes.  Regardless of the value of this
+  parameter, the intersections may be reduced by the affine transformation step
+  if @p do_affine_transformation is true.
+  @param intersection_pad is a distance by which each hyperplane is translated
+  back outward after satisfing all other constraints, subject to not
+  surpassing the original hyperplane position.  In the case where
+  @p keep_whole_intersection is false, using a non-zero value for this parameter
+  prevents intersections from being single points.
+  @param random_seed is a seed for a random number generator used to shuffle
+  the ordering of hyperplanes in between iterations.
+  @pre `min_v_ratio` > 0.
+  @pre `max_iterations` > 0.
+  @pre `intersection_pad` >= 0.
+  @pre All columns of `points_to_contain` are points contained within `this`.
+  @pre All elements of `intersecting_polytopes` intersect with `this`.
+  */
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
-    double min_v_ratio = 0.1, int max_iterations = 5, 
+    double min_v_ratio = 0.1, bool do_affine_transformation = true, 
+    int max_iterations = 5, 
+    const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
     const std::vector<drake::geometry::optimization::HPolyhedron>& 
     intersecting_polytopes = std::vector<HPolyhedron>(), 
-    double intersection_pad = 1e-4, bool conservative_intersections = false, 
-    const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
-    bool do_affine_transform = true, int random_seed = 0) const;
+    bool keep_whole_intersection = false, 
+    double intersection_pad = 1e-4, 
+    int random_seed = 0) const;
 
-  /** TODO rhjiang write*/
-//   TODO rhjiang make private
-// extra outputs just for testing
-  // [[nodiscard]] std::tuple<HPolyhedron, std::vector<double>, std::vector<bool>,int> MoveFaceAndCull(std::vector<double>& d, std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, Eigen::VectorXd& hx_proposed) const;
-  [[nodiscard]] HPolyhedron MoveFaceAndCull(Eigen::VectorXd& d, 
-    std::vector<bool>& moved_in, int& i,std::vector<int>& i_cull, 
-    Eigen::VectorXd& hx_proposed) const;
-
-  /** TODO rhjiang write*/
-//   TODO rhjiang make private
-  [[nodiscard]] HPolyhedron ShuffleHyperplanes(Eigen::VectorXd& d, std::vector<bool>& moved_in, int random_seed) const;
-
-  /** TODO rhjiang write*/
-  [[nodiscard]] HPolyhedron OptimizeAffineTransformInCircumbody(HPolyhedron circumbody) const;
+  /** 
+  Solves a semi-definite program to compute the maximum-volume affine 
+  transformation of `this`, subject to being a subset of another
+  HPolyhedron, and subject to the transformation matrix being positive 
+  semi-definite.  The latter condition is necessary for convexity of the
+  program.
+  @param circumbody is an HPolyhedron that must be a superset of the affine 
+  transformation of `this`.
+  @throws std::exception if the solver fails to solve the problem.*/
+  [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(const 
+      HPolyhedron& circumbody) const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and
