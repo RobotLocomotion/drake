@@ -85,8 +85,15 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   tree.Finalize();
 
-  EXPECT_EQ(tree.num_actuated_dofs(), 6);
-  EXPECT_EQ(actuator4.input_start(), 3);
+  // Tally of *successfully* added actuators:
+  // - act1 has 1 dof
+  // - act2 was an error (never added)
+  // - act3 was an error (never added)
+  // - act4 has 3 dofs
+  EXPECT_EQ(tree.num_actuated_dofs(), 4);
+  EXPECT_EQ(actuator1.input_start(), 0);
+  EXPECT_EQ(actuator1.num_inputs(), 1);
+  EXPECT_EQ(actuator4.input_start(), 1);
   EXPECT_EQ(actuator4.num_inputs(), 3);
 }
 

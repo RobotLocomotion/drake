@@ -297,11 +297,13 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
                            "See documentation for Finalize() for details.");
   }
 
+  // Create the JointActuator before making any changes to our member fields, so
+  // if the JointActuator constructor throws our state will still be valid.
+  auto owned = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
+  JointActuator<T>* actuator = owned.get();
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
-  owned_actuators_.push_back(
-      std::make_unique<JointActuator<T>>(name, joint, effort_limit));
-  JointActuator<T>* actuator = owned_actuators_.back().get();
+  owned_actuators_.push_back(std::move(owned));
   actuator->set_parent_tree(this, actuator_index);
   this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
   return *actuator;
