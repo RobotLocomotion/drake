@@ -3,7 +3,12 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <string>
+#include <thread>
+
+#include <fmt/format.h>
 
 // clang-format off to disable clang-format-includes
 // N.B. text-logging.h must be included before spdlog headers
@@ -17,6 +22,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_ostream.h"
 #endif
 
 namespace drake {
@@ -38,6 +44,9 @@ class pylogging_sink final
     // Annotate that the logger is alive (fed by spdlog).
     py::setattr(logger, "_tied_to_spdlog", py::cast(true));
 
+    // Save the thread ID of our thread.
+    initial_thread_id_ = std::this_thread::get_id();
+
     // Match the C++ default level.
     logger.attr("setLevel")(to_py_level(drake::log()->level()));
 
@@ -49,6 +58,16 @@ class pylogging_sink final
 
  protected:
   void sink_it_(const spdlog::details::log_msg& msg) final {
+    const auto this_thread_id = std::this_thread::get_id();
+    if (this_thread_id != initial_thread_id_) {
+      const std::string error_msg = fmt::format(
+          "C++ -> Python log redirection called from non-main thread {}, "
+          "(main thread is {}), this may result in deadlocks. Call "
+          "pydrake.common.use_native_cpp_logging() to disable log redirection.",
+          fmt_streamed(this_thread_id), fmt_streamed(initial_thread_id_));
+      std::cerr << error_msg << std::endl;
+    }
+
     py::gil_scoped_acquire acquire;
 
     // Bail out quickly in case this log level is disabled.
@@ -119,6 +138,7 @@ class pylogging_sink final
   }
 
   std::atomic<bool> is_configured_{false};
+  std::thread::id initial_thread_id_;
   py::object name_{py::cast("drake")};
   py::object is_enabled_for_;
   py::object make_record_;
