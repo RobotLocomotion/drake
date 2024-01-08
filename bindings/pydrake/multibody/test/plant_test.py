@@ -417,6 +417,9 @@ class TestPlant(unittest.TestCase):
         check_repr(
             link1,
             "<RigidBody name='Link1' index=1 model_instance=2>")
+        self.assertTrue(plant.HasFrameNamed(name="Link1"))
+        self.assertTrue(
+            plant.HasFrameNamed(name="Link1", model_instance=model_instance))
         self._test_frame_api(T, plant.GetFrameByName(name="Link1"))
         link1_frame = plant.GetFrameByName(name="Link1")
         check_repr(
