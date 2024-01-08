@@ -216,7 +216,9 @@ filegroup(
 drake_cc_googletest(
     name = "make_arm_controller_model_test",
     data = [
+        ":test/fake_camera.sdf",
         ":test/iiwa7_wsg.dmd.yaml",
+        ":test/iiwa7_wsg_cameras.dmd.yaml",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
