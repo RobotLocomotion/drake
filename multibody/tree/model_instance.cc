@@ -8,6 +8,21 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+ModelInstance<T>::ModelInstance(ModelInstanceIndex index, std::string name)
+    : MultibodyElement<T>(index) {
+  set_name(std::move(name));
+}
+
+template <typename T>
+ModelInstance<T>::~ModelInstance() = default;
+
+template <typename T>
+void ModelInstance<T>::set_name(std::string name) {
+  DRAKE_THROW_UNLESS(!name.empty());
+  name_ = std::move(name);
+}
+
+template <typename T>
 std::vector<JointActuatorIndex> ModelInstance<T>::GetJointActuatorIndices()
     const {
   std::vector<JointActuatorIndex> instance_actuator_indexes;
