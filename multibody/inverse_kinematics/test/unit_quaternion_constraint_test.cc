@@ -45,8 +45,23 @@ GTEST_TEST(UnitQuaternionConstraintTest, Test) {
 TEST_F(TwoFreeBodiesConstraintTest, AddUnitQuaternionConstraintOnPlant) {
   solvers::MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(plant_->num_positions());
+  Eigen::Vector4d body1_guess{0, 0, 0, 1};
+  // Set an initial guess for one body (to confirm that it is not overwritten).
+  prog.SetInitialGuess(
+      q.segment<4>(plant_->GetBodyByName("body1").floating_positions_start()),
+      body1_guess);
   AddUnitQuaternionConstraintOnPlant(*plant_, q, &prog);
   EXPECT_EQ(prog.generic_constraints().size(), 2);
+  // Confirm that body 1's non-default initial guess was not overwritten.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetInitialGuess(q.segment<4>(
+          plant_->GetBodyByName("body1").floating_positions_start())),
+      body1_guess));
+  // Confirm that body 2's default (singular) initial guess _was_ overwritten.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetInitialGuess(q.segment<4>(
+          plant_->GetBodyByName("body2").floating_positions_start())),
+      Eigen::Vector4d(1, 0, 0, 0)));
   Eigen::VectorXd q_val = Eigen::VectorXd::Zero(14);
   q_val.head<4>() << 0.5, -0.5, 0.5, -1.;
   q_val.segment<4>(7) << 1.0 / 3, 2.0 / 3, 2.0 / 3, 0.5;
