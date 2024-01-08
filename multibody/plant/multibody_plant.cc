@@ -1086,7 +1086,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
       internal_tree().get_topology();
   for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
        ++mobod_index) {
-    const BodyIndex body_index = topology.get_body_node(mobod_index).body;
+    const BodyIndex body_index = topology.get_body_node(mobod_index).rigid_body;
     (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
   }
 }
