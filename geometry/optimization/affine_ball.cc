@@ -120,10 +120,12 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
   DRAKE_THROW_UNLESS(x_1.size() == x_2.size());
   DRAKE_THROW_UNLESS(epsilon >= 0.0);
   const double length = (x_1 - x_2).norm();
-  if (length < 1e-9) {
-    throw std::runtime_error(
+  const double kTolerance = 1e-9;
+  if (length < kTolerance) {
+    throw std::runtime_error(fmt::format(
         "AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same "
-        "point.");
+        "point (distance: {} < tolerance: {}.",
+        length, kTolerance));
   }
   const int dim = x_1.size();
   const Eigen::VectorXd center = (x_1 + x_2) / 2.0;

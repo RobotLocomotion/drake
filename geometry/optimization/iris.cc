@@ -56,7 +56,9 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   if (options.termination_func) {
     if (options.termination_func(P)) {
       throw std::runtime_error(
-          "Iris: The termination function on domain returned true.");
+          "Iris: The options.termination_func() returned true for the initial "
+          "region (defined by the domain argument).  Please check the "
+          "implementation of your termination_func.");
     }
   }
 
@@ -616,8 +618,10 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   if (options.termination_func) {
     if (options.termination_func(P)) {
       throw std::runtime_error(
-          "IrisInConfigurationSpace: The termination function on domain "
-          "returned true.");
+          "IrisInConfigurationSpace: The options.termination_func() returned "
+          "true for the initial region (defined by the linear constraints in "
+          "prog_with_additional_constraints and bounding_region arguments).  "
+          "Please check the implementation of your termination_func.");
     }
   }
 
@@ -642,18 +646,17 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   const std::string seed_point_error_msg =
       "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
       "the seed point exited the initial region. Does the provided "
-      "starting_ellipse not contain the seed point?";
+      "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
       "IrisInConfigurationSpace: terminating iterations because the seed point "
       "is no longer in the region.";
   const std::string termination_error_msg =
       "IrisInConfigurationSpace: the termination function returned false on "
-      "the "
-      "computation of the initial region. Are the provided starting_ellipse "
-      "and termination function compatible?";
+      "the computation of the initial region. Are the provided "
+      "options.starting_ellipse and options.termination_func compatible?";
   const std::string termination_msg =
-      "IrisInConfigurationSpace: terminating iterations because the continue "
-      "termination function returned false.";
+      "IrisInConfigurationSpace: terminating iterations because "
+      "options.termination_func returned false.";
 
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
@@ -903,8 +906,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     if (iteration >= options.iteration_limit) {
       log()->info(
           "IrisInConfigurationSpace: Terminating because the iteration limit "
-          "{} has "
-          "been reached.",
+          "{} has been reached.",
           options.iteration_limit);
       break;
     }
@@ -915,16 +917,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     if (delta_volume <= options.termination_threshold) {
       log()->info(
           "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
-          "volume change {} is "
-          "below the threshold {}.",
+          "volume change {} is below the threshold {}.",
           delta_volume, options.termination_threshold);
       break;
     } else if (delta_volume / best_volume <=
                options.relative_termination_threshold) {
       log()->info(
           "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
-          "relative volume change "
-          "{} is below the threshold {}.",
+          "relative volume change {} is below the threshold {}.",
           delta_volume / best_volume, options.relative_termination_threshold);
       break;
     }

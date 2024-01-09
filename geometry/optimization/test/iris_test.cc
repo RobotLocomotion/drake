@@ -283,7 +283,7 @@ GTEST_TEST(IrisTest, TerminationFunc) {
   SetEdgeContainmentTerminationCondition(&options, q1, q3, 1e-3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Iris(obstacles, sample, domain, options),
-      ".* The termination function on domain returned true*.");
+      ".* Please check the implementation of your termination_func.");
 }
 
 GTEST_TEST(IrisTest, BallInBoxNDims) {

@@ -429,7 +429,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
   SetEdgeContainmentTerminationCondition(&options, q1, q4, 1e-3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options),
-      ".*The termination function on domain returned true.");
+      ".*Please check the implementation of your termination_func.");
 }
 
 /* Box obstacles in one corner.

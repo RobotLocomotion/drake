@@ -152,9 +152,6 @@ struct IrisOptions {
   The algorithm will stop when the computed HPolyhedron leaves one of the
   points, in a similar way to how @p require_sample_point_is_contained is
   enforced.
-  @warning Using an inappropriate termination function may lead to the IRIS
-  algorithm throw an error. It is the user's responsibility to ensure the
-  validity of the termination function.
   */
   std::function<bool(const HPolyhedron&)> termination_func{};
 };

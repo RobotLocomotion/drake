@@ -216,7 +216,7 @@ GTEST_TEST(AffineBallTest, NotAxisAligned) {
   Eigen::Matrix2d B1_negated = B1;
   B1_negated.col(1) *= -1;
   AffineBall ab1_negated(B1_negated, center);
-  // The determinant of B1_negated is is the nagation of the determinant of B1.
+  // The determinant of B1_negated is is the negation of the determinant of B1.
   EXPECT_NEAR(ab1_negated.B().determinant(), -ab1.B().determinant(), kTol);
   // However the volume is the same because we use the absolute value of the
   // determinant.

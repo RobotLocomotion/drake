@@ -102,7 +102,7 @@ class AffineBall final : public ConvexSet {
   epsilon.
   @pre x_1.size() == x_2.size().
   @pre epsilon >= 0.
-  @throws std::runtime_error if @p x_1 and @p x_2 are the same point. */
+  @throws std::runtime_error if ‖x_1 - x_2‖₂ is less than 1e-9. */
   static AffineBall MakeAffineBallFromLineSegment(
       const Eigen::Ref<const Eigen::VectorXd>& x_1,
       const Eigen::Ref<const Eigen::VectorXd>& x_2,
