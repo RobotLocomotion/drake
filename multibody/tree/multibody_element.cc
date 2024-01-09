@@ -31,6 +31,13 @@ MultibodyElement<T>::MultibodyElement(ModelInstanceIndex model_instance)
     : model_instance_(model_instance) {}
 
 template <typename T>
+MultibodyElement<T>::MultibodyElement(ModelInstanceIndex model_instance,
+                                      int64_t index)
+    : MultibodyElement(model_instance) {
+  index_ = index;
+}
+
+template <typename T>
 void MultibodyElement<T>::DoDeclareParameters(MultibodyTreeSystem<T>*) {}
 
 template <typename T>
