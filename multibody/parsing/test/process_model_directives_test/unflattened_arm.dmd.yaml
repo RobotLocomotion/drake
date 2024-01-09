@@ -1,0 +1,23 @@
+# An example of a model directives file with an internal collision filter
+# group that could not be correctly imported by another dmd file prior to
+# #20757.
+#
+# Note that this is "unflattened" in that FlattenModeDirectives will impose a
+# model namespace on the `add_collision_filter_group` members.
+directives:
+- add_model:
+    name: panda
+    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+- add_collision_filter_group:
+    name: panda_wrist_filter_group
+    members:
+    - panda::panda_link7
+- add_model:
+    name: camera
+    file: package://process_model_directives_test/fake_camera.sdf
+- add_collision_filter_group:
+    name: camera_filter_group
+    members:
+    - camera::body
+    ignored_collision_filter_groups:
+    - panda_wrist_filter_group
