@@ -58,12 +58,8 @@ void ParseModelDirectivesImpl(
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [plant = plant, &model_namespace](
                               const std::string& name) -> const Frame<double>& {
-    // TODO(eric.cousineau): Simplify logic?
-    if (name == "world") {
-      return plant->world_frame();
-    }
     return GetScopedFrameByName(
-        *plant, ScopedName::Join(model_namespace, name).to_string());
+        *plant, DmdScopedNameJoin(model_namespace, name).to_string());
   };
 
   for (auto& directive : directives.directives) {
@@ -196,6 +192,12 @@ void ParseModelDirectivesImpl(
 }
 
 }  // namespace
+
+ScopedName DmdScopedNameJoin(const std::string& namespace_name,
+                             const std::string& element_name) {
+  if (element_name == "world") return ScopedName("", element_name);
+  return ScopedName::Join(namespace_name, element_name);
+}
 
 ModelDirectives LoadModelDirectives(const DataSource& data_source) {
   // Even though the 'defaults' we use to start parsing here are empty, by

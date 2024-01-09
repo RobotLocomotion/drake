@@ -62,8 +62,9 @@ TEST_F(CollisionFilterGroupResolverTest, BogusPairGlobal) {
 }
 
 TEST_F(CollisionFilterGroupResolverTest, BogusGroupName) {
-  resolver_.AddGroup(diagnostic_policy_, "haha::a", {}, {});
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'haha::a' cannot be.*scoped.*"));
+  ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
+  resolver_.AddGroup(diagnostic_policy_, "haha::a", {}, r1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*haha::a' cannot be.*scoped.*"));
 }
 
 TEST_F(CollisionFilterGroupResolverTest, EmptyGroupGlobal) {

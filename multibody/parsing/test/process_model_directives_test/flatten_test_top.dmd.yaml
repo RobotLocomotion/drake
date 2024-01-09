@@ -1,0 +1,14 @@
+# Exemplar data adapted from
+# https://github.com/RobotLocomotion/drake/pull/20757#issuecomment-1884115261
+
+directives:
+- add_model_instance:
+    name: right
+- add_directives:
+    model_namespace: right
+    file: package://process_model_directives_test/flatten_test_arm.dmd.yaml
+- add_model_instance:
+    name: left
+- add_directives:
+    model_namespace: left
+    file: package://process_model_directives_test/flatten_test_arm.dmd.yaml
