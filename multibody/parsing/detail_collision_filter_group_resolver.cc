@@ -35,12 +35,13 @@ void CollisionFilterGroupResolver::AddGroup(
     DRAKE_DEMAND(*model_instance >= minimum_model_instance_index_);
   }
   DRAKE_DEMAND(!group_name.empty());
-  const std::string full_group_name = FullyQualify(group_name, model_instance);
-  if (!ScopedName::Parse(group_name).get_namespace().empty()) {
+  if (model_instance.has_value() &&
+      !ScopedName::Parse(group_name).get_namespace().empty()) {
     diagnostic.Error(fmt::format("group name '{}' cannot be a scoped name",
-                                 full_group_name));
+                                 group_name));
     return;
   }
+  const std::string full_group_name = FullyQualify(group_name, model_instance);
   if (body_names.empty()) {
     diagnostic.Error(fmt::format("group '{}' has no members", full_group_name));
     return;
