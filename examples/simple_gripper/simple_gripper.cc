@@ -30,13 +30,13 @@ using geometry::SceneGraph;
 using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using multibody::Body;
 using multibody::CoulombFriction;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using multibody::PrismaticJoint;
+using multibody::RigidBody;
 using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
@@ -97,8 +97,10 @@ DEFINE_double(frequency, 2.0,
               "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
-DEFINE_string(discrete_solver, "sap",
-              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
+DEFINE_string(contact_approximation, "sap",
+              "Discrete contact approximation. Options are: 'tamsi', 'sap', "
+              "'similar', 'lagged'");
+
 DEFINE_double(
     coupler_gear_ratio, -1.0,
     "When using SAP, the left finger's position qₗ is constrained to qₗ = "
@@ -119,9 +121,9 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // @param[in] pad_offset the ring offset along the x-axis in the finger
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
-// @param[in] finger the Body representing the finger
+// @param[in] finger the RigidBody representing the finger
 void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
-                    const Body<double>& finger) {
+                    const RigidBody<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
   const double d_theta = 2 * M_PI / sample_count;
@@ -163,7 +165,7 @@ int do_main() {
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
-  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 
@@ -194,8 +196,8 @@ int do_main() {
   }
 
   // Add the pads.
-  const Body<double>& left_finger = plant.GetBodyByName("left_finger");
-  const Body<double>& right_finger = plant.GetBodyByName("right_finger");
+  const RigidBody<double>& left_finger = plant.GetBodyByName("left_finger");
+  const RigidBody<double>& right_finger = plant.GetBodyByName("right_finger");
 
   // Pads offset from the center of a finger. pad_offset = 0 means the center of
   // the spheres is located right at the center of the finger.
@@ -220,7 +222,7 @@ int do_main() {
 
   // TAMSI does not support general constraints. If using TAMSI, we simplify the
   // model to have the right finger locked.
-  if (FLAGS_discrete_solver != "tamsi") {
+  if (FLAGS_contact_approximation != "tamsi") {
     plant.AddCouplerConstraint(left_slider, right_slider,
                                FLAGS_coupler_gear_ratio);
   }
@@ -298,7 +300,7 @@ int do_main() {
   // twice as much force as the grip force. This makes sense if we consider a
   // system of pulleys for this mechanism.
   const double grip_actuation_force =
-      FLAGS_discrete_solver == "tamsi"
+      FLAGS_contact_approximation == "tamsi"
           ? FLAGS_grip_force
           : (1.0 - FLAGS_coupler_gear_ratio) * FLAGS_grip_force;
 
@@ -331,7 +333,7 @@ int do_main() {
   right_slider.set_translation(&plant_context, finger_offset);
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
+  const multibody::RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
   const Vector3d& p_WBr =
       plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
   const Vector3d& p_WBl =
@@ -350,9 +352,9 @@ int do_main() {
   translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
 
-  if (FLAGS_discrete_solver == "tamsi") {
+  if (FLAGS_contact_approximation == "tamsi") {
     drake::log()->warn(
-        "discrete_solver = 'tamsi'. Since TAMSI does not support coupler "
+        "contact_approximation = 'tamsi'. Since TAMSI does not support coupler "
         "constraints to model the coupling of the fingers, this simple example "
         "locks the right finger and only the left finger is allowed to move.");
     right_slider.Lock(&plant_context);

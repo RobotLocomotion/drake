@@ -119,23 +119,8 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
       inverse_dynamics->get_output_port_generalized_force(),
       "generalized_force");
 
-  // The output port name 'force' is deprecated and will be removed from Drake
-  // on or after 2024-01-01. Use the name 'generalized_force' instead.
-  const OutputPortIndex deprecated_index = builder.ExportOutput(
-      inverse_dynamics->get_output_port_generalized_force(), "force");
-
   // Finalize ourself.
   builder.BuildInto(this);
-
-  // Now we can label the deprecated port as such. (There is no DiagramBuilder
-  // API available to do it earlier.)
-  const OutputPort<T>& deprecated_output =
-      this->get_output_port(deprecated_index);
-  const_cast<OutputPort<T>&>(deprecated_output)
-      .set_deprecation(
-          "The output port name 'force' is deprecated and will be removed from "
-          "Drake on or after 2024-01-01. Use the name 'generalized_force' "
-          "instead.");
 }
 
 template <typename T>

@@ -503,7 +503,21 @@ void DoScalarIndependentDefinitions(py::module m) {
                 lower_triangular_columns);
           },
           py::arg("lower_triangular_columns"),
-          doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size);
+          doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size)
+      .def(
+          "ToLowerTriangularColumnsFromMatrix",
+          [](const Eigen::Ref<const MatrixX<T>>& matrix) {
+            return ToLowerTriangularColumnsFromMatrix(matrix);
+          },
+          py::arg("matrix"), doc.ToLowerTriangularColumnsFromMatrix.doc)
+      .def(
+          "ExtractPrincipalSubmatrix",
+          [](const Eigen::Ref<const MatrixX<T>>& matrix,
+              const std::set<int>& indices) {
+            return ExtractPrincipalSubmatrix(matrix, indices);
+          },
+          py::arg("matrix"), py::arg("indices"),
+          doc.ExtractPrincipalSubmatrix.doc);
 
   // Quadratic Form.
   m  // BR

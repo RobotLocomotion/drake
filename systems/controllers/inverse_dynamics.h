@@ -5,7 +5,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -122,12 +121,6 @@ class InverseDynamics final : public LeafSystem<T> {
    * dimensionality of the generalized velocities.
    */
   const OutputPort<T>& get_output_port_generalized_force() const {
-    return this->get_output_port(generalized_force_);
-  }
-
-  DRAKE_DEPRECATED("2024-01-01",
-                   "Use get_output_port_generalized_force() instead.")
-  const OutputPort<T>& get_output_port_force() const {
     return this->get_output_port(generalized_force_);
   }
 

@@ -12,7 +12,13 @@
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 
-/* @file This file tests SapDriver's support for PD controller constraints. */
+/* @file This file tests SapDriver's support for PD controller constraints.
+
+  Constraints are only supported by the SAP solver. Therefore, to exercise the
+  relevant code paths, we arbitrarily choose one contact approximation that uses
+  the SAP solver. More precisely, in the unit tests below we call
+  set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+  MultibodyPlant used for testing, before constraints are added. */
 
 using drake::math::RigidTransformd;
 using drake::multibody::Parser;
@@ -55,6 +61,8 @@ class SapDriverTest {
   }
 };
 
+namespace kcov339_avoidance_magic {
+
 // Test fixture that sets up a model of an IIWA arm with PD controlled gripper.
 // Its purpose is to verify that the SAP driver defines constraints
 // appropriately to model the PD controllers on the gripper.
@@ -72,7 +80,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     plant_ = std::make_unique<MultibodyPlant<double>>(0.01 /* update period */);
     // Use the SAP solver. Thus far only SAP support the modeling of PD
     // controllers.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     Parser parser(plant_.get());
 
@@ -223,6 +232,7 @@ TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
   }
 }
 
+}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

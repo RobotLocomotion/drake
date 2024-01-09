@@ -100,10 +100,12 @@ class MujocoParser {
       return {};
     }
 
-    Vector4d quat;  // MuJoCo uses w,x,y,z order.
-    if (ParseVectorAttribute(node, "quat", &quat)) {
-      return RigidTransformd(
-          Eigen::Quaternion<double>(quat[0], quat[1], quat[2], quat[3]), pos);
+    {
+      Vector4d quat;  // MuJoCo uses w,x,y,z order.
+      if (ParseVectorAttribute(node, "quat", &quat)) {
+        return RigidTransformd(
+            Eigen::Quaternion<double>(quat[0], quat[1], quat[2], quat[3]), pos);
+      }
     }
 
     Vector4d axisangle;
@@ -120,8 +122,32 @@ class MujocoParser {
       if (angle_ == kDegree) {
         euler *= (M_PI / 180.0);
       }
-      // Default is extrinsic xyz.  See eulerseq compiler option.
-      return RigidTransformd(math::RollPitchYawd(euler), pos);
+      Quaternion<double> quat(1, 0, 0, 0);
+      DRAKE_DEMAND(eulerseq_.size() == 3);
+      for (int i = 0; i < 3; ++i) {
+        Quaternion<double> this_quat(cos(euler[i] / 2.0), 0, 0, 0);
+        double sa = sin(euler[i] / 2.0);
+
+        if (eulerseq_[i] == 'x' || eulerseq_[i] == 'X') {
+          this_quat.x() = sa;
+        } else if (eulerseq_[i] == 'y' || eulerseq_[i] == 'Y') {
+          this_quat.y() = sa;
+        } else {
+          // We already confirmed that eulerseq_ only has 'xyzXYZ' when it was
+          // parsed.
+          DRAKE_DEMAND(eulerseq_[i] == 'z' || eulerseq_[i] == 'Z');
+          this_quat.z() = sa;
+        }
+
+        if (eulerseq_[i] == 'x' || eulerseq_[i] == 'y' || eulerseq_[i] == 'z') {
+          // moving axes: post-multiply
+          quat = quat * this_quat;
+        } else {
+          // fixed axes: pre-multiply
+          quat = this_quat * quat;
+        }
+      }
+      return RigidTransformd(RotationMatrixd(quat), pos);
     }
 
     Vector6d xyaxes;
@@ -442,6 +468,8 @@ class MujocoParser {
     Vector4d rgba{.5, .5, .5, 1};
     CoulombFriction<double> friction{1.0, 1.0};
     SpatialInertia<double> M_GBo_B{};
+    bool register_collision{true};
+    bool register_visual{true};
   };
 
   MujocoGeometry ParseGeometry(XMLElement* node, int num_geom,
@@ -504,12 +532,12 @@ class MujocoParser {
       geom.shape = std::make_unique<geometry::HalfSpace>();
     } else if (type == "sphere") {
       if (size.size() < 1) {
-        Error(*node,
-              "The size attribute for sphere geom must have at least one "
-              "element.");
-        return geom;
+        // Allow zero-radius spheres (the MJCF default size is 0 0 0).
+        geom.shape = std::make_unique<geometry::Sphere>(0.0);
+        compute_inertia = false;
+      } else {
+        geom.shape = std::make_unique<geometry::Sphere>(size[0]);
       }
-      geom.shape = std::make_unique<geometry::Sphere>(size[0]);
     } else if (type == "capsule") {
       if (has_fromto) {
         if (size.size() < 1) {
@@ -627,7 +655,11 @@ class MujocoParser {
     ParseScalarAttribute(node, "contype", &contype);
     ParseScalarAttribute(node, "conaffinity", &conaffinity);
     ParseScalarAttribute(node, "condim", &condim);
-    if (contype != 1 || conaffinity != 1) {
+    if (contype == 0 && conaffinity == 0) {
+      // This is a common mechanism used by MJCF authors to specify visual-only
+      // geometry.
+      geom.register_collision = false;
+    } else if (contype != 1 || conaffinity != 1) {
       Warning(
           *node,
           fmt::format(
@@ -645,7 +677,26 @@ class MujocoParser {
                                  geom.name, condim));
     }
 
-    WarnUnsupportedAttribute(*node, "group");
+    if (geom.register_collision && type == "sphere" && size.size() < 1) {
+      Warning(*node,
+              fmt::format(
+                  "Using zero-radius spheres (MuJoCo's default geometry) for "
+                  "collision geometry may not be supported by all features in "
+                  "Drake. Consider specifying a non-zero size for geom {}.",
+                  geom.name));
+    }
+
+    int group{0};
+    ParseScalarAttribute(node, "group", &group);
+    if (group > 2) {
+      // By default, the MuJoCo visualizer does not render geom with group > 2.
+      // Setting the group > 2 is a common mechanism that MuJoCo uses to
+      // register collision-only geometry.
+      geom.register_visual = false;
+      // TODO(russt): Consider adding a <drake::enable_visual_for_group> tag so
+      // that mjcf authors can configure this behavior.
+    }
+
     WarnUnsupportedAttribute(*node, "priority");
 
     std::string material;
@@ -764,7 +815,7 @@ class MujocoParser {
       auto geom = ParseGeometry(link_node, geometries.size(), compute_inertia,
                                 child_class);
       if (!geom.shape) continue;
-      if (compute_inertia) {
+      if (compute_inertia && geom.M_GBo_B.get_mass() > 0) {
         M_BBo_B += geom.M_GBo_B;
       }
       geometries.push_back(std::move(geom));
@@ -776,10 +827,14 @@ class MujocoParser {
 
     if (plant_->geometry_source_is_registered()) {
       for (auto& geom : geometries) {
-        plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape, geom.name,
-                                       geom.rgba);
-        plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
-                                          geom.name, geom.friction);
+        if (geom.register_visual) {
+          plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape,
+                                         geom.name, geom.rgba);
+        }
+        if (geom.register_collision) {
+          plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
+                                            geom.name, geom.friction);
+        }
       }
     }
 
@@ -851,11 +906,15 @@ class MujocoParser {
            link_node = link_node->NextSiblingElement("geom")) {
         auto geom = ParseGeometry(link_node, geometries.size(), false);
         if (!geom.shape) continue;
-        plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
-                                       *geom.shape, geom.name, geom.rgba);
-        plant_->RegisterCollisionGeometry(plant_->world_body(), geom.X_BG,
-                                          *geom.shape, geom.name,
-                                          geom.friction);
+        if (geom.register_visual) {
+          plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
+                                         *geom.shape, geom.name, geom.rgba);
+        }
+        if (geom.register_collision) {
+          plant_->RegisterCollisionGeometry(plant_->world_body(), geom.X_BG,
+                                            *geom.shape, geom.name,
+                                            geom.friction);
+        }
       }
     }
 
@@ -872,6 +931,26 @@ class MujocoParser {
     }
   }
 
+  // Parse sub-elements of `<default>`, for a particular `element name`,
+  // updating `default_map`. Implements the inheritance mechanism for
+  // defaults; see
+  // https://mujoco.readthedocs.io/en/latest/modeling.html#cdefault
+  void ParseClassDefaults(XMLElement* node,
+                          const std::string& class_name,
+                          const std::string& parent_default,
+                          const std::string& element_name,
+                          std::map<std::string, XMLElement*>* default_map) {
+    const char* elt_name = element_name.c_str();
+    for (XMLElement* e = node->FirstChildElement(elt_name); e;
+         e = e->NextSiblingElement(elt_name)) {
+      (*default_map)[class_name] = e;
+      if (!parent_default.empty() &&
+          default_map->count(parent_default) > 0) {
+        ApplyDefaultAttributes(*default_map->at(parent_default), e);
+      }
+    }
+  }
+
   void ParseDefault(XMLElement* node, const std::string& parent_default = "") {
     std::string class_name;
     if (!ParseStringAttribute(node, "class", &class_name)) {
@@ -885,27 +964,17 @@ class MujocoParser {
       }
     }
 
-    // Parse default geometries.
-    for (XMLElement* geom_node = node->FirstChildElement("geom"); geom_node;
-         geom_node = geom_node->NextSiblingElement("geom")) {
-      default_geometry_[class_name] = geom_node;
-      if (!parent_default.empty() &&
-          default_geometry_.count(parent_default) > 0) {
-        ApplyDefaultAttributes(*default_geometry_.at(parent_default),
-                               geom_node);
-      }
-    }
+    // This sugar forwards common local arguments to ParseClassDefaults().
+    auto parse_class_defaults =
+        [&](const std::string& element_name,
+            std::map<std::string, XMLElement*>* default_map) {
+          ParseClassDefaults(node, class_name, parent_default, element_name,
+                             default_map);
+    };
 
-    // Parse default joints.
-    for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
-         joint_node = joint_node->NextSiblingElement("joint")) {
-      default_joint_[class_name] = joint_node;
-      if (!parent_default.empty() &&
-          default_joint_.count(parent_default) > 0) {
-        ApplyDefaultAttributes(*default_joint_.at(parent_default),
-                               joint_node);
-      }
-    }
+    parse_class_defaults("geom", &default_geometry_);
+    parse_class_defaults("joint", &default_joint_);
+    parse_class_defaults("mesh", &default_mesh_);
 
     // Parse child defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
@@ -915,7 +984,6 @@ class MujocoParser {
     }
 
     WarnUnsupportedElement(*node, "include");
-    WarnUnsupportedElement(*node, "mesh");
     WarnUnsupportedElement(*node, "material");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
@@ -945,7 +1013,13 @@ class MujocoParser {
 
     for (XMLElement* mesh_node = node->FirstChildElement("mesh"); mesh_node;
          mesh_node = mesh_node->NextSiblingElement("mesh")) {
-      WarnUnsupportedAttribute(*mesh_node, "class");
+      std::string class_name;
+      if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
+        class_name = "main";
+      }
+      if (default_mesh_.count(class_name) > 0) {
+        ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
+      }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
       WarnUnsupportedAttribute(*mesh_node, "vertex");
       // Note: "normal" and "face" are not supported either, but that lack of
@@ -1127,13 +1201,36 @@ class MujocoParser {
       }
     }
 
+    std::string assetdir;
+    if (ParseStringAttribute(node, "assetdir", &assetdir)) {
+      // assetdir sets both meshdir and texturedir, but texturedir is not
+      // supported.
+      meshdir_ = assetdir;
+    }
     std::string meshdir;
     if (ParseStringAttribute(node, "meshdir", &meshdir)) {
+      // meshdir takes priority over assetdir.
       meshdir_ = meshdir;
     }
 
     WarnUnsupportedAttribute(*node, "fitaabb");
-    WarnUnsupportedAttribute(*node, "eulerseq");
+
+    std::string eulerseq;
+    if (ParseStringAttribute(node, "eulerseq", &eulerseq)) {
+      if (eulerseq.size() != 3 ||
+          eulerseq.find_first_not_of("xyzXYZ") != std::string::npos) {
+        Error(
+            *node,
+            fmt::format(
+                "Illegal value '{}' for the eulerseq in {}. Valid eulerseq are "
+                "exactly three characters from the set [x,y,z,X,Y,Z]",
+                eulerseq, node->Name()));
+
+      } else {
+        eulerseq_ = eulerseq;
+      }
+    }
+
     WarnUnsupportedAttribute(*node, "texturedir");
     WarnUnsupportedAttribute(*node, "discardvisual");
     WarnUnsupportedAttribute(*node, "convexhull");
@@ -1345,17 +1442,18 @@ class MujocoParser {
       ParseOption(option_node);
     }
 
-    // Parses the assets.
-    for (XMLElement* asset_node = node->FirstChildElement("asset"); asset_node;
-         asset_node = asset_node->NextSiblingElement("asset")) {
-      ParseAsset(asset_node);
-    }
-
     // Parse the defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
          default_node;
          default_node = default_node->NextSiblingElement("default")) {
       ParseDefault(default_node);
+    }
+
+    // Parse the assets. This must happen after parsing the defaults (which
+    // could set the assetdir).
+    for (XMLElement* asset_node = node->FirstChildElement("asset"); asset_node;
+         asset_node = asset_node->NextSiblingElement("asset")) {
+      ParseAsset(asset_node);
     }
 
     // Parses the model's world link elements.
@@ -1426,10 +1524,12 @@ class MujocoParser {
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
   std::map<std::string, XMLElement*> default_joint_{};
+  std::map<std::string, XMLElement*> default_mesh_{};
   enum InertiaFromGeometry { kFalse, kTrue, kAuto };
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
   std::optional<std::filesystem::path> meshdir_{};
+  std::string eulerseq_{"xyz"};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_;

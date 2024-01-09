@@ -460,6 +460,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def_static("NormalizeSegmentTimes", &Class::NormalizeSegmentTimes,
             py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
   }
+
+  m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
+      py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
 }
 
 }  // namespace internal

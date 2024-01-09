@@ -222,18 +222,20 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_FALSE(plant->HasJointActuatorNamed(kInvalidName));
 
   // Get links by name.
-  const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
+  const RigidBody<double>& link1 =
+      plant->GetBodyByName(parameters.link1_name());
   EXPECT_EQ(link1.name(), parameters.link1_name());
   EXPECT_EQ(link1.model_instance(), default_model_instance());
 
-  const Body<double>& link2 = plant->GetBodyByName(parameters.link2_name());
+  const RigidBody<double>& link2 =
+      plant->GetBodyByName(parameters.link2_name());
   EXPECT_EQ(link2.name(), parameters.link2_name());
   EXPECT_EQ(link2.model_instance(), default_model_instance());
 
-  const Body<double>& upper = plant->GetBodyByName("upper_section");
+  const RigidBody<double>& upper = plant->GetBodyByName("upper_section");
   EXPECT_EQ(upper.model_instance(), pendulum_model_instance);
 
-  const Body<double>& lower = plant->GetBodyByName("lower_section");
+  const RigidBody<double>& lower = plant->GetBodyByName("lower_section");
   EXPECT_EQ(lower.model_instance(), pendulum_model_instance);
 
   // Attempting to retrieve a link that is not part of the model should throw
@@ -484,7 +486,7 @@ GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
   EXPECT_EQ(plant.num_model_instances(), 2);
   // Bodies.
   EXPECT_EQ(plant.num_bodies(), 1);
-  const Body<double>& world_body = plant.world_body();
+  const RigidBody<double>& world_body = plant.world_body();
   EXPECT_EQ(world_body.index(), world_index());
   EXPECT_EQ(world_body.model_instance(), world_model_instance());
   // Frames.
@@ -757,11 +759,11 @@ class AcrobotPlantTests : public ::testing::Test {
     const Vector3<double> gacc = plant_->gravity_field().gravity_vector();
     for (BodyIndex body_index(1); body_index < plant_->num_bodies();
          ++body_index) {
-      const Body<double>& body = plant_->get_body(body_index);
+      const RigidBody<double>& body = plant_->get_body(body_index);
       const SpatialForce<double>& F_Bo_W =
           body.GetForceInWorld(*plant_context_, forces);
       const double mass = body.default_mass();
-      // TODO(amcastro-tri): provide Body::EvalCOMInWorld().
+      // TODO(amcastro-tri): provide RigidBody::EvalCOMInWorld().
       const Vector3<double> p_BoBcm_B =
           body.CalcCenterOfMassInBodyFrame(*plant_context_);
       const RigidTransform<double> X_WB =
@@ -925,8 +927,8 @@ class AcrobotPlantTests : public ::testing::Test {
   // Non-owning pointer to the plant context.
   Context<double>* plant_context_{nullptr};
   // Non-owning pointers to the model's elements:
-  const Body<double>* link1_{nullptr};
-  const Body<double>* link2_{nullptr};
+  const RigidBody<double>* link1_{nullptr};
+  const RigidBody<double>* link2_{nullptr};
   RevoluteJoint<double>* shoulder_{nullptr};
   RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
@@ -1354,8 +1356,8 @@ class SphereChainScenario {
   }
 
   // Get all bodies of the internal plant.
-  std::vector<const Body<double>*> get_all_bodies() const {
-    std::vector<const Body<double>*> all_bodies;
+  std::vector<const RigidBody<double>*> get_all_bodies() const {
+    std::vector<const RigidBody<double>*> all_bodies;
     all_bodies.push_back(no_geometry_body_);
     for (const auto sphere : spheres_) {
       all_bodies.push_back(sphere);
@@ -1614,12 +1616,12 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModels(sdf_file);
-  const Body<double>& upper = plant.GetBodyByName("upper_section");
-  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const RigidBody<double>& upper = plant.GetBodyByName("upper_section");
+  const RigidBody<double>& lower = plant.GetBodyByName("lower_section");
 
   // Add a new body, and weld it using `WeldFrames` (to ensure that topology is
   // updated via this API).
-  const Body<double>& extra = plant.AddRigidBody(
+  const RigidBody<double>& extra = plant.AddRigidBody(
       "extra", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
@@ -1639,9 +1641,11 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   // Briefly test scalar conversion.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
       systems::System<double>::ToAutoDiffXd(plant);
-  const Body<AutoDiffXd>& upper_ad = plant_ad->GetBodyByName("upper_section");
-  const Body<AutoDiffXd>& lower_ad = plant_ad->GetBodyByName("lower_section");
-  const Body<AutoDiffXd>& extra_ad = plant_ad->GetBodyByName("extra");
+  const RigidBody<AutoDiffXd>& upper_ad =
+      plant_ad->GetBodyByName("upper_section");
+  const RigidBody<AutoDiffXd>& lower_ad =
+      plant_ad->GetBodyByName("lower_section");
+  const RigidBody<AutoDiffXd>& extra_ad = plant_ad->GetBodyByName("extra");
 
   EXPECT_THAT(plant_ad->GetBodiesWeldedTo(plant_ad->world_body()),
               UnorderedElementsAre(&plant_ad->world_body(), &extra_ad));
@@ -1658,12 +1662,12 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModels(sdf_file);
-  const Body<double>& upper = plant.GetBodyByName("upper_section");
-  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const RigidBody<double>& upper = plant.GetBodyByName("upper_section");
+  const RigidBody<double>& lower = plant.GetBodyByName("lower_section");
   const JointIndex shoulder = plant.GetJointByName("pin").index();
   const JointIndex elbow = plant.GetJointByName("weld").index();
   // Add a new body, and weld it to the world body.
-  const Body<double>& extra = plant.AddRigidBody(
+  const RigidBody<double>& extra = plant.AddRigidBody(
       "extra", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
@@ -1699,7 +1703,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   Parser(&plant).AddModels(sdf_file);
 
   // Add a new body, and weld it in the wrong direction using `WeldFrames`.
-  const Body<double>& extra = plant.AddRigidBody(
+  const RigidBody<double>& extra = plant.AddRigidBody(
       "extra", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(extra.body_frame(), plant.world_frame());
 
@@ -2316,7 +2320,7 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
       rigid_body =
-          &mutable_tree().AddBody<RigidBody>("Body", SpatialInertia<double>());
+          &mutable_tree().AddRigidBody("Body", SpatialInertia<double>());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};
@@ -2472,8 +2476,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     //  - Lb: the frame of the large box, with its origin at the box's center.
     //  - Sb: the frame of the small box, with its origin at the box's center.
 
-    const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
-    const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
+    const RigidBody<double>& large_box = plant_.GetBodyByName("LargeBox");
+    const RigidBody<double>& small_box = plant_.GetBodyByName("SmallBox");
 
     const RigidTransform<double> X_WLb =
         // Pure rotation.
@@ -2500,8 +2504,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   void SetPenetrationPairs(
       const Context<double>& context,
       std::vector<PenetrationAsPointPair<double>>* penetrations) {
-    const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
-    const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
+    const RigidBody<double>& large_box = plant_.GetBodyByName("LargeBox");
+    const RigidBody<double>& small_box = plant_.GetBodyByName("SmallBox");
 
     // Pose of the boxes in the world frame.
     const RigidTransform<double>& X_WLb =
@@ -3375,7 +3379,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Add a floating mug.
   objects_parser.AddModels(mug_sdf_path);
-  const Body<double>& mug = plant.GetBodyByName("simple_mug");
+  const RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
 
   plant.Finalize();
 
@@ -3459,7 +3463,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
   MultibodyPlant<double> plant(0.0);
 
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const Body<double>& body =
+  const RigidBody<double>& body =
       plant.AddRigidBody("LoneBody", SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
 
@@ -3520,11 +3524,11 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
   // Create a model that contains a free body and an acrobot.
   MultibodyPlant<double> plant(0.0);
   // Add a rigid body that is "implicitly floating" (i.e. no joint specified).
-  const Body<double>& body0 =
+  const RigidBody<double>& body0 =
       plant.AddRigidBody("free body 0", SpatialInertia<double>::MakeUnitary());
   // Add a rigid body that is "explicitly floating" (i.e. floating joint
   // explicitly added).
-  const Body<double>& body1 =
+  const RigidBody<double>& body1 =
       plant.AddRigidBody("free body 1", SpatialInertia<double>::MakeUnitary());
   plant.AddJoint<QuaternionFloatingJoint>("" + body1.name(), plant.world_body(),
                                           {}, body1, {});
@@ -3873,10 +3877,12 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   // Set up a plant with 3 constraints with arbitrary parameters.
   MultibodyPlant<double> plant(0.01);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
-  const Body<double>& body_A =
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const RigidBody<double>& body_A =
       plant.AddRigidBody("body_A", SpatialInertia<double>{});
-  const Body<double>& body_B =
+  const RigidBody<double>& body_B =
       plant.AddRigidBody("body_B", SpatialInertia<double>{});
   const RevoluteJoint<double>& world_A =
       plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
@@ -3891,6 +3897,16 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
       body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
   MultibodyConstraintId weld_id = plant.AddWeldConstraint(
       body_A, RigidTransformd(), body_B, RigidTransformd());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
+                                  DiscreteContactApproximation::kTamsi),
+                              ".*TAMSI does not support constraints.*");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi),
+      ".*TAMSI does not support constraints.*");
+#pragma GCC diagnostic pop
 
   plant.Finalize();
 
@@ -3927,9 +3943,61 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
 }
 
+GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
+  // Set up a plant with 3 constraints with arbitrary parameters.
+  MultibodyPlant<double> plant(0.01);
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const Body<double>& body_A =
+      plant.AddRigidBody("body_A", SpatialInertia<double>{});
+  const Body<double>& body_B =
+      plant.AddRigidBody("body_B", SpatialInertia<double>{});
+  const RevoluteJoint<double>& world_A =
+      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
+                                    body_A, std::nullopt, Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  MultibodyConstraintId coupler_id =
+      plant.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant.AddBallConstraint(
+      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+      body_A, RigidTransformd(), body_B, RigidTransformd());
+
+  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+  EXPECT_EQ(plant.num_distance_constraints(), 1);
+  EXPECT_EQ(plant.num_ball_constraints(), 1);
+  EXPECT_EQ(plant.num_weld_constraints(), 1);
+  plant.RemoveConstraint(coupler_id);
+  plant.RemoveConstraint(distance_id);
+  plant.RemoveConstraint(ball_id);
+  plant.RemoveConstraint(weld_id);
+  EXPECT_EQ(plant.num_coupler_constraints(), 0);
+  EXPECT_EQ(plant.num_distance_constraints(), 0);
+  EXPECT_EQ(plant.num_ball_constraints(), 0);
+  EXPECT_EQ(plant.num_weld_constraints(), 0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
+                              ".*does not match any constraint.*");
+
+  // Add a new coupler constraint
+  MultibodyConstraintId coupler_id2 =
+      plant.AddCouplerConstraint(world_A, A_B, 2.3);
+  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+
+  plant.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RemoveConstraint(coupler_id2),
+      ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
+}
+
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   MultibodyPlant<double> plant(0.0);
-  const Body<double>& body_B =
+  const RigidBody<double>& body_B =
       plant.AddRigidBody("body_B", SpatialInertia<double>{});
 
   // Weld body B to the world W which creates a fixed offset frame Wp fixed to
@@ -4642,13 +4710,13 @@ GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
   // until the floating joint name is unique.
   {
     MultibodyPlant<double> plant(0.0);
-    const Body<double>& base_body =
+    const RigidBody<double>& base_body =
         plant.AddRigidBody("base_body", default_model_instance(),
                            SpatialInertia<double>::MakeUnitary());
-    const Body<double>& body2 =
+    const RigidBody<double>& body2 =
         plant.AddRigidBody("body2", default_model_instance(),
                            SpatialInertia<double>::MakeUnitary());
-    const Body<double>& body3 =
+    const RigidBody<double>& body3 =
         plant.AddRigidBody("body3", default_model_instance(),
                            SpatialInertia<double>::MakeUnitary());
 
@@ -4752,6 +4820,66 @@ GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(plant.RenameModelInstance(models[0], "too_late"),
                               ".*finalized.*");
+}
+
+// Verify the proper coordination of discrete contact approximations with their
+// corresponding solvers.
+GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
+  MultibodyPlant<double> plant(0.01);
+
+  auto set_solver_and_check_approximation =
+      [&plant](DiscreteContactSolver solver) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        plant.set_discrete_contact_solver(solver);
+#pragma GCC diagnostic pop
+        EXPECT_EQ(plant.get_discrete_contact_solver(), solver);
+        if (solver == DiscreteContactSolver::kTamsi) {
+          // TAMSI can only solve the TAMSI approximation.
+          EXPECT_EQ(plant.get_discrete_contact_approximation(),
+                    DiscreteContactApproximation::kTamsi);
+        } else {
+          // SAP can solve all approximations other than TAMSI.
+          EXPECT_EQ(plant.get_discrete_contact_approximation(),
+                    DiscreteContactApproximation::kSap);
+        }
+      };
+
+  auto set_approximation_and_check_solver =
+      [&plant](DiscreteContactApproximation approximation) {
+        plant.set_discrete_contact_approximation(approximation);
+        EXPECT_EQ(plant.get_discrete_contact_approximation(), approximation);
+        if (approximation == DiscreteContactApproximation::kTamsi) {
+          // Only the TAMSI solver can be used with the TAMSI approximation.
+          EXPECT_EQ(plant.get_discrete_contact_solver(),
+                    DiscreteContactSolver::kTamsi);
+        } else {
+          // Approximations other than TAMSI use the SAP solver.
+          EXPECT_EQ(plant.get_discrete_contact_solver(),
+                    DiscreteContactSolver::kSap);
+        }
+      };
+
+  // Verify that setting the solver sets a consistent contact approximation.
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_solver_and_check_approximation(DiscreteContactSolver::kSap);
+
+  // Verify that setting an apprximation sets the proper solver.
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kSap);
+
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kLagged);
+
+  set_solver_and_check_approximation(DiscreteContactSolver::kTamsi);
+  set_approximation_and_check_solver(DiscreteContactApproximation::kSimilar);
+
+  // Post-finalize calls to set_discrete_contact_approximation() throws.
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kTamsi),
+      "Post-finalize calls to '.*' are not allowed; .*");
 }
 
 }  // namespace

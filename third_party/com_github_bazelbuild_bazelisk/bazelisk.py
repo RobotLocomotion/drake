@@ -121,10 +121,10 @@ def decide_which_bazel_version_to_use():
 def find_workspace_root(root=None):
     if root is None:
         root = os.getcwd()
-    if os.path.exists(os.path.join(root, "WORKSPACE")):
-        return root
-    if os.path.exists(os.path.join(root, "WORKSPACE.bazel")):
-        return root
+    for boundary in ["MODULE.bazel", "REPO.bazel", "WORKSPACE.bazel", "WORKSPACE"]:
+        path = os.path.join(root, boundary)
+        if os.path.exists(path) and not os.path.isdir(path):
+            return root
     new_root = os.path.dirname(root)
     return find_workspace_root(new_root) if new_root != root else None
 

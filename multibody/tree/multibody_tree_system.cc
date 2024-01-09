@@ -90,44 +90,44 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
   // Mobilizers.
   for (MobilizerIndex mobilizer_index(0);
        mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
-    mutable_tree()
-        .get_mutable_mobilizer(mobilizer_index)
+    internal_tree()
+        .get_mobilizer(mobilizer_index)
         .SetDefaultParameters(parameters);
   }
   // Joints.
   for (JointIndex joint_index(0); joint_index < tree_->num_joints();
        ++joint_index) {
-    mutable_tree()
-        .get_mutable_joint(joint_index)
+    internal_tree()
+        .get_joint(joint_index)
         .SetDefaultParameters(parameters);
   }
   // JointActuators.
   for (JointActuatorIndex joint_actuator_index(0);
        joint_actuator_index < tree_->num_actuators(); ++joint_actuator_index) {
-    mutable_tree()
-        .get_mutable_joint_actuator(joint_actuator_index)
+    internal_tree()
+        .get_joint_actuator(joint_actuator_index)
         .SetDefaultParameters(parameters);
   }
   // Bodies.
   for (BodyIndex body_index(0); body_index < tree_->num_bodies();
        ++body_index) {
-    mutable_tree()
-        .get_mutable_body(body_index)
+    internal_tree()
+        .get_body(body_index)
         .SetDefaultParameters(parameters);
   }
   // Frames.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
        ++frame_index) {
-    mutable_tree()
-        .get_mutable_frame(frame_index)
+    internal_tree()
+        .get_frame(frame_index)
         .SetDefaultParameters(parameters);
   }
   // Force Elements.
   for (ForceElementIndex force_element_index(0);
        force_element_index < tree_->num_force_elements();
        ++force_element_index) {
-    mutable_tree()
-        .get_mutable_force_element(force_element_index)
+    internal_tree()
+        .get_force_element(force_element_index)
         .SetDefaultParameters(parameters);
   }
 }
@@ -136,7 +136,7 @@ template <typename T>
 MultibodyTreeSystem<T>::~MultibodyTreeSystem() = default;
 
 template <typename T>
-MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
+MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
   DRAKE_DEMAND(tree_ != nullptr);
   return *tree_;
 }
@@ -206,8 +206,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   }
 
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
-  // control over cache dependencies on parameters. For example,
-  // all_rigid_body_parameters, etc.
+  //  control over cache dependencies on parameters. For example,
+  //  all_rigid_body_parameters, etc.
 
   // Allocate position cache.
   cache_indexes_.position_kinematics = this->DeclareCacheEntry(

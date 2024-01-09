@@ -17,9 +17,10 @@ namespace lcm {
 class DrakeLcmTester {
  public:
   DrakeLcmTester() = delete;
-  static ::lcm::LCM* get_native(DrakeLcm* dut) {
+  static ::lcm::LCM get_native(DrakeLcm* dut) {
     DRAKE_DEMAND(dut != nullptr);
-    return dut->get_native();
+    return ::lcm::LCM(
+        static_cast<::lcm_t*>(dut->get_native_lcm_handle_for_unit_testing()));
   }
 };
 namespace {
@@ -59,7 +60,8 @@ class DrakeLcmTest : public ::testing::Test {
     EXPECT_TRUE(message_was_received);
   }
 
-  ::lcm::LCM* get_native() { return DrakeLcmTester::get_native(dut_.get()); }
+  // Returns a C++ interface wrapper around DrakeLcm's internal LCM object.
+  ::lcm::LCM get_native() { return DrakeLcmTester::get_native(dut_.get()); }
 
   // The device under test.
   std::unique_ptr<DrakeLcm> dut_ = std::make_unique<DrakeLcm>();
@@ -105,7 +107,7 @@ TEST_F(DrakeLcmTest, EmptyChannelTest) {
 // Tests DrakeLcm's ability to publish an LCM message.
 // We subscribe using the native LCM APIs.
 TEST_F(DrakeLcmTest, PublishTest) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.PublishTest";
 
   lcmt_drake_signal received{};
@@ -115,18 +117,18 @@ TEST_F(DrakeLcmTest, PublishTest) {
         DRAKE_DEMAND(new_value != nullptr);
         received = *new_value;
       };
-  native_lcm->subscribe(channel_name, std::move(handler));
+  native_lcm.subscribe(channel_name, std::move(handler));
 
   LoopUntilDone(&received, 20 /* retries */, [&]() {
     Publish(dut_.get(), channel_name, message_);
-    native_lcm->handleTimeout(50 /* millis */);
+    native_lcm.handleTimeout(50 /* millis */);
   });
 }
 
 // Tests DrakeLcm's ability to subscribe to an LCM message.
 // We publish using the native LCM APIs.
 TEST_F(DrakeLcmTest, SubscribeTest) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeTest";
 
   lcmt_drake_signal received{};
@@ -138,7 +140,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
   int total = 0;
   LoopUntilDone(&received, 20 /* retries */, [&]() {
-    native_lcm->publish(channel_name, &message_);
+    native_lcm.publish(channel_name, &message_);
     total += dut_->HandleSubscriptions(50 /* millis */);
   });
   EXPECT_EQ(total, 1);
@@ -146,7 +148,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
 // Repeats the above test, but with explicit opt-out of unsubscribe.
 TEST_F(DrakeLcmTest, SubscribeTest2) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeTest2";
 
   lcmt_drake_signal received{};
@@ -159,7 +161,7 @@ TEST_F(DrakeLcmTest, SubscribeTest2) {
 
   int total = 0;
   LoopUntilDone(&received, 20 /* retries */, [&]() {
-    native_lcm->publish(channel_name, &message_);
+    native_lcm.publish(channel_name, &message_);
     total += dut_->HandleSubscriptions(50 /* millis */);
   });
   EXPECT_EQ(total, 1);
@@ -167,7 +169,7 @@ TEST_F(DrakeLcmTest, SubscribeTest2) {
 
 // Repeat SubscribeTest for SubscribeAllChannels.
 TEST_F(DrakeLcmTest, SubscribeAllTest) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest";
 
   lcmt_drake_signal received{};
@@ -181,7 +183,7 @@ TEST_F(DrakeLcmTest, SubscribeAllTest) {
 
   int total = 0;
   LoopUntilDone(&received, 20 /* retries */, [&]() {
-    native_lcm->publish(channel_name, &message_);
+    native_lcm.publish(channel_name, &message_);
     total += dut_->HandleSubscriptions(50 /* millis */);
   });
   EXPECT_EQ(total, 1);
@@ -189,7 +191,7 @@ TEST_F(DrakeLcmTest, SubscribeAllTest) {
 
 // Repeat SubscribeTest2 for SubscribeAllChannels.
 TEST_F(DrakeLcmTest, SubscribeAllTest2) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest2";
 
   lcmt_drake_signal received{};
@@ -204,7 +206,7 @@ TEST_F(DrakeLcmTest, SubscribeAllTest2) {
 
   int total = 0;
   LoopUntilDone(&received, 20 /* retries */, [&]() {
-    native_lcm->publish(channel_name, &message_);
+    native_lcm.publish(channel_name, &message_);
     total += dut_->HandleSubscriptions(50 /* millis */);
   });
   EXPECT_EQ(total, 1);
@@ -369,7 +371,7 @@ TEST_F(DrakeLcmTest, Suffix) {
   DrakeLcmParams params;
   params.channel_suffix = "_SUFFIX";
   dut_ = std::make_unique<DrakeLcm>(params);
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
 
   // Subscribe using native LCM (with the fully-qualified channel name).
   lcmt_drake_signal received_native{};
@@ -379,7 +381,7 @@ TEST_F(DrakeLcmTest, Suffix) {
         DRAKE_DEMAND(new_value != nullptr);
         received_native = *new_value;
       };
-  native_lcm->subscribe("SuffixDrakeLcmTest_SUFFIX", std::move(handler));
+  native_lcm.subscribe("SuffixDrakeLcmTest_SUFFIX", std::move(handler));
 
   // Subscribe using Drake LCM (with the abbreviated channel name).
   lcmt_drake_signal received_drake{};
@@ -392,14 +394,14 @@ TEST_F(DrakeLcmTest, Suffix) {
   // Check that the native subscription gets it.
   LoopUntilDone(&received_native, 20 /* retries */, [&]() {
     Publish(dut_.get(), "SuffixDrakeLcmTest", message_);
-    native_lcm->handleTimeout(50 /* millis */);
+    native_lcm.handleTimeout(50 /* millis */);
   });
 
   // Publish using the abbreviated channel name.
   // Check that the drake subscription gets it.
   LoopUntilDone(&received_drake, 20 /* retries */, [&]() {
     Publish(dut_.get(), "SuffixDrakeLcmTest", message_);
-    native_lcm->handleTimeout(50 /* millis */);
+    native_lcm.handleTimeout(50 /* millis */);
   });
 }
 
@@ -439,7 +441,7 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
 
 // Confirm that SubscribeMultichannel ignores mismatched channel names.
 TEST_F(DrakeLcmTest, SubscribeMultiTest) {
-  ::lcm::LCM* const native_lcm = get_native();
+  ::lcm::LCM native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeMultiTest";
 
   lcmt_drake_signal received{};
@@ -454,22 +456,12 @@ TEST_F(DrakeLcmTest, SubscribeMultiTest) {
 
   int total = 0;
   LoopUntilDone(&received, 20 /* retries */, [&]() {
-    native_lcm->publish("WRONG_" + channel_name, &message_);
-    native_lcm->publish(channel_name, &message_);
+    native_lcm.publish("WRONG_" + channel_name, &message_);
+    native_lcm.publish(channel_name, &message_);
     total += dut_->HandleSubscriptions(50 /* millis */);
   });
   EXPECT_EQ(total, 1);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(DrakeLcmTest, DeprecatedGetter) {
-  ::lcm::LCM* const deprecated = dut_->get_lcm_instance();
-  EXPECT_TRUE(deprecated != nullptr);
-  ::lcm::LCM* native = get_native();
-  EXPECT_TRUE(native == deprecated);
-}
-#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm

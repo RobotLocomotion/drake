@@ -6,8 +6,8 @@ def tinyxml2_internal_repository(
     github_archive(
         name = name,
         repository = "leethomason/tinyxml2",
-        commit = "9.0.0",
-        sha256 = "cc2f1417c308b1f6acc54f88eb70771a0bf65f76282ce5c40e54cfe52952702c",  # noqa
+        commit = "10.0.0",
+        sha256 = "3bdf15128ba16686e69bce256cc468e76c7b94ff2c7f391cc5ec09e40bff3839",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/namespace.patch",

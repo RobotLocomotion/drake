@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
@@ -288,11 +287,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
-    using Class = BodyFrame<T>;
-    constexpr auto& cls_doc = doc.BodyFrame;
+    using Class = RigidBodyFrame<T>;
+    constexpr auto& cls_doc = doc.RigidBodyFrame;
     auto cls = DefineTemplateClassWithDefault<Class, Frame<T>>(
-        m, "BodyFrame", param, cls_doc.doc);
+        m, "RigidBodyFrame", param, cls_doc.doc);
     // No need to re-bind element mixins from `Frame`.
+
+    // TODO(sherm1) This is deprecated; remove 2024-04-01.
+    m.attr("BodyFrame") = m.attr("RigidBodyFrame");
+    m.attr("BodyFrame_") = m.attr("RigidBodyFrame_");
   }
 
   {
@@ -306,7 +309,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
             py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
-        .def(py::init<const std::string&, const Body<T>&,
+        .def(py::init<const std::string&, const RigidBody<T>&,
                  const math::RigidTransform<double>&>(),
             py::arg("name"), py::arg("bodyB"), py::arg("X_BF"),
             cls_doc.ctor.doc_3args)
@@ -317,14 +320,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), cls_doc.GetPoseInParentFrame.doc);
   }
 
-  // Bodies.
+  // Rigid bodies.
   {
-    using Class = Body<T>;
-    constexpr auto& cls_doc = doc.Body;
-    auto cls =
-        DefineTemplateClassWithDefault<Class>(m, "Body", param, cls_doc.doc);
+    using Class = RigidBody<T>;
+    constexpr auto& cls_doc = doc.RigidBody;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RigidBody", param, cls_doc.doc);
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
+        .def(py::init<const std::string&, const SpatialInertia<double>&>(),
+            py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
+        .def(py::init<const std::string&, ModelInstanceIndex,
+                 const SpatialInertia<double>&>(),
+            py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
+            cls_doc.ctor.doc_3args)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
@@ -366,31 +375,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
-            cls_doc.is_locked.doc);
-
-// TODO(sherm1) Remove as of 2024-02-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("floating_velocities_start",
-            WrapDeprecated(cls_doc.floating_velocities_start.doc_deprecated,
-                &Class::floating_velocities_start),
-            cls_doc.floating_velocities_start.doc_deprecated);
-#pragma GCC diagnostic pop
-  }
-
-  {
-    using Class = RigidBody<T>;
-    constexpr auto& cls_doc = doc.RigidBody;
-    auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
-        m, "RigidBody", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<const std::string&, const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
-        .def(py::init<const std::string&, ModelInstanceIndex,
-                 const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
-            cls_doc.ctor.doc_3args)
+            cls_doc.is_locked.doc)
         .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
         .def("default_com", &Class::default_com, py_rvp::reference_internal,
             cls_doc.default_com.doc)
@@ -408,6 +393,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
+
+// TODO(sherm1) Remove as of 2024-02-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("floating_velocities_start",
+            WrapDeprecated(cls_doc.floating_velocities_start.doc_deprecated,
+                &Class::floating_velocities_start),
+            cls_doc.floating_velocities_start.doc_deprecated);
+#pragma GCC diagnostic pop
+
+    // Aliases for backwards compatibility (dispreferred).
+    m.attr("Body") = m.attr("RigidBody");
+    m.attr("Body_") = m.attr("RigidBody_");
   }
 
   // Joints.
@@ -888,8 +887,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
         m, "LinearSpringDamper", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<const Body<T>&, const Vector3<double>&, const Body<T>&,
-                 const Vector3<double>&, double, double, double>(),
+        .def(py::init<const RigidBody<T>&, const Vector3<double>&,
+                 const RigidBody<T>&, const Vector3<double>&, double, double,
+                 double>(),
             py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
             py::arg("p_BQ"), py::arg("free_length"), py::arg("stiffness"),
             py::arg("damping"), cls_doc.ctor.doc)

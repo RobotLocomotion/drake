@@ -2369,55 +2369,6 @@ GTEST_TEST(GraphvizTest, Attributes) {
   EXPECT_THAT(dot, ::testing::HasSubstr("<B>DefaultFeedthroughSystem</B>"));
 }
 
-// Remove this on 2024-01-01.
-GTEST_TEST(GraphvizTest, DeprecatedId) {
-  DefaultFeedthroughSystem system;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  ASSERT_NE(system.GetGraphvizId(), 0);
-#pragma GCC diagnostic pop
-}
-
-// Remove this on 2024-01-01.
-class LegacyCustomGraphviz final : public LeafSystem<double> {
- public:
-  LegacyCustomGraphviz() {
-    DeclareVectorInputPort("u0", 1);
-    auto calc = [](const Context<double>&, BasicVector<double>*) {};
-    DeclareVectorOutputPort("y0", 1, calc);
-    DeclareVectorOutputPort("y1", 2, calc);
-  }
-
-  using SystemBase::GetGraphvizFragment;
-
- protected:
-  void GetGraphvizFragment(int max_depth, std::stringstream* dot) const final {
-    DRAKE_THROW_UNLESS(max_depth >= 0);
-    *dot << "// The first ten million years were the worst,\n"
-            "// and the second ten million years, they were the worst too.\n"
-            "// The third ten million years I didn't enjoy at all.\n"
-            "// After that I went into a bit of a decline.\n";
-  }
-};
-
-// Remove this on 2024-01-01.
-GTEST_TEST(GraphvizTest, DeprecatedLegacyCustomGraphviz) {
-  const std::map<std::string, std::string> options;
-  LegacyCustomGraphviz dut;
-  const SystemBase::GraphvizFragment result =
-      dut.GetGraphvizFragment(std::nullopt, options);
-
-  ASSERT_EQ(result.fragments.size(), 1);
-  EXPECT_THAT(result.fragments.front(),
-              ::testing::HasSubstr("a bit of a decline"));
-
-  ASSERT_EQ(result.input_ports.size(), 1);
-  ASSERT_EQ(result.output_ports.size(), 2);
-  EXPECT_NE(result.input_ports.front(), "");
-  EXPECT_NE(result.output_ports.front(), "");
-  EXPECT_NE(result.output_ports.back(), "");
-}
-
 GTEST_TEST(GraphvizTest, Ports) {
   DefaultFeedthroughSystem system;
   system.AddVectorInputPort(/* size = */ 0);

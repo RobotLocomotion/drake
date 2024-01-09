@@ -227,7 +227,7 @@ TEST_F(MeshParserTest, CorrectMass) {
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
 
-  const Body<double>& body = plant_.GetBodyByName("body", model_instance);
+  const RigidBody<double>& body = plant_.GetBodyByName("body", model_instance);
   const double mass = body.get_mass(*context);
   const double density = 1000;  // kg/m³
   // 2x2x2 box with proscribed density.
@@ -260,7 +260,7 @@ TEST_F(MeshParserTest, RegisteredGeometry) {
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
 
-  const Body<double>& body = plant_.GetBodyByName("body", model_instance);
+  const RigidBody<double>& body = plant_.GetBodyByName("body", model_instance);
   std::optional<geometry::FrameId> frame_id =
       plant_.GetBodyFrameIdIfExists(body.index());
   ASSERT_TRUE(frame_id.has_value());

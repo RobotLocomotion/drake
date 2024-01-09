@@ -973,6 +973,7 @@ def drake_cc_googletest_linux_only(
             "@drake//tools/skylark:linux": linkopts,
             "//conditions:default": [],
         }),
+        alwayslink = True,
         visibility = ["//visibility:private"],
     )
 

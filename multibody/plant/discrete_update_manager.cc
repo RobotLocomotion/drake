@@ -797,6 +797,8 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
   Matrix3X<T> Jv_WBc_W(3, nv);
   Matrix3X<T> Jv_AcBc_W(3, nv);
 
+  const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
+
   const Frame<T>& frame_W = plant().world_frame();
   for (int icontact = 0; icontact < ssize(contact_pairs); ++icontact) {
     const auto& point_pair = contact_pairs[icontact];
@@ -805,9 +807,9 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index().at(geometryA_id);
-    const Body<T>& bodyA = plant().get_body(bodyA_index);
+    const RigidBody<T>& bodyA = plant().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index().at(geometryB_id);
-    const Body<T>& bodyB = plant().get_body(bodyB_index);
+    const RigidBody<T>& bodyB = plant().get_body(bodyB_index);
 
     // Contact normal from point A into B.
     const Vector3<T>& nhat_W = -point_pair.nhat_BA_W;
@@ -837,6 +839,11 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     // requirement being that they form a valid right handed basis with nhat_W.
     math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
+
+    // Contact velocity stored in the current context (previous time step).
+    const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
+    const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
+    const T vn0 = v_AcBc_C(2);
 
     const TreeIndex treeA_index =
         tree_topology().body_to_tree_index(bodyA_index);
@@ -880,6 +887,8 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
                                           .objectB = bodyB_index,
                                           .p_BqC_W = p_BC_W,
                                           .phi = point_pair.phi0,
+                                          .vn = vn0,
+                                          .fe = point_pair.fn0,
                                           .R_WC = R_WC};
     switch (type) {
       case DiscreteContactType::kPoint: {
@@ -991,9 +1000,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
        ++point_pair_index) {
     const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
     const BodyIndex body_A_index = geometry_id_to_body_index().at(pair.id_A);
-    const Body<T>& body_A = plant().get_body(body_A_index);
+    const RigidBody<T>& body_A = plant().get_body(body_A_index);
     const BodyIndex body_B_index = geometry_id_to_body_index().at(pair.id_B);
-    const Body<T>& body_B = plant().get_body(body_B_index);
+    const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
     const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
     const TreeIndex treeB_index = topology.body_to_tree_index(body_B_index);
@@ -1036,7 +1045,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
       const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
 
       const T phi0 = -pair.depth;
-      const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
+      const T fn0 = k * pair.depth;
 
       contact_pairs.AppendPointData(
           DiscreteContactPair<T>{pair.id_A,
@@ -1100,9 +1109,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
     // Combine dissipation.
     const BodyIndex body_M_index = geometry_id_to_body_index().at(s.id_M());
-    const Body<T>& body_M = plant().get_body(body_M_index);
+    const RigidBody<T>& body_M = plant().get_body(body_M_index);
     const BodyIndex body_N_index = geometry_id_to_body_index().at(s.id_N());
-    const Body<T>& body_N = plant().get_body(body_N_index);
+    const RigidBody<T>& body_N = plant().get_body(body_N_index);
 
     const TreeIndex& treeM_index = topology.body_to_tree_index(body_M_index);
     const TreeIndex& treeN_index = topology.body_to_tree_index(body_N_index);

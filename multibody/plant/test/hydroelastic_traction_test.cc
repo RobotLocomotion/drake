@@ -294,8 +294,8 @@ class MultibodyPlantHydroelasticTractionTests
         query_object.inspector().GetFrameId(contact_surface_->id_M());
     const geometry::FrameId frameN_id =
         query_object.inspector().GetFrameId(contact_surface_->id_N());
-    const Body<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
-    const Body<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
+    const RigidBody<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
+    const RigidBody<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
 
     // Get the poses of the two bodies in the world frame.
     const math::RigidTransform<double> X_WA =

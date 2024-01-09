@@ -61,12 +61,12 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   auto& tree = *tree_owned;
 
   // Add box body and gimbal (BallRpy) joint.
-  const RigidBody<double>& box_link = tree.AddBody<RigidBody>("box", M_Bcm);
+  const RigidBody<double>& box_link = tree.AddRigidBody("box", M_Bcm);
   tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {},
                               box_link, {});
 
   // Add a massless body that can rotate about x.
-  const RigidBody<double>& massless_link = tree.AddBody<RigidBody>(
+  const RigidBody<double>& massless_link = tree.AddRigidBody(
       "massless", SpatialInertia<double>(0, Vector3d::Zero(),
                                          UnitInertia<double>(0, 0, 0)));
   tree.AddJoint<RevoluteJoint>(
@@ -74,7 +74,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Add cylinder body and let it translate along y.
   const RigidBody<double>& cylinder_link =
-      tree.AddBody<RigidBody>("cylinder", M_Ccm);
+      tree.AddRigidBody("cylinder", M_Ccm);
   tree.AddJoint<PrismaticJoint>("prismatic", massless_link, {},
                                 cylinder_link, {}, Vector3d(0, 1, 0));
 
@@ -171,12 +171,12 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   auto& tree = *tree_owned;
 
   // Add box body and gimbal (BallRpy) joint.
-  const RigidBody<double>& box_link = tree.AddBody<RigidBody>("box", M_Bcm);
+  const RigidBody<double>& box_link = tree.AddRigidBody("box", M_Bcm);
   const auto& WB_joint =
       tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
 
   // Add a massless body that can rotate about x.
-  const RigidBody<double>& massless_link = tree.AddBody<RigidBody>(
+  const RigidBody<double>& massless_link = tree.AddRigidBody(
       "massless", SpatialInertia<double>(0, Vector3d::Zero(),
                                          UnitInertia<double>(0, 0, 0)));
   const auto& BM_joint = tree.AddJoint<RevoluteJoint>(
@@ -184,7 +184,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Add cylinder body and let it translate along y.
   const RigidBody<double>& cylinder_link =
-      tree.AddBody<RigidBody>("cylinder", M_Ccm);
+      tree.AddRigidBody("cylinder", M_Ccm);
   const auto& MC_joint = tree.AddJoint<PrismaticJoint>(
       "prismatic", massless_link, {}, cylinder_link, {}, Vector3d(0, 1, 0));
 

@@ -84,7 +84,7 @@ InverseKinematics::InverseKinematics(
 
   // Add the unit quaternion constraints.
   for (BodyIndex i{0}; i < plant.num_bodies(); ++i) {
-    const Body<double>& body = plant.get_body(i);
+    const RigidBody<double>& body = plant.get_body(i);
     if (body.has_quaternion_dofs()) {
       const int start = body.floating_positions_start();
       constexpr int size = 4;
@@ -96,10 +96,14 @@ InverseKinematics::InverseKinematics(
             current_positions.segment<size>(start).normalized();
         lb.segment<size>(start) = quat;
         ub.segment<size>(start) = quat;
+        prog_->SetInitialGuess(q_.segment<size>(start), quat);
       } else {
         prog_->AddConstraint(solvers::Binding<solvers::Constraint>(
             std::make_shared<UnitQuaternionConstraint>(),
             q_.segment<size>(start)));
+        // Set a non-zero initial guess to help avoid singularities.
+        prog_->SetInitialGuess(q_.segment<size>(start),
+                              Eigen::Vector4d{1, 0, 0, 0});
       }
     }
   }

@@ -120,7 +120,8 @@ def split_se3(q_se3):
 
 class TestStaticEquilibriumProblem(unittest.TestCase):
 
-    @unittest.skipUnless(mp.SnoptSolver().available(), "Requires Snopt")
+    @unittest.skipUnless(mp.SnoptSolver().available()
+                         and mp.SnoptSolver().enabled(), "Requires SNOPT")
     def test_one_box(self):
         # Test with a single box.
         masses = [1.]

@@ -214,7 +214,7 @@ combination of `w_AB` and `v_AB`.
 See @ref multibody_quantities for more information about notation.
 
 Each _body_ contains a _body frame_  and we use the same symbol `B` for both a
-body `B` and its body frame. Body B's location is defined via `Bo` (the
+body `B` and its body frame.  Body B's location is defined via `Bo` (the
 origin of the body frame) and body B's pose is defined via the pose of B's
 body frame.  Body properties (e.g., inertia and geometry) are measured with
 respect to the body frame.  Body B's center of mass is denoted `Bcm`

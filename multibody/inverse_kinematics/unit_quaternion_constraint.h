@@ -9,9 +9,17 @@
 namespace drake {
 namespace multibody {
 /**
- * Constrains the quaternion to have a unit length.
- *
- * @ingroup solver_evaluators
+ Constrains the quaternion to have a unit length.
+
+ @note: It is highly recommended that in addition to adding this constraint,
+ you also call MathematicalProgram::SetInitialGuess(), e.g.
+ @code
+ // Set a non-zero initial guess to help avoid singularities.
+ prog_->SetInitialGuess(q_.segment<4>(quaternion_start),
+                        Eigen::Vector4d{1, 0, 0, 0});
+ @endcode
+
+ @ingroup solver_evaluators
  */
 class UnitQuaternionConstraint : public solvers::Constraint {
  public:
@@ -40,19 +48,25 @@ class UnitQuaternionConstraint : public solvers::Constraint {
 };
 
 /**
- * Add unit length constraints to all the variables representing quaternion in
- * `q_vars`. Namely the quaternions for floating base joints in `plant` will be
- * enforced to have a unit length.
- * @param plant The plant on which we impose the unit quaternion constraints.
- * @param q_vars The decision variables for the generalized position of the
- * plant.
- * @param prog The unit quaternion constraints are added to this prog.
- * @tparam_default_scalar
+ Add unit length constraints to all the variables representing quaternion in
+ `q_vars`. Namely the quaternions for floating base joints in `plant` will be
+ enforced to have a unit length.
+
+ Additionally, if the initial guess for the quaternion variables has not been
+ set (it is nan), then this method calls MathematicalProgram::SetInitialGuess()
+ with [1, 0, 0, 0], to help the solver avoid singularities.
+
+ @param plant The plant on which we impose the unit quaternion constraints.
+ @param q_vars The decision variables for the generalized position of the
+ plant.
+ @param prog The unit quaternion constraints are added to this prog.
+ @tparam_default_scalar
  */
 template <typename T>
 void AddUnitQuaternionConstraintOnPlant(
     const MultibodyPlant<T>& plant,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     solvers::MathematicalProgram* prog);
+
 }  // namespace multibody
 }  // namespace drake

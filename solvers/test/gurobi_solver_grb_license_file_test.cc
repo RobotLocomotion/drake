@@ -19,7 +19,7 @@ namespace {
 
 std::optional<std::string> GetEnvStr(const char* name) {
   const char* const value = std::getenv(name);
-  if (!name) {
+  if (!value) {
     return std::nullopt;
   }
   return std::string(value);

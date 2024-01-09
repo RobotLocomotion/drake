@@ -375,7 +375,8 @@ class TestSensors(unittest.TestCase):
             self._check_input(port)
         for port in (
                 dut.color_image_output_port(),
-                dut.depth_image_output_port()):
+                dut.depth_image_output_port(),
+                dut.label_image_output_port()):
             self._check_output(port)
 
         # Create a one-pixel lcmt_image message.

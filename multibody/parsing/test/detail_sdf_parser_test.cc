@@ -62,6 +62,12 @@ using CollisionPair = SortedPair<std::string>;
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
+// Fixture to add test coverage for the SDF parser. Some features such as mimic
+// joints and ball constraints are only supported in discrete mode when using
+// the SAP solver. For testing such features, we set a model approximation that
+// uses the SAP solver. More specifically, we call
+// set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+// MultibodyPlant used for testing before parsing.
 class SdfParserTest : public test::DiagnosticPolicyTestBase{
  public:
   SdfParserTest() {
@@ -278,9 +284,9 @@ TEST_F(SdfParserTest, ModelInstanceTest) {
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot1));
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot2));
 
-  const Body<double>& acrobot1_link1 =
+  const RigidBody<double>& acrobot1_link1 =
       plant_.GetBodyByName("Link1", acrobot1);
-  const Body<double>& acrobot2_link1 =
+  const RigidBody<double>& acrobot2_link1 =
       plant_.GetBodyByName("Link1", acrobot2);
   EXPECT_NE(acrobot1_link1.index(), acrobot2_link1.index());
   EXPECT_EQ(acrobot1_link1.model_instance(), acrobot1);
@@ -991,7 +997,7 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsing) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1031,7 +1037,7 @@ TEST_F(SdfParserTest, MimicSuccessfulParsing) {
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1071,7 +1077,8 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
 }
 
 TEST_F(SdfParserTest, MimicNoSap) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  plant_.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1102,7 +1109,7 @@ TEST_F(SdfParserTest, MimicNoSap) {
 }
 
 TEST_F(SdfParserTest, MimicNoJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1131,7 +1138,7 @@ TEST_F(SdfParserTest, MimicNoJoint) {
 }
 
 TEST_F(SdfParserTest, MimicBadJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1160,7 +1167,7 @@ TEST_F(SdfParserTest, MimicBadJoint) {
 }
 
 TEST_F(SdfParserTest, MimicSameJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1181,7 +1188,7 @@ TEST_F(SdfParserTest, MimicSameJoint) {
 }
 
 TEST_F(SdfParserTest, MimicNoMultiplier) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1210,7 +1217,7 @@ TEST_F(SdfParserTest, MimicNoMultiplier) {
 }
 
 TEST_F(SdfParserTest, MimicNoOffset) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -1239,7 +1246,7 @@ TEST_F(SdfParserTest, MimicNoOffset) {
 }
 
 TEST_F(SdfParserTest, MimicOnlyOneDOFJoint) {
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   ParseTestString(R"""(
     <model name='a'>
       <link name='A'/>
@@ -2193,7 +2200,7 @@ TEST_F(SdfParserTest, BallConstraint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Test successful parsing.
   ParseTestString(R"""(
@@ -2235,7 +2242,7 @@ TEST_F(SdfParserTest, BallConstraintMissingBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2261,7 +2268,7 @@ TEST_F(SdfParserTest, BallConstraintMissingPoint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2287,7 +2294,7 @@ TEST_F(SdfParserTest, BallConstraintNonExistentBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -3435,9 +3442,9 @@ TEST_F(SdfParserTest, WorldJoint) {
   EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
   EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
 
-  const Body<double>& parent_link =
+  const RigidBody<double>& parent_link =
       plant_.GetBodyByName("L_P", parent_instance);
-  const Body<double>& child_link =
+  const RigidBody<double>& child_link =
       plant_.GetBodyByName("L_C", child_instance);
   EXPECT_NE(parent_link.index(), child_link.index());
   EXPECT_EQ(parent_link.model_instance(), parent_instance);

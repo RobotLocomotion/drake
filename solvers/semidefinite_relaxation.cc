@@ -8,6 +8,7 @@
 
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
 
 namespace drake {
@@ -149,8 +150,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
       nnz += binding.evaluator()->get_sparse_A().nonZeros();
     }
 
-    std::vector<Triplet<double>> triplet_list;
-    triplet_list.reserve(nnz);
+    std::vector<Triplet<double>> A_triplets;
+    A_triplets.reserve(nnz);
     SparseMatrix<double> A(num_constraints, prog.num_vars());
     VectorXd b(num_constraints);
 
@@ -160,12 +161,12 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
           prog.FindDecisionVariableIndices(binding.variables());
       for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
         if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-          triplet_list.push_back(
+          A_triplets.push_back(
               Triplet<double>(constraint_idx, indices[i], -1.0));
           b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
         }
         if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-          triplet_list.push_back(
+          A_triplets.push_back(
               Triplet<double>(constraint_idx, indices[i], 1.0));
           b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
         }
@@ -180,7 +181,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-              triplet_list.push_back(Triplet<double>(
+              A_triplets.push_back(Triplet<double>(
                   constraint_idx, indices[j],
                   -binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
@@ -190,7 +191,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-              triplet_list.push_back(Triplet<double>(
+              A_triplets.push_back(Triplet<double>(
                   constraint_idx, indices[j],
                   binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
@@ -199,22 +200,26 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         }
       }
     }
-    A.setFromTriplets(triplet_list.begin(), triplet_list.end());
+    A.setFromTriplets(A_triplets.begin(), A_triplets.end());
 
     // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented with
     // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
     // TODO(russt): Avoid the symbolic computation here.
     // TODO(russt): Avoid the dense matrix.
-    // TODO(russt): Only add the lower triangular constraints
-    // (MathematicalProgram::AddLinearEqualityConstraint has this option, but
-    // AddLinearConstraint does not yet).
+
     const MatrixX<Expression> AYAT =
         A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
     const VectorX<Variable> y = x.head(prog.num_vars());
+
+    const VectorX<Expression> rhs_flat_tril =
+        math::ToLowerTriangularColumnsFromMatrix(
+            AYAT - b * (A * y).transpose() - A * y * b.transpose());
+    const VectorXd bbT_flat_tril =
+        math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+
     relaxation->AddLinearConstraint(
-        AYAT - b * (A * y).transpose() - A * y * b.transpose(),
-        -b * b.transpose(),
-        MatrixXd::Constant(num_constraints, num_constraints, kInf));
+        rhs_flat_tril, bbT_flat_tril,
+        VectorXd::Constant(bbT_flat_tril.size(), kInf));
   }
 
   // Linear equality constraints.

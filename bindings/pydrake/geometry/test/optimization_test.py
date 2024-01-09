@@ -30,7 +30,7 @@ class TestGeometryOptimization(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.A = np.eye(3)
-        self.b = [1.0, 1.0, 1.0]
+        self.b = np.array([1.0, 1.0, 1.0])
         self.prog = MathematicalProgram()
         self.x = self.prog.NewContinuousVariables(3, "x")
         self.t = self.prog.NewContinuousVariables(1, "t")[0]
@@ -334,6 +334,50 @@ class TestGeometryOptimization(unittest.TestCase):
         e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
         mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
+
+    def test_hyperrectangle(self):
+        mut.Hyperrectangle()
+        rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
+
+        # Methods inherited from ConvexSet
+        self.assertEqual(rect.ambient_dimension(), self.b.shape[0])
+        self.assertTrue(rect.IntersectsWith(rect))
+        self.assertTrue(rect.IsBounded())
+        self.assertFalse(rect.IsEmpty())
+        self.assertTrue(rect.MaybeGetPoint() is None)
+        point = rect.MaybeGetFeasiblePoint()
+        self.assertTrue(point is not None)
+        self.assertTrue(rect.PointInSet(x=point, tol=0.0))
+        new_vars, new_constraints = rect.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
+        self.assertGreater(len(new_constraints), 0)
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, x=self.x, t=self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, A=self.Ay, b=self.by, c=self.cz, d=self.dz,
+            x=self.y, t=self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        shape, pose = rect.ToShapeWithPose()
+        self.assertTrue(isinstance(shape, Box))
+        np.testing.assert_array_equal(pose.translation(),
+                                      np.zeros_like(self.b))
+
+        # Methods specific to Hyperrectangle
+        np.testing.assert_array_equal(rect.lb(), -self.b)
+        np.testing.assert_array_equal(rect.ub(), self.b)
+        np.testing.assert_array_equal(rect.Center(), np.zeros_like(self.b))
+        generator = RandomGenerator()
+        sample = rect.UniformSample(generator=generator)
+        self.assertEqual(sample.shape, (self.b.shape[0],))
+        hpoly = rect.MakeHPolyhedron()
+        box = mut.HPolyhedron.MakeBox(rect.lb(), rect.ub())
+        np.testing.assert_array_equal(hpoly.A(), box.A())
+        np.testing.assert_array_equal(hpoly.b(), box.b())
+        assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()

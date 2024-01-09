@@ -538,11 +538,18 @@ class TestMathematicalProgram(unittest.TestCase):
         S = prog.NewSymmetricContinuousVariables(3, "S")
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
+        minor_indices = {0, 2}
         self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
         self.assertEqual(
             prog.positive_semidefinite_constraints()[0].evaluator().
             matrix_rows(), 3)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S, minor_indices)
+        self.assertEqual(len(prog.positive_semidefinite_constraints()), 2)
+        self.assertEqual(
+            prog.positive_semidefinite_constraints()[1].evaluator().
+            matrix_rows(), 2)
         prog.AddPositiveSemidefiniteConstraint(S+S)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S+S, minor_indices)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S+S)

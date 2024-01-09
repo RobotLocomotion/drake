@@ -29,7 +29,7 @@ class AccelerometerTest : public ::testing::Test {
     plant_->Finalize();
 
     // Connect a pendulum to the accelerometer.
-    const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");
+    const multibody::RigidBody<double>& arm_body = plant_->GetBodyByName("arm");
     const math::RigidTransform<double> X_BS(Eigen::Vector3d(0, 0, -r_BS_));
     gravity_ = plant_->gravity_field().gravity_vector();
     accel_default_ = builder.AddSystem<Accelerometer>(arm_body, X_BS, gravity_);

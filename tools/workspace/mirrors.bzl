@@ -50,9 +50,4 @@ DEFAULT_MIRRORS = {
         # N.B. ibiblio doesn't offer https.
         "http://maven.ibiblio.org/maven2/{fulljar}",
     ],
-    # On 2024-01-01 upon completion of @vtk deprecation, remove this stanza.
-    "vtk": [
-        "https://drake-packages.csail.mit.edu/vtk/{archive}",
-        "https://s3.amazonaws.com/drake-packages/vtk/{archive}",
-    ],
 }

@@ -4,10 +4,10 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -16,7 +16,7 @@ namespace multibody {
 class MultibodyElementTester {
  public:
   MultibodyElementTester() = delete;
-  static void set_index(Body<double>* element, BodyIndex index) {
+  static void set_index(RigidBody<double>* element, BodyIndex index) {
     // MultibodyTree parameter is null; don't call anything that depends on the
     // tree.
     element->set_parent_tree(nullptr, index);
@@ -50,48 +50,14 @@ namespace {
 //  utilities so other tests can create mocked bodies. Possibly templatize it.
 
 // Minimal definition of a body that we can use to construct a BodyNode.
-class DummyBody : public Body<double> {
+class DummyBody : public RigidBody<double> {
  public:
   DummyBody(std::string name, BodyIndex index)
-      : Body(std::move(name), ModelInstanceIndex(0)) {
+      : RigidBody<double>(std::move(name), ModelInstanceIndex(0),
+                          SpatialInertia<double>()) {
     // We need a body index for the body node test to be happy.
     MultibodyElementTester::set_index(this, index);
   }
-
-  double default_mass() const override { return 0; }
-  RotationalInertia<double> default_rotational_inertia() const override {
-    return {};
-  }
-  const double& get_mass(const Context<double>&) const override {
-    return mass_;
-  }
-  const Vector3d CalcCenterOfMassInBodyFrame(
-      const Context<double>&) const override {
-    return Vector3d::Zero();
-  }
-  Vector3d CalcCenterOfMassTranslationalVelocityInWorld(
-      const Context<double>&) const override {
-    return Vector3d::Zero();
-  }
-  SpatialInertia<double> CalcSpatialInertiaInBodyFrame(
-      const Context<double>&) const override {
-    return SpatialInertia<double>::MakeUnitary();
-  };
-  std::unique_ptr<Body<double>> DoCloneToScalar(
-      const MultibodyTree<double>&) const override {
-    return nullptr;
-  }
-  std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>&) const override {
-    return nullptr;
-  }
-  std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>&) const override {
-    return nullptr;
-  }
-
- protected:
-  double mass_{0};
 };
 
 // This test validates the exception message thrown in

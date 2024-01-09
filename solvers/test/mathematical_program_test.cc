@@ -2975,6 +2975,79 @@ GTEST_TEST(TestMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
 }
 
+GTEST_TEST(TestMathematicalProgram,
+           AddPrincipalSubmatrixIsPsdConstraintVariable) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<4>("X");
+
+  std::set<int> minor_indices{0, 1, 3};
+  MatrixXDecisionVariable minor_manual(3, 3);
+  // clang-format off
+  minor_manual << X(0, 0), X(0, 1), X(0, 3),
+                  X(1, 0), X(1, 1), X(1, 3),
+                  X(3, 0), X(3, 1), X(3, 3);
+  // clang-format on
+
+  auto psd_cnstr =
+      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices)
+          .evaluator();
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog.GetAllConstraints().size(), 1);
+  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.evaluator().get());
+  Eigen::Map<Eigen::Matrix<Variable, 9, 1>> minor_flat(&minor_manual(0, 0));
+  EXPECT_TRUE(CheckStructuralEquality(minor_flat, new_psd_cnstr.variables()));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddPrincipalSubmatrixIsPsdConstraintExpression) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<4>("X");
+  std::set<int> minor_indices{0, 1, 3};
+  MatrixXDecisionVariable minor_manual(3, 3);
+  // clang-format off
+  minor_manual << X(0, 0), X(0, 1), X(0, 3),
+                  X(1, 0), X(1, 1), X(1, 3),
+                  X(3, 0), X(3, 1), X(3, 3);
+  // clang-format on
+
+  auto psd_cnstr = prog.AddPrincipalSubmatrixIsPsdConstraint(
+                           2 * Matrix4d::Identity() * X, minor_indices)
+                       .evaluator();
+
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog.GetAllConstraints().size(), 2);
+
+  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.evaluator().get());
+
+  MathematicalProgram prog_manual;
+  prog_manual.AddDecisionVariables(minor_manual);
+  auto psd_cnstr_manual = prog_manual
+                              .AddPositiveSemidefiniteConstraint(
+                                  2 * Matrix3d::Identity() * minor_manual)
+                              .evaluator();
+  const auto& new_psd_cnstr_manual =
+      prog.positive_semidefinite_constraints().back();
+
+  EXPECT_TRUE(CheckStructuralEquality(new_psd_cnstr_manual.variables(),
+                                      new_psd_cnstr.variables()));
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(),
+            prog_manual.positive_semidefinite_constraints().size());
+  EXPECT_EQ(prog.linear_equality_constraints().size(),
+            prog_manual.linear_equality_constraints().size());
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 1);
+  EXPECT_EQ(prog.GetAllConstraints().size(),
+            prog_manual.GetAllConstraints().size());
+
+  EXPECT_TRUE(CompareMatrices(
+      prog.linear_equality_constraints()[0].evaluator()->upper_bound(),
+      prog_manual.linear_equality_constraints()[0].evaluator()->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      prog.linear_equality_constraints()[0].evaluator()->lower_bound(),
+      prog_manual.linear_equality_constraints()[0].evaluator()->lower_bound()));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.required_capabilities().count(
@@ -3748,7 +3821,7 @@ GTEST_TEST(TestMathematicalProgram, TestNonlinearExpressionConstraints) {
 
   prog.AddConstraint(x.transpose() * x == 1.);
 
-  if (SnoptSolver().available()) {
+  if (SnoptSolver().available() && SnoptSolver().enabled()) {
     // Add equivalent constraints using all of the other entry points.
     // Note: restricted to SNOPT because IPOPT complains about the redundant
     // constraints.

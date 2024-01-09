@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <set>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -122,6 +124,25 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   return symmetric_matrix;
 }
 
+/// Given a square matrix, extract the lower triangular part as a stacked column
+/// vector. This is a particularly useful operation when vectorizing symmetric
+/// matrices.
+template <typename Derived>
+drake::VectorX<typename Derived::Scalar> ToLowerTriangularColumnsFromMatrix(
+    const Eigen::MatrixBase<Derived>& matrix) {
+  DRAKE_ASSERT(matrix.rows() == matrix.cols());
+  const int num_rows = (matrix.rows() * (matrix.rows() + 1)) / 2;
+  drake::VectorX<typename Derived::Scalar> stacked_lower_triangular(num_rows);
+  int row_count = 0;
+  for (int c = 0; c < matrix.cols(); ++c) {
+    const int num_elts = matrix.cols() - c;
+    stacked_lower_triangular.segment(row_count, num_elts) =
+        matrix.col(c).tail(num_elts);
+    row_count += num_elts;
+  }
+  return stacked_lower_triangular;
+}
+
 /// Checks if a matrix is symmetric (with tolerance @p symmetry_tolerance --
 /// @see IsSymmetric) and has all eigenvalues greater than @p
 /// eigenvalue_tolerance.  @p eigenvalue_tolerance must be >= 0 -- where 0
@@ -180,6 +201,53 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
     mat.col(i) = vec[i];
   }
   return mat;
+}
+
+/// Extracts the principal submatrix from the ordered set of indices. The
+/// indices must be in monotonically increasing order and non-empty. This method
+/// makes no assumptions about the symmetry of the matrix, nor that the matrix
+/// is square. However, all indices must be valid for both rows and columns.
+template <typename Derived>
+MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
+    const Eigen::MatrixBase<Derived>& mat, const std::set<int>& indices) {
+  DRAKE_THROW_UNLESS(!indices.empty());
+  // Stores the contiguous intervals of the index set of the minor. These
+  // intervals include the first index but exclude the last, i.e.
+  // [intervals[i][0], intervals[i][1]).
+  std::vector<std::pair<int, int>> intervals;
+  auto it = indices.begin();
+  int interval_start{*it};
+  int interval_end{*it};
+  DRAKE_THROW_UNLESS(interval_start >= 0 && *it < mat.rows() &&
+                     *it < mat.cols());
+  // start iterating at the second element in the set.
+  for (++it; it != indices.end(); ++it) {
+    DRAKE_THROW_UNLESS(*it < mat.rows() && *it < mat.cols());
+    if (*it != interval_end + 1) {
+      intervals.emplace_back(interval_start, interval_end + 1);
+      interval_start = *it;
+    }
+    interval_end = *it;
+  }
+  intervals.emplace_back(interval_start, interval_end + 1);
+
+  MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
+  int minor_row_count = 0;
+  for (auto row_it = intervals.begin(); row_it != intervals.cend(); ++row_it) {
+    int minor_col_count = 0;
+    const int cur_block_row_size = row_it->second - row_it->first;
+    for (auto col_it = intervals.begin(); col_it != intervals.cend();
+         ++col_it) {
+      const int cur_block_col_size = col_it->second - col_it->first;
+      minor.block(minor_row_count, minor_col_count, cur_block_row_size,
+                  cur_block_col_size) =
+          mat.block(row_it->first, col_it->first, cur_block_row_size,
+                    cur_block_col_size);
+      minor_col_count += cur_block_col_size;
+    }
+    minor_row_count += cur_block_row_size;
+  }
+  return minor;
 }
 
 }  // namespace math

@@ -13,8 +13,8 @@
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/test_utilities/spatial_derivative.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 
@@ -78,7 +78,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(R_WH.matrix(), R_WH_expected.matrix(), kTolerance,
                               MatrixCompareType::relative));
 
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const Frame<double>& frame_L3 = link3.body_frame();
   const RigidTransform<double> X_HL3 = frame_L3.CalcPose(*context_, *frame_H_);
   const RigidTransform<double> X_WL3 = frame_L3.CalcPoseInWorld(*context_);
@@ -169,7 +169,7 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
                               MatrixCompareType::relative));
 
   // Verify CalcAngularVelocity() against EvalAngularVelocityInWorld().
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const Frame<double>& frame_L3 = link3.body_frame();
   const Frame<double>& frame_W = plant_->world_frame();
   const Vector3<double> w_WL3_W =
@@ -240,7 +240,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
   // same as its definition which is V_WH_W - V_WL3_W.
   // Note: Frame H  is a fixed offset frame, fixed to end-effector E.
   const FixedOffsetFrame<double>& frame_H = *frame_H_;
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const Frame<double>& frame_L3 = link3.body_frame();
   const SpatialVelocity<double> V_W_L3H_W =
       frame_H.CalcRelativeSpatialVelocityInWorld(*context_, frame_L3);
@@ -341,7 +341,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
                                                  *end_effector_link_);
   EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected1.get_coeffs());
 
-  // Also verify A_WE_W against Body::EvalSpatialAccelerationInWorld().
+  // Also verify A_WE_W against RigidBody::EvalSpatialAccelerationInWorld().
   const SpatialAcceleration<double> A_WE_W_expected2 =
       end_effector_link_->EvalSpatialAccelerationInWorld(*context_);
   EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected2.get_coeffs());
@@ -377,7 +377,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
 
   // Verify special case of frame_L3.CalcSpatialAcceleration() when both the
   // measured-in frame and expressed-in frame are the world frame W.
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const Frame<double>& frame_L3 = link3.body_frame();
   const SpatialAcceleration<double> A_WL3_W =
       frame_L3.CalcSpatialAcceleration(*context_, frame_W, frame_W);
@@ -480,7 +480,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
 
   // Verify frame_H's relative spatial acceleration to itself (frame_H),
   // measured in frame_L3 is zero.
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const Frame<double>& frame_L3 = link3.body_frame();
   const Frame<double>& frame_W = plant_->world_frame();
   const SpatialAcceleration<double> A_L3_HH_W =
@@ -664,7 +664,7 @@ GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {
   // However the world is non-empty.
   ASSERT_NE(plant.num_bodies(), 0);
 
-  const Body<double>& mug = plant.GetBodyByName("simple_mug");
+  const RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
 
   // The objects frame O is affixed to a robot table defined by
   // test::AddFixedObjectsToPlant().

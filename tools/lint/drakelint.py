@@ -36,6 +36,23 @@ def _check_unguarded_openmp_uses(filename):
     return 0
 
 
+def _check_header_using_overloaded(filename):
+    """Return 0 if the file is not a header or doesn't include overloaded.h
+    Return 1 otherwise."""
+    forbidden_re = re.compile(
+        # This expression approximates section 6.10.2 except 6.10.2.4 of
+        # https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
+        r'\s*#\s*include\s*[<"]drake/common/overloaded.h\s*[>"]')
+    if filename.endswith(".h"):
+        with open(filename, mode='r', encoding='utf-8') as file:
+            for line in file.readlines():
+                if forbidden_re.match(line):
+                    print("ERROR:  Header files must not include "
+                          "drake/common/overloaded.h")
+                    return 1
+    return 0
+
+
 def _check_invalid_line_endings(filename):
     """Return 0 if all of the newlines in @p filename are Unix, and 1
     otherwise.
@@ -223,6 +240,7 @@ def main():
             total_errors += _check_unguarded_openmp_uses(filename)
             total_errors += _check_iostream(filename)
             total_errors += _check_clang_format_toggles(filename)
+            total_errors += _check_header_using_overloaded(filename)
 
     if total_errors == 0:
         sys.exit(0)

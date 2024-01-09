@@ -1031,6 +1031,7 @@ drake_cc_library(
     hdrs = ["semidefinite_relaxation.h"],
     interface_deps = [
         ":mathematical_program",
+        "//math:matrix_util",
     ],
     deps = [],
 )

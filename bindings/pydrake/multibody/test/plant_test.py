@@ -19,7 +19,7 @@ from pydrake.multibody.fem import (
 )
 from pydrake.multibody.tree import (
     BallRpyJoint_,
-    Body_,
+    Body_,  # dispreferred alias for RigidBody_
     BodyIndex,
     CalcSpatialInertia,
     MultibodyConstraintId,
@@ -46,6 +46,7 @@ from pydrake.multibody.tree import (
     QuaternionFloatingJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
+    RigidBody,
     RigidBody_,
     RotationalInertia_,
     ScopedName,
@@ -60,6 +61,11 @@ from pydrake.multibody.tree import (
     world_frame_index,
     world_index,
     world_model_instance,
+)
+# Deprecated, remove 2024-04-01. Just making sure these exist.
+from pydrake.multibody.tree import (
+    BodyFrame,
+    BodyFrame_,
 )
 from pydrake.multibody.math import (
     SpatialForce_,
@@ -78,6 +84,7 @@ from pydrake.multibody.plant import (
     ContactResultsToLcmSystem,
     CoulombFriction_,
     DeformableModel,
+    DiscreteContactApproximation,
     DiscreteContactSolver,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
@@ -139,7 +146,7 @@ from pydrake.systems.lcm import LcmPublisherSystem
 def get_index_class(cls, T):
     # Maps a class to its corresponding index class, accommdating inheritance.
     class_to_index_class_map = {
-        Body_[T]: BodyIndex,
+        RigidBody_[T]: BodyIndex,
         ForceElement_[T]: ForceElementIndex,
         Frame_[T]: FrameIndex,
         Joint_[T]: JointIndex,
@@ -319,7 +326,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         Joint = Joint_[T]
-        Body = Body_[T]
+        Body = Body_[T]  # check that dispreferred alias works
         Frame = Frame_[T]
         JointActuator = JointActuator_[T]
         InputPort = InputPort_[T]
@@ -410,11 +417,14 @@ class TestPlant(unittest.TestCase):
         check_repr(
             link1,
             "<RigidBody name='Link1' index=1 model_instance=2>")
+        self.assertTrue(plant.HasFrameNamed(name="Link1"))
+        self.assertTrue(
+            plant.HasFrameNamed(name="Link1", model_instance=model_instance))
         self._test_frame_api(T, plant.GetFrameByName(name="Link1"))
         link1_frame = plant.GetFrameByName(name="Link1")
         check_repr(
             link1_frame,
-            "<BodyFrame name='Link1' index=1 model_instance=2>")
+            "<RigidBodyFrame name='Link1' index=1 model_instance=2>")
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
@@ -499,7 +509,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
 
-        self.assertIsInstance(frame.body(), Body_[T])
+        self.assertIsInstance(frame.body(), RigidBody_[T])
         self.assertIsInstance(frame.is_world_frame(), bool)
         self.assertIsInstance(frame.is_body_frame(), bool)
         self.assertIsInstance(frame.name(), str)
@@ -513,7 +523,7 @@ class TestPlant(unittest.TestCase):
             RotationMatrix_[T])
 
     def _test_body_api(self, T, body):
-        Body = Body_[T]
+        Body = RigidBody_[T]
 
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
@@ -563,7 +573,7 @@ class TestPlant(unittest.TestCase):
 
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
-        Body = Body_[T]
+        Body = RigidBody_[T]
         Frame = Frame_[T]
 
         self.assertIsInstance(joint, Joint)
@@ -881,11 +891,13 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_rigid_body_api(self, T):
-        RigidBody = RigidBody_[T]
+        TemplatedRigidBody = RigidBody_[T]
         M = SpatialInertia_[float]()
         i = ModelInstanceIndex(0)
+        TemplatedRigidBody(body_name="body_name", M_BBo_B=M)
+        TemplatedRigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
+        # Make sure the default (float) version also works.
         RigidBody(body_name="body_name", M_BBo_B=M)
-        RigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -2329,7 +2341,8 @@ class TestPlant(unittest.TestCase):
     def test_coupler_constraint_api(self):
         # Create a MultibodyPlant with only a WSG gripper.
         plant = MultibodyPlant_[float](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
         Parser(plant).AddModelsFromUrl(
             "package://drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
@@ -2350,7 +2363,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_distance_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add a distance constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2371,7 +2385,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_ball_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add ball constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2391,7 +2406,8 @@ class TestPlant(unittest.TestCase):
 
     def test_constraint_active_status_api(self):
         plant = MultibodyPlant_[float](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Since we won't be performing dynamics computations,
         # using garbage inertia is ok for this test.
@@ -2481,7 +2497,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_weld_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
 
         # Add weld constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
@@ -2498,6 +2515,30 @@ class TestPlant(unittest.TestCase):
 
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
+    def test_remove_constraint(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
+
+        # Add weld constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        X_AP = RigidTransform_[float]()
+        X_BQ = RigidTransform_[float]()
+        id = plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
+
+        plant.RemoveConstraint(id=id)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify no constraint was added.
+        self.assertEqual(plant.num_constraints(), 0)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
@@ -2686,6 +2727,9 @@ class TestPlant(unittest.TestCase):
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
 
+    # N.B. MultibodyPlant::set_discrete_contact_solver() is deprecated and will
+    # be removed on or after 2024-04-01. This entire unit test can be removed
+    # entirely with the removal of discrete_contact_solver().
     def test_discrete_contact_solver(self):
         plant = MultibodyPlant_[float](0.1)
         models = [
@@ -2693,10 +2737,25 @@ class TestPlant(unittest.TestCase):
             DiscreteContactSolver.kSap,
         ]
         for model in models:
-            plant.set_discrete_contact_solver(model)
+            with catch_drake_warnings(expected_count=1) as w:
+                plant.set_discrete_contact_solver(model)
             self.assertEqual(plant.get_discrete_contact_solver(), model)
+
+    def test_discrete_contact_approximation(self):
+        plant = MultibodyPlant_[float](0.1)
+        approximations = [
+            DiscreteContactApproximation.kTamsi,
+            DiscreteContactApproximation.kSap,
+            DiscreteContactApproximation.kLagged,
+            DiscreteContactApproximation.kSimilar,
+        ]
+        for approximation in approximations:
+            plant.set_discrete_contact_approximation(approximation)
+            self.assertEqual(plant.get_discrete_contact_approximation(),
+                             approximation)
         plant.get_sap_near_rigid_threshold()
         plant.set_sap_near_rigid_threshold(near_rigid_threshold=0.03)
+        plant.get_discrete_contact_solver()
 
     def test_contact_surface_representation(self):
         for time_step in [0.0, 0.1]:
@@ -3034,7 +3093,8 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(len(registered_models), 1)
         self.assertEqual(registered_models[0].num_bodies(), 1)
         # Turn on SAP and finalize.
-        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
         plant.Finalize()
 
         # Post-finalize operations.

@@ -60,7 +60,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
 
   // Define the end-effector link and get the corresponding body and frame.
   const std::string ee_link_name = "iiwa_link_7";
-  const multibody::Body<double>& ee_body = plant.GetBodyByName(ee_link_name);
+  const multibody::RigidBody<double>& ee_body =
+      plant.GetBodyByName(ee_link_name);
   const multibody::Frame<double>& ee_frame = plant.GetFrameByName(ee_link_name);
 
   // Create an IK object and get its mathetical program.

@@ -9,6 +9,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -104,8 +105,9 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   // Specify a list of solvers by preference, to avoid IPOPT getting used for
   // conic constraints.  See discussion at #15320.
   // TODO(russt): Revisit this pending resolution of #15320.
-  std::vector<solvers::SolverId> preferred_solvers{solvers::MosekSolver::id(),
-                                                   solvers::GurobiSolver::id()};
+  std::vector<solvers::SolverId> preferred_solvers{
+      solvers::MosekSolver::id(), solvers::GurobiSolver::id(),
+      solvers::ClarabelSolver::id()};
 
   // If we have only linear constraints, then add a quadratic cost and solve the
   // QP.  Otherwise add a slack variable and solve the SOCP.

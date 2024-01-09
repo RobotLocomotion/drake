@@ -158,19 +158,6 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override;
 
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling this function, call GetGraphvizFragment()")
-  void GetGraphvizInputPortToken(const InputPort<T>& port,
-                                 int max_depth,
-                                 std::stringstream *dot) const final;
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling this function, call GetGraphvizFragment()")
-  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
-                                  int max_depth,
-                                  std::stringstream *dot) const final;
-
   // =========================================================================
   // Allocation helper utilities.
 

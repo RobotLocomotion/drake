@@ -101,8 +101,9 @@ class Geometries final : public ShapeReifier {
       GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG);
 
   /* For each registered deformable geometry, computes the contact data of it
-   with respect to all registered rigid geometries. Assumes the vertex positions
-   and poses of all registered deformable and rigid geometries are up to date.
+   with respect to all registered rigid geometries and all other deformable
+   geometries. Assumes the vertex positions and poses of all registered
+   deformable and rigid geometries are up to date.
   */
   DeformableContact<double> ComputeDeformableContact(
       const CollisionFilter& collision_filter) const;

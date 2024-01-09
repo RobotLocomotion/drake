@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="fake_camera">
+    <link name="body">
+      <inertial>
+        <mass>0.1</mass>
+        <pose>0.01 0.02 0.03  0 0 0</pose>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+  </model>
+</sdf>

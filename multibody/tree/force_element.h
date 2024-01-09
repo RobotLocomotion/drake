@@ -215,20 +215,21 @@ class ForceElement : public MultibodyElement<T> {
   ///    public:
   ///     // Class's constructor.
   ///     SpringElement(
-  ///       const Body<T>& body1, const Body<T>& body2, double stiffness);
+  ///       const RigidBody<T>& body1, const RigidBody<T>& body2,
+  ///       double stiffness);
   ///     // Get the first body to which this spring is connected.
-  ///     const Body<T>& get_body1() const;
+  ///     const RigidBody<T>& get_body1() const;
   ///     // Get the second body to which this spring is connected.
-  ///     const Body<T>& get_body2() const;
+  ///     const RigidBody<T>& get_body2() const;
   ///     // Get the spring stiffness constant.
   ///     double get_stiffness() const;
   ///    protected:
   ///     // Implementation of the scalar conversion from T to double.
   ///     std::unique_ptr<ForceElement<double>> DoCloneToScalar(
   ///       const MultibodyTree<double>& tree_clone) const) {
-  ///         const Body<ToScalar>& body1_clone =
+  ///         const RigidBody<ToScalar>& body1_clone =
   ///           tree_clone.get_variant(get_body1());
-  ///         const Body<ToScalar>& body2_clone =
+  ///         const RigidBody<ToScalar>& body2_clone =
   ///           tree_clone.get_variant(get_body2());
   ///         return std::make_unique<SpringElement<double>>(
   ///           body1_clone, body2_clone, get_stiffness());
