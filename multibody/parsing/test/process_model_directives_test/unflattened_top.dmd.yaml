@@ -1,0 +1,14 @@
+# An example of a model directives file that mulitply imports another
+# directives file with an internal collision filter group.
+
+directives:
+- add_model_instance:
+    name: right
+- add_directives:
+    model_namespace: right
+    file: package://process_model_directives_test/unflattened_arm.dmd.yaml
+- add_model_instance:
+    name: left
+- add_directives:
+    model_namespace: left
+    file: package://process_model_directives_test/unflattened_arm.dmd.yaml

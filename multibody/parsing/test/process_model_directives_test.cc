@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -32,13 +33,19 @@ using drake::systems::DiagramBuilder;
 const char* const kTestDir =
     "drake/multibody/parsing/test/process_model_directives_test";
 
-// Our unit test's package is not normally loaded; construct a parser that
-// has it and can resolve package://process_model_directives_test urls.
-std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
-  auto parser = std::make_unique<Parser>(plant);
+void add_test_package(PackageMap* package_map) {
   const std::filesystem::path abspath_xml = FindResourceOrThrow(
       std::string(kTestDir) + "/package.xml");
-  parser->package_map().AddPackageXml(abspath_xml.string());
+  package_map->AddPackageXml(abspath_xml.string());
+}
+
+// Our unit test's package is not normally loaded; construct a parser that
+// has it and can resolve package://process_model_directives_test urls.
+std::unique_ptr<Parser> make_parser(
+  MultibodyPlant<double>* plant,
+  geometry::SceneGraph<double>* scene_graph = nullptr) {
+  auto parser = std::make_unique<Parser>(plant, scene_graph);
+  add_test_package(&(parser->package_map()));
   return parser;
 }
 
@@ -472,6 +479,56 @@ GTEST_TEST(ProcessModelDirectivesTest, Flatten) {
     reflattened_names.insert(info.model_name);
   }
   EXPECT_EQ(flat_names, reflattened_names);
+}
+
+// Test adapted from
+// https://github.com/RobotLocomotion/drake/pull/20757#issuecomment-1884115261
+// to verify the expected result of flattening two copies of the same file
+// containing a collision filter group.
+GTEST_TEST(ProcessModelDirectivesTest, FlattenCollisionGroups) {
+  PackageMap package_map;
+  add_test_package(&package_map);
+
+  // Load the directives hierarchy.
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/unflattened_top.dmd.yaml"));
+
+  // Flatten the directives hierarchy.
+  ModelDirectives flat_directives;
+  FlattenModelDirectives(directives, package_map, &flat_directives);
+
+  // Load the expected result of flattening.
+  const ModelDirectives expected_directives =
+      LoadModelDirectives(FindResourceOrThrow(
+          std::string(kTestDir) + "/flattened.dmd.yaml"));
+
+  // Check that the flattened directives are identical to the expected ones.
+  const std::string flattened = yaml::SaveYamlString(flat_directives);
+  const std::string expected = yaml::SaveYamlString(expected_directives);
+  EXPECT_EQ(flattened, expected);
+
+  // Check that both flattened and expected can be processed.
+  {
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    std::unique_ptr<Parser> parser = make_parser(&plant, &scene_graph);
+    std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(flat_directives, parser.get());
+    ASSERT_EQ(added_models.size(), 4);
+  }
+  {
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    std::unique_ptr<Parser> parser = make_parser(&plant, &scene_graph);
+    std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(expected_directives, parser.get());
+    ASSERT_EQ(added_models.size(), 4);
+  }
+
+  // This test does not directly test collision filtering, as we know it
+  // should work because the test dmd.yaml file contains collision filter
+  // groups that reference one another by scoped name.  For testing against
+  // collision filtering, see CollisionFilterGroupSmokeTest.
 }
 
 GTEST_TEST(ProcessModelDirectivesTest, FlattenWithWorld) {
