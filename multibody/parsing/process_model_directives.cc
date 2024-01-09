@@ -103,12 +103,10 @@ AddFrame ApplyDirectiveNamespace(const AddFrame& orig,
 
 AddCollisionFilterGroup ApplyDirectiveNamespace(
     const AddCollisionFilterGroup& orig, const std::string& model_namespace) {
-  // Model_namespace is not supported here, as `AddCollisionFilterGroup::name`
-  // is documented to be model_namespace-free.
-  // TODO(ggould-tri) The rest of the structure could concievably be salvaged
-  // rather than failing outright, but I don't yet see a sound use case.
-  DRAKE_THROW_UNLESS(model_namespace.empty());
-  return orig;
+  if (model_namespace.empty()) return orig;
+  AddCollisionFilterGroup result = orig;
+  result.name = NamespaceJoin(model_namespace, orig.name);
+  return result;
 }
 
 void FlattenModelDirectivesInternal(const ModelDirectives& directives,

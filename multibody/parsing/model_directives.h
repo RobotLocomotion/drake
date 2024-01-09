@@ -185,7 +185,7 @@ struct AddCollisionFilterGroup {
     a->Visit(DRAKE_NVP(ignored_collision_filter_groups));
   }
 
-  /// Name of group to be added. Must not be a scoped name.
+  /// Name of group to be added.
   std::string name;
   /// Names of members of the group. May be scoped and refer to bodies of
   /// already added models. This data is analogous to a sequence of
