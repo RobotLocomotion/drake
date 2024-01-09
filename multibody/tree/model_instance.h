@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -55,17 +56,27 @@ namespace internal {
 
 // @tparam_default_scalar
 template <typename T>
-class ModelInstance : public MultibodyElement<T> {
+class ModelInstance final : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance)
 
-  explicit ModelInstance(ModelInstanceIndex index)
-      : MultibodyElement<T>(index) {}
+  // Creates a new instance with the given values. The name must not be empty.
+  ModelInstance(ModelInstanceIndex index, std::string name);
 
-  /// Returns this element's unique index.
+  ~ModelInstance();
+
+  // Returns this element's unique index.
   ModelInstanceIndex index() const {
     return this->template index_impl<ModelInstanceIndex>();
   }
+
+  // Gets the `name` associated with this model instance. The name will never be
+  // empty.
+  const std::string& name() const { return name_; }
+
+  // Sets the `name` associated with this model instance. The name must not be
+  // empty.
+  void set_name(std::string name);
 
   int num_positions() const { return num_positions_; }
   int num_velocities() const { return num_velocities_; }
@@ -190,6 +201,8 @@ class ModelInstance : public MultibodyElement<T> {
 
  private:
   void DoSetTopology(const MultibodyTreeTopology&) final {}
+
+  std::string name_;
 
   int num_positions_{0};
   int num_velocities_{0};
