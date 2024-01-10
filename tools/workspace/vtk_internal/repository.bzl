@@ -129,6 +129,11 @@ vtk_internal_repository = repository_rule(
             # TODO(jwnimmer-tri) Once there's a tagged release with support
             # for VTK_ABI_NAMESPACE, we should switch to an official version
             # number here. That probably means waiting for the VTK 10 release.
+            # TODO(jwnimmer-tri) the next VTK release after 9.3.0 (ETA ~April
+            # 2024) will include all remaining fixes.  settings.bzl will want
+            # to define VTK_ABI_NAMESPACE_MANGLE for the C parts of VTK (e.g.
+            # `extern "C"` symbols).  See:
+            # https://gitlab.kitware.com/vtk/vtk/-/blob/master/Common/Core/vtkABINamespace.h.in
             default = "d706250a1422ae1e7ece0fa09a510186769a5fec",
         ),
         "commit_pin": attr.int(
