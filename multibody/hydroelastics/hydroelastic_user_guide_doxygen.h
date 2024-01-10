@@ -277,6 +277,21 @@ tag. Consider the following SDFormat example:
         </drake:proximity_properties>
       </collision>
     …
+and the following URDF example:
+
+    …
+      <collision name="body1_collision">
+        <geometry>
+          ...
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:mesh_resolution_hint value="0.1"/>
+          <drake:hydroelastic_modulus value="5e7/>
+          <drake:hunt_crossley_dissipation value="1.25/>
+        </drake:proximity_properties>
+      </collision>
+    …
 
 For a body, we’ve defined a collision geometry called “body1_collision”. Inside
 the <collision> tag (as a sibling to the <geometry> tag), we’ve introduced the
