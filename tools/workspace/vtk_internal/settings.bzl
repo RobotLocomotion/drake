@@ -12,6 +12,10 @@ MODULE_SETTINGS = {
     # First, we'll configure VTK's first-party utility libraries.
     "ABI": {
         "cmake_defines": [
+            # NOTE: see Common/Core/vtkABINamespace.h.in.
+            "VTK_HAS_ABI_NAMESPACE=1",
+            "VTK_ABI_NAMESPACE_NAME=drake_vendor",
+            # "VTK_ABI_NAMESPACE_MANGLE(x)=drake_vendor_##x",
             "VTK_ABI_NAMESPACE_BEGIN=inline namespace drake_vendor __attribute__ ((visibility (\"hidden\"))) {",  # noqa
             "VTK_ABI_NAMESPACE_END=}",
         ],
@@ -117,7 +121,7 @@ MODULE_SETTINGS = {
         ],
         "included_cxxs": [
             "Common/Core/vtkMersenneTwister_Private.cxx",
-            "Common/Core/vtkVariantToNumeric.cxx",
+            "Common/Core/vtkVariant.cxx",
         ],
         "srcs_extra": [
             # Sources in nested subdirs are not globbed by default, so we need
@@ -133,6 +137,9 @@ MODULE_SETTINGS = {
             # Optional files that we choose not to enable.
             "Common/Core/vtkAndroid*",
             "Common/Core/vtkWin32*",
+            # TODO(svenevs): not sure if we need this or not
+            # https://gitlab.kitware.com/vtk/vtk/-/commit/2eba01537a85954c776893fbb25369644874992a
+            "Common/Core/vtkStringToken.cxx",
         ],
         "cmake_defines_cmakelists": [
             # Scrape the VTK_..._VERSION definitions from this file.
@@ -160,6 +167,14 @@ MODULE_SETTINGS = {
             "VTK_LEGACY_REMOVE=1",
             "VTK_USE_FUTURE_CONST=1",
             "VTK_WARN_ON_DISPATCH_FAILURE=1",
+            # TODO(svenevs): ... just hacking at this point.
+            "VTK_DISPATCH_AFFINE_ARRAYS=0",
+            "VTK_DISPATCH_CONSTANT_ARRAYS=0",
+            "VTK_DISPATCH_STD_FUNCTION_ARRAYS=0",
+            "VTK_DISPATCH_STRUCTURED_POINT_ARRAYS=0",
+            "VTK_EPOCH_VERSION=0",
+            "VTK_USE_FUTURE_BOOL=0",
+            "VTK_BUILD_SHARED_LIBS=0",
         ],
         "cmake_undefines": [
             # Features that are NOT available on the host platform.
@@ -295,7 +310,8 @@ MODULE_SETTINGS = {
             "Filters/Hybrid/vtkWeightedTransformFilter.cxx",
         ],
         "included_cxxs": [
-            "Filters/Hybrid/vtkEarthSourceData.cxx",
+            "Filters/Hybrid/vtkEarthSource.cxx",
+            "Filters/Hybrid/vtkEarthSourceData.inl",
         ],
         "module_deps_ignore": [
             "VTK::ImagingSources",
@@ -633,6 +649,21 @@ MODULE_SETTINGS = {
         },
         "srcs_glob_extra": [
             "ThirdParty/pugixml/**/*.cpp",
+        ],
+    },
+    "VTK::verdict": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkverdict=0",
+        ],
+    },
+    "VTK::fastfloat": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkfastfloat=0",
+        ],
+    },
+    "VTK::token": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtktoken=0",
         ],
     },
 }

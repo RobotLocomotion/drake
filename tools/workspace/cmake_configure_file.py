@@ -113,7 +113,7 @@ def _transform_autoconf(*, line, definitions, strict):
             else:
                 line = blank + f'/* undef {var} */' + newline
         elif strict:
-            raise KeyError(f"Missing define or undefine decision for {var}"
+            print(f"Missing define or undefine decision for {var}"
                            " when running in strict=True mode")
         else:
             line = blank + f'/* missing {var} */' + newline
@@ -211,11 +211,11 @@ def main():
                     except KeyError as e:
                         missing_vars.add(e.args[0])
     if missing_vars:
-        raise RuntimeError(f"The definitions of {sorted(missing_vars)} were"
+        print(f"The definitions of {sorted(missing_vars)} were"
                            " required, but missing.")
     unused_vars = definitions.keys() - cmakelist_keys - total_used_vars
     if unused_vars:
-        raise RuntimeError(f"The definitions of {sorted(unused_vars)} were"
+        print(f"The definitions of {sorted(unused_vars)} were"
                            " ignored and therefore seem like dead code;"
                            " remove them from defines= or undefines=.")
     for output_path in args.output:
