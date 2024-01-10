@@ -66,12 +66,15 @@ def parse_module(repo_ctx, subdir):
             # We'll encode that as an int to avoid JSON encoding snafus.
             result[key] = 1
         else:
-            fail(("vtk/{subdir}/vtk.module: Got multiple values for {key} " +
+            # TODO(jwnimmer-tri): we have had license updates, see
+            # https://gitlab.kitware.com/vtk/vtk/-/commit/987d39ac31203df75281f0ab4be135dfc3c42d89
+            print(("vtk/{subdir}/vtk.module: Got multiple values for {key} " +
                   "but we assumed (because its name ended with 'S') that it " +
                   "was not supposed to be a list").format(
                 subdir = subdir,
                 key = key,
             ))
+            result[key] = values[0]
 
     return result
 
@@ -129,28 +132,22 @@ vtk_internal_repository = repository_rule(
             # TODO(jwnimmer-tri) Once there's a tagged release with support
             # for VTK_ABI_NAMESPACE, we should switch to an official version
             # number here. That probably means waiting for the VTK 10 release.
-            default = "d706250a1422ae1e7ece0fa09a510186769a5fec",
+            default = "b3066f749b40a3b7f259bed8ce69b6a100ebdacf",
         ),
         "commit_pin": attr.int(
             # See above. There's not any satisfactory tagged version yet.
             default = 1,
         ),
         "sha256": attr.string(
-            default = "6106493c8a6e9bd36250e80e4441a1644cd9bff706e6171607f996f0233f515c",  # noqa
+            default = "a1e4d7e2b9596597bf4ad5a6d6b0292c53247cc917b62a30bc8656d4a6342850",  # noqa
         ),
         "build_file": attr.label(
             default = "@drake//tools/workspace/vtk_internal:package.BUILD.bazel",  # noqa
         ),
         "patches": attr.label_list(
             default = [
-                "@drake//tools/workspace/vtk_internal:patches/capsule_from_cylinder.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/common_core_noutf8.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_version.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/common_core_vs_data_model_cycle.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/common_core_warnings.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/common_data_model_warnings.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_image_formats.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/io_image_png_messages.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_legacy_data_reader_uninit.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/rendering_opengl2_nobacktrace.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/vtkdoubleconversion_hidden.patch",  # noqa

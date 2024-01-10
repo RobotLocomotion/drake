@@ -7,23 +7,24 @@ This change is Drake-specific, so we do not plan to upstream it.
 
 --- Common/Core/vtkVersionFull.h.in
 +++ Common/Core/vtkVersionFull.h.in
-@@ -17,6 +17,6 @@
- 
+@@ -5,6 +5,6 @@
+
  /* This is in its own header to reduce build dependencies */
- 
+
 -#define VTK_VERSION_FULL "@VTK_VERSION_FULL@"
 +#define VTK_VERSION_FULL VTK_VERSION "-drake"
- 
+
  #endif
 
 --- Common/Core/vtkVersionMacros.h.in
 +++ Common/Core/vtkVersionMacros.h.in
-@@ -20,7 +20,7 @@
- #define VTK_MAJOR_VERSION @VTK_MAJOR_VERSION@
- #define VTK_MINOR_VERSION @VTK_MINOR_VERSION@
+@@ -8,7 +8,7 @@
+ /* Note: this file is deliberately both valid C and valid C++. */
+
  #define VTK_BUILD_VERSION @VTK_BUILD_VERSION@
 -#define VTK_VERSION "@VTK_VERSION@"
 +#define VTK_VERSION "@VTK_MAJOR_VERSION@.@VTK_MINOR_VERSION@.@VTK_BUILD_VERSION@"
- 
+
  #define VTK_SOURCE_VERSION "vtk version " VTK_VERSION
- 
+
+

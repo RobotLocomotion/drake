@@ -327,7 +327,7 @@ def generate_abi_namespace():
     """
     cmake_configure_files(
         name = "_vtkABINamespace_genrule",
-        srcs = ["CMake/vtkABINamespace.h.in"],
+        srcs = ["Common/Core/vtkABINamespace.h.in"],
         outs = ["CMake/vtkABINamespace.h"],
         defines = MODULE_SETTINGS["ABI"]["cmake_defines"],
         strict = True,
