@@ -97,10 +97,10 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
   }
 
   if (HasBodyNamed(name, model_instance)) {
-    throw std::logic_error(
-        "Model instance '" + instance_index_to_name_.at(model_instance) +
-            "' already contains a body named '" + name + "'. " +
-            "Body names must be unique within a given model.");
+    throw std::logic_error(fmt::format(
+        "Model instance '{}' already contains a body named '{}'. Body names "
+        "must be unique within a given model.",
+        model_instances_.get_element(model_instance).name(), name));
   }
 
   const RigidBody<T>& body = this->AddRigidBodyImpl(
@@ -123,13 +123,12 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
 template <typename T>
 const std::string& MultibodyTree<T>::GetModelInstanceName(
     ModelInstanceIndex model_instance) const {
-  const auto it = instance_index_to_name_.find(model_instance);
-  if (it == instance_index_to_name_.end()) {
+  if (!model_instances_.has_element(model_instance)) {
     throw std::logic_error(
         fmt::format("There is no model instance id {} in the model.",
                     std::to_string(model_instance)));
   }
-  return it->second;
+  return model_instances_.get_element_unchecked(model_instance).name();
 }
 
 template <typename T>
@@ -138,7 +137,7 @@ bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
   return base_body_index.has_value() &&
-         owned_rigid_bodies_[base_body_index.value()]->is_floating();
+         rigid_bodies_.get_element(base_body_index.value()).is_floating();
 }
 
 template <typename T>
@@ -147,16 +146,18 @@ const RigidBody<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
   if (!base_body_index.has_value()) {
-    throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
-                           " does not have a unique base body.");
+    throw std::logic_error(
+        fmt::format("Model {} does not have a unique base body.",
+                    model_instances_.get_element(model_instance).name()));
   }
-  if (!owned_rigid_bodies_[base_body_index.value()]->is_floating()) {
-    throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
-                           " has a unique base body, but it is not free.");
+  const RigidBody<T>& result =
+      rigid_bodies_.get_element(base_body_index.value());
+  if (!result.is_floating()) {
+    throw std::logic_error(
+        fmt::format("Model {} has a unique base body, but it is not free.",
+                    model_instances_.get_element(model_instance).name()));
   }
-  return *owned_rigid_bodies_[base_body_index.value()];
+  return result;
 }
 
 namespace {
@@ -367,64 +368,64 @@ const auto& GetElementByName(
 
 template <typename T>
 int MultibodyTree<T>::NumBodiesWithName(std::string_view name) const {
-  return static_cast<int>(body_name_to_index_.count(name));
+  return static_cast<int>(rigid_bodies_.names().count(name));
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
-  return HasElementNamed(*this, name, std::nullopt, body_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, rigid_bodies_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return HasElementNamed(*this, name, model_instance, body_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, rigid_bodies_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(std::string_view name) const {
-  return HasElementNamed(*this, name, std::nullopt, frame_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, frames_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return HasElementNamed(*this, name, model_instance, frame_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, frames_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointNamed(std::string_view name) const {
-  return HasElementNamed(*this, name, std::nullopt, joint_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, joints_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return HasElementNamed(*this, name, model_instance, joint_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, joints_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointActuatorNamed(std::string_view name) const {
-  return HasElementNamed(*this, name, std::nullopt, actuator_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, actuators_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointActuatorNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return HasElementNamed(*this, name, model_instance, actuator_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, actuators_.names());
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
-  return instance_name_to_index_.find(name) != instance_name_to_index_.end();
+  return model_instances_.names().count(name) > 0;
 }
 
 template <typename T>
 std::vector<BodyIndex> MultibodyTree<T>::GetBodyIndices(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
   std::vector<BodyIndex> indices;
-  for (auto& body : owned_rigid_bodies_) {
+  for (const Body<T>* body : rigid_bodies_.elements()) {
     if (body->model_instance() == model_instance) {
       indices.emplace_back(body->index());
     }
@@ -435,9 +436,9 @@ std::vector<BodyIndex> MultibodyTree<T>::GetBodyIndices(
 template <typename T>
 std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
   std::vector<JointIndex> indices;
-  for (auto& joint : owned_joints_) {
+  for (const Joint<T>* joint : joints_.elements()) {
     if (joint->model_instance() == model_instance) {
       indices.emplace_back(joint->index());
     }
@@ -448,23 +449,23 @@ std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
 template <typename T>
 std::vector<JointActuatorIndex> MultibodyTree<T>::GetJointActuatorIndices(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  return model_instances_.at(model_instance)->GetJointActuatorIndices();
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
+  return model_instances_.get_element(model_instance).GetJointActuatorIndices();
 }
 
 template <typename T>
 std::vector<JointIndex> MultibodyTree<T>::GetActuatedJointIndices(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  return model_instances_.at(model_instance)->GetActuatedJointIndices();
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
+  return model_instances_.get_element(model_instance).GetActuatedJointIndices();
 }
 
 template <typename T>
 std::vector<FrameIndex> MultibodyTree<T>::GetFrameIndices(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
   std::vector<FrameIndex> indices;
-  for (auto& frame : frames_) {
+  for (const Frame<T>* frame : frames_.elements()) {
     if (frame->model_instance() == model_instance) {
       indices.emplace_back(frame->index());
     }
@@ -474,25 +475,25 @@ std::vector<FrameIndex> MultibodyTree<T>::GetFrameIndices(
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
-  return GetElementByName(*this, name, std::nullopt, frame_name_to_index_);
+  return GetElementByName(*this, name, std::nullopt, frames_.names());
 }
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return GetElementByName(*this, name, model_instance, frame_name_to_index_);
+  return GetElementByName(*this, name, model_instance, frames_.names());
 }
 
 template <typename T>
 const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
     std::string_view name) const {
-  return GetElementByName(*this, name, std::nullopt, body_name_to_index_);
+  return GetElementByName(*this, name, std::nullopt, rigid_bodies_.names());
 }
 
 template <typename T>
 const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return GetElementByName(*this, name, model_instance, body_name_to_index_);
+  return GetElementByName(*this, name, model_instance, rigid_bodies_.names());
 }
 
 template <typename T>
@@ -513,11 +514,11 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
   // Make note in the graph.
   multibody_graph_.AddRigidBody(body->name(), body->model_instance());
 
-  BodyIndex body_index(0);
-  FrameIndex body_frame_index(0);
+  BodyIndex body_index;
+  FrameIndex body_frame_index;
   std::tie(body_index, body_frame_index) = topology_.add_rigid_body();
-  // These tests MUST be performed BEFORE frames_.push_back() and
-  // owned_rigid_bodies_.push_back() below. Do not move them around!
+  // These tests MUST be performed BEFORE `rigid_bodies_` and `frames_` are
+  // changed, below. Do not move them around!
   DRAKE_DEMAND(body_index == num_bodies());
   DRAKE_DEMAND(body_frame_index == num_frames());
 
@@ -530,22 +531,17 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
   Frame<T>* body_frame =
       &internal::RigidBodyAttorney<T>::get_mutable_body_frame(body.get());
   body_frame->set_parent_tree(this, body_frame_index);
-  DRAKE_ASSERT(body_frame->name() == body->name());
-  this->SetElementIndex(body_frame->name(), body_frame_index,
-                        &frame_name_to_index_);
-  frames_.push_back(body_frame);
+  DRAKE_DEMAND(body_frame->name() == body->name());
+  frames_.AddBorrowed(body_frame);
   // - Register body.
-  RigidBody<T>* raw_body_ptr = body.get();
-  this->SetElementIndex(body->name(), body->index(), &body_name_to_index_);
-  owned_rigid_bodies_.push_back(std::move(body));
-  return *raw_body_ptr;
+  return rigid_bodies_.Add(std::move(body));
 }
 
 template <typename T>
 const Joint<T>& MultibodyTree<T>::GetJointByNameImpl(
     std::string_view name,
     std::optional<ModelInstanceIndex> model_instance) const {
-  return GetElementByName(*this, name, model_instance, joint_name_to_index_);
+  return GetElementByName(*this, name, model_instance, joints_.names());
 }
 
 template <typename T>
@@ -554,30 +550,31 @@ void MultibodyTree<T>::ThrowJointSubtypeMismatch(
   throw std::logic_error(fmt::format(
       "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
       "but of type {}.",
-      joint.name(), instance_index_to_name_.at(joint.model_instance()),
+      joint.name(), model_instances_.get_element(joint.model_instance()).name(),
       desired_type, NiceTypeName::Get(joint)));
 }
 
 template <typename T>
 const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
     std::string_view name) const {
-  return GetElementByName(*this, name, std::nullopt, actuator_name_to_index_);
+  return GetElementByName(*this, name, std::nullopt, actuators_.names());
 }
 
 template <typename T>
 const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  return GetElementByName(*this, name, model_instance, actuator_name_to_index_);
+  return GetElementByName(*this, name, model_instance, actuators_.names());
 }
 
 template <typename T>
 ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
     std::string_view name) const {
-  const auto it = instance_name_to_index_.find(name);
-  if (it == instance_name_to_index_.end()) {
+  auto& names = model_instances_.names();
+  const auto it = names.find(name);
+  if (it == names.end()) {
     std::vector<std::string_view> valid_names;
-    valid_names.reserve(instance_name_to_index_.size());
-    for (const auto& [valid_name, _] : instance_name_to_index_) {
+    valid_names.reserve(names.size());
+    for (const auto& [valid_name, _] : names) {
       valid_names.push_back(valid_name.view());
     }
     std::sort(valid_names.begin(), valid_names.end());
@@ -608,7 +605,7 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::GetActuationFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u) const {
-  return model_instances_.at(model_instance)->GetActuationFromArray(u);
+  return model_instances_.get_element(model_instance).GetActuationFromArray(u);
 }
 
 template <typename T>
@@ -616,14 +613,15 @@ void MultibodyTree<T>::SetActuationInArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
-  model_instances_.at(model_instance)->SetActuationInArray(u_instance, u);
+  model_instances_.get_element(model_instance)
+      .SetActuationInArray(u_instance, u);
 }
 
 template <typename T>
 VectorX<T> MultibodyTree<T>::GetPositionsFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& q) const {
-  return model_instances_.at(model_instance)->GetPositionsFromArray(q);
+  return model_instances_.get_element(model_instance).GetPositionsFromArray(q);
 }
 
 template <typename T>
@@ -631,7 +629,7 @@ void MultibodyTree<T>::GetPositionsFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& q,
     drake::EigenPtr<VectorX<T>> q_out) const {
-  model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out);
+  model_instances_.get_element(model_instance).GetPositionsFromArray(q, q_out);
 }
 
 template <class T>
@@ -639,14 +637,15 @@ void MultibodyTree<T>::SetPositionsInArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& q_instance,
     EigenPtr<VectorX<T>> q) const {
-  model_instances_.at(model_instance)->SetPositionsInArray(q_instance, q);
+  model_instances_.get_element(model_instance)
+      .SetPositionsInArray(q_instance, q);
 }
 
 template <typename T>
 VectorX<T> MultibodyTree<T>::GetVelocitiesFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v) const {
-  return model_instances_.at(model_instance)->GetVelocitiesFromArray(v);
+  return model_instances_.get_element(model_instance).GetVelocitiesFromArray(v);
 }
 
 template <typename T>
@@ -654,7 +653,7 @@ void MultibodyTree<T>::GetVelocitiesFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v,
     drake::EigenPtr<VectorX<T>> v_out) const {
-  model_instances_.at(model_instance)->GetVelocitiesFromArray(v, v_out);
+  model_instances_.get_element(model_instance).GetVelocitiesFromArray(v, v_out);
 }
 
 template <class T>
@@ -662,7 +661,8 @@ void MultibodyTree<T>::SetVelocitiesInArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v_instance,
     EigenPtr<VectorX<T>> v) const {
-  model_instances_.at(model_instance)->SetVelocitiesInArray(v_instance, v);
+  model_instances_.get_element(model_instance)
+      .SetVelocitiesInArray(v_instance, v);
 }
 
 template <typename T>
@@ -682,13 +682,13 @@ void MultibodyTree<T>::CreateJointImplementations() {
   // assembled BEFORE the tree's topology is finalized.
   const int num_joints_pre_floating_joints = num_joints();
   joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
-  for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
-    auto& joint = owned_joints_[i];
+  for (JointIndex i{0}; i < num_joints_pre_floating_joints; ++i) {
+    auto& joint = joints_.get_mutable_element(i);
     Mobilizer<T>* mobilizer =
-        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    mobilizer->set_model_instance(joint->model_instance());
+        internal::JointImplementationBuilder<T>::Build(&joint, this);
+    mobilizer->set_model_instance(joint.model_instance());
     // Record the joint to mobilizer map.
-    joint_to_mobilizer_[joint->index()] = mobilizer->index();
+    joint_to_mobilizer_[joint.index()] = mobilizer->index();
   }
   // It is VERY important to add joints to free bodies only AFTER joints had a
   // chance to get implemented with mobilizers. This is because above added
@@ -719,13 +719,13 @@ void MultibodyTree<T>::CreateJointImplementations() {
   }
 
   joint_to_mobilizer_.resize(num_joints());
-  for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
-    auto& joint = owned_joints_[i];
+  for (JointIndex i{num_joints_pre_floating_joints}; i < num_joints(); ++i) {
+    auto& joint = joints_.get_mutable_element(i);
     Mobilizer<T>* mobilizer =
-        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    mobilizer->set_model_instance(joint->model_instance());
+        internal::JointImplementationBuilder<T>::Build(&joint, this);
+    mobilizer->set_model_instance(joint.model_instance());
     // Record the joint to mobilizer map.
-    joint_to_mobilizer_[joint->index()] = mobilizer->index();
+    joint_to_mobilizer_[joint.index()] = mobilizer->index();
   }
 }
 
@@ -787,11 +787,15 @@ void MultibodyTree<T>::FinalizeInternals() {
 
   // Give different multiobody elements the chance to perform any finalize-time
   // setup.
-  for (const auto& body : owned_rigid_bodies_) {
-    body->SetTopology(topology_);
+  for (const auto& body_index : rigid_bodies_.indices()) {
+    rigid_bodies_.get_mutable_element(body_index).SetTopology(topology_);
   }
-  for (const auto& frame : owned_frames_) {
-    frame->SetTopology(topology_);
+  for (const auto& frame_index : frames_.indices()) {
+    // We (re)set the topology on all frames. The rigid body frames' topologies
+    // will already have been set in the body loop immediately above, but it
+    // doesn't hurt to set them again. The important thing is that the non-body
+    // frames are being set here for the first time.
+    frames_.get_mutable_element(frame_index).SetTopology(topology_);
   }
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
@@ -799,8 +803,8 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (const auto& force_element : owned_force_elements_) {
     force_element->SetTopology(topology_);
   }
-  for (const auto& actuator : owned_actuators_) {
-    actuator->SetTopology(topology_);
+  for (const auto& actuator_index : actuators_.indices()) {
+    actuators_.get_mutable_element(actuator_index).SetTopology(topology_);
   }
 
   body_node_levels_.resize(topology_.forest_height());
@@ -819,26 +823,26 @@ void MultibodyTree<T>::FinalizeInternals() {
     CreateBodyNode(mobod_index);
   }
 
-  CreateModelInstances();
+  FinalizeModelInstances();
 
   // For all floating bodies, route their future default poses queries through
   // its joint representation.
-  for (int i = 0; i < num_joints(); ++i) {
-    auto& joint = owned_joints_[i];
-    const RigidBody<T>& body = joint->child_body();
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    auto& joint = joints_.get_mutable_element(i);
+    const RigidBody<T>& body = joint.child_body();
     if (body.is_floating()) {
       // Set default positions for the floating joints.
       // TODO(xuchenhan-tri): This assumes that the only type of floating
       //  joint is the quaternion floating joint. This may change pending
       //  the resolution of #14949.
       auto* quaternion_floating_joint =
-          dynamic_cast<QuaternionFloatingJoint<T>*>(joint.get());
+          dynamic_cast<QuaternionFloatingJoint<T>*>(&joint);
       DRAKE_DEMAND(quaternion_floating_joint != nullptr);
       const auto [quaternion, translation] =
           GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
       quaternion_floating_joint->set_default_quaternion(quaternion);
       quaternion_floating_joint->set_default_position(translation);
-      default_body_poses_[body.index()] = joint->index();
+      default_body_poses_[body.index()] = joint.index();
     }
   }
 }
@@ -867,8 +871,8 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
       topology_.get_body_node(mobod_index);
   const BodyIndex body_index = node_topology.rigid_body;
 
-  const RigidBody<T>* body =
-      owned_rigid_bodies_[node_topology.rigid_body].get();
+  const RigidBody<T>& body =
+      rigid_bodies_.get_element(node_topology.rigid_body);
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
@@ -884,7 +888,7 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
 
     // Only the mobilizer knows how to create a body node with compile-time
     // fixed sizes.
-    body_node = mobilizer->CreateBodyNode(parent_node, body, mobilizer);
+    body_node = mobilizer->CreateBodyNode(parent_node, &body, mobilizer);
     parent_node->add_child_node(body_node.get());
   }
   body_node->set_parent_tree(this, mobod_index);
@@ -894,18 +898,7 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
 }
 
 template <typename T>
-void MultibodyTree<T>::CreateModelInstances() {
-  DRAKE_ASSERT(model_instances_.empty());
-
-  // First create the pool of instances.
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    std::unique_ptr<internal::ModelInstance<T>> model_instance =
-        std::make_unique<internal::ModelInstance<T>>(model_instance_index);
-    model_instance->set_parent_tree(this, model_instance_index);
-    model_instances_.push_back(std::move(model_instance));
-  }
-
+void MultibodyTree<T>::FinalizeModelInstances() {
   // Add all of our mobilizers and joint actuators to the appropriate instance.
   // The order of the mobilizers should match the order in which the bodies were
   // added to the tree, which may not be the order in which the mobilizers were
@@ -913,17 +906,17 @@ void MultibodyTree<T>::CreateModelInstances() {
   for (const auto& body_node : body_nodes_) {
     if (body_node->get_num_mobilizer_positions() > 0 ||
         body_node->get_num_mobilizer_velocities() > 0) {
-      model_instances_.at(body_node->model_instance())->add_mobilizer(
-          &body_node->get_mobilizer());
+      model_instances_.get_mutable_element(body_node->model_instance())
+          .add_mobilizer(&body_node->get_mobilizer());
     }
   }
 
   // N.B. The result of the code below is that actuators are sorted by
   // JointActuatorIndex within each model instance. If this was not true,
   // ModelInstance::add_joint_actuator() would throw.
-  for (const auto& joint_actuator : owned_actuators_) {
-    model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
-        joint_actuator.get());
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
+    model_instances_.get_mutable_element(actuator->model_instance())
+        .add_joint_actuator(actuator);
   }
 }
 
@@ -1029,10 +1022,10 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
         std::make_pair(X_WB.rotation().ToQuaternion(), X_WB.translation());
     return;
   }
-  const auto& joint = owned_joints_.at(
+  auto& joint = joints_.get_mutable_element(
       std::get<JointIndex>(default_body_poses_.at(body.index())));
   auto* quaternion_floating_joint =
-      dynamic_cast<QuaternionFloatingJoint<T>*>(joint.get());
+      dynamic_cast<QuaternionFloatingJoint<T>*>(&joint);
   DRAKE_DEMAND(quaternion_floating_joint != nullptr);
   quaternion_floating_joint->set_default_quaternion(
       X_WB.rotation().ToQuaternion());
@@ -1058,9 +1051,9 @@ MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
   const auto& default_body_pose = default_body_poses_.at(body.index());
   if (std::holds_alternative<JointIndex>(default_body_pose)) {
     const auto& joint =
-        owned_joints_.at(std::get<JointIndex>(default_body_pose));
+        joints_.get_element(std::get<JointIndex>(default_body_pose));
     const QuaternionFloatingJoint<T>* quaternion_floating_joint =
-        dynamic_cast<const QuaternionFloatingJoint<T>*>(joint.get());
+        dynamic_cast<const QuaternionFloatingJoint<T>*>(&joint);
     DRAKE_DEMAND(quaternion_floating_joint != nullptr);
     return std::make_pair(quaternion_floating_joint->get_default_quaternion(),
                           quaternion_floating_joint->get_default_position());
@@ -1263,7 +1256,8 @@ void MultibodyTree<T>::CalcReflectedInertia(
 
   // See JointActuator::reflected_inertia().
   *reflected_inertia = VectorX<double>::Zero(num_velocities());
-  for (const auto& actuator : owned_actuators_) {
+
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
     const int joint_velocity_index =
         actuator->joint().velocity_start();  // within v
     (*reflected_inertia)(joint_velocity_index) =
@@ -1615,7 +1609,7 @@ template<typename T>
 void MultibodyTree<T>::AddJointDampingForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
-  for (const auto& joint : owned_joints_) {
+  for (const Joint<T>* joint : joints_.elements()) {
     joint->AddInDamping(context, forces);
   }
 }
@@ -2275,7 +2269,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
   std::vector<BodyIndex> body_indexes;
   for (auto model_instance : model_instances) {
     // If invalid model_instance, throw an exception with a helpful message.
-    if (model_instance >= instance_name_to_index_.size()) {
+    if (!model_instances_.has_element(model_instance)) {
       throw std::logic_error(
           "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
           " contains an invalid model_instance.");
@@ -3757,12 +3751,12 @@ VectorX<double> MultibodyTree<T>::GetEffortUpperLimits() const {
 template <typename T>
 std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
   if (model_instance == world_model_instance()) {
     return std::nullopt;
   }
   std::optional<BodyIndex> base_body_index{};
-  for (const auto& body : owned_rigid_bodies_) {
+  for (const RigidBody<T>* body : rigid_bodies_.elements()) {
     if (body->model_instance() == model_instance &&
         (topology_.get_rigid_body(body->index()).parent_body ==
          world_index())) {
