@@ -75,6 +75,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "collision_checker_trace_test",
+    data = [
+        "//multibody:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+    ],
+    num_threads = 2,
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
     name = "robot_diagram_test",
     data = [
         "//manipulation/models/iiwa_description:models",

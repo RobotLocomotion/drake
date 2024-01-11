@@ -123,9 +123,11 @@ void init_perception(py::module m) {
             py::arg("p_CP"), cls_doc.FlipNormalsTowardPoint.doc)
         .def("VoxelizedDownSample", &Class::VoxelizedDownSample,
             py::arg("voxel_size"), py::arg("parallelize") = false,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.VoxelizedDownSample.doc)
         .def("EstimateNormals", &Class::EstimateNormals, py::arg("radius"),
             py::arg("num_closest"), py::arg("parallelize") = false,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.EstimateNormals.doc);
   }
 
