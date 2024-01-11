@@ -29,11 +29,13 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto mesh = internal::ReadVtkToVolumeMesh(argv[1]);
-  auto bad_tets = internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
-  auto bad_triangles =
+  VolumeMesh<double> mesh = internal::ReadVtkToVolumeMesh(argv[1]);
+  std::vector<int> bad_tets =
+      internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
+  std::vector<internal::SortedTriplet<int>> bad_triangles =
       internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
-  auto bad_edges = internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
+  std::vector<SortedPair<int>> bad_edges =
+      internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
 
   drake::log()->info(
       "Found {} bad tets, {} bad triangles, and {} bad edges."
@@ -50,8 +52,7 @@ int do_main(int argc, char* argv[]) {
     return 0;
   }
 
-  auto refiner = internal::VolumeMeshRefiner(mesh);
-  auto refined_mesh = refiner.Refine();
+  VolumeMesh<double> refined_mesh = internal::VolumeMeshRefiner(mesh).Refine();
 
   std::filesystem::path outfile(argv[2]);
   const char* test_dir = ::getenv("TEST_TMPDIR");
