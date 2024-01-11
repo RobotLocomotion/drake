@@ -443,6 +443,9 @@ class TestPlant(unittest.TestCase):
         check_repr(
             link1,
             "<RigidBody name='Link1' index=1 model_instance=2>")
+        self.assertTrue(plant.HasFrameNamed(name="Link1"))
+        self.assertTrue(
+            plant.HasFrameNamed(name="Link1", model_instance=model_instance))
         self._test_frame_api(T, plant.GetFrameByName(name="Link1"))
         link1_frame = plant.GetFrameByName(name="Link1")
         check_repr(
@@ -2538,6 +2541,30 @@ class TestPlant(unittest.TestCase):
 
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
+    def test_remove_constraint(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
+
+        # Add weld constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        X_AP = RigidTransform_[float]()
+        X_BQ = RigidTransform_[float]()
+        id = plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
+
+        plant.RemoveConstraint(id=id)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify no constraint was added.
+        self.assertEqual(plant.num_constraints(), 0)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):

@@ -270,7 +270,7 @@ directives:
     has_no_such_joint[JointIndex(20)] = Vector1d(1.0);
     DRAKE_EXPECT_THROWS_MESSAGE(LinearDistanceAndInterpolationProvider(
                                     model->plant(), has_no_such_joint),
-                                ".* 'joint_index < num_joints\\(\\)' failed.*");
+                                ".*Joint.*20.*bound.*");
   }
 
   // Invalid weights (vector).

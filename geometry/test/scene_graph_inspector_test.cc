@@ -77,11 +77,10 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.NumGeometriesForFrameWithRole(frame_id, Role::kUnassigned);
   inspector.GetGeometries(frame_id, Role::kUnassigned);
   // Register a geometry to prevent an exception being thrown.
-  const GeometryId geometry_id =
-      tester.mutable_state().RegisterGeometry(
-          source_id, frame_id,
-          make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                        make_unique<Sphere>(1.0), "sphere"));
+  const GeometryId geometry_id = tester.mutable_state().RegisterGeometry(
+      source_id, frame_id,
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                    make_unique<Sphere>(1.0), "sphere"));
   inspector.GetGeometryIdByName(frame_id, Role::kUnassigned, "sphere");
 
   // Geometries and their properties.
@@ -100,11 +99,10 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetReferenceMesh(geometry_id);
   // Register an *additional* geometry and assign proximity properties to both
   // to prevent an exception being thrown.
-  const GeometryId geometry_id2 =
-      tester.mutable_state().RegisterGeometry(
-          source_id, frame_id,
-          make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                        make_unique<Sphere>(1.0), "sphere2"));
+  const GeometryId geometry_id2 = tester.mutable_state().RegisterGeometry(
+      source_id, frame_id,
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                    make_unique<Sphere>(1.0), "sphere2"));
   tester.mutable_state().AssignRole(source_id, geometry_id,
                                     ProximityProperties());
   tester.mutable_state().AssignRole(source_id, geometry_id2,
@@ -128,8 +126,8 @@ GTEST_TEST(SceneGraphInspector, CloneGeometryInstance) {
       tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame"));
 
   // Geometry with no properties; confirm the other properties.
-  const GeometryInstance original(RigidTransformd(
-      Eigen::Vector3d(1, 2, 3)), Sphere(1.5), "test_sphere");
+  const GeometryInstance original(RigidTransformd(Eigen::Vector3d(1, 2, 3)),
+                                  Sphere(1.5), "test_sphere");
   const GeometryId geometry_id = tester.mutable_state().RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(original));
 

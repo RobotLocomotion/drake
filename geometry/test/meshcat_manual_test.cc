@@ -27,8 +27,8 @@ then follow the instructions on your console. */
 namespace drake {
 namespace geometry {
 
-using Eigen::Vector3d;
 using common::MaybePauseForUser;
+using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -124,8 +124,8 @@ int do_main() {
         {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
     std::vector<Vector3d> vertices;
     for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
-    TriangleSurfaceMesh<double> surface_mesh(
-        std::move(faces), std::move(vertices));
+    TriangleSurfaceMesh<double> surface_mesh(std::move(faces),
+                                             std::move(vertices));
     meshcat->SetObject("triangle_mesh", surface_mesh, Rgba(0.9, 0, 0.9, 1.0));
     meshcat->SetTransform("triangle_mesh",
                           RigidTransformd(Vector3d{++x, -0.25, 0}));
@@ -235,20 +235,19 @@ int do_main() {
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
   animation.SetTransform(0, "sphere", RigidTransformd(sphere_home));
-  animation.SetTransform(20, "sphere", RigidTransformd(sphere_home +
-                                                       Vector3d::UnitZ()));
+  animation.SetTransform(20, "sphere",
+                         RigidTransformd(sphere_home + Vector3d::UnitZ()));
   animation.SetTransform(40, "sphere", RigidTransformd(sphere_home));
 
   std::cout << "- the blue box should spin clockwise about the +z axis.\n";
-  animation.SetTransform(0, "box",
-                         RigidTransformd(RotationMatrixd::MakeZRotation(0),
-                                         box_home));
-  animation.SetTransform(20, "box",
-                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI),
-                                         box_home));
   animation.SetTransform(
-      40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI),
-                                 box_home));
+      0, "box", RigidTransformd(RotationMatrixd::MakeZRotation(0), box_home));
+  animation.SetTransform(
+      20, "box",
+      RigidTransformd(RotationMatrixd::MakeZRotation(M_PI), box_home));
+  animation.SetTransform(
+      40, "box",
+      RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI), box_home));
   animation.set_repetitions(4);
 
   std::cout << "- the green cylinder should appear and disappear.\n";
@@ -269,8 +268,8 @@ int do_main() {
   std::cout << "You can review/replay the animation from the controls menu.\n";
   MaybePauseForUser();
 
-  meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4,
-                           4, -2, 2);
+  meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4, 4, -2,
+                           2);
 
   std::cout << "- The scene should have switched to 2D rendering mode.\n";
   MaybePauseForUser();
@@ -440,9 +439,8 @@ int do_main() {
     MaybePauseForUser();
   }
 
-  std::cout
-      << "Now we'll add back an environment map and move the camera, in\n"
-         "preparation for testing the standalone HTML download ...\n\n";
+  std::cout << "Now we'll add back an environment map and move the camera, in\n"
+               "preparation for testing the standalone HTML download ...\n\n";
 
   meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
@@ -489,7 +487,8 @@ int do_main() {
             << "Got " << meshcat->GetButtonClicks("Press t Key")
             << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
-            << " value for SliderTest.\n\n" << std::endl;
+            << " value for SliderTest.\n\n"
+            << std::endl;
 
   std::cout << "Next, we'll test gamepad (i.e., joystick) features.\n\n";
   std::cout
@@ -580,4 +579,6 @@ int do_main() {
 }  // namespace geometry
 }  // namespace drake
 
-int main() { return drake::geometry::do_main(); }
+int main() {
+  return drake::geometry::do_main();
+}

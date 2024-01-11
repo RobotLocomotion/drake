@@ -86,8 +86,7 @@ inline const Vector3<double>& convert_to_double(const Vector3<double>& vec) {
 }
 
 template <class T>
-Vector3<double> convert_to_double(
-    const Vector3<T>& vec) {
+Vector3<double> convert_to_double(const Vector3<T>& vec) {
   Vector3<double> result;
   for (int r = 0; r < 3; ++r) {
     result(r) = ExtractDoubleOrThrow(vec(r));
@@ -119,7 +118,6 @@ inline math::RigidTransformd convert_to_double(
   return math::RigidTransform<double>(
       ExtractDoubleOrThrow(X_AB.GetAsMatrix34()));
 }
-
 
 //@}
 

@@ -446,7 +446,12 @@ void DiagramBuilder<T>::ThrowIfInputAlreadyWired(
     const InputPortLocator& id) const {
   if (connection_map_.find(id) != connection_map_.end() ||
       diagram_input_set_.find(id) != diagram_input_set_.end()) {
-    throw std::logic_error("Input port is already wired.");
+    // Extract the name of the input port.
+    auto iter = std::find(input_port_ids_.begin(), input_port_ids_.end(), id);
+    DRAKE_DEMAND(iter != input_port_ids_.end());  // it should always be found.
+    int index = std::distance(input_port_ids_.begin(), iter);
+    throw std::logic_error(fmt::format("Input port {} is already connected.",
+                                       input_port_names_[index]));
   }
 }
 

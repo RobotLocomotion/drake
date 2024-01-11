@@ -46,11 +46,11 @@ class InternalFrame {
 
   /* Compares two %InternalFrame instances for "equality". Two internal frames
    are considered equal if they have the same frame identifier.  */
-  bool operator==(const InternalFrame &other) const;
+  bool operator==(const InternalFrame& other) const;
 
   /* Compares two %InternalFrame instances for inequality. See operator==()
    for the definition of equality.  */
-  bool operator!=(const InternalFrame &other) const;
+  bool operator!=(const InternalFrame& other) const;
 
   /* @name      Frame properties    */
   //@{
@@ -117,9 +117,7 @@ class InternalFrame {
 
   /* Adds the given `frame_id` to the set of frames that this frame considers
    to be children.  */
-  void add_child(FrameId frame_id) {
-    child_frames_.insert(frame_id);
-  }
+  void add_child(FrameId frame_id) { child_frames_.insert(frame_id); }
 
   /* Returns true if this frame considers the given `geometry_id` to be rigidly
    affixed to it.  */
@@ -142,9 +140,7 @@ class InternalFrame {
   }
 
   /* Changes the name of the frame to `name`. */
-  void set_name(const std::string& name) {
-    name_ = name;
-  }
+  void set_name(const std::string& name) { name_ = name; }
 
   /* The identifier used for identifying the single world frame in all
    instances of SceneGraph. The world frame will eventually have an arbitrary

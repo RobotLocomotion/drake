@@ -468,6 +468,8 @@ class MujocoParser {
     Vector4d rgba{.5, .5, .5, 1};
     CoulombFriction<double> friction{1.0, 1.0};
     SpatialInertia<double> M_GBo_B{};
+    bool register_collision{true};
+    bool register_visual{true};
   };
 
   MujocoGeometry ParseGeometry(XMLElement* node, int num_geom,
@@ -530,12 +532,12 @@ class MujocoParser {
       geom.shape = std::make_unique<geometry::HalfSpace>();
     } else if (type == "sphere") {
       if (size.size() < 1) {
-        Error(*node,
-              "The size attribute for sphere geom must have at least one "
-              "element.");
-        return geom;
+        // Allow zero-radius spheres (the MJCF default size is 0 0 0).
+        geom.shape = std::make_unique<geometry::Sphere>(0.0);
+        compute_inertia = false;
+      } else {
+        geom.shape = std::make_unique<geometry::Sphere>(size[0]);
       }
-      geom.shape = std::make_unique<geometry::Sphere>(size[0]);
     } else if (type == "capsule") {
       if (has_fromto) {
         if (size.size() < 1) {
@@ -653,7 +655,11 @@ class MujocoParser {
     ParseScalarAttribute(node, "contype", &contype);
     ParseScalarAttribute(node, "conaffinity", &conaffinity);
     ParseScalarAttribute(node, "condim", &condim);
-    if (contype != 1 || conaffinity != 1) {
+    if (contype == 0 && conaffinity == 0) {
+      // This is a common mechanism used by MJCF authors to specify visual-only
+      // geometry.
+      geom.register_collision = false;
+    } else if (contype != 1 || conaffinity != 1) {
       Warning(
           *node,
           fmt::format(
@@ -671,7 +677,26 @@ class MujocoParser {
                                  geom.name, condim));
     }
 
-    WarnUnsupportedAttribute(*node, "group");
+    if (geom.register_collision && type == "sphere" && size.size() < 1) {
+      Warning(*node,
+              fmt::format(
+                  "Using zero-radius spheres (MuJoCo's default geometry) for "
+                  "collision geometry may not be supported by all features in "
+                  "Drake. Consider specifying a non-zero size for geom {}.",
+                  geom.name));
+    }
+
+    int group{0};
+    ParseScalarAttribute(node, "group", &group);
+    if (group > 2) {
+      // By default, the MuJoCo visualizer does not render geom with group > 2.
+      // Setting the group > 2 is a common mechanism that MuJoCo uses to
+      // register collision-only geometry.
+      geom.register_visual = false;
+      // TODO(russt): Consider adding a <drake::enable_visual_for_group> tag so
+      // that mjcf authors can configure this behavior.
+    }
+
     WarnUnsupportedAttribute(*node, "priority");
 
     std::string material;
@@ -790,7 +815,7 @@ class MujocoParser {
       auto geom = ParseGeometry(link_node, geometries.size(), compute_inertia,
                                 child_class);
       if (!geom.shape) continue;
-      if (compute_inertia) {
+      if (compute_inertia && geom.M_GBo_B.get_mass() > 0) {
         M_BBo_B += geom.M_GBo_B;
       }
       geometries.push_back(std::move(geom));
@@ -802,10 +827,14 @@ class MujocoParser {
 
     if (plant_->geometry_source_is_registered()) {
       for (auto& geom : geometries) {
-        plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape, geom.name,
-                                       geom.rgba);
-        plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
-                                          geom.name, geom.friction);
+        if (geom.register_visual) {
+          plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape,
+                                         geom.name, geom.rgba);
+        }
+        if (geom.register_collision) {
+          plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
+                                            geom.name, geom.friction);
+        }
       }
     }
 
@@ -877,11 +906,15 @@ class MujocoParser {
            link_node = link_node->NextSiblingElement("geom")) {
         auto geom = ParseGeometry(link_node, geometries.size(), false);
         if (!geom.shape) continue;
-        plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
-                                       *geom.shape, geom.name, geom.rgba);
-        plant_->RegisterCollisionGeometry(plant_->world_body(), geom.X_BG,
-                                          *geom.shape, geom.name,
-                                          geom.friction);
+        if (geom.register_visual) {
+          plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
+                                         *geom.shape, geom.name, geom.rgba);
+        }
+        if (geom.register_collision) {
+          plant_->RegisterCollisionGeometry(plant_->world_body(), geom.X_BG,
+                                            *geom.shape, geom.name,
+                                            geom.friction);
+        }
       }
     }
 

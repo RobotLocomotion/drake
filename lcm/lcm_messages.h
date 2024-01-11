@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <stdexcept>
 #include <vector>
 
 #include "drake/common/drake_throw.h"
@@ -10,16 +9,25 @@
 namespace drake {
 namespace lcm {
 
+namespace internal {
+[[noreturn]] void ThrowLcmEncodeDecodeError(const char* operation,
+                                            const std::type_info& message_type);
+}  // namespace internal
+
 /**
  Encodes an LCM message to a series of bytes.
  */
 template <typename Message>
 std::vector<uint8_t> EncodeLcmMessage(const Message& message) {
-  const int num_bytes = message.getEncodedSize();
+  const int64_t num_bytes = message.getEncodedSize();
   DRAKE_THROW_UNLESS(num_bytes >= 0);
-  const size_t size_bytes = static_cast<size_t>(num_bytes);
-  std::vector<uint8_t> bytes(size_bytes);
-  message.encode(bytes.data(), 0, num_bytes);
+  std::vector<uint8_t> bytes(num_bytes);
+  const int64_t used_bytes = message.encode(bytes.data(), 0, num_bytes);
+  if (used_bytes != num_bytes) {
+    // Any error here would be quite atypical: it would most likly indicate a
+    // bug in the generated code for the message, rather than a user error.
+    internal::ThrowLcmEncodeDecodeError("encoding", typeid(Message));
+  }
   return bytes;
 }
 
@@ -32,8 +40,7 @@ Message DecodeLcmMessage(const std::vector<uint8_t>& bytes) {
   Message message{};
   const size_t size_decoded = message.decode(bytes.data(), 0, bytes.size());
   if (size_decoded != bytes.size()) {
-    throw std::runtime_error("Error decoding message of type '" +
-                             NiceTypeName::Get<Message>() + "'");
+    internal::ThrowLcmEncodeDecodeError("decoding", typeid(Message));
   }
   return message;
 }

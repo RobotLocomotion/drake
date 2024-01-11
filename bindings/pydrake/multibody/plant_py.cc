@@ -287,7 +287,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
-            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc);
+            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
+        .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
+            cls_doc.RemoveConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(
@@ -782,6 +784,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::HasJointActuatorNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointActuatorNamed.doc_2args)
+        .def("HasFrameNamed",
+            overload_cast_explicit<bool, string_view>(&Class::HasFrameNamed),
+            py::arg("name"), cls_doc.HasFrameNamed.doc_1args)
+        .def("HasFrameNamed",
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
+                &Class::HasFrameNamed),
+            py::arg("name"), py::arg("model_instance"),
+            cls_doc.HasFrameNamed.doc_2args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, string_view>(
                 &Class::GetFrameByName),
