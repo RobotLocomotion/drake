@@ -28,6 +28,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -271,22 +272,21 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  // @tparam MeshType is either Mesh or Convex.
-  template <typename MeshType>
-  void ImplementMesh(const MeshType& mesh, void* data) {
+  // Helper for ImplementGeometry, common to both Mesh and Convex shapes.
+  // The `extension` is lowercase and includes the leading dot (e.g., ".obj").
+  void ImplementMesh(const std::string& filename, const std::string& extension,
+                     double scale, void* data) {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-
     // TODO(russt): Use file contents to generate the uuid, and avoid resending
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    std::string format = mesh.extension();
+    std::string format = extension;
     format.erase(0, 1);  // remove the . from the extension
-    std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
+    std::ifstream input(filename, std::ios::binary | std::ios::ate);
     if (!input.is_open()) {
-      drake::log()->warn("Meshcat: Could not open mesh filename {}",
-                         mesh.filename());
+      drake::log()->warn("Meshcat: Could not open mesh filename {}", filename);
       return;
     }
 
@@ -327,7 +327,7 @@ class MeshcatShapeReifier : public ShapeReifier {
 
       // Use filename path as the base directory for textures.
       const std::filesystem::path basedir =
-          std::filesystem::path(mesh.filename()).parent_path();
+          std::filesystem::path(filename).parent_path();
 
       // Read .mtl file into geometry.mtl_library.
       std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
@@ -380,22 +380,14 @@ class MeshcatShapeReifier : public ShapeReifier {
         drake::log()->warn(
             "Meshcat: Failed to load texture. {} references {}, but Meshcat "
             "could not open filename \"{}\"",
-            mesh.filename(), mtllib, (basedir / mtllib).string());
+            filename, mtllib, (basedir / mtllib).string());
       }
-      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
-      matrix(0, 0) = mesh.scale();
-      matrix(1, 1) = mesh.scale();
-      matrix(2, 2) = mesh.scale();
     } else if (format == "gltf") {
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshFileObjectData>();
       meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
-      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
-      matrix(0, 0) = mesh.scale();
-      matrix(1, 1) = mesh.scale();
-      matrix(2, 2) = mesh.scale();
     } else {
       // We have a mesh that isn't a .gltf nor an obj with mtl. So, we'll make
       // mesh file *geometry* instead of mesh file *object*. This will most
@@ -428,12 +420,19 @@ class MeshcatShapeReifier : public ShapeReifier {
       geometry->data = std::move(mesh_data);
       lumped.geometry = std::move(geometry);
 
-      auto& meshcat_mesh = lumped.object.emplace<internal::MeshData>();
-      Eigen::Map<Eigen::Matrix4d> matrix(meshcat_mesh.matrix);
-      matrix(0, 0) = mesh.scale();
-      matrix(1, 1) = mesh.scale();
-      matrix(2, 2) = mesh.scale();
+      lumped.object.emplace<internal::MeshData>();
     }
+
+    // Set the scale.
+    std::visit(
+        overloaded{[](std::monostate) {},
+                   [scale](auto& lumped_object) {
+                     Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
+                     matrix(0, 0) = scale;
+                     matrix(1, 1) = scale;
+                     matrix(2, 2) = scale;
+                   }},
+        lumped.object);
   }
 
   void ImplementGeometry(const Box& box, void* data) override {
@@ -468,7 +467,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& mesh, void* data) override {
-    ImplementMesh(mesh, data);
+    ImplementMesh(mesh.filename(), mesh.extension(), mesh.scale(), data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) override {
@@ -513,7 +512,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* data) override {
-    ImplementMesh(mesh, data);
+    ImplementMesh(mesh.filename(), mesh.extension(), mesh.scale(), data);
   }
 
   void ImplementGeometry(const MeshcatCone& cone, void* data) override {
