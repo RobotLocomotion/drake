@@ -144,6 +144,11 @@ struct AddFrame {
     } else if (!X_PF.base_frame || X_PF.base_frame->empty()) {
       drake::log()->error("add_frame: `X_PF.base_frame` must be defined");
       return false;
+    } else if (!X_PF.IsDeterministic()) {
+      drake::log()->error(
+          "add_frame: `X_PF` must specify a deterministic transform, not a "
+          "distribution.");
+      return false;
     }
     return true;
   }
