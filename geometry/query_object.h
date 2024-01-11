@@ -138,9 +138,7 @@ class QueryObject {
 
   /** Provides an inspector for the topological structure of the underlying
    scene graph data (see SceneGraphInspector for details).  */
-  const SceneGraphInspector<T>& inspector() const {
-    return inspector_;
-  }
+  const SceneGraphInspector<T>& inspector() const { return inspector_; }
 
   /** @name                Configuration-dependent Introspection
 
@@ -770,12 +768,10 @@ class QueryObject {
                               values (and supporting data) for every supported
                               geometry as shown in the table. See
                               SignedDistanceToPoint. */
-  std::vector<SignedDistanceToPoint<T>>
-  ComputeSignedDistanceToPoint(const Vector3<T> &p_WQ,
-                               const double threshold
-                               = std::numeric_limits<double>::infinity()) const;
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
+      const Vector3<T>& p_WQ,
+      const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
-
 
   //---------------------------------------------------------------------------
   /**
@@ -830,7 +826,6 @@ class QueryObject {
   void RenderLabelImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;
-
 
   /** Returns the named render engine, if it exists. The RenderEngine is
    guaranteed to be up to date w.r.t. the poses and data in the context. */
@@ -903,9 +898,7 @@ class QueryObject {
   }
 
   // Reports if the object can be copied; it must either be callable or default.
-  bool is_copyable() const {
-    return is_callable() || is_default();
-  }
+  bool is_copyable() const { return is_callable() || is_default(); }
 
   // Throws an exception if the QueryObject is neither "live" nor "baked" (see
   // class docs for discussion).

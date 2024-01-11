@@ -17,17 +17,16 @@ void Rgba::set(const Eigen::Ref<const Eigen::VectorXd>& rgba) {
     new_value = rgba;
   } else {
     throw std::runtime_error(fmt::format(
-        "Rgba must contain either 3 or 4 elements (given [{}])",
-        rgba.size()));
+        "Rgba must contain either 3 or 4 elements (given [{}])", rgba.size()));
   }
 
   // Check the domain.
   for (int i = 0; i < 4; ++i) {
     if (!(new_value[i] >= 0 && new_value[i] <= 1.0)) {
-       throw std::runtime_error(fmt::format(
-           "Rgba values must be within the range [0, 1]. Values provided: "
-           "(r={}, g={}, b={}, a={})",
-           new_value[0], new_value[1], new_value[2], new_value[3]));
+      throw std::runtime_error(fmt::format(
+          "Rgba values must be within the range [0, 1]. Values provided: "
+          "(r={}, g={}, b={}, a={})",
+          new_value[0], new_value[1], new_value[2], new_value[3]));
     }
   }
 

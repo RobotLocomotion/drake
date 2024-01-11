@@ -34,7 +34,7 @@
 #include "drake/geometry/meshcat_types.h"
 
 #ifdef BOOST_VERSION
-# error Drake should be using the non-boost flavor of msgpack.
+#error Drake should be using the non-boost flavor of msgpack.
 #endif
 
 // Steal one function declaration from usockets/src/internal/internal.h.
@@ -64,9 +64,8 @@ const std::string& GetStaticResource(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
   static const drake::never_destroyed<std::string> empty;
-  if ((url_path == "/")
-      || (url_path == "/index.html")
-      || (url_path == "/meshcat.html")) {
+  if ((url_path == "/") || (url_path == "/index.html") ||
+      (url_path == "/meshcat.html")) {
     return meshcat_html.access();
   }
   if (url_path == "/meshcat.js") {
@@ -83,8 +82,8 @@ const std::string& GetStaticResource(std::string_view url_path) {
 }
 
 template <typename Mapping>
-[[noreturn]] void ThrowThingNotFound(
-    std::string_view thing, std::string_view name, Mapping thing_map) {
+[[noreturn]] void ThrowThingNotFound(std::string_view thing,
+                                     std::string_view name, Mapping thing_map) {
   std::vector<std::string> keys;
   for (const auto& map_pair : thing_map) {
     keys.push_back(map_pair.first);
@@ -634,9 +633,9 @@ class Meshcat::Impl {
     // Sanity-check the pattern, by passing it (along with dummy host and port
     // values) through to fmt to allow any fmt-specific exception to percolate.
     // Then, confirm that the user's pattern started with a valid protocol.
-    const std::string url = fmt::format(
-        fmt_runtime(params.web_url_pattern),
-        fmt::arg("host", "foo"), fmt::arg("port", 1));
+    const std::string url =
+        fmt::format(fmt_runtime(params.web_url_pattern),
+                    fmt::arg("host", "foo"), fmt::arg("port", 1));
     if (url.substr(0, 4) != "http") {
       throw std::logic_error("The web_url_pattern must be http:// or https://");
     }
@@ -645,11 +644,10 @@ class Meshcat::Impl {
     GetStaticResource("/");
 
     std::promise<std::tuple<int, bool>> app_promise;
-    std::future<std::tuple<int, bool>> app_future =
-        app_promise.get_future();
-    websocket_thread_ = std::thread(
-        &Impl::WrappedWebSocketMain, this, std::move(app_promise),
-        params.host, params.port);
+    std::future<std::tuple<int, bool>> app_future = app_promise.get_future();
+    websocket_thread_ =
+        std::thread(&Impl::WrappedWebSocketMain, this, std::move(app_promise),
+                    params.host, params.port);
     bool connected;
     std::tie(port_, connected) = app_future.get();
 
@@ -704,10 +702,8 @@ class Meshcat::Impl {
     const std::string& host = params_.host;
     const bool is_localhost = host.empty() || host == "*";
     const std::string display_host = is_localhost ? "localhost" : host;
-    return fmt::format(
-        fmt_runtime(params_.web_url_pattern),
-        fmt::arg("host", display_host),
-        fmt::arg("port", port_));
+    return fmt::format(fmt_runtime(params_.web_url_pattern),
+                       fmt::arg("host", display_host), fmt::arg("port", port_));
   }
 
   // This function is public via the PIMPL.
@@ -880,7 +876,7 @@ class Meshcat::Impl {
     geometry->uuid = uuids::to_string(uuid_generator());
     geometry->position = cloud.xyzs();
     if (cloud.has_rgbs()) {
-      geometry->color = cloud.rgbs().cast<float>()/255.0;
+      geometry->color = cloud.rgbs().cast<float>() / 255.0;
     }
     data.object.geometry = std::move(geometry);
 
@@ -913,8 +909,8 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   void SetObject(std::string_view path, const TriangleSurfaceMesh<double>& mesh,
-                 const Rgba& rgba, bool wireframe,
-                 double wireframe_line_width, SideOfFaceToRender side) {
+                 const Rgba& rgba, bool wireframe, double wireframe_line_width,
+                 SideOfFaceToRender side) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
     for (int i = 0; i < mesh.num_vertices(); ++i) {
@@ -951,7 +947,7 @@ class Meshcat::Impl {
     // but takes every consecutive pair of vertices as a (start, end).
     Eigen::Matrix<double, 6, Eigen::Dynamic> vstack(6, start.cols());
     vstack << start, end;
-    Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2*start.cols());
+    Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2 * start.cols());
     const bool kLineSegments = true;
     SetLineImpl(path, vertices, line_width, rgba, kLineSegments);
   }
@@ -1044,11 +1040,11 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   void SetTriangleColorMesh(std::string_view path,
-                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
-                       bool wireframe,
-                       double wireframe_line_width, SideOfFaceToRender side) {
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                            bool wireframe, double wireframe_line_width,
+                            SideOfFaceToRender side) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     uuids::uuid_random_generator uuid_generator{generator_};
@@ -1260,18 +1256,17 @@ class Meshcat::Impl {
       o.pack(animation.clamp_when_finished());
     }
 
-    Defer(
-        [this, message = message_stream.str()]() {
-          DRAKE_DEMAND(IsThread(websocket_thread_id_));
-          DRAKE_DEMAND(app_ != nullptr);
-          app_->publish("all", message, uWS::OpCode::BINARY, false);
-          animation_ = std::move(message);
-        });
+    Defer([this, message = message_stream.str()]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      animation_ = std::move(message);
+    });
   }
 
   // This function is public via the PIMPL.
   void Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
-                      double xmax, double ymin, double ymax) {
+                       double xmax, double ymin, double ymax) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     // Set orthographic camera.
     OrthographicCamera camera;
@@ -1358,7 +1353,8 @@ class Meshcat::Impl {
 () => this.connection.send(msgpack.encode({{
   'type': 'button',
   'name': '{}'
-}})))""", data.name);
+}})))""",
+                                data.name);
     data.keycode1 = std::move(keycode);
 
     {
@@ -1449,7 +1445,8 @@ class Meshcat::Impl {
   'type': 'slider',
   'name': '{}',
   'value': value
-}})))""", data.name);
+}})))""",
+                                data.name);
     data.min = min;
     data.max = max;
     data.step = step;
@@ -1500,7 +1497,7 @@ class Meshcat::Impl {
       // Match setValue in NumberController.js from dat.GUI.
       value = std::max(value, s.min);
       value = std::min(value, s.max);
-      value = std::round(value/s.step)*s.step;
+      value = std::round(value / s.step) * s.step;
       s.value = value;
     }
 
@@ -1524,7 +1521,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
     if (iter == sliders_.end()) {
-        ThrowThingNotFound("slider", name, sliders_);
+      ThrowThingNotFound("slider", name, sliders_);
     }
     return iter->second.value;
   }
@@ -1699,7 +1696,7 @@ class Meshcat::Impl {
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     Defer([this, path = FullPath(path), property = std::move(property),
-                  p = std::move(p)]() mutable {
+           p = std::move(p)]() mutable {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
       if (!e) {
@@ -1758,7 +1755,7 @@ class Meshcat::Impl {
         inject_message_fault_.store(true);
         return;
       }
-      static_assert(kMaxFaultNumber == 3);
+        static_assert(kMaxFaultNumber == 3);
     }
     DRAKE_UNREACHABLE();
   }
@@ -1782,9 +1779,8 @@ class Meshcat::Impl {
   //
   // N.B. Our arguments must not be pass-by-reference because this function is
   // called from a new thread!
-  void WrappedWebSocketMain(
-      std::promise<std::tuple<int, bool>> app_promise,
-      std::string host, std::optional<int> desired_port) {
+  void WrappedWebSocketMain(std::promise<std::tuple<int, bool>> app_promise,
+                            std::string host, std::optional<int> desired_port) {
     try {
       WebSocketMain(std::move(app_promise), host, desired_port);
     } catch (const std::exception& e) {
@@ -1794,9 +1790,8 @@ class Meshcat::Impl {
     }
   }
 
-  void WebSocketMain(
-      std::promise<std::tuple<int, bool>> app_promise,
-      const std::string& host, std::optional<int> desired_port) {
+  void WebSocketMain(std::promise<std::tuple<int, bool>> app_promise,
+                     const std::string& host, std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
     ScopeExit guard([this]() {
       // N.B. Refer to the comments on the `mode_` and `loop_` class member
@@ -1899,9 +1894,8 @@ class Meshcat::Impl {
   // This function is a callback from a WebSocketBehavior.
   void HandleSocketOpen(WebSocket* ws) {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    drake::log()->debug(
-        "Meshcat connection opened from {}",
-        ws->getRemoteAddressAsText());
+    drake::log()->debug("Meshcat connection opened from {}",
+                        ws->getRemoteAddressAsText());
     websockets_.emplace(ws);
     const int new_count = ++num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
@@ -1940,17 +1934,15 @@ class Meshcat::Impl {
     ws->send(realtime_message_stream.str());
 
     if (inject_open_fault_.load()) {
-      throw std::runtime_error(
-          "InjectWebsocketThreadFault during socket open");
+      throw std::runtime_error("InjectWebsocketThreadFault during socket open");
     }
   }
 
   // This function is a callback from a WebSocketBehavior.
   void HandleSocketClose(WebSocket* ws) {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    drake::log()->debug(
-        "Meshcat connection closed from {}",
-        ws->getRemoteAddressAsText());
+    drake::log()->debug("Meshcat connection closed from {}",
+                        ws->getRemoteAddressAsText());
     websockets_.erase(ws);
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
@@ -2313,7 +2305,7 @@ void Meshcat::SetTriangleMesh(
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
     bool wireframe, double wireframe_line_width, SideOfFaceToRender side) {
   impl().SetTriangleMesh(path, vertices, faces, rgba, wireframe,
-                              wireframe_line_width, side);
+                         wireframe_line_width, side);
 }
 
 void Meshcat::SetTriangleColorMesh(
@@ -2322,7 +2314,7 @@ void Meshcat::SetTriangleColorMesh(
     const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
     double wireframe_line_width, SideOfFaceToRender side) {
   impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
-                         wireframe_line_width, side);
+                              wireframe_line_width, side);
 }
 
 void Meshcat::PlotSurface(std::string_view path,
@@ -2490,8 +2482,7 @@ void Meshcat::SetEnvironmentMap(const std::filesystem::path& image_path) {
                       image_path.string()));
     }
   }
-  impl().SetProperty("/Background/<object>", "environment_map",
-                      image_encoding);
+  impl().SetProperty("/Background/<object>", "environment_map", image_encoding);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {

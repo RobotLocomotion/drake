@@ -65,15 +65,12 @@ GTEST_TEST(RgbaTest, Errors) {
   auto expect_error = [original](double ri, double gi, double bi, double ai) {
     const std::string expected_message = fmt::format(
         "Rgba values must be within the range \\[0, 1\\]. Values provided: "
-        "\\(r={}, g={}, b={}, a={}\\)", ri, gi, bi, ai);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        Rgba(ri, gi, bi, ai),
-        expected_message);
+        "\\(r={}, g={}, b={}, a={}\\)",
+        ri, gi, bi, ai);
+    DRAKE_EXPECT_THROWS_MESSAGE(Rgba(ri, gi, bi, ai), expected_message);
     // Check for transaction integrity.
     Rgba color = original;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        color.set(ri, gi, bi, ai),
-        expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(color.set(ri, gi, bi, ai), expected_message);
     EXPECT_EQ(color, original);
   };
 

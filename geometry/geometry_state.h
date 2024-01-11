@@ -377,9 +377,9 @@ class GeometryState {
   void RenameGeometry(GeometryId geometry_id, const std::string& name);
 
   /** Implementation of SceneGraph::ChangeShape().  */
-  void ChangeShape(
-      SourceId source_id, GeometryId geometry_id, const Shape& shape,
-      std::optional<math::RigidTransform<double>> X_FG);
+  void ChangeShape(SourceId source_id, GeometryId geometry_id,
+                   const Shape& shape,
+                   std::optional<math::RigidTransform<double>> X_FG);
 
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);

@@ -31,8 +31,8 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
 
   // Test various names -- including names with internal whitespace.
   for (const std::string& canonical : std::initializer_list<std::string>{
-        "name", "with space", "with\ttab", "with\nnewline",
-        "with\vvertical tab", "with\fformfeed"}) {
+           "name", "with space", "with\ttab", "with\nnewline",
+           "with\vvertical tab", "with\fformfeed"}) {
     // Confirms that the given name canonicalizes to the given canonical name.
     auto expect_canonical = [&canonical](const std::string& name) {
       const std::string canonicalized = CanonicalizeStringName(name);
