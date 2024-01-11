@@ -4,6 +4,7 @@ import os.path
 import unittest
 
 from bazel_tools.tools.python.runfiles import runfiles
+
 import mypy.fastparse
 
 
@@ -45,7 +46,11 @@ class TestStubgen(unittest.TestCase):
         # problematic line.
         failure_message = None
         try:
-            mypy.fastparse.parse(source=source, fnam=path, module=None)
+            errors = mypy.errors.Errors(mypy.options.Options())
+            mypy.fastparse.parse(source=source, fnam=path, module=None,
+                                 errors=errors)
+            if errors.is_errors():
+                errors.raise_error()
         except mypy.errors.CompileError as e:
             message = e.messages[0]
             line_num = int(message.split(":", maxsplit=2)[1])
