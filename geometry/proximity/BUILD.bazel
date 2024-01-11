@@ -883,9 +883,9 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "mesh_refiner_manual_test",
+    name = "mesh_refiner",
     testonly = 1,
-    srcs = ["test/mesh_refiner_manual_test.cc"],
+    srcs = ["mesh_refiner.cc"],
     add_test_rule = 1,
     data = ["//geometry:test_vtk_files"],
     test_rule_args = [
