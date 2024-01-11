@@ -32,7 +32,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/meshcat_types.h"
+#include "drake/geometry/meshcat_types_internal.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
