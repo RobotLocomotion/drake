@@ -8,7 +8,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/meshcat_types.h"
+#include "drake/geometry/meshcat_internal_types.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
