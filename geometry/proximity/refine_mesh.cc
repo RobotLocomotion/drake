@@ -13,7 +13,6 @@ DEFINE_bool(strict, false, "enable strict parsing");
 
 namespace drake {
 namespace geometry {
-namespace internal {
 namespace {
 
 int do_main(int argc, char* argv[]) {
@@ -30,10 +29,11 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto mesh = ReadVtkToVolumeMesh(argv[1]);
-  auto bad_tets = DetectTetrahedronWithAllBoundaryVertices(mesh);
-  auto bad_triangles = DetectInteriorTriangleWithAllBoundaryVertices(mesh);
-  auto bad_edges = DetectInteriorEdgeWithAllBoundaryVertices(mesh);
+  auto mesh = internal::ReadVtkToVolumeMesh(argv[1]);
+  auto bad_tets = internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
+  auto bad_triangles =
+      internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
+  auto bad_edges = internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
 
   drake::log()->info(
       "Found {} bad tets, {} bad triangles, and {} bad edges."
@@ -50,7 +50,7 @@ int do_main(int argc, char* argv[]) {
     return 0;
   }
 
-  auto refiner = VolumeMeshRefiner(mesh);
+  auto refiner = internal::VolumeMeshRefiner(mesh);
   auto refined_mesh = refiner.Refine();
 
   std::filesystem::path outfile(argv[2]);
@@ -60,8 +60,8 @@ int do_main(int argc, char* argv[]) {
     outfile = std::filesystem::path(test_dir) / outfile;
   }
 
-  WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
-                       "refined by mesh_refiner_manual_test");
+  internal::WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
+                                 "refined by mesh_refiner_manual_test");
   drake::log()->info(
       "wrote refined mesh to file '{}' with {} tets and {} "
       "vertices.",
@@ -71,10 +71,9 @@ int do_main(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::geometry::internal::do_main(argc, argv);
+  return drake::geometry::do_main(argc, argv);
 }
