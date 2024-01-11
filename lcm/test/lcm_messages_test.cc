@@ -25,6 +25,19 @@ GTEST_TEST(LcmMessagesTest, EncodeDecodeLcmMessage) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(message, ModelMessage()));
 }
 
+// This message does not implement encode() correctly.
+struct BuggyLcmMessage {
+  int getEncodedSize() const { return 1; }
+  inline int encode(void*, int, int) const { return 0; }
+};
+
+GTEST_TEST(LcmMessagesTest, EncodeLcmMessageError) {
+  BuggyLcmMessage bad;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      EncodeLcmMessage(bad),
+      "Error encoding message of type.*BuggyLcmMessage.*");
+}
+
 GTEST_TEST(LcmMessagesTest, DecodeLcmMessageError) {
   const std::vector<uint8_t> bytes = EncodeLcmMessage(ModelMessage());
   std::vector<uint8_t> corrupt_bytes = bytes;
