@@ -216,6 +216,24 @@ GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
       plant.HasFrameNamed("included_as_base_frame", simple_model_instance));
 }
 
+// Tests for rejection of non-deterministic frames.
+GTEST_TEST(ProcessModelDirectivesTest, AddStochasticFrameBad) {
+  // This nominal case works OK.
+  std::string yaml = R"""(
+directives:
+- add_frame:
+    name: my_frame
+    X_PF:
+      base_frame: world
+)""";
+  EXPECT_NO_THROW(LoadModelDirectivesFromString(yaml));
+
+  // Setting a stochastic transform yields a failure.
+  yaml += "      rotation: !Uniform {}\n";
+  DRAKE_EXPECT_THROWS_MESSAGE(LoadModelDirectivesFromString(yaml),
+                              ".*IsValid.*");
+}
+
 // Test backreference behavior in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
   ModelDirectives directives = LoadModelDirectives(
