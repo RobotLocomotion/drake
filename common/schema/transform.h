@@ -186,7 +186,15 @@ class Transform {
 
   /// Samples this Transform.  If this is deterministic, the result is the same
   /// as GetDeterministicValue.
+  ///
+  /// @throw std::exception if this has a non-world base frame (because the
+  ///        return type has no base frame, so the returned value would be
+  ///        misleading).
   math::RigidTransformd Sample(RandomGenerator* generator) const;
+
+  /// Samples this Transform; the returned value is deterministic and has the
+  /// same base frame.
+  Transform SampleAsTransform(RandomGenerator* generator) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
