@@ -419,8 +419,8 @@ class SceneGraphInspector {
            off of the original, but the returned id() will completely unique.
    @throws std::exception if the `geometry_id` does not refer to a valid
    geometry.  */
-  std::unique_ptr<GeometryInstance>
-  CloneGeometryInstance(GeometryId geometry_id) const;
+  std::unique_ptr<GeometryInstance> CloneGeometryInstance(
+      GeometryId geometry_id) const;
   //@}
 
  private:

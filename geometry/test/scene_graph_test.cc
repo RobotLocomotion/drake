@@ -100,8 +100,7 @@ class SceneGraphTester {
 namespace {
 
 // Convenience function for making a geometry instance.
-std::unique_ptr<GeometryInstance> make_sphere_instance(
-    double radius = 1.0) {
+std::unique_ptr<GeometryInstance> make_sphere_instance(double radius = 1.0) {
   return make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                        make_unique<Sphere>(radius), "sphere");
 }
@@ -226,8 +225,8 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   FrameId old_frame_id =
       scene_graph_.RegisterFrame(id, GeometryFrame("old_frame"));
   // This geometry will be removed after allocation.
-  GeometryId old_geometry_id = scene_graph_.RegisterGeometry(id, old_frame_id,
-      make_sphere_instance());
+  GeometryId old_geometry_id =
+      scene_graph_.RegisterGeometry(id, old_frame_id, make_sphere_instance());
 
   CreateDefaultContext();
 
@@ -272,8 +271,7 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 TEST_F(SceneGraphTest, DirectFeedThrough) {
   scene_graph_.RegisterSource();
   EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
-            scene_graph_.num_input_ports() *
-                scene_graph_.num_output_ports());
+            scene_graph_.num_input_ports() * scene_graph_.num_output_ports());
 }
 
 // Test the functionality that accumulates the values from the input ports.
@@ -396,8 +394,8 @@ TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyContext) {
   using U = TypeParam;
   SourceId s_id = this->scene_graph_.RegisterSource();
   // Register geometry that should be successfully transmogrified.
-  GeometryId g_id = this->scene_graph_.RegisterAnchoredGeometry(
-      s_id, make_sphere_instance());
+  GeometryId g_id =
+      this->scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
   this->CreateDefaultContext();
   const Context<double>& context_T = *this->context_;
   // This should transmogrify the internal *model*, so when I allocate the
@@ -432,11 +430,11 @@ TYPED_TEST_P(TypedSceneGraphTest, NonDoubleClone) {
   ASSERT_NE(copy, nullptr);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,
-    TransmogrifyWithoutAllocation,
-    TransmogrifyPorts,
-    TransmogrifyContext,
-    NonDoubleClone);
+REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,            //
+                            TransmogrifyWithoutAllocation,  //
+                            TransmogrifyPorts,              //
+                            TransmogrifyContext,            //
+                            NonDoubleClone);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, TypedSceneGraphTest, NonDoubleScalarTypes);
@@ -703,8 +701,8 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
       const VolumeMesh<double>* mesh_ptr =
           inspector.GetReferenceMesh(deformable_id);
       DRAKE_DEMAND(mesh_ptr != nullptr);
-      configurations_.set_value(deformable_id,
-          VectorX<double>::Zero(mesh_ptr->num_vertices() * 3));
+      configurations_.set_value(
+          deformable_id, VectorX<double>::Zero(mesh_ptr->num_vertices() * 3));
     }
 
     // Set up output pose port now that the frame is registered.
@@ -785,11 +783,11 @@ GTEST_TEST(SceneGraphConnectionTest, FullPositionUpdateConnected) {
   systems::DiagramBuilder<double> builder;
   auto scene_graph = builder.AddSystem<SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
-  auto mixed_source = builder.AddSystem<GeometrySourceSystem>(
-      scene_graph, true);
+  auto mixed_source =
+      builder.AddSystem<GeometrySourceSystem>(scene_graph, true);
   mixed_source->set_name("mixed source");
-  auto nondeformable_source = builder.AddSystem<GeometrySourceSystem>(
-      scene_graph, false);
+  auto nondeformable_source =
+      builder.AddSystem<GeometrySourceSystem>(scene_graph, false);
   nondeformable_source->set_name("nondeformable_only_source");
   SourceId mixed_source_id = mixed_source->get_source_id();
   SourceId nondeformable_source_id = nondeformable_source->get_source_id();
@@ -873,7 +871,6 @@ GTEST_TEST(SceneGraphExpressionTest, InstantiateExpression) {
       QueryObjectTest::MakeNullQueryObject<Expression>();
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
-
 
 // Tests that exercise the Context-modifying API
 

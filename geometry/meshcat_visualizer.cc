@@ -9,17 +9,13 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/common/overloaded.h"
 #include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 template <typename T>
 MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
@@ -51,8 +47,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
           .get_index();
 
   if (params_.enable_alpha_slider) {
-    meshcat_->AddSlider(
-      alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+    meshcat_->AddSlider(alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
   }
 }
 
@@ -71,7 +66,7 @@ template <typename T>
 MeshcatAnimation* MeshcatVisualizer<T>::StartRecording(
     bool set_transforms_while_recording) {
   meshcat_->StartRecording(1.0 / params_.publish_period,
-                            set_transforms_while_recording);
+                           set_transforms_while_recording);
   return &meshcat_->get_mutable_recording();
 }
 
@@ -82,7 +77,7 @@ void MeshcatVisualizer<T>::StopRecording() {
 
 template <typename T>
 void MeshcatVisualizer<T>::PublishRecording() const {
-    meshcat_->PublishRecording();
+  meshcat_->PublishRecording();
 }
 
 template <typename T>
@@ -160,12 +155,12 @@ template <typename T>
 void MeshcatVisualizer<T>::SetObjects(
     const SceneGraphInspector<T>& inspector) const {
   // Frames registered previously that are not set again here should be deleted.
-  std::map <FrameId, std::string> frames_to_delete{};
+  std::map<FrameId, std::string> frames_to_delete{};
   dynamic_frames_.swap(frames_to_delete);
 
   // Geometries registered previously that are not set again here should be
   // deleted.
-  std::map <GeometryId, std::string> geometries_to_delete{};
+  std::map<GeometryId, std::string> geometries_to_delete{};
   geometries_.swap(geometries_to_delete);
 
   // TODO(SeanCurtis-TRI): Mimic the full tree structure in SceneGraph.

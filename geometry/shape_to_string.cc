@@ -11,8 +11,8 @@ void ShapeToString::ImplementGeometry(const Box& box, void*) {
 }
 
 void ShapeToString::ImplementGeometry(const Capsule& capsule, void*) {
-  string_ = fmt::format("Capsule(r: {}, l: {})", capsule.radius(),
-                        capsule.length());
+  string_ =
+      fmt::format("Capsule(r: {}, l: {})", capsule.radius(), capsule.length());
 }
 
 void ShapeToString::ImplementGeometry(const Convex& convex, void*) {

@@ -15,9 +15,9 @@ using internal::kComplianceType;
 using internal::kElastic;
 using internal::kFriction;
 using internal::kHcDissipation;
-using internal::kPointStiffness;
 using internal::kHydroGroup;
 using internal::kMaterialGroup;
+using internal::kPointStiffness;
 using internal::kRezHint;
 using internal::kSlabThickness;
 using CoulombFrictiond = multibody::CoulombFriction<double>;
@@ -142,11 +142,11 @@ GTEST_TEST(ProximityPropertiesTest, AddCompliantProperties) {
     EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kElastic), E);
   }
 
-  CheckDisallowedModulusValues(
-      "AddCompliantHydroelasticProperties",
-      [](double modulus, ProximityProperties* p) {
-        AddCompliantHydroelasticProperties(1., modulus, p);
-      });
+  CheckDisallowedModulusValues("AddCompliantHydroelasticProperties",
+                               [](double modulus, ProximityProperties* p) {
+                                 AddCompliantHydroelasticProperties(1., modulus,
+                                                                    p);
+                               });
 }
 
 // Tests the variant where the static pressure field is defined by the
@@ -165,11 +165,11 @@ GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
               HydroelasticType::kSoft);
   }
 
-  CheckDisallowedModulusValues(
-      "AddCompliantHydroelasticPropertiesForHalfSpace",
-      [](double modulus, ProximityProperties* p) {
-        AddCompliantHydroelasticPropertiesForHalfSpace(1., modulus, p);
-      });
+  CheckDisallowedModulusValues("AddCompliantHydroelasticPropertiesForHalfSpace",
+                               [](double modulus, ProximityProperties* p) {
+                                 AddCompliantHydroelasticPropertiesForHalfSpace(
+                                     1., modulus, p);
+                               });
 }
 
 }  // namespace

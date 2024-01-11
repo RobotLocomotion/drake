@@ -157,8 +157,10 @@ Some notes on using the AR/VR modes:
 
 If you do not have AR/VR hardware, you can use an emulator in your browser to
 experiment with the mode. Use an browser plugin like WebXR API Emulator (i.e.,
-for [Chrome](https://chrome.google.com/webstore/detail/webxr-api-emulator/mjddjgeghkdijejnciaefnkjmkafnnje)
-or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/webxr-api-emulator/)).
+for
+[Chrome](https://chrome.google.com/webstore/detail/webxr-api-emulator/mjddjgeghkdijejnciaefnkjmkafnnje)
+or
+[Firefox](https://addons.mozilla.org/en-US/firefox/addon/webxr-api-emulator/)).
 
 @section network_access Network access
 
