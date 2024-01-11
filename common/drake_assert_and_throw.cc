@@ -50,10 +50,23 @@ void Abort(const char* condition, const char* func, const char* file,
 }
 
 // Declared in drake_throw.h.
+// If the suffix should end with punctuation, the caller must provide it.
 void Throw(const char* condition, const char* func, const char* file,
-           int line) {
+           int line, std::string_view suffix) {
   std::ostringstream what;
   PrintFailureDetailTo(what, condition, func, file, line);
+  if (!suffix.empty()) {
+    what << " " << suffix;
+  }
+  throw assertion_error(what.str().c_str());
+}
+
+// Declared in drake_throw.h.
+void ThrowWithSuffix(const std::string& condition, const char* func,
+                     const char* file, int line, const std::string& suffix) {
+  std::ostringstream what;
+  PrintFailureDetailTo(what, condition.c_str(), func, file, line);
+  what << " " << suffix;
   throw assertion_error(what.str().c_str());
 }
 
