@@ -670,6 +670,11 @@ MODULE_SETTINGS = {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtktoken=0",
         ],
+        "hdrs_glob_exclude": [
+            # We use `hdrs_content` instead of a full-blown configure file.
+            "**/Options.h.in",
+            "**/CxxABIConfigure.h.in",
+        ],
         "hdrs_content": {
             "ThirdParty/token/vtktoken/token/CxxABIConfigure.h": """
 #pragma once
