@@ -5,7 +5,6 @@ load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
-    "generate_abi_namespace",
     "generate_common_core_sources",
     "generate_rendering_opengl2_sources",
     "vtk_cc_module",
@@ -27,8 +26,6 @@ cc_library(
 
 # Generate some source files on the fly, using Bazel re-implementations of
 # various CMake scripts.
-
-generate_abi_namespace()
 
 generate_common_core_sources()
 

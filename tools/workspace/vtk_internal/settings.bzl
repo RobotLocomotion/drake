@@ -10,16 +10,6 @@
 
 MODULE_SETTINGS = {
     # First, we'll configure VTK's first-party utility libraries.
-    "ABI": {
-        "cmake_defines": [
-            # NOTE: see Common/Core/vtkABINamespace.h.in.
-            "VTK_HAS_ABI_NAMESPACE=1",
-            "VTK_ABI_NAMESPACE_NAME=drake_vendor",
-            # "VTK_ABI_NAMESPACE_MANGLE(x)=drake_vendor_##x",
-            "VTK_ABI_NAMESPACE_BEGIN=inline namespace drake_vendor __attribute__ ((visibility (\"hidden\"))) {",  # noqa
-            "VTK_ABI_NAMESPACE_END=}",
-        ],
-    },
     "VTK::kwiml": {
         "cmake_defines": [
             # Match the Utilities/KWIML/vtkkwiml/CMakeLists.txt value. (This
@@ -146,7 +136,13 @@ MODULE_SETTINGS = {
             "CMake/vtkVersion.cmake",
         ],
         "cmake_defines": [
+            # ABI
+            "VTK_HAS_ABI_NAMESPACE=1",
+            "VTK_ABI_NAMESPACE_NAME=drake_vendor",
+            "VTK_ABI_NAMESPACE_BEGIN=inline namespace drake_vendor __attribute__ ((visibility (\"hidden\"))) {",  # noqa
+            "VTK_ABI_NAMESPACE_END=}",
             # Features that are available on the host platform.
+            "VTK_HAS_CXXABI_DEMANGLE=1",
             "VTK_HAS_ISFINITE=1",
             "VTK_HAS_ISINF=1",
             "VTK_HAS_ISNAN=1",

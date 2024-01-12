@@ -134,8 +134,6 @@ def _vtk_cc_module_impl(
     copts = ["-w"] + copts_extra
     linkopts = linkopts_extra
     deps = []
-    if "ThirdParty" not in subdir:
-        deps.append(":vtkABINamespace")
     deps = deps + gen_hdrs_lib
     deps = deps + module_deps_public
     deps = deps + module_deps_private
@@ -314,7 +312,6 @@ def compile_all_modules():
         for name in MODULE_SETTINGS
         if name not in names
     ]
-    unused_settings.remove("ABI")  # Not a real module.
     modules_no_settings = [
         name
         for name in names
@@ -324,24 +321,6 @@ def compile_all_modules():
         print("settings.bzl has unused modules: " + str(unused_settings))
     if _VERBOSE and modules_no_settings:
         print("settings.bzl does not customize: " + str(modules_no_settings))
-
-def generate_abi_namespace():
-    """Generates vtkABINamespace.h, mimicking the Common/Core/CMakeLists.txt.
-    """
-    cmake_configure_files(
-        name = "_vtkABINamespace_genrule",
-        srcs = ["Common/Core/vtkABINamespace.h.in"],
-        outs = ["CMake/vtkABINamespace.h"],
-        defines = MODULE_SETTINGS["ABI"]["cmake_defines"],
-        strict = True,
-    )
-    cc_library(
-        name = "vtkABINamespace",
-        hdrs = ["CMake/vtkABINamespace.h"],
-        strip_include_prefix = "CMake",
-        linkstatic = True,
-        visibility = ["//visibility:public"],
-    )
 
 def generate_common_core_array_dispatch_array_list():
     """Mimics the vtkCreateArrayDispatchArrayList.cmake logic.
