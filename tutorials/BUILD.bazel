@@ -109,6 +109,23 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
+    name = "hydroelastic_contact_nonconvex_debug_load",
+    add_test_rule = 1,
+    data = [
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ],
+    test_timeout = "moderate",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
     name = "rendering_multibody_plant",
     add_test_rule = 1,
     deps = [
