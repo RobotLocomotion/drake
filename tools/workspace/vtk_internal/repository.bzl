@@ -69,6 +69,7 @@ def parse_module(repo_ctx, subdir):
             result[key] = 1
         else:
             fail(("vtk/{subdir}/vtk.module: Got multiple values for {key} " +
+                  "but we assumed (because its name ended with 'S') that it " +
                   "was not supposed to be a list").format(
                 subdir = subdir,
                 key = key,
