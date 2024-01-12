@@ -666,5 +666,27 @@ MODULE_SETTINGS = {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtktoken=0",
         ],
+        "hdrs_content": {
+            "ThirdParty/token/vtktoken/token/CxxABIConfigure.h": """
+#pragma once
+#define token_HAS_CXXABI_DEMANGLE
+#include <cxxabi.h>
+""",
+            "ThirdParty/token/vtktoken/token/Exports.h": """
+#pragma once
+#define TOKEN_EXPORT
+#define TOKEN_NO_EXPORT
+#define TOKEN_DEPRECATED
+#define TOKEN_DEPRECATED_EXPORT
+#define TOKEN_DEPRECATED_NO_EXPORT
+            """,
+            "ThirdParty/token/vtktoken/token/Options.h": """
+#pragma once
+#define token_NAMESPACE vtktoken
+#define token_BEGIN_NAMESPACE namespace vtktoken {
+#define token_CLOSE_NAMESPACE }
+            """,
+        },
+        "strip_include_prefix_extra": "/vtktoken",
     },
 }
