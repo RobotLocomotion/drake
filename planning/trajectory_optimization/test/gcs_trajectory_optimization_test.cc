@@ -1482,9 +1482,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSetAPI) {
   EXPECT_THROW(PartitionConvexSet(contains_nullptr, continuous_revolute_joints),
                std::exception);
 
-  // List of convex sets must not have unbounded sets.
-  Hyperellipsoid unbounded_hyperellipsoid(Eigen::MatrixXd::Zero(2, 2),
-                                          Eigen::VectorXd::Zero(2));
+  // List of convex sets must not sets which are unbounded on dimensions
+  // corresponding to continuous revolute joints.
   Eigen::Matrix<double, 1, 2> A;
   A << 1, 0;
   Eigen::VectorXd b(1);
@@ -1496,6 +1495,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PartitionConvexSetAPI) {
   EXPECT_THROW(PartitionConvexSet(MakeConvexSets(unbounded_hpolyhedron),
                                   continuous_revolute_joints),
                std::exception);
+
+  // But unbounded dimensions are allowed on dimensions not corresponding to
+  // continuous revolute joints.
+  EXPECT_NO_THROW(
+      PartitionConvexSet(unbounded_hpolyhedron, std::vector<int>{}));
+  EXPECT_NO_THROW(PartitionConvexSet(MakeConvexSets(unbounded_hpolyhedron),
+                                     std::vector<int>{}));
 
   // List of convex sets must have matching ambient dimension.
   VPolytope v_wrong_dimension(Eigen::MatrixXd::Zero(3, 1));

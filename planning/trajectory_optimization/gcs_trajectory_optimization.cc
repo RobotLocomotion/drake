@@ -10,7 +10,6 @@
 #include "drake/common/symbolic/decompose.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
-#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/math/matrix_util.h"
@@ -38,7 +37,6 @@ using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
-using geometry::optimization::Hyperrectangle;
 using geometry::optimization::Intersection;
 using geometry::optimization::Point;
 using multibody::Joint;
@@ -108,9 +106,9 @@ const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
 }
 
 /* Helper function to assert that a given list of continuous revolute joint
- * indices satisfies the requirements for the constructor to
- * GcsTrajectoryOptimization, as well as any static functions that may take in
- * such a list. */
+indices satisfies the requirements for the constructor to
+GcsTrajectoryOptimization, as well as any static functions that may take in
+such a list. */
 void ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints) {
   for (int i = 0; i < ssize(continuous_revolute_joints); ++i) {
@@ -1109,25 +1107,28 @@ ConvexSets PartitionConvexSet(
   DRAKE_THROW_UNLESS(epsilon < M_PI);
   ThrowsForInvalidContinuousJointsList(convex_set.ambient_dimension(),
                                        continuous_revolute_joints);
-  // Unboundedness will be asserted by
-  // Hyperrectangle::MaybeCalcAxisAlignedBoundingBox.
+  // Boundedness along dimensions corresponding to continuous revolute joints
+  // will be asserted by the GetMinimumAndMaximumValueAlongDimension calls
+  // below.
 
   ConvexSets sets = MakeConvexSets(convex_set);
   const double convexity_radius_step = M_PI - epsilon;
   const int dim = convex_set.ambient_dimension();
-  // TODO(cohnt): Don't calculate bounding box components for joints that aren't
-  // revolute, since it's an unnecessary calculation.
-  const auto bbox_maybe =
-      Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(convex_set);
-  DRAKE_THROW_UNLESS(bbox_maybe.has_value());
-  const Hyperrectangle& bbox = bbox_maybe.value();
+
+  std::vector<std::pair<double, double>> bbox(dim, std::make_pair(0, 0));
+
+  // We only populate the entries corresponding to continuous revolute joints,
+  // since the lower and upper limits of other joints aren't needed.
+  for (const int& i : continuous_revolute_joints) {
+    bbox[i] = GetMinimumAndMaximumValueAlongDimension(convex_set, i);
+  }
   // The overall structure is to partition the set along each dimension
   // corresponding to a continuous revolute joint. The partitioning is done by
   // constructing axis-aligned bounding boxes, and intersecting them with the
   // original set.
   for (const int& i : continuous_revolute_joints) {
-    const double min_value = bbox.lb()[i];
-    const double max_value = bbox.ub()[i];
+    const double min_value = bbox[i].first;
+    const double max_value = bbox[i].second;
     if (max_value - min_value >= M_PI) {
       // Since we operate along one dimension at a time, all of the elements of
       // sets will potentially violate the convexity radius, and thus must be
