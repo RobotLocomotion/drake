@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_runfiles.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -257,6 +260,23 @@ GTEST_TEST(CalcDistanceToSurfaceMeshWithBvhTest, MultipleTriangles2) {
   const Vector3d p_TQ2 = p_TQ + Vector3d{kPerturb, 0, 0};
   const Vector3d p_WQ2 = X_WT * p_TQ2;
   EXPECT_LT(CalcDistanceToSurfaceMeshWithBvh(p_WQ2, mesh_W, bvh_W), d_Q);
+}
+
+GTEST_TEST(CalcDistanceToSurfaceMeshWithBvhTest, WithAndWithoutBvhAgree) {
+  const std::string test_file =
+      FindRunfile("drake_models/veggies/yellow_bell_pepper_no_stem_low.vtk")
+          .abspath;
+  VolumeMesh<double> volume_mesh_M = internal::ReadVtkToVolumeMesh(test_file);
+  TriangleSurfaceMesh<double> surface_mesh_M =
+      ConvertVolumeToSurfaceMesh(volume_mesh_M);
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(surface_mesh_M);
+
+  // Confirm that we are testing a large number of vertices.
+  ASSERT_EQ(volume_mesh_M.vertices().size(), 667);
+  for (const Vector3d& vertex_M : volume_mesh_M.vertices()) {
+    ASSERT_EQ(CalcDistanceToSurfaceMeshWithBvh(vertex_M, surface_mesh_M, bvh_M),
+              CalcDistanceToSurfaceMesh(vertex_M, surface_mesh_M));
+  }
 }
 
 }  // namespace
