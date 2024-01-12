@@ -289,6 +289,9 @@ MODULE_SETTINGS = {
             "Filters/General/vtkTransformPolyDataFilter.cxx",
             "Filters/General/vtkVertexGlyphFilter.cxx",
         ],
+        "module_deps_ignore": [
+            "VTK::FiltersVerdict",
+        ],
     },
     "VTK::FiltersGeometry": {
         # This module has a lot of code we don't need. We'll opt-out of the
@@ -382,6 +385,9 @@ MODULE_SETTINGS = {
             "IO/Geometry/vtkGLTFWriterUtils.cxx",
             "IO/Geometry/vtkOBJWriter.cxx",
             "IO/Geometry/vtkSTLReader.cxx",
+        ],
+        "module_deps_ignore": [
+            "VTK::FiltersVerdict",
         ],
     },
     "VTK::IOImage": {
@@ -654,11 +660,6 @@ MODULE_SETTINGS = {
         },
         "srcs_glob_extra": [
             "ThirdParty/pugixml/**/*.cpp",
-        ],
-    },
-    "VTK::verdict": {
-        "cmake_defines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkverdict=0",
         ],
     },
     "VTK::token": {
