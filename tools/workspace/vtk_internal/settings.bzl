@@ -214,6 +214,10 @@ MODULE_SETTINGS = {
     },
     "VTK::CommonDataModel": {
         "visibility": ["//visibility:public"],
+        "srcs_glob_exclude": [
+            "**/*MooreSuperCursor*",
+            "**/*VonNeumannSuperCursor*",
+        ],
     },
     "VTK::CommonExecutionModel": {
         "visibility": ["//visibility:public"],
