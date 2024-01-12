@@ -352,6 +352,7 @@ def generate_common_core_array_dispatch_array_list():
 #pragma once
 #include "vtkTypeList.h"
 #include "vtkAOSDataArrayTemplate.h"
+#include "vtkStructuredPointArray.h"
 namespace vtkArrayDispatch {
 VTK_ABI_NAMESPACE_BEGIN
 typedef vtkTypeList::Unique<
@@ -372,6 +373,17 @@ typedef vtkTypeList::Unique<
     vtkAOSDataArrayTemplate<vtkIdType>
   >
 >::Result Arrays;
+typedef vtkTypeList::Unique<
+  vtkTypeList::Create<
+    vtkStructuredPointArray<double>
+  >
+>::Result ReadOnlyArrays;
+typedef vtkTypeList::Unique<
+  vtkTypeList::Append<
+    Arrays,
+    ReadOnlyArrays
+  >::Result
+>::Result AllArrays;
 VTK_ABI_NAMESPACE_END
 }
 """
