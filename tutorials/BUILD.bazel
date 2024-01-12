@@ -1,3 +1,4 @@
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/install:install.bzl", "install", "install_files")
@@ -103,6 +104,61 @@ drake_jupyter_py_binary(
     name = "hydroelastic_contact_basics",
     add_test_rule = 1,
     test_timeout = "moderate",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "hydroelastic_contact_nonconvex_debug_load",
+    add_test_rule = 1,
+    data = [
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ],
+    test_timeout = "moderate",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "hydroelastic_contact_nonconvex_mesh",
+    add_test_rule = 1,
+    data = [
+        "@drake_models//:dishes/bowls/evo_bowl.vtk",
+        "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ],
+    test_timeout = "moderate",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "profile_hydro_nonconvex_py",
+    srcs = ["profile_hydro_nonconvex.py"],
+    add_test_rule = 0,
+    data = [
+        "@drake_models//:dishes/bowls/evo_bowl.vtk",
+        "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
