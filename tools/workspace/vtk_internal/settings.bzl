@@ -608,6 +608,11 @@ MODULE_SETTINGS = {
             "ThirdParty/doubleconversion/**/*.cc",
         ],
     },
+    "VTK::fast_float": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkfastfloat=0",
+        ],
+    },
     "VTK::glew": {
         "cmake_undefines": [
             "VTK_GLEW_SHARED",
@@ -654,11 +659,6 @@ MODULE_SETTINGS = {
     "VTK::verdict": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtkverdict=0",
-        ],
-    },
-    "VTK::fastfloat": {
-        "cmake_defines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkfastfloat=0",
         ],
     },
     "VTK::token": {
