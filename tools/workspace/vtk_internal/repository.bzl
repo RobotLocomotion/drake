@@ -55,7 +55,9 @@ def parse_module(repo_ctx, subdir):
         # list-valued, and key names not ending in "S" are not list-valued. If
         # they ever break that pattern, we'll need a lookup table here instead
         # of this heuristic.
-        parse_as_list = key.endswith("S")
+        parse_as_list = key.endswith("S") or key in [
+            "SPDX_COPYRIGHT_TEXT",
+        ]
 
         if parse_as_list:
             result[key] = values
