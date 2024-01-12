@@ -188,6 +188,7 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("q"), cls_doc.CheckContextConfigCollisionFree.doc)
         .def("CheckConfigsCollisionFree", &Class::CheckConfigsCollisionFree,
             py::arg("configs"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckConfigsCollisionFree.doc)
         .def("SetDistanceAndInterpolationProvider",
             &Class::SetDistanceAndInterpolationProvider, py::arg("provider"),
@@ -231,9 +232,11 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("CheckEdgeCollisionFreeParallel",
             &Class::CheckEdgeCollisionFreeParallel, py::arg("q1"),
             py::arg("q2"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckEdgeCollisionFreeParallel.doc)
         .def("CheckEdgesCollisionFree", &Class::CheckEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckEdgesCollisionFree.doc)
         .def("MeasureEdgeCollisionFree", &Class::MeasureEdgeCollisionFree,
             py::arg("q1"), py::arg("q2"),
@@ -246,9 +249,11 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("MeasureEdgeCollisionFreeParallel",
             &Class::MeasureEdgeCollisionFreeParallel, py::arg("q1"),
             py::arg("q2"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.MeasureEdgeCollisionFreeParallel.doc)
         .def("MeasureEdgesCollisionFree", &Class::MeasureEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.MeasureEdgesCollisionFree.doc)
         .def("CalcRobotClearance", &Class::CalcRobotClearance, py::arg("q"),
             py::arg("influence_distance"),
