@@ -68,15 +68,11 @@ def parse_module(repo_ctx, subdir):
             # We'll encode that as an int to avoid JSON encoding snafus.
             result[key] = 1
         else:
-            # TODO(jwnimmer-tri): we have had license updates, see
-            # https://gitlab.kitware.com/vtk/vtk/-/commit/987d39ac31203df75281f0ab4be135dfc3c42d89
-            print(("vtk/{subdir}/vtk.module: Got multiple values for {key} " +
-                  "but we assumed (because its name ended with 'S') that it " +
+            fail(("vtk/{subdir}/vtk.module: Got multiple values for {key} " +
                   "was not supposed to be a list").format(
                 subdir = subdir,
                 key = key,
             ))
-            result[key] = values[0]
 
     return result
 
