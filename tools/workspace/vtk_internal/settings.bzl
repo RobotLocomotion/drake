@@ -615,8 +615,8 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::fast_float": {
-        "cmake_defines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkfast_float=0",
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkfast_float",
         ],
     },
     "VTK::glew": {
