@@ -6,7 +6,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser

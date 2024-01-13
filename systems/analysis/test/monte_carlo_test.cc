@@ -16,10 +16,10 @@ namespace drake {
 namespace systems {
 namespace analysis {
 namespace {
-// Only use two threads during testing. This value should match the "cpu" tag
-// in BUILD.bazel defining this test.
-constexpr int kTestConcurrency = 2;
 
+// Remove this on 2024-05-01 along with the other deprecations.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SelectNumberOfThreadsToUseTest, BasicTest) {
   const int hardware_concurrency =
       static_cast<int>(std::thread::hardware_concurrency());
@@ -42,6 +42,7 @@ GTEST_TEST(SelectNumberOfThreadsToUseTest, BasicTest) {
   EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::exception);
   EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::exception);
 }
+#pragma GCC diagnostic pop
 
 // Checks that RandomSimulation repeatedly produces the same output sample
 // when given the same RandomGenerator, but produces different output samples
@@ -181,10 +182,10 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
 
   const auto serial_results = MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, kNoConcurrency);
+      &serial_generator, Parallelism::None());
   const auto parallel_results = MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, kTestConcurrency);
+      &parallel_generator, Parallelism::Max());
 
   EXPECT_EQ(serial_results.size(), num_samples);
   EXPECT_EQ(parallel_results.size(), num_samples);
@@ -264,11 +265,11 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
 
   EXPECT_THROW(MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, kNoConcurrency),
+      &serial_generator, Parallelism::None()),
       std::exception);
   EXPECT_THROW(MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, kTestConcurrency),
+      &parallel_generator, Parallelism::Max()),
       std::exception);
 }
 

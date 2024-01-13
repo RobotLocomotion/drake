@@ -282,7 +282,7 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   };
 
   this->SolveCertificationForEachPlaneInParallel(
-      active_plane_indices, solve_small_sos, options.num_threads,
+      active_plane_indices, solve_small_sos, options.parallelism,
       options.verbose, options.terminate_at_failure);
   return ret;
 }

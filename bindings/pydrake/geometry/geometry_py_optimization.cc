@@ -881,7 +881,7 @@ void DefineGeometryOptimization(py::module m) {
             m, "FindSeparationCertificateOptions", find_options_doc.doc)
             .def(py::init<>())
             .def_readwrite(
-                "num_threads", &FindSeparationCertificateOptions::num_threads)
+                "parallelism", &FindSeparationCertificateOptions::parallelism)
             .def_readwrite(
                 "verbose", &FindSeparationCertificateOptions::verbose)
             .def_readwrite(
@@ -890,6 +890,19 @@ void DefineGeometryOptimization(py::module m) {
                 &FindSeparationCertificateOptions::terminate_at_failure)
             .def_readwrite("solver_options",
                 &FindSeparationCertificateOptions::solver_options);
+    constexpr char kNumThreadsDeprecated[] =
+        "FindSeparationCertificateOptions.num_threads is deprecated and will "
+        "be removed on or after 2024-05-01. Use options.parallelism instead.";
+    find_options_cls.def_property("num_threads",
+        WrapDeprecated(kNumThreadsDeprecated,
+            [](const FindSeparationCertificateOptions& self) {
+              return self.parallelism.num_threads();
+            }),
+        WrapDeprecated(kNumThreadsDeprecated,
+            [](FindSeparationCertificateOptions& self, int num_threads) {
+              self.parallelism =
+                  (num_threads > 0) ? num_threads : Parallelism::Max();
+            }));
   }
   {
     using BaseClass = CspaceFreePolytopeBase;
@@ -949,7 +962,10 @@ void DefineGeometryOptimization(py::module m) {
               return std::pair(success, certificates);
             },
             py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
-            py::arg("options"))
+            py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.FindSeparationCertificateGivenPolytope.doc)
         .def("SearchWithBilinearAlternation",
             &Class::SearchWithBilinearAlternation,
             py::arg("ignored_collision_pairs"), py::arg("C_init"),
@@ -965,6 +981,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("SolveSeparationCertificateProgram",
             &Class::SolveSeparationCertificateProgram,
             py::arg("certificate_program"), py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.SolveSeparationCertificateProgram.doc);
     py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
         "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)

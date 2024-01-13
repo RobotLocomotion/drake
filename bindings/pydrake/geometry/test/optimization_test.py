@@ -7,6 +7,7 @@ import copy
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Convex, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -878,13 +879,17 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         # FindSeparationCertificateOptions
         find_separation_options = mut.FindSeparationCertificateOptions()
-        find_separation_options.num_threads = 1
+        with catch_drake_warnings(expected_count=1):
+            find_separation_options.num_threads = 1
+        find_separation_options.parallelism = False
         find_separation_options.verbose = True
         find_separation_options.solver_id = ScsSolver.id()
         find_separation_options.terminate_at_failure = False
         find_separation_options.solver_options = solver_options
 
-        self.assertEqual(find_separation_options.num_threads, 1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(find_separation_options.num_threads, 1)
+        self.assertEqual(find_separation_options.parallelism.num_threads(), 1)
         self.assertTrue(find_separation_options.verbose)
         self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
         self.assertFalse(find_separation_options.terminate_at_failure)
@@ -895,8 +900,10 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
             dut.FindSeparationCertificateGivenPolytopeOptions()
-        self.assertEqual(
-            lagrangian_options.num_threads, -1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(lagrangian_options.num_threads, int)
+        self.assertIsInstance(
+            lagrangian_options.parallelism.num_threads(), int)
         self.assertFalse(
             lagrangian_options.verbose)
         self.assertEqual(
@@ -908,16 +915,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.solver_options)
         self.assertFalse(
             lagrangian_options.ignore_redundant_C)
-        num_threads = 1
-        lagrangian_options.num_threads = num_threads
+        with catch_drake_warnings(expected_count=1):
+            lagrangian_options.num_threads = 1
+        lagrangian_options.parallelism = False
         lagrangian_options.verbose = True
         lagrangian_options.solver_id = ScsSolver.id()
         lagrangian_options.terminate_at_failure = False
         lagrangian_options.solver_options = solver_options
         lagrangian_options.ignore_redundant_C = True
-        self.assertEqual(
-            lagrangian_options.num_threads,
-            num_threads)
+        self.assertEqual(lagrangian_options.parallelism.num_threads(), 1)
         self.assertTrue(
             lagrangian_options.verbose)
         self.assertEqual(

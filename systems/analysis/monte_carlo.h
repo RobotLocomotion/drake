@@ -5,22 +5,20 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/parallelism.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {
 namespace analysis {
 
-/**
- * Definition to specify the desired concurrency for MonteCarloSimulation.
- * Use only a single thread, equivalent to num_parallel_executions = 1.
- */
+DRAKE_DEPRECATED("2024-05-01",
+                 "Use either `drake::Parallelism::None()` or `false` instead.")
 constexpr int kNoConcurrency = 1;
 
-/**
- * Definition to specify the desired concurrency for MonteCarloSimulation.
- * Equivalent to num_parallel_executions = std::thread::hardware_concurrency().
- */
+DRAKE_DEPRECATED("2024-05-01",
+                 "Use either `drake::Parallelism::Max()` or `true` instead.")
 constexpr int kUseHardwareConcurrency = -1;
 
 /***
@@ -149,12 +147,11 @@ struct RandomSimulationResult {
  * future call to MonteCarloSimulation, you should make repeated uses of the
  * same RandomGenerator object.
  *
- * @param num_parallel_executions Specify number of parallel executions to use
- * while performing `num_samples` simulations. The default value,
- * kNoConcurrency, specifies that simulations should be executed in serial. To
- * use the default concurrency available on your hardware (equivalent to
- * num_parallel_executions=std::thread::hardware_concurrency()), use value
- * kUseHardwareConcurrency. Otherwise, num_parallel_executions must be >= 1.
+ * @param parallelism Specify number of parallel executions to use while
+ * performing `num_samples` simulations. The default value (false) specifies
+ * that simulations should be executed in serial. To use the concurrency
+ * available on your hardware, specify either `Parallellism::Max()` or its terse
+ * abbreviation `true`.
  *
  * @returns a list of RandomSimulationResult's.
  *
@@ -177,7 +174,15 @@ struct RandomSimulationResult {
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
-    int num_parallel_executions = kNoConcurrency);
+    Parallelism parallelism = false);
+
+DRAKE_DEPRECATED("2024-05-01",
+                 "The `num_parallel_executions` argument is deprecated. "
+                 "Use the `parallelism` argument, instead.")
+std::vector<RandomSimulationResult> MonteCarloSimulation(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    double final_time, int num_samples, RandomGenerator* generator = nullptr,
+    int num_parallel_executions = 1);
 
 // The below functions are exposed for unit testing only.
 namespace internal {
