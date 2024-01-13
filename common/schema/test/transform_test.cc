@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/math/rigid_transform.h"
@@ -116,7 +117,8 @@ GTEST_TEST(StochasticSampleTest, TransformTestWithBaseFrame) {
 
   Transform transform_with_base_frame = transform;
   transform_with_base_frame.base_frame = "baz";
-  EXPECT_THROW(transform_with_base_frame.Sample(&generator), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(transform_with_base_frame.Sample(&generator),
+                              ".*frame.*use.*SampleAsTransform.*instead.*");
   generator = drake::RandomGenerator(0);
   const Transform sampled_transform =
       transform_with_base_frame.SampleAsTransform(&generator);
