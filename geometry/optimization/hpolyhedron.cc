@@ -681,7 +681,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       const bool keep_whole_intersection, const double intersection_pad, 
       const int random_seed) 
       const {
-
   DRAKE_DEMAND(min_v_ratio > 0);
   DRAKE_DEMAND(max_iterations > 0);
   DRAKE_DEMAND(intersection_pad >= 0);
@@ -734,7 +733,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
   for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
     DRAKE_DEMAND(circumbody.IntersectsWith(intersecting_polytopes[i]));
-    if (!scaled_circumbody.IntersectsWith(intersecting_polytopes[i])) {
+    if (keep_whole_intersection || 
+        !scaled_circumbody.IntersectsWith(intersecting_polytopes[i])) {
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
     }
   }
@@ -794,8 +794,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           if (result.is_success()) {
             if (cost_multiplier * result.get_optimal_cost() + intersection_pad >
                 b_i_min_allowed) {
-              b_i_min_allowed = std::min(cost_multiplier * 
-                  result.get_optimal_cost() + intersection_pad, inbody.b()(i));
+              b_i_min_allowed = cost_multiplier * result.get_optimal_cost() + 
+                  intersection_pad;
             }
           } else {
             log()->warn("Intersection program did not solve properly.  Will not"
@@ -809,6 +809,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           b_i_min_allowed = std::max(b_i_min_allowed, inbody.A().row(i).dot(
               points_to_contain.col(i_point)));
         }
+
+        // Ensure `b_min_allowed` does not exceed `b(i)` (hyperplane does not
+        // move outward).  Can occur if `intersection_pad > 0.
+        b_i_min_allowed = std::min(b_i_min_allowed, inbody.b()(i));
 
         // Find which hyperplanes become redundant if we move the hyperplane
         // as far as is allowed.  If any, move face and cull other faces.
@@ -900,7 +904,7 @@ HPolyhedron HPolyhedron::OptimizeAffineTransformationInCircumbody(
   solvers::MatrixXDecisionVariable Lambda = prog.NewContinuousVariables
       (Ny,Nx,"Lambda");
   prog.AddBoundingBoxConstraint(0,kInf,Lambda);
-  prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx, l
+  prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx, 
       MatrixXd::Zero(Ny,ambient_dimension()));
   prog.AddLinearConstraint(Lambda * this->b()-circumbody.b()+circumbody.A() * 
       tx,VectorXd::Constant(Ny,-kInf),VectorXd::Zero(Ny));

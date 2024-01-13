@@ -129,7 +129,7 @@ class HPolyhedron final : public ConvexSet {
   parameter, the intersections may be reduced by the affine transformation step
   if @p do_affine_transformation is true.
   @param intersection_pad is a distance by which each hyperplane is translated
-  back outward after satisfing all other constraints, subject to not
+  back outward after satisfing intersection constraints, subject to not
   surpassing the original hyperplane position.  In the case where
   @p keep_whole_intersection is false, using a non-zero value for this parameter
   prevents intersections from being single points.
@@ -143,7 +143,7 @@ class HPolyhedron final : public ConvexSet {
   */
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
     double min_v_ratio = 0.1, bool do_affine_transformation = true, 
-    int max_iterations = 5, 
+    int max_iterations = 10, 
     const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
     const std::vector<drake::geometry::optimization::HPolyhedron>& 
     intersecting_polytopes = std::vector<HPolyhedron>(), 
