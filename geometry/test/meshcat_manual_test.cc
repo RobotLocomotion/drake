@@ -4,6 +4,8 @@
 #include <iostream>
 #include <thread>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
@@ -579,6 +581,8 @@ int do_main() {
 }  // namespace geometry
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  // This enables ":add_text_logging_gflags" to control the spdlog level.
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::geometry::do_main();
 }
