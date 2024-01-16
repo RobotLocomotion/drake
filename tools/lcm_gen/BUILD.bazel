@@ -1,25 +1,145 @@
 load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# The library target for this tool.
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     deps = ["//tools:module_py"],
 )
 
+# The command-line target for this tool.
+drake_py_binary(
+    name = "lcm_gen",
+    srcs = ["__init__.py"],
+    tags = [
+        # The "module_py" handles the linting for "__init__.py"; we suppress
+        # it here to avoid duplicate linter complaints.
+        "nolint",
+    ],
+    deps = [":module_py"],
+)
+
+# The unit test for this tool.
 drake_py_unittest(
     name = "lcm_gen_test",
     data = [
+        "test/goal/lima.h",
+        "test/goal/mike.h",
         "test/lima.lcm",
         "test/mike.lcm",
     ],
     deps = [
         ":module_py",
         "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+# We'll run the upstream reference implementation of lcm-gen, for comparison.
+# When doing that, we'll use the LCM package name "romeo" to distinguish the
+# upstream reference output from our tool's output, which is in package "papa".
+# That way, we can safely include both in the same test program for comparison.
+genrule(
+    name = "gen_romeo_lcm_sources",
+    testonly = True,
+    srcs = [
+        "test/lima.lcm",
+        "test/mike.lcm",
+    ],
+    outs = [
+        "test/romeo/lima.lcm",
+        "test/romeo/mike.lcm",
+    ],
+    cmd = " && ".join([
+        " ".join([
+            # Replace 'papa' with 'romeo'.
+            "sed -e 's#papa#romeo#g;'",
+            "$(execpath test/{}.lcm)".format(name),
+            " > ",
+            "$(RULEDIR)/test/romeo/{}.lcm".format(name),
+        ])
+        for name in [
+            "lima",
+            "mike",
+        ]
+    ]),
+)
+
+# Run the upstream reference implementation of lcm-gen.
+genrule(
+    name = "gen_romeo_hpp",
+    testonly = True,
+    srcs = [
+        ":test/romeo/lima.lcm",
+        ":test/romeo/mike.lcm",
+    ],
+    outs = [
+        "test/romeo/lima.hpp",
+        "test/romeo/mike.hpp",
+    ],
+    cmd = " ".join([
+        "$(execpath @lcm//:lcm-gen)",
+        "--cpp",
+        "--cpp-std=c++11",
+        "--use-quotes-for-includes",
+        "--cpp-hpath=$(RULEDIR)/test",
+        "$(execpath :test/romeo/lima.lcm)",
+        "$(execpath :test/romeo/mike.lcm)",
+    ]),
+    tools = [
+        "@lcm//:lcm-gen",
+    ],
+)
+
+# The reference implementation's C++ output (i.e., headers).
+cc_library(
+    name = "romeo",
+    testonly = True,
+    hdrs = [
+        ":test/romeo/lima.hpp",
+        ":test/romeo/mike.hpp",
+    ],
+    includes = ["test"],
+    tags = ["nolint"],
+    deps = [
+        "@lcm",
+    ],
+)
+
+# Our tools' C++ "output" (i.e., headers). Here we use the _goal_ header
+# files instead of _auto-generated_ header files so we can separate the
+# test questions of "does the tool generate the expeted headers" (via the
+# `lcm_gen_test` unit test) vs "do the headers encode/decode correctly"
+# (via the `papa_test`).
+cc_library(
+    name = "papa",
+    testonly = True,
+    hdrs = [
+        "test/goal/lima.h",
+        "test/goal/mike.h",
+    ],
+    include_prefix = "papa",
+    strip_include_prefix = "test/goal",
+    tags = ["nolint"],
+)
+
+# Functional testing for the generated C++ message headers.
+drake_cc_googletest(
+    name = "functional_test",
+    deps = [
+        ":papa",
+        ":romeo",
+        "//lcm:lcm_messages",
     ],
 )
 
