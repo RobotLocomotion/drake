@@ -1156,3 +1156,19 @@ class TestCspaceFreePolytope(unittest.TestCase):
                          C_init.shape[0])
         self.assertEqual(len(negative_test_lagrangian.s_lower()), 1)
         self.assertEqual(len(negative_test_lagrangian.s_upper()), 1)
+
+    def test_partition_convex_set(self):
+        big_convex_set = mut.VPolytope(np.array([[0, 4]]))
+        out = mut.PartitionConvexSet(big_convex_set, [0])
+        self.assertEqual(len(out), 2)
+        self.assertTrue(isinstance(out[0], mut.ConvexSet))
+
+        mut.PartitionConvexSet(big_convex_set, [0], 1e-5)
+        mut.PartitionConvexSet(convex_set=big_convex_set,
+                               continuous_revolute_joints=[0],
+                               epsilon=1e-5)
+        mut.PartitionConvexSet([big_convex_set], [0])
+        mut.PartitionConvexSet([big_convex_set], [0], 1e-5)
+        mut.PartitionConvexSet(convex_sets=[big_convex_set],
+                               continuous_revolute_joints=[0],
+                               epsilon=1e-5)

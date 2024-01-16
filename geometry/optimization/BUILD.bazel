@@ -24,9 +24,24 @@ drake_cc_package_library(
         ":cspace_free_polytope_base",
         ":cspace_free_structs",
         ":cspace_separating_plane",
+        ":geodesic_convexity",
         ":graph_of_convex_sets",
         ":iris",
         ":iris_internal",
+    ],
+)
+
+drake_cc_library(
+    name = "geodesic_convexity",
+    srcs = ["geodesic_convexity.cc"],
+    hdrs = ["geodesic_convexity.h"],
+    interface_deps = [
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+    deps = [
+        "//geometry/optimization:convex_set",
+        "//solvers:solve",
     ],
 )
 
@@ -407,6 +422,15 @@ drake_cc_googletest(
     deps = [
         ":cspace_separating_plane",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geodesic_convexity_test",
+    deps = [
+        ":convex_set",
+        ":geodesic_convexity",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

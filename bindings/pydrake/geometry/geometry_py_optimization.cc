@@ -23,6 +23,7 @@
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
+#include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
@@ -1078,6 +1079,37 @@ void DefineGeometryOptimization(py::module m) {
         .def_readonly("find_lagrangian_options",
             &Class::BinarySearchOptions::find_lagrangian_options);
   }
+
+  using drake::geometry::optimization::ConvexSet;
+  m.def(
+      "PartitionConvexSet",
+      [](const ConvexSet& convex_set,
+          const std::vector<int>& continuous_revolute_joints,
+          const double epsilon) {
+        std::vector<copyable_unique_ptr<ConvexSet>> copyable_result =
+            PartitionConvexSet(convex_set, continuous_revolute_joints, epsilon);
+        std::vector<std::unique_ptr<ConvexSet>> result(
+            std::make_move_iterator(copyable_result.begin()),
+            std::make_move_iterator(copyable_result.end()));
+        return result;
+      },
+      py::arg("convex_set"), py::arg("continuous_revolute_joints"),
+      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
+  m.def(
+      "PartitionConvexSet",
+      [](const std::vector<ConvexSet*>& convex_sets,
+          const std::vector<int>& continuous_revolute_joints,
+          const double epsilon = 1e-5) {
+        std::vector<copyable_unique_ptr<ConvexSet>> copyable_result =
+            PartitionConvexSet(CloneConvexSets(convex_sets),
+                continuous_revolute_joints, epsilon);
+        std::vector<std::unique_ptr<ConvexSet>> result(
+            std::make_move_iterator(copyable_result.begin()),
+            std::make_move_iterator(copyable_result.end()));
+        return result;
+      },
+      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
+      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

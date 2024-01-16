@@ -462,32 +462,6 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
   }
 
-  m.def(
-      "PartitionConvexSet",
-      [](const drake::geometry::optimization::ConvexSet& convex_set,
-          const std::vector<int>& continuous_revolute_joints,
-          const double epsilon)
-          -> std::vector<std::unique_ptr<geometry::optimization::ConvexSet>> {
-        return CloneConvexSets(PartitionConvexSet(
-            convex_set, continuous_revolute_joints, epsilon));
-      },
-      py::arg("convex_set"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, py_rvp::take_ownership,
-      doc.PartitionConvexSet.doc);
-  m.def(
-      "PartitionConvexSet",
-      [](const std::vector<drake::geometry::optimization::ConvexSet*>&
-              convex_sets,
-          const std::vector<int>& continuous_revolute_joints,
-          const double epsilon = 1e-5)
-          -> std::vector<std::unique_ptr<geometry::optimization::ConvexSet>> {
-        return CloneConvexSets(PartitionConvexSet(
-            CloneConvexSets(convex_sets), continuous_revolute_joints, epsilon));
-      },
-      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, py_rvp::take_ownership,
-      doc.PartitionConvexSet.doc);
-
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
       py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
 }
