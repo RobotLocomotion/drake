@@ -1172,3 +1172,5 @@ class TestCspaceFreePolytope(unittest.TestCase):
         mut.PartitionConvexSet(convex_sets=[big_convex_set],
                                continuous_revolute_joints=[0],
                                epsilon=1e-5)
+        mut.CheckIfSatisfiesConvexityRadius(convex_set=big_convex_set,
+                                            continuous_revolute_joints=[0])
