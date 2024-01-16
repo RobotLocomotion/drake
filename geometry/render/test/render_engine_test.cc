@@ -21,12 +21,14 @@ class RenderEngineTester {
 
   int num_geometries() const {
     return static_cast<int>(engine_.update_ids_.size() +
-                            engine_.anchored_ids_.size());
+                            engine_.anchored_ids_.size() +
+                            engine_.deformable_mesh_dofs_.size());
   }
 
   bool has_id(GeometryId id) const {
     return engine_.update_ids_.count(id) > 0 ||
-           engine_.anchored_ids_.count(id) > 0;
+           engine_.anchored_ids_.count(id) > 0 ||
+           engine_.deformable_mesh_dofs_.count(id) > 0;
   }
 
  private:
@@ -35,7 +37,9 @@ class RenderEngineTester {
 
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using std::set;
@@ -70,11 +74,102 @@ class MinimumEngine : public RenderEngine {
   std::unique_ptr<RenderEngine> DoClone() const override { return nullptr; }
 };
 
+GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
+  DummyRenderEngine engine;
+
+  geometry::internal::RenderMesh mesh;
+  mesh.positions.resize(1, 3);
+  mesh.normals.resize(1, 3);
+  mesh.uvs.resize(1, 2);
+  const Vector3d initial_q = Vector3d(1, 2, 3);
+  const Vector3d initial_normal = Vector3d(-1, 0, 0);
+  mesh.positions.row(0) = initial_q;
+  mesh.normals.row(0) = initial_normal;
+  mesh.uvs.row(0) = Vector2d(1, 0).transpose();
+  PerceptionProperties properties;
+  GeometryId id0 = GeometryId::get_new_id();
+  GeometryId id1 = GeometryId::get_new_id();
+  engine.RegisterDeformable(id0, {mesh}, properties);
+  engine.RegisterDeformable(id1, {mesh}, properties);
+
+  EXPECT_EQ(engine.num_registered(), 2);
+  EXPECT_TRUE(engine.is_registered(id0));
+  EXPECT_TRUE(engine.is_registered(id1));
+  EXPECT_FALSE(engine.is_registered(GeometryId::get_new_id()));
+
+  {
+    const std::vector<VectorXd>& q0 = engine.world_configurations(id0);
+    ASSERT_EQ(q0.size(), 1);
+    EXPECT_EQ(q0[0], initial_q);
+    const std::vector<VectorXd>& q1 = engine.world_configurations(id1);
+    ASSERT_EQ(q1.size(), 1);
+    EXPECT_EQ(q1[0], initial_q);
+  }
+
+  {
+    const std::vector<VectorXd>& n0 = engine.world_normals(id0);
+    ASSERT_EQ(n0.size(), 1);
+    EXPECT_EQ(n0[0], initial_normal);
+    const std::vector<VectorXd>& n1 = engine.world_normals(id1);
+    ASSERT_EQ(n1.size(), 1);
+    EXPECT_EQ(n1[0], initial_normal);
+  }
+
+  // Update id0 but not id1.
+  VectorXd new_q(3);
+  VectorXd new_normal(3);
+  new_q << 4, 5, 6;
+  new_normal << 7, 8, 9;
+  new_normal.normalize();
+  engine.UpdateDeformableConfigurations(id0, {new_q}, {new_normal});
+  {
+    const std::vector<VectorXd>& q0 = engine.world_configurations(id0);
+    ASSERT_EQ(q0.size(), 1);
+    EXPECT_EQ(q0[0], new_q);
+    const std::vector<VectorXd>& q1 = engine.world_configurations(id1);
+    ASSERT_EQ(q1.size(), 1);
+    EXPECT_EQ(q1[0], initial_q);
+  }
+  {
+    const std::vector<VectorXd>& n0 = engine.world_normals(id0);
+    ASSERT_EQ(n0.size(), 1);
+    EXPECT_EQ(n0[0], new_normal);
+    const std::vector<VectorXd>& n1 = engine.world_normals(id1);
+    ASSERT_EQ(n1.size(), 1);
+    EXPECT_EQ(n1[0], initial_normal);
+  }
+
+  // Now we test for throw conditions for the update.
+  // Non-existant geometry.
+  GeometryId fake_id = GeometryId::get_new_id();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}),
+      "No deformable geometry with id.*");
+  // Wrong number of vertex positions/normals.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q, new_q}, {new_normal}),
+      "Wrong number of vertex positions and/or normals.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q},
+                                            {new_normal, new_normal}),
+      "Wrong number of vertex positions and/or normals.*");
+  // Wrong size for the vertex positions/normal vectors.
+  VectorXd incorrectly_sized_vector(4);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {incorrectly_sized_vector},
+                                            {new_normal}),
+      "Wrong DoFs in vertex positions and/or normals.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q},
+                                            {incorrectly_sized_vector}),
+      "Wrong DoFs in vertex positions and/or normals.*");
+}
+
 // Tests the RenderEngine-specific functionality for managing registration of
-// geometry and its corresponding update behavior. The former should configure
-// each geometry correctly on whether it gets updated or not, and the latter
-// will confirm that the right geometries get updated.
-GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
+// rigid geometry and its corresponding update behavior. The former should
+// configure each geometry correctly on whether it gets updated or not, and the
+// latter will confirm that the right geometries get updated.
+GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
   // Change the default render label to something registerable.
   DummyRenderEngine engine({RenderLabel::kDontCare});
 
@@ -180,6 +275,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
 
   set<GeometryId> ids;
 
+  // Register rigid geometries.
   for (int i = 0; i < need_update_count + anchored_count; ++i) {
     const GeometryId id = GeometryId::get_new_id();
     const bool is_dynamic = i % 2 == 0;  // alternate dynamic, anchored, etc.
@@ -190,6 +286,18 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
     }
     ids.insert(id);
   }
+
+  // Register a single deformable geometry.
+  geometry::internal::RenderMesh mesh;
+  PerceptionProperties properties;
+  GeometryId deformable_id = GeometryId::get_new_id();
+  const bool accepted =
+      engine.RegisterDeformable(deformable_id, {mesh}, add_properties);
+  if (!accepted) {
+    throw std::logic_error("The geometry wasn't accepted for registration");
+  }
+  ids.insert(deformable_id);
+
   RenderEngineTester tester(&engine);
 
   // Case: invalid ids don't get removed.
@@ -197,7 +305,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
 
   // Case: Systematically remove remaining geometries and confirm state --
   // because of how geometries were added, this will alternate dynamic,
-  // anchored, dynamic, etc.
+  // anchored, dynamic, etc, with the last geometry being deformable.
   while (!ids.empty()) {
     const GeometryId id = *ids.begin();
     EXPECT_TRUE(engine.RemoveGeometry(id));

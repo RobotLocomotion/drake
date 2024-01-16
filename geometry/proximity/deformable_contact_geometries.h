@@ -8,7 +8,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
+#include "drake/geometry/proximity/deformable_mesh.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"

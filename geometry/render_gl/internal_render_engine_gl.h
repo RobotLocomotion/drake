@@ -155,9 +155,20 @@ class RenderEngineGl final : public render::RenderEngine {
                         const PerceptionProperties& properties,
                         const math::RigidTransformd& X_WG) final;
 
+  // @see RenderEngine::DoRegisterDeformable().
+  bool DoRegisterDeformable(
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties) final;
+
   // @see RenderEngine::DoUpdateVisualPose().
   void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) final;
+
+  // @see RenderEngine::DoUpdateDeformableConfigurations.
+  void DoUpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WG,
+      const std::vector<VectorX<double>>& nhat_W) final;
 
   // @see RenderEngine::DoRemoveGeometry().
   bool DoRemoveGeometry(GeometryId id) final;
@@ -254,9 +265,12 @@ class RenderEngineGl final : public render::RenderEngine {
                                RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  // The geometry is added to geometries_ and its index is returned.
-  // This is *not* threadsafe.
-  int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data);
+  // The geometry is added to geometries_ and its index is returned. When
+  // `is_deformable` is true, the vertex position data in vertex buffer object
+  // (VBO) may be modified.
+  // This function is *not* threadsafe.
+  int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data,
+                       bool is_deformable = false);
 
   // Given a geometry that has its buffers (and vertex counts assigned), ties
   // all of the buffer data into the vertex array attributes.
@@ -387,6 +401,11 @@ class RenderEngineGl final : public render::RenderEngine {
 
   // Mapping from the obj's canonical filename to RenderGlMeshes.
   std::unordered_map<std::string, std::vector<RenderGlMesh>> meshes_;
+
+  // Mapping from GeometryIds of deformable geometries to indices of
+  // OpenGlGeometry into `geometries_`. One deformable geometry (with a single
+  // GeometryId) may consist of one or more OpenGlGeometry.
+  std::unordered_map<GeometryId, std::vector<int>> deformable_meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The

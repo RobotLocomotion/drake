@@ -5,6 +5,8 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/render/render_engine.h"
@@ -29,7 +31,10 @@ namespace internal {
     knows to be registered).
  4. Records which poses have been updated via UpdatePoses() to validate which
     ids values are updated and which aren't (and with what pose).
- 5. Records the camera pose provided to UpdateViewpoint() and report it with
+ 5. Records which deformable configurations have been updated via
+    UpdateDeformableConfigurations() to validate which ids values are updated
+    and which aren't (and with what configurations).
+ 6. Records the camera pose provided to UpdateViewpoint() and report it with
     last_updated_X_WC().  */
 class DummyRenderEngine : public render::RenderEngine {
  public:
@@ -132,6 +137,19 @@ class DummyRenderEngine : public render::RenderEngine {
     return X_WGs_.at(id);
   }
 
+  /* Returns the most recent vertex normals of the render meshes for the
+   deformable geometry with the given `id` in the world frame.  */
+  const std::vector<Eigen::VectorXd>& world_normals(GeometryId id) const {
+    return nhats_W_.at(id);
+  }
+
+  /* Returns the most recent configurations of the render meshes for the
+   deformable geometry with the given `id` in the world frame.  */
+  const std::vector<Eigen::VectorXd>& world_configurations(
+      GeometryId id) const {
+    return q_WGs_.at(id);
+  }
+
   const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
 
   // Promote these to be public to facilitate testing.
@@ -156,6 +174,28 @@ class DummyRenderEngine : public render::RenderEngine {
     return false;
   }
 
+  /* Dummy implementation that registers the given geometry with `id` and record
+   the meshes' initial configurations. */
+  bool DoRegisterDeformable(
+      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties) override {
+    using Eigen::VectorXd;
+    registered_geometries_.insert(id);
+    std::vector<VectorXd> initial_positions;
+    std::vector<VectorXd> initial_normals;
+    for (int i = 0; i < ssize(render_meshes); ++i) {
+      VectorXd flat_positions = Eigen::Map<const VectorXd>(
+          render_meshes[i].positions.data(), render_meshes[i].positions.size());
+      initial_positions.push_back(std::move(flat_positions));
+      VectorXd flat_normals = Eigen::Map<const VectorXd>(
+          render_meshes[i].normals.data(), render_meshes[i].normals.size());
+      initial_normals.push_back(std::move(flat_normals));
+    }
+    q_WGs_[id] = std::move(initial_positions);
+    nhats_W_[id] = std::move(initial_normals);
+    return true;
+  }
+
   /* Updates the pose X_WG for the geometry with the given `id`. Also tracks
    which ids have been updated and the poses set (over the _lifespan_ of
    `this` instance). This can be reset with a call to init_test_data().  */
@@ -163,6 +203,13 @@ class DummyRenderEngine : public render::RenderEngine {
                           const math::RigidTransformd& X_WG) override {
     updated_ids_[id] = X_WG;
     X_WGs_[id] = X_WG;
+  }
+
+  void DoUpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W) override {
+    q_WGs_[id] = q_WGs;
+    nhats_W_[id] = nhats_W;
   }
 
   /* Removes the given geometry id (if it is registered).  */
@@ -204,6 +251,15 @@ class DummyRenderEngine : public render::RenderEngine {
 
   // The current poses of the geometries in the world frame.
   std::map<GeometryId, math::RigidTransformd> X_WGs_;
+
+  // The current configurations of the deformable render meshes in the world
+  // frame.
+  std::map<GeometryId, std::vector<Eigen::VectorXd>> q_WGs_;
+
+  // The current vertex normals of the deformable render meshes in the world
+  // frame.
+  std::map<GeometryId, std::vector<Eigen::VectorXd>> nhats_W_;
+
   // TODO(SeanCurtis-TRI) Shuffle this around so that the updated ids no longer
   //  redundantly stores the updated poses; those should be accessible via
   //  X_WGs_.
