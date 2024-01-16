@@ -1,6 +1,7 @@
 #include "drake/geometry/render/render_engine.h"
 
 #include <typeinfo>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -53,20 +54,73 @@ bool RenderEngine::RegisterVisual(GeometryId id,
   return accepted;
 }
 
+bool RenderEngine::RegisterDeformable(
+    GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+    const PerceptionProperties& properties) {
+  // TODO(xuchenhan-tri): these checks should be invariants in RenderMesh when
+  // it's brought out of internal namespace.
+  // Check input meshes are valid.
+  for (const auto& mesh : render_meshes) {
+    const int num_vertices = mesh.positions.rows();
+    DRAKE_THROW_UNLESS(num_vertices == mesh.normals.rows());
+    DRAKE_THROW_UNLESS(num_vertices == mesh.uvs.rows());
+  }
+
+  bool accepted = DoRegisterDeformable(id, render_meshes, properties);
+  if (accepted) {
+    std::vector<int> mesh_dofs;
+    for (const auto& mesh : render_meshes) {
+      mesh_dofs.emplace_back(mesh.positions.size());
+    }
+    deformable_mesh_dofs_[id] = std::move(mesh_dofs);
+  }
+  return accepted;
+}
+
 bool RenderEngine::RemoveGeometry(GeometryId id) {
   const bool removed = DoRemoveGeometry(id);
   // The derived sub-class should report geometry removal if and only if the
   // base class is tracking the id.
   if (removed) {
-    DRAKE_DEMAND(update_ids_.erase(id) > 0 || anchored_ids_.erase(id) > 0);
-  } else {
-    DRAKE_DEMAND(update_ids_.count(id) == 0 || anchored_ids_.count(id) == 0);
+    DRAKE_DEMAND(update_ids_.erase(id) > 0 || anchored_ids_.erase(id) > 0 ||
+                 deformable_mesh_dofs_.erase(id) > 0);
   }
+  DRAKE_DEMAND(!has_geometry(id));
   return removed;
 }
 
 bool RenderEngine::has_geometry(GeometryId id) const {
-  return update_ids_.count(id) > 0 || anchored_ids_.count(id) > 0;
+  return update_ids_.count(id) > 0 || anchored_ids_.count(id) > 0 ||
+         deformable_mesh_dofs_.count(id) > 0;
+}
+
+void RenderEngine::UpdateDeformableConfigurations(
+    GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+    const std::vector<VectorX<double>>& nhats_W) {
+  if (deformable_mesh_dofs_.count(id) == 0) {
+    throw std::runtime_error(fmt::format(
+        "No deformable geometry with id {} has been registered.", id));
+  }
+  const std::vector<int>& mesh_dofs = deformable_mesh_dofs_.at(id);
+  if (mesh_dofs.size() != q_WGs.size() || mesh_dofs.size() != nhats_W.size()) {
+    throw std::runtime_error(fmt::format(
+        "Wrong number of vertex positions and/or normals. {} meshes are "
+        "registered with deformable geometry with id {}, but vertex positions "
+        "for {} meshes and vertex normals for {} meshes are provided for the "
+        "configuration update.",
+        mesh_dofs.size(), id, q_WGs.size(), nhats_W.size()));
+  }
+  for (int i = 0; i < ssize(mesh_dofs); ++i) {
+    if (mesh_dofs[i] != q_WGs[i].size() || mesh_dofs[i] != nhats_W[i].size()) {
+      throw std::runtime_error(fmt::format(
+          "Wrong DoFs in vertex positions and/or normals. There are {} dofs "
+          "for mesh {} registered with deformable geometry with id {}; "
+          "however, positions with {} dofs and normals with {} dofs are "
+          "supplied in the configuration update.",
+          mesh_dofs[i], i, id, q_WGs[i].size(), nhats_W[i].size()));
+    }
+  }
+  DoUpdateDeformableConfigurations(id, q_WGs, nhats_W);
 }
 
 RenderLabel RenderEngine::GetRenderLabelOrThrow(
@@ -82,6 +136,16 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
   }
   return label;
 }
+
+bool RenderEngine::DoRegisterDeformable(
+    GeometryId, const std::vector<internal::RenderMesh>&,
+    const PerceptionProperties&) {
+  return false;
+}
+
+void RenderEngine::DoUpdateDeformableConfigurations(
+    GeometryId, const std::vector<VectorX<double>>&,
+    const std::vector<VectorX<double>>&) {}
 
 void RenderEngine::DoRenderColorImage(const ColorRenderCamera&,
                                       ImageRgba8U*) const {
