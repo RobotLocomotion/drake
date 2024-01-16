@@ -1,0 +1,26 @@
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools:module_py"],
+)
+
+drake_py_unittest(
+    name = "lcm_gen_test",
+    data = [
+        "test/lima.lcm",
+        "test/mike.lcm",
+    ],
+    deps = [
+        ":module_py",
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+add_lint_tests()

@@ -1,0 +1,26 @@
+// A sample LCM message definition for unit testing.
+
+package papa;
+
+/** This is multi-line C-style comment.
+ * It is veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery long.
+ */
+struct lima {
+  // All fixed-size primitive types (i.e., no string).
+  boolean golf;
+  byte    bravo;
+  double  delta;
+  float   foxtrot;
+  int8_t  india8;
+  int16_t india16;
+  int32_t india32;
+  int64_t india64;
+
+  // Constants.
+  const double  charlie_delta = 3.25e1;
+  const float   charlie_foxtrot = 4.5e2;
+  const int8_t  charlie_india8 = -8;
+  const int16_t charlie_india16 = 16;
+  const int32_t charlie_india32 = 32;
+  const int64_t charlie_india64 = 64;
+}
