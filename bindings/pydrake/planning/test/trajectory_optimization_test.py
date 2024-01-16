@@ -13,7 +13,6 @@ from pydrake.planning import (
     DirectTranscription,
     GcsTrajectoryOptimization,
     KinematicTrajectoryOptimization,
-    PartitionConvexSet,
     GetContinuousRevoluteJointIndices
 )
 from pydrake.geometry.optimization import (
@@ -555,19 +554,3 @@ class TestTrajectoryOptimization(unittest.TestCase):
         plant.Finalize()
         indices = GetContinuousRevoluteJointIndices(plant=plant)
         self.assertEqual(len(indices), 0)
-
-    def test_partition_convex_set(self):
-        big_convex_set = VPolytope(np.array([[0, 4]]))
-        out = PartitionConvexSet(big_convex_set, [0])
-        self.assertEqual(len(out), 2)
-        self.assertTrue(isinstance(out[0], ConvexSet))
-
-        PartitionConvexSet(big_convex_set, [0], 1e-5)
-        PartitionConvexSet(convex_set=big_convex_set,
-                           continuous_revolute_joints=[0],
-                           epsilon=1e-5)
-        PartitionConvexSet([big_convex_set], [0])
-        PartitionConvexSet([big_convex_set], [0], 1e-5)
-        PartitionConvexSet(convex_sets=[big_convex_set],
-                           continuous_revolute_joints=[0],
-                           epsilon=1e-5)
