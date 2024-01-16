@@ -19,11 +19,8 @@ using drake::solvers::Solve;
 using drake::solvers::VectorXDecisionVariable;
 using Eigen::VectorXd;
 
-const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
-    const ConvexSet& region, const int dimension) {
-  // TODO(cohnt) centralize this function in geometry/optimization, by making it
-  // a member of ConvexSet. Also potentially only compute the value once, and
-  // then return the pre-computed value instead of re-computing.
+std::pair<double, double> internal::GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, int dimension) {
   DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
   MathematicalProgram prog;
   VectorXDecisionVariable y =
@@ -55,7 +52,7 @@ const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
   return {lower_bound, upper_bound};
 }
 
-void ThrowsForInvalidContinuousJointsList(
+void internal::ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints) {
   for (int i = 0; i < ssize(continuous_revolute_joints); ++i) {
     // Make sure the unbounded revolute joints point to valid indices.
@@ -80,7 +77,7 @@ bool CheckIfSatisfiesConvexityRadius(
     const std::vector<int>& continuous_revolute_joints) {
   for (const int& j : continuous_revolute_joints) {
     auto [min_value, max_value] =
-        GetMinimumAndMaximumValueAlongDimension(convex_set, j);
+        internal::GetMinimumAndMaximumValueAlongDimension(convex_set, j);
     if (max_value - min_value >= M_PI) {
       return false;
     }
@@ -93,8 +90,8 @@ ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints, const double epsilon) {
   DRAKE_THROW_UNLESS(epsilon > 0);
   DRAKE_THROW_UNLESS(epsilon < M_PI);
-  ThrowsForInvalidContinuousJointsList(convex_set.ambient_dimension(),
-                                       continuous_revolute_joints);
+  internal::ThrowsForInvalidContinuousJointsList(convex_set.ambient_dimension(),
+                                                 continuous_revolute_joints);
   // Boundedness along dimensions corresponding to continuous revolute joints
   // will be asserted by the GetMinimumAndMaximumValueAlongDimension calls
   // below.
@@ -108,7 +105,7 @@ ConvexSets PartitionConvexSet(
   // We only populate the entries corresponding to continuous revolute joints,
   // since the lower and upper limits of other joints aren't needed.
   for (const int& i : continuous_revolute_joints) {
-    bbox[i] = GetMinimumAndMaximumValueAlongDimension(convex_set, i);
+    bbox[i] = internal::GetMinimumAndMaximumValueAlongDimension(convex_set, i);
   }
   // The overall structure is to partition the set along each dimension
   // corresponding to a continuous revolute joint. The partitioning is done by
@@ -154,8 +151,8 @@ ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints, const double epsilon) {
   DRAKE_THROW_UNLESS(convex_sets.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets[0] != nullptr);
-  ThrowsForInvalidContinuousJointsList(convex_sets[0]->ambient_dimension(),
-                                       continuous_revolute_joints);
+  internal::ThrowsForInvalidContinuousJointsList(
+      convex_sets[0]->ambient_dimension(), continuous_revolute_joints);
 
   int ambient_dimension = convex_sets[0]->ambient_dimension();
   for (int i = 1; i < ssize(convex_sets); ++i) {

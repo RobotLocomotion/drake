@@ -10,20 +10,22 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+namespace internal {
 
-/** A robot that has revolute joints without any limits has an inherently
-non-Euclidean configuration space, but one can still consider
-"geodesically-convex" sets, akin to convex sets in Euclidean space. In
-practice, this only requires that the width of the set along each dimension
-corresponding to an unbounded revolute joint be strictly less than π.
-
-These functions are primarily used by GcsTrajectoryOptimization to make motion
-plans for these types of robots. */
+// A robot that has revolute joints without any limits has an inherently
+// non-Euclidean configuration space, but one can still consider
+// "geodesically-convex" sets, akin to convex sets in Euclidean space. In
+// practice, this only requires that the width of the set along each dimension
+// corresponding to an unbounded revolute joint be strictly less than π. These
+// functions are primarily used by GcsTrajectoryOptimization to make motion
+// plans for these types of robots.
 
 /** Computes the minimum and maximum values that can be attained along a certain
-dimension for a point constrained to lie within a convex set. */
-const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
-    const ConvexSet& region, const int dimension);
+dimension for a point constrained to lie within a convex set.
+@throws std::exception if dimension is outside the interval
+[0, region.ambient_dimension()). */
+std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, int dimension);
 
 /** Helper function to assert that a given list of continuous revolute joint
 indices satisfies the requirements for the constructor to
@@ -31,9 +33,10 @@ GcsTrajectoryOptimization, as well as any static functions that may take in
 such a list. */
 void ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints);
+}  // namespace internal
 
 /** Given a convex set, and a list of indices corresponding to continuous
-revolute joints, check whether or not the set satisfies the convexity radius.
+revolute joints, checks whether or not the set satisfies the convexity radius.
 See §6.5.3 of "A Panoramic View of Riemannian Geometry", Marcel Berger for a
 general definition of convexity radius. When dealing with continuous revolute
 joints, respecting the convexity radius entails that each convex set has a width
