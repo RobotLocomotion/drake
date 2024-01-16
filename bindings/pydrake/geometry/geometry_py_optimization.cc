@@ -1081,6 +1081,9 @@ void DefineGeometryOptimization(py::module m) {
   }
 
   using drake::geometry::optimization::ConvexSet;
+  m.def("CheckIfSatisfiesConvexityRadius", &CheckIfSatisfiesConvexityRadius,
+      py::arg("convex_set"), py::arg("continuous_revolute_joints"),
+      doc.CheckIfSatisfiesConvexityRadius.doc);
   m.def(
       "PartitionConvexSet",
       [](const ConvexSet& convex_set,
