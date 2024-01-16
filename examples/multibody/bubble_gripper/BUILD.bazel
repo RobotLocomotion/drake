@@ -1,0 +1,56 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
+load("//tools/install:install_data.bzl", "install_data")
+
+models_filegroup(
+    name = "glob_models",
+    glob_exclude = ["images/**/*"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":glob_models",
+        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.mtl",
+        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.obj",
+        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.mtl",  # noqa
+        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj",  # noqa
+    ],
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_binary(
+    name = "bubble_gripper",
+    srcs = [
+        "bubble_gripper.cc",
+    ],
+    data = [
+        "bubble.vtk",
+        "dots.png",
+        "texture_bubble.mtl",
+        "texture_bubble.obj",
+        ":models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
+    deps = [
+        "//geometry",
+        "//geometry/render_gl",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives",
+        "//systems/sensors:camera_config_functions",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()

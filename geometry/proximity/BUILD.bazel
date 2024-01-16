@@ -21,8 +21,8 @@ drake_cc_package_library(
         ":deformable_contact_geometries",
         ":deformable_contact_internal",
         ":deformable_field_intersection",
+        ":deformable_mesh",
         ":deformable_mesh_intersection",
-        ":deformable_volume_mesh",
         ":detect_zero_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
@@ -171,7 +171,7 @@ drake_cc_library(
     hdrs = ["deformable_contact_geometries.h"],
     deps = [
         ":calc_distance_to_surface_mesh",
-        ":deformable_volume_mesh",
+        ":deformable_mesh",
         ":hydroelastic_internal",
         ":triangle_surface_mesh",
         "//common:copyable_unique_ptr",
@@ -217,7 +217,7 @@ drake_cc_library(
     deps = [
         ":bvh",
         ":deformable_contact_geometries",
-        ":deformable_volume_mesh",
+        ":deformable_mesh",
         ":mesh_intersection",
         ":triangle_surface_mesh",
         "//geometry/query_results:deformable_contact",
@@ -226,9 +226,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "deformable_volume_mesh",
-    srcs = ["deformable_volume_mesh.cc"],
-    hdrs = ["deformable_volume_mesh.h"],
+    name = "deformable_mesh",
+    srcs = ["deformable_mesh.cc"],
+    hdrs = ["deformable_mesh.h"],
     deps = [
         ":bvh",
         ":bvh_updater",
@@ -1047,9 +1047,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "deformable_volume_mesh_test",
+    name = "deformable_mesh_test",
     deps = [
-        ":deformable_volume_mesh",
+        ":deformable_mesh",
         ":make_box_mesh",
         "//common/test_utilities:eigen_matrix_compare",
     ],

@@ -76,6 +76,8 @@ drake_cc_library_linux_only(
         ":internal_texture_library",
         ":render_engine_gl_params",
         "//common:diagnostic_policy",
+        "//geometry/proximity:deformable_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",

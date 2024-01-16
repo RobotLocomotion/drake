@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
+#include "drake/geometry/proximity/deformable_mesh.h"
 
 #include <limits>
 #include <utility>

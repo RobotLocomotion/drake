@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
+#include "drake/geometry/proximity/deformable_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 
 namespace drake {

@@ -23,6 +23,10 @@ namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Vector4i;
+using Eigen::VectorXd;
+using geometry::internal::DeformableTriangleSurfaceMesh;
 using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeMeshFallbackMaterial;
 using geometry::internal::RenderMaterial;
@@ -808,7 +812,7 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  GetMeshes(mesh.filename(), data);
+  const std::vector<int> mesh_indices = GetMeshes(mesh.filename(), data);
   if (data->accepted) {
     ImplementMeshesForFile(user_data, Vector3d(1, 1, 1) * mesh.scale(),
                            mesh.filename());
@@ -873,6 +877,44 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
   return data.accepted;
 }
 
+bool RenderEngineGl::DoRegisterDeformable(
+    GeometryId id, const std::vector<RenderMesh>& render_meshes,
+    const PerceptionProperties& properties) {
+  opengl_context_->MakeCurrent();
+  std::vector<int> gl_mesh_indices;
+  bool accepted = true;
+  for (const auto& render_mesh : render_meshes) {
+    const int mesh_index =
+        CreateGlGeometry(render_mesh, /* is_deformable */ true);
+    DRAKE_DEMAND(mesh_index >= 0);
+    gl_mesh_indices.emplace_back(mesh_index);
+
+    RenderMaterial material;
+    const auto mesh_filename =
+        properties.GetPropertyOrDefault("render", "mesh", string{});
+    // If the material in render_mesh is defined by the file, we use it
+    // Otherwise, we recreate the fallback material based on user data and
+    // defaults from `parameters_`. We need to do this because the defaults in
+    // `render_meshes` may not respect the defaults set in this renderer.
+    if (render_mesh.material.from_mesh_file) {
+      material = render_mesh.material;
+    } else {
+      material = MakeMeshFallbackMaterial(
+          properties, mesh_filename, parameters_.default_diffuse,
+          drake::internal::DiagnosticPolicy(), render_mesh.uv_state);
+    }
+    PerceptionProperties mesh_properties(properties);
+    mesh_properties.UpdateProperty("phong", "diffuse_map",
+                                   material.diffuse_map.string());
+    mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
+    RegistrationData data{id, RigidTransformd::Identity(), mesh_properties};
+    AddGeometryInstance(mesh_index, &data, Vector3d(1, 1, 1));
+    accepted &= data.accepted;
+  }
+  deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
+  return accepted;
+}
+
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
                                         const RigidTransformd& X_WG) {
   for (auto& part : visuals_.at(id).parts) {
@@ -884,7 +926,47 @@ void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
   }
 }
 
+void RenderEngineGl::DoUpdateDeformableConfigurations(
+    GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+    const std::vector<VectorX<double>>& nhats_W) {
+  DRAKE_DEMAND(deformable_meshes_.count(id) > 0);
+  std::vector<int>& gl_mesh_indices = deformable_meshes_.at(id);
+
+  auto convert_to_gl_floats = [](const VectorX<double>& q) {
+    std::vector<GLfloat> result(q.size());
+    for (int i = 0; i < q.size(); ++i) {
+      result[i] = static_cast<GLfloat>(q[i]);
+    }
+    return result;
+  };
+
+  for (int i = 0; i < ssize(q_WGs); ++i) {
+    VectorX<double> q_WG = q_WGs[i];
+    VectorX<double> nhat_W = nhats_W[i];
+    // Find the OpenGL geometry.
+    OpenGlGeometry& geometry = geometries_[gl_mesh_indices[i]];
+    const std::vector<GLfloat> vertex_position_data =
+        convert_to_gl_floats(q_WG);
+    // Update vertex position data.
+    std::size_t positions_offset = 0;
+    glNamedBufferSubData(geometry.vertex_buffer,
+                         positions_offset * sizeof(GLfloat),
+                         vertex_position_data.size() * sizeof(GLfloat),
+                         vertex_position_data.data());
+    const std::vector<GLfloat> vertex_normal_data =
+        convert_to_gl_floats(nhat_W);
+    // Update vertex normal data.
+    std::size_t normals_offset = q_WG.size();
+    glNamedBufferSubData(
+        geometry.vertex_buffer, normals_offset * sizeof(GLfloat),
+        vertex_normal_data.size() * sizeof(GLfloat), vertex_normal_data.data());
+  }
+}
+
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
+  if (deformable_meshes_.count(id) > 0) {
+    deformable_meshes_.erase(id);
+  }
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
     // Multiple parts may have the same shader. We don't want to attempt
@@ -951,10 +1033,9 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
                               RenderType render_type) const {
   const Eigen::Matrix4f& X_CW = X_CW_.GetAsMatrix4().matrix().cast<float>();
-  // We rely on the calling method to clear all appropriate buffers; this method
-  // may be called multiple times per image (based on the number of shaders
-  // being used) and, therefore, can't do the clearing itself.
-
+  // We rely on the calling method to clear all appropriate buffers; this
+  // method may be called multiple times per image (based on the number of
+  // shaders being used) and, therefore, can't do the clearing itself.
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
     for (const auto& part : visuals_.at(g_id).parts) {
@@ -987,10 +1068,11 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   opengl_context_->MakeCurrent();
   // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
   //  segregate objects with transparency from those without. The transparent
-  //  geometries then need to be sorted from farthest to nearest the camera and
-  //  rendered in that order. This may lead to shader thrashing. Without this
-  //  ordering, I may not necessarily see objects through transparent surfaces.
-  //  Confirm that VTK handles transparency correctly and do the same.
+  //  geometries then need to be sorted from farthest to nearest the camera
+  //  and rendered in that order. This may lead to shader thrashing. Without
+  //  this ordering, I may not necessarily see objects through transparent
+  //  surfaces. Confirm that VTK handles transparency correctly and do the
+  //  same.
 
   const RenderTarget render_target =
       GetRenderTarget(camera.core(), RenderType::kColor);
@@ -1015,10 +1097,10 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   }
   glDisable(GL_BLEND);
 
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
+  // Note: SetWindowVisibility must be called *after* the rendering; setting
+  // the visibility is responsible for taking the target buffer and bringing
+  // it to the front buffer; reversing the order means the image we've just
+  // rendered wouldn't be visible.
   SetWindowVisibility(camera.core(), camera.show_window(), render_target);
   glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                     color_image_out->size(), color_image_out->at(0, 0));
@@ -1090,15 +1172,15 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
     shader_program.Unuse();
   }
 
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
+  // Note: SetWindowVisibility must be called *after* the rendering; setting
+  // the visibility is responsible for taking the target buffer and bringing
+  // it to the front buffer; reversing the order means the image we've just
+  // rendered wouldn't be visible.
   SetWindowVisibility(camera.core(), camera.show_window(), render_target);
   // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
-  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
-  // the underlying RenderLabel value). Doing so would allow us to render labels
-  // directly and eliminate this additional pass.
+  // buffer texture consisting of a single-channel, 16-bit, signed int (to
+  // match the underlying RenderLabel value). Doing so would allow us to
+  // render labels directly and eliminate this additional pass.
   GetLabelImage(label_image_out, render_target);
 }
 
@@ -1145,8 +1227,9 @@ int RenderEngineGl::GetCylinder() {
   if (cylinder_ < 0) {
     const int kLongitudeBands = 50;
 
-    // For long skinny cylinders, it would be better to offer some subdivisions
-    // along the length. For now, we'll simply save the triangles.
+    // For long skinny cylinders, it would be better to offer some
+    // subdivisions along the length. For now, we'll simply save the
+    // triangles.
     RenderMesh render_mesh = MakeUnitCylinder(kLongitudeBands, 1);
     cylinder_ = CreateGlGeometry(render_mesh);
   }
@@ -1245,7 +1328,8 @@ std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
     case RenderType::kColor:
       return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
     case RenderType::kLabel:
-      // TODO(SeanCurtis-TRI): Ultimately, this should be a 16-bit, signed int.
+      // TODO(SeanCurtis-TRI): Ultimately, this should be a 16-bit, signed
+      // int.
       return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
     case RenderType::kDepth:
       return std::make_tuple(GL_R32F, GL_RED, GL_FLOAT);
@@ -1344,7 +1428,8 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
+int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
+                                     bool is_dynamic) {
   // Confirm that the context is allocated.
   DRAKE_ASSERT(opengl_context_->IsCurrent());
 
@@ -1377,13 +1462,14 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
                      render_mesh.uvs.data() + v_count * kFloatsPerUv);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat), vertex_data.data(),
-                       0);
+                       is_dynamic ? GL_DYNAMIC_STORAGE_BIT : 0);
 
   // Create the index buffer object (IBO).
   using indices_uint_t = decltype(render_mesh.indices)::Scalar;
   static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
                 "If this fails, cast from unsigned int to GLuint");
   glCreateBuffers(1, &geometry.index_buffer);
+  // The connectivity is always NOT dynamic.
   glNamedBufferStorage(geometry.index_buffer,
                        render_mesh.indices.size() * sizeof(GLuint),
                        render_mesh.indices.data(), 0);
@@ -1395,9 +1481,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
-  // particular GeometryId is removed, it was only referencing its corresponding
-  // canonical mesh. We keep all canonical meshes alive for the lifetime of the
-  // OpenGL context for convenient reuse.
+  // particular GeometryId is removed, it was only referencing its
+  // corresponding canonical mesh. We keep all canonical meshes alive for the
+  // lifetime of the OpenGL context for convenient reuse.
   const int index = ssize(geometries_);
   geometries_.push_back(geometry);
   return index;
@@ -1468,10 +1554,10 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
   if (show_window) {
     const auto& intrinsics = camera.intrinsics();
     // Use the render target buffer as the read buffer and the default buffer
-    // (0) as the draw buffer for displaying in the window. We transfer the full
-    // image from source to destination. The semantics of glBlitNamedFrameBuffer
-    // are inclusive of the "minimum" pixel (0, 0) and exclusive of the
-    // "maximum" pixel (width, height).
+    // (0) as the draw buffer for displaying in the window. We transfer the
+    // full image from source to destination. The semantics of
+    // glBlitNamedFrameBuffer are inclusive of the "minimum" pixel (0, 0) and
+    // exclusive of the "maximum" pixel (width, height).
     opengl_context_->DisplayWindow(intrinsics.width(), intrinsics.height());
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            // Src bounds.
