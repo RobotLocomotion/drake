@@ -455,10 +455,12 @@ drake_cc_library(
     srcs = ["meshcat.cc"],
     hdrs = [
         "meshcat.h",
-        "meshcat_types.h",
+        "meshcat_types_internal.h",
     ],
     data = [":meshcat_resources"],
-    install_hdrs_exclude = ["meshcat_types.h"],
+    install_hdrs_exclude = [
+        "meshcat_types_internal.h",
+    ],
     interface_deps = [
         ":meshcat_animation",
         ":rgba",

@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/geometry/meshcat_types.h"
+#include "drake/geometry/meshcat_types_internal.h"
 
 namespace drake {
 namespace multibody {
