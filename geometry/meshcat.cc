@@ -318,7 +318,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       // in MeshCat.jl/src/mesh_files.jl.
 
       auto& meshfile_object =
-          lumped.object.emplace<internal::MeshFileObjectData>();
+          lumped.object.emplace<internal::MeshfileObjectData>();
       meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
@@ -384,7 +384,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       }
     } else if (format == "gltf") {
       auto& meshfile_object =
-          lumped.object.emplace<internal::MeshFileObjectData>();
+          lumped.object.emplace<internal::MeshfileObjectData>();
       meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
