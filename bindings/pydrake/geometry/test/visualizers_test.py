@@ -261,6 +261,18 @@ class TestGeometryVisualizers(unittest.TestCase):
         # The pose is None because no meshcat session has broadcast its pose.
         self.assertIsNone(meshcat.GetTrackedCameraPose())
 
+    def test_meshcat_404(self):
+        meshcat = mut.Meshcat()
+
+        good_url = meshcat.web_url()
+        with urllib.request.urlopen(good_url) as response:
+            self.assertTrue(response.read(1))
+
+        bad_url = f"{good_url}/no_such_file"
+        with self.assertRaisesRegex(Exception, "HTTP.*404"):
+            with urllib.request.urlopen(bad_url) as response:
+                response.read(1)
+
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)

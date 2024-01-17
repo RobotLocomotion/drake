@@ -11,6 +11,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
@@ -178,11 +179,8 @@ std::string RenderClient::RenderOnServer(
       const std::string& data_path = response.data_path.value();
       const std::uintmax_t bin_size = fs::file_size(data_path);
       if (bin_size > 0 && bin_size < 8192) {
-        std::ifstream bin_in(data_path, std::ios::binary);
-        if (bin_in.is_open()) {
-          std::stringstream buff;
-          buff << bin_in.rdbuf();
-          server_message = buff.str();
+        if (std::optional<std::string> data = ReadFile(data_path)) {
+          server_message = std::move(*data);
         }
       }
     }

@@ -1,8 +1,6 @@
 #include "drake/multibody/parsing/parser.h"
 
 #include <filesystem>
-#include <fstream>
-#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -14,14 +12,6 @@
 namespace drake {
 namespace multibody {
 namespace {
-
-std::string ReadEntireFile(const std::string& file_name) {
-  std::ifstream input(file_name);
-  DRAKE_DEMAND(input.good());
-  std::stringstream result;
-  result << input.rdbuf();
-  return result.str();
-}
 
 GTEST_TEST(FileParserTest, BasicTest) {
   const std::string sdf_name = FindResourceOrThrow(
@@ -131,7 +121,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
 
   // Load an SDF via string using plural method.
   {
-    const std::string sdf_contents = ReadEntireFile(sdf_name);
+    const std::string sdf_contents = ReadFileOrThrow(sdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const std::vector<ModelInstanceIndex> ids =
@@ -142,7 +132,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
 
   // Load an URDF via string using plural method.
   {
-    const std::string urdf_contents = ReadEntireFile(urdf_name);
+    const std::string urdf_contents = ReadFileOrThrow(urdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const std::vector<ModelInstanceIndex> ids =
@@ -153,7 +143,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
 
   // Load an MJCF via string using plural method.
   {
-    const std::string xml_contents = ReadEntireFile(xml_name);
+    const std::string xml_contents = ReadFileOrThrow(xml_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const std::vector<ModelInstanceIndex> ids =
@@ -164,7 +154,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
 
   // Load a DMD.YAML via string using plural method.
   {
-    const std::string dmd_contents = ReadEntireFile(dmd_name);
+    const std::string dmd_contents = ReadFileOrThrow(dmd_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const std::vector<ModelInstanceIndex> ids =
