@@ -53,6 +53,7 @@ drake_cc_package_library(
         ":reset_on_copy",
         ":scope_exit",
         ":scoped_singleton",
+        ":sha256",
         ":sorted_pair",
         ":temp_directory",
         ":timer",
@@ -447,6 +448,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sha256",
+    srcs = ["sha256.cc"],
+    hdrs = ["sha256.h"],
+    interface_deps = [
+        ":essential",
+    ],
+    deps = [
+        "@picosha2_internal//:picosha2",
+    ],
+)
+
+drake_cc_library(
     name = "pointer_cast",
     srcs = ["pointer_cast.cc"],
     hdrs = ["pointer_cast.h"],
@@ -678,6 +691,14 @@ drake_cc_googletest(
     name = "reset_on_copy_test",
     deps = [
         ":reset_on_copy",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sha256_test",
+    deps = [
+        ":sha256",
+        ":temp_directory",
     ],
 )
 
