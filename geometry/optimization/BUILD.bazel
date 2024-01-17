@@ -158,6 +158,7 @@ drake_cc_library(
     name = "cspace_free_structs",
     hdrs = ["cspace_free_structs.h"],
     deps = [
+        "//common:parallelism",
         "//common/symbolic:rational_function",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
