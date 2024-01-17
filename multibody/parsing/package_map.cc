@@ -16,7 +16,6 @@
 #include <tuple>
 #include <utility>
 
-#include <picosha2.h>
 #include <tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
@@ -27,6 +26,7 @@
 #include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/sha256.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 
@@ -255,7 +255,7 @@ std::vector<std::string> GetAllowedUrls(const std::vector<std::string>& urls) {
 fs::path PackageData::GetCacheRelativePath() const {
   DRAKE_DEMAND(is_remote());
   const std::string hashed_strip_prefix =
-      picosha2::hash256_hex_string(remote_params_->strip_prefix.value_or(""));
+      Sha256::Checksum(remote_params_->strip_prefix.value_or("")).to_string();
   return fmt::format("{}-{}", remote_params_->sha256, hashed_strip_prefix);
 }
 

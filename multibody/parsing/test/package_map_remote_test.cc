@@ -2,12 +2,12 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <picosha2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/sha256.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/package_map.h"
 
@@ -30,7 +30,7 @@ class PackageMapRemoteTest : public ::testing::Test {
     const fs::path package_dir =
         try_cache.abspath /
         fmt::format("{}-{}", sha256,
-                    picosha2::hash256_hex_string(strip_prefix));
+                    Sha256::Checksum(strip_prefix).to_string());
     const bool exists = fs::create_directory(package_dir);
     DRAKE_DEMAND(exists);
     std::ofstream xml(package_dir / "package.xml");
