@@ -101,6 +101,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_properties",
         "//geometry:rgba",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
     deps = [
         "@tinyobjloader_internal//:tinyobjloader",
