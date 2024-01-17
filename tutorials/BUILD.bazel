@@ -113,6 +113,7 @@ drake_jupyter_py_binary(
     add_test_rule = 1,
     data = [
         "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
+        "@drake_models//:dishes/bowls/evo_bowl.vtk",
         "@drake_models//:veggies/bell_pepper_no_stem_color.png",
         "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
         "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
@@ -120,7 +121,7 @@ drake_jupyter_py_binary(
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
     ],
-    test_timeout = "moderate",
+    test_timeout = "long",
     deps = [
         "//bindings/pydrake",
     ],
