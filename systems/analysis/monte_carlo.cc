@@ -130,6 +130,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 
 namespace internal {
 
+// Remove this on 2024-05-01 along with the other deprecations.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
   const int hardware_concurrency =
       static_cast<int>(std::thread::hardware_concurrency());
@@ -166,13 +169,14 @@ int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
 
   return num_threads;
 }
+#pragma GCC diagnostic push
 
 }  // namespace internal
 
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     const double final_time, const int num_samples, RandomGenerator* generator,
-    const int num_parallel_executions) {
+    const Parallelism parallelism) {
   // Create a generator if the user didn't provide one.
   std::unique_ptr<RandomGenerator> owned_generator;
   if (generator == nullptr) {
@@ -180,13 +184,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     generator = owned_generator.get();
   }
 
-  // Check num_parallel_executions vs the available hardware concurrency.
-  // This also serves to sanity-check the num_parallel_executions argument.
-  const int num_threads =
-      internal::SelectNumberOfThreadsToUse(num_parallel_executions);
-
   // Since the parallel implementation incurs additional overhead even in the
   // num_threads=1 case, dispatch to the serial implementation in these cases.
+  const int num_threads = parallelism.num_threads();
   if (num_threads > 1) {
     return MonteCarloSimulationParallel(
         make_simulator, output, final_time, num_samples, generator,
@@ -195,6 +195,18 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     return MonteCarloSimulationSerial(
         make_simulator, output, final_time, num_samples, generator);
   }
+}
+
+std::vector<RandomSimulationResult> MonteCarloSimulation(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    const double final_time, const int num_samples, RandomGenerator* generator,
+    const int num_parallel_executions) {
+  // Convert the deprecated argument to the new spelling.
+  const Parallelism parallelism(
+      internal::SelectNumberOfThreadsToUse(num_parallel_executions));
+  // Delegate to the the non-deprecated overload.
+  return MonteCarloSimulation(make_simulator, output, final_time, num_samples,
+                              generator, parallelism);
 }
 
 }  // namespace analysis

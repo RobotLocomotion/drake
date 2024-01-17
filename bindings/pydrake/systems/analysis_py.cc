@@ -391,16 +391,17 @@ Parameter ``interruptible``:
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
-    // Note: parallel simulation must be disabled in the binding via
-    // num_parallel_executions=kNoConcurrency, since parallel execution of
-    // Python systems in multiple threads is not supported.
+    // Note: This hard-codes `parallelism` to be off, since parallel execution
+    // of Python systems on multiple threads was thought to be unsupported. It's
+    // possible that with `py::call_guard<py::gil_scoped_release>` it would
+    // actually be fine, so we could revisit that decision at some point.
     m.def("MonteCarloSimulation",
         WrapCallbacks([](const SimulatorFactory make_simulator,
                           const ScalarSystemFunction& output, double final_time,
                           int num_samples, RandomGenerator* generator)
                           -> std::vector<RandomSimulationResult> {
           return MonteCarloSimulation(make_simulator, output, final_time,
-              num_samples, generator, kNoConcurrency);
+              num_samples, generator, /* parallelism = */ Parallelism::None());
         }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),
