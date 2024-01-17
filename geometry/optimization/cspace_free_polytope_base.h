@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/common/parallelism.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
@@ -218,7 +219,7 @@ class CspaceFreePolytopeBase {
    is because when we access the return value of solve_small_sos, we need to
    know the plane_count, and the return value and the input `plane_count` live
    in different part of the code due to multi-threading.
-   @param num_threads The number of threads in the parallel solve.
+   @param parallelism The number of threads in the parallel solve.
    @param verbose Whether to print out some messages during the parallel solve.
    @param terminate_at_failure If set to true, then terminate this function when
    we failed to find a separating plane.
@@ -226,7 +227,7 @@ class CspaceFreePolytopeBase {
   void SolveCertificationForEachPlaneInParallel(
       const std::vector<int>& active_plane_indices,
       const std::function<std::pair<bool, int>(int)>& solve_plane_sos,
-      int num_threads, bool verbose, bool terminate_at_failure) const;
+      Parallelism parallelism, bool verbose, bool terminate_at_failure) const;
 
   /**
    Get the total size of all the decision variables for the Gram matrices, so as

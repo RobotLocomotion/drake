@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/solvers/mathematical_program.h"
@@ -45,10 +46,10 @@ struct FindSeparationCertificateOptions {
   FindSeparationCertificateOptions() = default;
 
   virtual ~FindSeparationCertificateOptions() = default;
+
   // We can find the certificate for each pair of geometries in parallel.
-  // num_threads specifies how many threads we run in parallel. If num_threads
-  // <=0, then we use all available threads on the computer.
-  int num_threads{-1};
+  // This allows limiting how many threads will be used for that operation.
+  Parallelism parallelism{Parallelism::Max()};
 
   // If verbose set to true, then we will print some information to the
   // terminal.
