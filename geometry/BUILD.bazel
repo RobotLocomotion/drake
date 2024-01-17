@@ -452,13 +452,18 @@ drake_cc_googletest(
 
 drake_cc_library(
     name = "meshcat",
-    srcs = ["meshcat.cc"],
+    srcs = [
+        "meshcat.cc",
+        "meshcat_internal.cc",
+    ],
     hdrs = [
         "meshcat.h",
+        "meshcat_internal.h",
         "meshcat_types_internal.h",
     ],
     data = [":meshcat_resources"],
     install_hdrs_exclude = [
+        "meshcat_internal.h",
         "meshcat_types_internal.h",
     ],
     interface_deps = [
@@ -532,6 +537,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_internal_test",
+    deps = [
+        ":meshcat",
     ],
 )
 

@@ -94,10 +94,7 @@ TEST_F(PackageMapRemoteTest, ActuallyFetch) {
   EXPECT_TRUE(fs::is_regular_file(readme_path)) << readme_path;
 
   // Double-check the file content.
-  std::ifstream readme(readme_path);
-  std::stringstream buffer;
-  buffer << readme.rdbuf();
-  EXPECT_EQ(buffer.str(), "This package is empty.\n");
+  EXPECT_EQ(ReadFileOrThrow(readme_path), "This package is empty.\n");
 }
 
 // Fetch a remote zip file, then again with a different strip_prefix.

@@ -2,10 +2,8 @@
 
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -16,6 +14,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using std::string;
 
@@ -84,13 +83,8 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   // The path is the correct answer.
   ASSERT_FALSE(absolute_path.empty());
   EXPECT_EQ(absolute_path[0], '/');
-  std::ifstream input(absolute_path, std::ios::binary);
-  ASSERT_TRUE(input);
-  std::stringstream buffer;
-  buffer << input.rdbuf();
-  EXPECT_EQ(
-      buffer.str(),
-      "Test data for drake/common/test/find_resource_test.cc.\n");
+  EXPECT_EQ(ReadFileOrThrow(absolute_path),
+            "Test data for drake/common/test/find_resource_test.cc.\n");
 
   // Sugar works the same way.
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
@@ -118,6 +112,12 @@ GTEST_TEST(GetDrakePathTest, PathIncludesDrake) {
       std::filesystem::path(*result) /
       std::filesystem::path("common/test/find_resource_test_data.txt");
   EXPECT_TRUE(std::filesystem::exists(expected));
+}
+
+GTEST_TEST(ReadFileTest, NoSuchPath) {
+  EXPECT_FALSE(ReadFile("/foo/bar/missing"));
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadFileOrThrow("/foo/bar/missing"),
+                              "Error reading.*/foo/bar/missing.*");
 }
 
 }  // namespace
