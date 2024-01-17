@@ -25,6 +25,7 @@ load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")
 load("//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("//tools/workspace/expat:repository.bzl", "expat_repository")
+load("//tools/workspace/expat_internal:repository.bzl", "expat_internal_repository")  # noqa
 load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
 load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
@@ -173,6 +174,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         # The @expat external is deprecated in Drake's WORKSPACE and will be
         # removed on or after 2024-02-01.
         expat_repository(name = "expat")
+    if "expat_internal" not in excludes:
+        expat_internal_repository(name = "expat_internal", mirrors = mirrors)
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)
     if "fmt" not in excludes:
