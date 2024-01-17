@@ -112,8 +112,8 @@ drake_jupyter_py_binary(
     name = "hydroelastic_contact_nonconvex_mesh",
     add_test_rule = 1,
     data = [
-        "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
         "@drake_models//:dishes/bowls/evo_bowl.vtk",
+        "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
         "@drake_models//:veggies/bell_pepper_no_stem_color.png",
         "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
         "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
