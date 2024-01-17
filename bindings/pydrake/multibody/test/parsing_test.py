@@ -25,7 +25,6 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,

@@ -287,7 +287,6 @@ drake_py_unittest(
     data = ["//examples/pendulum:models"],
     deps = [
         ":all_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -351,7 +350,6 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//lcmtypes:lcmtypes_drake_py",
     ],
 )
