@@ -11,7 +11,6 @@ from pydrake.symbolic import Expression
 from pydrake.common.value import Value
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 
