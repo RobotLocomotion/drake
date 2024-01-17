@@ -1,6 +1,7 @@
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,8 +10,8 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <picosha2.h>
 
+#include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
@@ -237,9 +238,7 @@ std::string RenderClient::ComputeSha256(const std::string& path) {
     throw std::runtime_error(
         fmt::format("RenderClient: cannot open file '{}'.", path));
   }
-  std::vector<unsigned char> hash(picosha2::k_digest_size);
-  picosha2::hash256(f_in, hash.begin(), hash.end());
-  return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
+  return Sha256::Checksum(&f_in).to_string();
 }
 
 std::string RenderClient::RenameHttpServiceResponse(
