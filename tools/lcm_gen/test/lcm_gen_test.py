@@ -5,6 +5,7 @@ import unittest
 from bazel_tools.tools.python.runfiles import runfiles
 
 from drake.tools.lcm_gen import (
+    CppGen,
     Parser,
     PrimitiveType,
     UserType,
@@ -169,3 +170,31 @@ struct papa.mike {
     def test_missing_const_name(self):
         with self.assertRaisesRegex(SyntaxError, "Expected.*NAME"):
             self._parse_str('struct bad { const double /* name */ = 1; }')
+
+
+class TestCppGen(BaseTest):
+    """Tests for the CppGen class."""
+
+    def test_lima_text(self):
+        """The generated text for lima.h exactly matches the goal file."""
+
+        lima_h_path = self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/lima.h")
+        with open(lima_h_path, encoding="utf-8") as f:
+            expected_text = f.read()
+        lima = Parser.parse(filename=self._lima_path)
+        dut = CppGen(struct=lima)
+        actual_text = dut.generate()
+        self.assertMultiLineEqual(expected_text, actual_text)
+
+    def test_mike_text(self):
+        """The generated text for mike.h exactly matches the goal file."""
+
+        mike_h_path = self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/mike.h")
+        with open(mike_h_path, encoding="utf-8") as f:
+            expected_text = f.read()
+        mike = Parser.parse(filename=self._mike_path)
+        dut = CppGen(struct=mike)
+        actual_text = dut.generate()
+        self.assertMultiLineEqual(expected_text, actual_text)
