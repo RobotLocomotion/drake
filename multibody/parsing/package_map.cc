@@ -7,7 +7,6 @@
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -367,17 +366,14 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {
     // Try to read the error message text from the downloader.
-    std::ifstream error_file(error_filename);
-    std::stringstream error_stream;
-    error_stream << error_file.rdbuf();
-    std::string error = error_stream.str();
-    if (error.empty()) {
+    std::optional<std::string> error = ReadFile(error_filename);
+    if (!error || error->empty()) {
       error = fmt::format("returncode == {}", returncode);
     }
     throw std::runtime_error(fmt::format(
         "PackageMap: when downloading '{}', the downloader experienced an "
         "error: {}",
-        package_name, error));
+        package_name, *error));
   }
 
   // Confirm that it actually fetched.

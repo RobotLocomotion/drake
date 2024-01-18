@@ -919,6 +919,7 @@ drake_cc_googletest(
         ":drake_path",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
