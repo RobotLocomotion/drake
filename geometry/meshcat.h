@@ -162,6 +162,9 @@ for
 or
 [Firefox](https://addons.mozilla.org/en-US/firefox/addon/webxr-api-emulator/)).
 
+The AR/VR mode is not currently supported in offline mode (i.e., when saving as
+StaticHtml()).
+
 @section network_access Network access
 
 See MeshcatParams for options to control the hostname and port to bind to.
