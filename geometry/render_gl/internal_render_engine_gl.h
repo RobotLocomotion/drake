@@ -155,9 +155,20 @@ class RenderEngineGl final : public render::RenderEngine {
                         const PerceptionProperties& properties,
                         const math::RigidTransformd& X_WG) final;
 
+  // @see RenderEngine::DoRegisterDeformableVisual().
+  bool DoRegisterDeformableVisual(
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties) final;
+
   // @see RenderEngine::DoUpdateVisualPose().
   void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) final;
+
+  // @see RenderEngine::DoUpdateDeformableConfigurations.
+  void DoUpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W) final;
 
   // @see RenderEngine::DoRemoveGeometry().
   bool DoRemoveGeometry(GeometryId id) final;
@@ -254,9 +265,12 @@ class RenderEngineGl final : public render::RenderEngine {
                                RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  // The geometry is added to geometries_ and its index is returned.
-  // This is *not* threadsafe.
-  int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data);
+  // The geometry is added to geometries_ and its index is returned. When
+  // `is_deformable` is true, the data in the vertex buffer object of the
+  // OpenGlGeometry in geometries_ indexed by the return value may be modified.
+  // This function is *not* threadsafe.
+  int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data,
+                       bool is_deformable = false);
 
   // Given a geometry that has its buffers (and vertex counts assigned), ties
   // all of the buffer data into the vertex array attributes.
@@ -388,6 +402,14 @@ class RenderEngineGl final : public render::RenderEngine {
   // Mapping from the obj's canonical filename to RenderGlMeshes.
   std::unordered_map<std::string, std::vector<RenderGlMesh>> meshes_;
 
+  // This collection serves as a convenient look up when updating the vertex
+  // positions and normals of deformable meshes (which get updated on a
+  // per-geometry-id basis). The actual instances that get rendered are still
+  // stored in visuals_, and the geometries indexed here are likewise stored in
+  // geometries_. Each of the geometry indices included here should appear in
+  // exactly one OpenGlInstance contained in visuals_.
+  std::unordered_map<GeometryId, std::vector<int>> deformable_meshes_;
+
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
   // collection is mutable so that it can be updated in what would otherwise
@@ -447,6 +469,11 @@ class RenderEngineGl final : public render::RenderEngine {
   // this directly; call active_lights() instead.
   mutable reset_on_copy<const std::vector<render::LightParameter>*>
       active_lights_{};
+
+  // Convenience vector for scaling a geometry in x,y,z-direction by 1.0 (i.e.
+  // not enlarging or shrinking the geometry) for functions that require a 3d
+  // scaling.
+  const Vector3<double> kUnitScale = Vector3<double>(1, 1, 1);
 };
 
 }  // namespace internal
