@@ -582,23 +582,25 @@ vtkSmartPointer<vtkLight> MakeVtkLight(const LightParameter& light_param) {
     }
   }
   if (light_param.frame == "camera") {
-    // LightParameter has the camera located at Co looking in the +Cz direction.
-    // VTK has camera positioned at p_DC = <0, 0, 1> in the device frame D,
-    // looking in the -Dz direction. So, we need to translate p_CL to p_DL by
-    // negating the z-value and offsetting it by p_DC. We need to treat the
-    // light direction similarly.
+    // Drake's camera frame C has the camera looking in the Cz direction (with
+    // Cx pointing right in the image and Cy down). The light parameters are
+    // expressed in that frame. VTK's camera is ultimately the *device* frame D.
+    // It relates to C as follows: Cx = Dx, Cy = -Dy, and Cz = -Dz, with
+    // p_CoDo_D = Dz (i.e., [0, 0, 1]). So, we set the light parameters in the
+    // device frame.
     const Vector3d& p_CL_C = light_param.position;
-    const Vector3d p_CL_D(p_CL_C.x(), p_CL_C.y(), -p_CL_C.z() + 1);
+    const Vector3d p_CL_D(p_CL_C.x(), -p_CL_C.y(), -p_CL_C.z() + 1);
     light->SetPosition(p_CL_D.data());
-    const Vector3d& dir_LT_C = light_param.direction;
-    const Vector3d& dir_LT_D{dir_LT_C.x(), dir_LT_C.y(), -dir_LT_C.z()};
-    const Vector3d p_CT = p_CL_D + dir_LT_D;
+    const Vector3d& dir_LT_C = light_param.direction.normalized();
+    const Vector3d& dir_LT_D{dir_LT_C.x(), -dir_LT_C.y(), -dir_LT_C.z()};
+    const Vector3d p_CT_D = p_CL_D + dir_LT_D;
     // Setting the focal point on a point light is harmless.
-    light->SetFocalPoint(p_CT.data());
+    light->SetFocalPoint(p_CT_D.data());
     light->SetLightTypeToCameraLight();
   } else if (light_param.frame == "world") {
     light->SetPosition(light_param.position.data());
-    const Vector3d p_WT = light_param.position + light_param.direction;
+    const Vector3d p_WT =
+        light_param.position + light_param.direction.normalized();
     light->SetFocalPoint(p_WT.data());
     light->SetLightTypeToSceneLight();
   } else {
