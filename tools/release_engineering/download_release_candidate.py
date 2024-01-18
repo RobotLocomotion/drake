@@ -136,7 +136,9 @@ def _download_binaries(*, timestamp, staging, version):
                 f"drake-{version[1:]}-cp311-cp311-manylinux_2_31_x86_64.whl",
                 f"drake-{version[1:]}-cp312-cp312-manylinux_2_31_x86_64.whl",
                 f"drake-{version[1:]}-cp311-cp311-macosx_12_0_x86_64.whl",
+                f"drake-{version[1:]}-cp311-cp312-macosx_12_0_x86_64.whl",
                 f"drake-{version[1:]}-cp311-cp311-macosx_13_0_arm64.whl",
+                f"drake-{version[1:]}-cp311-cp312-macosx_13_0_arm64.whl",
                 # Deb filenames.
                 f"drake-dev_{version[1:]}-1_amd64-focal.deb",
                 f"drake-dev_{version[1:]}-1_amd64-jammy.deb",

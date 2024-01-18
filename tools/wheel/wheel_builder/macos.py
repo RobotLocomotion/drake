@@ -8,18 +8,28 @@ import shutil
 import subprocess
 
 from .common import die, wheel_name
-from .common import build_root, resource_root, wheelhouse
+from .common import build_root, resource_root, wheel_root, wheelhouse
 from .common import test_root, find_tests
 
+from .macos_types import PythonTarget
 
-def _find_wheel(path, version):
+# This is the complete set of defined targets (i.e. potential wheels). By
+# default, all targets are built, but the user may down-select from this set.
+# On macOS (unlike Linux), this is just the set of Python versions targeted.
+python_targets = (
+    PythonTarget(3, 11),
+    PythonTarget(3, 12),
+)
+
+
+def _find_wheel(path, version, python_target):
     """
     Returns name of built wheel. Uses `glob` to find it, since trying to
     replicate the logic which determines the macOS platform name is not
     accessible and is very non-trivial to replicate.
     """
     pattern = wheel_name(
-        python_version=''.join(platform.python_version_tuple()[:2]),
+        python_version=python_target.tag,
         wheel_version=version,
         wheel_platform='*')
 
@@ -61,7 +71,7 @@ def _find_host_key_types(host):
     return key_types
 
 
-def _provision():
+def _provision(python_targets):
     """
     Prepares wheel build environment.
     """
@@ -89,14 +99,22 @@ def _provision():
             f.write(''.join(host_keys))
             os.fchmod(f.fileno(), 0o600)
 
+    for t in python_targets:
+        subprocess.check_call(['brew', 'install', f'python@{t.version}'])
 
-def _test_wheel(wheel, env):
+
+def _test_wheel(wheel, python_target, env):
     """
     Runs the test script on `wheel`.
     """
     setup_script = os.path.join(resource_root, 'macos',
                                 'provision-test-python.sh')
-    subprocess.check_call(['bash', setup_script], env=env)
+    subprocess.check_call(['bash', setup_script, python_target.version],
+                          env=env)
+
+    test_python_venv = os.path.join(test_root, 'python')
+    os.symlink(os.path.join(test_root, f'python{python_target.version}'),
+               test_python_venv)
 
     # Install the wheel.
     install_script = os.path.join(resource_root, 'test', 'install-wheel.sh')
@@ -109,6 +127,8 @@ def _test_wheel(wheel, env):
         subprocess.check_call(['bash', test_script, test, wheel], env=env)
         print(f'-- Executing test {test} - PASSED')
 
+    os.unlink(test_python_venv)
+
 
 def build(options):
     """
@@ -117,8 +137,21 @@ def build(options):
     if options.extract:
         _assert_isdir(options.output_dir, 'Output location')
 
+    # Collect set of wheels to be built.
+    targets_to_build = []
+    for t in python_targets:
+        if t.tag in options.python_versions:
+            targets_to_build.append(t)
+
+    # Check if there is anything to do.
+    if not len(targets_to_build):
+        die('Nothing to do! (Python version selection '
+            'resulted in an empty set of wheels)')
+
+    # Set up build environment.
+    os.makedirs(build_root, exist_ok=True)
     if options.provision:
-        _provision()
+        _provision(targets_to_build)
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
@@ -152,25 +185,34 @@ def build(options):
                                          'build-dependencies.sh')
         subprocess.check_call(['bash', build_deps_script], env=environment)
 
-    # Build the wheel.
-    build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
-    build_command = ['bash', build_script]
-    build_command.append(options.version)
+    # Build the wheel(s).
+    for python_target in targets_to_build:
+        wheel_versioned_root = os.path.join(
+            build_root, f'python{python_target.version}', 'wheel')
+        os.symlink(wheel_versioned_root, wheel_root)
 
-    subprocess.check_call(build_command, env=environment)
+        build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
+        build_command = ['bash', build_script]
+        build_command.append(options.version)
+        build_command.append(python_target.version)
 
-    # Find the built wheel and, if requested, test and/or extract it.
-    wheel = _find_wheel(path=wheelhouse, version=options.version)
+        subprocess.check_call(build_command, env=environment)
 
-    if options.test:
-        _test_wheel(wheel, env=environment)
+        # Find the built wheel and, if requested, test and/or extract it.
+        wheel = _find_wheel(path=wheelhouse, version=options.version,
+                            python_target=python_target)
 
-    if options.extract:
-        shutil.copy2(wheel, options.output_dir)
+        if options.test:
+            _test_wheel(wheel, python_target=python_target, env=environment)
+
+        if options.extract:
+            shutil.copy2(wheel, options.output_dir)
+
+        os.unlink(wheel_root)
 
     if not options.keep_build:
         shutil.rmtree('/opt/drake-dependencies')
-        shutil.rmtree('/opt/drake')
+        shutil.rmtree('/opt/drake-dist')
         shutil.rmtree(build_root)
         if options.test:
             shutil.rmtree(test_root)
@@ -197,14 +239,17 @@ def add_build_arguments(parser):
 def add_selection_arguments(parser):
     """
     Adds arguments that control which wheel(s) to build.
-    (No-op on macOS.)
     """
-    pass  # macOS can only build one wheel.
+    parser.add_argument(
+        '--python', dest='python_versions', metavar='VERSIONS',
+        default=','.join(sorted([t.tag for t in python_targets])),
+        help='python version(s) to build; separate with \',\''
+             ' (default: %(default)s)')
 
 
 def fixup_options(options):
     """
     Validates options and applies any necessary transformations.
-    (No-op on macOS.)
+    (Converts comma-separated strings to sets.)
     """
-    pass  # Not needed on macOS.
+    options.python_versions = set(options.python_versions.split(','))
