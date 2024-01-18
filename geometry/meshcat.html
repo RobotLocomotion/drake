@@ -215,7 +215,6 @@
     url = url.replace("/index.html", "/")
     url = url.replace("/meshcat.html", "/")
     make_connection(url, reconnect_ms);
-    <!-- CONNECTION BLOCK END -->
 
     const webxrMode = urlParams.get('webxr');
     if (webxrMode) {
@@ -231,8 +230,7 @@
         type: "visualize_vr_controller"
       });
     }
-
-
+    <!-- CONNECTION BLOCK END -->
 
   </script>
 
