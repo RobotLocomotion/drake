@@ -2424,20 +2424,15 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
                   .position = Eigen::Vector3d(0, -0.1, 2),
                   .frame = "world",
                   .intensity = 1,
-                  .direction = Eigen::Vector3d(-0.5, 0, -1).normalized(),
+                  .direction = Eigen::Vector3d(-0.5, 0, -1),
                   .cone_angle = 10},
                  {.type = "directional",  // Rim light highlight the tops.
                   .color = Rgba(1, 1, 1),
                   .frame = "camera",
-                  // TODO(SeanCurtis-TRI): The instantiation of this light shows
-                  // that things don't get angry. However, when the material is
-                  // PBR it appears that this camera doesn't work right. Instead
-                  // of rim light on the tops of each of the rounded primitives
-                  // (with intensity = 5), this is being treated as a headlight.
-                  // We need to to look into vtkOpenGLPolyDataMapper to see
-                  // what the cause of this might be.
-                  .intensity = 0,
-                  .direction = Eigen::Vector3d(0, -0.5, -1).normalized()}},
+                  .intensity = 10,
+                  // Remember, +Cy points *down* in the image and -Cz points
+                  // into the camera.
+                  .direction = Eigen::Vector3d(0, 1, -1)}},
       .environment_map = {
           // Note: The ground plane covers the full background, we won't be
           // able to see the skybox.
