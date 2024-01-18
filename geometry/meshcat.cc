@@ -27,11 +27,11 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/network_policy.h"
-#include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 
 #ifdef BOOST_VERSION
@@ -43,44 +43,12 @@ extern "C" {
 void us_internal_free_closed_sockets(struct us_loop_t*);
 }
 
+namespace drake {
+namespace geometry {
 namespace {
-std::string LoadResource(const std::string& resource_name) {
-  const std::string resource = drake::FindResourceOrThrow(resource_name);
-  std::ifstream file(resource.c_str(), std::ios::in);
-  if (!file.is_open())
-    throw std::runtime_error("Error opening resource: " + resource_name);
-  std::stringstream content;
-  content << file.rdbuf();
-  file.close();
-  return content.str();
-}
 
-const std::string& GetStaticResource(std::string_view url_path) {
-  static const drake::never_destroyed<std::string> meshcat_js(
-      LoadResource("drake/geometry/meshcat.js"));
-  static const drake::never_destroyed<std::string> stats_js(
-      LoadResource("drake/geometry/stats.min.js"));
-  static const drake::never_destroyed<std::string> meshcat_ico(
-      LoadResource("drake/geometry/meshcat.ico"));
-  static const drake::never_destroyed<std::string> meshcat_html(
-      LoadResource("drake/geometry/meshcat.html"));
-  static const drake::never_destroyed<std::string> empty;
-  if ((url_path == "/") || (url_path == "/index.html") ||
-      (url_path == "/meshcat.html")) {
-    return meshcat_html.access();
-  }
-  if (url_path == "/meshcat.js") {
-    return meshcat_js.access();
-  }
-  if (url_path == "/stats.min.js") {
-    return stats_js.access();
-  }
-  if (url_path == "/favicon.ico") {
-    return meshcat_ico.access();
-  }
-  drake::log()->warn("Ignoring Meshcat http request for {}", url_path);
-  return empty.access();
-}
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 template <typename Mapping>
 [[noreturn]] void ThrowThingNotFound(std::string_view thing,
@@ -94,16 +62,6 @@ template <typename Mapping>
                   "registered {} names are ({}).",
                   thing, name, thing, fmt::join(keys, ", ")));
 }
-
-}  // namespace
-
-namespace drake {
-namespace geometry {
-
-namespace {
-
-using math::RigidTransformd;
-using math::RotationMatrixd;
 
 constexpr static bool kSsl = false;
 constexpr static bool kIsServer = true;
@@ -284,20 +242,15 @@ class MeshcatShapeReifier : public ShapeReifier {
 
     std::string format = extension;
     format.erase(0, 1);  // remove the . from the extension
-    std::ifstream input(filename, std::ios::binary | std::ios::ate);
-    if (!input.is_open()) {
+    std::optional<std::string> maybe_mesh_data = ReadFile(filename);
+    if (!maybe_mesh_data) {
       drake::log()->warn("Meshcat: Could not open mesh filename {}", filename);
       return;
     }
 
     // We simply dump the binary contents of the file into the data field of the
     // message.  The javascript meshcat takes care of the rest.
-    const int obj_size = input.tellg();
-    input.seekg(0, std::ios::beg);
-    std::string mesh_data;
-    mesh_data.reserve(obj_size);
-    mesh_data.assign(std::istreambuf_iterator<char>(input),
-                     std::istreambuf_iterator<char>());
+    std::string mesh_data = std::move(*maybe_mesh_data);
 
     // TODO(russt): MeshCat.jl/src/mesh_files.jl loads dae with textures, also.
 
@@ -330,14 +283,9 @@ class MeshcatShapeReifier : public ShapeReifier {
           std::filesystem::path(filename).parent_path();
 
       // Read .mtl file into geometry.mtl_library.
-      std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
-      if (mtl_stream.is_open()) {
-        int mtl_size = mtl_stream.tellg();
-        mtl_stream.seekg(0, std::ios::beg);
-        meshfile_object.mtl_library.reserve(mtl_size);
-        meshfile_object.mtl_library.assign(
-            std::istreambuf_iterator<char>(mtl_stream),
-            std::istreambuf_iterator<char>());
+      if (std::optional<std::string> maybe_mtl_data =
+              ReadFile(basedir / mtllib)) {
+        meshfile_object.mtl_library = std::move(*maybe_mtl_data);
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
         // the contents to geometry.resources.
@@ -640,7 +588,7 @@ class Meshcat::Impl {
     }
 
     // Fetch the index once to be sure that we preload the content.
-    GetStaticResource("/");
+    DRAKE_DEMAND(internal::GetMeshcatStaticResource("/").has_value());
 
     std::promise<std::tuple<int, bool>> app_promise;
     std::future<std::tuple<int, bool>> app_future = app_promise.get_future();
@@ -1596,7 +1544,7 @@ class Meshcat::Impl {
   // outer function calls into here using appropriate deferred handling.
   std::string CalcStandaloneHtml() const {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    std::string html = GetStaticResource("/");
+    std::string html{internal::GetMeshcatStaticResource("/").value()};
 
     // Insert the javascript directly into the html.
     std::vector<std::pair<std::string, std::string>> js_paths{
@@ -1604,10 +1552,12 @@ class Meshcat::Impl {
         {" src=\"stats.min.js\"", "/stats.min.js"},
     };
     for (const auto& [src_link, url] : js_paths) {
+      const std::string_view url_data =
+          internal::GetMeshcatStaticResource(url).value();
       const size_t js_pos = html.find(src_link);
       DRAKE_DEMAND(js_pos != std::string::npos);
       html.erase(js_pos, src_link.size());
-      html.insert(js_pos + 1, GetStaticResource(url));
+      html.insert(js_pos + 1, url_data);
     }
 
     // Replace the javascript code in the original html file which connects via
@@ -1957,20 +1907,30 @@ class Meshcat::Impl {
   void HandleHttpGet(std::string_view url_path,
                      uWS::HttpResponse<kSsl>* response) const {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    drake::log()->debug("Meshcat GET on {}", url_path);
+    drake::log()->debug("Meshcat: GET {}", url_path);
+    // Handle the magic download URL.
     if (url_path == "/download") {
-      const std::string output = CalcStandaloneHtml();
+      const std::string content = CalcStandaloneHtml();
       response->writeHeader("Content-Type", "text/html; charset=utf-8");
       response->writeHeader("Content-Disposition",
                             "attachment; filename=\"meshcat.html\"");
-      response->end(output);
+      response->end(content);
       return;
     }
-    const std::string& content = GetStaticResource(url_path);
-    if (content.substr(0, 15) == "<!DOCTYPE html>") {
-      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+    // Handle static (i.e., compiled-in) files.
+    if (const std::optional<std::string_view> content =
+            internal::GetMeshcatStaticResource(url_path)) {
+      if (content->substr(0, 15) == "<!DOCTYPE html>") {
+        response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      }
+      response->end(*content);
+      return;
     }
-    response->end(content);
+    // Unknown URL.
+    log()->warn("Meshcat: Failed http request for unknown URL {}", url_path);
+    response->writeStatus("404 Not Found");
+    response->writeHeader("Cache-Control:", "no-cache");
+    response->end("");
   }
 
   // This function is a callback from a WebSocketBehavior. However, unit tests
