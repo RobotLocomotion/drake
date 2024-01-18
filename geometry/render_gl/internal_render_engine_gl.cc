@@ -1022,6 +1022,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
   // We rely on the calling method to clear all appropriate buffers; this method
   // may be called multiple times per image (based on the number of shaders
   // being used) and, therefore, can't do the clearing itself.
+
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
     for (const auto& part : visuals_.at(g_id).parts) {

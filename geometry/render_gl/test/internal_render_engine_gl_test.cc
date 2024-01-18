@@ -87,6 +87,7 @@ using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using std::make_unique;
@@ -463,9 +464,9 @@ class RenderEngineGlTest : public ::testing::Test {
     expected_color_ = RgbaColor{default_color_};
   }
 
-  // Performs the work to test the rendering with a sphere centered in the
+  // Performs the work to test the rendering with a shape centered in the
   // image. To pass, the renderer will have to have been populated with a
-  // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
+  // compliant shape and camera configuration (e.g., PopulateSphereTest()).
   void PerformCenterShapeTest(RenderEngineGl* renderer,
                               const DepthRenderCamera* camera = nullptr) {
     const DepthRenderCamera& cam = camera ? *camera : depth_camera_;
@@ -805,6 +806,70 @@ TEST_F(RenderEngineGlTest, TransparentSphereTest) {
       << "Expected one of two colors:"
       << "\n  " << expect_linear << " or " << expect_quad << "."
       << "\n  Found " << at_pixel;
+}
+
+// Performs the shape-centered-in-the-image test with a deformable mesh.
+TEST_F(RenderEngineGlTest, DeformableTest) {
+  for (const bool use_texture : {false, true}) {
+    Init(X_WR_, true);
+
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data by the build system.
+    auto filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
+
+    expected_label_ = RenderLabel(123);
+    PerceptionProperties material = simple_material();
+    Rgba diffuse_color(1, 1, 1, 1);
+    std::vector<geometry::internal::RenderMesh> render_meshes =
+        geometry::internal::LoadRenderMeshesFromObj(filename, material,
+                                                    diffuse_color);
+    ASSERT_EQ(render_meshes.size(), 1);
+
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterDeformable(id, render_meshes, material);
+
+    expected_color_ = use_texture ? RgbaColor(kTextureColor) : default_color_;
+
+    SCOPED_TRACE("Deformable test");
+    PerformCenterShapeTest(renderer_.get());
+
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_q_WG = render_meshes[0].positions;
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_nhat_W = render_meshes[0].normals;
+    auto translate_all_vertices = [&initial_q_WG](const Vector3d& t_W) {
+      auto result = initial_q_WG;
+      for (int i = 0; i < result.rows(); ++i) {
+        result.row(i) += t_W;
+      }
+      return result;
+    };
+    auto flatten = [](const Eigen::Matrix<double, Eigen::Dynamic, 3,
+                                          Eigen::RowMajor>& input) {
+      return VectorXd(Eigen::Map<const VectorXd>(input.data(), input.size()));
+    };
+
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(0.9, 0, 0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+    PerformCenterShapeTest(renderer_.get());
+
+    // TODO(xuchenhan-tri): verify that the center of the image now shows the
+    // terrain, not the mesh.
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(1.1, 0, 0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+
+    // TODO(xuchenhan-tri): test normal somehow.
+  }
 }
 
 // Performs the shape-centered-in-the-image test with a capsule.

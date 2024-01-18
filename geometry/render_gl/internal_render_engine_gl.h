@@ -167,8 +167,8 @@ class RenderEngineGl final : public render::RenderEngine {
 
   // @see RenderEngine::DoUpdateDeformableConfigurations.
   void DoUpdateDeformableConfigurations(
-      GeometryId id, const std::vector<VectorX<double>>& q_WG,
-      const std::vector<VectorX<double>>& nhat_W) final;
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W) final;
 
   // @see RenderEngine::DoRemoveGeometry().
   bool DoRemoveGeometry(GeometryId id) final;
