@@ -204,6 +204,23 @@ int do_main() {
   }
 
   std::cout << R"""(
+Open the developer tools of your browser (F12) and within that panel switch to
+the "Console" tab.
+
+Keep that panel visible throughout the entire testing process. Any errors or
+warnings displayed in that Console most likely indicate a bug in our code and
+should be fixed. (If you are running this test as part of a pull request code
+review, be sure to post the message as a Reviewable discussion.)
+
+Less severe Console messages (info, debug, etc.) are not bugs and can be
+ignored.
+
+Caveat: At the moment, you might see Console warnings related to deprecations.
+Ignore those for now; we'll need to circle back and fix them later.
+)""";
+  MaybePauseForUser();
+
+  std::cout << R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a red sphere
@@ -456,8 +473,11 @@ int do_main() {
          "- the camera is focused on the contact point between the robot and "
          "table,\n"
          "- the iiwa is visible,\n"
-         "- the animation plays, and\n"
-         "- the environment map is present.\n";
+         "- the animation plays,\n"
+         "- the environment map is present, and\n"
+         "- the browser Console has no warnings nor errors\n"
+         "  (use F12 to open the panel with the Console).\n\n";
+  std::cout << "When you're done, close the browser tab.\n";
 
   MaybePauseForUser();
 

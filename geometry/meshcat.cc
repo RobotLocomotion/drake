@@ -50,6 +50,14 @@ namespace {
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
+// TODO(jwnimmer-tri) Use the C++ built-in ends_with when we drop C++17.
+bool EndsWith(std::string_view str, std::string_view suffix) {
+  if (str.size() < suffix.size()) {
+    return false;
+  }
+  return str.substr(str.size() - suffix.size()) == suffix;
+}
+
 template <typename Mapping>
 [[noreturn]] void ThrowThingNotFound(std::string_view thing,
                                      std::string_view name, Mapping thing_map) {
@@ -1922,6 +1930,8 @@ class Meshcat::Impl {
             internal::GetMeshcatStaticResource(url_path)) {
       if (content->substr(0, 15) == "<!DOCTYPE html>") {
         response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      } else if (EndsWith(url_path, ".js")) {
+        response->writeHeader("Content-Type", "text/javascript; charset=utf-8");
       }
       response->end(*content);
       return;
