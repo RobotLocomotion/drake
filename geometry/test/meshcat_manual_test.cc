@@ -284,7 +284,16 @@ Ignore those for now; we'll need to circle back and fix them later.
 
   meshcat->SetAnimation(animation);
 
-  std::cout << "You can review/replay the animation from the controls menu.\n";
+  std::cout << R"""(
+Click "Open Controls" in the upper right to unfold the Control Panel.
+
+Confirm that the "Scene => drake" sub-tree is already unfolded by default, so
+that you see all of the shape names (box, capsule, etc.). Click on "drake"
+to fold it away again to de-clutter the controls.
+
+Replay the animation by clicking the "play" button under "Scene => Animations =>
+default" and confirm that it plays.
+)""";
   MaybePauseForUser();
 
   meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4, 4, -2,
