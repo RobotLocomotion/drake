@@ -54,9 +54,11 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   std::vector<T> pressure_values;
   T max_value(std::numeric_limits<double>::lowest());
   // First round, it's actually unsigned distance, not pressure values yet.
+  Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(surface_d);
   for (const Vector3<T>& p_MV : mesh_M->vertices()) {
     Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
-    T pressure(internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d));
+    T pressure(
+        internal::CalcDistanceToSurfaceMeshWithBvh(p_MV_d, surface_d, bvh_M));
     pressure_values.emplace_back(pressure);
     if (max_value < pressure) {
       max_value = pressure;

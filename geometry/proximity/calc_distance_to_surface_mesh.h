@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
@@ -13,6 +15,10 @@ namespace internal {
  @pre Each element in `mesh_W` has non-zero area. */
 double CalcDistanceToSurfaceMesh(const Vector3<double>& p_WQ,
                                  const TriangleSurfaceMesh<double>& mesh_W);
+
+double CalcDistanceToSurfaceMeshWithBvh(
+    const Vector3<double>& p_WQ, const TriangleSurfaceMesh<double>& mesh_W,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_W);
 
 }  // namespace internal
 }  // namespace geometry
