@@ -121,10 +121,15 @@ drake_cc_library(
     hdrs = ["calc_distance_to_surface_mesh.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    deps = [
+    interface_deps = [
+        ":bv",
+        ":bvh",
         ":triangle_surface_mesh",
         "//common:essential",
         "//math:geometric_transform",
+    ],
+    deps = [
+        ":distance_to_point_callback",
     ],
 )
 
