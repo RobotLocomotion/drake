@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <optional>
+#include <set>
 #include <vector>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -35,6 +37,15 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
 std::vector<int> CollectUniqueVertices(
     const std::vector<std::array<int, 3>>& faces);
 
+/*
+ Implements the public API ConvertVolumeToSurfaceMesh() with optional return
+ of the boundary vertices that we can use internally.
+ */
+template <class T>
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume,
+    std::set<int>* return_boundary_vertices = nullptr);
+
 }  // namespace internal
 
 /** Converts a tetrahedral volume mesh to a triangulated surface mesh of the
@@ -50,7 +61,10 @@ std::vector<int> CollectUniqueVertices(
                 boundary triangles of the volume.
  @tparam_nonsymbolic_scalar */
 template <class T>
-TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
+  return internal::ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume,
+                                                                  nullptr);
+}
 
 }  // namespace geometry
 }  // namespace drake
