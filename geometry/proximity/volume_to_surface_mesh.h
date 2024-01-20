@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <set>
 #include <vector>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -50,7 +51,14 @@ std::vector<int> CollectUniqueVertices(
                 boundary triangles of the volume.
  @tparam_nonsymbolic_scalar */
 template <class T>
-TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
+  return ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume, nullptr);
+}
+
+template <class T>
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume,
+    std::set<int>* return_boundary_vertices = nullptr);
 
 }  // namespace geometry
 }  // namespace drake

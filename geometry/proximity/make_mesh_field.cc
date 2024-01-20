@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -20,8 +21,10 @@ namespace {
 
 template <typename T>
 TriangleSurfaceMesh<double> ConvertVolumeToSurfaceMeshDouble(
-    const VolumeMesh<T>& volume_mesh) {
-  TriangleSurfaceMesh<T> surface = ConvertVolumeToSurfaceMesh(volume_mesh);
+    const VolumeMesh<T>& volume_mesh, std::set<int>* boundary_vertices) {
+  TriangleSurfaceMesh<T> surface =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume_mesh,
+                                                     boundary_vertices);
   if constexpr (std::is_same_v<T, double>) {
     return surface;
   } else {
@@ -43,9 +46,10 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
     const VolumeMesh<T>* mesh_M, const T& hydroelastic_modulus) {
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
   DRAKE_DEMAND(mesh_M != nullptr);
+  std::set<int> boundary_vertices;
   // The subscript _d is for the scalar type double.
   TriangleSurfaceMesh<double> surface_d =
-      ConvertVolumeToSurfaceMeshDouble(*mesh_M);
+      ConvertVolumeToSurfaceMeshDouble(*mesh_M, &boundary_vertices);
 
   // TODO(DamrongGuoy): Check whether there could be numerical roundings that
   //  cause a vertex on the boundary to have a non-zero value. Consider
@@ -54,13 +58,19 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   std::vector<T> pressure_values;
   T max_value(std::numeric_limits<double>::lowest());
   // First round, it's actually unsigned distance, not pressure values yet.
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh(surface_d);
+  int v = 0;
   for (const Vector3<T>& p_MV : mesh_M->vertices()) {
-    Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
-    T pressure(internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d));
+    T pressure(0);
+    if (!boundary_vertices.count(v)) {
+      Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
+      pressure = internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh);
+    }
     pressure_values.emplace_back(pressure);
     if (max_value < pressure) {
       max_value = pressure;
     }
+    ++v;
   }
 
   if (max_value <= T(0)) {
