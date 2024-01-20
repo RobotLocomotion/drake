@@ -30,10 +30,22 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
  multiple faces is reported once. Each face is represented as an array of
  three vertices of a volume mesh.
  @param[in] faces
- @return    vertices used by the faces.
+ @return    vertices used by the faces. The vertex indices are sorted in
+            increasing order.
  */
 std::vector<int> CollectUniqueVertices(
     const std::vector<std::array<int, 3>>& faces);
+
+/*
+ Implements the public API ConvertVolumeToSurfaceMesh() with optional return
+ of the boundary vertices that we can use internally.
+     The returned integer indices are sorted in increasing order and refer
+ to vertices in the input `volume` mesh.
+ */
+template <class T>
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume,
+    std::vector<int>* boundary_vertices_out = nullptr);
 
 }  // namespace internal
 
@@ -50,7 +62,10 @@ std::vector<int> CollectUniqueVertices(
                 boundary triangles of the volume.
  @tparam_nonsymbolic_scalar */
 template <class T>
-TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
+  return internal::ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume,
+                                                                  nullptr);
+}
 
 }  // namespace geometry
 }  // namespace drake
