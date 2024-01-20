@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_internal.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -20,6 +21,22 @@ GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->empty());
   }
+}
+
+GTEST_TEST(MeshcatInternalTest, UuidGenerator) {
+  UuidGenerator dut;
+  std::string foo = dut.GenerateRandom();
+  std::string bar = dut.GenerateRandom();
+  EXPECT_NE(foo, bar);
+
+  const std::string_view pattern =
+      "[[:xdigit:]]{8,8}-"
+      "[[:xdigit:]]{4,4}-"
+      "[[:xdigit:]]{4,4}-"
+      "[[:xdigit:]]{4,4}-"
+      "[[:xdigit:]]{12,12}";
+  EXPECT_THAT(foo, testing::MatchesRegex(pattern));
+  EXPECT_THAT(bar, testing::MatchesRegex(pattern));
 }
 
 }  // namespace

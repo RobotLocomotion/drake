@@ -1,16 +1,14 @@
 #include "drake/geometry/meshcat_internal.h"
 
-#include <fstream>
-#include <sstream>
 #include <stdexcept>
 #include <utility>
 
 #include <fmt/format.h>
+#include <uuid.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
-
-namespace fs = std::filesystem;
 
 namespace drake {
 namespace geometry {
@@ -54,6 +52,22 @@ std::optional<std::string_view> GetMeshcatStaticResource(
     return meshcat_ico.access();
   }
   return {};
+}
+
+// We need an Impl for this class for two reasons:
+// - The mt19937 object is ginormous and should not be inline.
+// - The uuids object must be wrapped within DRAKE_NO_EXPORT.
+struct DRAKE_NO_EXPORT UuidGenerator::Impl {
+  std::mt19937 prng_;
+  uuids::uuid_random_generator uuid_{prng_};
+};
+
+UuidGenerator::UuidGenerator() : impl_(std::make_unique<Impl>()) {}
+
+UuidGenerator::~UuidGenerator() = default;
+
+std::string UuidGenerator::GenerateRandom() {
+  return uuids::to_string(impl_->uuid_());
 }
 
 }  // namespace internal
