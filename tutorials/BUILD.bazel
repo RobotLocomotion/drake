@@ -138,8 +138,7 @@ drake_jupyter_py_binary(
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
     ],
-    # The optimized test took 6 seconds, but the debug test took 9 minutes.
-    test_timeout = "long",
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
