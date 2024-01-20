@@ -214,6 +214,51 @@ GTEST_TEST(CalcDistanceToSurfaceMeshTest, MultipleTriangles2) {
   EXPECT_LT(CalcDistanceToSurfaceMesh(p_WQ2, mesh_W), d_Q);
 }
 
+// Copied and modified from GTEST_TEST(CalcDistanceToSurfaceMeshTest,
+// MultipleTriangles2)
+GTEST_TEST(CalcDistanceToSurfaceMeshWithBvhTest, MultipleTriangles2) {
+  const Vector3d p_TA(1, 0, 0);
+  const Vector3d p_TB(0, -1, 1);
+  const Vector3d p_TC(0, 1, 1);
+  const Vector3d p_TD(-1, 0, 0);
+
+  const math::RollPitchYaw<double> rpy_WT(1, 2, 3);
+  const Vector3d p_WTo(4, 5, 6);
+  const math::RigidTransform<double> X_WT(rpy_WT, p_WTo);
+
+  vector<Vector3d> vertices = {X_WT * p_TA, X_WT * p_TB, X_WT * p_TC,
+                               X_WT * p_TD};
+  vector<SurfaceTriangle> triangles = {{0, 1, 2}, {1, 2, 3}};
+  const TriangleSurfaceMesh<double> mesh_W(std::move(triangles),
+                                           std::move(vertices));
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_W(mesh_W);
+
+  constexpr double kEps = 1e-14;
+  /* Q lines on the z-axis half way up. Its distance to the mesh should be equal
+   to its distance to the line passing through <1,0,0> and <0,0,1> (measured
+   and expressed in frame T). */
+  const Vector3d p_TQ(0, 0, 0.5);
+  const double d_Q_expected =
+      CalcDistanceToLine(p_TQ, {Vector3d::UnitX(), Vector3d::UnitZ()});
+  const Vector3d p_WQ = X_WT * p_TQ;
+  const double d_Q = CalcDistanceToSurfaceMeshWithBvh(p_WQ, mesh_W, bvh_W);
+  EXPECT_NEAR(d_Q, d_Q_expected, kEps);
+
+  /* Perturbation amount (as introduced in the test description). Any positive
+   value should suffice as long as it's not large enough so that Q goes to the
+   other side of the triangles. */
+  constexpr double kPerturb = 1e-3;
+  /* Q1 is slightly to the left of Q. */
+  const Vector3d p_TQ1 = p_TQ + Vector3d{-kPerturb, 0, 0};
+  const Vector3d p_WQ1 = X_WT * p_TQ1;
+  EXPECT_LT(CalcDistanceToSurfaceMeshWithBvh(p_WQ1, mesh_W, bvh_W), d_Q);
+
+  /* Q2 is slightly to the right of Q. */
+  const Vector3d p_TQ2 = p_TQ + Vector3d{kPerturb, 0, 0};
+  const Vector3d p_WQ2 = X_WT * p_TQ2;
+  EXPECT_LT(CalcDistanceToSurfaceMeshWithBvh(p_WQ2, mesh_W, bvh_W), d_Q);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
