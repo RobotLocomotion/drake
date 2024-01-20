@@ -122,6 +122,9 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":bv",
+        ":bvh",
+        ":distance_to_point_callback",
         ":triangle_surface_mesh",
         "//common:essential",
         "//math:geometric_transform",
