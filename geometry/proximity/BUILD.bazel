@@ -959,6 +959,16 @@ drake_cc_googletest(
     name = "calc_distance_to_surface_mesh_test",
     deps = [
         ":calc_distance_to_surface_mesh",
+        ":volume_to_surface_mesh",
+        ":vtk_to_volume_mesh",
+    ],
+    data = [
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
     ],
 )
 
