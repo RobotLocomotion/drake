@@ -21,7 +21,6 @@
 #include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 #include <msgpack.hpp>
-#include <uuid.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
@@ -229,8 +228,8 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(uuids::uuid_random_generator* uuid_generator)
-      : uuid_generator_(uuid_generator) {
+  explicit MeshcatShapeReifier(internal::UuidGenerator* uuid_generator)
+      : uuid_generator_(*uuid_generator) {
     DRAKE_DEMAND(uuid_generator != nullptr);
   }
 
@@ -280,7 +279,7 @@ class MeshcatShapeReifier : public ShapeReifier {
 
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshfileObjectData>();
-      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.uuid = uuid_generator_.GenerateRandom();
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
 
@@ -341,7 +340,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     } else if (format == "gltf") {
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshfileObjectData>();
-      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.uuid = uuid_generator_.GenerateRandom();
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
     } else {
@@ -371,7 +370,7 @@ class MeshcatShapeReifier : public ShapeReifier {
             "mesh types (e.g., .stl, etc.) will not be visualized.");
       }
       auto geometry = std::make_unique<internal::MeshFileGeometryData>();
-      geometry->uuid = uuids::to_string((*uuid_generator_)());
+      geometry->uuid = uuid_generator_.GenerateRandom();
       geometry->format = std::move(format);
       geometry->data = std::move(mesh_data);
       lumped.geometry = std::move(geometry);
@@ -397,7 +396,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     lumped.object = internal::MeshData();
 
     auto geometry = std::make_unique<internal::BoxGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->width = box.width();
     // Three.js uses height for the y axis; Drake uses depth.
     geometry->height = box.depth();
@@ -411,7 +410,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
     auto geometry = std::make_unique<internal::CapsuleGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radius = capsule.radius();
     geometry->length = capsule.length();
     lumped.geometry = std::move(geometry);
@@ -432,7 +431,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
     auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radiusBottom = cylinder.radius();
     geometry->radiusTop = cylinder.radius();
     geometry->height = cylinder.length();
@@ -451,7 +450,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
     auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radius = 1;
     lumped.geometry = std::move(geometry);
 
@@ -477,7 +476,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
     auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radiusBottom = 0;
     geometry->radiusTop = 1.0;
     geometry->height = cone.height();
@@ -499,13 +498,13 @@ class MeshcatShapeReifier : public ShapeReifier {
     lumped.object = internal::MeshData();
 
     auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radius = sphere.radius();
     lumped.geometry = std::move(geometry);
   }
 
  private:
-  uuids::uuid_random_generator* const uuid_generator_{};
+  internal::UuidGenerator& uuid_generator_;
 };
 
 int ToMeshcatColor(const Rgba& rgba) {
@@ -757,7 +756,6 @@ class Meshcat::Impl {
   void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
 
@@ -766,7 +764,7 @@ class Meshcat::Impl {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    MeshcatShapeReifier reifier(&uuid_generator);
+    MeshcatShapeReifier reifier(&uuid_generator_);
     shape.Reify(&reifier, &data.object);
 
     if (std::holds_alternative<std::monostate>(data.object.object)) {
@@ -780,7 +778,7 @@ class Meshcat::Impl {
       meshfile_object.geometry = data.object.geometry->uuid;
 
       auto material = std::make_unique<internal::MaterialData>();
-      material->uuid = uuids::to_string(uuid_generator());
+      material->uuid = uuid_generator_.GenerateRandom();
       material->type = "MeshPhongMaterial";
       material->color = ToMeshcatColor(rgba);
       // TODO(russt): Most values are taken verbatim from meshcat-python.
@@ -798,7 +796,7 @@ class Meshcat::Impl {
       material->wireframe = false;
       material->wireframeLineWidth = 1.0;
 
-      meshfile_object.uuid = uuids::to_string(uuid_generator());
+      meshfile_object.uuid = uuid_generator_.GenerateRandom();
       meshfile_object.material = material->uuid;
       data.object.material = std::move(material);
     }
@@ -823,12 +821,11 @@ class Meshcat::Impl {
                  double point_size, const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
 
     auto geometry = std::make_unique<internal::BufferGeometryData>();
-    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->position = cloud.xyzs();
     if (cloud.has_rgbs()) {
       geometry->color = cloud.rgbs().cast<float>() / 255.0;
@@ -836,7 +833,7 @@ class Meshcat::Impl {
     data.object.geometry = std::move(geometry);
 
     auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuids::to_string(uuid_generator());
+    material->uuid = uuid_generator_.GenerateRandom();
     material->type = "PointsMaterial";
     material->color = ToMeshcatColor(rgba);
     material->transparent = (rgba.a() != 1.0);
@@ -846,7 +843,7 @@ class Meshcat::Impl {
     data.object.material = std::move(material);
 
     internal::MeshData mesh;
-    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.uuid = uuid_generator_.GenerateRandom();
     mesh.type = "Points";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material = data.object.material->uuid;
@@ -912,17 +909,16 @@ class Meshcat::Impl {
   void SetLineImpl(std::string_view path,
                    const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                    double line_width, const Rgba& rgba, bool line_segments) {
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
 
     auto geometry = std::make_unique<internal::BufferGeometryData>();
-    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->position = vertices.cast<float>();
     data.object.geometry = std::move(geometry);
 
     auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuids::to_string(uuid_generator());
+    material->uuid = uuid_generator_.GenerateRandom();
     material->type = "LineBasicMaterial";
     material->color = ToMeshcatColor(rgba);
     material->linewidth = line_width;
@@ -930,7 +926,7 @@ class Meshcat::Impl {
     data.object.material = std::move(material);
 
     internal::MeshData mesh;
-    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.uuid = uuid_generator_.GenerateRandom();
     mesh.type = line_segments ? "LineSegments" : "Line";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material = data.object.material->uuid;
@@ -954,18 +950,17 @@ class Meshcat::Impl {
                        double wireframe_line_width, SideOfFaceToRender side) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
 
     auto geometry = std::make_unique<internal::BufferGeometryData>();
-    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->position = vertices.cast<float>();
     geometry->faces = faces.cast<uint32_t>();
     data.object.geometry = std::move(geometry);
 
     auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuids::to_string(uuid_generator());
+    material->uuid = uuid_generator_.GenerateRandom();
     material->type = "MeshPhongMaterial";
     material->color = ToMeshcatColor(rgba);
     material->transparent = (rgba.a() != 1.0);
@@ -977,7 +972,7 @@ class Meshcat::Impl {
     data.object.material = std::move(material);
 
     internal::MeshData mesh;
-    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.uuid = uuid_generator_.GenerateRandom();
     mesh.type = "Mesh";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material = data.object.material->uuid;
@@ -1002,19 +997,18 @@ class Meshcat::Impl {
                             SideOfFaceToRender side) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
 
     auto geometry = std::make_unique<internal::BufferGeometryData>();
-    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->position = vertices.cast<float>();
     geometry->faces = faces.cast<uint32_t>();
     geometry->color = colors.cast<float>();
     data.object.geometry = std::move(geometry);
 
     auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuids::to_string(uuid_generator());
+    material->uuid = uuid_generator_.GenerateRandom();
     material->type = "MeshPhongMaterial";
     material->transparent = false;
     material->opacity = 1.0;
@@ -1025,7 +1019,7 @@ class Meshcat::Impl {
     data.object.material = std::move(material);
 
     internal::MeshData mesh;
-    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.uuid = uuid_generator_.GenerateRandom();
     mesh.type = "Mesh";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material = data.object.material->uuid;
@@ -1048,7 +1042,6 @@ class Meshcat::Impl {
 
     is_orthographic_ = std::is_same_v<OrthographicCamera, CameraData>;
 
-    uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetCameraData<CameraData> data;
     data.path = std::move(path);
     data.object.object = std::move(camera);
@@ -2093,7 +2086,7 @@ class Meshcat::Impl {
   std::thread::id main_thread_id_{};
   const MeshcatParams params_;
   int port_{};
-  std::mt19937 generator_{};
+  internal::UuidGenerator uuid_generator_{};
   double realtime_rate_{0.0};
   bool is_orthographic_{false};
 
