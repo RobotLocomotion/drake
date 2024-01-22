@@ -11,6 +11,9 @@ print(pydrake.all.PackageMap().GetPath('drake'))
 assert pydrake.all.MosekSolver().available(), 'Missing MOSEK'
 assert pydrake.all.SnoptSolver().available(), 'Missing SNOPT'
 
+# Once we drop Focal and its nerfs, we won't need this sanity-check anymore.
+assert pydrake.all.ClarabelSolver().available(), 'Missing Clarabel'
+
 # Check that IPOPT is working.
 prog = pydrake.all.MathematicalProgram()
 x = prog.NewContinuousVariables(2, 'x')
