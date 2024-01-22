@@ -563,7 +563,7 @@ class RigidBody : public MultibodyElement<T> {
   /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const {
     const systems::BasicVector<T>& spatial_inertia_parameter =
@@ -598,7 +598,7 @@ class RigidBody : public MultibodyElement<T> {
   /// modifying G_BBo_B (B's unit inertia about Bo, expressed in B). Since this
   /// use case is very unlikely, consider using SetSpatialInertiaInBodyFrame()
   /// or SetCenterOfMassInBodyFrameAndPreserveCentralInertia().
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if context is null.
   /// @warning Do not use this function unless it is needed (think twice).
   // TODO(Mitiguy) Consider deprecating this function.
@@ -632,7 +632,7 @@ class RigidBody : public MultibodyElement<T> {
   /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_Bo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if context is null.
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
@@ -816,7 +816,7 @@ class RigidBody : public MultibodyElement<T> {
   // if changing center of mass position also changes G_BBo_B and necessitates
   // a call to SetUnitInertiaAboutBodyOrigin(). B's inertia properties can be
   // checked via CalcSpatialInertiaInBodyFrame().IsPhysicallyValid().
-  // @pre the context makes sense for use by this RigidBody.
+  // @pre the context makes sense for use by this %RigidBody.
   // @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrameNoModifyInertia(
       systems::Context<T>* context,
@@ -830,7 +830,7 @@ class RigidBody : public MultibodyElement<T> {
   // also changes B's center of mass and necessitates a call to
   // SetCenterOfMassInBodyFrameNoModifyInertia(). B's inertia properties can be
   // checked via CalcSpatialInertiaInBodyFrame().IsPhysicallyValid().
-  // @pre the context makes sense for use by this RigidBody.
+  // @pre the context makes sense for use by this %RigidBody.
   // @throws std::exception if context is null.
   void SetUnitInertiaAboutBodyOrigin(
       systems::Context<T>* context,
