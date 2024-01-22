@@ -32,4 +32,34 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "multibody_topology",
+    srcs = [
+        "link_joint_graph.cc",
+        "spanning_forest.cc",
+    ],
+    hdrs = [
+        "forest.h",
+        "graph.h",
+        "link_joint_graph.h",
+        "link_joint_graph_defs.h",
+        "link_joint_graph_inlines.h",
+        "link_joint_graph_joint.h",
+        "link_joint_graph_link.h",
+        "spanning_forest.h",
+    ],
+    deps = [
+        "//common:copyable_unique_ptr",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "link_joint_graph_test",
+    deps = [
+        ":multibody_topology",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
 add_lint_tests()
