@@ -379,6 +379,10 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.b(), box.b())
         assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
 
+        other = mut.VPolytope(np.eye(2))
+        bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
+        self.assertIsInstance(bbox, mut.Hyperrectangle)
+
     def test_minkowski_sum(self):
         mut.MinkowskiSum()
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
