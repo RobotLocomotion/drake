@@ -528,11 +528,6 @@ class GcsTrajectoryOptimization final {
   const int num_positions_;
   const std::vector<int> continuous_revolute_joints_;
 
-  /* Computes the minium and maximum values that can be attained along a certain
-  dimension for a point constrained to lie within a convex set. */
-  const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
-      const geometry::optimization::ConvexSet& region, int dimension) const;
-
   // Adds a Edge to gcs_ with the name "{u.name} -> {v.name}".
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
       geometry::optimization::GraphOfConvexSets::Vertex* u,

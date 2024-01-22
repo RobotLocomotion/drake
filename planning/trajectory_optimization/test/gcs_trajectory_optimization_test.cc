@@ -6,8 +6,11 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -27,10 +30,14 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
+using geometry::optimization::Hyperrectangle;
+using geometry::optimization::Intersection;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
