@@ -54,8 +54,9 @@ TEST_F(ScrewMobilizerTest, ScrewPitchAccess) {
 
 TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
   const double zero_screw_pitch{0};
+  const SpanningForest::Mobod* dummy_mobod{};
   ScrewMobilizer<double> zero_pitch_screw_mobilizer(
-      tree().world_body().body_frame(), body_->body_frame(),
+      *dummy_mobod, tree().world_body().body_frame(), body_->body_frame(),
       Vector3<double>::UnitZ(), zero_screw_pitch);
 
   const double translation_z{1.0};

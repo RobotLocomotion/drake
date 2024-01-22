@@ -69,9 +69,10 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 
   // Constructor for a SpaceXYZFloatingMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M`.
-  SpaceXYZFloatingMobilizer(const Frame<T>& inboard_frame_F,
+  SpaceXYZFloatingMobilizer(const SpanningForest::Mobod& mobod,
+                            const Frame<T>& inboard_frame_F,
                             const Frame<T>& outboard_frame_M)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   bool is_floating() const override { return true; }
 
