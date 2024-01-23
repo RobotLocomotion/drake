@@ -190,24 +190,28 @@ class SceneTreeElement {
     }
   }
 
-  // Returns a string which implements the entire tree directly in javascript.
-  // This is intended for use in generating a "static html" of the scene.
-  std::string CreateCommands() const {
-    std::string html;
+  // Returns the JavaScript text that will re-create this scene element and its
+  // children. This is intended for use in generating a "static html" of the
+  // scene. For efficiency, the text is returned as a list of strings; the
+  // caller is expected to concatenate them (without adding any whitespace),
+  // similar to a https://en.wikipedia.org/wiki/Rope_(data_structure).
+  std::vector<std::string> CreateCommands() const {
+    std::vector<std::string> result;
     if (object_) {
-      html += CreateCommand(*object_);
+      result.push_back(CreateCommand(*object_));
     }
     if (transform_) {
-      html += CreateCommand(*transform_);
+      result.push_back(CreateCommand(*transform_));
     }
     for (const auto& [_, msg] : properties_) {
-      html += CreateCommand(msg);
+      result.push_back(CreateCommand(msg));
     }
-
     for (const auto& [_, child] : children_) {
-      html += child->CreateCommands();
+      std::vector<std::string> child_commands = child->CreateCommands();
+      std::move(child_commands.begin(), child_commands.end(),
+                std::back_inserter(result));
     }
-    return html;
+    return result;
   }
 
  private:
@@ -1561,18 +1565,21 @@ class Meshcat::Impl {
       html.insert(js_pos + 1, url_data);
     }
 
-    // Replace the javascript code in the original html file which connects via
-    // websockets with the static javascript commands.
-    std::string commands = scene_tree_root_.CreateCommands();
+    // Assemble javascript code that mimics (replays) the websocket commands.
+    std::vector<std::string> commands = scene_tree_root_.CreateCommands();
     if (!animation_.empty()) {
-      commands += CreateCommand(animation_);
+      commands.push_back(CreateCommand(animation_));
     }
     if (!camera_target_message_.empty()) {
-      commands += CreateCommand(camera_target_message_);
+      commands.push_back(CreateCommand(camera_target_message_));
     }
+
+    // Replace the original html file's javascript websocket connection logic
+    // with the replayed commands.
     std::regex block_re(
         "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
-    html = std::regex_replace(html, block_re, commands);
+    html = std::regex_replace(html, block_re,
+                              fmt::format("{}", fmt::join(commands, "")));
 
     return html;
   }
