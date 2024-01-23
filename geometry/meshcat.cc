@@ -42,10 +42,13 @@ extern "C" {
 void us_internal_free_closed_sockets(struct us_loop_t*);
 }
 
+namespace fs = std::filesystem;
+
 namespace drake {
 namespace geometry {
 namespace {
 
+using internal::FileStorage;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -93,16 +96,40 @@ fetch("data:application/octet-binary;base64,{}")
 
 class SceneTreeElement {
  public:
-  // Member access methods (object_, transform_, and properties_ should be
-  // effectively public).
-  const std::optional<std::string>& object() const { return object_; }
-  std::optional<std::string>& object() { return object_; }
-  const std::optional<std::string>& transform() const { return transform_; }
-  std::optional<std::string>& transform() { return transform_; }
-  const std::map<std::string, std::string>& properties() const {
-    return properties_;
-  }
-  std::map<std::string, std::string>& properties() { return properties_; }
+  /* Each SceneTreeElement stores the set of messages that would re-create it
+  from scratch. Some of those messages might refer to asset files. This struct
+  stores the message bytes alongside any resources that the message refers to,
+  so it's easier to keep the two pieces in sync. */
+  struct Message {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Message);
+
+    Message() = default;
+
+    /* Convenience operator to assign to `bytes` (and therefore, clear any
+    `resources` used by the prior value of bytes). */
+    Message& operator=(std::string&& new_bytes) {
+      bytes = std::move(new_bytes);
+      resources.clear();
+      return *this;
+    }
+
+    /* The packed command message that conveys some portion of this
+    SceneTreeElement to meshcat.js. */
+    std::string bytes;
+
+    /* If the message refers to http resources (e.g., image files), then this
+    list is responsible for keeping alive a non-zero reference count for those
+    file(s) in our in-memory storage. */
+    std::vector<FileStorage::Handle> resources;
+  };
+
+  // Provide direct access to all member fields except the list of children.
+  const std::optional<Message>& object() const { return object_; }
+  std::optional<Message>& object() { return object_; }
+  const std::optional<Message>& transform() const { return transform_; }
+  std::optional<Message>& transform() { return transform_; }
+  const std::map<std::string, Message>& properties() const { return props_; }
+  std::map<std::string, Message>& properties() { return props_; }
 
   // Returns this element or a descendant, based on a recursive evaluation of
   // the `path`.  Adds new elements if they do not exist.  Comparable to
@@ -176,13 +203,13 @@ class SceneTreeElement {
   // Sends the entire tree on `ws`.
   void Send(WebSocket* ws) {
     if (object_) {
-      ws->send(*object_);
+      ws->send(object_->bytes);
     }
     if (transform_) {
-      ws->send(*transform_);
+      ws->send(transform_->bytes);
     }
-    for (const auto& [_, msg] : properties_) {
-      ws->send(msg);
+    for (const auto& [_, property] : props_) {
+      ws->send(property.bytes);
     }
 
     for (const auto& [_, child] : children_) {
@@ -198,13 +225,13 @@ class SceneTreeElement {
   std::vector<std::string> CreateCommands() const {
     std::vector<std::string> result;
     if (object_) {
-      result.push_back(CreateCommand(*object_));
+      result.push_back(CreateCommand(object_->bytes));
     }
     if (transform_) {
-      result.push_back(CreateCommand(*transform_));
+      result.push_back(CreateCommand(transform_->bytes));
     }
-    for (const auto& [_, msg] : properties_) {
-      result.push_back(CreateCommand(msg));
+    for (const auto& [_, property] : props_) {
+      result.push_back(CreateCommand(property.bytes));
     }
     for (const auto& [_, child] : children_) {
       std::vector<std::string> child_commands = child->CreateCommands();
@@ -219,13 +246,13 @@ class SceneTreeElement {
   // not been set, and therefore need not be sent over the websocket.
 
   // The msgpack'd set_object command.
-  std::optional<std::string> object_{std::nullopt};
+  std::optional<Message> object_;
   // The msgpack'd set_transform command.
-  std::optional<std::string> transform_{std::nullopt};
+  std::optional<Message> transform_;
   // The msgpack'd set_property command(s).
-  std::map<std::string, std::string> properties_{};
+  std::map<std::string, Message> props_;
   // Children, with the key value denoting their (relative) path name.
-  std::map<std::string, std::unique_ptr<SceneTreeElement>> children_{};
+  std::map<std::string, std::unique_ptr<SceneTreeElement>> children_;
 };
 
 class MeshcatShapeReifier : public ShapeReifier {
@@ -816,7 +843,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -859,7 +886,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -942,7 +969,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -988,7 +1015,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -1035,7 +1062,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -1059,7 +1086,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.object() = std::move(message);
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -1087,7 +1114,7 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
-      e.transform() = std::move(message);
+      e.transform().emplace() = std::move(message);
     });
   }
 
@@ -1129,6 +1156,51 @@ class Meshcat::Impl {
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.properties()[data.property] = std::move(message);
+    });
+  }
+
+  // Meshcat uses content-addressable storage ("CAS") to serve resource files.
+  // See https://en.wikipedia.org/wiki/Content-addressable_storage.
+  // This function returns the CAS URL for the given checksum.
+  static std::string GetCasUrl(const Sha256& sha256) {
+    // This URL pattern must align with the pattern in HandleHttpGet().
+    return fmt::format("cas/sha256/{}", sha256.to_string());
+  }
+
+  // Sets the `property` of `path` to a CAS URL that refers to `file_path`. The
+  // file is copied into memory (in `file_storage_`) so that our HTTP server can
+  // serve it anytime a browser requests it.
+  //
+  // This function is a file-internal helper, not public in the PIMPL.
+  void SetPropertyToFile(std::string_view path, std::string property,
+                         const fs::path& file_path) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    // Read the file and insert it into the database.
+    std::optional<std::string> content = ReadFile(file_path);
+    if (!content) {
+      throw std::runtime_error(fmt::format(
+          "Cannot open '{}' when attempting to set property '{}' on '{}'",
+          file_path.string(), property, path));
+    }
+    FileStorage::Handle resource = file_storage_.Insert(std::move(*content));
+
+    internal::SetPropertyData<std::string> data;
+    data.path = FullPath(path);
+    data.property = std::move(property);
+    data.value = GetCasUrl(resource.sha256);
+
+    Defer([this, data = std::move(data), resource = std::move(resource)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      SceneTreeElement::Message& m = e.properties()[data.property];
+      m.bytes = std::move(message);
+      m.resources = {std::move(resource)};
     });
   }
 
@@ -1565,6 +1637,29 @@ class Meshcat::Impl {
       html.insert(js_pos + 1, url_data);
     }
 
+    // Insert a JavaScript URL hook that knows how to serve the CAS database.
+    // (See FileStorage and GetCasUrl for details about CAS.)
+    std::vector<std::string> cas_script;
+    cas_script.push_back("casResources = {};");
+    std::vector<FileStorage::Handle> resources = file_storage_.DumpEverything();
+    for (const auto& resource : resources) {
+      cas_script.push_back(
+          fmt::format("casResources[\"{}\"] = "
+                      "\"data:application/octet-binary;base64,{}\";",
+                      GetCasUrl(resource.sha256),
+                      common_robotics_utilities::base64_helpers::Encode(
+                          std::vector<uint8_t>(resource.content->begin(),
+                                               resource.content->end()))));
+    }
+    cas_script.push_back(R"""(
+        MeshCat.THREE.DefaultLoadingManager.setURLModifier(url => {
+            if (url in casResources) {
+                return casResources[url];
+            }
+            return url;
+        });
+)""");
+
     // Assemble javascript code that mimics (replays) the websocket commands.
     std::vector<std::string> commands = scene_tree_root_.CreateCommands();
     if (!animation_.empty()) {
@@ -1579,7 +1674,8 @@ class Meshcat::Impl {
     std::regex block_re(
         "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
     html = std::regex_replace(html, block_re,
-                              fmt::format("{}", fmt::join(commands, "")));
+                              fmt::format("{}{}", fmt::join(cas_script, ""),
+                                          fmt::join(commands, "")));
 
     return html;
   }
@@ -1618,11 +1714,11 @@ class Meshcat::Impl {
     Defer([this, path = FullPath(path), p = std::move(p)]() mutable {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
-      if (!e || !e->object()) {
-        p.set_value("");
-      } else {
-        p.set_value(*e->object());
+      std::string value;
+      if ((e != nullptr) && e->object().has_value()) {
+        value = e->object().value().bytes;
       }
+      p.set_value(std::move(value));
     });
     return f.get();
   }
@@ -1636,11 +1732,11 @@ class Meshcat::Impl {
     Defer([this, path = FullPath(path), p = std::move(p)]() mutable {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
-      if (!e || !e->transform()) {
-        p.set_value("");
-      } else {
-        p.set_value(*e->transform());
+      std::string value;
+      if ((e != nullptr) && e->transform().has_value()) {
+        value = e->transform().value().bytes;
       }
+      p.set_value(std::move(value));
     });
     return f.get();
   }
@@ -1656,16 +1752,14 @@ class Meshcat::Impl {
            p = std::move(p)]() mutable {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
-      if (!e) {
-        p.set_value("");
-      } else {
+      std::string value;
+      if (e != nullptr) {
         auto prop = e->properties().find(property);
-        if (prop == e->properties().end()) {
-          p.set_value("");
-        } else {
-          p.set_value(prop->second);
+        if (prop != e->properties().end()) {
+          value = prop->second.bytes;
         }
       }
+      p.set_value(std::move(value));
     });
     return f.get();
   }
@@ -1925,6 +2019,30 @@ class Meshcat::Impl {
       response->end(content);
       return;
     }
+    // Handle content-addressable storage. This must align with GetCasUrl().
+    if (url_path.substr(0, 12) == "/cas/sha256/") {
+      const std::string_view suffix = url_path.substr(12);
+      std::optional<Sha256> key = Sha256::Parse(suffix);
+      if (!key.has_value()) {
+        drake::log()->warn("Meshcat: Malformed CAS key {}", suffix);
+        response->writeStatus("400 Unparseable CAS key");
+        response->end("");
+        return;
+      }
+      FileStorage::Handle handle = file_storage_.Find(*key);
+      if (handle.content == nullptr) {
+        drake::log()->warn("Meshcat: Unknown CAS key {}", suffix);
+        response->writeStatus("404 CAS key not found");
+        response->writeHeader("Cache-Control:", "no-cache");
+        response->end("");
+        return;
+      }
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#immutable
+      response->writeHeader("Cache-Control:",
+                            "public, max-age=604800, immutable");
+      response->end(*handle.content);
+      return;
+    }
     // Handle static (i.e., compiled-in) files.
     if (const std::optional<std::string_view> content =
             internal::GetMeshcatStaticResource(url_path)) {
@@ -2108,6 +2226,9 @@ class Meshcat::Impl {
   // This variable may be accessed from any thread, but should only be modified
   // in the websocket thread.
   std::atomic<int> num_websockets_{0};
+
+  // This variable may be accessed from any thread. It has an internal mutex.
+  FileStorage file_storage_;
 
   // The loop_ pointer is used to pass functors from the main thread into the
   // websocket worker thread, via loop_->defer(...). See the documentation of
@@ -2422,36 +2543,13 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 }
 
 void Meshcat::SetEnvironmentMap(const std::filesystem::path& image_path) {
-  // We broadcast the image to Meshcat as a base64-encoded data URL. So, we
-  // need to determine its mime type (from extension) and encode the image
-  // contents. We have a stated prereq that the file is actually an image, So,
-  // we're not even validating the extension. In the case of a bad extension or
-  // bad file contents, we defer to meshcat to report problems in the browser.
-  std::string ext = image_path.extension();
-  std::string image_encoding = "";
-  if (ssize(ext) > 1) {
-    ext = ext.substr(1);
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
-      return std::tolower(c);
-    });
-    std::ifstream map_stream(image_path, std::ios::binary | std::ios::ate);
-    if (map_stream.is_open()) {
-      int map_size = map_stream.tellg();
-      map_stream.seekg(0, std::ios::beg);
-      std::vector<uint8_t> map_data;
-      map_data.reserve(map_size);
-      map_data.assign(std::istreambuf_iterator<char>(map_stream),
-                      std::istreambuf_iterator<char>());
-      image_encoding =
-          fmt::format("data:image/{};base64,", ext) +
-          common_robotics_utilities::base64_helpers::Encode(map_data);
-    } else {
-      throw std::runtime_error(
-          fmt::format("Requested environment map cannot be read: '{}'.",
-                      image_path.string()));
-    }
+  const std::string_view property_path = "/Background/<object>";
+  const std::string property_name = "environment_map";
+  if (image_path.empty()) {
+    impl().SetProperty(property_path, property_name, std::string{});
+  } else {
+    impl().SetPropertyToFile(property_path, property_name, image_path);
   }
-  impl().SetProperty("/Background/<object>", "environment_map", image_encoding);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
