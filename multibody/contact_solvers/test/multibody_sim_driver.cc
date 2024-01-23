@@ -61,9 +61,8 @@ void MultibodySimDriver::AddGround(double stiffness, double damping,
   SetPointContactParameters(plant_->world_body(), stiffness, damping);
 }
 
-void MultibodySimDriver::SetPointContactParameters(const Body<double>& body,
-                                                   double stiffness,
-                                                   double damping) {
+void MultibodySimDriver::SetPointContactParameters(
+    const RigidBody<double>& body, double stiffness, double damping) {
   const std::vector<geometry::GeometryId>& geometries =
       plant_->GetCollisionGeometriesForBody(body);
 
@@ -90,7 +89,7 @@ void MultibodySimDriver::SetPointContactParameters(const Body<double>& body,
 }
 
 std::vector<double> MultibodySimDriver::GetDynamicFrictionCoefficients(
-    const Body<double>& body) const {
+    const RigidBody<double>& body) const {
   const std::vector<geometry::GeometryId>& geometries =
       plant_->GetCollisionGeometriesForBody(body);
   const auto& inspector = GetInspector();

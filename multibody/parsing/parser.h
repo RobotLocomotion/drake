@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -214,11 +213,6 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddModelsFromUrl(
       const std::string& url);
 
-  /// Legacy spelling of AddModels.
-  DRAKE_DEPRECATED("2023-12-01", "Use AddModels() instead.")
-  std::vector<ModelInstanceIndex> AddAllModelsFromFile(
-      const std::string& file_name);
-
   /// Provides same functionality as AddModels, but instead parses
   /// the model description text data via @p file_contents with format dictated
   /// by @p file_type.
@@ -231,26 +225,6 @@ class Parser final {
   /// @throws std::exception in case of errors.
   std::vector<ModelInstanceIndex> AddModelsFromString(
       const std::string& file_contents, const std::string& file_type);
-
-  /// Parses the input file named in @p file_name and adds one top-level model
-  /// to @p plant. It is an error to call this using any file that adds more
-  /// than one model instance.
-  ///
-  /// @note This function might create additional model instances corresponding
-  /// to nested models found in the top level file. This means that elements
-  /// contained by the returned model instance may not comprise all of the
-  /// added elements due to how model instances are mutually exclusive and not
-  /// hierarchical (#14043).
-  ///
-  /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
-  /// nesting in SDFormat.
-  DRAKE_DEPRECATED("2023-12-01", "Use parser.AddModels() instead. To port the"
-                   " 2-argument form, rename models using"
-                   " parser.SetAutoRenaming() and plant.RenameModelInstance()."
-                   " See PR #19978 for more details.")
-  ModelInstanceIndex AddModelFromFile(
-      const std::string& file_name,
-      const std::string& model_name = {});
 
  private:
   friend class internal::CompositeParse;

@@ -1,6 +1,9 @@
 [vtk] Remove a spurious dependency on VTK::utf8
 
-We should upstream this patch. Nothing in vtkCommonCore uses VTK::utf8.
+This patch has been upstreamed and can likely be dropped in a future
+update to Drake's VTK.
+
+See https://gitlab.kitware.com/vtk/vtk/-/merge_requests/10793.
 
 --- Common/Core/vtk.module
 +++ Common/Core/vtk.module

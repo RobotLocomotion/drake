@@ -12,6 +12,13 @@ namespace drake {
 namespace multibody {
 namespace {
 
+GTEST_TEST(ModelInstance, MissingName) {
+  const std::string empty_name;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ModelInstance<double>(ModelInstanceIndex{1}, empty_name),
+      ".*name.*empty.*");
+}
+
 GTEST_TEST(ModelInstance, ModelInstanceTest) {
   // Create a tree with enough bodies to make two models, one with a
   // welded base and one free.
@@ -170,10 +177,12 @@ GTEST_TEST(ModelInstance, ModelInstanceRenameTest) {
       ".*no model instance id 99.*");
 
   const ModelInstanceIndex model0 = tree.AddModelInstance("before");
+  EXPECT_EQ(tree.GetModelInstanceName(model0), "before");
   EXPECT_EQ(tree.GetModelInstanceByName("before"), model0);
 
   tree.RenameModelInstance(model0, "after");
   EXPECT_FALSE(tree.HasModelInstanceNamed("before"));
+  EXPECT_EQ(tree.GetModelInstanceName(model0), "after");
   EXPECT_EQ(tree.GetModelInstanceByName("after"), model0);
   tree.RenameModelInstance(model0, "after");  // to same name is not an error.
 

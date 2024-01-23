@@ -15,12 +15,12 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 using drake::math::RigidTransformd;
-using drake::multibody::Body;
 using drake::multibody::RevoluteJoint;
+using drake::multibody::RigidBody;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
@@ -386,9 +386,9 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
   // We aren't doing any physics in this test, just checking that constraint
   // active status is forwarded through to the driver. So bodies, joints, and
   // constraints have arbitrary non-physical parameters for ease of setup.
-  const Body<double>& body_A =
+  const RigidBody<double>& body_A =
       plant.AddRigidBody("body_A", SpatialInertia<double>::MakeUnitary());
-  const Body<double>& body_B =
+  const RigidBody<double>& body_B =
       plant.AddRigidBody("body_B", SpatialInertia<double>::MakeUnitary());
   const RevoluteJoint<double>& world_A = plant.AddJoint<RevoluteJoint>(
       "world_A", plant.world_body(), RigidTransformd::Identity(), body_A,

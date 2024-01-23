@@ -5,6 +5,10 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -56,6 +60,7 @@ drake_cc_package_library(
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":volume_mesh_refiner",
         ":volume_to_surface_mesh",
         ":vtk_to_volume_mesh",
     ],
@@ -835,6 +840,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "volume_mesh_refiner",
+    srcs = ["volume_mesh_refiner.cc"],
+    hdrs = ["volume_mesh_refiner.h"],
+    deps = [
+        ":detect_zero_simplex",
+        ":volume_mesh",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "volume_to_surface_mesh",
     srcs = [
         "volume_to_surface_mesh.cc",
@@ -867,6 +883,18 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOLegacy",
+    ],
+)
+
+drake_cc_binary(
+    name = "refine_mesh",
+    srcs = ["refine_mesh.cc"],
+    deps = [
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
+        ":vtk_to_volume_mesh",
+        "//common:add_text_logging_gflags",
+        "@gflags",
     ],
 )
 
@@ -1483,6 +1511,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "volume_mesh_refiner_test",
+    deps = [
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
+    ],
+)
+
+drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
         ":mesh_field",
@@ -1511,6 +1547,17 @@ drake_cc_googletest(
         ":vtk_to_volume_mesh",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "refine_mesh_test",
+    data = [
+        ":refine_mesh",
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 

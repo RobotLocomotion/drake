@@ -608,10 +608,10 @@ class ContactModelTest : public ::testing::Test {
 
       const GeometryId A_id = surface.id_M();
       const FrameId fA_id = inspector.GetFrameId(A_id);
-      const Body<double>& body_A = *plant_->GetBodyFromFrameId(fA_id);
+      const RigidBody<double>& body_A = *plant_->GetBodyFromFrameId(fA_id);
       const GeometryId B_id = surface.id_N();
       const FrameId fB_id = inspector.GetFrameId(B_id);
-      const Body<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
+      const RigidBody<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
 
       const Vector3d& p_WC = surface.centroid();
       const Vector3d& p_WAo =

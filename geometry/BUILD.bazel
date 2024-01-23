@@ -452,13 +452,20 @@ drake_cc_googletest(
 
 drake_cc_library(
     name = "meshcat",
-    srcs = ["meshcat.cc"],
+    srcs = [
+        "meshcat.cc",
+        "meshcat_internal.cc",
+    ],
     hdrs = [
         "meshcat.h",
-        "meshcat_types.h",
+        "meshcat_internal.h",
+        "meshcat_types_internal.h",
     ],
     data = [":meshcat_resources"],
-    install_hdrs_exclude = ["meshcat_types.h"],
+    install_hdrs_exclude = [
+        "meshcat_internal.h",
+        "meshcat_types_internal.h",
+    ],
     interface_deps = [
         ":meshcat_animation",
         ":rgba",
@@ -497,6 +504,7 @@ drake_cc_binary(
     deps = [
         ":meshcat",
         ":meshcat_visualizer",
+        "//common:add_text_logging_gflags",
         "//common/test_utilities:maybe_pause_for_user",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
@@ -529,6 +537,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_internal_test",
+    deps = [
+        ":meshcat",
     ],
 )
 

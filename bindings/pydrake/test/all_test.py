@@ -8,8 +8,6 @@ import warnings
 # our tools/bazel.rc file) since importing doesn't open any new windows.
 del os.environ['MPLBACKEND']  # noqa
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 
 class TestAll(unittest.TestCase):
     # N.B. Synchronize code snippets with `doc/_pages/python_bindings.md`.

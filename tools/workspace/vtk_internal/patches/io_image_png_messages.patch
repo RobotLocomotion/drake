@@ -4,7 +4,10 @@ Dumping errors to the global output window when unable to parse a PNG
 file header is completely unacceptable. We should send all errors to a
 relevant vtkObject so that they are dispatched appropriately.
 
-We should upstream this patch.
+This patch has been upstreamed and can likely be dropped in a future
+update to Drake's VTK.
+
+See https://gitlab.kitware.com/vtk/vtk/-/merge_requests/10781.
 
 --- IO/Image/vtkPNGReader.cxx
 +++ IO/Image/vtkPNGReader.cxx

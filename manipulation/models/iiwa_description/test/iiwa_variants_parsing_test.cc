@@ -95,8 +95,9 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
 }
 
 // Compare rotational inertias i.e moments and products of inertia
-void CompareRotationalInertias(const multibody::Body<double>& canonical_body,
-                               const multibody::Body<double>& robot_body) {
+void CompareRotationalInertias(
+    const multibody::RigidBody<double>& canonical_body,
+    const multibody::RigidBody<double>& robot_body) {
   EXPECT_TRUE(
       CompareMatrices(canonical_body.default_rotational_inertia().get_moments(),
                       robot_body.default_rotational_inertia().get_moments()));
@@ -166,9 +167,9 @@ GTEST_TEST(InertiasIiwa7, TestInertiaValues) {
     std::filesystem::path model_path(model_file);
     for (size_t i = 0; i < link_names.size(); ++i) {
       SCOPED_TRACE(fmt::format("Link: {}", link_names[i]));
-      const multibody::Body<double>& canonical_body =
+      const multibody::RigidBody<double>& canonical_body =
           canonical_plant.GetBodyByName(link_names[i]);
-      const multibody::Body<double>& robot_body =
+      const multibody::RigidBody<double>& robot_body =
           plant.GetBodyByName(link_names[i]);
       CompareRotationalInertias(canonical_body, robot_body);
     }
@@ -286,11 +287,11 @@ GTEST_TEST(InertiasIiwa14, TestInertiaValues) {
     if (model_path.filename() == "dual_iiwa14_polytope_collision.urdf") {
       for (size_t i = 0; i < link_names.size(); ++i) {
         SCOPED_TRACE(fmt::format("Link: {}", link_names[i]));
-        const multibody::Body<double>& canonical_body =
+        const multibody::RigidBody<double>& canonical_body =
             canonical_plant.GetBodyByName(link_names[i]);
-        const multibody::Body<double>& left_robot_body =
+        const multibody::RigidBody<double>& left_robot_body =
             plant.GetBodyByName("left_" + link_names[i]);
-        const multibody::Body<double>& right_robot_body =
+        const multibody::RigidBody<double>& right_robot_body =
             plant.GetBodyByName("right_" + link_names[i]);
         CompareRotationalInertias(canonical_body, left_robot_body);
         CompareRotationalInertias(canonical_body, right_robot_body);
@@ -298,9 +299,9 @@ GTEST_TEST(InertiasIiwa14, TestInertiaValues) {
     } else {
       for (size_t i = 0; i < link_names.size(); ++i) {
         SCOPED_TRACE(fmt::format("Link: {}", link_names[i]));
-        const multibody::Body<double>& canonical_body =
+        const multibody::RigidBody<double>& canonical_body =
             canonical_plant.GetBodyByName(link_names[i]);
-        const multibody::Body<double>& robot_body =
+        const multibody::RigidBody<double>& robot_body =
             plant.GetBodyByName(link_names[i]);
         CompareRotationalInertias(canonical_body, robot_body);
       }

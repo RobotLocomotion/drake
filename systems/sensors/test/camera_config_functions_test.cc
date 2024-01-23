@@ -570,6 +570,32 @@ TEST_F(CameraConfigFunctionsTest, BadLcmBus) {
                               ".*non-default.*special_request.*");
 }
 
+// The user can opt-out of LCM, in which case only the camera system is added.
+// LcmBuses object from the argument list.
+TEST_F(CameraConfigFunctionsTest, NullLcmBus) {
+  LcmBuses lcm_buses;
+  DrakeLcm default_lcm(LcmBuses::kLcmUrlMemqNull);
+  lcm_buses.Add("default", &default_lcm);
+
+  // Add the camera (only).
+  const CameraConfig config;
+  ApplyCameraConfig(config, &builder_, &lcm_buses);
+
+  // Check that no LCM-related objects are created.
+  for (const auto* system : builder_.GetSystems()) {
+    const std::string& name = system->get_name();
+    // Allow the MbP basics.
+    if (name == "plant" || name == "scene_graph") {
+      continue;
+    }
+    // Allow the camera itself.
+    if (name == "rgbd_sensor_preview_camera") {
+      continue;
+    }
+    GTEST_FAIL() << name << " should not exist in the diagram";
+  }
+}
+
 // Confirms that the render engine implementation follows the requested type
 // (when supported). We already know that the config gets validated, so we
 // don't need to test cases where an invalid renderer_class value is passed.

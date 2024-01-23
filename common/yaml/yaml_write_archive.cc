@@ -182,7 +182,7 @@ void WriteJson(std::ostream& os, const internal::Node& node) {
           os << "Infinity";
           return;
         }
-        if (scalar == ".-inf") {
+        if (scalar == "-.inf") {
           os << "-Infinity";
           return;
         }

@@ -34,14 +34,20 @@ clone) **must** be named ``drake``.
    academic license [here](https://www.jetbrains.com/shop/eform/students).
 
 The most recent versions that we have tested for compatibility are:
-* Ubuntu 20.04 (Focal)
-* Bazel 4.2.1 (2021-08-30)
-* CLion 2021.2.3 (2021-10-14)
-    * Bazel plugin 2021.11.03.1.1 (2021-11-08)
+* Ubuntu 22.04 (Jammy)
+* Bazel 6.4.0
+* CLion 2023.3.2
+    * Bazel plugin 2023.11.23.0.1-api-version-233
 
-Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
-with each other.  We strongly suggest using only the versions shown above, when
-working with Drake.
+Different CLion versions will normally choose a compatible Bazel plugin.
+
+## Current CLion/Bazel problem
+
+We are seeing CLion confused about Drake header files, possibly due to
+Bazel's "sandboxing" which uses symbolic links to construct a source tree
+containing only files that appear in the current workspace. We do not
+yet have a diagnosis or workaround. CLion is still usable but symbols within
+header files are not properly recognized, .cc files work fine.
 
 ## Upgrading CLion
 
@@ -58,7 +64,7 @@ Users upgrading from a previous version of CLion should do the following:
 3. In CLion, select
    ``Bazel->Sync->Non-incrementally Sync Project with BUILD Files``
 4. You may need to delete cached data in ``~/.cache/bazel`` and
-   ``~/.cache/JetBrains/CLion2021.2/caches`` if you get error messages
+   ``~/.cache/JetBrains/CLion2023.2/caches`` if you get error messages
    complaining about old files in the cache (substitute the right version
    number).
 
@@ -218,7 +224,6 @@ Leave the checkbox options in their default state.
 
 ## "Linting" files
 
-
 "Linting" refers to using tools to find aspects of code which don't conform
 to specified coding practices. You can apply Drake's linting tools in CLion to
 find such issues. We'll define two tools:
@@ -336,20 +341,17 @@ configuration is done.
 
 ## Get the bazel target string
 
-
 Find the source file of the program in the file tree view. Right-click on the
 file, and select "Copy BUILD Target String". This will put the Bazel target
 name into the clipboard.
 
 ## Start a run configuration
 
-
 From the top menu, select "Run/Edit Configurations...". Select the "+" at the
 upper left of the dialog to add a new configuration. From the list, select
 "Bazel Command".
 
 ## Fill in the configuration
-
 
 Now it's time to fill in the new blank configuration. Give it a name, then
 select the "+" at the right side to add the target expression. Once the edit

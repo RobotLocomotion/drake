@@ -199,7 +199,7 @@ Next topic: @ref contact_engineering
    2. Global parameters controlling the stiffness of normal penalty forces.
       @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers a single
       global parameter, the "penetration allowance", described in detail in
-      section @ref mbp_penalty_method "Contact by penalty method".
+      section @ref mbp_compliant_point_contact "Compliant point contact model".
    3. Global parameter controlling the Stribeck approximation of Coulomb
       friction, refer to section @ref stribeck_approximation for details.
       @ref drake::multibody::MultibodyPlant::set_stiction_tolerance()

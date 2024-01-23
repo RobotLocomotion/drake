@@ -11,9 +11,9 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
+using multibody::RigidBody;
 
 void DefinePlanningCollisionChecker(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -34,7 +34,7 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def("IsPartOfRobot",
-            overload_cast_explicit<bool, const Body<double>&>(
+            overload_cast_explicit<bool, const RigidBody<double>&>(
                 &Class::IsPartOfRobot),
             py::arg("body"), cls_doc.IsPartOfRobot.doc)
         .def("IsPartOfRobot",
@@ -107,8 +107,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("bodyA_index"), py::arg("bodyB_index"),
             cls_doc.GetPaddingBetween.doc_2args_bodyA_index_bodyB_index)
         .def("GetPaddingBetween",
-            overload_cast_explicit<double, const Body<double>&,
-                const Body<double>&>(&Class::GetPaddingBetween),
+            overload_cast_explicit<double, const RigidBody<double>&,
+                const RigidBody<double>&>(&Class::GetPaddingBetween),
             py::arg("bodyA"), py::arg("bodyB"),
             cls_doc.GetPaddingBetween.doc_2args_bodyA_bodyB)
         .def("SetPaddingBetween",
@@ -117,8 +117,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("bodyA_index"), py::arg("bodyB_index"), py::arg("padding"),
             cls_doc.SetPaddingBetween.doc_3args_bodyA_index_bodyB_index_padding)
         .def("SetPaddingBetween",
-            py::overload_cast<const Body<double>&, const Body<double>&, double>(
-                &Class::SetPaddingBetween),
+            py::overload_cast<const RigidBody<double>&,
+                const RigidBody<double>&, double>(&Class::SetPaddingBetween),
             py::arg("bodyA"), py::arg("bodyB"), py::arg("padding"),
             cls_doc.SetPaddingBetween.doc_3args_bodyA_bodyB_padding)
         .def("GetPaddingMatrix", &Class::GetPaddingMatrix,
@@ -152,8 +152,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.IsCollisionFilteredBetween
                 .doc_2args_bodyA_index_bodyB_index)
         .def("IsCollisionFilteredBetween",
-            overload_cast_explicit<bool, const Body<double>&,
-                const Body<double>&>(&Class::IsCollisionFilteredBetween),
+            overload_cast_explicit<bool, const RigidBody<double>&,
+                const RigidBody<double>&>(&Class::IsCollisionFilteredBetween),
             py::arg("bodyA"), py::arg("bodyB"),
             cls_doc.IsCollisionFilteredBetween.doc_2args_bodyA_bodyB)
         .def("SetCollisionFilteredBetween",
@@ -164,7 +164,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.SetCollisionFilteredBetween
                 .doc_3args_bodyA_index_bodyB_index_filter_collision)
         .def("SetCollisionFilteredBetween",
-            py::overload_cast<const Body<double>&, const Body<double>&, bool>(
+            py::overload_cast<const RigidBody<double>&,
+                const RigidBody<double>&, bool>(
                 &Class::SetCollisionFilteredBetween),
             py::arg("bodyA"), py::arg("bodyB"), py::arg("filter_collision"),
             cls_doc.SetCollisionFilteredBetween
@@ -175,7 +176,7 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("body_index"),
             cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body_index)
         .def("SetCollisionFilteredWithAllBodies",
-            py::overload_cast<const Body<double>&>(
+            py::overload_cast<const RigidBody<double>&>(
                 &Class::SetCollisionFilteredWithAllBodies),
             py::arg("body"),
             cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body)
@@ -187,6 +188,7 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("q"), cls_doc.CheckContextConfigCollisionFree.doc)
         .def("CheckConfigsCollisionFree", &Class::CheckConfigsCollisionFree,
             py::arg("configs"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckConfigsCollisionFree.doc)
         .def("SetDistanceAndInterpolationProvider",
             &Class::SetDistanceAndInterpolationProvider, py::arg("provider"),
@@ -230,9 +232,11 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("CheckEdgeCollisionFreeParallel",
             &Class::CheckEdgeCollisionFreeParallel, py::arg("q1"),
             py::arg("q2"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckEdgeCollisionFreeParallel.doc)
         .def("CheckEdgesCollisionFree", &Class::CheckEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckEdgesCollisionFree.doc)
         .def("MeasureEdgeCollisionFree", &Class::MeasureEdgeCollisionFree,
             py::arg("q1"), py::arg("q2"),
@@ -245,9 +249,11 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("MeasureEdgeCollisionFreeParallel",
             &Class::MeasureEdgeCollisionFreeParallel, py::arg("q1"),
             py::arg("q2"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.MeasureEdgeCollisionFreeParallel.doc)
         .def("MeasureEdgesCollisionFree", &Class::MeasureEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.MeasureEdgesCollisionFree.doc)
         .def("CalcRobotClearance", &Class::CalcRobotClearance, py::arg("q"),
             py::arg("influence_distance"),

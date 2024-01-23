@@ -549,16 +549,26 @@ class XmlInertiaMapper:
             pose, mass, mom, prod)
 
 
+# Roles avialable for ordering.
+GEOM_INERTIA_ROLE_AVAILABLE = [
+    Role.kProximity, Role.kIllustration, Role.kPerception
+]
+# The default ordering happens to be the same as the available roles.
+GEOM_INERTIA_ROLE_ORDER_DEFAULT = GEOM_INERTIA_ROLE_AVAILABLE
+
+
 class InertiaProcessor:
     """Handles selection, repair, and replacement of inertial properties,
     in model files pre-processed by drake parsing and XmlInertiaMapper.
     """
 
     def __init__(self, plant: MultibodyPlant, scene_graph: SceneGraph,
-                 mapper: XmlInertiaMapper):
+                 mapper: XmlInertiaMapper,
+                 geom_inertia_role_order: list[Role]):
         self._plant = plant
         self._scene_graph = scene_graph
         self._mapper = mapper
+        self._geom_inertia_role_order = geom_inertia_role_order
 
     def _maybe_fix_inertia(
             self, body_index: BodyIndex) -> [SpatialInertia, list] | None:
@@ -572,7 +582,7 @@ class InertiaProcessor:
         frame_id = self._plant.GetBodyFrameIdOrThrow(body_index)
         old_inertia = body.default_spatial_inertia()
         inspector = self._scene_graph.model_inspector()
-        for role in [Role.kProximity, Role.kIllustration, Role.kPerception]:
+        for role in self._geom_inertia_role_order:
             geoms = inspector.GetGeometries(frame_id, role)
             if geoms:
                 break
@@ -619,7 +629,10 @@ class InertiaProcessor:
         return self._mapper.build_output(new_inertias_mapping)
 
 
-def fix_inertia_from_string(input_text: str, file_type: str) -> str:
+def fix_inertia_from_string(
+    input_text: str, file_type: str,
+    geom_inertia_role_order: list[Role] = GEOM_INERTIA_ROLE_ORDER_DEFAULT,
+) -> str:
     """A pure string-processing wrapper for the tool, for testing.
     """
     # Parse with drake to build mbp and confirm sanity.
@@ -638,18 +651,43 @@ def fix_inertia_from_string(input_text: str, file_type: str) -> str:
     mapper.build_plant_models_association(plant)
 
     # Fix indicated inertias.
-    processor = InertiaProcessor(plant, scene_graph, mapper)
+    processor = InertiaProcessor(
+        plant, scene_graph, mapper, geom_inertia_role_order
+    )
     return processor.process()
+
+
+_role_to_str = {
+    Role.kProximity: "proximity",
+    Role.kIllustration: "illustration",
+    Role.kPerception: "perception",
+}
+_str_to_role = {v: k for k, v in _role_to_str.items()}
+
+
+def role_list_to_str_list(roles):
+    return [_role_to_str[x] for x in roles]
+
+
+def str_list_to_role_list(names):
+    return [_str_to_role[x] for x in names]
+
+
+def _is_unique(x):
+    return len(set(x)) == len(x)
 
 
 class InertiaFixer:
     """Fixes specified inertias in a URDF or SDFormat input file, writing the
     new file contents to one of: stdout, a new file, or the original file.
     """
-    def __init__(self, *,
-                 input_file: Path,
-                 output_file: Path = None,
-                 in_place: bool = False):
+    def __init__(
+        self, *,
+        input_file: Path,
+        output_file: Path = None,
+        in_place: bool = False,
+        geom_inertia_role_order: list[Role] = GEOM_INERTIA_ROLE_ORDER_DEFAULT,
+    ):
         """Initialize an InertiaFixer.
 
         Args:
@@ -658,10 +696,17 @@ class InertiaFixer:
                          contents. If None, the new contents will be written to
                          stdout.
             in_place: if True, write output back to the input file.
+            geom_inertia_role_order: Specifies what order of geometries to try
+                                     and infer geometry from for each body.
         """
         self.input_file = input_file
         self.output_file = output_file
         self.in_place = in_place
+        if not _is_unique(geom_inertia_role_order):
+            raise RuntimeError(
+                "geom_inertia_role_order must have unique elements"
+            )
+        self.geom_inertia_role_order = geom_inertia_role_order
 
     def fix_inertia(self):
         """Executes the inertia fixing processing and write the output as
@@ -689,7 +734,9 @@ class InertiaFixer:
         mapper.build_plant_models_association(plant)
 
         # Fix indicated inertias.
-        processor = InertiaProcessor(plant, scene_graph, mapper)
+        processor = InertiaProcessor(
+            plant, scene_graph, mapper, self.geom_inertia_role_order
+        )
         output_text = processor.process()
 
         # Write output.

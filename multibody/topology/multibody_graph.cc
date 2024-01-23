@@ -21,24 +21,24 @@ MultibodyGraph::MultibodyGraph() {
                JointTypeIndex(0));
 }
 
-BodyIndex MultibodyGraph::AddBody(const std::string& body_name,
-                                  ModelInstanceIndex model_instance) {
+BodyIndex MultibodyGraph::AddRigidBody(const std::string& body_name,
+                                       ModelInstanceIndex model_instance) {
   DRAKE_DEMAND(model_instance.is_valid());
 
   // Reject the usage of the "world" model instance for any other bodies but the
   // world.
   if (num_bodies() > 0 && model_instance == world_model_instance()) {
     const std::string msg = fmt::format(
-        "AddBody(): Model instance index = {} is reserved for the world body. "
-        " body_index = 0, named '{}'",
+        "AddRigidBody(): Model instance index = {} is reserved for the world "
+        "body. body_index = 0, named '{}'",
         world_model_instance(), world_body_name());
     throw std::runtime_error(msg);
   }
 
   // Reject duplicate body name.
   if (HasBodyNamed(body_name, model_instance)) {
-    throw std::runtime_error("AddBody(): Duplicate body name '" + body_name +
-                             "'");
+    throw std::runtime_error("AddRigidBody(): Duplicate body name '" +
+                             body_name + "'");
   }
   // next available
   const BodyIndex body_index(num_bodies());
@@ -46,7 +46,7 @@ BodyIndex MultibodyGraph::AddBody(const std::string& body_name,
   body_name_to_index_.insert({body_name, body_index});
 
   // Can't use emplace_back below because the constructor is private.
-  bodies_.push_back(Body(body_index, body_name, model_instance));
+  bodies_.push_back(RigidBody(body_index, body_name, model_instance));
 
   return body_index;
 }
@@ -87,15 +87,15 @@ const std::string& MultibodyGraph::world_body_name() const {
   if (bodies_.empty())
     throw std::runtime_error(
         "get_world_body_name(): you can't call this until you have called "
-        "AddBody() at least once -- the first body is World.");
+        "AddRigidBody() at least once -- the first body is World.");
   return bodies_[0].name();
 }
 
-const MultibodyGraph::Body& MultibodyGraph::world_body() const {
+const MultibodyGraph::RigidBody& MultibodyGraph::world_body() const {
   if (bodies_.empty())
     throw std::runtime_error(
         "world_body(): you can't call this until you have called "
-        "AddBody() at least once -- the first body is 'world'.");
+        "AddRigidBody() at least once -- the first body is 'world'.");
   return bodies_[0];
 }
 
@@ -141,9 +141,8 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
     const auto& new_child = get_body(child_body_index);
     throw std::runtime_error(
         "This MultibodyGraph already has a joint '" + existing_joint.name() +
-        "' connecting '" + existing_parent.name() +
-        "' to '" + existing_child.name() +
-        "'. Therefore adding joint '" + name +
+        "' connecting '" + existing_parent.name() + "' to '" +
+        existing_child.name() + "'. Therefore adding joint '" + name +
         "' connecting '" + new_parent.name() + "' to '" + new_child.name() +
         "' is not allowed.");
   }
@@ -174,12 +173,14 @@ int MultibodyGraph::num_joints() const {
   return static_cast<int>(joints_.size());
 }
 
-const MultibodyGraph::Body& MultibodyGraph::get_body(BodyIndex index) const {
+const MultibodyGraph::RigidBody& MultibodyGraph::get_body(
+    BodyIndex index) const {
   DRAKE_THROW_UNLESS(index < num_bodies());
   return bodies_[index];
 }
 
-MultibodyGraph::Body& MultibodyGraph::get_mutable_body(BodyIndex body_index) {
+MultibodyGraph::RigidBody& MultibodyGraph::get_mutable_body(
+    BodyIndex body_index) {
   return bodies_[body_index];
 }
 
@@ -246,7 +247,7 @@ std::vector<std::set<BodyIndex>> MultibodyGraph::FindSubgraphsOfWeldedBodies()
 }
 
 void MultibodyGraph::FindSubgraphsOfWeldedBodiesRecurse(
-    const Body& parent_body, std::set<BodyIndex>* parent_subgraph,
+    const RigidBody& parent_body, std::set<BodyIndex>* parent_subgraph,
     std::vector<std::set<BodyIndex>>* subgraphs,
     std::vector<bool>* visited) const {
   // Mark parent_body as visited in order to detect loops.
@@ -262,7 +263,7 @@ void MultibodyGraph::FindSubgraphsOfWeldedBodiesRecurse(
     // If already visited continue with the next joint.
     if (visited->at(sibling_index)) continue;
 
-    const Body& sibling = get_body(sibling_index);
+    const RigidBody& sibling = get_body(sibling_index);
     if (joint.type_index() == weld_type_index()) {
       // Welded to parent_body, add it to parent_subgraph.
       parent_subgraph->insert(sibling_index);
@@ -291,8 +292,8 @@ std::set<BodyIndex> MultibodyGraph::FindBodiesWeldedTo(
       FindSubgraphsOfWeldedBodies();
 
   // Find subgraph that contains this body_index.
-  // TODO(amcastro-tri): Consider storing within Body the subgraph it belongs to
-  // if performance becomes an issue.
+  // TODO(amcastro-tri): Consider storing within RigidBody the subgraph it
+  //  belongs to if performance becomes an issue.
   auto predicate = [body_index](auto& subgraph) {
     return subgraph.count(body_index) > 0;
   };

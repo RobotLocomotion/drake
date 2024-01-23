@@ -54,7 +54,7 @@ class Gyroscope final : public LeafSystem<T> {
   /// Constructor for %Gyroscope using full transform.
   /// @param body the body B to which the sensor is affixed
   /// @param X_BS the pose of sensor frame S in body B
-  Gyroscope(const multibody::Body<T>& body,
+  Gyroscope(const multibody::RigidBody<T>& body,
             const math::RigidTransform<double>& X_BS);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -73,7 +73,7 @@ class Gyroscope final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
-  /// Returns the index of the Body that was supplied in the constructor.
+  /// Returns the index of the RigidBody that was supplied in the constructor.
   const multibody::BodyIndex& body_index() const { return body_index_; }
 
   /// Gets X_BS, the pose of sensor frame S in body B.
@@ -94,7 +94,8 @@ class Gyroscope final : public LeafSystem<T> {
   /// @param plant the plant to which the sensor will be connected
   /// @param builder a pointer to the DiagramBuilder
   static const Gyroscope& AddToDiagram(
-      const multibody::Body<T>& body, const math::RigidTransform<double>& X_BS,
+      const multibody::RigidBody<T>& body,
+      const math::RigidTransform<double>& X_BS,
       const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder);
 
  private:

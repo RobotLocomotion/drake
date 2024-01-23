@@ -8,7 +8,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -375,7 +374,8 @@ class TestSensors(unittest.TestCase):
             self._check_input(port)
         for port in (
                 dut.color_image_output_port(),
-                dut.depth_image_output_port()):
+                dut.depth_image_output_port(),
+                dut.label_image_output_port()):
             self._check_output(port)
 
         # Create a one-pixel lcmt_image message.

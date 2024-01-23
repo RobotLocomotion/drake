@@ -398,30 +398,6 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void LeafSystem<T>::GetGraphvizInputPortToken(
-    const InputPort<T>& port, int max_depth, std::stringstream* dot) const {
-  unused(max_depth);
-  DRAKE_DEMAND(&port.get_system() == this);
-  // N.B. Calling GetGraphvizId() will print the deprecation console warning.
-  *dot << this->GetGraphvizId() << ":u" << port.get_index();
-}
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void LeafSystem<T>::GetGraphvizOutputPortToken(
-    const OutputPort<T>& port, int max_depth, std::stringstream* dot) const {
-  unused(max_depth);
-  DRAKE_DEMAND(&port.get_system() == this);
-  // N.B. Calling GetGraphvizId() will print the deprecation console warning.
-  *dot << this->GetGraphvizId() << ":y" << port.get_index();
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState()
     const {

@@ -18,9 +18,3 @@ To upgrade Drake's pinned Rust dependencies, run this tool:
 TODO(jwnimmer-tri) Wire this up into our tools/workspace/new_release tool:
 - teach new_release to repin the crate_universe;
 - teach new_release that clarabel_cpp_internal + crate_universe are a cohort.
-
-## Licenses
-
-TODO(jwnimmer-tri) Automate the Rust crate license checking, and ensure that we
-collect and install license texts, before we start shipping Clarabel in our
-binary releases.

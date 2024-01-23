@@ -27,10 +27,10 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSetAPI) {
   const double epsilon = 1e-5;
 
   // Test the function overload that takes in multiple convex sets.
-  ConvexSets sets5 = PartitionConvexSet(MakeConvexSets(v, v),
-                                        continuous_revolute_joints, epsilon);
-  EXPECT_EQ(sets5.size(), 8);
-  for (const auto& set : sets5) {
+  ConvexSets sets = PartitionConvexSet(MakeConvexSets(v, v),
+                                       continuous_revolute_joints, epsilon);
+  EXPECT_EQ(sets.size(), 8);
+  for (const auto& set : sets) {
     EXPECT_TRUE(
         CheckIfSatisfiesConvexityRadius(*set, continuous_revolute_joints));
   }
@@ -139,11 +139,9 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet2) {
   VPolytope v2(vertices2);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
-
-  ConvexSets sets2 =
-      PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
-  EXPECT_EQ(sets2.size(), 2);
-  for (const auto& set : sets2) {
+  ConvexSets sets = PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
+  EXPECT_EQ(sets.size(), 2);
+  for (const auto& set : sets) {
     EXPECT_TRUE(
         CheckIfSatisfiesConvexityRadius(*set, continuous_revolute_joints));
   }
@@ -151,7 +149,7 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet2) {
   // Check that sets overlap by epsilon.
   const auto maybe_intersection_bbox =
       Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
-          Intersection(*sets2[0], *sets2[1]));
+          Intersection(*sets[0], *sets[1]));
   ASSERT_TRUE(maybe_intersection_bbox.has_value());
   const Hyperrectangle intersection_bbox = maybe_intersection_bbox.value();
   for (int i = 0; i < intersection_bbox.ambient_dimension(); ++i) {
@@ -175,11 +173,9 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet3) {
   VPolytope v3(vertices3);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
-
-  ConvexSets sets3 =
-      PartitionConvexSet(v3, continuous_revolute_joints, epsilon);
-  EXPECT_EQ(sets3.size(), 1);
-  for (const auto& set : sets3) {
+  ConvexSets sets = PartitionConvexSet(v3, continuous_revolute_joints, epsilon);
+  EXPECT_EQ(sets.size(), 1);
+  for (const auto& set : sets) {
     EXPECT_TRUE(
         CheckIfSatisfiesConvexityRadius(*set, continuous_revolute_joints));
   }
@@ -197,15 +193,15 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet4) {
   std::vector<int> continuous_revolute_joints{0, 1};
   std::vector<int> only_one_continuous_revolute_joint{1};
 
-  ConvexSets sets4 = PartitionConvexSet(v, only_one_continuous_revolute_joint);
-  EXPECT_EQ(sets4.size(), 2);
-  for (const auto& set : sets4) {
+  ConvexSets sets = PartitionConvexSet(v, only_one_continuous_revolute_joint);
+  EXPECT_EQ(sets.size(), 2);
+  for (const auto& set : sets) {
     EXPECT_TRUE(CheckIfSatisfiesConvexityRadius(
         *set, only_one_continuous_revolute_joint));
   }
 
   bool all_satisfy = true;
-  for (const auto& set : sets4) {
+  for (const auto& set : sets) {
     all_satisfy = all_satisfy && CheckIfSatisfiesConvexityRadius(
                                      *set, continuous_revolute_joints);
   }

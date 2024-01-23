@@ -204,3 +204,9 @@ class TestYaml(unittest.TestCase):
             }
         }
         self.assertDictEqual(yaml_load_data(data, private=True), expected)
+
+    def test_bad_args(self):
+        with self.assertRaisesRegex(Exception, "both were None"):
+            yaml_load()
+        with self.assertRaisesRegex(Exception, "both were non-None"):
+            yaml_load(data="", filename="/some/file")

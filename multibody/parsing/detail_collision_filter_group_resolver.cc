@@ -52,7 +52,7 @@ void CollisionFilterGroupResolver::AddGroup(
     const ScopedName scoped_body_name =
         ScopedName::Parse(FullyQualify(body_name, model_instance));
 
-    const Body<double>* body{};
+    const RigidBody<double>* body{};
     if (plant_->HasModelInstanceNamed(scoped_body_name.get_namespace())) {
       ModelInstanceIndex body_model =
           plant_->GetModelInstanceByName(scoped_body_name.get_namespace());
@@ -137,7 +137,7 @@ const GeometrySet* CollisionFilterGroupResolver::FindGroup(
   return &iter->second;
 }
 
-const Body<double>* CollisionFilterGroupResolver::FindBody(
+const RigidBody<double>* CollisionFilterGroupResolver::FindBody(
     std::string_view name,
     ModelInstanceIndex model_instance) {
   if (plant_->HasBodyNamed(name, model_instance)) {

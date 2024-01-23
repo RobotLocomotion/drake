@@ -246,6 +246,10 @@ void ApplyCameraConfig(const CameraConfig& config,
   lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyCameraConfig",
                            config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
+  if (lcm->get_lcm_url() == LcmBuses::kLcmUrlMemqNull) {
+    // The user has opted-out of LCM.
+    return;
+  }
 
   // TODO(jwnimmer-tri) When the Simulator has concurrent update + publish
   // events, it effectively runs the publish event before the update event.

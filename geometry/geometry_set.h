@@ -147,13 +147,10 @@ class GeometrySet {
     Add(frame_ids);
   }
 
-  template <
-      typename ContainerG,
-      typename ContainerF,
-      typename = typename std::enable_if_t<
-          std::is_same_v<typename ContainerG::value_type, GeometryId> &&
-          std::is_same_v<typename ContainerF::value_type, FrameId>>
-      >
+  template <typename ContainerG, typename ContainerF,
+            typename = typename std::enable_if_t<
+                std::is_same_v<typename ContainerG::value_type, GeometryId> &&
+                std::is_same_v<typename ContainerF::value_type, FrameId>>>
   GeometrySet(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
     Add(geometry_ids, frame_ids);
   }
@@ -238,8 +235,7 @@ class GeometrySet {
   template <typename ContainerF>
   typename std::enable_if_t<
       std::is_same_v<typename ContainerF::value_type, FrameId>>
-  Add(
-      std::initializer_list<GeometryId> geometry_ids,
+  Add(std::initializer_list<GeometryId> geometry_ids,
       const ContainerF& frame_ids) {
     Add(geometry_ids);
     Add(frame_ids);
@@ -248,8 +244,7 @@ class GeometrySet {
   template <typename ContainerG>
   typename std::enable_if_t<
       std::is_same_v<typename ContainerG::value_type, GeometryId>>
-  Add(
-      const ContainerG& geometry_ids,
+  Add(const ContainerG& geometry_ids,
       std::initializer_list<FrameId> frame_ids) {
     Add(geometry_ids);
     Add(frame_ids);
@@ -257,8 +252,8 @@ class GeometrySet {
 
   void Add(const GeometrySet& other) {
     frame_ids_.insert(other.frame_ids_.begin(), other.frame_ids_.end());
-    geometry_ids_.insert(
-        other.geometry_ids_.begin(), other.geometry_ids_.end());
+    geometry_ids_.insert(other.geometry_ids_.begin(),
+                         other.geometry_ids_.end());
   }
 
   //@}
@@ -283,9 +278,7 @@ class GeometrySet {
 
   // Reports the number of geometries _explicitly_ in the set. It does _not_
   // count the geometries that belong to the added frames.
-  int num_geometries() const {
-    return static_cast<int>(geometry_ids_.size());
-  }
+  int num_geometries() const { return static_cast<int>(geometry_ids_.size()); }
 
   // Reports if the given `frame_id` has been added to the group.
   bool contains(FrameId frame_id) const {

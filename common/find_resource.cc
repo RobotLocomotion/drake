@@ -1,7 +1,9 @@
 #include "drake/common/find_resource.h"
 
 #include <cstdlib>
-#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -289,6 +291,26 @@ Result FindResource(const string& resource_path) {
 
 string FindResourceOrThrow(const string& resource_path) {
   return FindResource(resource_path).get_absolute_path_or_throw();
+}
+
+std::optional<string> ReadFile(const std::filesystem::path& path) {
+  std::optional<string> result;
+  std::ifstream input(path, std::ios::binary);
+  if (input.is_open()) {
+    std::stringstream content;
+    content << input.rdbuf();
+    result.emplace(std::move(content).str());
+  }
+  return result;
+}
+
+std::string ReadFileOrThrow(const std::filesystem::path& path) {
+  std::optional<string> result = ReadFile(path);
+  if (!result) {
+    throw std::runtime_error(
+        fmt::format("Error reading from '{}'", path.string()));
+  }
+  return std::move(*result);
 }
 
 }  // namespace drake

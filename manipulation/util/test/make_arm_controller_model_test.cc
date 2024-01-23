@@ -22,7 +22,6 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::ModelInstanceIndex;
@@ -49,7 +48,11 @@ class MakeArmControllerModelTest : public ::testing::Test {
             "/iiwa7_no_collision.sdf")),
         wsg_model_path_(FindResourceOrThrow(
             "drake/manipulation/models/wsg_50_description/sdf/"
-            "schunk_wsg_50.sdf")) {}
+            "schunk_wsg_50.sdf")) {
+    // Add an `empty` model instance to ensure model instance lookups are
+    // correct between this plant and the newly constructed control plant.
+    sim_plant_->AddModelInstance("empty");
+  }
 
  protected:
   // Adds an Iiwa model into `sim_plant_` and returns its ModelInstanceInfo.
@@ -86,9 +89,10 @@ std::vector<BodyIndex> GetAllBodyIndices(const MultibodyPlant<double>& plant) {
   return body_indices;
 }
 
-// Checks mass, inertia, and gravity generalized forces for the (full)
-// simulation plant and the control plant. This expects that the simulation
-// plant consists only of the arm and (optional) gripper.
+// This test blindly operates on the full simulation and control plants.
+// Therefore, the simulation plant's mass should be wholly contained in bodies
+// that belong to either the arm or (optional) gripper model instances, or be
+// welded to a body in those instances.
 void CompareInertialTerms(const MultibodyPlant<double>& sim_plant,
                           ModelInstanceIndex sim_arm_model_instance,
                           const MultibodyPlant<double>& control_plant,
@@ -157,14 +161,16 @@ TEST_F(MakeArmControllerModelTest, SingleIiwaWithoutWsg) {
             sim_plant_->num_multibody_states());
   // MultibodyPlant always creates at least two model instances, one for the
   // world and one for a default model instance for unspecified modeling
-  // elements. The third one is the added Iiwa model.
-  EXPECT_EQ(control_plant->num_model_instances(),
+  // elements. Note that we add an additional model instance ("empty") to the
+  // simulation plant to have meaningfully different model instance indices
+  // between the two plants.
+  EXPECT_EQ(control_plant->num_model_instances() + 1,
             sim_plant_->num_model_instances());
   EXPECT_EQ(control_plant->num_actuators(), sim_plant_->num_actuators());
 
   // Check the arm is welded to the world at the same pose.
-  const Frame<double>& iiwa7_child_frame = control_plant->GetFrameByName(
-      iiwa7_info.child_frame_name, iiwa7_info.model_instance);
+  const Frame<double>& iiwa7_child_frame =
+      control_plant->GetFrameByName(iiwa7_info.child_frame_name);
   EXPECT_TRUE(control_plant->IsAnchored(iiwa7_child_frame.body()));
   const RigidTransform<double> X_WIiwa_control =
       control_plant->CalcRelativeTransform(*control_plant_context,
@@ -213,7 +219,7 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
   const ModelDirectives directives = LoadModelDirectives(
       FindResourceOrThrow("drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"));
   Parser parser{sim_plant_};
-  std::vector<ModelInstanceInfo> models_from_directives =
+  const std::vector<ModelInstanceInfo> models_from_directives =
       multibody::parsing::ProcessModelDirectives(directives, &parser);
 
   sim_plant_->Finalize();
@@ -291,6 +297,36 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
   const RigidTransform<double> X_GF_control = control_wsg_grasp_frame.CalcPose(
       *control_plant_context, control_wsg_child_frame);
   EXPECT_TRUE(X_GF_sim.IsNearlyEqualTo(X_GF_control, kTolerance));
+
+  CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
+                       *sim_plant_context);
+}
+
+TEST_F(MakeArmControllerModelTest, AdditionalAttachedModels) {
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      "drake/manipulation/util/test/iiwa7_wsg_cameras.dmd.yaml"));
+  Parser parser{sim_plant_};
+  const std::vector<ModelInstanceInfo> models_from_directives =
+      multibody::parsing::ProcessModelDirectives(directives, &parser);
+  sim_plant_->Finalize();
+
+  // Query the ModelInstanceInfo(s) from the directives.
+  ModelInstanceInfo iiwa7_info;
+  ModelInstanceInfo wsg_info;
+  for (const ModelInstanceInfo& model_info : models_from_directives) {
+    if (model_info.model_name == "iiwa7") {
+      iiwa7_info = model_info;
+    } else if (model_info.model_name == "schunk_wsg") {
+      wsg_info = model_info;
+    }
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> control_plant =
+      MakeArmControllerModel(*sim_plant_, iiwa7_info, wsg_info);
+  ASSERT_NE(control_plant, nullptr);
+
+  std::unique_ptr<Context<double>> sim_plant_context =
+      sim_plant_->CreateDefaultContext();
 
   CompareInertialTerms(*sim_plant_, iiwa7_info.model_instance, *control_plant,
                        *sim_plant_context);

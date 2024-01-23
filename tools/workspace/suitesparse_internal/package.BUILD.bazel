@@ -39,28 +39,11 @@ _AMD_SRCS = glob(
 )
 
 cc_library(
-    name = "amd_32bit",
+    name = "amd",
     srcs = _AMD_SRCS,
     copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [":amd_hdrs"],
-)
-
-cc_library(
-    name = "amd_64bit",
-    srcs = _AMD_SRCS,
-    copts = ["-fvisibility=hidden", "-DDLONG=1"],
-    linkstatic = True,
-    deps = [":amd_hdrs"],
-)
-
-cc_library(
-    name = "amd",
-    linkstatic = True,
-    deps = [
-        ":amd_32bit",
-        ":amd_64bit",
-    ],
     visibility = ["//visibility:public"],
 )
 

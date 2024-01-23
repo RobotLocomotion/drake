@@ -6,18 +6,8 @@
 #include <string_view>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_params.h"
-
-#ifndef DRAKE_DOXYGEN_CXX
-namespace lcm {
-// We don't want to pollute our Drake headers with the include paths for either
-// @lcm or @glib, so we forward-declare the `class ::lcm::LCM` for use only by
-// DrakeLcm::get_native() -- an unit-test-only private function.
-class LCM;
-}  // namespace lcm
-#endif
 
 namespace drake {
 namespace lcm {
@@ -54,16 +44,6 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ~DrakeLcm() override;
 
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Drake will no longer provide access to the underlying lcm::LCM object.")
-  /**
-   * (Advanced.) An accessor to the underlying LCM instance. The returned
-   * pointer is guaranteed to be valid for the duration of this object's
-   * lifetime.
-   */
-  ::lcm::LCM* get_lcm_instance() { return get_native(); }
-
   void Publish(const std::string&, const void*, int,
                std::optional<double>) override;
   std::string get_lcm_url() const override;
@@ -80,7 +60,7 @@ class DrakeLcm : public DrakeLcmInterface {
 
   void OnHandleSubscriptionsError(const std::string&) override;
 
-  ::lcm::LCM* get_native();
+  void* get_native_lcm_handle_for_unit_testing();
 
   class Impl;
   std::unique_ptr<Impl> impl_;

@@ -7,6 +7,7 @@ import copy
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Convex, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -30,7 +31,7 @@ class TestGeometryOptimization(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.A = np.eye(3)
-        self.b = [1.0, 1.0, 1.0]
+        self.b = np.array([1.0, 1.0, 1.0])
         self.prog = MathematicalProgram()
         self.x = self.prog.NewContinuousVariables(3, "x")
         self.t = self.prog.NewContinuousVariables(1, "t")[0]
@@ -334,6 +335,50 @@ class TestGeometryOptimization(unittest.TestCase):
         e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
         mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
+
+    def test_hyperrectangle(self):
+        mut.Hyperrectangle()
+        rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
+
+        # Methods inherited from ConvexSet
+        self.assertEqual(rect.ambient_dimension(), self.b.shape[0])
+        self.assertTrue(rect.IntersectsWith(rect))
+        self.assertTrue(rect.IsBounded())
+        self.assertFalse(rect.IsEmpty())
+        self.assertTrue(rect.MaybeGetPoint() is None)
+        point = rect.MaybeGetFeasiblePoint()
+        self.assertTrue(point is not None)
+        self.assertTrue(rect.PointInSet(x=point, tol=0.0))
+        new_vars, new_constraints = rect.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
+        self.assertGreater(len(new_constraints), 0)
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, x=self.x, t=self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, A=self.Ay, b=self.by, c=self.cz, d=self.dz,
+            x=self.y, t=self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        shape, pose = rect.ToShapeWithPose()
+        self.assertTrue(isinstance(shape, Box))
+        np.testing.assert_array_equal(pose.translation(),
+                                      np.zeros_like(self.b))
+
+        # Methods specific to Hyperrectangle
+        np.testing.assert_array_equal(rect.lb(), -self.b)
+        np.testing.assert_array_equal(rect.ub(), self.b)
+        np.testing.assert_array_equal(rect.Center(), np.zeros_like(self.b))
+        generator = RandomGenerator()
+        sample = rect.UniformSample(generator=generator)
+        self.assertEqual(sample.shape, (self.b.shape[0],))
+        hpoly = rect.MakeHPolyhedron()
+        box = mut.HPolyhedron.MakeBox(rect.lb(), rect.ub())
+        np.testing.assert_array_equal(hpoly.A(), box.A())
+        np.testing.assert_array_equal(hpoly.b(), box.b())
+        assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()
@@ -834,13 +879,17 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         # FindSeparationCertificateOptions
         find_separation_options = mut.FindSeparationCertificateOptions()
-        find_separation_options.num_threads = 1
+        with catch_drake_warnings(expected_count=1):
+            find_separation_options.num_threads = 1
+        find_separation_options.parallelism = False
         find_separation_options.verbose = True
         find_separation_options.solver_id = ScsSolver.id()
         find_separation_options.terminate_at_failure = False
         find_separation_options.solver_options = solver_options
 
-        self.assertEqual(find_separation_options.num_threads, 1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(find_separation_options.num_threads, 1)
+        self.assertEqual(find_separation_options.parallelism.num_threads(), 1)
         self.assertTrue(find_separation_options.verbose)
         self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
         self.assertFalse(find_separation_options.terminate_at_failure)
@@ -851,8 +900,10 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
             dut.FindSeparationCertificateGivenPolytopeOptions()
-        self.assertEqual(
-            lagrangian_options.num_threads, -1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(lagrangian_options.num_threads, int)
+        self.assertIsInstance(
+            lagrangian_options.parallelism.num_threads(), int)
         self.assertFalse(
             lagrangian_options.verbose)
         self.assertEqual(
@@ -864,16 +915,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.solver_options)
         self.assertFalse(
             lagrangian_options.ignore_redundant_C)
-        num_threads = 1
-        lagrangian_options.num_threads = num_threads
+        with catch_drake_warnings(expected_count=1):
+            lagrangian_options.num_threads = 1
+        lagrangian_options.parallelism = False
         lagrangian_options.verbose = True
         lagrangian_options.solver_id = ScsSolver.id()
         lagrangian_options.terminate_at_failure = False
         lagrangian_options.solver_options = solver_options
         lagrangian_options.ignore_redundant_C = True
-        self.assertEqual(
-            lagrangian_options.num_threads,
-            num_threads)
+        self.assertEqual(lagrangian_options.parallelism.num_threads(), 1)
         self.assertTrue(
             lagrangian_options.verbose)
         self.assertEqual(
@@ -1172,3 +1222,5 @@ class TestCspaceFreePolytope(unittest.TestCase):
         mut.PartitionConvexSet(convex_sets=[big_convex_set],
                                continuous_revolute_joints=[0],
                                epsilon=1e-5)
+        mut.CheckIfSatisfiesConvexityRadius(convex_set=big_convex_set,
+                                            continuous_revolute_joints=[0])

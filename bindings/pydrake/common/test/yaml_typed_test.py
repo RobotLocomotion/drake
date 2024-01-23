@@ -1,6 +1,10 @@
+import copy
 import dataclasses as dc
+import functools
 import math
-from math import nan
+from math import inf, nan
+import os
+from pathlib import Path
 from textwrap import dedent
 import typing
 import unittest
@@ -14,7 +18,7 @@ from pydrake.common.test_utilities.meta import (
     run_with_multiple_values,
 )
 from pydrake.common.value import Value
-from pydrake.common.yaml import yaml_load_typed
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 
 
 # To provide test coverage for all of the special cases of YAML loading, we'll
@@ -100,6 +104,11 @@ class VariantStruct:
 
 
 @dc.dataclass
+class NullableVariantStruct:
+    value: typing.Union[None, FloatStruct, StringStruct] = None
+
+
+@dc.dataclass
 class ListVariantStruct:
     value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
         dc.field(default_factory=lambda: list([nan])))
@@ -110,6 +119,26 @@ class OuterStruct:
     outer_value: float = nan
     inner_struct: InnerStruct = dc.field(
         default_factory=lambda: InnerStruct())
+
+
+@dc.dataclass
+class OuterStructOpposite:
+    # N.B. The opposite member order of OuterStruct.
+    inner_struct: InnerStruct = dc.field(
+        default_factory=lambda: InnerStruct())
+    outer_value: float = nan
+
+
+@dc.dataclass
+class Blank:
+    pass
+
+
+@dc.dataclass
+class OuterWithBlankInner:
+    outer_value: float = nan
+    inner_struct: Blank = dc.field(
+        default_factory=lambda: Blank())
 
 
 @dc.dataclass
@@ -577,31 +606,560 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         result = yaml_load_typed(schema=StringStruct, filename=filename)
         self.assertEqual(result.value, "some_value_1")
 
+    def test_read_bad_schema(self):
+        # N.B. This test covers python-specific error handling, so does not
+        # have any corrresponding cases in the C++ unit tests.
+        with self.assertRaisesRegex(Exception, "should have been a dict"):
+            yaml_load_typed(
+                schema=typing.List[float], data="[1.0]", defaults=[])
+
+
+class TestYamlTypedWrite(unittest.TestCase):
+    """Detailed tests for the yaml_dump_typed function.
+
+    This test class is the Python flavor of the C++ test suite at
+     drake/common/yaml/test/yaml_write_archive_test.cc
+    and should be roughly kept in sync with the test cases in that file.
+    """
+
+    def test_write_float(self):
+        cases = [
+            (0.0, "0.0"),
+            (1.0, "1.0"),
+            (-1.0, "-1.0"),
+            (0.009, "0.009"),
+            (1.2, "1.2"),
+            (-1.2, "-1.2"),
+            (5.6e+16, "5.6e+16"),
+            (5.6e-12, "5.6e-12"),
+            (-5.6e+16, "-5.6e+16"),
+            (-5.6e-12, "-5.6e-12"),
+            # See https://yaml.org/spec/1.2.2/#10214-floating-point.
+            (nan, ".nan"),
+            (inf, ".inf"),
+            (-inf, "-.inf"),
+        ]
+        for value, expected_str in cases:
+            actual_doc = yaml_dump_typed(FloatStruct(value=value))
+            expected_doc = f"value: {expected_str}\n"
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_string(self):
+        cases = [
+            ("a", "a"),
+            ("1", "'1'"),
+        ]
+        for value, expected_str in cases:
+            actual_doc = yaml_dump_typed(StringStruct(value=value))
+            expected_doc = f"value: {expected_str}\n"
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_list_plain(self):
+        # When the vector items are simple YAML scalars, we should use "flow"
+        # style, where they all appear on a single line.
+        cases = [
+            ([], "value: []\n"),
+            ([1.0, 2.0, 3.0], "value: [1.0, 2.0, 3.0]\n"),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(ListStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_list_nested(self):
+        # When the vector items are not simple scalars, we should use "block"
+        # style, where each gets its own line(s).
+        cases = [
+            (
+                [FloatStruct(value=1.0), FloatStruct(value=2.0)],
+                dedent("""\
+                value:
+                - !FloatStruct
+                  value: 1.0
+                - !FloatStruct
+                  value: 2.0
+                """),
+            ),
+            # Empty lists still use flow style.
+            (
+                [],
+                dedent("""\
+                value: []
+                """),
+            ),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(ListVariantStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_map(self):
+        cases = [
+            (
+                dict(),
+                dedent("""\
+                value: {}
+                """),
+            ),
+            (
+                dict(foo=0.0),
+                dedent("""\
+                value:
+                  foo: 0.0
+                """),
+            ),
+            (
+                dict(foo=0.0, bar=1.0),
+                dedent("""\
+                value:
+                  bar: 1.0
+                  foo: 0.0
+                """),
+            ),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(MapStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_bad_map_key(self):
+        @dc.dataclass
+        class BadMapStruct:
+            value: typing.Dict[int, float]
+        with self.assertRaisesRegex(Exception, "keys must be string"):
+            yaml_dump_typed(BadMapStruct({1: 2}))
+
+    def test_write_map_directly(self):
+        cases = [
+            (
+                dict(),
+                dedent("""\
+                {}
+                """),
+            ),
+            (
+                dict(foo=0.0),
+                dedent("""\
+                foo: 0.0
+                """),
+            ),
+            (
+                dict(foo=0.0, bar=1.0),
+                dedent("""\
+                bar: 1.0
+                foo: 0.0
+                """),
+            ),
+        ]
+        schema = typing.Dict[str, float]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(value, schema=schema)
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_optional(self):
+        cases = [
+            (1.0, "value: 1.0\n"),
+            (None, "{}\n"),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(OptionalStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_variant(self):
+        cases = [
+            (
+                "",
+                "value: ''\n",
+            ),
+            (
+                "foo",
+                "value: foo\n",
+            ),
+            (
+                FloatStruct(1.0),
+                dedent("""\
+                value: !FloatStruct
+                  value: 1.0
+                """),
+            ),
+            (
+                NumpyStruct(np.array([1.0, 2.0])),
+                dedent("""\
+                value: !NumpyStruct
+                  value: [1.0, 2.0]
+                """),
+            ),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(VariantStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+        # TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our
+        # dumper does not yet support that output syntax.
+        with self.assertRaisesRegex(Exception, "float.*non-zero index"):
+            yaml_dump_typed(VariantStruct(value=1.0))
+
+        # Check when the value in a Union is not one of the allowed types.
+        with self.assertRaisesRegex(Exception, "did not match"):
+            yaml_dump_typed(VariantStruct(value=MapStruct()))
+        with self.assertRaisesRegex(Exception, "does not allow None"):
+            yaml_dump_typed(VariantStruct(value=None))
+
+    def test_write_nullable_variant(self):
+        cases = [
+            (
+                None,
+                "value: null\n",
+            ),
+            (
+                FloatStruct(1.0),
+                dedent("""\
+                value: !FloatStruct
+                  value: 1.0
+                """),
+            ),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(NullableVariantStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_numpy_vector(self):
+        cases = [
+            ([], "value: []\n"),
+            ([1.0], "value: [1.0]\n"),
+            ([1.0, 0.0], "value: [1.0, 0.0]\n"),
+        ]
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(NumpyStruct(value=np.array(value)))
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_numpy_matrix(self):
+        x = NumpyStruct(value=np.array([
+            [0.0, 1.0, 2.0, 3.0],
+            [4.0, 5.0, 6.0, 7.0],
+            [8.0, 9.0, 10.0, 11.0],
+        ]))
+        self.assertEqual(yaml_dump_typed(x), dedent("""\
+        value:
+        - [0.0, 1.0, 2.0, 3.0]
+        - [4.0, 5.0, 6.0, 7.0]
+        - [8.0, 9.0, 10.0, 11.0]
+        """))
+
+    def test_write_numpy_matrix00(self):
+        x = NumpyStruct(value=np.ndarray(shape=(0, 0)))
+        self.assertEqual(yaml_dump_typed(x), dedent("""\
+        value: []
+        """))
+
+    def test_write_nested(self):
+        x = OuterStruct()
+        x.outer_value = 1.0
+        x.inner_struct.inner_value = 2.0
+
+        saved = yaml_dump_typed(x, child_name="doc")
+        expected = dedent("""\
+        doc:
+          outer_value: 1.0
+          inner_struct:
+            inner_value: 2.0
+        """)
+        self.assertEqual(saved, expected)
+
+    def test_write_blank_inner(self):
+        x = OuterWithBlankInner()
+        x.outer_value = 1.0
+
+        saved = yaml_dump_typed(x, child_name="doc")
+        expected = dedent("""\
+        doc:
+          outer_value: 1.0
+          inner_struct: {}
+        """)
+        self.assertEqual(saved, expected)
+
+    def test_write_child_name(self):
+        x = FloatStruct(value=1.0)
+        dut = functools.partial(yaml_dump_typed, data=x)
+        self.assertEqual(dut(child_name=None), "value: 1.0\n")
+        self.assertEqual(dut(child_name="root"), "root:\n  value: 1.0\n")
+        with self.assertRaisesRegex(Exception, "child_name must be a prim"):
+            dut(child_name=[1, 2, 3])
+
+
+class TestYamlTypedWriteDefaults(unittest.TestCase):
+    """Detailed tests for the yaml_dump_typed use of ``defaults=...``, in
+    particular the _erase_matching_maps function.
+
+    This test class is the Python flavor of the C++ test suite at
+     drake/common/yaml/test/yaml_write_archive_defaults_test.cc
+    and should be roughly kept in sync with the test cases in that file.
+    """
+
+    def _save(self, data, defaults, child_name="doc"):
+        return yaml_dump_typed(
+            data=data,
+            defaults=defaults,
+            child_name=child_name)
+
+    def test_dump_default_basic_example1(self):
+        # Shows the typical use -- that only the novel data is output.
+        # The inner_struct is the same for both x and y, so is not output.
+        defaults = OuterStruct()
+        defaults.outer_value = 1.0
+        defaults.inner_struct.inner_value = 2.0
+        data = copy.deepcopy(defaults)
+        data.outer_value = 3.0
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          outer_value: 3.0
+        """))
+
+    def test_dump_default_basic_example2(self):
+        # Shows the typical use -- that only the novel data is output.
+        # The outer_value is the same for both x and y, so is not output.
+        defaults = OuterStruct()
+        defaults.outer_value = 1.0
+        defaults.inner_struct.inner_value = 2.0
+        data = copy.deepcopy(defaults)
+        data.inner_struct.inner_value = 3.0
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          inner_struct:
+            inner_value: 3.0
+        """))
+
+    def test_dump_default_basic_example3(self):
+        # Shows the typical use -- emit the content with or without providing a
+        # root_name.
+        defaults = OuterStruct()
+        defaults.outer_value = 1.0
+        data = OuterStruct()
+        data.outer_value = 3.0
+        data.inner_struct.inner_value = defaults.inner_struct.inner_value
+
+        # Emit using the default "doc" root name.
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          outer_value: 3.0
+        """))
+
+        # Emit using an empty root name.
+        self.assertEqual(self._save(data, defaults, None), dedent("""\
+        outer_value: 3.0
+        """))
+
+        # Emit with an empty root name without defaults.
+        self.assertEqual(self._save(defaults, defaults, None), dedent("""\
+        {}
+        """))
+
+    def test_dump_default_different_map_order1(self):
+        # Same as the BasicExample1 from above, except that the map order of
+        # the defaults vs data differs.  The defaults still take effect.
+        defaults = OuterStructOpposite()
+        defaults.inner_struct.inner_value = 1.0
+        defaults.outer_value = 2.0
+        data = OuterStruct()
+        data.outer_value = 3.0
+        data.inner_struct.inner_value = defaults.inner_struct.inner_value
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          outer_value: 3.0
+        """))
+
+    def test_dump_default_different_map_order2(self):
+        # Same as the BasicExample2 from above, except that the map order of
+        # the defaults vs data differs.  The defaults still take effect.
+        defaults = OuterStructOpposite()
+        defaults.inner_struct.inner_value = 1.0
+        defaults.outer_value = 2.0
+        data = OuterStruct()
+        data.outer_value = defaults.outer_value
+        data.inner_struct.inner_value = 3.0
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          inner_struct:
+            inner_value: 3.0
+        """))
+
+    def test_dump_default_nulls(self):
+        # YAML nulls are handled reasonably, without throwing.
+        defaults = OptionalStruct()
+        defaults.value = None
+        data = copy.deepcopy(defaults)
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc: {}
+        """))
+
+    def test_dump_default_different_lists(self):
+        # Lists differing in their values are not erased.
+        defaults = ListStruct()
+        defaults.value = [0.0, 0.0, 0.0]
+        data = ListStruct()
+        data.value = [1.0, 2.0, 3.0]
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          value: [1.0, 2.0, 3.0]
+        """))
+
+    def test_dump_default_different_size_lists(self):
+        # Lists differing in size (but sharing a prefix) are not erased.
+        defaults = ListStruct()
+        defaults.value = [1.0, 2.0]
+        data = ListStruct()
+        data.value = [1.0, 2.0, 3.0]
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          value: [1.0, 2.0, 3.0]
+        """))
+
+    def test_dump_default_different_variant_tag(self):
+        # Variants differing by tag are not erased.
+        defaults = VariantStruct()
+        defaults.value = NumpyStruct()
+        data = VariantStruct()
+        data.value = FloatStruct(1.0)
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          value: !FloatStruct
+            value: 1.0
+        """))
+
+    def test_dump_default_different_map_keys(self):
+        # Maps differing in key only (same value) are not erased.
+        defaults = MapStruct()
+        defaults.value["b"] = 1.0
+        data = MapStruct()
+        data.value["a"] = 1.0
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          value:
+            a: 1.0
+        """))
+
+    def test_dump_default_different_map_values(self):
+        # Maps differing in value only (same key) are not erased.
+        defaults = MapStruct()
+        defaults.value["a"] = 2.0
+        data = MapStruct()
+        data.value["a"] = 1.0
+
+        self.assertEqual(self._save(data, defaults), dedent("""\
+        doc:
+          value:
+            a: 1.0
+        """))
+
+
+class TestYamlTypedWriteAcceptance(unittest.TestCase):
+    """Acceptance tests for the typed yaml_load function(s).
+
+    This test class is the Python flavor of the C++ test suite at
+     drake/common/yaml/test/yaml_io_test.cc
+    and should be roughly kept in sync with the test cases in that file.
+    """
+
+    def test_save_string(self):
+        data = StringStruct(value="save_string")
+        result = yaml_dump_typed(data)
+        self.assertEqual(result, "value: save_string\n")
+
+    def test_save_string_child(self):
+        child_name = "some_child"
+        data = StringStruct(value="save_string_child")
+        result = yaml_dump_typed(data, child_name=child_name)
+        self.assertEqual(result, "some_child:\n  value: save_string_child\n")
+
+    def test_save_string_defaults(self):
+        # N.B. The MapStruct.value dict contains a "nominal_float" by default.
+        defaults = MapStruct()
+        data = MapStruct()
+        data.value["save_string"] = 1.0
+        assert len(data.value) == 2
+
+        # Only the non-default map entry is saved.
+        result = yaml_dump_typed(data, defaults=defaults)
+        self.assertEqual(result, dedent("""\
+            value:
+              save_string: 1.0
+            """))
+
+    # Inside the implementation of yaml_dump_typed, the code to save to a
+    # string versus a file shares all of the same dumping logic; only at the
+    # last moment do we choose to write the output to a string or a file.
+    # Therefore, we don't need to repeat all of the schema-specific test cases
+    # for files. Instead, we can just spot-check a few calls to probe the file
+    # handling and argument passing.
+
+    def test_save_file(self):
+        filename = Path(os.environ["TEST_TMPDIR"]) / "save_file.yaml"
+        data = StringStruct(value="save_file")
+        yaml_dump_typed(filename=filename, data=data)
+        readback = filename.read_text(encoding="utf-8")
+        self.assertEqual(readback, "value: save_file\n")
+
+    def test_save_file_all_args(self):
+        # N.B. The MapStruct.value dict contains a "nominal_float" by default.
+        defaults = MapStruct()
+        data = MapStruct()
+        data.value["save_file"] = 1.0
+        assert len(data.value) == 2
+
+        filename = Path(os.environ["TEST_TMPDIR"]) / "save_file_all_args.yaml"
+        yaml_dump_typed(
+            filename=filename,
+            data=data,
+            child_name="some_child",
+            defaults=defaults,
+        )
+        readback = filename.read_text(encoding="utf-8")
+        self.assertEqual(readback, dedent("""\
+            some_child:
+              value:
+                save_file: 1.0
+            """))
+
+    def test_write_bad_schema(self):
+        # N.B. This test covers python-specific error handling, so does not
+        # have any corrresponding cases in the C++ unit tests.
+        with self.assertRaisesRegex(Exception, "should have been a dict"):
+            yaml_dump_typed([1.0], schema=typing.List[float])
+
 
 class TestYamlTypedReadPybind11(unittest.TestCase):
-    """Tests for deserializing into pybind11 objects."""
+    """Tests for (de)serializing into pybind11 objects."""
 
     def test_missing_serialize_binding(self):
+        # For testing the error message in case of missing C++ bindings, we
+        # just need any bound C++ class that doesn't have a Serialize().
+        # We'll use Value to avoid dependencies on non-'common' code.
+        invalid_cxx_class = Value[str]
         with self.assertRaisesRegex(RuntimeError, ".*lacks.*__fields__.*"):
-            # For testing the error message in case of missing C++ bindings,
-            # we just need any bound C++ class that doesn't have a Serialize().
-            # We'll use Value to avoid dependencies on non-'common' code.
-            invalid_cxx_class = Value[str]
+            yaml_dump_typed(invalid_cxx_class())
+        with self.assertRaisesRegex(RuntimeError, ".*lacks.*__fields__.*"):
             yaml_load_typed(schema=invalid_cxx_class, data="{}")
 
     def test_mydata2(self):
-        data = dedent("""
-        some_bool: True
+        data = dedent("""\
+        some_bool: true
         some_int: 1
         some_uint64: 1
         some_float: 1.0
         some_double: 1.0
         some_string: one
-        some_eigen: [1.0]
+        some_eigen:
+        - [1.0]
         some_optional: 1.0
         some_vector: [1.0]
-        some_map: { one: 1.0 }
-        some_variant: !MyData1 { quux: 1.0 }
+        some_map:
+          one: 1.0
+        some_variant: !MyData1
+          quux: 1.0
         """)
         x = yaml_load_typed(schema=MyData2, data=data)
         self.assertEqual(x.some_bool, True)
@@ -615,3 +1173,4 @@ class TestYamlTypedReadPybind11(unittest.TestCase):
         self.assertEqual(x.some_vector, [1.0])
         self.assertEqual(x.some_map, dict(one=1.0))
         self.assertEqual(x.some_variant.quux, 1.0)
+        self.assertEqual(yaml_dump_typed(x), data)

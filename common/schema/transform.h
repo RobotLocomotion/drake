@@ -186,7 +186,16 @@ class Transform {
 
   /// Samples this Transform.  If this is deterministic, the result is the same
   /// as GetDeterministicValue.
+  ///
+  /// @warning Calling this function when this object has a non-null, non-world
+  /// `base_frame` is deprecated and will become an error on 2024-05-01. (The
+  /// returned value would be misleading because it doesn't incorporate the base
+  /// frame.)
   math::RigidTransformd Sample(RandomGenerator* generator) const;
+
+  /// Samples this Transform; the returned value is deterministic and has the
+  /// same base frame.
+  Transform SampleAsTransform(RandomGenerator* generator) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {

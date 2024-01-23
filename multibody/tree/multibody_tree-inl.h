@@ -17,7 +17,6 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/body_node.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
@@ -31,6 +30,7 @@
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
@@ -38,95 +38,6 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-
-template <typename T>
-template <template <typename Scalar> class BodyType>
-const BodyType<T>& MultibodyTree<T>::AddBody(
-    std::unique_ptr<BodyType<T>> body) {
-  static_assert(std::is_convertible_v<BodyType<T>*, Body<T>*>,
-                "BodyType must be a sub-class of Body<T>.");
-  if (topology_is_valid()) {
-    throw std::logic_error(
-        "This MultibodyTree is finalized already. "
-        "Therefore adding more bodies is not allowed. "
-        "See documentation for Finalize() for details.");
-  }
-  if (body == nullptr) {
-    throw std::logic_error("Input body is a nullptr.");
-  }
-
-  DRAKE_DEMAND(body->model_instance().is_valid());
-
-  // Make note in the graph.
-  multibody_graph_.AddBody(body->name(), body->model_instance());
-
-  BodyIndex body_index(0);
-  FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_body();
-  // These tests MUST be performed BEFORE frames_.push_back() and
-  // owned_bodies_.push_back() below. Do not move them around!
-  DRAKE_DEMAND(body_index == num_bodies());
-  DRAKE_DEMAND(body_frame_index == num_frames());
-
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyElement altogether.
-  body->set_parent_tree(this, body_index);
-  // MultibodyTree can access selected private methods in Body through its
-  // BodyAttorney.
-  // - Register body frame.
-  Frame<T>* body_frame =
-      &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
-  body_frame->set_parent_tree(this, body_frame_index);
-  DRAKE_ASSERT(body_frame->name() == body->name());
-  this->SetElementIndex(body_frame->name(), body_frame_index,
-                        &frame_name_to_index_);
-  frames_.push_back(body_frame);
-  // - Register body.
-  BodyType<T>* raw_body_ptr = body.get();
-  this->SetElementIndex(body->name(), body->index(), &body_name_to_index_);
-  owned_bodies_.push_back(std::move(body));
-  return *raw_body_ptr;
-}
-
-template <typename T>
-template<template<typename Scalar> class BodyType, typename... Args>
-const BodyType<T>& MultibodyTree<T>::AddBody(Args&&... args) {
-  static_assert(std::is_convertible_v<BodyType<T>*, Body<T>*>,
-                "BodyType must be a sub-class of Body<T>.");
-  return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
-}
-
-template <typename T>
-const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
-    const std::string& name, ModelInstanceIndex model_instance,
-    const SpatialInertia<double>& M_BBo_B) {
-  if (model_instance >= num_model_instances()) {
-    throw std::logic_error("Invalid model instance specified.");
-  }
-
-  if (HasBodyNamed(name, model_instance)) {
-    throw std::logic_error(
-        "Model instance '" + instance_index_to_name_.at(model_instance) +
-            "' already contains a body named '" + name + "'. " +
-            "Body names must be unique within a given model.");
-  }
-
-  const RigidBody<T>& body =
-      this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
-  return body;
-}
-
-template <typename T>
-const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
-    const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-  if (num_model_instances() != 2) {
-    throw std::logic_error(
-        "This model has more model instances than the default.  Please "
-        "call AddRigidBody with an explicit model instance.");
-  }
-
-  return AddRigidBody(name, default_model_instance(), M_BBo_B);
-}
 
 template <typename T>
 template <template <typename Scalar> class FrameType>
@@ -147,22 +58,20 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
     throw std::logic_error(fmt::format(
         "Model instance '{}' already contains a frame named '{}'. "
         "Frame names must be unique within a given model.",
-        instance_index_to_name_.at(frame->model_instance()), frame->name()));
+        model_instances_.get_element(frame->model_instance()).name(),
+        frame->name()));
   }
-  FrameIndex frame_index = topology_.add_frame(frame->body().index());
-  // This test MUST be performed BEFORE frames_.push_back() and
-  // owned_frames_.push_back() below. Do not move it around!
-  DRAKE_DEMAND(frame_index == num_frames());
   DRAKE_DEMAND(frame->model_instance().is_valid());
+  const FrameIndex frame_index = topology_.add_frame(frame->body().index());
+  // This test MUST be performed BEFORE frames_.Add(). Do not move it around!
+  DRAKE_DEMAND(frame_index == num_frames());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyElement altogether.
+  //  all. Consider also removing MultibodyElement altogether.
   frame->set_parent_tree(this, frame_index);
-  FrameType<T>* raw_frame_ptr = frame.get();
-  frames_.push_back(raw_frame_ptr);
-  this->SetElementIndex(frame->name(), frame_index, &frame_name_to_index_);
-  owned_frames_.push_back(std::move(frame));
-  return *raw_frame_ptr;
+  FrameType<T>* result = frame.get();
+  frames_.Add(std::move(frame));
+  return *result;
 }
 
 template <typename T>
@@ -223,9 +132,9 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->is_floating() &&
       mobilizer->inboard_frame().body().index() == world_body().index();
 
-  topology_.get_mutable_body(outboard_body_index).is_floating =
+  topology_.get_mutable_rigid_body(outboard_body_index).is_floating =
       is_body_floating;
-  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+  topology_.get_mutable_rigid_body(outboard_body_index).has_quaternion_dofs =
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
@@ -270,10 +179,7 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     gravity_field_ = gravity_element;
   }
 
-  ForceElementIndex force_element_index = topology_.add_force_element();
-  // This test MUST be performed BEFORE owned_force_elements_.push_back()
-  // below. Do not move it around!
-  DRAKE_DEMAND(force_element_index == num_force_elements());
+  const ForceElementIndex force_element_index(num_force_elements());
   DRAKE_DEMAND(force_element->model_instance().is_valid());
   force_element->set_parent_tree(this, force_element_index);
 
@@ -301,11 +207,11 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                 "JointType must be a sub-class of Joint<T>.");
 
   if (HasJointNamed(joint->name(), joint->model_instance())) {
-    throw std::logic_error(
-        "Model instance '" +
-            instance_index_to_name_.at(joint->model_instance()) +
-            "' already contains a joint named '" + joint->name() + "'. " +
-            "Joint names must be unique within a given model.");
+    throw std::logic_error(fmt::format(
+        "Model instance '{}' already contains a joint named '{}'. Joint names "
+        "must be unique within a given model.",
+        model_instances_.get_element(joint->model_instance()).name(),
+        joint->name()));
   }
 
   if (topology_is_valid()) {
@@ -335,21 +241,19 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   // This will check some additional error conditions.
   RegisterJointInGraph(*joint);
 
-  const JointIndex joint_index(owned_joints_.size());
-  joint->set_parent_tree(this, joint_index);
-  JointType<T>* raw_joint_ptr = joint.get();
-  this->SetElementIndex(joint->name(), joint->index(), &joint_name_to_index_);
-  owned_joints_.push_back(std::move(joint));
-  return *raw_joint_ptr;
+  joint->set_parent_tree(this, joints_.next_index());
+  JointType<T>* result = joint.get();
+  joints_.Add(std::move(joint));
+  return *result;
 }
 
 template <typename T>
 template<template<typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::string& name,
-    const Body<T>& parent,
+    const RigidBody<T>& parent,
     const std::optional<math::RigidTransform<double>>& X_PF,
-    const Body<T>& child,
+    const RigidBody<T>& child,
     const std::optional<math::RigidTransform<double>>& X_BM,
     Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
@@ -373,11 +277,10 @@ template <typename T>
 const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
     const std::string& name, const Joint<T>& joint, double effort_limit) {
   if (HasJointActuatorNamed(name, joint.model_instance())) {
-    throw std::logic_error(
-        "Model instance '" +
-            instance_index_to_name_.at(joint.model_instance()) +
-            "' already contains a joint actuator named '" + name + "'. " +
-            "Joint actuator names must be unique within a given model.");
+    throw std::logic_error(fmt::format(
+        "Model instance '{}' already contains a joint actuator named '{}'. "
+        "Joint actuator names must be unique within a given model.",
+        model_instances_.get_element(joint.model_instance()).name(), name));
   }
 
   if (topology_is_valid()) {
@@ -386,14 +289,13 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
                            "See documentation for Finalize() for details.");
   }
 
+  // Create the JointActuator before making any changes to our member fields, so
+  // if the JointActuator constructor throws our state will still be valid.
+  auto actuator = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
-  owned_actuators_.push_back(
-      std::make_unique<JointActuator<T>>(name, joint, effort_limit));
-  JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
-  this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
-  return *actuator;
+  return actuators_.Add(std::move(actuator));
 }
 
 template <typename T>
@@ -410,9 +312,10 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
                            "allowed. See documentation for Finalize() for "
                            "details.");
   }
-  const ModelInstanceIndex index(num_model_instances());
-  this->SetElementIndex(name, index, &instance_name_to_index_);
-  instance_index_to_name_[index] = name;
+  const ModelInstanceIndex index = model_instances_.next_index();
+  auto element = std::make_unique<internal::ModelInstance<T>>(index, name);
+  element->set_parent_tree(this, index);
+  model_instances_.Add(std::move(element));
   return index;
 }
 
@@ -433,57 +336,48 @@ void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
                            "allowed. See documentation for Finalize() for "
                            "details.");
   }
-  instance_name_to_index_.erase(old_name);
-  this->SetElementIndex(name, model_instance, &instance_name_to_index_);
-  instance_index_to_name_.at(model_instance) = name;
+
+  model_instances_.Rename(model_instance, name);
 }
 
 template <typename T>
 template <typename FromScalar>
 Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {
-  FrameIndex frame_index = frame.index();
+  const FrameIndex frame_index = frame.index();
 
   auto frame_clone = frame.CloneToScalar(*this);
   frame_clone->set_parent_tree(this, frame_index);
   frame_clone->set_model_instance(frame.model_instance());
-
-  Frame<T>* raw_frame_clone_ptr = frame_clone.get();
-  // The order in which frames are added into frames_ is important to keep the
-  // topology invariant. Therefore we index new clones according to the
-  // original frame_index.
-  frames_[frame_index] = raw_frame_clone_ptr;
-  // The order within owned_frames_ does not matter.
-  owned_frames_.push_back(std::move(frame_clone));
-  return raw_frame_clone_ptr;
+  Frame<T>* result = frame_clone.get();
+  frames_.Add(std::move(frame_clone));
+  return result;
 }
 
 template <typename T>
 template <typename FromScalar>
-Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
+RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
+    const RigidBody<FromScalar>& body) {
   const BodyIndex body_index = body.index();
   const FrameIndex body_frame_index = body.body_frame().index();
 
   auto body_clone = body.CloneToScalar(*this);
   body_clone->set_parent_tree(this, body_index);
   body_clone->set_model_instance(body.model_instance());
-  // MultibodyTree can access selected private methods in Body through its
-  // BodyAttorney.
+  // MultibodyTree can access selected private methods in RigidBody through its
+  // RigidBodyAttorney.
   Frame<T>* body_frame_clone =
-      &internal::BodyAttorney<T>::get_mutable_body_frame(body_clone.get());
+      &internal::RigidBodyAttorney<T>::get_mutable_body_frame(body_clone.get());
   body_frame_clone->set_parent_tree(this, body_frame_index);
   body_frame_clone->set_model_instance(body.model_instance());
 
   // The order in which frames are added into frames_ is important to keep the
   // topology invariant. Therefore we index new clones according to the
   // original body_frame_index.
-  frames_[body_frame_index] = body_frame_clone;
-  Body<T>* raw_body_clone_ptr = body_clone.get();
-  // The order in which bodies are added into owned_bodies_ is important to
-  // keep the topology invariant. Therefore this method is called from
+  frames_.AddBorrowed(body_frame_clone);
+  // The order in which bodies are added into owned_bodies_ is important to keep
+  // the topology invariant. Therefore this method is called from
   // MultibodyTree::CloneToScalar() within a loop by original body_index.
-  DRAKE_DEMAND(static_cast<int>(owned_bodies_.size()) == body_index);
-  owned_bodies_.push_back(std::move(body_clone));
-  return raw_body_clone_ptr;
+  return &rigid_bodies_.Add(std::move(body_clone));
 }
 
 template <typename T>
@@ -513,24 +407,21 @@ void MultibodyTree<T>::CloneForceElementAndAdd(
 template <typename T>
 template <typename FromScalar>
 Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
-  JointIndex joint_index = joint.index();
   auto joint_clone = joint.CloneToScalar(this);
-  joint_clone->set_parent_tree(this, joint_index);
+  joint_clone->set_parent_tree(this, joint.index());
   joint_clone->set_model_instance(joint.model_instance());
-  owned_joints_.push_back(std::move(joint_clone));
-  return owned_joints_.back().get();
+  return &joints_.Add(std::move(joint_clone));
 }
 
 template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneActuatorAndAdd(
     const JointActuator<FromScalar>& actuator) {
-  JointActuatorIndex actuator_index = actuator.index();
   std::unique_ptr<JointActuator<T>> actuator_clone =
       actuator.CloneToScalar(*this);
-  actuator_clone->set_parent_tree(this, actuator_index);
+  actuator_clone->set_parent_tree(this, actuator.index());
   actuator_clone->set_model_instance(actuator.model_instance());
-  owned_actuators_.push_back(std::move(actuator_clone));
+  actuators_.Add(std::move(actuator_clone));
 }
 
 template <typename T>

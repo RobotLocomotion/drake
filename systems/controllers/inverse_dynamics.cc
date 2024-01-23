@@ -65,33 +65,6 @@ InverseDynamics<T>::InverseDynamics(
         this->DeclareInputPort("desired_acceleration", kVectorValued, v_dim_)
             .get_index();
   }
-
-  // Add deprecated port names.
-  const InputPort<T>& u0 =
-      this->DeclareInputPort("u0", kVectorValued, q_dim_ + v_dim_);
-  this->DeprecateInputPort(
-      u0,
-      "The input port name 'u0' is deprecated and will be removed from Drake "
-      "on or after 2024-01-01. Use the name 'estimated_state' instead.");
-  this->get_mutable_cache_entry(plant_context_cache_index_)
-      .mutable_prerequisites()
-      .insert(u0.ticket());
-  if (!this->is_pure_gravity_compensation()) {
-    this->DeprecateInputPort(
-        this->DeclareInputPort("u1", kVectorValued, v_dim_),
-        "The input port name 'u1' is deprecated and will be removed from Drake "
-        "on or after 2024-01-01. Use the name 'desired_acceleration' instead.");
-  }
-  this->DeprecateOutputPort(
-      this->DeclareVectorOutputPort(
-          "y0", BasicVector<T>(v_dim_),
-          [this](const Context<T>& context, BasicVector<T>* output) {
-            output->SetFromVector(
-                this->get_output_port_generalized_force().Eval(context));
-          },
-          {this->all_input_ports_ticket()}),
-      "The output port name 'y0' is deprecated and will be removed from Drake "
-      "on or after 2024-01-01. Use the name 'generalized_force' instead.");
 }
 
 template <typename T>
@@ -119,10 +92,7 @@ InverseDynamics<T>::~InverseDynamics() = default;
 template <typename T>
 void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context,
                                              Context<T>* plant_context) const {
-  // On 2024-01-01 upon completion of deprecation, remove the "u0" fallback.
-  const VectorX<T>& x = get_input_port_estimated_state().HasValue(context)
-                            ? get_input_port_estimated_state().Eval(context)
-                            : this->GetInputPort("u0").Eval(context);
+  const VectorX<T>& x = get_input_port_estimated_state().Eval(context);
 
   if (this->is_pure_gravity_compensation()) {
     // Velocities remain zero, as set in the constructor, for pure gravity
@@ -159,11 +129,8 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
             .template Eval<MultibodyForces<T>>(context);
 
     // Compute inverse dynamics.
-    // On 2024-01-01 upon completion of deprecation, remove the "u1" fallback.
     const VectorX<T>& desired_vd =
-        get_input_port_desired_acceleration().HasValue(context)
-            ? get_input_port_desired_acceleration().Eval(context)
-            : this->GetInputPort("u1").Eval(context);
+            get_input_port_desired_acceleration().Eval(context);
 
     output->get_mutable_value() =
         plant_->CalcInverseDynamics(plant_context, desired_vd, external_forces);

@@ -27,6 +27,7 @@
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -322,6 +323,30 @@ void DefineGeometryOptimization(py::module m) {
             },
             [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
               return Hyperellipsoid(std::get<0>(args), std::get<1>(args));
+            }));
+  }
+
+  // Hyperrectangle
+  {
+    const auto& cls_doc = doc.Hyperrectangle;
+    py::class_<Hyperrectangle, ConvexSet>(m, "Hyperrectangle", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("lb"), py::arg("ub"), cls_doc.ctor.doc_2args)
+        .def("lb", &Hyperrectangle::lb, cls_doc.lb.doc)
+        .def("ub", &Hyperrectangle::ub, cls_doc.ub.doc)
+        .def("UniformSample", &Hyperrectangle::UniformSample,
+            py::arg("generator"), cls_doc.UniformSample.doc)
+        .def("Center", &Hyperrectangle::Center, cls_doc.Center.doc)
+        .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
+            cls_doc.MakeHPolyhedron.doc)
+        .def(py::pickle(
+            [](const Hyperrectangle& self) {
+              return std::make_pair(self.lb(), self.ub());
+            },
+            [](std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
+              return Hyperrectangle(std::get<0>(args), std::get<1>(args));
             }));
   }
 
@@ -857,7 +882,7 @@ void DefineGeometryOptimization(py::module m) {
             m, "FindSeparationCertificateOptions", find_options_doc.doc)
             .def(py::init<>())
             .def_readwrite(
-                "num_threads", &FindSeparationCertificateOptions::num_threads)
+                "parallelism", &FindSeparationCertificateOptions::parallelism)
             .def_readwrite(
                 "verbose", &FindSeparationCertificateOptions::verbose)
             .def_readwrite(
@@ -866,6 +891,19 @@ void DefineGeometryOptimization(py::module m) {
                 &FindSeparationCertificateOptions::terminate_at_failure)
             .def_readwrite("solver_options",
                 &FindSeparationCertificateOptions::solver_options);
+    constexpr char kNumThreadsDeprecated[] =
+        "FindSeparationCertificateOptions.num_threads is deprecated and will "
+        "be removed on or after 2024-05-01. Use options.parallelism instead.";
+    find_options_cls.def_property("num_threads",
+        WrapDeprecated(kNumThreadsDeprecated,
+            [](const FindSeparationCertificateOptions& self) {
+              return self.parallelism.num_threads();
+            }),
+        WrapDeprecated(kNumThreadsDeprecated,
+            [](FindSeparationCertificateOptions& self, int num_threads) {
+              self.parallelism =
+                  (num_threads > 0) ? num_threads : Parallelism::Max();
+            }));
   }
   {
     using BaseClass = CspaceFreePolytopeBase;
@@ -925,7 +963,10 @@ void DefineGeometryOptimization(py::module m) {
               return std::pair(success, certificates);
             },
             py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
-            py::arg("options"))
+            py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.FindSeparationCertificateGivenPolytope.doc)
         .def("SearchWithBilinearAlternation",
             &Class::SearchWithBilinearAlternation,
             py::arg("ignored_collision_pairs"), py::arg("C_init"),
@@ -941,6 +982,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("SolveSeparationCertificateProgram",
             &Class::SolveSeparationCertificateProgram,
             py::arg("certificate_program"), py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
             cls_doc.SolveSeparationCertificateProgram.doc);
     py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
         "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
@@ -1081,6 +1124,9 @@ void DefineGeometryOptimization(py::module m) {
   }
 
   using drake::geometry::optimization::ConvexSet;
+  m.def("CheckIfSatisfiesConvexityRadius", &CheckIfSatisfiesConvexityRadius,
+      py::arg("convex_set"), py::arg("continuous_revolute_joints"),
+      doc.CheckIfSatisfiesConvexityRadius.doc);
   m.def(
       "PartitionConvexSet",
       [](const ConvexSet& convex_set,

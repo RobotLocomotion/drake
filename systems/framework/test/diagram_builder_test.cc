@@ -610,6 +610,18 @@ GTEST_TEST(DiagramBuilderTest, DuplicateInputPortNamesThrow) {
       ".*already has an input port named.*");
 }
 
+GTEST_TEST(DiagramBuilderTest, ThrowIfInputAlreadyWired) {
+  DiagramBuilder<double> builder;
+
+  auto sink = builder.AddSystem<Sink<double>>();
+
+  builder.ExportInput(sink->get_input_port(0), "sink1");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ExportInput(sink->get_input_port(0), "sink2"),
+      "Input port sink1 is already connected.");
+}
+
 GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
   DiagramBuilder<double> builder;
 

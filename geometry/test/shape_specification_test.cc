@@ -530,8 +530,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(Vector3<double>{1, 1, 0}),
                               "MeshcatCone parameters .+ should all be > 0.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5),
-                              "Sphere radius should be >= 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), "Sphere radius should be >= 0.+");
   DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 }
 
@@ -547,9 +546,9 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Convex.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Cylinder(1, 2), nullptr),
                               "This class (.+) does not support Cylinder.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Ellipsoid(1, 1, 1),
-                              nullptr),
-                              "This class (.+) does not support Ellipsoid.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      this->ImplementGeometry(Ellipsoid(1, 1, 1), nullptr),
+      "This class (.+) does not support Ellipsoid.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(HalfSpace(), nullptr),
                               "This class (.+) does not support HalfSpace.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("foo", 1), nullptr),

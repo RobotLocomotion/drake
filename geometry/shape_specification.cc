@@ -34,7 +34,9 @@ void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
   reifier_(*this, reifier, user_data);
 }
 
-std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
+std::unique_ptr<Shape> Shape::Clone() const {
+  return cloner_(*this);
+}
 
 template <typename S>
 Shape::Shape(ShapeTag<S>) {
@@ -54,8 +56,7 @@ Shape::Shape(ShapeTag<S>) {
 }
 
 Box::Box(double width, double depth, double height)
-    : Shape(ShapeTag<Box>()),
-      size_(width, depth, height) {
+    : Shape(ShapeTag<Box>()), size_(width, depth, height) {
   if (width <= 0 || depth <= 0 || height <= 0) {
     throw std::logic_error(
         fmt::format("Box width, depth, and height should all be > 0 (were {}, "
@@ -95,9 +96,7 @@ Convex::Convex(const std::string& filename, double scale)
 }
 
 Cylinder::Cylinder(double radius, double length)
-    : Shape(ShapeTag<Cylinder>()),
-      radius_(radius),
-      length_(length) {
+    : Shape(ShapeTag<Cylinder>()), radius_(radius), length_(length) {
   if (radius <= 0 || length <= 0) {
     throw std::logic_error(
         fmt::format("Cylinder radius and length should both be > 0 (were {} "
@@ -178,8 +177,7 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
 MeshcatCone::MeshcatCone(const Vector3<double>& measures)
     : MeshcatCone(measures(0), measures(1), measures(2)) {}
 
-Sphere::Sphere(double radius)
-    : Shape(ShapeTag<Sphere>()), radius_(radius) {
+Sphere::Sphere(double radius) : Shape(ShapeTag<Sphere>()), radius_(radius) {
   if (radius < 0) {
     throw std::logic_error(
         fmt::format("Sphere radius should be >= 0 (was {}).", radius));
@@ -286,7 +284,9 @@ template <class MeshType>
 double CalcMeshVolumeFromFile(const MeshType& mesh) {
   std::string extension = std::filesystem::path(mesh.filename()).extension();
   std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+                 [](unsigned char c) {
+                   return std::tolower(c);
+                 });
   // TODO(russt): Support .vtk files.
   if (extension != ".obj") {
     throw std::runtime_error(fmt::format(
@@ -310,7 +310,7 @@ class CalcVolumeReifier final : public ShapeReifier {
   }
   void ImplementGeometry(const Capsule& capsule, void*) final {
     volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
-         4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
+              4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
   }
   void ImplementGeometry(const Convex& mesh, void*) {
     volume_ = CalcMeshVolumeFromFile(mesh);

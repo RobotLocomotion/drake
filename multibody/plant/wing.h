@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
