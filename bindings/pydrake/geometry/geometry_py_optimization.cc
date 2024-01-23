@@ -347,7 +347,10 @@ void DefineGeometryOptimization(py::module m) {
             },
             [](std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
               return Hyperrectangle(std::get<0>(args), std::get<1>(args));
-            }));
+            }))
+        .def_static("MaybeCalcAxisAlignedBoundingBox",
+            &Hyperrectangle::MaybeCalcAxisAlignedBoundingBox, py::arg("set"),
+            cls_doc.MaybeCalcAxisAlignedBoundingBox.doc);
   }
 
   // Intersection
