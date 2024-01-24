@@ -244,7 +244,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(
             h_box.UniformSample(generator=generator,
                                 previous_sample=sample).shape, (3, ))
-
+        h_box.UniformSample(generator=generator, mixing_steps=100)
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn
