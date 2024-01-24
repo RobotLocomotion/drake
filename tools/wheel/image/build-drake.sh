@@ -18,6 +18,8 @@ build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_OS=manylinux
 build --repo_env=SNOPT_PATH=git
 build --config=packaging
+# Our wheel Eigen is new enough to undo the Focal-specific removal of Clarabel.
+build --define=NO_CLARABEL=OFF
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.
