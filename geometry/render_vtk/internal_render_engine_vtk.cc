@@ -459,6 +459,8 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
 
 bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                     const RegistrationData& data) {
+  // TODO(SeanCurtis-TRI): introduce VtkDiagnosticEventObserver on the gltf
+  // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
   importer->SetFileName(file_name.c_str());
   importer->Update();
