@@ -633,7 +633,7 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   EXPECT_EQ(data.type, "set_property");
   EXPECT_EQ(data.path, "/Background/<object>");
   EXPECT_EQ(data.property, "environment_map");
-  EXPECT_THAT(data.value, testing::StartsWith("data:image/png;base64"));
+  EXPECT_THAT(data.value, testing::StartsWith("cas/sha256/"));
 
   // Clear the map with an empty string.
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));
@@ -650,7 +650,7 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
 
   // An invalid map throws.
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.SetEnvironmentMap("invalid_file.png"),
-                              "Requested environment map cannot be read.+");
+                              ".*invalid_file.png.*environment_map.*");
 }
 
 // Tests the functional logic of button handling, without actually creating any
