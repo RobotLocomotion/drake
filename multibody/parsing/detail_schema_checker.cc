@@ -152,18 +152,12 @@ bool CheckDocumentStringAgainstRncSchemaFile(
     const DiagnosticPolicy& diagnostic, const std::filesystem::path& rnc_schema,
     const std::string& document_contents,
     const std::string& document_filename) {
+  const std::string rnc_data = ReadFileOrThrow(rnc_schema);
   std::vector<std::string> rnv_messages;
   {
     RnvGuard rnv_guard(&rnv_messages);
-    const int schema_fd = open(rnc_schema.string().c_str(), O_RDONLY);
-    if (schema_fd < 0) {
-      throw std::runtime_error(
-          fmt::format("Missing required resource '{}'", rnc_schema.string()));
-    }
-    ScopeExit schema_fd_guard([schema_fd]() {
-      ::close(schema_fd);
-    });
-    xcl_rnl_fd(const_cast<char*>(rnc_schema.c_str()), schema_fd);
+    xcl_rnl_s(const_cast<char*>(rnc_schema.c_str()),
+              const_cast<char*>(rnc_data.c_str()), rnc_data.size());
     if (!rnv_messages.empty()) {
       throw std::runtime_error(fmt::format("Errors parsing '{}':\n{}",
                                            rnc_schema.string(),
