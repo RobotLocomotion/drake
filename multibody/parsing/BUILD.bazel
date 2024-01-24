@@ -292,6 +292,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:diagnostic_policy",
+        "//common:find_resource",
         "//common:scope_exit",
         "@rnv_internal//:rnv",
     ],

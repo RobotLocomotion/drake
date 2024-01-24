@@ -8,8 +8,10 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <optional>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -23,9 +25,9 @@ extern "C" {
 };
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {
@@ -36,134 +38,52 @@ using drake::internal::DiagnosticPolicy;
 
 namespace {
 
-// Use this singleton mutex to protect both the one global variable below, and
-// the static global state within the rnv library.
-static std::mutex& library_mutex() {
-  static drake::never_destroyed<std::mutex> mutex;
-  return mutex.access();
-}
+// Reprocesses errors and warnings from the rnv library to a diagnostic policy.
+bool ReplayDiagnostics(const DiagnosticPolicy& diagnostic,
+                       const std::vector<std::string>& rnv_messages) {
+  bool success = true;
 
-// This helper allows writing assertions about the mutex state.
-bool library_mutex_is_locked() {
-  auto& mutex = library_mutex();
-  if (mutex.try_lock()) {
-    mutex.unlock();
-    return false;
-  }
-  return true;
-}
+  // Since the library issues informative multiline comments, group them here
+  // into multiline Error() or Warning() events.
+  static constexpr char kPattern[] =
+      R"""(^([^:]*):(\d+):(\d+:)? (warning|error): (.*))""";
+  std::regex regex(kPattern);
 
-// Capture and redirect error messages from the rnv library to a diagnostic
-// policy object. Note that this requires manipulation of global state
-// (function and instance pointers) both in this class and in the rnv library.
-//
-// This class does not fully enforce thread safety itself, but requires that
-// any client be holding the library mutex at construction time, and assumes
-// that it will be held for the lifetime of any instance.
-class DiagnosticAdapter {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagnosticAdapter)
-  explicit DiagnosticAdapter(const DiagnosticPolicy* policy)
-  : policy_(policy) {
-    DRAKE_DEMAND(library_mutex_is_locked());
-    DRAKE_ASSERT(the_adapter == nullptr);
-    the_adapter = this;
-    old_er_vprintf_ = ::er_vprintf;
-    ::er_vprintf = DiagnosticAdapter::er_vprintf;
-  }
-
-  ~DiagnosticAdapter() {
-    ::er_vprintf = old_er_vprintf_;
-    the_adapter = nullptr;
-  }
-
-  // This could have been the destructor, except for the fact that Error() most
-  // commonly throws exceptions.
-  void Finish() {
-    flush();
-    for (const auto& event : diagnostic_events_) {
-      switch (event.mode) {
-        case Unknown: { break; }
-        case Error: { policy_->Error(event.detail); break; }
-        case Warning: { policy_->Warning(event.detail); break; }
+  // These hold the work-in-progress message.
+  DiagnosticDetail detail;
+  enum class Severity { Error, Warning } severity = Severity::Error;
+  auto flush = [&diagnostic, &success, &detail, &severity]() {
+    if (!detail.message.empty()) {
+      if (severity == Severity::Error) {
+        diagnostic.Error(detail);
+        success = false;
+      } else {
+        diagnostic.Warning(detail);
       }
     }
-  }
-
-  int error_count() const { return error_count_; }
-
- private:
-  static int er_vprintf(char* format, va_list ap) {
-    return the_adapter->ErVprintf(format, ap);
-  }
-
-  int ErVprintf(char* format, va_list ap) noexcept {
-    std::array<char, 4096> buffer{};
-    vsnprintf(buffer.data(), buffer.size(), format, ap);
-    buffer[buffer.size() - 1] = 0;
-    std::string result(buffer.data());
-
-    // Since the library issues informative multiline comments, parse them here
-    // into multiline Error() or Warning() events.
-    std::smatch m;
-    static constexpr char kPattern[] =
-        R"""(^([^:]*):(\d+):(\d+:)? (warning|error): (.*))""";
-    std::regex_search(result, m, std::regex(kPattern));
-    if (!m.empty()) {
-      flush();
-      // set mode, filename, line.
-      switch (*m[4].first) {
-        case 'w': { mode_ = Warning; break; }
-        case 'e': { mode_ = Error; ++error_count_; break; }
-        default: { mode_ = Unknown; break; }
-      }
-      filename_ = m[1];
-      line_ = std::stoi(m[2]);
-      result = m[5];
-    }
-    // store.
-    buffer_.push_back(result);
-    return result.size();
-  }
-
-  void flush() {
-    DiagnosticDetail detail;
-    detail.filename = filename_;
-    detail.line = line_;
-    for (int k = 0; k < ssize(buffer_); ++k) {
-      detail.message += buffer_[k];
-    }
-    // We can't throw any exceptions while the rnv-implemented parse is
-    // running, so buffer up the completed events and emit them later.
-    switch (mode_) {
-      case Unknown: { break; }
-      case Error: { diagnostic_events_.push_back({Error, detail}); break; }
-      case Warning: { diagnostic_events_.push_back({Warning, detail}); break; }
-    }
-    buffer_.clear();
-  }
-
-  // This is global state containing and instance pointer, which allows us to
-  // crawl back from a patched global function pointer to the relevant live
-  // instance of this class.
-  static DiagnosticAdapter* the_adapter;
-
-  const DiagnosticPolicy* policy_;
-  typedef int (*ErVprintfFunc)(char *format, va_list ap);
-  ErVprintfFunc old_er_vprintf_{};
-
-  enum Mode { Unknown, Error, Warning } mode_ {Unknown};
-  std::string filename_;
-  int line_{};
-  int error_count_{0};
-  std::vector<std::string> buffer_;
-  struct Event {
-    Mode mode;
-    DiagnosticDetail detail;
+    detail = {};
   };
-  std::vector<Event> diagnostic_events_;
-};
-DiagnosticAdapter* DiagnosticAdapter::the_adapter{nullptr};
+
+  // Loop over all of the "printed" messages.
+  for (const std::string& rnv_message : rnv_messages) {
+    std::smatch match;
+    std::regex_search(rnv_message, match, regex);
+    if (match.empty()) {
+      detail.message += rnv_message;
+    } else {
+      flush();
+      detail.filename = match[1];
+      detail.line = std::stoi(match[2]);
+      severity = (*match[4].first == 'w') ? Severity::Warning : Severity::Error;
+      detail.message = match[5];
+    }
+  }
+
+  // Be sure to get the last one.
+  flush();
+
+  return success;
+}
 
 // While `rnv` is a very nice tool to use from the command line, it is not well
 // suited for use as a library. The `RnvGuard` takes care of several necessary
@@ -175,91 +95,84 @@ DiagnosticAdapter* DiagnosticAdapter::the_adapter{nullptr};
 class RnvGuard {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RnvGuard)
-  explicit RnvGuard(const DiagnosticPolicy* policy)
-  : adapter_(policy) {
+
+  explicit RnvGuard(std::vector<std::string>* messages) : messages_(messages) {
+    DRAKE_DEMAND(g_singleton == nullptr);
+    g_singleton = this;
+    ::er_vprintf = &RnvGuard::vprintf_callback;
     xcl_init();
   }
+
   ~RnvGuard() {
     xcl_clear();
-  }
-
-  int error_count() const {
-    return adapter_.error_count();
-  }
-
-  void Finish() {
-    adapter_.Finish();
+    er_vprintf = nullptr;
+    g_singleton = nullptr;
   }
 
  private:
-  // This guard holds the mutex to protect both the DiagnosticAdapter, and the
-  // underlying global state in the rnv library.
-  std::lock_guard<std::mutex> guard_{library_mutex()};
-  DiagnosticAdapter adapter_;
+  // This mutex ensures that at most one RnvGuard is ever created per process.
+  static std::mutex& singleton_mutex() {
+    static drake::never_destroyed<std::mutex> mutex;
+    return mutex.access();
+  }
+
+  static int vprintf_callback(char* format, va_list ap) {
+    DRAKE_DEMAND(g_singleton != nullptr);
+    std::array<char, 4096> buffer{};
+    ::vsnprintf(buffer.data(), buffer.size(), format, ap);
+    buffer[buffer.size() - 1] = 0;
+    std::string message(buffer.data());
+    int result = message.size();
+    g_singleton->messages_->push_back(std::move(message));
+    return result;
+  }
+
+  std::lock_guard<std::mutex> guard_{singleton_mutex()};
+  std::vector<std::string>* const messages_;
+  static RnvGuard* g_singleton;
 };
 
-// Manage a file read descriptor in RAII style, with error reporting via
-// diagnostic policy.
-class ReadFd {
- public:
-  explicit ReadFd(const DiagnosticPolicy& diagnostic,
-    const std::string& filename) {
-    fd_ = open(filename.c_str(), O_RDONLY);
-    if (!ok()) {
-        diagnostic.Error(fmt::format("Failed to read file '{}': {}",
-                                     filename, strerror(errno)));
-    }
-  }
-  ~ReadFd() {
-    if (ok()) { close(fd_); }
-  }
-  bool ok() const { return fd_ >= 0; }
-  operator int () { return fd_; }
- private:
-  int fd_{};
-};
+RnvGuard* RnvGuard::g_singleton = nullptr;
 
 }  // namespace
 
 bool CheckDocumentFileAgainstRncSchemaFile(
-    const DiagnosticPolicy& diagnostic,
-    const std::filesystem::path& rnc_schema,
+    const DiagnosticPolicy& diagnostic, const std::filesystem::path& rnc_schema,
     const std::filesystem::path& document) {
-  RnvGuard rnv_guard(&diagnostic);
-  DRAKE_ASSERT(library_mutex_is_locked());
-  ReadFd schema_fd(diagnostic, rnc_schema);
-  if (!schema_fd.ok()) { return false; }
-  xcl_rnl_fd(const_cast<char*>(rnc_schema.c_str()), schema_fd);
-  if (rnv_guard.error_count() > 0) {
-    rnv_guard.Finish();
-    return false;
+  const std::optional<std::string> contents = ReadFile(document);
+  if (!contents) {
+    diagnostic.Error(
+        fmt::format("Could not open file '{}'", document.string()));
   }
-  ReadFd fd(diagnostic, document);
-  if (!fd.ok()) { return false; }
-  xcl_validate_fd(fd, document.c_str());
-  rnv_guard.Finish();
-  return (rnv_guard.error_count() == 0);
+  return CheckDocumentStringAgainstRncSchemaFile(diagnostic, rnc_schema,
+                                                 *contents, document);
 }
 
 bool CheckDocumentStringAgainstRncSchemaFile(
-    const DiagnosticPolicy& diagnostic,
-    const std::filesystem::path& rnc_schema,
+    const DiagnosticPolicy& diagnostic, const std::filesystem::path& rnc_schema,
     const std::string& document_contents,
     const std::string& document_filename) {
-  RnvGuard rnv_guard(&diagnostic);
-  DRAKE_ASSERT(library_mutex_is_locked());
-  ReadFd schema_fd(diagnostic, rnc_schema);
-  if (!schema_fd.ok()) { return false; }
-  xcl_rnl_fd(const_cast<char*>(rnc_schema.c_str()), schema_fd);
-  if (rnv_guard.error_count() > 0) {
-    rnv_guard.Finish();
-    return false;
+  std::vector<std::string> rnv_messages;
+  {
+    RnvGuard rnv_guard(&rnv_messages);
+    const int schema_fd = open(rnc_schema.string().c_str(), O_RDONLY);
+    if (schema_fd < 0) {
+      throw std::runtime_error(
+          fmt::format("Missing required resource '{}'", rnc_schema.string()));
+    }
+    ScopeExit schema_fd_guard([schema_fd]() {
+      ::close(schema_fd);
+    });
+    xcl_rnl_fd(const_cast<char*>(rnc_schema.c_str()), schema_fd);
+    if (!rnv_messages.empty()) {
+      throw std::runtime_error(fmt::format("Errors parsing '{}':\n{}",
+                                           rnc_schema.string(),
+                                           fmt::join(rnv_messages, "")));
+    }
+    xcl_validate_memory(const_cast<char*>(document_contents.c_str()),
+                        document_contents.size(), document_filename.c_str());
   }
-  xcl_validate_memory(const_cast<char*>(document_contents.c_str()),
-                      document_contents.size(),
-                      document_filename.c_str());
-  rnv_guard.Finish();
-  return (rnv_guard.error_count() == 0);
+  return ReplayDiagnostics(diagnostic, rnv_messages);
 }
 
 }  // namespace internal
