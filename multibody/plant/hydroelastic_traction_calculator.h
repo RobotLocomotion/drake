@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"

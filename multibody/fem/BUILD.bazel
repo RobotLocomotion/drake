@@ -490,7 +490,7 @@ drake_cc_library(
         ":damping_model",
         ":fem_model",
         ":volumetric_element",
-        "//geometry/proximity:volume_mesh",
+        "//geometry:volume_mesh",
     ],
 )
 

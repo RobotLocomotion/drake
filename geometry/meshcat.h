@@ -11,9 +11,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/meshcat_animation.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 // TODO(russt): Move point_cloud.h to a more central location.
 #include "drake/perception/point_cloud.h"

@@ -6,8 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/mesh_deformer.h"
 #include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/proximity/mesh_deformer.h"
 
 namespace drake {
 namespace geometry {

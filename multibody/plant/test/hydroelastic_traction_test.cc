@@ -6,10 +6,10 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"

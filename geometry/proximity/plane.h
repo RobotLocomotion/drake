@@ -6,7 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/geometry/mesh_traits.h"
 
 namespace drake {
 namespace geometry {

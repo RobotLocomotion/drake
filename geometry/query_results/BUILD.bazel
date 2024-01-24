@@ -72,7 +72,7 @@ drake_cc_library(
     hdrs = ["deformable_contact.h"],
     deps = [
         "//geometry:geometry_ids",
-        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry:polygon_surface_mesh",
         "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )

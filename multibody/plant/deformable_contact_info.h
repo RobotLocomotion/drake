@@ -6,7 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 

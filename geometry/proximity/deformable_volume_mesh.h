@@ -2,10 +2,10 @@
 
 #include <utility>
 
+#include "drake/geometry/mesh_deformer.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/bvh_updater.h"
-#include "drake/geometry/proximity/mesh_deformer.h"
-#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 
 namespace drake {
 namespace geometry {

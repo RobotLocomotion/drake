@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"

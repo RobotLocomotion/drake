@@ -9,7 +9,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

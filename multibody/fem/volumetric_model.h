@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 #include "drake/multibody/fem/damping_model.h"
 #include "drake/multibody/fem/fem_model_impl.h"
 #include "drake/multibody/fem/volumetric_element.h"

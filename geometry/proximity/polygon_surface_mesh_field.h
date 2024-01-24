@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

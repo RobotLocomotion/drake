@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 #include "drake/common/default_scalars.h"
 

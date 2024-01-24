@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/geometry/mesh_traits.h"
 
 #include <type_traits>
 

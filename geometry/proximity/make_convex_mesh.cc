@@ -7,7 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

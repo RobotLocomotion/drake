@@ -7,10 +7,10 @@
 
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/triangle_surface_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 
 namespace drake {
 namespace geometry {

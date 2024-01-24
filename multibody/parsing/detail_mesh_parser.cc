@@ -13,7 +13,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/tree/geometry_spatial_inertia.h"
 

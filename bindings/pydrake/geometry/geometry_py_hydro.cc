@@ -7,14 +7,14 @@
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh_field.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh_field.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/triangle_surface_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 
 namespace drake {
 namespace pydrake {

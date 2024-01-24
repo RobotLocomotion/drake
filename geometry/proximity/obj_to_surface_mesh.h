@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

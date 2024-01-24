@@ -9,10 +9,10 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/triangle_surface_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 
 namespace drake {
 namespace geometry {

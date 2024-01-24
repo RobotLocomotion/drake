@@ -11,7 +11,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/geometry/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

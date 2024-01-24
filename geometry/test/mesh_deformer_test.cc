@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/mesh_deformer.h"
+#include "drake/geometry/mesh_deformer.h"
 
 #include <gtest/gtest.h>
 

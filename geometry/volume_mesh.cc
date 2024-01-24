@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 
 #include "drake/common/default_scalars.h"
 

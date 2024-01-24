@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"

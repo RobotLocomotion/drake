@@ -226,7 +226,7 @@ drake_cc_library(
         ":hydroelastic_quadrature_point_data",
         "//common:default_scalars",
         "//geometry:geometry_ids",
-        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry:polygon_surface_mesh",
         "//multibody/math",
     ],
 )
@@ -254,7 +254,7 @@ drake_cc_library(
         "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
-        "//geometry/proximity:triangle_surface_mesh",
+        "//geometry:triangle_surface_mesh",
     ],
 )
 

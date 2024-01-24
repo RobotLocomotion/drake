@@ -12,8 +12,8 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

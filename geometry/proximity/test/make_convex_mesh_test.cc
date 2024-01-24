@@ -7,8 +7,8 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

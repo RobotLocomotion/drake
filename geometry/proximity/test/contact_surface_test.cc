@@ -9,8 +9,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh_field.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 // TODO(DamrongGuoy): Move to geometry/query_results/test/.

@@ -14,7 +14,7 @@
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/common/unused.h"
-#include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/geometry/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

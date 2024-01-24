@@ -34,12 +34,15 @@ drake_cc_package_library(
         ":internal_geometry",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
+        ":mesh_deformer",
+        ":mesh_traits",
         ":meshcat",
         ":meshcat_animation",
         ":meshcat_graphviz",
         ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
+        ":polygon_surface_mesh",
         ":proximity_engine",
         ":proximity_properties",
         ":read_obj",
@@ -48,7 +51,109 @@ drake_cc_package_library(
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
+        ":triangle_surface_mesh",
         ":utilities",
+        ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_deformer",
+    srcs = ["mesh_deformer.cc"],
+    hdrs = ["mesh_deformer.h"],
+    deps = [
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_deformer_test",
+    deps = [
+        ":mesh_deformer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_box_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_traits",
+    hdrs = ["mesh_traits.h"],
+    deps = ["//common:autodiff"],
+)
+
+drake_cc_googletest(
+    name = "mesh_traits_test",
+    deps = [
+        ":mesh_traits",
+    ],
+)
+
+drake_cc_library(
+    name = "polygon_surface_mesh",
+    srcs = ["polygon_surface_mesh.cc"],
+    hdrs = ["polygon_surface_mesh.h"],
+    deps = [
+        ":mesh_traits",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polygon_surface_mesh_test",
+    deps = [
+        ":polygon_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
+    name = "triangle_surface_mesh",
+    srcs = ["triangle_surface_mesh.cc"],
+    hdrs = ["triangle_surface_mesh.h"],
+    deps = [
+        ":mesh_traits",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "triangle_surface_mesh_test",
+    deps = [
+        ":triangle_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "volume_mesh",
+    srcs = [
+        "volume_mesh.cc",
+    ],
+    hdrs = [
+        "volume_mesh.h",
+    ],
+    deps = [
+        ":mesh_traits",
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//math:geometric_transform",
+        "//math:linear_solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_test",
+    deps = [
+        ":volume_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:mesh_field",
+        "//math:autodiff",
+        "//math:geometric_transform",
     ],
 )
 
@@ -191,7 +296,7 @@ drake_cc_library(
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
-        "//geometry/proximity:volume_mesh",
+        "//geometry:volume_mesh",
     ],
 )
 
@@ -261,9 +366,9 @@ drake_cc_library(
     hdrs = ["make_mesh_for_deformable.h"],
     deps = [
         ":shape_specification",
+        "//geometry:volume_mesh",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:make_sphere_mesh",
-        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -329,7 +434,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
-        "//geometry/proximity:volume_mesh",
+        "//geometry:volume_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -472,7 +577,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:essential",
         "//common:name_value",
-        "//geometry/proximity:triangle_surface_mesh",
+        "//geometry:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",
     ],

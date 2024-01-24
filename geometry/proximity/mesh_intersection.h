@@ -7,16 +7,16 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh_field.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh_field.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/triangle_surface_mesh.h"
+#include "drake/geometry/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

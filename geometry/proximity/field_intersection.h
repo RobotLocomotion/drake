@@ -7,9 +7,9 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/plane.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

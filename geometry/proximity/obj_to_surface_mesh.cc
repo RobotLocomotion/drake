@@ -16,7 +16,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

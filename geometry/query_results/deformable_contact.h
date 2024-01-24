@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/polygon_surface_mesh.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {

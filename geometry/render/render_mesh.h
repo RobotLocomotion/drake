@@ -7,9 +7,9 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_properties.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/render/render_material.h"
 #include "drake/geometry/rgba.h"
+#include "drake/geometry/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

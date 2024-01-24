@@ -12,7 +12,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/geometry/mesh_traits.h"
 #include "drake/math/linear_solve.h"
 #include "drake/math/rigid_transform.h"
 
