@@ -187,7 +187,8 @@ class HPolyhedron final : public ConvexSet {
   `previous_sample` to the next; in this case the distribution of samples will
   converge to the true uniform distribution in total variation at a geometric
   rate.  If `previous_sample` is not set, then the ChebyshevCenter() will be
-  used to seed the algorithm.
+  used to seed the algorithm. Mixing steps sets the number of hit and run iterations
+  between samples.
   @throws std::exception if previous_sample is not in the set. */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
