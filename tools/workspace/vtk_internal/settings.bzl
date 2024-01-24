@@ -129,7 +129,7 @@ MODULE_SETTINGS = {
             "Common/Core/vtkWin32*",
             # TODO(svenevs): not sure if we need this or not
             # https://gitlab.kitware.com/vtk/vtk/-/commit/2eba01537a85954c776893fbb25369644874992a
-            "Common/Core/vtkStringToken.cxx",
+            # "Common/Core/vtkStringToken.cxx",
         ],
         "cmake_defines_cmakelists": [
             # Scrape the VTK_..._VERSION definitions from this file.
@@ -197,14 +197,6 @@ MODULE_SETTINGS = {
             "VTK_LEGACY_SILENT",
             "VTK_USE_MEMKIND",
             "VTK_USE_SCALED_SOA_ARRAYS",
-        ],
-        # Allow a circular dependency between CommonCore <=> CommonDataModel.
-        # See also patches/common_core_vs_data_model_cycle.patch.
-        "copts_extra": [
-            "-DvtkCommonDataModel_ENABLED",
-        ],
-        "deps_extra": [
-            ":VTK__CommonDataModel_vtkDataObject",
         ],
     },
     "VTK::CommonDataModel": {
