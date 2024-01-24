@@ -111,7 +111,6 @@ MODULE_SETTINGS = {
         ],
         "included_cxxs": [
             "Common/Core/vtkMersenneTwister_Private.cxx",
-            "Common/Core/vtkVariant.cxx",
         ],
         "srcs_extra": [
             # Sources in nested subdirs are not globbed by default, so we need
@@ -127,9 +126,6 @@ MODULE_SETTINGS = {
             # Optional files that we choose not to enable.
             "Common/Core/vtkAndroid*",
             "Common/Core/vtkWin32*",
-            # TODO(svenevs): not sure if we need this or not
-            # https://gitlab.kitware.com/vtk/vtk/-/commit/2eba01537a85954c776893fbb25369644874992a
-            # "Common/Core/vtkStringToken.cxx",
         ],
         "cmake_defines_cmakelists": [
             # Scrape the VTK_..._VERSION definitions from this file.
@@ -163,7 +159,7 @@ MODULE_SETTINGS = {
             "VTK_LEGACY_REMOVE=1",
             "VTK_USE_FUTURE_CONST=1",
             "VTK_WARN_ON_DISPATCH_FAILURE=1",
-            # TODO(svenevs): ... just hacking at this point.
+            # Misc.
             "VTK_DISPATCH_AFFINE_ARRAYS=0",
             "VTK_DISPATCH_CONSTANT_ARRAYS=0",
             "VTK_DISPATCH_STD_FUNCTION_ARRAYS=0",
@@ -204,6 +200,12 @@ MODULE_SETTINGS = {
         "srcs_glob_exclude": [
             "**/*MooreSuperCursor*",
             "**/*VonNeumannSuperCursor*",
+        ],
+        # TODO(svenevs): VTK::CommonDataModel depends on VTK::CommonCore, and
+        # VTK::CommonCore depends on VTK::token, but for whatever reason the
+        # transitive dependency is not propagating, leading to linking errors.
+        "deps_extra": [
+            ":VTK__token",
         ],
     },
     "VTK::CommonExecutionModel": {

@@ -503,6 +503,8 @@ def generate_common_core_array_instantiations():
         for stem in (
             "vtkSOADataArrayTemplateInstantiate",
             "vtkGenericDataArrayValueRangeInstantiate",
+            "vtkStructuredPointBackendInstantiate",
+            "vtkConstantImplicitBackendInstantiate",
         ):
             if "Generic" in stem and "long" not in ctype:
                 continue
