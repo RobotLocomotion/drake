@@ -37,7 +37,7 @@ bowl_urdf = """<?xml version="1.0"?>
       </visual>
       <collision name="collision">
         <geometry>
-          <mesh filename="package://drake_models/dishes/bowls/evo_bowl.vtk"/>
+          <mesh filename="package://drake_models/dishes/bowls/evo_bowl_fine44k.vtk"/>
         </geometry>
         <drake:proximity_properties>
           <drake:compliant_hydroelastic/>
