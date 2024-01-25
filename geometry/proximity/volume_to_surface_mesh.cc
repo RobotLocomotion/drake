@@ -119,12 +119,17 @@ std::vector<int> CollectUniqueVertices(
 }  // namespace internal
 
 template <class T>
-TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume, std::set<int>* return_boundary_vertices) {
   const std::vector<std::array<int, 3>> boundary_faces =
       internal::IdentifyBoundaryFaces(volume.tetrahedra());
 
   const std::vector<int> boundary_vertices =
       internal::CollectUniqueVertices(boundary_faces);
+  if (return_boundary_vertices != nullptr) {
+    *return_boundary_vertices =
+        std::set<int>(boundary_vertices.begin(), boundary_vertices.end());
+  }
 
   std::vector<Vector3<T>> surface_vertices;
   surface_vertices.reserve(boundary_vertices.size());
@@ -150,7 +155,8 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ConvertVolumeToSurfaceMesh<T>))
+    (&ConvertVolumeToSurfaceMesh<T>,
+     &ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>))
 
 }  // namespace geometry
 }  // namespace drake
