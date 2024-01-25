@@ -54,5 +54,3 @@ bowl_urdf = """<?xml version="1.0"?>
 visualizer = ModelVisualizer(meshcat=meshcat, visualize_frames=True)
 visualizer.parser().AddModelsFromString(bowl_urdf, "urdf")
 visualizer.Run(loop_once=True)
-
-
