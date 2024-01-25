@@ -4,7 +4,6 @@ Test bindings of LCM integration with the Systems framework.
 import pydrake.systems.lcm as mut
 
 import collections
-from multiprocessing import Process
 import time
 import unittest
 

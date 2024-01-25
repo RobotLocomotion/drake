@@ -24,11 +24,13 @@ class PyObjectValue : public drake::Value<Object> {
 
   // Override `Clone()` to perform a deep copy on the object.
   std::unique_ptr<AbstractValue> Clone() const override {
+    py::gil_scoped_acquire guard;
     return std::make_unique<PyObjectValue>(get_value().Clone());
   }
 
   // Override `SetFrom()` to perform a deep copy on the object.
   void SetFrom(const AbstractValue& other) override {
+    py::gil_scoped_acquire guard;
     get_mutable_value() = other.get_value<Object>().Clone();
   }
 };
