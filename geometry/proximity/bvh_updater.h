@@ -23,7 +23,7 @@ namespace internal {
 
  This class cannot be moved or copied. It is assumed upon creation that it will
  be permanently associated with *specific* MeshType and Bvh instances and
- maintain those associations for its entire lifetime (see DeformableVolumeMesh
+ maintain those associations for its entire lifetime (see DeformableMeshWithBvh
  as an example).
 
  @tparam MeshType TriangleSurfaceMesh<T> or VolumeMesh<T> where T is double or

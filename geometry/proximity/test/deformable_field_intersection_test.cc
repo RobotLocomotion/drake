@@ -13,7 +13,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 // Translates a deformable mesh into or out of contact.
-void Translate(DeformableVolumeMesh<double>* deform_W,
+void Translate(DeformableVolumeMeshWithBvh<double>* deform_W,
                const Vector3d& displacement_W) {
   int num_vertices = deform_W->mesh().num_vertices();
   VectorXd q_W(3 * num_vertices);
@@ -80,12 +80,12 @@ class AddDeformableDeformableContactSurfaceTest : public ::testing::Test {
  protected:
   const GeometryId id0_;
   // The first deformable mesh is fixed.
-  const DeformableVolumeMesh<double> deform0_W_;
+  const DeformableVolumeMeshWithBvh<double> deform0_W_;
   const VolumeMeshFieldLinear<double, double> signed_distance0_W_;
   const GeometryId id1_;
   // The second deformable mesh will make contact or not depending on the test.
   // After deformation, we will create its signed distance field.
-  DeformableVolumeMesh<double> deform1_W_;
+  DeformableVolumeMeshWithBvh<double> deform1_W_;
   DeformableContact<double> deformable_contact_W_;
 };
 

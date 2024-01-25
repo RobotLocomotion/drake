@@ -49,8 +49,8 @@ DeformableGeometry& DeformableGeometry::operator=(
     const DeformableGeometry& other) {
   if (this == &other) return *this;
 
-  deformable_mesh_ =
-      std::make_unique<DeformableVolumeMesh<double>>(*other.deformable_mesh_);
+  deformable_mesh_ = std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+      *other.deformable_mesh_);
   // We can't simply copy the field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   signed_distance_field_ =
@@ -59,8 +59,8 @@ DeformableGeometry& DeformableGeometry::operator=(
 }
 
 DeformableGeometry::DeformableGeometry(VolumeMesh<double> mesh)
-    : deformable_mesh_(
-          std::make_unique<DeformableVolumeMesh<double>>(std::move(mesh))),
+    : deformable_mesh_(std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+          std::move(mesh))),
       signed_distance_field_(
           ApproximateSignedDistanceField(&deformable_mesh_->mesh())) {}
 
