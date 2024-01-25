@@ -9,6 +9,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
@@ -32,13 +33,17 @@ using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 using geometry::optimization::CartesianProduct;
+using geometry::optimization::CheckIfSatisfiesConvexityRadius;
 using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Intersection;
+using geometry::optimization::PartitionConvexSet;
 using geometry::optimization::Point;
+using geometry::optimization::internal::GetMinimumAndMaximumValueAlongDimension;
+using geometry::optimization::internal::ThrowsForInvalidContinuousJointsList;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::MultibodyPlant;
@@ -157,46 +162,19 @@ Subgraph::Subgraph(
 
 Subgraph::~Subgraph() = default;
 
-const std::pair<double, double>
-GcsTrajectoryOptimization::GetMinimumAndMaximumValueAlongDimension(
-    const ConvexSet& region, int dimension) const {
-  // TODO(cohnt) centralize this function in geometry/optimization, by making it
-  // a member of ConvexSet. Also potentially only compute the value once, and
-  // then return the pre-computed value instead of re-computing.
-  DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
-  MathematicalProgram prog;
-  VectorXDecisionVariable y =
-      prog.NewContinuousVariables(region.ambient_dimension());
-  VectorXDecisionVariable z =
-      prog.NewContinuousVariables(region.ambient_dimension());
-  region.AddPointInSetConstraints(&prog, y);
-  region.AddPointInSetConstraints(&prog, z);
-  VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
-  objective_vector[dimension] = 1;
-  prog.AddLinearCost(objective_vector.dot(y - z));
-
-  auto result = Solve(prog);
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        "GcsTrajectoryOptimization: Failed to compute upper and lower bounds "
-        "of a convex set!");
-  }
-
-  return {result.GetSolution(y)[dimension], result.GetSolution(z)[dimension]};
-}
-
 void Subgraph::ThrowsForInvalidConvexityRadius() const {
   for (int i = 0; i < ssize(regions_); ++i) {
     for (const int& j : continuous_revolute_joints()) {
       auto [min_value, max_value] =
-          traj_opt_.GetMinimumAndMaximumValueAlongDimension(*regions_[i], j);
+          GetMinimumAndMaximumValueAlongDimension(*regions_[i], j);
       if (max_value - min_value >= M_PI) {
         throw std::runtime_error(fmt::format(
             "GcsTrajectoryOptimization: Region at index {} is wider than π "
             "along dimension {}, so it doesn't respect the convexity radius! "
             "To add this set, separate it into smaller pieces so that along "
             "dimensions corresponding to continuous revolute joints, its width "
-            "is strictly smaller than π.",
+            "is strictly smaller than π. This can be done manually, or with "
+            "the helper function PartitionConvexSet.",
             i, j));
       }
     }
@@ -656,22 +634,8 @@ GcsTrajectoryOptimization::GcsTrajectoryOptimization(
     : num_positions_(num_positions),
       continuous_revolute_joints_(std::move(continuous_revolute_joints)) {
   DRAKE_THROW_UNLESS(num_positions >= 1);
-  for (int i = 0; i < ssize(continuous_revolute_joints_); ++i) {
-    // Make sure the unbounded revolute joints point to valid indices.
-    if (continuous_revolute_joints_[i] < 0 ||
-        continuous_revolute_joints_[i] >= num_positions) {
-      throw std::runtime_error(fmt::format(
-          "Each joint index in continuous_revolute_joints must lie in the "
-          "interval [0, {}). Joint index {} (located at {}) violates this.",
-          num_positions, continuous_revolute_joints_[i], i));
-    }
-  }
-  std::unordered_set<int> comparison(continuous_revolute_joints_.begin(),
-                                     continuous_revolute_joints_.end());
-  if (comparison.size() != continuous_revolute_joints_.size()) {
-    throw std::runtime_error(fmt::format(
-        "continuous_revolute_joints must not contain duplicate entries."));
-  }
+  ThrowsForInvalidContinuousJointsList(num_positions,
+                                       continuous_revolute_joints_);
 }
 
 GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;

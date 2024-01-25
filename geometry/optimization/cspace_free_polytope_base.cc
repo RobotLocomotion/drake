@@ -236,10 +236,8 @@ void CspaceFreePolytopeBase::SetIndicesOfSOnChainForBodyPair(
 void CspaceFreePolytopeBase::SolveCertificationForEachPlaneInParallel(
     const std::vector<int>& active_plane_indices,
     const std::function<std::pair<bool, int>(int)>& solve_plane_sos,
-    int num_threads, bool verbose, bool terminate_at_failure) const {
-  num_threads = num_threads > 0
-                    ? num_threads
-                    : static_cast<int>(std::thread::hardware_concurrency());
+    Parallelism parallelism, bool verbose, bool terminate_at_failure) const {
+  const int num_threads = parallelism.num_threads();
   // We implement the "thread pool" idea here, by following
   // MonteCarloSimulationParallel class. This implementation doesn't use openMP
   // library.

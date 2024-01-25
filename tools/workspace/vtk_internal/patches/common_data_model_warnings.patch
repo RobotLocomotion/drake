@@ -2,7 +2,9 @@
 
 vtkBoundingBox: -Wold-style-cast
 
-TODO(jwnimmer-tri) We should upstream this patch.
+This patch is no longer needed upstream, and can be removed
+from drake the next time we update VTK.  The VTK module
+upstream has been rewritten and the patch will no longer apply.
 
 --- Common/DataModel/vtkBoundingBox.h
 +++ Common/DataModel/vtkBoundingBox.h

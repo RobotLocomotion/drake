@@ -1,9 +1,7 @@
 #include "drake/multibody/parsing/process_model_directives.h"
 
 #include <filesystem>
-#include <fstream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -98,12 +96,9 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
 
 // Smoke test of the most basic model directives, now loading from string.
 GTEST_TEST(ProcessModelDirectivesTest, FromString) {
-  std::ifstream file_stream(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
-  std::stringstream yaml;
-  yaml << file_stream.rdbuf();
   ModelDirectives station_directives =
-      LoadModelDirectivesFromString(yaml.str());
+      LoadModelDirectivesFromString(ReadFileOrThrow(FindResourceOrThrow(
+          std::string(kTestDir) + "/add_scoped_sub.dmd.yaml")));
 
   const MultibodyPlant<double> empty_plant(0.0);
 
@@ -214,6 +209,24 @@ GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
   auto simple_model_instance = plant.GetModelInstanceByName("simple_model");
   EXPECT_TRUE(
       plant.HasFrameNamed("included_as_base_frame", simple_model_instance));
+}
+
+// Tests for rejection of non-deterministic frames.
+GTEST_TEST(ProcessModelDirectivesTest, AddStochasticFrameBad) {
+  // This nominal case works OK.
+  std::string yaml = R"""(
+directives:
+- add_frame:
+    name: my_frame
+    X_PF:
+      base_frame: world
+)""";
+  EXPECT_NO_THROW(LoadModelDirectivesFromString(yaml));
+
+  // Setting a stochastic transform yields a failure.
+  yaml += "      rotation: !Uniform {}\n";
+  DRAKE_EXPECT_THROWS_MESSAGE(LoadModelDirectivesFromString(yaml),
+                              ".*IsValid.*");
 }
 
 // Test backreference behavior in ModelDirectives.

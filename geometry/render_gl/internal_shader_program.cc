@@ -4,9 +4,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
+
+#include "drake/common/find_resource.h"
 
 namespace drake {
 namespace geometry {
@@ -90,13 +93,10 @@ void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
 
 namespace {
 std::string LoadFile(const std::string& filename) {
-  std::ifstream file(filename.c_str(), std::ios::in);
-  if (!file.is_open())
+  std::optional<std::string> content = ReadFile(filename);
+  if (!content)
     throw std::runtime_error("Error opening shader file: " + filename);
-  std::stringstream content;
-  content << file.rdbuf();
-  file.close();
-  return content.str();
+  return std::move(*content);
 }
 }  // namespace
 

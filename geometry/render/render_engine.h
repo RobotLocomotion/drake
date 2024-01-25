@@ -13,8 +13,10 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
@@ -108,15 +110,22 @@ class RenderEngine : public ShapeReifier {
    copyable_unique_ptr.  */
   std::unique_ptr<RenderEngine> Clone() const;
 
-  /** Requests registration of the given shape with this render engine. The
-   geometry is uniquely identified by the given `id`. The renderer is allowed to
-   examine the given `properties` and choose to _not_ register the geometry.
+  /** @name Registering geometry with the engine
+
+   These methods allow for requests to register new visual geometries to `this`
+   %RenderEngine. The geometry is uniquely identified by the given `id`. The
+   renderer is allowed to examine the given `properties` and choose to _not_
+   register the geometry.
 
    Typically, derived classes will attempt to validate the RenderLabel value
    stored in the `(label, id)` property (or its configured default value if
    no such property exists). In that case, attempting to assign
    RenderLabel::kEmpty or RenderLabel::kUnspecified will cause an exception to
-   be thrown (as @ref reserved_render_label "documented").
+   be thrown (as @ref reserved_render_label "documented"). */
+  //@{
+
+  /** Requests registration of the given shape as a rigid geometry with this
+   render engine.
 
    @param id             The geometry id of the shape to register.
    @param shape          The shape specification to add to the render engine.
@@ -137,6 +146,31 @@ class RenderEngine : public ShapeReifier {
                       const math::RigidTransformd& X_WG,
                       bool needs_updates = true);
 
+  // TODO(xuchenhan-tri): Bring RenderMesh out of internal namespace, when doing
+  // that, the invariants for a RenderMesh to be valid should be verified.
+  /** Requests registration of the given deformable geometry with this render
+   engine.
+
+   @experimental
+   @param id             The geometry id of the shape to register.
+   @param render_meshes  The mesh representations of deformable geometry in
+                         its default state. A single geometry may be represented
+                         by more than one render mesh. This facilitates
+                         registering a geometry with more than one material for
+                         rendering.
+   @param properties     The perception properties provided for this geometry.
+   @pre each RenderMesh in `render_meshes` is valid.
+   @throws std::exception if a geometry with `id` has already been registered
+           with `this` %RenderEngine.
+   @throws std::exception if `render_meshes` is empty.
+   @returns True if the %RenderEngine implementation accepted the geometry for
+            registration. */
+  bool RegisterDeformableVisual(
+      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties);
+
+  //@}
+
   /** Removes the geometry indicated by the given `id` from the engine.
    @param id    The id of the geometry to remove.
    @returns True if the geometry was removed (false implies that this id wasn't
@@ -147,7 +181,7 @@ class RenderEngine : public ShapeReifier {
    `this` engine.  */
   bool has_geometry(GeometryId id) const;
 
-  /** Updates the poses of all geometries marked as "needing update" (see
+  /** Updates the poses of all rigid geometries marked as "needing update" (see
    RegisterVisual()).
 
    @param X_WGs  The poses of *all* geometries in SceneGraph (measured and
@@ -162,6 +196,33 @@ class RenderEngine : public ShapeReifier {
       DoUpdateVisualPose(id, X_WG);
     }
   }
+
+  /** Updates the configurations of all meshes associated with the given
+   deformable geometry (see RegisterDeformableVisual()). The number of elements
+   in the supplied vertex position vector `q_WGs` and the vertex normal vector
+   `nhats_W` must be equal to the number of render meshes registered to the
+   geometry associated with `id`. Within each mesh, the vertex positions and
+   normals must be ordered the same way as the vertices specified in the render
+   mesh at registration when reshaped to be an Nx3 matrix with N being the
+   number of vertices in the mesh.
+
+   @experimental
+   @param id       The unique identifier of a deformable geometry registered
+                   with this %RenderEngine.
+   @param q_WGs    The vertex positions of all meshes associated with the given
+                   deformable geometry (measured and expressed in the world
+                   frame).
+   @param nhats_W  The vertex normals of all meshes associated with the given
+                   deformable geometry (measured and expressed in the world
+                   frame).
+   @throws std::exception if no geometry with the given `id` is registered as
+           deformable geometry in this `RenderEngine`.
+   @throws std::exception if the sizes of `q_WGs` or `nhats_W` are incompatible
+           with the number of degrees of freedom of the meshes registered with
+           the deformable geometry. */
+  void UpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W);
 
   /** Updates the renderer's viewpoint with given pose X_WR.
 
@@ -236,33 +297,50 @@ class RenderEngine : public ShapeReifier {
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
 
-  /** The NVI-function for sub-classes to implement actual geometry
+  /** The NVI-function for sub-classes to implement actual rigid geometry
    registration. If the derived class chooses not to register this particular
    shape, it should return false.
 
-   A derived render engine can choose not to register geometry because, e.g., it
-   doesn't have default properties. This is the primary mechanism which enables
-   different renderers to use different geometries for the same frame.
-   For example, a low-fidelity renderer may use simple geometry whereas a
-   high-fidelity renderer would require a very detailed geometry. Both
-   geometries would have PerceptionProperties, but, based on the provided
-   property groups and values, one would be accepted and registered with one
-   render engine implementation and the other geometry with another render
-   engine.
-
-   In accessing the RenderLabel property in `properties` derived class should
-   _exclusively_ use GetRenderLabelOrThrow().  */
+   A derived render engine can use arbitrary criteria to decide if the rigid
+   geometry gets registered. In accessing the RenderLabel property in
+   `properties` derived class should _exclusively_ use GetRenderLabelOrThrow().
+  */
   virtual bool DoRegisterVisual(GeometryId id, const Shape& shape,
                                 const PerceptionProperties& properties,
                                 const math::RigidTransformd& X_WG) = 0;
 
-  /** The NVI-function for updating the pose of a render geometry (identified
-   by `id`) to the given pose X_WG.
+  /** The NVI-function for RegisterDeformableVisual(). This function defaults to
+   returning false. If the derived class chooses to register this particular
+   geometry, it should return true. This function is invoked with the following
+   guarantees:
+
+      - `id` is unique (i.e. distinct from previously registered geometries).
+      - `render_meshes` is non-empty.
+
+   @experimental */
+  virtual bool DoRegisterDeformableVisual(
+      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties);
+
+  /** The NVI-function for updating the pose of a rigid render geometry
+   (identified by `id`) to the given pose X_WG.
 
    @param id       The id of the render geometry whose pose is being set.
    @param X_WG     The pose of the render geometry in the world frame.  */
   virtual void DoUpdateVisualPose(GeometryId id,
                                   const math::RigidTransformd& X_WG) = 0;
+
+  /** The NVI-function for UpdateDeformableConfigurations(). It is
+   invoked with the following guarantees:
+
+    - `id` references a registered deformable geometry.
+    - `q_WGs` and `nhats_W` are appropriately sized for the
+       registered meshes.
+
+   @experimental */
+  virtual void DoUpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W);
 
   /** The NVI-function for removing the geometry with the given `id`.
    @param id  The id of the geometry to remove.
@@ -397,17 +475,23 @@ class RenderEngine : public ShapeReifier {
  private:
   friend class RenderEngineTester;
 
-  // The following two sets store all registered geometry ids. It must be the
-  // case that the members of the two maps are disjoint and span all of the
-  // registered geometries. This dichotomy facilitates updating only those
-  // geometries registered as movable.
+  // The following collections represent a disjoint partition of all registered
+  // geometry ids (i.e., the id for a registered visual must appear in one and
+  // only one of the collections).
 
-  // The set of geometry ids whose pose needs to be updated.
+  // The set of rigid geometry ids whose pose needs to be updated.
   // See UpdateVisualPose().
   std::unordered_set<GeometryId> update_ids_;
 
   // The set of geometry ids whose pose is fixed at registration time.
   std::unordered_set<GeometryId> anchored_ids_;
+
+  // Maps ids of deformable geometries registered to this render engine to the
+  // number of degrees of freedom in each of the render meshes associated with
+  // this deformable geometry. Deformable geometries don't have the distinction
+  // of being "dynamic" vs "anchored" as rigid geometries; they always need to
+  // have their configurations updated. See UpdateDeformableConfigurations().
+  std::unordered_map<GeometryId, std::vector<int>> deformable_mesh_dofs_;
 
   // The default render label to apply to geometries that don't otherwise
   // provide one. Default constructor is RenderLabel::kUnspecified via the

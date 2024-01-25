@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/math/rigid_transform.h"
@@ -60,7 +61,6 @@ GTEST_TEST(StochasticTest, TransformTest) {
 }
 
 const char* random_bounded = R"""(
-base_frame: baz
 translation: !UniformVector { min: [1., 2., 3.], max: [4., 5., 6.] }
 rotation: !Rpy
   deg: !UniformVector
@@ -107,6 +107,27 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
           Eigen::Vector3d(390., 0., 0.) * (M_PI / 180.0)),
       Eigen::Vector3d(2.5, 3.5, 4.5));
   EXPECT_TRUE(transform.Mean().IsExactlyEqualTo(expected_mean));
+}
+
+GTEST_TEST(StochasticSampleTest, TransformTestWithBaseFrame) {
+  const Transform transform = LoadYamlString<Transform>(random_bounded);
+  drake::RandomGenerator generator(0);
+  const math::RigidTransformd sampled_rigidtransformd =
+      transform.Sample(&generator);
+
+  Transform transform_with_base_frame = transform;
+  transform_with_base_frame.base_frame = "baz";
+  DRAKE_EXPECT_THROWS_MESSAGE(transform_with_base_frame.Sample(&generator),
+                              ".*frame.*use.*SampleAsTransform.*instead.*");
+  generator = drake::RandomGenerator(0);
+  const Transform sampled_transform =
+      transform_with_base_frame.SampleAsTransform(&generator);
+
+  EXPECT_EQ(sampled_transform.GetDeterministicValue().translation(),
+            sampled_rigidtransformd.translation());
+  EXPECT_TRUE(
+    sampled_transform.GetDeterministicValue().rotation().IsNearlyEqualTo(
+        sampled_rigidtransformd.rotation(), 1e-14));
 }
 
 }  // namespace

@@ -31,7 +31,7 @@ namespace internal {
 // with the javascript.  The structure names do not have this requirement.
 // When they represent a specific message with a single `type`, we take the
 // type name (with a `Data` suffix) as the struct name, e.g.
-// `MeshFileObjectData` is taken because the message `type` is
+// `MeshfileObjectData` is taken because the message `type` is
 // `_meshfile_object`.
 
 // Note: These types lack many of the standard const qualifiers in order to be
@@ -308,7 +308,7 @@ struct MeshData {
   MSGPACK_DEFINE_MAP(uuid, type, geometry, material, matrix);
 };
 
-struct MeshFileObjectData {
+struct MeshfileObjectData {
   std::string uuid;
   std::string type{"_meshfile_object"};
   std::string format;
@@ -325,7 +325,7 @@ struct LumpedObjectData {
   // currently only support zero or one geometry/material.
   std::unique_ptr<GeometryData> geometry;
   std::unique_ptr<MaterialData> material;
-  std::variant<std::monostate, MeshData, MeshFileObjectData> object;
+  std::variant<std::monostate, MeshData, MeshfileObjectData> object;
 
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
@@ -349,7 +349,7 @@ struct LumpedObjectData {
     if (std::holds_alternative<MeshData>(object)) {
       o.pack(std::get<MeshData>(object));
     } else {
-      o.pack(std::get<MeshFileObjectData>(object));
+      o.pack(std::get<MeshfileObjectData>(object));
     }
   }
   // This method must be defined, but the implementation is not needed in the

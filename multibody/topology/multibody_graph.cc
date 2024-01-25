@@ -141,9 +141,8 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
     const auto& new_child = get_body(child_body_index);
     throw std::runtime_error(
         "This MultibodyGraph already has a joint '" + existing_joint.name() +
-        "' connecting '" + existing_parent.name() +
-        "' to '" + existing_child.name() +
-        "'. Therefore adding joint '" + name +
+        "' connecting '" + existing_parent.name() + "' to '" +
+        existing_child.name() + "'. Therefore adding joint '" + name +
         "' connecting '" + new_parent.name() + "' to '" + new_child.name() +
         "' is not allowed.");
   }

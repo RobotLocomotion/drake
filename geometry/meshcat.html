@@ -215,7 +215,11 @@
     url = url.replace("/index.html", "/")
     url = url.replace("/meshcat.html", "/")
     make_connection(url, reconnect_ms);
-    <!-- CONNECTION BLOCK END -->
+
+    // Per our meshcat.h docs, using XR when offline is not supported. Adding
+    // offline support might be possible by moving the 'webxr' and 'controller'
+    // handling outside of the CONNECTION BLOCK comment region and adding
+    // meshcat_manual_test coverage.
 
     const webxrMode = urlParams.get('webxr');
     if (webxrMode) {
@@ -231,8 +235,7 @@
         type: "visualize_vr_controller"
       });
     }
-
-
+    <!-- CONNECTION BLOCK END -->
 
   </script>
 

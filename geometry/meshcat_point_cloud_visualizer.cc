@@ -26,8 +26,7 @@ MeshcatPointCloudVisualizer<T>::MeshcatPointCloudVisualizer(
   DRAKE_DEMAND(publish_period >= 0.0);
 
   this->DeclarePeriodicPublishEvent(
-      publish_period, 0.0,
-      &MeshcatPointCloudVisualizer<T>::UpdateMeshcat);
+      publish_period, 0.0, &MeshcatPointCloudVisualizer<T>::UpdateMeshcat);
   this->DeclareForcedPublishEvent(
       &MeshcatPointCloudVisualizer<T>::UpdateMeshcat);
 

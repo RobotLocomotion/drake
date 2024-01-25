@@ -781,7 +781,7 @@ void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
   GetMeshes(convex.filename(), data);
   if (data->accepted) {
-    ImplementMeshesForFile(user_data, Vector3d(1, 1, 1) * convex.scale(),
+    ImplementMeshesForFile(user_data, kUnitScale * convex.scale(),
                            convex.filename());
   }
 }
@@ -803,14 +803,14 @@ void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
   const int geometry = GetHalfSpace();
-  AddGeometryInstance(geometry, user_data, Vector3d(1, 1, 1));
+  AddGeometryInstance(geometry, user_data, kUnitScale);
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
   GetMeshes(mesh.filename(), data);
   if (data->accepted) {
-    ImplementMeshesForFile(user_data, Vector3d(1, 1, 1) * mesh.scale(),
+    ImplementMeshesForFile(user_data, kUnitScale * mesh.scale(),
                            mesh.filename());
   }
 }
@@ -873,6 +873,29 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
   return data.accepted;
 }
 
+bool RenderEngineGl::DoRegisterDeformableVisual(
+    GeometryId id, const std::vector<RenderMesh>& render_meshes,
+    const PerceptionProperties& properties) {
+  opengl_context_->MakeCurrent();
+  std::vector<int> gl_mesh_indices;
+  for (const auto& render_mesh : render_meshes) {
+    const int mesh_index =
+        CreateGlGeometry(render_mesh, /* is_deformable */ true);
+    DRAKE_DEMAND(mesh_index >= 0);
+    gl_mesh_indices.emplace_back(mesh_index);
+
+    PerceptionProperties mesh_properties(properties);
+    mesh_properties.UpdateProperty("phong", "diffuse_map",
+                                   render_mesh.material.diffuse_map.string());
+    mesh_properties.UpdateProperty("phong", "diffuse",
+                                   render_mesh.material.diffuse);
+    RegistrationData data{id, RigidTransformd::Identity(), mesh_properties};
+    AddGeometryInstance(mesh_index, &data, kUnitScale);
+  }
+  deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
+  return true;
+}
+
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
                                         const RigidTransformd& X_WG) {
   for (auto& part : visuals_.at(id).parts) {
@@ -884,7 +907,40 @@ void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
   }
 }
 
+void RenderEngineGl::DoUpdateDeformableConfigurations(
+    GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+    const std::vector<VectorX<double>>& nhats_W) {
+  DRAKE_DEMAND(deformable_meshes_.count(id) > 0);
+  std::vector<int>& gl_mesh_indices = deformable_meshes_.at(id);
+  DRAKE_DEMAND(q_WGs.size() == gl_mesh_indices.size());
+
+  for (int i = 0; i < ssize(q_WGs); ++i) {
+    const VectorX<GLfloat> q_WG = q_WGs[i].cast<GLfloat>();
+    const VectorX<GLfloat> nhat_W = nhats_W[i].cast<GLfloat>();
+    // Find the OpenGL geometry.
+    const int geometry_index = gl_mesh_indices[i];
+    DRAKE_DEMAND(0 <= geometry_index && geometry_index < ssize(geometries_));
+    OpenGlGeometry& geometry = geometries_[geometry_index];
+    // Update vertex position data.
+    std::size_t positions_offset = 0;
+    glNamedBufferSubData(geometry.vertex_buffer,
+                         positions_offset * sizeof(GLfloat),
+                         q_WG.size() * sizeof(GLfloat), q_WG.data());
+    // Update vertex normal data.
+    std::size_t normals_offset = q_WG.size();
+    glNamedBufferSubData(geometry.vertex_buffer,
+                         normals_offset * sizeof(GLfloat),
+                         nhat_W.size() * sizeof(GLfloat), nhat_W.data());
+  }
+}
+
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
+  // Clean up the convenience look up table for deformable if the id is
+  // associated with a deformable geometry.
+  if (deformable_meshes_.count(id) > 0) {
+    deformable_meshes_.erase(id);
+  }
+  // Now remove the instances associated with the id (stored in visuals_).
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
     // Multiple parts may have the same shader. We don't want to attempt
@@ -1344,7 +1400,8 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
+int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
+                                     bool is_deformable) {
   // Confirm that the context is allocated.
   DRAKE_ASSERT(opengl_context_->IsCurrent());
 
@@ -1375,15 +1432,18 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
                      render_mesh.normals.data() + v_count * kFloatsPerNormal);
   vertex_data.insert(vertex_data.end(), render_mesh.uvs.data(),
                      render_mesh.uvs.data() + v_count * kFloatsPerUv);
+  // For deformable meshes, we set the dynamic storage bit to allow modification
+  // to the vertex position data.
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat), vertex_data.data(),
-                       0);
+                       is_deformable ? GL_DYNAMIC_STORAGE_BIT : 0);
 
   // Create the index buffer object (IBO).
   using indices_uint_t = decltype(render_mesh.indices)::Scalar;
   static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
                 "If this fails, cast from unsigned int to GLuint");
   glCreateBuffers(1, &geometry.index_buffer);
+  // The connectivity is always NOT modifiable.
   glNamedBufferStorage(geometry.index_buffer,
                        render_mesh.indices.size() * sizeof(GLuint),
                        render_mesh.indices.data(), 0);

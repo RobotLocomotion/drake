@@ -29,6 +29,9 @@ namespace {
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
+DEFINE_bool(ignore_solve_errors, false,
+            "Don't reflect the status of Solve() in the program's returncode. "
+            "Only crashes / exceptions will cause a non-zero returncode.");
 
 int DoMain() {
   auto pendulum = std::make_unique<PendulumPlant<double>>();
@@ -70,9 +73,12 @@ int DoMain() {
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
   const auto result = solvers::Solve(dircol.prog());
   if (!result.is_success()) {
-    std::cerr << "Failed to solve optimization for the swing-up trajectory"
-              << std::endl;
-    return 1;
+    std::cerr << "Failed to solve optimization for the swing-up trajectory\n";
+    int returncode = 1;
+    if (FLAGS_ignore_solve_errors) {
+      returncode = 0;
+    }
+    return returncode;
   }
 
   systems::DiagramBuilder<double> builder;

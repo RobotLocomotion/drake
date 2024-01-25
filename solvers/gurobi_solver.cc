@@ -24,6 +24,7 @@
 #include "gurobi_c.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
@@ -1084,13 +1085,11 @@ bool IsGrbLicenseFileLocalHost() {
   if (grb_license_file == nullptr) {
     return false;
   }
-  std::ifstream stream{grb_license_file};
-  const std::string contents{std::istreambuf_iterator<char>{stream},
-                             std::istreambuf_iterator<char>{}};
-  if (stream.fail()) {
+  const std::optional<std::string> contents = ReadFile(grb_license_file);
+  if (!contents) {
     return false;
   }
-  return contents.find("HOSTID") != std::string::npos;
+  return contents->find("HOSTID") != std::string::npos;
 }
 }  // namespace
 

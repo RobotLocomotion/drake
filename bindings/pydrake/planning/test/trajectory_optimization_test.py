@@ -16,6 +16,7 @@ from pydrake.planning import (
     GetContinuousRevoluteJointIndices
 )
 from pydrake.geometry.optimization import (
+    ConvexSet,
     GraphOfConvexSetsOptions,
     GraphOfConvexSets,
     HPolyhedron,

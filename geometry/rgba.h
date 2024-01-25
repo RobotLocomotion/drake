@@ -21,9 +21,7 @@ class Rgba {
 
   /** Constructs with given (r, g, b, a) values.
    @pre All values are within the range of [0, 1]. */
-  Rgba(double r, double g, double b, double a = 1.0) {
-    set(r, g, b, a);
-  }
+  Rgba(double r, double g, double b, double a = 1.0) { set(r, g, b, a); }
 
   /** Red. */
   double r() const { return value_[0]; }
@@ -70,13 +68,9 @@ class Rgba {
            std::abs(a() - other.a()) <= tolerance;
   }
 
-  bool operator==(const Rgba& other) const {
-    return value_ == other.value_;
-  }
+  bool operator==(const Rgba& other) const { return value_ == other.value_; }
 
-  bool operator!=(const Rgba& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const Rgba& other) const { return !(*this == other); }
 
   /** Computes the element-wise product of two rgba colors. This type of
    calculation is frequently used to modulate one color with another (e.g., for

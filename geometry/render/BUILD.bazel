@@ -53,6 +53,7 @@ drake_cc_library(
     deps = [
         ":render_camera",
         ":render_label",
+        ":render_mesh",
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
@@ -101,6 +102,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_properties",
         "//geometry:rgba",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
     deps = [
         "@tinyobjloader_internal//:tinyobjloader",

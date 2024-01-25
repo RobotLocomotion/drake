@@ -120,15 +120,13 @@ class ConfigurationSource : public systems::LeafSystem<T> {
         &ConfigurationSource<T>::ReadConfigurations);
   }
 
-  void SetConfigurations(
-    GeometryConfigurationVector<T> configurations) {
+  void SetConfigurations(GeometryConfigurationVector<T> configurations) {
     configurations_ = std::move(configurations);
   }
 
  private:
   void ReadConfigurations(
-      const Context<T>&,
-      GeometryConfigurationVector<T>* configurations) const {
+      const Context<T>&, GeometryConfigurationVector<T>* configurations) const {
     *configurations = configurations_;
   }
 
@@ -358,10 +356,10 @@ class DrakeVisualizerTest : public ::testing::Test {
 
   struct Subscribers;
   Subscribers& GetSubscribers(std::optional<Role> role) {
-    std::map<Role, Subscribers *> subscribers_{
-      {Role::kIllustration, &illustration_subs_},
-      {Role::kProximity, &proximity_subs_},
-      {Role::kPerception, &perception_subs_},
+    std::map<Role, Subscribers*> subscribers_{
+        {Role::kIllustration, &illustration_subs_},
+        {Role::kProximity, &proximity_subs_},
+        {Role::kPerception, &perception_subs_},
     };
     if (role.has_value()) {
       DRAKE_DEMAND(*role != Role::kUnassigned);
@@ -369,7 +367,6 @@ class DrakeVisualizerTest : public ::testing::Test {
     }
     return default_subs_;
   }
-
 
   static constexpr double kPublishPeriod = 1 / 64.0;
 
@@ -575,9 +572,9 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
  provide data for the dynamic frames (i.e., "world" will not be included).  */
 TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   using T = TypeParam;
-  this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity,
-       .use_role_channel_suffix = true});
+  this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                          .role = Role::kProximity,
+                          .use_role_channel_suffix = true});
   const FrameId f_id = this->scene_graph_->RegisterFrame(
       this->pose_source_id_, GeometryFrame("frame", 0));
   const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
@@ -643,16 +640,18 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
       {Role::kProximity, source_name + "::proximity"}};
   for (const auto& [role, name] : expected) {
     for (const bool use_suffix : {false, true}) {
-      SCOPED_TRACE(fmt::format("role '{}', name '{}', use_suffix '{}'",
-                               role, name, use_suffix));
-      this->ConfigureDiagram(
-          {.publish_period = this->kPublishPeriod, .role = role,
-           .use_role_channel_suffix = use_suffix});
+      SCOPED_TRACE(fmt::format("role '{}', name '{}', use_suffix '{}'", role,
+                               name, use_suffix));
+      this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                              .role = role,
+                              .use_role_channel_suffix = use_suffix});
       this->PopulateScene();
       Simulator<T> simulator(*(this->diagram_));
       simulator.AdvanceTo(0.0);
       std::optional<Role> maybe_role;
-      if (use_suffix) { maybe_role = role; }
+      if (use_suffix) {
+        maybe_role = role;
+      }
       MessageResults results = this->ProcessMessages(maybe_role);
 
       /* Confirm that messages were sent.  */
@@ -691,9 +690,9 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
  illustration role with color, that value is used instead of the default.  */
 TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   using T = TypeParam;
-  this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity,
-       .use_role_channel_suffix = true});
+  this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                          .role = Role::kProximity,
+                          .use_role_channel_suffix = true});
   const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
       this->pose_source_id_,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -724,9 +723,9 @@ TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
 TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
   using T = TypeParam;
   for (const Role role : {Role::kProximity, Role::kPerception}) {
-    this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role,
-         .use_role_channel_suffix = true});
+    this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                            .role = role,
+                            .use_role_channel_suffix = true});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -788,9 +787,9 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
   using T = TypeParam;
   for (const Role role :
        {Role::kProximity, Role::kPerception, Role::kIllustration}) {
-    this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role,
-         .use_role_channel_suffix = true});
+    this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                            .role = role,
+                            .use_role_channel_suffix = true});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),

@@ -9,6 +9,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -367,22 +368,10 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
 
     if (!kUsingAsan) {
       // The print file contents should be the same for single vs multi.
-      std::string contents_single;
-      {
-        std::ifstream input(single_threaded[i].print_file, std::ios::binary);
-        ASSERT_TRUE(input);
-        std::stringstream buffer;
-        buffer << input.rdbuf();
-        contents_single = buffer.str();
-      }
-      std::string contents_multi;
-      {
-        std::ifstream input(multi_threaded[i].print_file, std::ios::binary);
-        ASSERT_TRUE(input);
-        std::stringstream buffer;
-        buffer << input.rdbuf();
-        contents_multi = buffer.str();
-      }
+      std::string contents_single =
+          ReadFileOrThrow(single_threaded[i].print_file);
+      std::string contents_multi =
+          ReadFileOrThrow(multi_threaded[i].print_file);
       for (auto* contents : {&contents_single, &contents_multi}) {
         // Scrub some volatile text output.
         *contents = std::regex_replace(*contents, std::regex("..... seconds"),
@@ -390,10 +379,10 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
         *contents = std::regex_replace(
             *contents, std::regex(".Printer........................\\d"),
             "(Printer)..............      ####");
-      }
-      EXPECT_EQ(contents_single, contents_multi);
     }
+    EXPECT_EQ(contents_single, contents_multi);
   }
+}
 }
 
 class AutoDiffOnlyCost final : public drake::solvers::Cost {
