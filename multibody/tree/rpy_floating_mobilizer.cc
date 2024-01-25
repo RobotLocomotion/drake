@@ -1,12 +1,12 @@
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_floating_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -15,8 +15,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-std::string SpaceXYZMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+std::string RpyFloatingMobilizer<T>::position_suffix(
+    int position_index_in_mobilizer) const {
+  // Note: The order of variables here is documented in get_quaternion().
   switch (position_index_in_mobilizer) {
     case 0:
       return "qx";
@@ -24,13 +25,20 @@ std::string SpaceXYZMobilizer<T>::position_suffix(
       return "qy";
     case 2:
       return "qz";
+    case 3:
+      return "x";
+    case 4:
+      return "y";
+    case 5:
+      return "z";
   }
-  throw std::runtime_error("SpaceXYZMobilizer has only 3 positions.");
+  throw std::runtime_error(
+      "RpyFloatingMobilizer has only 6 positions.");
 }
 
 template <typename T>
-std::string SpaceXYZMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+std::string RpyFloatingMobilizer<T>::velocity_suffix(
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "wx";
@@ -38,98 +46,138 @@ std::string SpaceXYZMobilizer<T>::velocity_suffix(
       return "wy";
     case 2:
       return "wz";
+    case 3:
+      return "vx";
+    case 4:
+      return "vy";
+    case 5:
+      return "vz";
   }
   throw std::runtime_error(
-    "SpaceXYZMobilizer has only 3 velocities.");
+      "RpyFloatingMobilizer has only 6 velocities.");
 }
 
 template <typename T>
-Vector3<T> SpaceXYZMobilizer<T>::get_angles(
+Vector6<T> RpyFloatingMobilizer<T>::get_generalized_positions(
     const systems::Context<T>& context) const {
   return this->get_positions(context);
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
-    systems::Context<T>* context, const Vector3<T>& angles) const {
-  auto q = this->GetMutablePositions(context);
-  q = angles;
-  return *this;
-}
-
-template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
-    systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-  auto q = this->GetMutablePositions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-  q = math::RollPitchYaw<T>(R_FM).vector();
-  return *this;
-}
-
-template <typename T>
-Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
+Vector6<T> RpyFloatingMobilizer<T>::get_generalized_velocities(
     const systems::Context<T>& context) const {
   return this->get_velocities(context);
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
+Vector3<T> RpyFloatingMobilizer<T>::get_angles(
+    const systems::Context<T>& context) const {
+  return this->get_positions(context).template head<3>();
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, const Vector3<T>& w_FM,
-    systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(state);
-  DRAKE_ASSERT(v.size() == kNv);
+Vector3<T> RpyFloatingMobilizer<T>::get_translation(
+    const systems::Context<T>& context) const {
+  return this->get_positions(context).template tail<3>();
+}
+
+template <typename T>
+Vector3<T> RpyFloatingMobilizer<T>::get_angular_velocity(
+    const systems::Context<T>& context) const {
+  return this->get_velocities(context).template head<3>();
+}
+
+template <typename T>
+Vector3<T> RpyFloatingMobilizer<T>::get_translational_velocity(
+    const systems::Context<T>& context) const {
+  return this->get_velocities(context).template tail<3>();
+}
+
+template <typename T>
+const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::set_angles(
+    systems::Context<T>* context, const Vector3<T>& angles) const {
+  auto q = this->GetMutablePositions(context).template head<3>();
+  q = angles;
+  return *this;
+}
+
+template <typename T>
+const RpyFloatingMobilizer<T>&
+RpyFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
+                                         const Vector3<T>& p_FM) const {
+  auto q = this->GetMutablePositions(context).template tail<3>();
+  q = p_FM;
+  return *this;
+}
+
+template <typename T>
+const RpyFloatingMobilizer<T>&
+RpyFloatingMobilizer<T>::set_angular_velocity(
+    systems::Context<T>* context, const Vector3<T>& w_FM) const {
+  auto v = this->GetMutableVelocities(context).template head<3>();
   v = w_FM;
   return *this;
 }
 
 template <typename T>
-math::RigidTransform<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
-  DRAKE_ASSERT(rpy.size() == kNq);
-  const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  math::RigidTransform<T> X_FM(roll_pitch_yaw, Vector3<T>::Zero());
-  return X_FM;
+const RpyFloatingMobilizer<T>&
+RpyFloatingMobilizer<T>::set_translational_velocity(
+    systems::Context<T>* context, const Vector3<T>& v_FM) const {
+  auto v = this->GetMutableVelocities(context).template tail<3>();
+  v = v_FM;
+  return *this;
 }
 
 template <typename T>
-SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+const RpyFloatingMobilizer<T>&
+RpyFloatingMobilizer<T>::SetFromRigidTransform(
+    systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
+  set_angles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
+  set_translation(context, X_FM.translation());
+  return *this;
+}
+
+template <typename T>
+math::RigidTransform<T>
+RpyFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
+    const systems::Context<T>& context) const {
+  const auto rpy = this->get_angles(context);
+  const auto p_FM = this->get_translation(context);
+  const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  return math::RigidTransform<T>(roll_pitch_yaw, p_FM);
+}
+
+template <typename T>
+SpatialVelocity<T>
+RpyFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v, Vector3<T>::Zero());
+  return SpatialVelocity<T>(v);
 }
 
 template <typename T>
 SpatialAcceleration<T>
-SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+RpyFloatingMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  return SpatialAcceleration<T>(vdot, Vector3<T>::Zero());
+  return SpatialAcceleration<T>(vdot);
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+void RpyFloatingMobilizer<T>::ProjectSpatialForce(
+    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau = F_Mo_F.rotational();
+  tau = F_Mo_F.get_coeffs();
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::DoCalcNMatrix(
+void RpyFloatingMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
-  using std::sin;
-  using std::cos;
   using std::abs;
+  using std::cos;
+  using std::sin;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
@@ -151,12 +199,11 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
   // singular.
   if (abs(cp) < 1.0e-3) {
     throw std::runtime_error(fmt::format(
-        "The SpaceXYZMobilizer (likely associated with a BallRpyJoint) between "
+        "The RpyFloatingMobilizer (implementing an RpyFloatingJoint) between "
         "body {} and body {} has reached a singularity. This occurs when the "
         "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+        "configuration, we have pitch = {}. Consider using a "
+        "QuaternionFloatingJoint instead.",
         this->inboard_body().name(), this->outboard_body().name(), angles[1]));
   }
 
@@ -168,18 +215,20 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
   const T cy_x_cpi = cy * cpi;
   const T sy_x_cpi = sy * cpi;
 
-  // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
-  N->row(0) << cy_x_cpi, sy_x_cpi, 0.0;
+  Matrix3<T> Einv_F;
+  // clang-format off
+  Einv_F <<
+         cy_x_cpi,      sy_x_cpi, 0.0,
+              -sy,            cy, 0.0,
+    cy_x_cpi * sp, sy_x_cpi * sp, 1.0;
+  // clang-format on
 
-  // ṗ = -sin(y) * w0 + cos(y) * w1
-  N->row(1) << -sy, cy, 0.0;
-
-  // ẏ = sin(p) * ṙ + w2
-  N->row(2) << cy_x_cpi * sp, sy_x_cpi * sp, 1.0;
+  N->setIdentity();
+  N->template topLeftCorner<3, 3>() = Einv_F;
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
+void RpyFloatingMobilizer<T>::DoCalcNplusMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
@@ -201,30 +250,35 @@ void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
 
-  *Nplus <<
-        cy * cp, -sy, 0.0,
-        sy * cp,  cy, 0.0,
-            -sp, 0.0, 1.0;
+  Matrix3<T> E_F;
+  // clang-format off
+  E_F <<
+    cy * cp, -sy, 0.0,
+    sy * cp,  cy, 0.0,
+        -sp, 0.0, 1.0;
+  // clang-format on
+
+  Nplus->setIdentity();
+  Nplus->template topLeftCorner<3, 3>() = E_F;
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v,
+void RpyFloatingMobilizer<T>::MapVelocityToQDot(
+    const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
 
-  using std::sin;
-  using std::cos;
   using std::abs;
+  using std::cos;
+  using std::sin;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Here, following a convention used by many dynamicists, we are calling the
-  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
+  // angles θ₀, θ₁, θ₂ as roll (r), pitch (p) and yaw (y), respectively.
   //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
   //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
@@ -271,12 +325,11 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
   const T cp = cos(angles[1]);
   if (abs(cp) < 1.0e-3) {
     throw std::runtime_error(fmt::format(
-        "The SpaceXYZMobilizer (likely associated with a BallRpyJoint) between "
+        "The RpyFloatingMobilizer (implementing an RpyFloatingJoint) between "
         "body {} and body {} has reached a singularity. This occurs when the "
         "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+        "configuration, we have pitch = {}. Consider using a "
+        "QuaternionFloatingJoint instead.",
         this->inboard_body().name(), this->outboard_body().name(), angles[1]));
   }
 
@@ -290,8 +343,8 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
   const T cpi = 1.0 / cp;
 
   // Although the linear equations relating v to q̇ can be used to explicitly
-  // solve the equation w_FM = E_F(q) * q̇ for q̇, a more computational efficient
-  // solution results by implicit solution of those linear equations.
+  // solve the equation w_FM = E_F(q) * q̇ for q̇, a more computationally
+  // efficient solution results by implicit solution of those linear equations.
   // Namely, the first two equations in w_FM = E_F(q) * q̇ are used to solve for
   // ṙ and ṗ, then the third equation is used to solve for ẏ in terms of just
   // ṙ and w2:
@@ -299,19 +352,19 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
   // ṗ = -sin(y) * w0 + cos(y) * w1
   // ẏ = sin(p) * ṙ + w2
   const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
-  *qdot =  Vector3<T>(t, -sy * w0 + cy * w1, sp *  t + w2);
+  qdot->template head<3>() = Vector3<T>(t, -sy * w0 + cy * w1, sp * t + w2);
+  qdot->template tail<3>() = v.template tail<3>();
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::MapQDotToVelocity(
+void RpyFloatingMobilizer<T>::MapQDotToVelocity(
     const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& qdot,
-    EigenPtr<VectorX<T>> v) const {
+    const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);
   DRAKE_ASSERT(v->size() == kNv);
-  using std::sin;
   using std::cos;
+  using std::sin;
 
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
@@ -321,7 +374,7 @@ void SpaceXYZMobilizer<T>::MapQDotToVelocity(
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Here, following a convention used by many dynamicists, we are calling the
-  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
+  // angles θ₀, θ₁, θ₂ as roll (r), pitch (p) and yaw (y), respectively.
   //
   // Note to developers:
   // Matrix E_F(q) is obtained by computing w_FM as the composition of the
@@ -361,41 +414,45 @@ void SpaceXYZMobilizer<T>::MapQDotToVelocity(
 
   // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
   // explicitly forming E_F and then multiplying with q̇.
-  *v = Vector3<T>(
-      cy * cp_x_rdot  -  sy * pdot, /*+ 0 * ydot*/
-      sy * cp_x_rdot  +  cy * pdot, /*+ 0 * ydot*/
-          -sp * rdot/*+   0 * pdot */ +     ydot);
+  // clang-format off
+  v->template head<3>() = Vector3<T>(
+    cy * cp_x_rdot    - sy * pdot, /* + 0 * ydot */
+    sy * cp_x_rdot    + cy * pdot, /* + 0 * ydot */
+        -sp * rdot /* +  0 * pdot */  +     ydot);
+  // clang-format on
+  v->template tail<3>() = qdot.template tail<3>();
 }
 
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
+RpyFloatingMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->outboard_frame());
-  return std::make_unique<SpaceXYZMobilizer<ToScalar>>(
+  return std::make_unique<RpyFloatingMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> SpaceXYZMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>>
+RpyFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Mobilizer<AutoDiffXd>>
-SpaceXYZMobilizer<T>::DoCloneToScalar(
+RpyFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Mobilizer<symbolic::Expression>>
-SpaceXYZMobilizer<T>::DoCloneToScalar(
+RpyFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
@@ -405,4 +462,4 @@ SpaceXYZMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::SpaceXYZMobilizer)
+    class ::drake::multibody::internal::RpyFloatingMobilizer)
