@@ -56,6 +56,10 @@ class GeometriesTester {
   deformable_geometries(const Geometries& geometries) {
     return geometries.deformable_geometries_;
   }
+
+  static void disable_rigid_geometry_deferral(Geometries* geometries) {
+    geometries->enable_rigid_geometries_pending_ = false;
+  }
 };
 
 namespace {
@@ -216,6 +220,7 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
 
 GTEST_TEST(GeometriesTest, UpdateRigidWorldPose) {
   Geometries geometries;
+  GeometriesTester::disable_rigid_geometry_deferral(&geometries);
 
   /* Add a rigid geometry. */
   GeometryId rigid_id = GeometryId::get_new_id();
