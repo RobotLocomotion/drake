@@ -7,7 +7,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 /* @file This file provides testing for the SapDriver's limited support for
 joint limits on joints with multiple degrees of freedom.
@@ -97,7 +97,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
     // The only restriction here relevant for these tests is that we provide a
     // mobilizer with kNumDofs positions and velocities, so that indexes are
     // consistent during MultibodyPlant::Finalize().
-    auto revolute_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
+    auto revolute_mobilizer = std::make_unique<internal::RpyBallMobilizer<T>>(
         this->frame_on_parent(), this->frame_on_child());
     blue_print->mobilizer = std::move(revolute_mobilizer);
     return blue_print;

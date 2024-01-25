@@ -8,7 +8,7 @@
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {

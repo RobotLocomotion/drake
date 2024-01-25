@@ -26,7 +26,7 @@
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
