@@ -18,7 +18,7 @@ namespace internal {
 
  This class cannot be moved or copied. It is assumed upon creation that it will
  be permanently associated with a *specific* MeshType instance and maintain that
- association for its entire lifetime (see DeformableVolumeMesh as an example).
+ association for its entire lifetime (see DeformableMesh as an example).
  */
 template <typename MeshType>
 class MeshDeformer {
