@@ -172,6 +172,7 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      py::gil_scoped_acquire guard;
       auto wrapped =
           [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
         PYBIND11_OVERLOAD_INT(
