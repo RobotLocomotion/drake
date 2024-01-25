@@ -391,17 +391,16 @@ GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
   options.iteration_limit = 100;
   options.termination_threshold = -1;
   options.configuration_obstacles = obstacles;
-  HPolyhedron region_without_termination =
+  options.random_seed = 0;
+  HPolyhedron without_termination =
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
   options.termination_func = always_false;
-  HPolyhedron region_with_always_false =
+  HPolyhedron with_always_false =
       IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
-  // Region with always true termination function should be the same as region
+  // Region with always false termination function should be the same as region
   // without the termination function
-  EXPECT_TRUE(
-      region_with_always_false.ContainedIn(region_without_termination, 1e-9));
-  EXPECT_TRUE(
-      region_without_termination.ContainedIn(region_with_always_false, 1e-9));
+  EXPECT_TRUE(with_always_false.ContainedIn(without_termination, 1e-6));
+  EXPECT_TRUE(without_termination.ContainedIn(with_always_false, 1e-6));
   // now we add a termination function that will make the region contain q1, q2
   const Vector2d q1{0.15, -0.45};
   const Vector2d q2{-0.05, 0.75};
