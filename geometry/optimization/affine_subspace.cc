@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/spectrahedron.h"
 #include "drake/solvers/solve.h"
 
@@ -171,19 +172,36 @@ AffineSubspace::DoAddPointInSetConstraints(
 
 std::vector<Binding<Constraint>>
 AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram*,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
-    const Variable&) const {
-  // This method of ConvexSet is currently only used in GraphOfConvexSets,
-  // and it's bad practice to include unbounded sets in such optimizations.
-  // "For GCS the boundedness of the sets is required because you want to
-  // be sure that if the perspective coefficient is zero, then the vector
-  // variable is constrained to be zero. If the set is unbounded, then the
-  // vector variables is only constrained in the recession cone of the set."
-  // -Tobia Marcucci
-  throw std::runtime_error(
-      "AffineSubspace::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  if (AffineDimension() == 0) {
+    // If the affine dimension is zero, then the set is a point.
+    Point p(translation());
+    return p.AddPointInNonnegativeScalingConstraints(prog, x, t);
+  } else {
+    // If the affine dimension is positive, then the set is unbounded. The
+    // recession cone of the affine subspace is just its basis, so the
+    // constraints imply t ≥ 0 and x = t(By+c)+Bz, where B is the basis and c is
+    // the translation, and z is an arbitrary vector. We can rewrite this as
+    // x=By+tc for some vector y. We can rewrite these constraints as
+    // 0 = [-I, B, c][x;y;t]
+    const int n = basis().rows();
+    const int m = basis().cols();
+    std::vector<Binding<Constraint>> new_constraints;
+    solvers::VectorXDecisionVariable y =
+        prog->NewContinuousVariables(basis().cols());
+    new_constraints.push_back(prog->AddLinearConstraint(
+        Eigen::RowVectorXd::Ones(1), 0, std::numeric_limits<double>::infinity(),
+        Vector1<Variable>(t)));
+    Eigen::MatrixXd A(n, n + m + 1);
+    A.leftCols(n) = Eigen::MatrixXd::Identity(n, n);
+    A.block(0, n, n, m) = basis();
+    A.rightCols(1) = translation();
+    new_constraints.push_back(prog->AddLinearEqualityConstraint(
+        A, Eigen::VectorXd::Zero(n), {x, y, Vector1<Variable>(t)}));
+    return new_constraints;
+  }
 }
 
 std::vector<Binding<Constraint>>
