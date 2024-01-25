@@ -183,20 +183,23 @@ class HPolyhedron final : public ConvexSet {
   /** Draw an (approximately) uniform sample from the set using the hit and run
   Markov-chain Monte-Carlo strategy described in
   https://link.springer.com/article/10.1007/s101070050099.
-  To draw many samples from the uniform distribution, pass the output of one iteration
-  in as the `previous_sample` to the next, with `mixing_steps` set to a relatively low number.
-  When drawing a single sample, `mixing_steps` should be set relatively high in order to obtain
-  an approximately uniformly random point. The distribution of samples will converge to the true
-  uniform distribution at a geometric rate in the total number of hit-and-run steps which is
-  `mixing_steps` * the number of times this function is called.
+  To draw many samples from the uniform distribution, pass the output of one
+  iteration in as the `previous_sample` to the next, with `mixing_steps` set to
+  a relatively low number. When drawing a single sample, `mixing_steps` should
+  be set relatively high in order to obtain an approximately uniformly random
+  point. The distribution of samples will converge to the true uniform
+  distribution at a geometric rate in the total number of hit-and-run steps
+  which is `mixing_steps` * the number of times this function is called.
   @throws std::exception if previous_sample is not in the set. */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
-      const Eigen::Ref<const Eigen::VectorXd>& previous_sample, const int mixing_steps = 10) const;
+      const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
+      const int mixing_steps = 10) const;
 
   /** Variant of UniformSample that uses the ChebyshevCenter() as the
   previous_sample as a feasible point to start the Markov chain sampling. */
-  Eigen::VectorXd UniformSample(RandomGenerator* generator, const int mixing_steps = 10) const;
+  Eigen::VectorXd UniformSample(RandomGenerator* generator,
+                                const int mixing_steps = 10) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */

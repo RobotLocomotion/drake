@@ -1053,9 +1053,11 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
   RandomGenerator generator(1234);
   const int N{10000};
   MatrixXd samples(2, N);
-  samples.col(0) = H.UniformSample(&generator);
+  const int mixing_steps{7};
+  samples.col(0) = H.UniformSample(&generator, mixing_steps);
   for (int i = 1; i < N; ++i) {
-    samples.col(i) = H.UniformSample(&generator, samples.col(i - 1));
+    samples.col(i) =
+        H.UniformSample(&generator, samples.col(i - 1), mixing_steps);
   }
 
   // Provide a visualization of the points.
