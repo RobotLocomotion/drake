@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
@@ -15,7 +15,7 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-std::string SpaceXYZMobilizer<T>::position_suffix(
+std::string RpyBallMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
     case 0:
@@ -25,11 +25,11 @@ std::string SpaceXYZMobilizer<T>::position_suffix(
     case 2:
       return "qz";
   }
-  throw std::runtime_error("SpaceXYZMobilizer has only 3 positions.");
+  throw std::runtime_error("RpyBallMobilizer has only 3 positions.");
 }
 
 template <typename T>
-std::string SpaceXYZMobilizer<T>::velocity_suffix(
+std::string RpyBallMobilizer<T>::velocity_suffix(
   int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
@@ -40,17 +40,17 @@ std::string SpaceXYZMobilizer<T>::velocity_suffix(
       return "wz";
   }
   throw std::runtime_error(
-    "SpaceXYZMobilizer has only 3 velocities.");
+    "RpyBallMobilizer has only 3 velocities.");
 }
 
 template <typename T>
-Vector3<T> SpaceXYZMobilizer<T>::get_angles(
+Vector3<T> RpyBallMobilizer<T>::get_angles(
     const systems::Context<T>& context) const {
   return this->get_positions(context);
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
+const RpyBallMobilizer<T>& RpyBallMobilizer<T>::set_angles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
   auto q = this->GetMutablePositions(context);
   q = angles;
@@ -58,7 +58,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
+const RpyBallMobilizer<T>& RpyBallMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -67,19 +67,19 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
 }
 
 template <typename T>
-Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
+Vector3<T> RpyBallMobilizer<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
   return this->get_velocities(context);
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
+const RpyBallMobilizer<T>& RpyBallMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
   return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
 }
 
 template <typename T>
-const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
+const RpyBallMobilizer<T>& RpyBallMobilizer<T>::set_angular_velocity(
     const systems::Context<T>&, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
   auto v = this->get_mutable_velocities(state);
@@ -89,7 +89,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-math::RigidTransform<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T> RpyBallMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
   DRAKE_ASSERT(rpy.size() == kNq);
@@ -99,7 +99,7 @@ math::RigidTransform<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
 }
 
 template <typename T>
-SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+SpatialVelocity<T> RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -108,7 +108,7 @@ SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 
 template <typename T>
 SpatialAcceleration<T>
-SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
@@ -116,7 +116,7 @@ SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::ProjectSpatialForce(
+void RpyBallMobilizer<T>::ProjectSpatialForce(
     const systems::Context<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
@@ -125,7 +125,7 @@ void SpaceXYZMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::DoCalcNMatrix(
+void RpyBallMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
   using std::sin;
   using std::cos;
@@ -151,7 +151,7 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
   // singular.
   if (abs(cp) < 1.0e-3) {
     throw std::runtime_error(fmt::format(
-        "The SpaceXYZMobilizer (likely associated with a BallRpyJoint) between "
+        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
         "body {} and body {} has reached a singularity. This occurs when the "
         "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
         "configuration, we have pitch = {}. Drake does not yet support a "
@@ -179,7 +179,7 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
+void RpyBallMobilizer<T>::DoCalcNplusMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
@@ -208,7 +208,7 @@ void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::MapVelocityToQDot(
+void RpyBallMobilizer<T>::MapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
@@ -271,7 +271,7 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
   const T cp = cos(angles[1]);
   if (abs(cp) < 1.0e-3) {
     throw std::runtime_error(fmt::format(
-        "The SpaceXYZMobilizer (likely associated with a BallRpyJoint) between "
+        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
         "body {} and body {} has reached a singularity. This occurs when the "
         "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
         "configuration, we have pitch = {}. Drake does not yet support a "
@@ -303,7 +303,7 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void SpaceXYZMobilizer<T>::MapQDotToVelocity(
+void RpyBallMobilizer<T>::MapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
@@ -370,32 +370,32 @@ void SpaceXYZMobilizer<T>::MapQDotToVelocity(
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
+RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->outboard_frame());
-  return std::make_unique<SpaceXYZMobilizer<ToScalar>>(
+  return std::make_unique<RpyBallMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> SpaceXYZMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>> RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Mobilizer<AutoDiffXd>>
-SpaceXYZMobilizer<T>::DoCloneToScalar(
+RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Mobilizer<symbolic::Expression>>
-SpaceXYZMobilizer<T>::DoCloneToScalar(
+RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
@@ -405,4 +405,4 @@ SpaceXYZMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::SpaceXYZMobilizer)
+    class ::drake::multibody::internal::RpyBallMobilizer)

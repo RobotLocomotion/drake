@@ -288,8 +288,9 @@ class RigidBody : public MultibodyElement<T> {
   /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
   /// @note A floating body is not necessarily modeled with a quaternion
-  /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
-  /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
+  /// mobilizer, see has_quaternion_dofs(). Alternative options include a
+  /// roll-pitch-yaw (rpy) parametrization of rotations, see
+  /// RpyFloatingMobilizer.
   /// @throws std::exception if called pre-finalize,
   /// @see MultibodyPlant::Finalize()
   bool is_floating() const {
