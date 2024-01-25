@@ -130,18 +130,18 @@ struct IrisOptions {
   configuration space is <= 3 dimensional.*/
   std::shared_ptr<Meshcat> meshcat{};
 
-  /** A user-defined termination function for the computed HPolyhedron to
-  determine whether the iterations should stop. This function is called upon
-  obtaining each hyperplane of the HPolyhedron at every IRIS step. If the
-  function returns true, then the computations will stop and the last step
-  HPolyhedron will be returned. Therefore, it is highly recommended that the
-  termination function possesses a monotonic property such that for any two
-  HPolyhedrons A and B such that B ⊆ A, we have if termination(A) -->
-  termination(B). For example, a valid termination function is to check whether
-  if the HPolyhedron does not contain any of a set of desired points.
+  /** A user-defined termination function to
+  determine whether the iterations should stop. This function is called after
+  computing each hyperplane at every IRIS iteration. If the function returns
+  true, then the computations will stop and the last step region will be
+  returned. Therefore, it is highly recommended that the termination function
+  possesses a monotonic property such that for any two HPolyhedrons A and B such
+  that B ⊆ A, we have if termination(A) -> termination(B). For example, a valid
+  termination function is to check whether if the region does not contain any of
+  a set of desired points.
   ```
   auto termination_func = [](const HPolyhedron& set) {
-    for (const auto& point : desired_points) {
+    for (const VectorXd& point : desired_points) {
       if (!set.PointInSet(point)) {
         return true;
       }
@@ -149,9 +149,9 @@ struct IrisOptions {
     return false;
   };
   ```
-  The algorithm will stop when the computed HPolyhedron leaves one of the
-  points, in a similar way to how @p require_sample_point_is_contained is
-  enforced.
+  The algorithm will stop when as soon as the region leaves one
+  of the desired points, in a similar way to how @p
+  require_sample_point_is_contained is enforced.
   */
   std::function<bool(const HPolyhedron&)> termination_func{};
 };
@@ -237,17 +237,20 @@ HPolyhedron IrisInConfigurationSpace(
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
 
-/** Modifies the @p options to facilitate finding a region that contains the
-edge between two configuration @p x_1 and @p x_2. Under the hood, it sets @p
-options.starting_ellipse to be a hyperellipsoid that contains the edge and is
-centered at the midpoint of the edge, and extends in other directions by a small
-number @p epsilon. It also sets @p options.termination_func such that IRIS
-iterations terminate when the edge is no longer contained in the IRIS region.
-@param @p tol to check PointInSet for the two points.
-@pre x_1.size() == x_2.size().
-@pre epsilon > 0. */
+/** Modifies the @p iris_options to facilitate finding a region that contains
+the edge between x_1 and x_2. It sets @p iris_options.starting_ellipse to be a
+hyperellipsoid that contains the edge and is centered at the midpoint of the
+edge and extends in other directions by epsilon. It also sets @p
+iris_options.termination_func such that IRIS iterations terminate when the edge
+is no longer contained in the IRIS region with tolerance tol.
+
+@throws std::exception if x_1.size() != x_2.size().
+@throws std::exception if epsilon <= 0. This is due to the fact that the
+hyperellipsoid for @p iris_options.starting_ellipse must have non-zero volume.
+@ingroup geometry_optimization
+*/
 void SetEdgeContainmentTerminationCondition(
-    IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    IrisOptions* iris_options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon = 1e-3,
     const double tol = 1e-6);
 
