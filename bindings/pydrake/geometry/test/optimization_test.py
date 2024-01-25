@@ -237,14 +237,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(h5, mut.HPolyhedron)
         np.testing.assert_array_equal(h5.A(), h_box.A())
         np.testing.assert_array_equal(h5.b(), np.zeros(6))
-
         generator = RandomGenerator()
         sample = h_box.UniformSample(generator=generator)
         self.assertEqual(sample.shape, (3,))
         self.assertEqual(
             h_box.UniformSample(generator=generator,
-                                previous_sample=sample).shape, (3, ))
-        h_box.UniformSample(generator=generator, mixing_steps=100)
+                                previous_sample=sample,
+                                mixing_steps=7).shape, (3, ))
+        h_box.UniformSample(generator=generator, mixing_steps=7)
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn
