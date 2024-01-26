@@ -1,0 +1,9 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+cc_library(
+    name = "zlib",
+    linkopts = ["-lz"],
+    visibility = ["//visibility:public"],
+)
