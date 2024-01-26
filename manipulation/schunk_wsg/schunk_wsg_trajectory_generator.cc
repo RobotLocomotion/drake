@@ -129,7 +129,11 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
   // be significantly improved.  It's also based only on the
   // configurable constants for the WSG 50, not on analysis of the
   // actual motion of the gripper.
-  if (delta < kDistanceToMaxVelocity * 2) {
+  if (delta == 0) {
+    // Create the constant trajectory.
+    trajectory_.reset(new trajectories::PiecewisePolynomial<double>(knots[0]));
+    return;
+  } else if (delta < kDistanceToMaxVelocity * 2) {
     // If we can't accelerate to our maximum (and decelerate again)
     // within the target travel distance, calculate the peak velocity
     // we will reach and create a trajectory which ramps to that
