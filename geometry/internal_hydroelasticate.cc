@@ -209,7 +209,11 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
   }
 
   // Make the final changes to proximity properties.
-  if (is_too_small) {
+
+  // XXX removal causes too much collateral damage. Disable for now to see a
+  // different set of damage.
+  // if (is_too_small) {
+  if (false) {
     geometry_state->RemoveRole(gid_source_id, gid, Role::kProximity);
   } else {
     geometry_state->AssignRole(gid_source_id, gid, props,
