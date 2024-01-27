@@ -21,7 +21,7 @@ have sets_.size() == 0) is treated as the singleton {0}, which is nonempty.
 This includes the zero-dimensional case.
 
 @ingroup geometry_optimization */
-class MinkowskiSum final : public ConvexSet {
+class MinkowskiSum final : public ConvexSet, private ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
 
