@@ -102,7 +102,7 @@ class MinkowskiSum final : public ConvexSet {
       const final;
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Capsule& capsule, void* data) final;
 
   ConvexSets sets_{};  // Not marked const to support move semantics.

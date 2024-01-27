@@ -46,7 +46,9 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                std::optional<FrameId> reference_frame)
     : ConvexSet(3, true) {
   Eigen::Matrix3d A_G;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &A_G);
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1
 
   const RigidTransformd X_WE =

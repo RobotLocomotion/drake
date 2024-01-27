@@ -182,7 +182,7 @@ class Hyperellipsoid final : public ConvexSet {
   void CheckInvariants() const;
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) final;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
 

@@ -59,7 +59,9 @@ MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
                            std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
   Capsule capsule(1., 1.);
-  query_object.inspector().GetShape(geometry_id).Reify(this, &capsule);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &capsule);
 
   // Sphere at zero.
   sets_.emplace_back(

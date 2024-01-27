@@ -128,7 +128,7 @@ class CartesianProduct final : public ConvexSet {
       const final;
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Cylinder& cylinder, void* data) final;
 
   // The member variables are not const in order to support move semantics.

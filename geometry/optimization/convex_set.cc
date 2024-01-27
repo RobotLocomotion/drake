@@ -281,6 +281,36 @@ double ConvexSet::DoCalcVolume() const {
                   NiceTypeName::Get(*this)));
 }
 
+// TODO(jwnimmer-tri) On 2024-06-01 upon completion of deprecation, remove this
+// entire block of code.
+void ConvexSet::ImplementGeometry(const Box& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Capsule& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Convex& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Cylinder& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Ellipsoid& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const HalfSpace& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Mesh& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const MeshcatCone& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+void ConvexSet::ImplementGeometry(const Sphere& shape, void* user_data) {
+  ShapeReifier::ImplementGeometry(shape, user_data);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

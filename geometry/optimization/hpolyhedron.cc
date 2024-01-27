@@ -119,7 +119,9 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
   std::pair<MatrixXd, VectorXd> Ab_G;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &Ab_G);
 
   const RigidTransformd X_WE =
       reference_frame ? query_object.GetPoseInWorld(*reference_frame)

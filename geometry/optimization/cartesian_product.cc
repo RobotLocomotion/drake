@@ -91,7 +91,9 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
   Cylinder cylinder(1., 1.);
-  query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &cylinder);
 
   // Make the cylinder out of a circle (2D sphere) and a line segment (1D box).
   sets_.emplace_back(

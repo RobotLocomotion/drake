@@ -90,7 +90,8 @@ MatrixXd GetConvexHullFromObjFile(const std::string& filename,
         prefix, filename));
   }
   const auto [tinyobj_vertices, faces, num_faces] =
-      internal::ReadObjFile(filename, scale, /* triangulate = */ false);
+      geometry::internal::ReadObjFile(filename, scale,
+                                      /* triangulate = */ false);
   unused(faces);
   unused(num_faces);
   orgQhull::Qhull qhull;
@@ -129,7 +130,9 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
                      std::optional<FrameId> reference_frame)
     : ConvexSet(3, true) {
   Matrix3Xd vertices;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &vertices);
 
   const RigidTransformd X_WE =
       reference_frame ? query_object.GetPoseInWorld(*reference_frame)

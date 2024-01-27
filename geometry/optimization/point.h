@@ -88,7 +88,7 @@ class Point final : public ConvexSet {
   double DoCalcVolume() const final { return 0.0; }
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
 
   Eigen::VectorXd x_;

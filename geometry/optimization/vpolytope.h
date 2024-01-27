@@ -140,7 +140,7 @@ class VPolytope final : public ConvexSet {
   double DoCalcVolume() const final;
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
   void ImplementGeometry(const Mesh& mesh, void* data) final;

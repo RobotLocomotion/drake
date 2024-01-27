@@ -30,7 +30,9 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
              double maximum_allowable_radius)
     : ConvexSet(3, true) {
   double radius = -1.0;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &radius);
+  query_object.inspector()
+      .GetShape(geometry_id)
+      .Reify(internal::ConvexSetReifierAttorney::get_reifier(this), &radius);
   if (radius > maximum_allowable_radius) {
     throw std::runtime_error(
         fmt::format("GeometryID {} has a radius {} is larger than the "

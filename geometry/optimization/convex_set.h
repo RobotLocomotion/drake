@@ -19,6 +19,12 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+// TODO(jwnimmer-tri) Remove on 2024-06-01 upon completion of deprecation.
+namespace internal {
+// This class is defined later in the file.
+class ConvexSetReifierAttorney;
+}  // namespace internal
+
 // TODO(russt): Remove the experimental caveat once we've given this a proper
 // spin.
 /** @defgroup geometry_optimization Geometry Optimization
@@ -72,7 +78,7 @@ struct SampledVolume {
 
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
-class ConvexSet : public ShapeReifier {
+class ConvexSet : private ShapeReifier {
  public:
   virtual ~ConvexSet();
 
@@ -397,7 +403,33 @@ class ConvexSet : public ShapeReifier {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
+  // TODO(jwnimmer-tri) On 2024-06-01 upon completion of deprecation, remove
+  // this entire block of code.
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Box& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Capsule& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Convex& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Cylinder& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Ellipsoid& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const HalfSpace& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Mesh& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const MeshcatCone& shape, void* user_data) override;
+  DRAKE_DEPRECATED("2024-06-01", "The ShapeReifier base class is now private")
+  void ImplementGeometry(const Sphere& shape, void* user_data) override;
+#endif
+
  private:
+  // TODO(jwnimmer-tri) Remove on 2024-06-01 upon completion of deprecation.
+  friend internal::ConvexSetReifierAttorney;
+
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
   bool GenericDoIsBounded() const;
@@ -442,6 +474,36 @@ ConvexSets MakeConvexSets(Args&&... args) {
   seq_into_sets(std::make_index_sequence<N>{});
   return sets;
 }
+
+// TODO(jwnimmer-tri) On 2024-06-01 upon completion of deprecation, remove this
+// entire block of code. Also remove `private ShapeReifier` inheritance from the
+// ConvexSet base class and have each set that needs it (i.e., the six classes
+// listed as friends below) privately inherit `ShapeReifier` on thier own.
+#ifndef DRAKE_DOXYGEN_CXX
+class CartesianProduct;
+class HPolyhedron;
+class Hyperellipsoid;
+class MinkowskiSum;
+class Point;
+class VPolytope;
+namespace internal {
+class ConvexSetReifierAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexSetReifierAttorney);
+  ConvexSetReifierAttorney() = delete;
+
+ private:
+  friend optimization::CartesianProduct;
+  friend optimization::HPolyhedron;
+  friend optimization::Hyperellipsoid;
+  friend optimization::MinkowskiSum;
+  friend optimization::Point;
+  friend optimization::VPolytope;
+
+  static ShapeReifier* get_reifier(ConvexSet* convex_set) { return convex_set; }
+};
+}  // namespace internal
+#endif
 
 }  // namespace optimization
 }  // namespace geometry

@@ -279,7 +279,7 @@ class HPolyhedron final : public ConvexSet {
       const final;
 
   // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
+  using ConvexSet::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const HalfSpace&, void* data) final;
   // TODO(russt): Support ImplementGeometry(const Convex& convex, ...);
