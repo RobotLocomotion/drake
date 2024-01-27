@@ -213,6 +213,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "iris_from_clique_cover",
+    srcs = ["iris_from_clique_cover.cc"],
+    hdrs = ["iris_from_clique_cover.h"],
+    interface_deps = [
+        "//geometry/optimization:convex_set",
+        "//geometry/optimization:iris",
+        "//planning/graph_algorithms:max_clique_solver_via_mip",
+        "//planning/graph_algorithms:max_clique_solver_base",
+        ":scene_graph_collision_checker",
+        ":visibility_graph"
+    ],
+)
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
@@ -348,4 +362,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "iris_from_clique_cover_test",
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    deps = [
+        ":iris_from_clique_cover",
+        ":robot_diagram_builder",
+        ":scene_graph_collision_checker",
+        "//multibody/parsing:parser",
+        "//systems/framework:diagram_builder",
+    ],
+)
 add_lint_tests()

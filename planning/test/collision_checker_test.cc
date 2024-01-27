@@ -603,6 +603,7 @@ TEST_F(TrivialCollisionCheckerTest, ClonesAndContexts) {
 
   EXPECT_EQ(count_contexts(dut_.get()),
             dut_->num_allocated_contexts() + 1 /* prototype context */);
+  EXPECT_EQ(dut_.get()->num_implicit_context_parallelism().num_threads(), 2);
 
   // Add one standalone context.
   auto context = dut_->MakeStandaloneModelContext();
