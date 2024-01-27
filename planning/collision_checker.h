@@ -250,6 +250,10 @@ class CollisionChecker {
   /** @returns the number of internal (not standalone) per-thread contexts. */
   int num_allocated_contexts() const { return owned_contexts_.num_contexts(); }
 
+  /** @returns the amounted of supported implicit parallelism. */
+  Parallelism num_implicit_context_parallelism() const { return implicit_context_parallelism_; }
+
+
   /** Accesses a collision checking context from within the implicit context
    pool owned by this collision checker.
    @param context_number Optional implicit context number.
