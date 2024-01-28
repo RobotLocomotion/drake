@@ -1219,6 +1219,8 @@ TEST_F(GeometryStateTest, GetAllGeometryIds) {
   const GeometryId local_anchored_id = geometry_state_.RegisterAnchoredGeometry(
       test_source, make_unique<GeometryInstance>(
                        RigidTransformd(), make_unique<Sphere>(1), "anchored"));
+  geometry_state_.AssignRole(test_source, local_anchored_id,
+                             ProximityProperties{});
   SetUpSingleSourceTree();
 
   vector<GeometryId> expected_ids(geometries_);
@@ -1226,8 +1228,16 @@ TEST_F(GeometryStateTest, GetAllGeometryIds) {
   expected_ids.push_back(anchored_geometry_);
   std::sort(expected_ids.begin(), expected_ids.end());
 
-  const vector<GeometryId> all_ids = geometry_state_.GetAllGeometryIds();
+  const vector<GeometryId> all_ids =
+      geometry_state_.GetAllGeometryIds(/* role = */ std::nullopt);
   EXPECT_EQ(all_ids, expected_ids);
+
+  expected_ids.clear();
+  expected_ids.push_back(local_anchored_id);
+
+  const vector<GeometryId> proximity_ids =
+      geometry_state_.GetAllGeometryIds(Role::kProximity);
+  EXPECT_EQ(proximity_ids, expected_ids);
 }
 
 // Confirms that a GeometrySet can be converted into a set of geometry ids.

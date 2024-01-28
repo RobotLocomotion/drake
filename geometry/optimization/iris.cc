@@ -214,9 +214,8 @@ class IrisConvexSetMaker final : public ShapeReifier {
 ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
                              std::optional<FrameId> reference_frame) {
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const GeometrySet all_ids(inspector.GetAllGeometryIds());
-  const std::unordered_set<GeometryId> geom_ids =
-      inspector.GetGeometryIds(all_ids, Role::kProximity);
+  const std::vector<GeometryId> geom_ids =
+      inspector.GetAllGeometryIds(Role::kProximity);
   ConvexSets sets(geom_ids.size());
 
   IrisConvexSetMaker maker(query_object, reference_frame);
@@ -487,8 +486,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   IrisConvexSetMaker maker(query_object, inspector.world_frame_id());
   std::unordered_map<GeometryId, copyable_unique_ptr<ConvexSet>> sets{};
   std::unordered_map<GeometryId, const multibody::Frame<double>*> frames{};
-  const std::unordered_set<GeometryId> geom_ids = inspector.GetGeometryIds(
-      GeometrySet(inspector.GetAllGeometryIds()), Role::kProximity);
+  const std::vector<GeometryId> geom_ids =
+      inspector.GetAllGeometryIds(Role::kProximity);
   copyable_unique_ptr<ConvexSet> temp_set;
   for (GeometryId geom_id : geom_ids) {
     // Make all sets in the local geometry frame.
