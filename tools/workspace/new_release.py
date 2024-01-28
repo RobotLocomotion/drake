@@ -32,8 +32,6 @@ command line.
 
 import argparse
 import getpass
-import git
-import github3
 import hashlib
 import json
 import logging
@@ -43,12 +41,21 @@ import shlex
 import subprocess
 import time
 import urllib
-
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
 from typing import List, Optional
 
+import git
+
+import github3
+
 from drake.tools.workspace.metadata import read_repository_metadata
+
+# Repository rules that fetch from GitHub.
+_GITHUB_RULE_TYPES = [
+    "github",
+    "github_release_attachments"
+]
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
@@ -102,6 +109,13 @@ def _str_replace_forced(original, old, new):
     if result == original:
         raise RuntimeError(f"Could not find '{old}' to subtitute")
     return result
+
+
+def _rewrite_file_contents(path, new_content):
+    """Atomically replace the contents of path with new_content."""
+    with open(f"{path}.new", "w", encoding="utf-8") as f:
+        f.write(new_content)
+    os.rename(f"{path}.new", path)
 
 
 def _check_output(args):
@@ -199,19 +213,20 @@ def _check_for_upgrades(gh, args, metadata):
             continue
         if data.get("version_pin"):
             continue
-        key = data["repository_rule_type"]
-        if key in ["github", "github_release_attachments"]:
+        rule_type = data["repository_rule_type"]
+        if rule_type in _GITHUB_RULE_TYPES:
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
-        elif key == "crate_universe":
+        elif rule_type == "crate_universe":
             # For details, see drake/tools/workspace/crate_universe/README.md.
             print(f"Ignoring {workspace_name} from rules_rust")
             continue
-        elif key == "manual":
+        elif rule_type == "manual":
             print("{} version {} needs manual inspection".format(
                 workspace_name, data.get("version", "???")))
             continue
         else:
-            raise RuntimeError("Bad key " + key)
+            raise RuntimeError(
+                f"Bad rule type {rule_type} in {workspace_name}")
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
@@ -274,7 +289,6 @@ def _do_upgrade_github_archive(
         temp_dir,
         old_commit,
         new_commit,
-        local_drake_checkout,
         bzl_filename,
         repository):
     # Slurp the file we're supposed to modify.
@@ -311,10 +325,7 @@ def _do_upgrade_github_archive(
         new_commit, lines[commit_line_num])
     lines[checksum_line_num] = checksum_line_re.sub(
         new_checksum, lines[checksum_line_num])
-    with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line)
-    os.rename(bzl_filename + ".new", bzl_filename)
+    _rewrite_file_contents(bzl_filename, ''.join(lines))
 
 
 def _do_upgrade_github_release_attachments(
@@ -322,7 +333,6 @@ def _do_upgrade_github_release_attachments(
         temp_dir,
         old_commit,
         new_commit,
-        local_drake_checkout,
         bzl_filename,
         repository,
         old_attachments):
@@ -333,27 +343,24 @@ def _do_upgrade_github_release_attachments(
     # Download the new attachments.
     print("Downloading new attachments...")
     new_attachments = {}
-    for filename in old_attachments:
+    for filename in old_attachments.keys():
         new_url = (f"https://github.com/{repository}/"
                    f"releases/download/{new_commit}/{filename}")
-        hasher = hashlib.sha256()
-        checksum = _download(new_url, f"{temp_dir}/{filename}")
-        new_attachments[filename] = checksum
+        new_checksum = _download(new_url, f"{temp_dir}/{filename}")
+        new_attachments[filename] = new_checksum
 
     # Update the repository.bzl contents and then write it out.
     bzl_content = _str_replace_forced(
         bzl_content,
         f'commit = "{old_commit}"',
         f'commit = "{new_commit}"')
-    for filename, old_sha256 in old_attachments.items():
-        new_sha256 = new_attachments[filename]
+    for filename, old_checksum in old_attachments.items():
+        new_checksum = new_attachments[filename]
         bzl_content = _str_replace_forced(
             bzl_content,
-            f'"{old_sha256}"',
-            f'"{new_sha256}"')
-    with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
-        f.write(bzl_content)
-    os.rename(bzl_filename + ".new", bzl_filename)
+            f'"{old_checksum}"',
+            f'"{new_checksum}"')
+    _rewrite_file_contents(bzl_filename, bzl_content)
 
 
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
@@ -361,8 +368,8 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
     data = metadata[workspace_name]
-    key = data["repository_rule_type"]
-    if key not in ["github", "github_release_attachments"]:
+    rule_type = data["repository_rule_type"]
+    if rule_type not in _GITHUB_RULE_TYPES:
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
 
     # Sanity check that an upgrade is possible.
@@ -374,28 +381,27 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     print("Upgrading {} from {} to {}".format(
         workspace_name, old_commit, new_commit))
 
-    # Determine if we can commit the changes made.
+    # Determine if we should and can commit the changes made.
     bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
     can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
     if local_drake_checkout and not can_commit:
         print(f"{bzl_filename} has local changes.")
         print(f"Changes made for {workspace_name} will NOT be committed.")
-    if key == "github":
+
+    if rule_type == "github":
         _do_upgrade_github_archive(
             temp_dir=temp_dir,
             old_commit=old_commit,
             new_commit=new_commit,
-            local_drake_checkout=local_drake_checkout,
             bzl_filename=bzl_filename,
             repository=data["repository"],
         )
     else:
-        assert key == "github_release_attachments"
+        assert rule_type == "github_release_attachments"
         _do_upgrade_github_release_attachments(
             temp_dir=temp_dir,
             old_commit=old_commit,
             new_commit=new_commit,
-            local_drake_checkout=local_drake_checkout,
             bzl_filename=bzl_filename,
             repository=data["repository"],
             old_attachments=data["attachments"],
