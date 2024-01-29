@@ -1,6 +1,7 @@
 #pragma once
 
-/** @file The "overloaded" variant-visit pattern.
+/** @file
+The "overloaded" variant-visit pattern.
 
 The C++ std::visit (typeswitch dispatch) is very useful for std::variant but
 doesn't support it natively.  There is a commonly used two-line boilerplate

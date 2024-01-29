@@ -1,8 +1,8 @@
 #pragma once
 
-/// @file This file contains classes dealing with sending/receiving
-/// LCM messages related to acrobot. The classes in this file are based on
-/// iiwa_lcm.h
+/// @file
+/// This file contains classes dealing with sending/receiving LCM messages
+/// related to acrobot. The classes in this file are based on iiwa_lcm.h
 
 #include <memory>
 
