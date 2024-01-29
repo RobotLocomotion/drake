@@ -29,7 +29,6 @@ MODULE_SETTINGS = {
         "srcs_extra": [
             # These files are enabled by default upstream, but Drake doesn't
             # need them:
-            #  Base64.c
             #  CommandLineArguments.cxx
             #  EncodingC.c
             #  EncodingCXX.cxx
@@ -39,6 +38,7 @@ MODULE_SETTINGS = {
             #  String.c
             #  System.c
             #  SystemInformation.cxx
+            "Utilities/KWSys/vtksys/Base64.c",
             "Utilities/KWSys/vtksys/Directory.cxx",
             "Utilities/KWSys/vtksys/DynamicLoader.cxx",
             "Utilities/KWSys/vtksys/MD5.c",
