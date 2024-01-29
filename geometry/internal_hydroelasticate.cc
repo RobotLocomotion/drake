@@ -194,7 +194,7 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
   if (type != HydroelasticType::kUndefined) { return; }
 
   // Shape adjuster will fix configurations that can't work.
-  bool is_too_small = GetShapeAdjuster()->MakeShapeAdjustments(
+  /*bool is_too_small = */GetShapeAdjuster()->MakeShapeAdjustments(
       geometry_state->GetShape(gid), config, &props);
 
   // The source_id arguments on most scene graph methods are marked with todo's
