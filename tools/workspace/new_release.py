@@ -46,7 +46,6 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 import git
-
 import github3
 
 from drake.tools.workspace.metadata import read_repository_metadata
