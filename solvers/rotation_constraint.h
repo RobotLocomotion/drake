@@ -9,7 +9,8 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
 
-/// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
+/// @file
+/// Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
 /// There are a number of choices for representing 3D rotations in a
 /// mathematical program -- many of these choices involve using more than

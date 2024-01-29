@@ -1,6 +1,7 @@
 #pragma once
 
-/* @file A collection of utilities to facilitate proximity query testing. The
+/* @file
+ A collection of utilities to facilitate proximity query testing. The
  functionality specifically targets proximity queries that are signed distance
  (or equivalent to signed distance). It allows for compact representation of
  test scenarios with outcome expectations and provides the common code to
