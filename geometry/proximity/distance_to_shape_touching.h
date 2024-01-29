@@ -10,9 +10,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
-/* @file Support distance queries between shapes when they barely touch (have
- zero signed distance) by providing a reasonable distance gradient in fcl
- fallback CalcDistanceFallback() in distance_to_shape_callback.cc.
+/* @file
+ Support distance queries between shapes when they barely touch (have zero
+ signed distance) by providing a reasonable distance gradient in fcl fallback
+ CalcDistanceFallback() in distance_to_shape_callback.cc.
  */
 
 namespace drake {
