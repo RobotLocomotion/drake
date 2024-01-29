@@ -501,10 +501,20 @@ def generate_common_core_array_instantiations():
         "double",
     ):
         for stem in (
-            "vtkSOADataArrayTemplateInstantiate",
-            "vtkGenericDataArrayValueRangeInstantiate",
-            "vtkStructuredPointBackendInstantiate",
+            "vtkAffineArrayInstantiate",
+            "vtkAffineImplicitBackendInstantiate",
+            "vtkCompositeArrayInstantiate",
+            "vtkCompositeImplicitBackendInstantiate",
+            "vtkConstantArrayInstantiate",
             "vtkConstantImplicitBackendInstantiate",
+            "vtkIndexedArrayInstantiate",
+            "vtkIndexedImplicitBackendInstantiate",
+            "vtkSOADataArrayTemplateInstantiate",
+            "vtkStdFunctionArrayInstantiate",
+            "vtkStructuredPointBackendInstantiate",
+            "vtkStructuredPointArrayInstantiate",
+            "vtkTypedDataArrayInstantiate",
+            "vtkGenericDataArrayValueRangeInstantiate",
         ):
             if "Generic" in stem and "long" not in ctype:
                 continue
