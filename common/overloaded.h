@@ -13,7 +13,7 @@ use the variant visit pattern, i.e.
 @code {.cpp}
   using MyVariant = std::variant<int, std::string>;
   MyVariant v = 5;
-  std::string result = std::visit(overloaded{
+  std::string result = std::visit<const char*>(overloaded{
     [](const int arg) { return "found an int"; },
     [](const std::string& arg) { return "found a string"; }
   }, v);
