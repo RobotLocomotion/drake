@@ -30,7 +30,7 @@ A hyperellipsoid can never be empty -- it always contains its center. This
 includes the zero-dimensional case.
 
 @ingroup geometry_optimization */
-class Hyperellipsoid final : public ConvexSet {
+class Hyperellipsoid final : public ConvexSet, private ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
 
