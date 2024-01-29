@@ -201,12 +201,6 @@ MODULE_SETTINGS = {
             "**/*MooreSuperCursor*",
             "**/*VonNeumannSuperCursor*",
         ],
-        # TODO(svenevs): VTK::CommonDataModel depends on VTK::CommonCore, and
-        # VTK::CommonCore depends on VTK::token, but for whatever reason the
-        # transitive dependency is not propagating, leading to linking errors.
-        "deps_extra": [
-            ":VTK__token",
-        ],
     },
     "VTK::CommonExecutionModel": {
         "visibility": ["//visibility:public"],
@@ -656,9 +650,6 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::token": {
-        "cmake_defines": [
-            "VTK_MODULE_USE_EXTERNAL_vtktoken=0",
-        ],
         "hdrs_glob_exclude": [
             # We use `hdrs_content` instead of a full-blown configure file.
             "**/Options.h.in",
@@ -686,5 +677,8 @@ MODULE_SETTINGS = {
             """,
         },
         "strip_include_prefix_extra": "/vtktoken",
+        "srcs_glob_extra": [
+            "ThirdParty/token/vtktoken/token/*.cxx",
+        ],
     },
 }
