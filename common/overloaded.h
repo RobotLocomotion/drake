@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <variant>
+
 /** @file The "overloaded" variant-visit pattern.
 
 The C++ std::visit (typeswitch dispatch) is very useful for std::variant but
@@ -39,4 +42,26 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 // NOTE:  The second line above can be removed when we are compiling with
 // >= C++20 on all platforms.
+
+// This is a polyfill for std::visit<Return>(visitor, variant) that we need
+// on Ubuntu 20.04 ("Focal"). Once we drop Focal, we should switch back to
+// the conventional spelling.
+#if __cplusplus > 201703L
+// On reasonable platforms, we can just call std::visit.
+template <typename Return, typename Visitor, typename Variant>
+auto visit_overloaded(Visitor&& visitor, Variant&& variant) -> decltype(auto) {
+  return std::visit<Return>(std::forward<Visitor>(visitor),
+                            std::forward<Variant>(variant));
+}
+#else
+// On Focal, we need to do a polyfill.
+template <typename Return, typename Visitor, typename Variant>
+auto visit_overloaded(Visitor&& visitor, Variant&& variant) -> Return {
+  auto visitor_coerced = [&visitor]<typename Value>(Value&& value) -> Return {
+    return visitor(std::forward<Value>(value));
+  };
+  return std::visit(visitor_coerced, std::forward<Variant>(variant));
+}
+#endif
+
 }  // namespace
