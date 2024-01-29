@@ -1,7 +1,14 @@
 # Schema for URDF as seen and used by Drake.
-# Relax NG Compact Syntax.
+# Relax NG Compact Syntax. See https://relaxng.org/
 #
-# An easy but runtime-slow way to validate:
+# URDF language reference:
+# https://wiki.ros.org/urdf/XML
+#
+# Not particularly authoritative URDF schema:
+# https://github.com/ros/urdfdom/blob/4.0.0/xsd/urdf.xsd
+# 
+#
+# An external-to-drake way to validate:
 #  $ apt install jing
 #  $ jing -c urdf.rnc [ROBOT-FILE...]
 #
@@ -15,14 +22,15 @@
 #   $ make
 #   $ ./rnv urdf.rnc [ROBOT-FILE]
 #
-# TODO proper Drake tag checking
-# TODO refine open schema tricks
 namespace drake = "http://drake.mit.edu"
 
 grammar {
    start = Robot
    Robot = element robot {
-      Name?, attribute version { text }?,
+      Name?,
+      # The version attribute is proposed in urdf.xsd, but not documented
+      # elsehwere.
+      attribute version { text }?,
       (Joint* &
          LinkE* &
          Frame* &
@@ -33,44 +41,28 @@ grammar {
          DrakeLinearBushingRpy* &
          DrakeCollisionFilterGroup* &
          Gazebo* &
-         ObsoleteLoopJoint* &
          Force*)
    }
 
-   # This appears to be a bullet extension.
+   # This appears to be a commonly used bullet extension.
    Force = element force_element { Anything }
 
-   # Extension back doors.
+   # Documented extension back door.
    Gazebo = element gazebo { Anything }
-   ObsoleteLoopJoint = element loop_joint { Anything }
 
+   # TODO(#20837): Frame is a legacy Drake extenstion that is not properly
+   # namespaced.
    Frame = element frame { Name, LinkA, Pose }
 
    Joint = element joint {
       (Name, DrakeIgnoreTrue, AnyE) |
-      (Name, DrakeIgnoreFalse? , Type,
-         (Origin? &
-            Parent &
-            Child &
-            Axis? &
-            Calibration? &
-            Dynamics? &
-            Limit? &
-            SafetyController? &
-            Mimic?))
+      (Name, DrakeIgnoreFalse?, Type,
+         JointSubElements)
    }
    DrakeJoint = element drake:joint {
       (Name, DrakeIgnoreTrue, AnyE) |
-      (Name, DrakeIgnoreFalse? , Type,
-         (Origin? &
-            Parent &
-            Child &
-            Axis? &
-            Calibration? &
-            Dynamics? &
-            Limit? &
-            SafetyController? &
-            Mimic? &
+      (Name, DrakeIgnoreFalse?, Type,
+         (JointSubElements &
             DrakeScrewThreadPitch?))
    }
    DrakeLinearBushingRpy = element drake:linear_bushing_rpy {
@@ -81,10 +73,22 @@ grammar {
       element drake:bushing_force_stiffness { Value } &
       element drake:bushing_force_damping { Value }
    }
+   JointSubElements = Origin? &
+      Parent &
+      Child &
+      Axis? &
+      Calibration? &
+      Dynamics? &
+      Limit? &
+      SafetyController? &
+      Mimic?
 
    LinkE = element link {
       (Name, DrakeIgnoreTrue, AnyE) |
-      (Name, DrakeIgnoreFalse? ,
+      (Name, DrakeIgnoreFalse?,
+         # The link@type attribut is see in the urdf.xsd, but not documented
+         # elsewhere.
+         Type?,
       (Inertial? & Visual* & Collision* & SelfCollisionChecking*))
    }
    MaterialGlobal = element material { Name, (Color? & Texture?) }
@@ -96,15 +100,10 @@ grammar {
    Parent = element parent { LinkA }
    Child = element child { LinkA }
    Axis = element axis { attribute xyz { text }? }
-   Calibration = element calibration {
-      attribute reference_position { text }?,
-      attribute rising { text }?,
-      attribute falling { text }?
-   }
    Dynamics = element dynamics {
       attribute damping { text }?,
       attribute friction { text }?,
-      # Paleo-Drake extension; now ignored. Perhaps it should go.
+      # Paleo-Drake extension; now ignored.
       attribute coulomb_window { text }?
    }
    Limit = element limit {
@@ -114,23 +113,27 @@ grammar {
       attribute velocity { text }?,
       attribute drake:acceleration { text }?
    }
-   # Drake ignores this, so don't police it here.
-   SafetyController = element safety_controller { Anything }
    Mimic = element mimic {
       attribute joint { text },
       attribute multiplier { text }?,
       attribute offset { text }?
    }
+   # Drake ignores these, so don't police them here.
+   SafetyController = element safety_controller { Anything }
+   Calibration = element calibration { Anything }
 
    Inertial = element inertial {
-      (Origin? & Mass? & Inertia?)
+      # The URDF language reference marks the inertia tag as required, but many
+      # Drake files treat it as optional. TODO(#20840) decide which disposition
+      # (required or optional) is best, and implement that.
+      (Origin? & Mass & Inertia?)
    }
    Visual = element visual {
-      Name?, (Origin? & Geometry & Material? & DrakeAcceptingRenderer? )
+      Name?, (Origin? & Geometry & Material? & DrakeAcceptingRenderer* )
    }
    DrakeAcceptingRenderer = element drake:accepting_renderer { Name }
    Collision = element collision {
-      Name?, (Origin? & Geometry & Material? & Verbose? & DrakeProximityProperties? )
+      Name?, (Origin? & Geometry & Verbose? & DrakeProximityProperties? )
    }
    SelfCollisionChecking = element self_collision_checking {
       Name?, (Origin? & Geometry & Material? & Verbose?)
@@ -150,7 +153,7 @@ grammar {
       attribute izz { text }?
    }
 
-   Box = element box { attribute size { text }? }
+   Box = element box { attribute size { text } }
    Capsule = element capsule { CapsuleContents }
    DrakeCapsule = element drake:capsule { CapsuleContents }
    CapsuleContents = ( attribute radius { text }, attribute length { text} )
@@ -162,12 +165,12 @@ grammar {
    DrakeEllipsoid = element drake:ellipsoid {
       attribute a { text }, attribute b { text }, attribute c { text } }
 
-   Color = element color { attribute rgba { text }? }
-   Mass = element mass { Value? }
+   Color = element color { attribute rgba { text } }
+   Mass = element mass { Value }
    Texture = element texture { attribute filename { text } }
    Verbose = element verbose { Value }
 
-   # drake_ignore is dumb and should go away.
+   # drake_ignore is legacy and should go away.
    DrakeIgnoreFalse = attribute drake_ignore { string - "true" }
    DrakeIgnoreTrue = attribute drake_ignore { "true" }
 
