@@ -373,6 +373,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_schema_checker",
+    srcs = ["detail_schema_checker.cc"],
+    hdrs = ["detail_schema_checker.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:diagnostic_policy",
+        "//common:find_resource",
+        "@rnv_internal//:rnv",
+    ],
+)
+
+drake_cc_library(
     name = "detail_select_parser",
     srcs = ["detail_select_parser.cc"],
     hdrs = ["detail_select_parser.h"],
@@ -524,6 +537,26 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "schema_validator",
+    testonly = 1,
+    srcs = ["schema_validator.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "multibody/parsing/urdf.rnc",
+        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
+    ],
+    test_rule_data = [
+        "urdf.rnc",
+        ":test_models",
+    ],
+    deps = [
+        ":detail_schema_checker",
+        "//common:add_text_logging_gflags",
+        "@gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "parser_test",
     data = [
@@ -638,6 +671,19 @@ drake_cc_googletest(
         ":detail_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_schema_checker_test",
+    data = [
+        "test/SVG-1.2-RFC.rnc",
+        "test/draft-rfcxml-general-template-annotated-00.xml",
+        "test/draft-rfcxml-general-template-bare-00.xml",
+        "test/rfc7991bis.rnc",
+    ],
+    deps = [
+        ":detail_schema_checker",
     ],
 )
 

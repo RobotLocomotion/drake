@@ -12,15 +12,10 @@
 #  $ apt install jing
 #  $ jing -c urdf.rnc [ROBOT-FILE...]
 #
-# A faster way (that could maybe get linked directly into drake later):
-#   $ git clone git@github.com:hartwork/rnv.git
-#   $ cd rnv
-#   $ apt install asciidoc-base  # could skip, with some patching
-#   $ apt install libexpat1-dev
-#   $ ./bootstrap
-#   $ ./configure
-#   $ make
-#   $ ./rnv urdf.rnc [ROBOT-FILE]
+# A drake-source-build way to validate:
+#   $ bazel build //multibody/parsing:schema_validator
+#   $ bazel-bin/multibody/parsing/schema_validator \
+#       multibody/parsing/urdf.rnc [ROBOT-FILE]
 #
 
 # Enumerate the drake namespace and the anonymous URDF-spec "local" namespace.
