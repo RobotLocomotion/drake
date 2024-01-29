@@ -1,6 +1,7 @@
 #pragma once
 
-/// @file Functions to help with the creation of lcmt_robot_plan messages.
+/// @file
+/// Functions to help with the creation of lcmt_robot_plan messages.
 
 #include <string>
 #include <vector>

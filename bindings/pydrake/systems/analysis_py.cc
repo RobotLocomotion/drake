@@ -28,6 +28,7 @@ namespace {
 // https://docs.python.org/3/c-api/exceptions.html#c.PyErr_CheckSignals
 // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-properly-handle-ctrl-c-in-long-running-functions
 void ThrowIfPythonHasPendingSignals() {
+  py::gil_scoped_acquire guard;
   if (PyErr_CheckSignals() != 0) {
     throw py::error_already_set();
   }
@@ -240,6 +241,9 @@ PYBIND11_MODULE(analysis, m) {
               return self->AdvanceTo(boundary_time);
             },
             py::arg("boundary_time"), py::arg("interruptible") = true,
+            // This is a long-running function that might sleep; for both
+            // reasons, we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
             // Amend the docstring with the additional parameter.
             []() {
               std::string new_doc = doc.Simulator.AdvanceTo.doc;

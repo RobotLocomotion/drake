@@ -454,10 +454,12 @@ drake_cc_library(
     name = "meshcat",
     srcs = [
         "meshcat.cc",
+        "meshcat_file_storage_internal.cc",
         "meshcat_internal.cc",
     ],
     hdrs = [
         "meshcat.h",
+        "meshcat_file_storage_internal.h",
         "meshcat_internal.h",
         "meshcat_types_internal.h",
     ],
@@ -481,6 +483,7 @@ drake_cc_library(
         "//common:find_resource",
         "//common:network_policy",
         "//common:scope_exit",
+        "//common:sha256",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@stduuid_internal//:stduuid",
@@ -537,6 +540,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_file_storage_internal_test",
+    tags = ["cpu:2"],
+    deps = [
+        ":meshcat",
     ],
 )
 
