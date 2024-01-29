@@ -680,5 +680,9 @@ MODULE_SETTINGS = {
         "srcs_glob_extra": [
             "ThirdParty/token/vtktoken/token/*.cxx",
         ],
+        "srcs_glob_exclude": [
+            # Don't link the main() program.
+            "**/tokenize.cxx",
+        ],
     },
 }
