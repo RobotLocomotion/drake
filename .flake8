@@ -1,0 +1,3 @@
+[flake8]
+application_import_names = drake, pydrake
+import-order-style = edited
