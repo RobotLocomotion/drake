@@ -32,102 +32,71 @@ Arguments:
 load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("//tools/workspace:os.bzl", "determine_os")
 
-# The supported Python versions should match those listed in both the root
-# CMakeLists.txt and doc/_pages/from_source.md, except for the "manylinux"
-# matrix which should match tools/wheel/build-wheels list of targets=().
-_VERSION_SUPPORT_MATRIX = {
-    # NOTE: when changing native OS python versions, make sure to update
-    # CMakeLists.txt python versions.
-    "ubuntu:20.04": ["3.8"],
-    "ubuntu:22.04": ["3.10"],
-    "macos": ["3.11"],
-    # NOTE: when updating supported wheel python versions:
-    # - Wheel URLs in tools/release_engineering/download_release_candidate.py
-    #   (`cpXY-cpXY` components).
-    # - Tables on from_source.md and installation.md (python version number).
-    "macos_wheel": ["3.11"],
-    "manylinux": ["3.8", "3.9", "3.10", "3.11", "3.12"],
-}
-
 def repository_python_info(repository_ctx):
-    # Given the operating system, determine:
-    # - `python` - binary path
-    # - `python_config` - configuration binary path
-    # - `site_packages_relpath` - relative to base of FHS
-    # - `version` - '{major}.{minor}`
-    # - `version_major` - major version
-    # - `os` - results from `determine_os(...)`
-    os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-    os_key = os_result.target
-    if os_result.is_ubuntu:
-        os_key += ":" + os_result.ubuntu_release
-    versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
+    """Determines the following information:
+    - `python` - binary path
+    - `python_config` - configuration binary path
+    - `version` - '{major}.{minor}'
+    - `version_major` - major version (as a string)
+    - `site_packages_relpath` - relative to base of FHS
+    - `is_any_macos` - macOS or not
+    and returns those details in a struct().
+    """
 
-    if os_result.is_macos or os_result.is_macos_wheel:
+    # - `is_any_macos`
+    is_any_macos = repository_ctx.os.name == "mac os x"
+
+    # - `python`
+    # - `python_config`
+    if is_any_macos:
         python = repository_ctx.attr.macos_interpreter_path
         if "{homebrew_prefix}" in python:
-            python = python.format(homebrew_prefix = os_result.homebrew_prefix)
+            if repository_ctx.os.arch == "x86_64":
+                homebrew_prefix = "/usr/local"
+            else:
+                homebrew_prefix = "/opt/homebrew"
+            python = python.format(homebrew_prefix = homebrew_prefix)
     else:
         python = repository_ctx.attr.linux_interpreter_path
+    python_config = "{}-config".format(python)
 
-    version = execute_or_fail(
-        repository_ctx,
-        [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
-                       ".format(v.major, v.minor))"],
-    ).stdout.strip()
+    # - `version`
+    # - `version_major`
+    # - `site_packages_relpath`
+    version = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
+        "from sys import version_info as v",
+        "print('{}.{}'.format(v.major, v.minor))",
+    ])]).stdout.strip()
     version_major, _ = version.split(".")
+    site_packages_relpath = "lib/python{}/site-packages".format(version)
 
-    # Perform sanity checks on supplied Python binary.
-    implementation = execute_or_fail(
-        repository_ctx,
-        [
-            python,
-            "-c",
-            "import platform as m; print(m.python_implementation())",
-        ],
-    ).stdout.strip()
+    # Validate the `python` and `python_config` binaries.
+    implementation = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
+        "import platform",
+        "print(platform.python_implementation())",
+    ])]).stdout.strip()
     if implementation != "CPython":
         fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
               "supported.").format(python, implementation))
-
-    # Development Note: This should generally be the correct configuration. If
-    # you are hacking with `virtualenv` (which is officially unsupported),
-    # ensure that you manually symlink the matching `*-config` binary in your
-    # `virtualenv` installation.
-    python_config = "{}-config".format(python)
-
-    # Check if config binary exists.
     if which(repository_ctx, python_config) == None:
-        fail((
-            "Cannot find corresponding config executable: {}\n" +
-            "  From interpreter: {}"
-        ).format(python_config, python))
+        # Developer note: If you are using a `virtualenv` (which is officially
+        # unsupported), ensure that you manually symlink the `python3-config`
+        # binary in your `virtualenv` installation.
+        fail(("Cannot find corresponding config executable: {}\n" +
+              "  From interpreter: {}").format(python_config, python))
 
-    # Warn if we do not the correct platform support.
-    if version not in versions_supported:
-        print((
-            "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n  " +
-            "From interpreter: {}\n\n"
-        ).format(version, os_key, versions_supported, python))
-
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
     return struct(
         python = python,
         python_config = python_config,
-        site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version_major,
-        os = os_result,
+        site_packages_relpath = site_packages_relpath,
+        is_any_macos = is_any_macos,
     )
 
 def _impl(repository_ctx):
     # Repository implementation.
-    py_info = repository_python_info(
-        repository_ctx,
-    )
+    py_info = repository_python_info(repository_ctx)
 
     # Collect includes.
     cflags = execute_or_fail(
@@ -183,10 +152,10 @@ def _impl(repository_ctx):
     for i in reversed(range(len(linkopts))):
         if linkopts[i].startswith("-l") and linkopts[i].find(libpy) != -1:
             has_direct_link = True
-            if py_info.os.is_macos:
+            if py_info.is_any_macos:
                 linkopts.pop(i)
 
-    if py_info.os.is_macos:
+    if py_info.is_any_macos:
         linkopts = ["-undefined dynamic_lookup"] + linkopts
 
     if not has_direct_link:
