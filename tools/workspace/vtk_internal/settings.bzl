@@ -157,15 +157,9 @@ MODULE_SETTINGS = {
             "VTK_ALL_NEW_OBJECT_FACTORY=1",
             "VTK_ALWAYS_OPTIMIZE_ARRAY_ITERATORS=1",
             "VTK_LEGACY_REMOVE=1",
+            "VTK_USE_FUTURE_BOOL=1",
             "VTK_USE_FUTURE_CONST=1",
             "VTK_WARN_ON_DISPATCH_FAILURE=1",
-            # Misc.
-            "VTK_DISPATCH_AFFINE_ARRAYS=0",
-            "VTK_DISPATCH_CONSTANT_ARRAYS=0",
-            "VTK_DISPATCH_STD_FUNCTION_ARRAYS=0",
-            "VTK_DISPATCH_STRUCTURED_POINT_ARRAYS=0",
-            "VTK_USE_FUTURE_BOOL=0",
-            "VTK_BUILD_SHARED_LIBS=0",
         ],
         "cmake_undefines": [
             # Features that are NOT available on the host platform.
@@ -190,6 +184,10 @@ MODULE_SETTINGS = {
             "VTK_BUILD_SHARED_LIBS",
             "VTK_DEBUG_LEAKS",
             "VTK_DEBUG_RANGE_ITERATORS",
+            "VTK_DISPATCH_AFFINE_ARRAYS",
+            "VTK_DISPATCH_CONSTANT_ARRAYS",
+            "VTK_DISPATCH_STD_FUNCTION_ARRAYS",
+            "VTK_DISPATCH_STRUCTURED_POINT_ARRAYS",
             "VTK_LEGACY_SILENT",
             "VTK_USE_MEMKIND",
             "VTK_USE_SCALED_SOA_ARRAYS",
