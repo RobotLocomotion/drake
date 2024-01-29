@@ -139,7 +139,6 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet2) {
   VPolytope v2(vertices2);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
-
   ConvexSets sets = PartitionConvexSet(v2, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets.size(), 2);
   for (const auto& set : sets) {
@@ -174,7 +173,6 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet3) {
   VPolytope v3(vertices3);
   std::vector<int> continuous_revolute_joints{0, 1};
   const double epsilon = 1e-5;
-
   ConvexSets sets = PartitionConvexSet(v3, continuous_revolute_joints, epsilon);
   EXPECT_EQ(sets.size(), 1);
   for (const auto& set : sets) {
