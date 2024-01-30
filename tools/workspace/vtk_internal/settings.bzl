@@ -311,6 +311,8 @@ MODULE_SETTINGS = {
             # Avoid the use of VTK::CommonComputationalGeometry.
             "**/vtkPartitionedDataSetCollectionSource.cxx",
             "**/vtkPartitionedDataSetSource.cxx",
+            # Avoid some VTK::FiltersGeneral stuff we don't need.
+            "**/vtkSpatioTemporalHarmonicsSource.cxx",
         ],
     },
     "VTK::IOCore": {
