@@ -1037,7 +1037,7 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
 }
 
-GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
+GTEST_TEST(HPolyhedronTest, UniformSampleTest1) {
   Matrix<double, 4, 2> A;
   Vector4d b;
   // clang-format off
@@ -1094,6 +1094,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
                   .count(),
               N / 10, kTol);
 }
+
 // Test the case where the sample point is outside the region, but the max
 // threshold can be smaller than the min threshold. (This was a bug uncovered
 // by hammering on this code from IRIS).
@@ -1139,6 +1140,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
   EXPECT_GT(num_throws, 0);
   EXPECT_GT(num_success, 0);
 }
+
 // Test that the argument mixing_steps is working by sampling three points: A
 // with 5 mixing steps starting from the Chebyshev center, B starting from the
 // same random seed as A, but with 2 mixing steps, and C starting from B with 2
@@ -1166,6 +1168,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest3) {
   EXPECT_TRUE(CompareMatrices(A, C, kTol));
   EXPECT_FALSE(CompareMatrices(A, B, kTol));
 }
+
 GTEST_TEST(HPolyhedronTest, Serialize) {
   const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
   const std::string yaml = yaml::SaveYamlString(H);
