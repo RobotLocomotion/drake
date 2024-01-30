@@ -80,6 +80,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//math:geometric_transform",
+        "//multibody/plant:discrete_contact_pair",
     ],
 )
 
