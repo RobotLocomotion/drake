@@ -16,7 +16,7 @@ This situation is unique to Drake, so we won't to upstream this patch.
 
 --- IO/Core/vtkNumberToString.cxx
 +++ IO/Core/vtkNumberToString.cxx
-@@ -19,6 +19,11 @@
+@@ -7,6 +7,11 @@
  #include VTK_DOUBLECONVERSION_HEADER(double-conversion.h)
  // clang-format on
  
@@ -25,6 +25,6 @@ This situation is unique to Drake, so we won't to upstream this patch.
 +using namespace drake_vendor_double_conversion;
 +}
 +
+ #include <array>
  #include <sstream>
  
- VTK_ABI_NAMESPACE_BEGIN

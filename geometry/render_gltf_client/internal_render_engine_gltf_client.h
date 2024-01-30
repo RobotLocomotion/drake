@@ -40,9 +40,6 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
   RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
                              RenderEngineGltfClientParams());
 
-  // TODO(svenevs): Remove when VTK is updated, see implementation for details.
-  void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
-
   const RenderEngineGltfClientParams& get_params() const {
     return render_client_->get_params();
   }

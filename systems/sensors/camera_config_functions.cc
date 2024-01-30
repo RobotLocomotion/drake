@@ -11,6 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/overloaded.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gltf_client/factory.h"
@@ -47,14 +48,6 @@ using multibody::MultibodyPlant;
 using multibody::parsing::GetScopedFrameByName;
 
 namespace {
-
-// Boilerplate for std::visit.
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
 
 // Given a valid string containing a supported RenderEngine class name, returns
 // the full name as would be returned by SceneGraph::GetRendererTypeName().
@@ -134,9 +127,9 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   bool already_exists = !type_name.empty();
 
   if (already_exists) {
-    std::visit(
+    visit_overloaded<void>(
         overloaded{
-            [&type_name, &config](const std::string& class_name) -> void {
+            [&type_name, &config](const std::string& class_name) {
               if (!class_name.empty() &&
                   LookupEngineType(class_name) != type_name) {
                 throw std::logic_error(fmt::format(
@@ -146,7 +139,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                     config.renderer_name, class_name, type_name));
               }
             },
-            [&config](auto&&) -> void {
+            [&config](auto&&) {
               throw std::logic_error(fmt::format(
                   "Invalid camera configuration; requested renderer_name "
                   " = '{}' with renderer parameters, but the named renderer "
@@ -159,7 +152,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   if (already_exists) return;
 
-  std::visit(
+  visit_overloaded<void>(
       overloaded{
           [&config, scene_graph](const std::string& class_name) {
             MakeEngineByClassName(class_name, config, scene_graph);

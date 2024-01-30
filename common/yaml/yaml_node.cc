@@ -6,19 +6,12 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/overloaded.h"
 
 namespace drake {
 namespace yaml {
 namespace internal {
 namespace {
-
-// Boilerplate for std::visit.
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
 
 // Converts a type T from our variant<> into a string name for errors.
 template <typename T>
@@ -62,7 +55,7 @@ Node Node::MakeNull() {
 }
 
 NodeType Node::GetType() const {
-  return std::visit(  // BR
+  return visit_overloaded<NodeType>(  // BR
       overloaded{
           [](const ScalarData&) {
             return NodeType::kScalar;
@@ -137,12 +130,12 @@ bool operator==(const Node::MappingData& a, const Node::MappingData& b) {
 }
 
 std::string_view Node::GetTag() const {
-  return std::visit(  // BR
+  return visit_overloaded<std::string_view>(  // BR
       overloaded{
-          [](const std::string& tag) -> std::string_view {
-            return tag;
+          [](const std::string& tag) {
+            return std::string_view{tag};
           },
-          [](JsonSchemaTag tag) -> std::string_view {
+          [](JsonSchemaTag tag) {
             switch (tag) {
               case JsonSchemaTag::kNull:
                 return kTagNull;
@@ -188,12 +181,12 @@ const std::optional<Node::Mark>& Node::GetMark() const {
 }
 
 const std::string& Node::GetScalar() const {
-  return std::visit(
+  return *visit_overloaded<const std::string*>(
       overloaded{
-          [](const ScalarData& data) -> const std::string& {
-            return data.scalar;
+          [](const ScalarData& data) {
+            return &data.scalar;
           },
-          [](auto&& data) -> const std::string& {
+          [](auto&& data) -> std::nullptr_t {
             throw std::logic_error(fmt::format("Cannot Node::GetScalar on a {}",
                                                GetNiceVariantName(data)));
           },
@@ -202,12 +195,12 @@ const std::string& Node::GetScalar() const {
 }
 
 const std::vector<Node>& Node::GetSequence() const {
-  return std::visit(
+  return *visit_overloaded<const std::vector<Node>*>(
       overloaded{
-          [](const SequenceData& data) -> const std::vector<Node>& {
-            return data.sequence;
+          [](const SequenceData& data) {
+            return &data.sequence;
           },
-          [](auto&& data) -> const std::vector<Node>& {
+          [](auto&& data) -> std::nullptr_t {
             throw std::logic_error(fmt::format(
                 "Cannot Node::GetSequence on a {}", GetNiceVariantName(data)));
           },
@@ -216,12 +209,12 @@ const std::vector<Node>& Node::GetSequence() const {
 }
 
 void Node::Add(Node value) {
-  return std::visit(
+  return visit_overloaded<void>(
       overloaded{
-          [&value](SequenceData& data) -> void {
+          [&value](SequenceData& data) {
             data.sequence.push_back(std::move(value));
           },
-          [](auto&& data) -> void {
+          [](auto&& data) {
             throw std::logic_error(fmt::format(
                 "Cannot Node::Add(value) on a {}", GetNiceVariantName(data)));
           },
@@ -230,12 +223,12 @@ void Node::Add(Node value) {
 }
 
 const std::map<std::string, Node>& Node::GetMapping() const {
-  return std::visit(
+  return *visit_overloaded<const std::map<std::string, Node>*>(
       overloaded{
-          [](const MappingData& data) -> const std::map<std::string, Node>& {
-            return data.mapping;
+          [](const MappingData& data) {
+            return &data.mapping;
           },
-          [](auto&& data) -> const std::map<std::string, Node>& {
+          [](auto&& data) -> std::nullptr_t {
             throw std::logic_error(fmt::format(
                 "Cannot Node::GetMapping on a {}", GetNiceVariantName(data)));
           },
@@ -244,9 +237,9 @@ const std::map<std::string, Node>& Node::GetMapping() const {
 }
 
 void Node::Add(std::string key, Node value) {
-  return std::visit(
+  return visit_overloaded<void>(
       overloaded{
-          [&key, &value](MappingData& data) -> void {
+          [&key, &value](MappingData& data) {
             const auto result =
                 data.mapping.insert({std::move(key), std::move(value)});
             const bool inserted = result.second;
@@ -260,7 +253,7 @@ void Node::Add(std::string key, Node value) {
                   old_key));
             }
           },
-          [](auto&& data) -> void {
+          [](auto&& data) {
             throw std::logic_error(
                 fmt::format("Cannot Node::Add(key, value) on a {}",
                             GetNiceVariantName(data)));
@@ -270,12 +263,12 @@ void Node::Add(std::string key, Node value) {
 }
 
 Node& Node::At(std::string_view key) {
-  return std::visit(
+  return *visit_overloaded<Node*>(
       overloaded{
-          [key](MappingData& data) -> Node& {
-            return data.mapping.at(std::string{key});
+          [key](MappingData& data) {
+            return &data.mapping.at(std::string{key});
           },
-          [](auto&& data) -> Node& {
+          [](auto&& data) -> std::nullptr_t {
             throw std::logic_error(fmt::format("Cannot Node::At(key) on a {}",
                                                GetNiceVariantName(data)));
           },
@@ -284,16 +277,16 @@ Node& Node::At(std::string_view key) {
 }
 
 void Node::Remove(std::string_view key) {
-  return std::visit(
+  return visit_overloaded<void>(
       overloaded{
-          [key](MappingData& data) -> void {
+          [key](MappingData& data) {
             auto erased = data.mapping.erase(std::string{key});
             if (!erased) {
               throw std::logic_error(fmt::format(
                   "No such key '{}' during Node::Remove(key)", key));
             }
           },
-          [](auto&& data) -> void {
+          [](auto&& data) {
             throw std::logic_error(fmt::format(
                 "Cannot Node::Remove(key) on a {}", GetNiceVariantName(data)));
           },
