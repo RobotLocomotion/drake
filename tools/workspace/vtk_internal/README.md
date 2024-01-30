@@ -28,6 +28,10 @@ For example, build the lowest-layer module first:
 bazel build @vtk_internal//:vtkCommonCore
 ```
 
+Note that vtkCommonCore in particular has a lot of weird codegen stuff, some of
+which lives in `rules.bzl` (not just `settings.bzl`). If our codegen has fallen
+out of date, consult the upstream code and try to match it back up.
+
 Then you can work your way up:
 
 ```
