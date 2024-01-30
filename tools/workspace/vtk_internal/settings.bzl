@@ -670,7 +670,8 @@ MODULE_SETTINGS = {
             "ThirdParty/token/vtktoken/token/Options.h": """
 #pragma once
 #define token_NAMESPACE vtktoken
-#define token_BEGIN_NAMESPACE namespace vtktoken __attribute__ ((visibility (\"hidden\"))) {
+#define token_BEGIN_NAMESPACE namespace vtktoken \
+  __attribute__ ((visibility (\"hidden\"))) {
 #define token_CLOSE_NAMESPACE }
             """,
         },
