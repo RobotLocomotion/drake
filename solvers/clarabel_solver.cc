@@ -152,7 +152,29 @@ class SettingsConverter {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SettingsConverter);
 
-  explicit SettingsConverter(const SolverOptions& solver_options) {
+  // When `use_nerfed_default_tolerances` is true, we use looser tolerance
+  // defaults to help reduce the possiblity of Clarabel crashing the entire
+  // process due to https://github.com/oxfordcontrol/Clarabel.rs/issues/66.
+  // We should remove this nerf after Clarabel is fixed.
+  SettingsConverter(const SolverOptions& solver_options,
+                    bool use_nerfed_default_tolerances) {
+    // N.B. We must adjust our default values before starting to process the
+    // user's requested `solver_options`.
+    if (use_nerfed_default_tolerances) {
+      drake::log()->debug(
+          "ClarabelSolver is using loosened default tolerances due to the "
+          "presence of SDP and Exponential Cone Constraints. This is done to "
+          "prevent numerical issues from potentially crashing your program "
+          "due to https://github.com/oxfordcontrol/Clarabel.rs/issues/66. "
+          "If you need to solve your program to high precision, consider "
+          "manually setting SolverOptions for 'tol_gap_abs', 'tol_gap_rel', "
+          "and 'tol_feas'. Values set in SolverOptions take prececence over "
+          "the defaults");
+      settings_.tol_gap_abs *= 100.0;
+      settings_.tol_gap_rel *= 100.0;
+      settings_.tol_feas *= 100.0;
+    }
+
     // Propagate Drake's common options into `settings_`.
     settings_.verbose = solver_options.get_print_to_console();
     // TODO(jwnimmer-tri) Handle get_print_file_name().
@@ -436,7 +458,15 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   const Eigen::Map<Eigen::VectorXd> b_vec{b.data(), ssize(b)};
 
-  const SettingsConverter settings_converter(merged_options);
+  // When the program mixes PSD cones with either Exponential or Power cones, we
+  // must loosen the default tolerance to help reduce the possiblity of crashing
+  // the entire process. Since we never add power cones (nor generialized power
+  // cones), the only case we need to guard is PSD mixed with Exponential.
+  const bool use_nerfed_default_tolerances =
+      psd_cone_length.size() && prog.exponential_cone_constraints().size();
+
+  const SettingsConverter settings_converter(merged_options,
+                                             use_nerfed_default_tolerances);
   clarabel::DefaultSettings<double> settings = settings_converter.settings();
 
   clarabel::DefaultSolver<double> solver(P, q_vec, A, b_vec, cones, settings);

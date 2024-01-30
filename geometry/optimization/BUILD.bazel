@@ -503,13 +503,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
-    args = select({
-        "@platforms//os:osx": [
-            # TODO(#20799) This test sometimes panics when run with OpenBLAS.
-            "--gtest_filter=-SceneGraphTester.MultipleBoxes",
-        ],
-        "//conditions:default": [],
-    }),
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
