@@ -9,7 +9,6 @@
 #include <variant>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"

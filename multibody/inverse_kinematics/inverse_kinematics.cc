@@ -7,7 +7,6 @@
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
-#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -195,19 +194,6 @@ solvers::Binding<solvers::Cost> InverseKinematics::AddAngleBetweenVectorsCost(
       &plant_, frameA, na_A, frameB, nb_B, c, get_mutable_context());
   return prog_->AddCost(cost, q_);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-solvers::Binding<solvers::Constraint>
-InverseKinematics::AddMinimumDistanceConstraint(
-    double minimum_distance, double influence_distance_offset) {
-  auto constraint =
-      std::shared_ptr<MinimumDistanceConstraint>(new MinimumDistanceConstraint(
-          &plant_, minimum_distance, get_mutable_context(), {},
-          influence_distance_offset));
-  return prog_->AddConstraint(constraint, q_);
-}
-#pragma GCC diagnostic pop
 
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddMinimumDistanceLowerBoundConstraint(

@@ -356,8 +356,8 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
                std::runtime_error);
 }
 
-// Tests that the default DoPublish is invoked when no other handler is
-// registered in DoCalcNextUpdateTime.
+// Tests that default publishing is invoked when no other handler is registered
+// in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscretePublish) {
   context_->SetTime(5.0);
   auto event_info = system_.AllocateCompositeEventCollection();

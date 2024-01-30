@@ -6,7 +6,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/system_visitor.h"
 

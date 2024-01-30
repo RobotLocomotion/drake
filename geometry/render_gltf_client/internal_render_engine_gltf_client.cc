@@ -15,7 +15,6 @@
 #include <vtkMatrix4x4.h>      // vtkCommonMath
 #include <vtkVersionMacros.h>  // vtkCommonCore
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"

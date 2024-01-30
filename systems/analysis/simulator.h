@@ -540,8 +540,7 @@ class Simulator {
   /// Specifically, that means the System::Publish() event dispatcher will be
   /// invoked on each subsystem of the System and passed the current Context
   /// and a forced-publish Event. If a subsystem has declared a forced-publish
-  /// event handler, that will be called. Otherwise, nothing will happen unless
-  /// the DoPublish() dispatcher has been overridden.
+  /// event handler, that will be called. Otherwise, nothing will happen.
   ///
   /// Enabling this option does not cause a forced-publish to be triggered at
   /// initialization; if you want that you should also call

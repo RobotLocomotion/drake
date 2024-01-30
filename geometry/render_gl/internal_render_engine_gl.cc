@@ -9,7 +9,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"

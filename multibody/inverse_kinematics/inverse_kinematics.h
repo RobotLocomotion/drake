@@ -281,37 +281,6 @@ class InverseKinematics {
       const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double c);
 
-  // TODO(hongkai.dai): remove this documentation.
-  /**
-   * Adds the constraint that the pairwise distance between objects should be no
-   * smaller than `minimum_distance`. We consider the distance between pairs
-   * of
-   * 1. Anchored (static) object and a dynamic object.
-   * 2. A dynamic object and another dynamic object, if one is not the parent
-   * link of the other.
-   * @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
-   * distance between any candidate pair of geometries.
-   * @param influence_distance_offset The difference (in meters) between the
-   * influence distance, d_influence, and the minimum distance, dₘᵢₙ. This value
-   * must be finite and strictly positive, as it is used to scale the signed
-   * distances between pairs of geometries. Smaller values may improve
-   * performance, as fewer pairs of geometries need to be considered in each
-   * constraint evaluation. @default 1 meter
-   * @see MinimumDistanceConstraint for more details on the constraint
-   * formulation.
-   * @pre The MultibodyPlant passed to the constructor of `this` has registered
-   * its geometry with a SceneGraph.
-   * @pre 0 < `influence_distance_offset` < ∞
-   */
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Use AddMinimumDistanceLowerBoundConstraint() instead. The "
-                   "default value for influence_distance_offset has *changed*. "
-                   "It changes from 1 m to 0.01 m. If you're relying on the "
-                   "1 m default value, make sure to pass that value explicitly "
-                   "when calling AddMinimumDistanceLowerBoundConstraint().")
-  solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
-      double minimum_distance, double influence_distance_offset = 1);
-
   /**
    * Adds the constraint that the pairwise distance between objects should be no
    * smaller than `bound`. We consider the distance between

@@ -10,7 +10,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/volume_mesh.h"
