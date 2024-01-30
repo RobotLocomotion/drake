@@ -148,7 +148,7 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
-    const DeformableVolumeMesh<double>* const mesh_ptr =
+    const DeformableVolumeMeshWithBvh<double>* const mesh_ptr =
         &start.deformable_mesh();
 
     // Test move constructor.

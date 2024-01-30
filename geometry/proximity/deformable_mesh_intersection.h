@@ -39,7 +39,7 @@ namespace internal {
  @pre deformable_contact != nullptr. */
 void AddDeformableRigidContactSurface(
     const VolumeMeshFieldLinear<double, double>& deformable_sdf,
-    const DeformableVolumeMesh<double>& deformable_mesh,
+    const DeformableVolumeMeshWithBvh<double>& deformable_mesh,
     GeometryId deformable_id, GeometryId rigid_id,
     const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,

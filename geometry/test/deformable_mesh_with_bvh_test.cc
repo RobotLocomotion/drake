@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
+#include "drake/geometry/deformable_mesh_with_bvh.h"
 
 #include <limits>
 #include <utility>
@@ -13,7 +13,8 @@ namespace geometry {
 namespace internal {
 namespace {
 
-/* In testing the move/copy semantics:
+/* We test a particular instantiation of the DeformableMeshWithBvh on
+VolumeMesh. In testing the move/copy semantics:
 
 1. For copy semantics, we want to confirm that the deformation mechanism is
    wired up correctly. So, after copying, we'll confirm the meshes match, but
@@ -33,9 +34,9 @@ efficacy of the assignment.
 This implicitly tests the UpdateVertexPositions() method over and over again; so
 there is no dedicated test for that method. */
 template <typename T>
-class DeformableVolumeMeshTest : public ::testing::Test {
+class DeformableMeshWithBvhTest : public ::testing::Test {
  public:
-  DeformableVolumeMeshTest() : ::testing::Test(), mesh_(MakeBox()) {}
+  DeformableMeshWithBvhTest() : ::testing::Test(), mesh_(MakeBox()) {}
 
   /* Reports if the mesh coordinates match the arbitrary q-values to which we
    will deform the mesh. We're *assuming* that q is correctly sized (i.e.,
@@ -69,17 +70,17 @@ class DeformableVolumeMeshTest : public ::testing::Test {
   }
 
  protected:
-  DeformableVolumeMesh<T> mesh_;
+  DeformableVolumeMeshWithBvh<T> mesh_;
 };
 
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
-TYPED_TEST_SUITE(DeformableVolumeMeshTest, ScalarTypes);
+TYPED_TEST_SUITE(DeformableMeshWithBvhTest, ScalarTypes);
 
 /* Generically poke around the mesh and bvh to make sure things are wired up
  correctly.
    - the mesh is a copy of the input mesh.
    - the bvh bounds it as expected. */
-TYPED_TEST(DeformableVolumeMeshTest, Construction) {
+TYPED_TEST(DeformableMeshWithBvhTest, Construction) {
   using T = TypeParam;
 
   /* The test class constructs the deformable mesh; invocation is implicit in
@@ -97,10 +98,10 @@ TYPED_TEST(DeformableVolumeMeshTest, Construction) {
   EXPECT_TRUE(CompareMatrices(bvh.root_node().bv().upper(), half_size));
 }
 
-TYPED_TEST(DeformableVolumeMeshTest, CopyConstructor) {
+TYPED_TEST(DeformableMeshWithBvhTest, CopyConstructor) {
   using T = TypeParam;
 
-  DeformableVolumeMesh<T> copy(this->mesh_);
+  DeformableVolumeMeshWithBvh<T> copy(this->mesh_);
 
   /* The copy's members are different *instances*, but equal values to the
    source. */
@@ -122,13 +123,13 @@ TYPED_TEST(DeformableVolumeMeshTest, CopyConstructor) {
   EXPECT_TRUE(copy.bvh().Equal(scaled_bvh));
 }
 
-TYPED_TEST(DeformableVolumeMeshTest, MoveConstructor) {
+TYPED_TEST(DeformableMeshWithBvhTest, MoveConstructor) {
   using T = TypeParam;
   /* Construct a reference copy -- assumes the copy constructor works (see the
    CopyConstructor test). */
-  const DeformableVolumeMesh<T> ref(this->mesh_);
+  const DeformableVolumeMeshWithBvh<T> ref(this->mesh_);
 
-  DeformableVolumeMesh<T> moved(std::move(this->mesh_));
+  DeformableVolumeMeshWithBvh<T> moved(std::move(this->mesh_));
 
   /* The targets's members are different *instances*, but equal values to the
    reference. The source mesh is left in a state such that the moved mesh is
@@ -151,10 +152,10 @@ TYPED_TEST(DeformableVolumeMeshTest, MoveConstructor) {
   EXPECT_TRUE(moved.bvh().Equal(scaled_bvh));
 }
 
-TYPED_TEST(DeformableVolumeMeshTest, CopyAssignment) {
+TYPED_TEST(DeformableMeshWithBvhTest, CopyAssignment) {
   using T = TypeParam;
-  DeformableVolumeMesh<T> dut(this->MakeBox(2.0));
-  const DeformableVolumeMesh<T>& small = this->mesh_;
+  DeformableVolumeMeshWithBvh<T> dut(this->MakeBox(2.0));
+  const DeformableVolumeMeshWithBvh<T>& small = this->mesh_;
 
   /* Confirm that the dut mesh doesn't start equal to the small mesh. */
   ASSERT_FALSE(dut.mesh().Equal(small.mesh()));
@@ -182,20 +183,20 @@ TYPED_TEST(DeformableVolumeMeshTest, CopyAssignment) {
   EXPECT_TRUE(dut.bvh().Equal(scaled_bvh));
 }
 
-TYPED_TEST(DeformableVolumeMeshTest, MoveAssignment) {
+TYPED_TEST(DeformableMeshWithBvhTest, MoveAssignment) {
   using T = TypeParam;
   /* With move *assignment*, we need a deformable mesh with an initial value
    such that we can recognize successful reassignment. So, we create a mesh
    that is "big" (compared to the "small" source mesh) and then move the small
    mesh onto the big mesh. */
-  DeformableVolumeMesh<T> dut(this->MakeBox(2.0));
+  DeformableVolumeMeshWithBvh<T> dut(this->MakeBox(2.0));
 
   /* Construct a reference copy -- assumes the copy constructor works (see the
    CopyConstructor test). */
-  const DeformableVolumeMesh<T> small_ref(this->mesh_);
+  const DeformableVolumeMeshWithBvh<T> small_ref(this->mesh_);
 
   /* An alias for the "small" source deformable mesh. */
-  DeformableVolumeMesh<T>& small = this->mesh_;
+  DeformableVolumeMeshWithBvh<T>& small = this->mesh_;
 
   /* Confirm that the dut mesh doesn't start equal to the small mesh. */
   ASSERT_FALSE(dut.mesh().Equal(small.mesh()));

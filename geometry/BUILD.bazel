@@ -20,6 +20,8 @@ drake_cc_package_library(
     deps = [
         ":collision_filter_declaration",
         ":collision_filter_manager",
+        ":deformable_mesh",
+        ":deformable_mesh_with_bvh",
         ":drake_visualizer",
         ":drake_visualizer_params",
         ":geometry_frame",
@@ -110,6 +112,26 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_set",
         "//geometry/proximity:collision_filter",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_mesh",
+    srcs = ["deformable_mesh.cc"],
+    hdrs = ["deformable_mesh.h"],
+    deps = [
+        "//geometry/proximity:mesh_deformer",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_mesh_with_bvh",
+    srcs = ["deformable_mesh_with_bvh.cc"],
+    hdrs = ["deformable_mesh_with_bvh.h"],
+    deps = [
+        ":deformable_mesh",
+        "//geometry/proximity:bvh",
+        "//geometry/proximity:bvh_updater",
     ],
 )
 
@@ -721,6 +743,24 @@ drake_cc_googletest(
         ":collision_filter_manager",
         ":scene_graph",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_mesh_test",
+    deps = [
+        ":deformable_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_mesh_with_bvh_test",
+    deps = [
+        ":deformable_mesh_with_bvh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
     ],
 )
 
