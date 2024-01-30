@@ -163,7 +163,7 @@ void AddShape(const Shape& shape, const Vector3d& p_WS,
               std::variant<Rgba, std::string> diffuse, RenderEngine* engine) {
   PerceptionProperties material;
   material.AddProperty("label", "id", render::RenderLabel::kDontCare);
-  std::visit<void>(  // BR
+  visit_overloaded<void>(  // BR
       overloaded{[&material](const Rgba& rgba) {
                    material.AddProperty("phong", "diffuse", rgba);
                  },

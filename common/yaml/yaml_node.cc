@@ -55,7 +55,7 @@ Node Node::MakeNull() {
 }
 
 NodeType Node::GetType() const {
-  return std::visit<NodeType>(  // BR
+  return visit_overloaded<NodeType>(  // BR
       overloaded{
           [](const ScalarData&) {
             return NodeType::kScalar;
@@ -130,7 +130,7 @@ bool operator==(const Node::MappingData& a, const Node::MappingData& b) {
 }
 
 std::string_view Node::GetTag() const {
-  return std::visit<std::string_view>(  // BR
+  return visit_overloaded<std::string_view>(  // BR
       overloaded{
           [](const std::string& tag) {
             return std::string_view{tag};
@@ -181,7 +181,7 @@ const std::optional<Node::Mark>& Node::GetMark() const {
 }
 
 const std::string& Node::GetScalar() const {
-  return *std::visit<const std::string*>(
+  return *visit_overloaded<const std::string*>(
       overloaded{
           [](const ScalarData& data) {
             return &data.scalar;
@@ -195,7 +195,7 @@ const std::string& Node::GetScalar() const {
 }
 
 const std::vector<Node>& Node::GetSequence() const {
-  return *std::visit<const std::vector<Node>*>(
+  return *visit_overloaded<const std::vector<Node>*>(
       overloaded{
           [](const SequenceData& data) {
             return &data.sequence;
@@ -209,7 +209,7 @@ const std::vector<Node>& Node::GetSequence() const {
 }
 
 void Node::Add(Node value) {
-  return std::visit<void>(
+  return visit_overloaded<void>(
       overloaded{
           [&value](SequenceData& data) {
             data.sequence.push_back(std::move(value));
@@ -223,7 +223,7 @@ void Node::Add(Node value) {
 }
 
 const std::map<std::string, Node>& Node::GetMapping() const {
-  return *std::visit<const std::map<std::string, Node>*>(
+  return *visit_overloaded<const std::map<std::string, Node>*>(
       overloaded{
           [](const MappingData& data) {
             return &data.mapping;
@@ -237,7 +237,7 @@ const std::map<std::string, Node>& Node::GetMapping() const {
 }
 
 void Node::Add(std::string key, Node value) {
-  return std::visit<void>(
+  return visit_overloaded<void>(
       overloaded{
           [&key, &value](MappingData& data) {
             const auto result =
@@ -263,7 +263,7 @@ void Node::Add(std::string key, Node value) {
 }
 
 Node& Node::At(std::string_view key) {
-  return *std::visit<Node*>(
+  return *visit_overloaded<Node*>(
       overloaded{
           [key](MappingData& data) {
             return &data.mapping.at(std::string{key});
@@ -277,7 +277,7 @@ Node& Node::At(std::string_view key) {
 }
 
 void Node::Remove(std::string_view key) {
-  return std::visit<void>(
+  return visit_overloaded<void>(
       overloaded{
           [key](MappingData& data) {
             auto erased = data.mapping.erase(std::string{key});
