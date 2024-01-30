@@ -195,9 +195,9 @@ MODULE_SETTINGS = {
     },
     "VTK::CommonDataModel": {
         "visibility": ["//visibility:public"],
-        "srcs_glob_exclude": [
-            "**/*MooreSuperCursor*",
-            "**/*VonNeumannSuperCursor*",
+        "included_cxxs": [
+            "Common/DataModel/vtkHyperTreeGridNonOrientedMooreSuperCursorData.inl",
+            "Common/DataModel/vtkHyperTreeGridNonOrientedVonNeumannSuperCursorData.inl",
         ],
     },
     "VTK::CommonExecutionModel": {
