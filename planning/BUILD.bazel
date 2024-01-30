@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":collision_checker_context",
         ":collision_checker_params",
         ":distance_and_interpolation_provider",
+        ":iris_from_clique_cover",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
@@ -223,7 +224,7 @@ drake_cc_library(
         "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//planning/graph_algorithms:max_clique_solver_base",
         ":scene_graph_collision_checker",
-        ":visibility_graph"
+        ":visibility_graph",
     ],
 )
 
@@ -374,4 +375,5 @@ drake_cc_googletest(
         "//systems/framework:diagram_builder",
     ],
 )
+
 add_lint_tests()
