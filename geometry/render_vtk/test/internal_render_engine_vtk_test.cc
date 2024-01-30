@@ -28,7 +28,9 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_io.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
+#include "drake/visualization/colorize_depth_image.h"
 
 /* Note: enabling this causes failures with two tests. Try running as:
 
@@ -78,6 +80,7 @@ using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;
+using render::DepthRange;
 using render::DepthRenderCamera;
 using render::LightParameter;
 using render::RenderCameraCore;
@@ -92,10 +95,13 @@ using systems::sensors::Color;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageGrey8U;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
+using visualization::ColorizeDepthImage;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -996,6 +1002,93 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
         renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
+}
+
+// There have been circumstances in which a glTF model, when rendered in depth
+// or label images, displays the wrong transform. This examines the alignment
+// of a glTF file in three images. The "wrong" transform entailed compounded
+// transforms -- extra scale, transform, and rotation. So, we make sure they're
+// all non-identity so we can detect if any of those quantities lead to a
+// different appearance.
+TEST_F(RenderEngineVtkTest, GltfColorVsDepth) {
+  // Position the pyramid at some arbitrary point in space with a small spin
+  // around its vertical axis (the scale is applied while registering).
+  const RigidTransformd X_WP{RotationMatrixd::MakeZRotation(M_PI / 6),
+                             Vector3d(1, -2, 3)};
+  // Offset the camera from the pyramid in the Wx direction, looking in the -Wx
+  // direction (with +Wz up).
+  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2, 0, M_PI / 2));
+  const RigidTransformd X_WC(R_WC, X_WP.translation() + Vector3d(3.5, 0, 0));
+  Init(X_WC);
+
+  // Write test outputs so we can inspect the images in case of failure.
+  auto log_image = [](const auto& image, std::string_view name) {
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::filesystem::path out_dir(dir);
+      ImageIo{}.Save(image, out_dir / fmt::format("{}_test.png", name));
+    }
+  };
+
+  PerceptionProperties material;
+  // Pick a label that will be easily discernible in the saved image.
+  const RenderLabel label(255 * 15);
+  material.AddProperty("label", "id", label);
+  const GeometryId id = GeometryId::get_new_id();
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  renderer_->RegisterVisual(id, Mesh(filename, 0.5), material, X_WP,
+                            false /* needs update */);
+  const int size = 64;
+  ImageRgba8U color_image(size, size);
+  const ColorRenderCamera color_camera(
+      {"unused", {size, size, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
+  renderer_->RenderColorImage(color_camera, &color_image);
+  log_image(color_image, "GltfColorVsDepth_color");
+
+  ImageDepth32F depth32_image(size, size);
+  // Simple depth range -- just make sure near and far encloses the pyramid.
+  const DepthRenderCamera depth_camera(color_camera.core(), {0.1, 10});
+  renderer_->RenderDepthImage(depth_camera, &depth32_image);
+  {
+    ColorizeDepthImage<double> colorizer;
+    ImageRgba8U color_depth(size, size);
+    colorizer.Calc(depth32_image, &color_depth);
+    log_image(color_depth, "GltfColorVsDepth_depth");
+  }
+
+  ImageLabel16I label_image(size, size);
+  renderer_->RenderLabelImage(color_camera, &label_image);
+  log_image(label_image, "GltfColorVsDepth_label");
+
+  // Everywhere the depth is finite, we should have the expected label value and
+  // a color that is *not* the background.
+  // Likewise, everywhere the label is the expected label, we should have a
+  // finite depth and non-background color.
+  // However, a non-background color does not imply finite depth nor expected
+  // label because of anti-aliasing between the pyramid and the background.
+  bool gltf_visible = false;
+  const RgbaColor bg_color(kBgColor, 255);
+  for (int r = 0; r < color_image.height(); ++r) {
+    for (int c = 0; c < color_image.width(); ++c) {
+      // Depth implies color and label.
+      if (*depth32_image.at(c, r) < std::numeric_limits<double>::infinity()) {
+        const RgbaColor color(color_image.at(c, r));
+        ASSERT_NE(color, bg_color);
+        ASSERT_EQ(RenderLabel(*label_image.at(c, r)), label);
+        gltf_visible = true;
+      }
+      // Label implies color and depth.
+      if (*label_image.at(c, r) == label) {
+        const RgbaColor color(color_image.at(c, r));
+        ASSERT_NE(color, bg_color);
+        ASSERT_NE(*depth32_image.at(c, r),
+                  std::numeric_limits<double>::infinity());
+        gltf_visible = true;
+      }
+    }
+  }
+  // The depth image wasn't all infinite values.
+  ASSERT_TRUE(gltf_visible);
 }
 
 // A simple regression test to make sure that we are supporting all of the
