@@ -1094,7 +1094,6 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
                   .count(),
               N / 10, kTol);
 }
-
 // Test the case where the sample point is outside the region, but the max
 // threshold can be smaller than the min threshold. (This was a bug uncovered
 // by hammering on this code from IRIS).
@@ -1140,7 +1139,33 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
   EXPECT_GT(num_throws, 0);
   EXPECT_GT(num_success, 0);
 }
+// Test that the argument mixing_steps is working by sampling three points: A
+// with 5 mixing steps starting from the Chebyshev center, B starting from the
+// same random seed as A, but with 2 mixing steps, and C starting from B with 2
+// mixing steps. We expect A==C but A!=B.
+GTEST_TEST(HPolyhedronTest, UniformSampleTest3) {
+  Matrix<double, 4, 2> D;
+  Vector4d e;
+  // clang-format off
+  D << -2, -1,  // 2x + y ≥ 4
+        2,  1,  // 2x + y ≤ 6
+       -1,  2,  // x - 2y ≥ 2
+        1, -2;  // x - 2y ≤ 8
+  e << -4, 6, -2, 8;
+  // clang-format on
+  HPolyhedron H(D, e);
 
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  Vector2d A = H.UniformSample(&generator, 5);
+  RandomGenerator generator2(1234);
+  Vector2d B = H.UniformSample(&generator2, 2);
+  Vector2d C = H.UniformSample(&generator2, B, 3);
+  const double kTol = 1e-7;
+
+  EXPECT_TRUE(CompareMatrices(A, C, kTol));
+  EXPECT_FALSE(CompareMatrices(A, B, kTol));
+}
 GTEST_TEST(HPolyhedronTest, Serialize) {
   const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
   const std::string yaml = yaml::SaveYamlString(H);

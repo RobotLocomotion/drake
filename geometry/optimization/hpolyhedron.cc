@@ -387,8 +387,9 @@ VectorXd HPolyhedron::UniformSample(
     RandomGenerator* generator,
     const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
     const int mixing_steps) const {
-  std::normal_distribution<double> gaussian;
+  DRAKE_THROW_UNLESS(mixing_steps >= 1);
 
+  std::normal_distribution<double> gaussian;
   VectorXd direction(ambient_dimension());
   VectorXd current_sample = previous_sample;
 
