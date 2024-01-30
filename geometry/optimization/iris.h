@@ -228,7 +228,7 @@ run-time of the algorithm. The same goes for
 `options.num_additional_constraints_infeasible_samples`.
 
 @throws std::exception if the sample configuration in @p context is infeasible.
-@throws std::exception if termination_func is invalid on the domian. See
+@throws std::exception if termination_func is invalid on the domain. See
 IrisOptions.termination_func for more details.
 @ingroup geometry_optimization
 */
@@ -239,7 +239,7 @@ HPolyhedron IrisInConfigurationSpace(
 
 /** Modifies the @p iris_options to facilitate finding a region that contains
 the edge between x_1 and x_2. It sets @p iris_options.starting_ellipse to be a
-hyperellipsoid that contains the edge and is centered at the midpoint of the
+hyperellipsoid that contains the edge, is centered at the midpoint of the
 edge and extends in other directions by epsilon. It also sets @p
 iris_options.termination_func such that IRIS iterations terminate when the edge
 is no longer contained in the IRIS region with tolerance tol.

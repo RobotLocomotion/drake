@@ -327,8 +327,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
 }
 
 /* Test if the starting ellipse is far away from the seed point, and the seed
-point exits the polytope before the computations are over,
-then an error will be thrown. */
+point exits the polytope before the computations are over, then an error will be
+thrown. */
 GTEST_TEST(IrisInConfigurationSpaceTest, BadEllipseAndSample) {
   IrisOptions options;
   ConvexSets obstacles;

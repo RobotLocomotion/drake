@@ -124,7 +124,7 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
   if (length < kTolerance) {
     throw std::runtime_error(fmt::format(
         "AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same "
-        "point (distance: {} < tolerance: {}.",
+        "point (distance: {} < tolerance: {}).",
         length, kTolerance));
   }
   const int dim = x_1.size();

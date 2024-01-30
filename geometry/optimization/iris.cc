@@ -53,13 +53,11 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
-  if (options.termination_func) {
-    if (options.termination_func(P)) {
-      throw std::runtime_error(
-          "Iris: The options.termination_func() returned true for the initial "
-          "region (defined by the domain argument).  Please check the "
-          "implementation of your termination_func.");
-    }
+  if (options.termination_func && options.termination_func(P)) {
+    throw std::runtime_error(
+        "Iris: The options.termination_func() returned true for the initial "
+        "region (defined by the domain argument).  Please check the "
+        "implementation of your termination_func.");
   }
 
   if (options.bounding_region) {
@@ -119,11 +117,10 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       break;
     }
 
-    if (options.termination_func) {
-      if (options.termination_func(HPolyhedron(A.topRows(num_constraints),
-                                               b.head(num_constraints)))) {
-        break;
-      }
+    if (options.termination_func &&
+        options.termination_func(
+            HPolyhedron(A.topRows(num_constraints), b.head(num_constraints)))) {
+      break;
     }
 
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
@@ -455,6 +452,19 @@ struct GeometryPairWithDistance {
   }
 };
 
+bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
+                    const std::string& error_msg, const std::string& info_msg,
+                    const bool is_initial_region) {
+  if (options.termination_func && options.termination_func(P)) {
+    if (is_initial_region) {
+      throw std::runtime_error(error_msg);
+    }
+    log()->info(info_msg);
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
@@ -615,14 +625,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     b.head(num_initial_constraints));
   }
 
-  if (options.termination_func) {
-    if (options.termination_func(P)) {
-      throw std::runtime_error(
-          "IrisInConfigurationSpace: The options.termination_func() returned "
-          "true for the initial region (defined by the linear constraints in "
-          "prog_with_additional_constraints and bounding_region arguments).  "
-          "Please check the implementation of your termination_func.");
-    }
+  if (options.termination_func && options.termination_func(P)) {
+    throw std::runtime_error(
+        "IrisInConfigurationSpace: The options.termination_func() returned "
+        "true for the initial region (defined by the linear constraints in "
+        "prog_with_additional_constraints and bounding_region arguments).  "
+        "Please check the implementation of your termination_func.");
   }
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
@@ -695,16 +703,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
               return P;
             }
           }
-          if (options.termination_func) {
-            const bool termination = options.termination_func(HPolyhedron(
-                A.topRows(num_constraints), b.head(num_constraints)));
-            if (termination) {
-              if (iteration == 0) {
-                throw std::runtime_error(termination_error_msg);
-              }
-              log()->info(termination_msg);
-              return P;
-            }
+          if (CheckTerminate(options,
+                             HPolyhedron(A.topRows(num_constraints),
+                                         b.head(num_constraints)),
+                             termination_error_msg, termination_msg,
+                             iteration == 0)) {
+            return P;
           }
         }
       }
@@ -784,16 +788,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
               return P;
             }
           }
-          if (options.termination_func) {
-            const bool termination =
-                options.termination_func(HPolyhedron(P_candidate));
-            if (termination) {
-              if (iteration == 0) {
-                throw std::runtime_error(termination_error_msg);
-              }
-              log()->info(termination_msg);
-              return P;
-            }
+          if (CheckTerminate(options, P_candidate, termination_error_msg,
+                             termination_msg, iteration == 0)) {
+            return P;
           }
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
@@ -877,16 +874,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     return P;
                   }
                 }
-                if (options.termination_func) {
-                  const bool termination =
-                      options.termination_func(HPolyhedron(P_candidate));
-                  if (termination) {
-                    if (iteration == 0) {
-                      throw std::runtime_error(termination_error_msg);
-                    }
-                    log()->info(termination_msg);
-                    return P;
-                  }
+                if (CheckTerminate(options, P_candidate, termination_error_msg,
+                                   termination_msg, iteration == 0)) {
+                  return P;
                 }
                 counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
                                                      b.head(num_constraints));
