@@ -35,6 +35,7 @@ drake_cc_library(
     hdrs = ["yaml_node.h"],
     deps = [
         "//common:essential",
+        "//common:overloaded",
     ],
 )
 
@@ -62,6 +63,7 @@ drake_cc_library(
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
+        "//common:overloaded",
         "//common:unused",
         "@yaml_cpp_internal//:yaml_cpp",
     ],

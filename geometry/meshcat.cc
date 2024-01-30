@@ -414,7 +414,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     }
 
     // Set the scale.
-    std::visit(
+    std::visit<void>(
         overloaded{[](std::monostate) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
