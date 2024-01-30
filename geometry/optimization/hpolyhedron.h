@@ -194,12 +194,12 @@ class HPolyhedron final : public ConvexSet {
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
       const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
-      const int mixing_steps = 10) const;
+      int mixing_steps = 10) const;
 
   /** Variant of UniformSample that uses the ChebyshevCenter() as the
   previous_sample as a feasible point to start the Markov chain sampling. */
   Eigen::VectorXd UniformSample(RandomGenerator* generator,
-                                const int mixing_steps = 10) const;
+                                int mixing_steps = 10) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
