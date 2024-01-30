@@ -444,7 +444,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.IrisOptions;
     py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
-    iris_options.def(py::init<>(), cls_doc.ctor.doc)
+    iris_options.def(py::init<>(), cls_doc.doc)
         .def_readwrite("require_sample_point_is_contained",
             &IrisOptions::require_sample_point_is_contained,
             cls_doc.require_sample_point_is_contained.doc)
