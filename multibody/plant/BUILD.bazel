@@ -17,7 +17,6 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":constraint_specs",
         ":contact_jacobians",
-        ":contact_pair_kinematics",
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
@@ -70,6 +69,9 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//geometry:geometry_ids",
+        "//math:geometric_transform",
+        "//multibody/contact_solvers:matrix_block",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -127,7 +129,6 @@ drake_cc_library(
     deps = [
         ":constraint_specs",
         ":contact_jacobians",
-        ":contact_pair_kinematics",
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
@@ -180,23 +181,6 @@ drake_cc_library(
         ":multibody_plant_core",
         "//common:essential",
         "//geometry:geometry_ids",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_pair_kinematics",
-    srcs = [
-        "contact_pair_kinematics.cc",
-    ],
-    hdrs = [
-        "contact_pair_kinematics.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//math:geometric_transform",
-        "//multibody/contact_solvers:contact_configuration",
-        "//multibody/contact_solvers:matrix_block",
-        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 

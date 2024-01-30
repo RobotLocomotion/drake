@@ -31,12 +31,6 @@ class CompliantContactManagerTester {
     return manager.EvalContactSurfaces(context);
   }
 
-  static const DiscreteContactData<DiscreteContactPair<double>>&
-  EvalDiscreteContactPairs(const CompliantContactManager<double>& manager,
-                           const drake::systems::Context<double>& context) {
-    return manager.EvalDiscreteContactPairs(context);
-  }
-
   // N.B. Actuation input is always included, regardless of solver choice.
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
@@ -46,12 +40,6 @@ class CompliantContactManagerTester {
     const bool include_pd_controlled_input = true;
     manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
                                  include_pd_controlled_input, forces);
-  }
-
-  static DiscreteContactData<ContactPairKinematics<double>>
-  CalcContactKinematics(const CompliantContactManager<double>& manager,
-                        const drake::systems::Context<double>& context) {
-    return manager.EvalContactKinematics(context);
   }
 
   static const SapDriver<double>& sap_driver(
@@ -71,18 +59,16 @@ class CompliantContactManagerTester {
   // Jacobian matrix.
   static Eigen::MatrixXd CalcDenseJacobianMatrixInContactFrame(
       const CompliantContactManager<double>& manager,
-      const DiscreteContactData<ContactPairKinematics<double>>&
-          contact_kinematics) {
-    const int nc = contact_kinematics.size();
+      const DiscreteContactData<DiscreteContactPair<double>>& contact_pairs) {
+    const int nc = contact_pairs.size();
     Eigen::MatrixXd J_AcBc_C(3 * nc, manager.plant().num_velocities());
     J_AcBc_C.setZero();
     const auto& topology = CompliantContactManagerTester::topology(manager);
     for (int i = 0; i < nc; ++i) {
       const int row_offset = 3 * i;
-      const ContactPairKinematics<double>& pair_kinematics =
-          contact_kinematics[i];
-      for (const ContactPairKinematics<double>::JacobianTreeBlock&
-               tree_jacobian : pair_kinematics.jacobian) {
+      const DiscreteContactPair<double>& contact_pair = contact_pairs[i];
+      for (const DiscreteContactPair<double>::JacobianTreeBlock& tree_jacobian :
+           contact_pair.jacobian) {
         // If added to the Jacobian, it must have a valid index.
         EXPECT_TRUE(tree_jacobian.tree.is_valid());
         const int col_offset =

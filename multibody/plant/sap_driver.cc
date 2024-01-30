@@ -36,6 +36,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::ExtractNormal;
 using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::FixedConstraintKinematics;
+using drake::multibody::contact_solvers::internal::MakeContactConfiguration;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::SapBallConstraint;
 using drake::multibody::contact_solvers::internal::SapConstraint;
@@ -213,21 +214,16 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // Quick no-op exit.
   if (num_contacts == 0) return std::vector<RotationMatrix<T>>();
 
-  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
-      manager().EvalContactKinematics(context);
-
   std::vector<RotationMatrix<T>> R_WC;
   R_WC.reserve(num_contacts);
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
-    const auto& discrete_pair = contact_pairs[icontact];
+    const auto& contact_pair = contact_pairs[icontact];
 
-    const T stiffness = discrete_pair.stiffness;
-    const T dissipation_time_scale = discrete_pair.dissipation_time_scale;
-    const T damping = discrete_pair.damping;
-    const T friction = discrete_pair.friction_coefficient;
-    const ContactConfiguration<T>& configuration =
-        contact_kinematics[icontact].configuration;
-    const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
+    const T stiffness = contact_pair.stiffness;
+    const T dissipation_time_scale = contact_pair.dissipation_time_scale;
+    const T damping = contact_pair.damping;
+    const T friction = contact_pair.friction_coefficient;
+    const auto& jacobian_blocks = contact_pair.jacobian;
 
     // Stiffness equal to infinity is used to indicate a rigid contact. Since
     // SAP is inherently compliant, we must use the "near rigid regime"
@@ -260,7 +256,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
           model, friction, stiffness, damping, vs, sigma};
     };
 
-    R_WC.push_back(configuration.R_WC);
+    R_WC.push_back(contact_pair.R_WC);
 
     if (jacobian_blocks.size() == 1) {
       SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
@@ -268,10 +264,11 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
       if (plant().get_discrete_contact_approximation() ==
           DiscreteContactApproximation::kSap) {
         problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-            std::move(configuration), std::move(J), make_sap_parameters()));
+            MakeContactConfiguration(contact_pair), std::move(J),
+            make_sap_parameters()));
       } else {
         problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
-            std::move(configuration), std::move(J),
+            MakeContactConfiguration(contact_pair), std::move(J),
             make_hunt_crossley_parameters()));
       }
     } else {
@@ -281,10 +278,11 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
       if (plant().get_discrete_contact_approximation() ==
           DiscreteContactApproximation::kSap) {
         problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-            std::move(configuration), std::move(J), make_sap_parameters()));
+            MakeContactConfiguration(contact_pair), std::move(J),
+            make_sap_parameters()));
       } else {
         problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
-            std::move(configuration), std::move(J),
+            MakeContactConfiguration(contact_pair), std::move(J),
             make_hunt_crossley_parameters()));
       }
     }
@@ -1014,9 +1012,9 @@ void SapDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
-  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
-  const int num_contacts = discrete_pairs.size();
+  const int num_contacts = contact_pairs.size();
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   PackContactSolverResults(context, *contact_problem_cache.sap_problem,

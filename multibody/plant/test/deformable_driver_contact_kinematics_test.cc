@@ -64,7 +64,7 @@ DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
   return body_id;
 }
 
-/* Test fixture to test DeformableDriver::AppendContactKinematics and
+/* Test fixture to test DeformableDriver::AppendDiscreteContactPairs and
  DeformableDriver::AppendDeformableRigidFixedConstraintKinematics.
  In particular, this fixture sets up a deformable octahedron centered at world
  origin with 8 elements, 7 vertices, and 21 dofs. To test contact kinematics,
@@ -198,10 +198,10 @@ class DeformableDriverContactKinematicsTest
     /* Each discrete contact pair should create a contact kinematics pair. */
     const Context<double>& plant_context =
         plant_->GetMyContextFromRoot(*context_);
-    DiscreteContactData<ContactPairKinematics<double>> contact_kinematics;
-    driver_->AppendContactKinematics(plant_context, &contact_kinematics);
+    DiscreteContactData<DiscreteContactPair<double>> contact_pairs;
+    driver_->AppendDiscreteContactPairs(plant_context, &contact_pairs);
     const int num_contact_points = GetNumContactPoints(plant_context);
-    ASSERT_EQ(contact_kinematics.size(), num_contact_points);
+    ASSERT_EQ(contact_pairs.size(), num_contact_points);
 
     /* The contact surfaces are parallel to the xy-plane in frame F and the
      contact normal points from the deformable body into the rigid body. */
@@ -214,19 +214,16 @@ class DeformableDriverContactKinematicsTest
     const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
     const Vector3d expected_v_DpRp_C(0, 0, -1);
     for (int i = 0; i < num_contact_points; ++i) {
-      const ContactPairKinematics<double>& contact_kinematic =
-          contact_kinematics[i];
-      const contact_solvers::internal::ContactConfiguration<double>&
-          configuration = contact_kinematic.configuration;
-      EXPECT_LT(configuration.phi, 0.0);
-      EXPECT_TRUE(configuration.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
+      const DiscreteContactPair<double>& contact_pair = contact_pairs[i];
+      EXPECT_LT(contact_pair.phi0, 0.0);
+      EXPECT_TRUE(contact_pair.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
       if (dynamic_rigid_body) {
-        ASSERT_EQ(contact_kinematic.jacobian.size(), 2);
+        ASSERT_EQ(contact_pair.jacobian.size(), 2);
         const Matrix3X<double> J0 =
-            contact_kinematic.jacobian[0].J.MakeDenseMatrix();
+            contact_pair.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
         const Matrix3X<double> J1 =
-            contact_kinematic.jacobian[1].J.MakeDenseMatrix();
+            contact_pair.jacobian[1].J.MakeDenseMatrix();
         const Vector3d v_WR_F(0, 0, 0.5);
         const Vector3d v_WR = X_WF_.rotation() * v_WR_F;
         const Vector3d w_WR(0, 0, 0);
@@ -236,20 +233,20 @@ class DeformableDriverContactKinematicsTest
         EXPECT_TRUE(
             CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, 1e-14));
       } else {
-        ASSERT_EQ(contact_kinematic.jacobian.size(), 1);
+        ASSERT_EQ(contact_pair.jacobian.size(), 1);
         const Matrix3X<double> J0 =
-            contact_kinematic.jacobian[0].J.MakeDenseMatrix();
+            contact_pair.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
         EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
       }
 
       // Object A is always the deformable body and B is the rigid body.
-      EXPECT_EQ(BodyIndex(configuration.objectB), rigid_body_index_);
+      EXPECT_EQ(BodyIndex(contact_pair.object_B), rigid_body_index_);
       const DeformableBodyIndex body_index =
           model_->GetBodyIndex(deformable_body_id_);
       // We expect deformable bodies to follow after rigid bodies.
-      const int objectA = body_index + plant_->num_bodies();
-      EXPECT_EQ(configuration.objectA, objectA);
+      const int object_A = body_index + plant_->num_bodies();
+      EXPECT_EQ(contact_pair.object_A, object_A);
     }
   }
 
@@ -452,23 +449,21 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   auto context = diagram->CreateDefaultContext();
 
   const Context<double>& plant_context = plant.GetMyContextFromRoot(*context);
-  DiscreteContactData<ContactPairKinematics<double>> contact_kinematics;
-  driver->AppendContactKinematics(plant_context, &contact_kinematics);
+  DiscreteContactData<DiscreteContactPair<double>> contact_pairs;
+  driver->AppendDiscreteContactPairs(plant_context, &contact_pairs);
   /* The set of contact points is not empty. */
-  EXPECT_GT(contact_kinematics.size(), 0);
+  EXPECT_GT(contact_pairs.size(), 0);
   const PartialPermutation& vertex_permutation =
       DeformableDriverTest::EvalVertexPermutation(
           *driver, plant_context, model->GetGeometryId(body_id));
   /* We know that the octahedron created as the coarsest sphere indexes the
    bottom vertex as 6 (see RegisterDeformableOctahedron). */
   const int bottom_vertex_permuted_index = vertex_permutation.permuted_index(6);
-  for (int i = 0; i < static_cast<int>(contact_kinematics.size()); ++i) {
-    const ContactPairKinematics<double>& contact_kinematic =
-        contact_kinematics[i];
+  for (int i = 0; i < static_cast<int>(contact_pairs.size()); ++i) {
+    const DiscreteContactPair<double>& contact_pair = contact_pairs[i];
     /* The first jacobian entry corresponds to the contribution of the
      deformable clique. */
-    const Matrix3X<double>& J =
-        contact_kinematic.jacobian[0].J.MakeDenseMatrix();
+    const Matrix3X<double>& J = contact_pair.jacobian[0].J.MakeDenseMatrix();
     /* The jacobian isn't completely zero. */
     EXPECT_GT(J.norm(), 0.01);
     /* But the columns corresponding to the vertex under bc are set to zero. */

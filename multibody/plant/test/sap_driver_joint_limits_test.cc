@@ -442,8 +442,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
                                            context_.get());
 
   const DiscreteContactData<DiscreteContactPair<double>>& discrete_pairs =
-      CompliantContactManagerTester::EvalDiscreteContactPairs(*manager_,
-                                                              *context_);
+      manager_->EvalDiscreteContactPairs(*context_);
   const int num_contacts = discrete_pairs.size();
   // We are assuming there is no contact. Assert this.
   ASSERT_EQ(num_contacts, 0);
@@ -582,8 +581,7 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
 
   // We are assuming there is no contact. Assert this.
   const DiscreteContactData<DiscreteContactPair<double>>& discrete_pairs =
-      CompliantContactManagerTester::EvalDiscreteContactPairs(*manager_,
-                                                              *context_);
+      manager_->EvalDiscreteContactPairs(*context_);
   const int num_contacts = discrete_pairs.size();
   ASSERT_EQ(num_contacts, 0);
 
