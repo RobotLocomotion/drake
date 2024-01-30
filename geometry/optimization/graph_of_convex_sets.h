@@ -624,6 +624,16 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult& result,
       double tolerance = 1e-3) const;
 
+  /**
+   TODO(bernhardpg): Write some doc
+   */
+  std::pair<std::vector<std::vector<const Edge*>>,
+            std::vector<solvers::MathematicalProgramResult>>
+  GetRandomizedSolutionPath(
+      const Vertex& source, const Vertex& target,
+      const solvers::MathematicalProgramResult& result,
+      const GraphOfConvexSetsOptions& specified_options) const;
+
   /** The non-convexity in a GCS problem comes from the binary variables (phi)
   associated with the edges being active or inactive in the solution. If those
   binary variables are fixed, then the problem is convex -- this is a so-called
