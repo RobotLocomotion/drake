@@ -127,7 +127,21 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc)
-        .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc);
+        .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc)
+        .def("CalcVolumeViaSampling", &ConvexSet::CalcVolumeViaSampling,
+            py::arg("generator"), py::arg("desired_rel_accuracy") = 1e-2,
+            py::arg("max_num_samples") = 1e4,
+            cls_doc.CalcVolumeViaSampling.doc);
+  }
+  // SampledVolume
+  {
+    py::class_<SampledVolume>(m, "SampledVolume", doc.SampledVolume.doc)
+        .def_readwrite(
+            "volume", &SampledVolume::volume, doc.SampledVolume.volume.doc)
+        .def_readwrite("rel_accuracy", &SampledVolume::rel_accuracy,
+            doc.SampledVolume.rel_accuracy.doc)
+        .def_readwrite("num_samples", &SampledVolume::num_samples,
+            doc.SampledVolume.num_samples.doc);
   }
   // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.
