@@ -204,14 +204,14 @@ void MeshcatVisualizer<T>::SetObjects(
       if constexpr (std::is_same_v<T, double>) {
         if (params_.show_hydroelastic) {
           auto maybe_mesh = inspector.maybe_get_hydroelastic_mesh(geom_id);
-          std::visit(
-              overloaded{[](std::monostate) -> void {},
-                         [&](const TriangleSurfaceMesh<double>* mesh) -> void {
+          visit_overloaded<void>(
+              overloaded{[](std::monostate) {},
+                         [&](const TriangleSurfaceMesh<double>* mesh) {
                            DRAKE_DEMAND(mesh != nullptr);
                            meshcat_->SetObject(path, *mesh, rgba);
                            used_hydroelastic = true;
                          },
-                         [&](const VolumeMesh<double>* mesh) -> void {
+                         [&](const VolumeMesh<double>* mesh) {
                            DRAKE_DEMAND(mesh != nullptr);
                            meshcat_->SetObject(
                                path, ConvertVolumeToSurfaceMesh(*mesh), rgba);
