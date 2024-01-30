@@ -22,8 +22,6 @@ namespace planning {
  * the clique.
  */
 struct IrisFromCliqueCoverOptions {
-  IrisFromCliqueCoverOptions() = default;
-
   /**
    * The options used on internal calls to IRIS.
    */
@@ -75,7 +73,7 @@ struct IrisFromCliqueCoverOptions {
 
   /**
    * The number of threads used to build sets. It is recommended to set this no
-   * larger than 1 - the hardware concurrency of the current machine. If this
+   * larger than the hardware concurrency - 1 of the current machine. If this
    * number is larger than the implicit_context_parallelism of the collision
    * checker used in IrisInConfigurationSpaceFromCliqueCover then it will be
    * overridden to be no larger than this implicit context parallelism.
@@ -96,12 +94,6 @@ struct IrisFromCliqueCoverOptions {
   double point_in_set_tol{1e-6};
 
   /**
-   * The random generator used as the source of randomness across the whole
-   * run of the method.
-   */
-  RandomGenerator generator{};
-
-  /**
    * The amount of parallelism to use when constructing the visibility graph. If
    * this number is larger than the implicit_context_parallelism of the
    * collision checker used in IrisInConfigurationSpaceFromCliqueCover then it
@@ -112,17 +104,21 @@ struct IrisFromCliqueCoverOptions {
 
 /**
  * Cover the configuration space in IRIS regions using the Visibility Clique
- * Cover Algorithm.
+ * Cover Algorithm as described in
+ *
+ * P. Werner, A. Amice, T. Marcucci, D. Rus, R. Tedrake "Approximating Robot
+ * Configuration Spaces with few Convex Sets using Clique Covers of Visibility
+ * Graphs" In 2024 IEEE Internation Conference on Robotics and Automation.
+ * https://arxiv.org/abs/2310.02875
+ *
  * @param checker The collision checker containing the plant and it's associated
  * scene_graph
- * @param generator The source of randomness across the entire run of the
- * algorithm.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
-    const SceneGraphCollisionChecker& checker,
-    const IrisFromCliqueCoverOptions& options, RandomGenerator* generator,
+    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
+    RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets);
 
 }  // namespace planning

@@ -92,8 +92,7 @@ class AsyncQueue {
   bool still_filling_ = true;
 };
 
-// Sets all the value of the rows and columns in mat to false for which
-// mask(i) is true.
+// Sets mat(i, :) and mat(:, i) to false if mask(i) is true.
 void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
                              SparseMatrix<bool>* mat) {
   for (int j = 0; j < mat->outerSize(); ++j) {
@@ -111,12 +110,8 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
 // Computes the largest clique in the graph represented by @p adjacency_matrix
 // and adds this largest clique to @p computed_cliques. This clique is then
 // removed from the adjacency matrix, and a new maximal clique is computed.
-// This process is completed until no clique of size @p minimum_clique can be
-// found.
-// At this point, set the value of @p clique_cover_computed to true.
-//
-// This method is intended to be used only in
-// IrisInConfigurationSpaceFromCliqueCover.
+// This process continue until no clique of size @p minimum_clique can be
+// found. At this point, set the value of @p clique_cover_computed to true.
 //
 // Note:
 // 1. Access to @p computed_cliques must be locked by @p computed_cliques_lock
@@ -125,9 +120,6 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
 //
 // 2. The adjacency matrix will be mutated by this method and be mostly useless
 // after this method is called.
-//
-// @p clique_cover_computed must be set to true on the exit of this method,
-// otherwise IrisInConfigurationSpaceFromCliqueCover will loop forever.
 void ComputeGreedyTruncatedCliqueCover(
     const int minimum_clique_size,
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
@@ -145,8 +137,9 @@ void ComputeGreedyTruncatedCliqueCover(
       computed_cliques->push(max_clique);
       ++num_cliques;
       MakeFalseRowsAndColumns(max_clique, adjacency_matrix);
-      log()->info("Clique added to queue. There are {}/{} left to cover.",
-                  adjacency_matrix->nonZeros() / 2, adjacency_matrix->cols());
+      log()->info(
+          "Clique added to queue. There are {}/{} points left to cover.",
+          adjacency_matrix->nonZeros() / 2, adjacency_matrix->cols());
     }
   }
   computed_cliques->done_filling();
@@ -158,11 +151,8 @@ void ComputeGreedyTruncatedCliqueCover(
 
 // Pulls cliques from @p computed_cliques and constructs Iris regions by seeding
 // Iris with the minimum circumscribed ellipse.
-//
-// Note that the argument IrisOptions is intentionally passed by value, so that
-// multiple threads do not write to the same options creating a race condition.
 std::queue<HPolyhedron> IrisWorker(
-    const SceneGraphCollisionChecker& checker,
+    const CollisionChecker& checker,
     const Eigen::Ref<const Eigen::MatrixXd>& points, const int builder_id,
     const IrisFromCliqueCoverOptions& options,
     AsyncQueue<VectorX<bool>>* computed_cliques) {
@@ -237,23 +227,21 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 // points uniformly at random in `domain` and checking whether the point lies in
 // one of the sets in `sets`.
 //
-// The `generator` is used as the source of randomness
-// for drawing points from domain.
+// The `generator` is used as the source of randomness for drawing points from
+// domain.
 //
-// The sampled points are checked for inclusion
-// in `sets` in parallel, with the degree of parallelism determined by
-// `parallelism`.
+// The sampled points are checked for inclusion  in `sets` in parallel, with the
+// degree of parallelism determined by `parallelism`.
 //
-// The value `initial_polytope_sample` is used to initialize the
-// distribution over the domain. The value of the final sample is written to
-// this vector so that it the MCMC sampling can continue. See @HPolyhedron for
-// details.
+// The value of `last_polytope_sample` is used to initialize the distribution
+// over the domain. The value of the final sample is written to this vector so
+// that the MCMC sampling can continue. See @HPolyhedron for details.
 double ApproximatelyComputeCoverage(const HPolyhedron& domain,
                                     const std::vector<HPolyhedron>& sets,
                                     const int num_samples,
                                     const double point_in_set_tol,
-                                    RandomGenerator* generator,
                                     const Parallelism& parallelism,
+                                    RandomGenerator* generator,
                                     Eigen::VectorXd* last_polytope_sample) {
   double fraction_covered = 0.0;
   if (sets.empty()) {
@@ -289,9 +277,11 @@ double ApproximatelyComputeCoverage(const HPolyhedron& domain,
 }  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
-    const SceneGraphCollisionChecker& checker,
-    const IrisFromCliqueCoverOptions& options, RandomGenerator* generator,
-    std::vector<HPolyhedron>* sets) {
+    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
+    RandomGenerator* generator, std::vector<HPolyhedron>* sets) {
+  DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
+  DRAKE_THROW_UNLESS(options.iteration_limit > 0);
+
   const HPolyhedron& domain = options.iris_options.bounding_region.value_or(
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
                            checker.plant().GetPositionUpperLimits()));
@@ -308,10 +298,12 @@ void IrisInConfigurationSpaceFromCliqueCover(
       std::min(options.visibility_graph_parallelism.num_threads(),
                checker.num_allocated_contexts())};
 
+  int num_iterations = 0;
   while (!ApproximatelyComputeCoverage(
-      domain, *sets, options.num_points_per_coverage_check,
-      options.point_in_set_tol, generator, options.num_coverage_checkers,
-      &last_polytope_sample)) {
+             domain, *sets, options.num_points_per_coverage_check,
+             options.point_in_set_tol, options.num_coverage_checkers, generator,
+             &last_polytope_sample) &&
+         num_iterations < options.iteration_limit) {
     Eigen::MatrixXd points(domain.ambient_dimension(),
                            num_points_per_visibility_round);
     for (int i = 0; i < points.cols(); ++i) {
@@ -359,13 +351,19 @@ void IrisInConfigurationSpaceFromCliqueCover(
     // The clique cover and the convex sets are computed asynchronously. Wait
     // for all the threads to join and then add the new sets to built sets.
     clique_cover_thread.join();
+    int num_new_sets{0};
     for (auto& new_set_queue_future : build_sets_future) {
       std::queue<HPolyhedron> new_set_queue{new_set_queue_future.get()};
       while (!new_set_queue.empty()) {
         sets->push_back(std::move(new_set_queue.front()));
         new_set_queue.pop();
+        ++num_new_sets;
       }
     }
+    if (num_new_sets == 0) {
+      num_points_per_visibility_round *= 2;
+    }
+    ++num_iterations;
   }
 }
 }  // namespace planning
