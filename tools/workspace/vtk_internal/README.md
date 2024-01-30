@@ -6,10 +6,16 @@ git commit in `repository.bzl`.  Change that to the new commit, along with
 the matching change to `sha256 = ...`. (To get the new sha256, set it to
 `None` or `"0" * 64` and run a build; the required new sha256 will be printed.)
 
-After changing the commit, the best next step is to get a handle on which
-libraries (aka "modules") are required vs which should be excluded. Generally
-we want to try to build as few modules as possible. Ignore configure_file
-complaints until you're sure the list of modules is happy.
+After changing the commit, next you might find that patch files have conflicts.
+Check if any of the patches have already been upstreamed, and if so then drop
+those from Drake. If there are still patch conflicts, you can either try to fix
+them right away, or else comment out the patch in `repository.bzl` and circle
+back to it later.
+
+Then, the best next step is to get a handle on which libraries (aka "modules")
+are required vs which should be excluded. Generally we want to try to build as
+few modules as possible. Ignore configure_file complaints until you're sure the
+list of modules is happy.
 
 In rules.bzl there is a constant `VERBOSE = False`. Try changing that to `True`
 when debugging / developing the module dependencies.
