@@ -14,7 +14,6 @@
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
-#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/deformable_driver.h"
@@ -199,13 +198,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    The returned vector is indexed by JointActuatorIndex. */
   const VectorX<T>& EvalActuation(const systems::Context<T>& context) const;
 
-  /* Evaluates sparse kinematics information for each contact pair at
-   the given configuration stored in `context`. */
-  const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
-      const systems::Context<T>& context) const;
-
-  /* Given the configuration stored in `context`, evalutates all discrete
-   contact pairs, including point, hydroelastic, and deformable contact. */
+  /* Evaluates discrete contact pairs from all types of contact (point contact,
+   hydroelastics, and deformable contact) at the given configuration stored in
+   `context`. */
   const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
@@ -403,13 +398,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
      this cache entry requests its value before any discrete update has
      happened. Evaluating this cache entry when caching is disabled throws an
      exception. */
+    systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
     systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
-    systems::CacheIndex contact_kinematics;
-    systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex actuation;
   };
@@ -459,38 +453,26 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcActuation(const systems::Context<T>& context,
                      VectorX<T>* forces) const;
 
-  /* Calc version of EvalContactKinematics(). */
-  void CalcContactKinematics(
-      const systems::Context<T>& context,
-      DiscreteContactData<ContactPairKinematics<T>>* result) const;
-
-  /* Helper function for CalcContactKinematics() that computes the contact pair
-   kinematics for point contact and hydroelastic contact respectively,
-   depending on the value of `type`. */
-  void AppendContactKinematics(
-      const systems::Context<T>& context,
-      const std::vector<DiscreteContactPair<T>>& contact_pairs,
-      DiscreteContactType type,
-      DiscreteContactData<ContactPairKinematics<T>>* contact_kinematics) const;
-
   /* Calc version of EvalDiscreteContactPairs(). */
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
-  /* Given the configuration stored in `context`, this method appends discrete
-   pairs corresponding to point contact into `pairs`.
-   @pre pairs != nullptr. */
-  void AppendDiscreteContactPairsForPointContact(
-      const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
+  int CalcNumberOfPointContacts(const systems::Context<T>& context) const;
 
-  /* Given the configuration stored in `context`, this method appends discrete
-   pairs corresponding to hydroelastic contact into `pairs`.
-   @pre pairs != nullptr. */
+  int CalcNumberOfHydroContactPoints(const systems::Context<T>& context) const;
+
+  /* Helper function for CalcDiscreteContactPairs() that computes all contact
+   pairs from hydroelastic contact, if any. */
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
+      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const;
+
+  /* Helper function for CalcDiscreteContactPairs() that computes all contact
+   pairs from point contact, if any. */
+  void AppendDiscreteContactPairsForPointContact(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const;
 
   /* Helper method to fill in contact_results with point contact information
    for the given state stored in `context`.
@@ -533,12 +515,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
 
-/* N.B. These geometry queries are not supported when T = symbolic::Expression
- and therefore their implementation throws. */
-template <>
-void DiscreteUpdateManager<symbolic::Expression>::CalcDiscreteContactPairs(
-    const drake::systems::Context<symbolic::Expression>&,
-    DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
+/* N.B. These geometry queries are not supported when T =
+ symbolic::Expression */
 template <>
 void DiscreteUpdateManager<symbolic::Expression>::
     AppendDiscreteContactPairsForHydroelasticContact(

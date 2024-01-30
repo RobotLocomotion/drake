@@ -24,7 +24,6 @@ using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
-using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::internal::DiscreteContactPair;

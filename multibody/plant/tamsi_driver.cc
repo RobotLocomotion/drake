@@ -29,10 +29,10 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 template <typename T>
 internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
     const systems::Context<T>& context) const {
-  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
-      manager().EvalContactKinematics(context);
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
+      manager().EvalDiscreteContactPairs(context);
 
-  const int nc = contact_kinematics.size();
+  const int nc = contact_pairs.size();
   const int nv = manager().plant().num_velocities();
   internal::ContactJacobians<T> contact_jacobians;
   contact_jacobians.Jc = MatrixX<T>::Zero(3 * nc, nv);
@@ -42,9 +42,9 @@ internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
   const auto& topology = tree_topology();
   for (int i = 0; i < nc; ++i) {
     const int row_offset = 3 * i;
-    const ContactPairKinematics<T>& pair_kinematics = contact_kinematics[i];
-    for (const typename ContactPairKinematics<T>::JacobianTreeBlock&
-             tree_jacobian : pair_kinematics.jacobian) {
+    const DiscreteContactPair<T>& contact_pair = contact_pairs[i];
+    for (const typename DiscreteContactPair<T>::JacobianTreeBlock&
+             tree_jacobian : contact_pair.jacobian) {
       const int col_offset =
           topology.tree_velocities_start_in_v(tree_jacobian.tree);
       const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);

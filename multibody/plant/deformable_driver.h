@@ -12,7 +12,6 @@
 #include "drake/multibody/contact_solvers/schur_complement.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_solver.h"
-#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
@@ -140,19 +139,12 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   void AppendLinearDynamicsMatrix(const systems::Context<T>& context,
                                   std::vector<MatrixX<T>>* A) const;
 
-  /* Given the configuration stored in `context`, appends discrete pairs in
-   which one of the body in contact is deformable to the given `pairs`.
-   @pre pairs != nullptr. */
+  /* Appends discrete contact pairs where at least one of the bodies in contact
+   is deformable.
+   @pre result != nullptr. */
   void AppendDiscreteContactPairs(
       const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
-
-  /* Appends the contact kinematics information for each contact pair where at
-   least one of the body in contact is deformable.
-   @pre result != nullptr. */
-  void AppendContactKinematics(
-      const systems::Context<T>& context,
-      DiscreteContactData<ContactPairKinematics<T>>* result) const;
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
   /* Appends the constraint kinematics information for each deformable rigid
    fixed constraint.

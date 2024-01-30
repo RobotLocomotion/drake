@@ -146,18 +146,6 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
     return CompliantContactManagerTester::sap_driver(*manager_);
   }
 
-  DiscreteContactData<ContactPairKinematics<double>> CalcContactKinematics(
-      const Context<double>& context) const {
-    return CompliantContactManagerTester::CalcContactKinematics(*manager_,
-                                                                context);
-  }
-
-  const DiscreteContactData<DiscreteContactPair<double>>&
-  EvalDiscreteContactPairs(const Context<double>& context) const {
-    return CompliantContactManagerTester::EvalDiscreteContactPairs(*manager_,
-                                                                   context);
-  }
-
   std::unique_ptr<systems::Diagram<double>> diagram_;
   MultibodyPlant<double>* plant_{nullptr};
   const RigidBody<double>* bodyA_{nullptr};
@@ -190,30 +178,26 @@ TEST_P(TwoBodiesTest, ConfirmContactConstraintProperties) {
   EXPECT_EQ(problem.num_constraint_equations(), 3);
 
   // Verify it is only a single point contact.
-  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
-      EvalDiscreteContactPairs(*plant_context_);
-  EXPECT_EQ(pairs.size(), 1);
-  EXPECT_EQ(pairs.num_point_contacts(), 1);
-  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
-      CalcContactKinematics(*plant_context_);
-  EXPECT_EQ(contact_kinematics.size(), 1);
-  EXPECT_EQ(contact_kinematics.num_point_contacts(), 1);
+  const DiscreteContactData<DiscreteContactPair<double>>& contact_pairs =
+      manager_->EvalDiscreteContactPairs(*plant_context_);
+  EXPECT_EQ(contact_pairs.size(), 1);
+  EXPECT_EQ(contact_pairs.num_point_contacts(), 1);
 
-  const DiscreteContactPair<double>& discrete_pair = pairs[0];
-  const ContactPairKinematics<double>& pair_kinematics = contact_kinematics[0];
+  const DiscreteContactPair<double>& discrete_pair = contact_pairs[0];
   const SapConstraint<double>& constraint = problem.get_constraint(0);
 
   // Check Jacobian and number of cliques.
   ASSERT_EQ(constraint.num_cliques(), 2);  // Two floating bodies.
-  EXPECT_EQ(constraint.first_clique(), pair_kinematics.jacobian[0].tree);
+  EXPECT_EQ(constraint.first_clique(), discrete_pair.jacobian[0].tree);
   EXPECT_EQ(constraint.first_clique_jacobian().MakeDenseMatrix(),
-            pair_kinematics.jacobian[0].J.MakeDenseMatrix());
-  EXPECT_EQ(constraint.second_clique(), pair_kinematics.jacobian[1].tree);
+            discrete_pair.jacobian[0].J.MakeDenseMatrix());
+  EXPECT_EQ(constraint.second_clique(), discrete_pair.jacobian[1].tree);
   EXPECT_EQ(constraint.second_clique_jacobian().MakeDenseMatrix(),
-            pair_kinematics.jacobian[1].J.MakeDenseMatrix());
+            discrete_pair.jacobian[1].J.MakeDenseMatrix());
 
-  const ContactConfiguration<double>& expected_configuration =
-      pair_kinematics.configuration;
+  const ContactConfiguration<double> expected_configuration =
+      multibody::contact_solvers::internal::MakeContactConfiguration(
+          discrete_pair);
 
   // Verify constraint type, configuration and its parameters.
   if (GetParam().contact_approximation == DiscreteContactApproximation::kSap) {

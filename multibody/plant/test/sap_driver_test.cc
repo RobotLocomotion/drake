@@ -122,18 +122,6 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   const internal::MultibodyTreeTopology& topology() const {
     return CompliantContactManagerTester::topology(*contact_manager_);
   }
-
-  const DiscreteContactData<DiscreteContactPair<double>>&
-  EvalDiscreteContactPairs(const Context<double>& context) const {
-    return CompliantContactManagerTester::EvalDiscreteContactPairs(
-        *contact_manager_, context);
-  }
-
-  DiscreteContactData<ContactPairKinematics<double>> CalcContactKinematics(
-      const Context<double>& context) const {
-    return CompliantContactManagerTester::CalcContactKinematics(
-        *contact_manager_, context);
-  }
 };
 
 // This test verifies that the SapContactProblem built by the driver is
@@ -146,9 +134,9 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
   const std::vector<drake::math::RotationMatrix<double>>& R_WC =
       problem_cache.R_WC;
 
-  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
-      EvalDiscreteContactPairs(*plant_context_);
-  const int num_contacts = pairs.size();
+  const DiscreteContactData<DiscreteContactPair<double>>& contact_pairs =
+      contact_manager_->EvalDiscreteContactPairs(*plant_context_);
+  const int num_contacts = contact_pairs.size();
 
   // Verify sizes.
   EXPECT_EQ(problem.num_cliques(), topology().num_trees());
@@ -165,25 +153,21 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
   EXPECT_EQ(problem.dynamics_matrix(), A);
 
   // Verify each of the contact constraints.
-  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
-      CalcContactKinematics(*plant_context_);
-  for (int i = 0; i < contact_kinematics.size(); ++i) {
-    const DiscreteContactPair<double>& discrete_pair = pairs[i];
-    const ContactPairKinematics<double>& pair_kinematics =
-        contact_kinematics[i];
+  for (int i = 0; i < contact_pairs.size(); ++i) {
+    const DiscreteContactPair<double>& discrete_pair = contact_pairs[i];
     const auto* constraint =
         dynamic_cast<const SapFrictionConeConstraint<double>*>(
             &problem.get_constraint(i));
     // In this test we do know all constraints are contact constraints.
     ASSERT_NE(constraint, nullptr);
-    EXPECT_EQ(constraint->num_cliques(), pair_kinematics.jacobian.size());
-    EXPECT_EQ(constraint->first_clique(), pair_kinematics.jacobian[0].tree);
+    EXPECT_EQ(constraint->num_cliques(), discrete_pair.jacobian.size());
+    EXPECT_EQ(constraint->first_clique(), discrete_pair.jacobian[0].tree);
     EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
-              pair_kinematics.jacobian[0].J.MakeDenseMatrix());
+              discrete_pair.jacobian[0].J.MakeDenseMatrix());
     if (constraint->num_cliques() == 2) {
-      EXPECT_EQ(constraint->second_clique(), pair_kinematics.jacobian[1].tree);
+      EXPECT_EQ(constraint->second_clique(), discrete_pair.jacobian[1].tree);
       EXPECT_EQ(constraint->second_clique_jacobian().MakeDenseMatrix(),
-                pair_kinematics.jacobian[1].J.MakeDenseMatrix());
+                discrete_pair.jacobian[1].J.MakeDenseMatrix());
     }
     EXPECT_EQ(constraint->parameters().mu, discrete_pair.friction_coefficient);
     EXPECT_EQ(constraint->parameters().stiffness, discrete_pair.stiffness);
@@ -196,13 +180,11 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
     EXPECT_EQ(constraint->parameters().sigma, 1.0e-3);
 
     // Verify contact configuration.
-    const contact_solvers::internal::ContactConfiguration<double>&
-        configuration = pair_kinematics.configuration;
-    EXPECT_EQ(constraint->configuration().objectA, configuration.objectA);
-    EXPECT_EQ(constraint->configuration().objectB, configuration.objectB);
-    EXPECT_EQ(constraint->configuration().p_ApC_W, configuration.p_ApC_W);
-    EXPECT_EQ(constraint->configuration().p_BqC_W, configuration.p_BqC_W);
-    EXPECT_EQ(constraint->configuration().phi, configuration.phi);
+    EXPECT_EQ(constraint->configuration().objectA, discrete_pair.object_A);
+    EXPECT_EQ(constraint->configuration().objectB, discrete_pair.object_B);
+    EXPECT_EQ(constraint->configuration().p_ApC_W, discrete_pair.p_ApC_W);
+    EXPECT_EQ(constraint->configuration().p_BqC_W, discrete_pair.p_BqC_W);
+    EXPECT_EQ(constraint->configuration().phi, discrete_pair.phi0);
     EXPECT_EQ(constraint->configuration().R_WC.matrix(), R_WC[i].matrix());
   }
 }
@@ -305,9 +287,9 @@ TEST_F(SpheresStackTest, PackContactSolverResults) {
 
   // We form an arbitrary set of SAP results consistent with the contact
   // kinematics for the configuration of our model.
-  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
-      CalcContactKinematics(*plant_context_);
-  const int num_contacts = contact_kinematics.size();
+  const DiscreteContactData<DiscreteContactPair<double>> contact_pairs =
+      contact_manager_->EvalDiscreteContactPairs(*plant_context_);
+  const int num_contacts = contact_pairs.size();
   const int nv = plant_->num_velocities();
   SapSolverResults<double> sap_results;
   sap_results.Resize(nv, 3 * num_contacts);
@@ -336,7 +318,7 @@ TEST_F(SpheresStackTest, PackContactSolverResults) {
       CompareMatrices(vc, sap_results.vc, kEps, MatrixCompareType::relative));
   const MatrixXd J_AcBc_C =
       CompliantContactManagerTester::CalcDenseJacobianMatrixInContactFrame(
-          *contact_manager_, contact_kinematics);
+          *contact_manager_, contact_pairs);
   const VectorXd tau_expected =
       J_AcBc_C.transpose() * sap_results.gamma / plant_->time_step();
   EXPECT_TRUE(CompareMatrices(contact_results.tau_contact, tau_expected,
