@@ -195,6 +195,8 @@ def _determine_macos(repository_ctx):
 
 def determine_os(repository_ctx):
     """
+    DO NOT USE THIS IN NEW CODE. We are working to remove this from Drake.
+
     A repository_rule helper function that determines which of the supported
     build environments (OS versions or wheel environments) we should target.
 
