@@ -116,10 +116,10 @@ drake_cc_library(
         "revolute_mobilizer.cc",
         "revolute_spring.cc",
         "rigid_body.cc",
+        "rpy_ball_mobilizer.cc",
+        "rpy_floating_mobilizer.cc",
         "screw_joint.cc",
         "screw_mobilizer.cc",
-        "space_xyz_floating_mobilizer.cc",
-        "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
         "universal_joint.cc",
         "universal_mobilizer.cc",
@@ -162,10 +162,10 @@ drake_cc_library(
         "revolute_mobilizer.h",
         "revolute_spring.h",
         "rigid_body.h",
+        "rpy_ball_mobilizer.h",
+        "rpy_floating_mobilizer.h",
         "screw_joint.h",
         "screw_mobilizer.h",
-        "space_xyz_floating_mobilizer.h",
-        "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
         "universal_joint.h",
         "universal_mobilizer.h",
@@ -499,7 +499,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "space_xyz_mobilizer_test",
+    name = "rpy_ball_mobilizer_test",
     deps = [
         ":mobilizer_tester",
         ":tree",
@@ -509,7 +509,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "space_xyz_floating_mobilizer_test",
+    name = "rpy_floating_mobilizer_test",
     deps = [
         ":mobilizer_tester",
         ":tree",
