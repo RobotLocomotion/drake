@@ -414,13 +414,11 @@ VectorXd HPolyhedron::UniformSample(
     }
     if (std::isinf(theta_max) || std::isinf(theta_min) ||
         theta_max < theta_min) {
-      throw std::invalid_argument(
-          fmt::format("The Hit and Run algorithm failed to find a feasible "
-                      "point in the set. "
-                      "The `previous_sample` must be in the set.\nmax(A * "
-                      "previous_sample - "
-                      "b) = {}",
-                      (A_ * current_sample - b_).maxCoeff()));
+      throw std::invalid_argument(fmt::format(
+          "The Hit and Run algorithm failed to find a feasible point in the "
+          "set. The `previous_sample` must be in the set.\n"
+          "max(A * previous_sample - b) = {}",
+          (A_ * current_sample - b_).maxCoeff()));
     }
     // Now pick θ uniformly from [θ_min, θ_max).
     std::uniform_real_distribution<double> uniform_theta(theta_min, theta_max);
