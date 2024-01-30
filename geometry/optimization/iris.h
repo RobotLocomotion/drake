@@ -36,7 +36,7 @@ struct IrisOptions {
     a->Visit(DRAKE_NVP(random_seed));
   }
 
-  IrisOptions() = default;
+//  IrisOptions() = default;
 
   /** The initial polytope is guaranteed to contain the point if that point is
   collision-free. However, the IRIS alternation objectives do not include (and

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -14,31 +15,19 @@
 
 namespace drake {
 namespace planning {
-using geometry::optimization::ConvexSets;
-using geometry::optimization::HPolyhedron;
-using geometry::optimization::IrisOptions;
-using planning::graph_algorithms::MaxCliqueSolverBase;
-using planning::graph_algorithms::MaxCliqueSolverViaMip;
-
 /**
  * The default configurations for running IRIS when building a convex set from a
  * clique. Currently, it is recommended to only run IRIS for one iteration when
  * building from a clique so as to avoid discarding the information gained from
  * the clique.
  */
-struct DefaultIrisOptionsForIrisRegionFromCliqueBuilder : public IrisOptions {
-  DefaultIrisOptionsForIrisRegionFromCliqueBuilder() : IrisOptions() {
-    iteration_limit = 1;
-  }
-};
-
 struct IrisFromCliqueCoverOptions {
   IrisFromCliqueCoverOptions() = default;
 
   /**
    * The options used on internal calls to IRIS.
    */
-  IrisOptions iris_options{DefaultIrisOptionsForIrisRegionFromCliqueBuilder()};
+  geometry::optimization::IrisOptions iris_options{.iteration_limit = 1};
 
   /**
    * The fraction of the domain that must be covered before we terminate the
@@ -80,8 +69,9 @@ struct IrisFromCliqueCoverOptions {
   /**
    * The max clique solver used.
    */
-  std::unique_ptr<MaxCliqueSolverBase> max_clique_solver{
-      new MaxCliqueSolverViaMip()};
+  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
+      max_clique_solver{
+          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
 
   /**
    * The number of threads used to build sets. It is recommended to set this no
@@ -112,12 +102,12 @@ struct IrisFromCliqueCoverOptions {
   RandomGenerator generator{};
 
   /**
-   * The amount of parallelism to use when constructing the visibility graph. If this
-   * number is larger than the implicit_context_parallelism of the collision
-   * checker used in IrisInConfigurationSpaceFromCliqueCover then it will be
-   * overridden to be no larger than this implicit context parallelism.
+   * The amount of parallelism to use when constructing the visibility graph. If
+   * this number is larger than the implicit_context_parallelism of the
+   * collision checker used in IrisInConfigurationSpaceFromCliqueCover then it
+   * will be overridden to be no larger than this implicit context parallelism.
    */
-   Parallelism visibility_graph_parallelism{Parallelism::Max()};
+  Parallelism visibility_graph_parallelism{Parallelism::Max()};
 };
 
 /**
@@ -133,7 +123,7 @@ struct IrisFromCliqueCoverOptions {
 void IrisInConfigurationSpaceFromCliqueCover(
     const SceneGraphCollisionChecker& checker,
     const IrisFromCliqueCoverOptions& options, RandomGenerator* generator,
-    std::vector<HPolyhedron>* sets);
+    std::vector<geometry::optimization::HPolyhedron>* sets);
 
 }  // namespace planning
 }  // namespace drake

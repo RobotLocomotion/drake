@@ -1,8 +1,9 @@
 #include "drake/planning/iris_from_clique_cover.h"
 
+#include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <future>
-#include <iostream>
 #include <limits>
 #include <mutex>
 #include <queue>
@@ -209,8 +210,7 @@ std::queue<HPolyhedron> IrisWorker(
                             builder_id);
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
     ret.emplace(IrisInConfigurationSpace(
-        checker.plant(), checker.plant_context(builder_id),
-        iris_options));
+        checker.plant(), checker.plant_context(builder_id), iris_options));
     log()->debug("Iris builder thread  {} has constructed a set.", builder_id);
   }
   log()->debug("Iris builder thread {} has completed.", builder_id);
@@ -302,12 +302,11 @@ void IrisInConfigurationSpaceFromCliqueCover(
       std::max(options.minimum_clique_size, checker.plant().num_positions());
   int num_points_per_visibility_round = std::max(
       options.num_points_per_visibility_round, 2 * minimum_clique_size);
-  Parallelism num_builders{
-      std::min(options.num_builders.num_threads(),
-               checker.num_implicit_context_parallelism().num_threads())};
+  Parallelism num_builders{std::min(options.num_builders.num_threads(),
+                                    checker.num_allocated_contexts())};
   Parallelism visibility_graph_parallelism{
       std::min(options.visibility_graph_parallelism.num_threads(),
-               checker.num_implicit_context_parallelism().num_threads())};
+               checker.num_allocated_contexts())};
 
   while (!ApproximatelyComputeCoverage(
       domain, *sets, options.num_points_per_coverage_check,
