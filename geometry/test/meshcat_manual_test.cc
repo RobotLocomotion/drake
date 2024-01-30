@@ -28,11 +28,20 @@ then follow the instructions on your console. */
 
 namespace drake {
 namespace geometry {
+namespace {
 
 using common::MaybePauseForUser;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+
+// Returns an offset pointer inside message that skips over leading newlines.
+const char* ltrim(const char* message) {
+  while (*message == '\n') {
+    ++message;
+  }
+  return message;
+}
 
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
@@ -203,7 +212,7 @@ int do_main() {
     }
   }
 
-  std::cout << R"""(
+  std::cout << ltrim(R"""(
 Open the developer tools of your browser (F12) and within that panel switch to
 the "Console" tab.
 
@@ -217,10 +226,10 @@ ignored.
 
 Caveat: At the moment, you might see Console warnings related to deprecations.
 Ignore those for now; we'll need to circle back and fix them later.
-)""";
+)""");
   MaybePauseForUser();
 
-  std::cout << R"""(
+  std::cout << ltrim(R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a red sphere
@@ -238,7 +247,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - the same purple triangle mesh drawn as a wireframe.
   - the same triangle mesh drawn in multicolor.
   - a blue mesh plot of the function z = y*sin(5*x).
-)""";
+)""");
   MaybePauseForUser();
 
   std::cout << "Calling meshcat.Flush(), which will block until all clients "
@@ -342,6 +351,13 @@ Ignore those for now; we'll need to circle back and fix them later.
 
   std::cout << "- The Cornell box has been replaced by a room with brick walls "
             << "loaded from a jpg.\n";
+  MaybePauseForUser();
+
+  std::cout << ltrim(R"""(
+- Reloading the page should always succeed. Force a complete reload now using
+  Ctrl-Shift-R and confirm you still see same objects, the animation, the brick
+  walls, etc.
+)""");
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap("");
@@ -598,6 +614,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   return 0;
 }
 
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
 

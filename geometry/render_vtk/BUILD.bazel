@@ -181,4 +181,33 @@ drake_cc_googletest(
     ],
 )
 
+# The generated glTF file can be removed when we're no longer testing the glTF
+# parser patch (see :internal_vtk_gltf_parser_patch_test).
+
+genrule(
+    name = "gltf_pyramid_no_color_texture",
+    srcs = ["//geometry/render:test/meshes/fully_textured_pyramid.gltf"],
+    outs = ["test/pyramid_no_color_texture.gltf"],
+    cmd = "sed '/baseColorTexture/,/},/d' $< > $@",
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "patch_test_models",
+    testonly = 1,
+    srcs = [":gltf_pyramid_no_color_texture"],
+)
+
+drake_cc_googletest(
+    name = "internal_vtk_gltf_parser_patch_test",
+    data = [":patch_test_models"],
+    deps = [
+        ":factory",
+        "//common:find_resource",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
 add_lint_tests()

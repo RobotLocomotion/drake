@@ -80,6 +80,14 @@ report anytime, to get the remaining items that need attention.  You can also
 list several externals to try to update at once, although this will complicate
 making changes to those commits if needed.
 
+Finally, crate_universe needs to be updated manually by running
+tools/workspace/crate_universe/upgrade.sh. This may result in a number of files
+in ``tools/workspace/crate_universe/lock`` being added, removed or changed.
+In this case, commit *all* such changes with the commit message
+``[workspace] Upgrade crate_universe to latest``.
+If the update is included with another 'cohort' package, use the message
+``[workspace] Upgrade <COHORT(S)>, crate_universe to latest``.
+
 Each external being upgraded should have exactly one commit that does the
 upgrade, and each commit should either a) only impact exactly one external, or
 b) impact exactly those externals of a cohort which need to be upgraded.  If we

@@ -50,7 +50,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   // The body in this model is not a floating body but is free to rotate. The
   // rotation is not modeled using a quaternion mobilizer (it uses a
-  // SpaceXYZMobilizer).
+  // RpyBallMobilizer).
   EXPECT_FALSE(free_body_plant.body().is_floating());
   EXPECT_FALSE(free_body_plant.body().has_quaternion_dofs());
 

@@ -47,6 +47,7 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
 
   void Deserialize(const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
+    py::gil_scoped_acquire guard;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
     PYBIND11_OVERLOAD_PURE(
@@ -55,6 +56,7 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
 
   void Serialize(const AbstractValue& abstract_value,
       std::vector<uint8_t>* message_bytes) const override {
+    py::gil_scoped_acquire guard;
     auto wrapped = [&]() -> py::bytes {
       // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
       // from copying it.

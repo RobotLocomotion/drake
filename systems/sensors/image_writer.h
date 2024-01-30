@@ -1,6 +1,7 @@
 #pragma once
 
-/** @file Provides utilities for writing images to disk.
+/** @file
+ Provides utilities for writing images to disk.
 
  This file provides two sets of utilities: stand alone methods that can be
  invoked in any context and a System that can be connected into a diagram to

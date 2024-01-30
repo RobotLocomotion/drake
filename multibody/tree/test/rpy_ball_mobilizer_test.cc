@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 #include <gtest/gtest.h>
 
@@ -29,27 +29,27 @@ using systems::Context;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple MBT model containing a space xyz mobilizer.
-class SpaceXYZMobilizerTest :  public MobilizerTester {
+class RpyBallMobilizerTest :  public MobilizerTester {
  public:
   // Creates a simple model consisting of a single body with a space xyz
   // mobilizer connecting it to the world.
   void SetUp() override {
-    mobilizer_ = &AddJointAndFinalize<BallRpyJoint, SpaceXYZMobilizer>(
+    mobilizer_ = &AddJointAndFinalize<BallRpyJoint, RpyBallMobilizer>(
         std::make_unique<BallRpyJoint<double>>("joint0",
             tree().world_body().body_frame(), body_->body_frame()));
   }
 
  protected:
-  const SpaceXYZMobilizer<double>* mobilizer_{nullptr};
+  const RpyBallMobilizer<double>* mobilizer_{nullptr};
 };
 
-TEST_F(SpaceXYZMobilizerTest, CanRotateOrTranslate) {
+TEST_F(RpyBallMobilizerTest, CanRotateOrTranslate) {
   EXPECT_TRUE(mobilizer_->can_rotate());
   EXPECT_FALSE(mobilizer_->can_translate());
 }
 
 // Verifies methods to mutate and access the context.
-TEST_F(SpaceXYZMobilizerTest, StateAccess) {
+TEST_F(RpyBallMobilizerTest, StateAccess) {
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);
   EXPECT_EQ(mobilizer_->get_angles(*context_), rpy_value);
@@ -63,7 +63,7 @@ TEST_F(SpaceXYZMobilizerTest, StateAccess) {
     kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZMobilizerTest, ZeroState) {
+TEST_F(RpyBallMobilizerTest, ZeroState) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);
@@ -79,7 +79,7 @@ TEST_F(SpaceXYZMobilizerTest, ZeroState) {
 
 // For an arbitrary state verify that the computed Nplus(q) matrix is the
 // inverse of N(q).
-TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
+TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   const Vector3d rpy(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy);
 
@@ -106,7 +106,7 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
       kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZMobilizerTest, MapUsesN) {
+TEST_F(RpyBallMobilizerTest, MapUsesN) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);
@@ -122,12 +122,12 @@ TEST_F(SpaceXYZMobilizerTest, MapUsesN) {
   MatrixX<double> N(3, 3);
   mobilizer_->CalcNMatrix(*context_, &N);
 
-  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  // Ensure N(q) is used in q̇ = N(q)⋅v
   EXPECT_TRUE(
       CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZMobilizerTest, MapUsesNplus) {
+TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);
@@ -141,12 +141,12 @@ TEST_F(SpaceXYZMobilizerTest, MapUsesNplus) {
   MatrixX<double> Nplus(3, 3);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  // Ensure N⁺(q) is used in v = N⁺(q)⋅q̇
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZMobilizerTest, SingularityError) {
+TEST_F(RpyBallMobilizerTest, SingularityError) {
   // Set state in singularity
   const Vector3d rpy_value(M_PI / 3, M_PI / 2, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);

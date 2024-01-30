@@ -72,7 +72,7 @@ struct SampledVolume {
 
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
-class ConvexSet : public ShapeReifier {
+class ConvexSet {
  public:
   virtual ~ConvexSet();
 

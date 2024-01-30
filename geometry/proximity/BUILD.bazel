@@ -196,6 +196,7 @@ drake_cc_library(
         ":deformable_mesh_intersection",
         "//common:essential",
         "//geometry:geometry_ids",
+        "//geometry:geometry_instance",
         "//geometry:shape_specification",
         "//geometry/query_results:deformable_contact",
     ],

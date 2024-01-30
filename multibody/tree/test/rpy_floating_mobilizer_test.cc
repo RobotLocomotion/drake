@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/space_xyz_floating_mobilizer.h"
+#include "drake/multibody/tree/rpy_floating_mobilizer.h"
 
 #include <gtest/gtest.h>
 
@@ -10,7 +10,6 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -25,13 +24,13 @@ using math::RotationMatrixd;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple model containing a space xyz floating mobilizer.
-class SpaceXYZFloatingMobilizerTest : public MobilizerTester {
+class RpyFloatingMobilizerTest : public MobilizerTester {
  public:
   // Creates a simple model consisting of a single body with a space xyz
   // floating mobilizer connecting it to the world.
   void SetUp() override {
     mobilizer_ = &AddMobilizerAndFinalize(
-        std::make_unique<SpaceXYZFloatingMobilizer<double>>(
+        std::make_unique<RpyFloatingMobilizer<double>>(
             tree().world_body().body_frame(), body_->body_frame()));
   }
 
@@ -48,22 +47,37 @@ class SpaceXYZFloatingMobilizerTest : public MobilizerTester {
   Vector3d arbitrary_translation() const { return Vector3d(1.0, 2.0, 3.0); }
 
  protected:
-  const SpaceXYZFloatingMobilizer<double>* mobilizer_{nullptr};
+  const RpyFloatingMobilizer<double>* mobilizer_{nullptr};
 };
 
-TEST_F(SpaceXYZFloatingMobilizerTest, CanRotateOrTranslate) {
+TEST_F(RpyFloatingMobilizerTest, CanRotateOrTranslate) {
   EXPECT_TRUE(mobilizer_->can_rotate());
   EXPECT_TRUE(mobilizer_->can_translate());
 }
 
 // Verifies methods to mutate and access the context.
-TEST_F(SpaceXYZFloatingMobilizerTest, BasicIntrospection) {
+TEST_F(RpyFloatingMobilizerTest, BasicIntrospection) {
   EXPECT_TRUE(mobilizer_->is_floating());
   EXPECT_FALSE(mobilizer_->has_quaternion_dofs());
 }
 
+TEST_F(RpyFloatingMobilizerTest, NameSuffix) {
+  EXPECT_EQ(mobilizer_->position_suffix(0), "qx");
+  EXPECT_EQ(mobilizer_->position_suffix(1), "qy");
+  EXPECT_EQ(mobilizer_->position_suffix(2), "qz");
+  EXPECT_EQ(mobilizer_->position_suffix(3), "x");
+  EXPECT_EQ(mobilizer_->position_suffix(4), "y");
+  EXPECT_EQ(mobilizer_->position_suffix(5), "z");
+  EXPECT_EQ(mobilizer_->velocity_suffix(0), "wx");
+  EXPECT_EQ(mobilizer_->velocity_suffix(1), "wy");
+  EXPECT_EQ(mobilizer_->velocity_suffix(2), "wz");
+  EXPECT_EQ(mobilizer_->velocity_suffix(3), "vx");
+  EXPECT_EQ(mobilizer_->velocity_suffix(4), "vy");
+  EXPECT_EQ(mobilizer_->velocity_suffix(5), "vz");
+}
+
 // Verifies methods to mutate and access the context.
-TEST_F(SpaceXYZFloatingMobilizerTest, ConfigurationAccessAndMutation) {
+TEST_F(RpyFloatingMobilizerTest, ConfigurationAccessAndMutation) {
   SetArbitraryNonZeroState();
   EXPECT_EQ(mobilizer_->get_angles(*context_), arbitrary_rpy().vector());
   EXPECT_EQ(mobilizer_->get_translation(*context_), arbitrary_translation());
@@ -72,7 +86,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, ConfigurationAccessAndMutation) {
   EXPECT_EQ(mobilizer_->get_generalized_positions(*context_), q);
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, SetFromRigidTransform) {
+TEST_F(RpyFloatingMobilizerTest, SetFromRigidTransform) {
   SetArbitraryNonZeroState();
   const RigidTransformd X_WB(arbitrary_rpy(), arbitrary_translation());
   mobilizer_->SetFromRigidTransform(context_.get(), X_WB);
@@ -82,7 +96,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, SetFromRigidTransform) {
   EXPECT_EQ(mobilizer_->get_translation(*context_), arbitrary_translation());
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, VelocityAccessAndMutation) {
+TEST_F(RpyFloatingMobilizerTest, VelocityAccessAndMutation) {
   const Vector3d w_FM(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angular_velocity(context_.get(), w_FM);
   EXPECT_EQ(mobilizer_->get_angular_velocity(*context_), w_FM);
@@ -95,7 +109,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, VelocityAccessAndMutation) {
   EXPECT_EQ(mobilizer_->get_generalized_velocities(*context_), v);
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, ZeroState) {
+TEST_F(RpyFloatingMobilizerTest, ZeroState) {
   SetArbitraryNonZeroState();
 
   // The non-zero state is not the identity transform as expected.
@@ -110,7 +124,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, ZeroState) {
 }
 
 // Verify the correctness of across-mobilizer quantities; X_FM, V_FM, A_FM.
-TEST_F(SpaceXYZFloatingMobilizerTest, CalcAcrossMobilizer) {
+TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizer) {
   SetArbitraryNonZeroState();
 
   const RigidTransformd X_FM_expected(arbitrary_rpy(), arbitrary_translation());
@@ -146,7 +160,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, CalcAcrossMobilizer) {
                               MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, MapVelocityToQdotAndBack) {
+TEST_F(RpyFloatingMobilizerTest, MapVelocityToQdotAndBack) {
   EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
 
   SetArbitraryNonZeroState();
@@ -161,7 +175,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, MapVelocityToQdotAndBack) {
 
 // For an arbitrary state verify that the computed Nplus(q) matrix is the
 // inverse of N(q).
-TEST_F(SpaceXYZFloatingMobilizerTest, KinematicMapping) {
+TEST_F(RpyFloatingMobilizerTest, KinematicMapping) {
   RollPitchYawd rpy(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy.vector());
 
@@ -186,7 +200,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, KinematicMapping) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesN) {
+TEST_F(RpyFloatingMobilizerTest, MapUsesN) {
   SetArbitraryNonZeroState();
   const Vector6<double> v = (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
   Vector6<double> qdot;
@@ -196,12 +210,12 @@ TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesN) {
   Matrix6<double> N;
   mobilizer_->CalcNMatrix(*context_, &N);
 
-  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  // Ensure N(q) is used in q̇ = N(q)⋅v
   EXPECT_TRUE(
       CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesNplus) {
+TEST_F(RpyFloatingMobilizerTest, MapUsesNplus) {
   SetArbitraryNonZeroState();
   const Vector6<double> qdot =
       (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
@@ -212,12 +226,12 @@ TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesNplus) {
   Matrix6<double> Nplus;
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  // Ensure N⁺(q) is used in v = N⁺(q)⋅q̇
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, SingularityError) {
+TEST_F(RpyFloatingMobilizerTest, SingularityError) {
   // Set state in singularity
   const Vector3d rpy_value(M_PI / 3, M_PI / 2, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);

@@ -3,8 +3,9 @@
 #include "drake/examples/planar_gripper/gripper_brick.h"
 #include "drake/solvers/mathematical_program.h"
 
-/// @file This file contains the utility function to add constraint in
-/// gripper/brick motion planning.
+/// @file
+/// This file contains the utility function to add constraint in gripper/brick
+/// motion planning.
 
 namespace drake {
 namespace examples {
