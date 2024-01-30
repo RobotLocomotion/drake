@@ -28,6 +28,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_io.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
 
 /* Note: enabling this causes failures with two tests. Try running as:
@@ -78,6 +79,7 @@ using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;
+using render::DepthRange;
 using render::DepthRenderCamera;
 using render::LightParameter;
 using render::RenderCameraCore;
@@ -92,6 +94,8 @@ using systems::sensors::Color;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageGrey8U;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
@@ -996,6 +1000,98 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
         renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
+}
+
+// Colors the 32-bit depth image as a 8-bit luminance image. This allows humans
+// to easily grok the image. The depth values are mapped to the provided depth
+// range and depth values beyond the range get clamped.
+ImageGrey8U NormalizeDepth(const ImageDepth32F& original_depth,
+                           const DepthRange& depth_range) {
+  const float min_value = static_cast<float>(depth_range.min_depth());
+  const float max_value = static_cast<float>(depth_range.max_depth());
+  VectorX<float> clamped = Eigen::Map<const VectorX<float>>(
+      original_depth.at(0, 0), original_depth.size());
+  for (int i = 0; i < clamped.size(); ++i) {
+    clamped[i] = std::clamp(clamped[i], min_value, max_value);
+  }
+  using Byte = ImageGrey8U::T;
+  ImageGrey8U color_depth(original_depth.width(), original_depth.height());
+  Eigen::Map<VectorX<Byte>> data(color_depth.at(0, 0), color_depth.size());
+  auto data_array = data.array();
+  const float range = max_value - min_value;
+  data_array = ((clamped.array() - min_value) * (255 / range)).cast<Byte>();
+  return color_depth;
+}
+
+// There have been circumstances in which a glTF model, when rendered in depth
+// or label images, displays the wrong transform. This examines the alignment
+// of a glTF file in three files. The "wrong" transform entailed compounded
+// scale -- i.e., if the glTF model was scaled at 0.5, the depth and label
+// versions would be scaled at 0.25. Similarly, the depth and label images
+// displayed the y-up glTF file, *not* in a z-up world, but in a negative y-up
+// world.
+TEST_F(RenderEngineVtkTest, GltfColorVsDepth) {
+  // The camera is simply rotated to look along the -Wx direction (with +Wz up).
+  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2, 0, M_PI / 2));
+  const RigidTransformd X_WC(R_WC, Vector3d(3.5, 0, 0));
+  Init(X_WC);
+
+  // Write test outputs so we can inspect the images in case of failure.
+  auto log_image = [](const auto& image, std::string_view name) {
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::filesystem::path out_dir(dir);
+      ImageIo{}.Save(image, out_dir / fmt::format("{}_test.png", name));
+    }
+  };
+
+  PerceptionProperties material;
+  // Pick a label that will be easily discernible in the saved image.
+  const RenderLabel label(255 * 15);
+  material.AddProperty("label", "id", label);
+  const GeometryId id = GeometryId::get_new_id();
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  renderer_->RegisterVisual(id, Mesh(filename, 0.5), material,
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+  const int size = 64;
+  ImageRgba8U color_image(size, size);
+  const ColorRenderCamera color_camera(
+      {"unused", {size, size, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
+  renderer_->RenderColorImage(color_camera, &color_image);
+  log_image(color_image, "GltfColorVsDepth_color");
+
+  ImageDepth32F depth32_image(size, size);
+  // Depth ranged centered on the Wx = 0 plane. The pyramid should extend less
+  // than one unit toward and away from the camera, relative to that plane.
+  const DepthRenderCamera depth_camera(color_camera.core(), {2.5, 4.5});
+  renderer_->RenderDepthImage(depth_camera, &depth32_image);
+  log_image(NormalizeDepth(depth32_image, depth_camera.depth_range()),
+            "GltfColorVsDepth_depth");
+
+  ImageLabel16I label_image(size, size);
+  renderer_->RenderLabelImage(color_camera, &label_image);
+  log_image(label_image, "GltfColorVsDepth_label");
+
+  bool gltf_visible = false;
+  const RgbaColor bg_color(kBgColor, 255);
+  for (int r = 0; r < color_image.height(); ++r) {
+    for (int c = 0; c < color_image.width(); ++c) {
+      if (*depth32_image.at(c, r) < std::numeric_limits<double>::infinity()) {
+        // Where ever the depth image registers a finite value, we should have a
+        // non-background color and registered label value. Due to
+        // anti-aliasing, it would NOT be true that everywhere the color image
+        // is NOT the background color, we should have a non-background depth or
+        // label reading.
+        const RgbaColor color(color_image.at(c, r));
+        ASSERT_NE(color, bg_color);
+        ASSERT_EQ(RenderLabel(*label_image.at(c, r)), label);
+        gltf_visible = true;
+      }
+    }
+  }
+  // The depth image wasn't all infinite values.
+  ASSERT_TRUE(gltf_visible);
 }
 
 // A simple regression test to make sure that we are supporting all of the
