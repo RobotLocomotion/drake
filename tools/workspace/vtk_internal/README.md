@@ -1,10 +1,15 @@
 
 # Tips for Drake Developers when upgrading VTK
 
-When upgrading, the best first step is to get a handle on which libraries (aka
-"modules") are required vs which should be excluded. Generally we want to try to
-build as few modules as possible. Ignore configure_file complaints until you're
-sure the list of modules is happy.
+The VTK source code version we download is determined by the `commit = ...`
+git commit in `repository.bzl`.  Change that to the new commit, along with
+the matching change to `sha256 = ...`. (To get the new sha256, set it to
+`None` or `"0" * 64` and run a build; the required new sha256 will be printed.)
+
+After changing the commit, the best next step is to get a handle on which
+libraries (aka "modules") are required vs which should be excluded. Generally
+we want to try to build as few modules as possible. Ignore configure_file
+complaints until you're sure the list of modules is happy.
 
 In rules.bzl there is a constant `VERBOSE = False`. Try changing that to `True`
 when debugging / developing the module dependencies.
@@ -22,3 +27,12 @@ Then you can work your way up:
 ```
 bazel build @vtk_internal//:vtkCommonDataModel
 ```
+
+For dealing with crashes from `cmake_configure_file()` about set-but-unused
+values, just remove the now-unused values from `settings.bzl`. For crashes about
+required-but-missing values, you can start by adding them to `cmake_undefines =
+...` to try to reduce the quantity of errors; later (once the overall build is
+healthier), you'll need to revisit what the proper value should be. Do that by
+reading the VTK code (either the C++ code that uses the setting, or the
+CMakeLists.txt or README files that explain the setting) and decide what the
+value should be.
