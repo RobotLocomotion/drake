@@ -1034,8 +1034,21 @@ drake_cc_library(
         ":mathematical_program",
         "//math:matrix_util",
     ],
+    deps = [":semidefinite_relaxation_internal"],
+)
+
+drake_cc_library(
+    name = "semidefinite_relaxation_internal",
+    srcs = ["semidefinite_relaxation_internal.cc"],
+    hdrs = ["semidefinite_relaxation_internal.h"],
+    interface_deps = [
+        ":mathematical_program",
+        "//math:matrix_util",
+    ],
     deps = [],
 )
+
+
 
 drake_cc_optional_library(
     name = "csdp_solver_error_handling",
@@ -1226,6 +1239,15 @@ drake_cc_googletest(
     name = "semidefinite_relaxation_test",
     deps = [
         ":semidefinite_relaxation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "semidefinite_relaxation_internal_test",
+    deps = [
+        ":semidefinite_relaxation_internal",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
