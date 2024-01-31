@@ -40,7 +40,7 @@ AccelerationsDueNonConstraintForcesCache<
                                                      topology)
     : forces(topology.num_rigid_bodies(), topology.num_velocities()),
       abic(topology),
-      Zb_Bo_W(topology.num_rigid_bodies()),
+      Zb_Bo_W(topology.num_mobods()),
       aba_forces(topology),
       ac(topology) {}
 

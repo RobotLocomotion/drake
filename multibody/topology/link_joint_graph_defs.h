@@ -15,6 +15,7 @@ class SpanningForest;
 
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;
+using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 
 /** Link properties that can affect how the forest model gets built. Or-ing
 these also produces a LinkFlags object. */
