@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -247,6 +248,44 @@ GTEST_TEST(IrisTest, TerminationConditions) {
             8);  // 4 from bbox + 1 from each obstacle.
 }
 
+GTEST_TEST(IrisTest, TerminationFunc) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
+  const Vector2d sample{0, 0};  // center of the bounding box.
+  const Vector2d q1{0.15, -0.45};
+  const Vector2d q2{-0.05, 0.75};
+  IrisOptions options;
+  options.iteration_limit = 100;
+  options.termination_threshold = -1;
+  SetEdgeContainmentTerminationCondition(&options, q1, q2, 1e-3);
+  EXPECT_FALSE(options.termination_func(domain));
+  const HPolyhedron region = Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(region.b().size(), 8);
+  EXPECT_TRUE(region.PointInSet(q1));
+  EXPECT_TRUE(region.PointInSet(q2));
+  EXPECT_TRUE(region.PointInSet(sample));
+  EXPECT_FALSE(options.termination_func(region));
+  // What if we didn't set the termination condition?
+  options.termination_func = nullptr;
+  const HPolyhedron region_no_termination =
+      Iris(obstacles, sample, domain, options);
+  EXPECT_FALSE(region_no_termination.PointInSet(q1) &&
+               region_no_termination.PointInSet(q2));
+  // failure case when the domain is infeasible.
+  const Vector2d q3{3.0, 0};
+  SetEdgeContainmentTerminationCondition(&options, q1, q3, 1e-3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Iris(obstacles, sample, domain, options),
+      ".* Please check the implementation of your termination_func.");
+}
+
 GTEST_TEST(IrisTest, BallInBoxNDims) {
   const int N = 8;
   ConvexSets obstacles;
@@ -324,6 +363,31 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
   EXPECT_EQ(options.num_additional_constraint_infeasible_samples,
             options2.num_additional_constraint_infeasible_samples);
   EXPECT_EQ(options.random_seed, options2.random_seed);
+}
+
+GTEST_TEST(IrisOptionsTest, SetEdgeContainmentTerminationCondition) {
+  IrisOptions options;
+  const Vector2d x_1{0.0, 1.0};
+  const Vector2d x_2{1.0, 3.0};
+  const double epsilon = 1e-3;
+  const double tol = 1e-9;
+  // default options should not have starting_ellipse or termination_func.
+  EXPECT_FALSE(options.starting_ellipse.has_value());
+  EXPECT_FALSE(options.termination_func);
+  SetEdgeContainmentTerminationCondition(&options, x_1, x_2, epsilon, tol);
+  EXPECT_TRUE(options.starting_ellipse.has_value());
+  EXPECT_TRUE(options.termination_func);
+  const Hyperellipsoid& E = options.starting_ellipse.value();
+  // The ellipse should contain both endpoints.
+  EXPECT_TRUE(E.PointInSet(x_1, tol));
+  EXPECT_TRUE(E.PointInSet(x_2, tol));
+  // make a box that only contains up to half of the line segment. Must lead to
+  // termination
+  const auto half_box = HPolyhedron::MakeBox(Vector2d::Zero(), (x_1 + x_2) / 2);
+  EXPECT_TRUE(options.termination_func(half_box));
+  // Make a box that contains the line segment. Must not lead to termination
+  const auto all_box = HPolyhedron::MakeBox(x_1, x_2);
+  EXPECT_FALSE(options.termination_func(all_box));
 }
 
 class SceneGraphTester : public ::testing::Test {
