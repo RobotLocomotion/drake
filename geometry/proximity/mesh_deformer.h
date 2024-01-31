@@ -19,7 +19,9 @@ namespace internal {
  This class cannot be moved or copied. It is assumed upon creation that it will
  be permanently associated with a *specific* MeshType instance and maintain that
  association for its entire lifetime (see DeformableMesh as an example).
- */
+
+ @tparam MeshType TriangleSurfaceMesh<T>, PolygonSurfaceMesh<T>, or
+                  VolumeMesh<T> where T is double or AutoDiffXd. */
 template <typename MeshType>
 class MeshDeformer {
  public:

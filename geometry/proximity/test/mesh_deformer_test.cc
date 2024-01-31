@@ -6,6 +6,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -121,6 +124,97 @@ TYPED_TEST(SurfaceMeshDeformerTest, Construction) {
 
 TYPED_TEST(SurfaceMeshDeformerTest, SetAllPositions) {
   this->TestSetAllPositions();
+}
+
+// N.B. We can't use partial specialization on functions, so we create a factory
+// struct to serve the purpose.
+template <typename T, template <typename> typename MeshType>
+struct SingleTriangleMaker {
+  static MeshType<T> make() { throw std::logic_error("Unimplemented call"); }
+};
+
+// Makes a TriangleSurfaceMesh with a single triangle whose normal is _not_
+// along the z-axis.
+template <typename T>
+struct SingleTriangleMaker<T, TriangleSurfaceMesh> {
+  static TriangleSurfaceMesh<T> make() {
+    std::vector<Vector3<T>> vertices;
+    vertices.emplace_back(0, 0, 0);
+    vertices.emplace_back(0, 2, 0);
+    vertices.emplace_back(0, 0, 2);
+    std::vector<SurfaceTriangle> triangles;
+    triangles.emplace_back(0, 1, 2);
+    return TriangleSurfaceMesh(std::move(triangles), std::move(vertices));
+  }
+};
+
+// Makes a PolygonSurfaceMesh with a single triangle whose normal is _not_ along
+// the z-axis.
+template <typename T>
+struct SingleTriangleMaker<T, PolygonSurfaceMesh> {
+  static PolygonSurfaceMesh<T> make() {
+    std::vector<int> face_data{3, 0, 1, 2};
+    std::vector<Vector3<T>> vertices;
+    vertices.emplace_back(0, 0, 0);
+    vertices.emplace_back(0, 2, 0);
+    vertices.emplace_back(0, 0, 2);
+    return PolygonSurfaceMesh(std::move(face_data), std::move(vertices));
+  }
+};
+
+// Tests that for surface meshes, auxiliary quantities (face normal, face area,
+// and mesh centroid) are updated along with vertex position changes.
+template <typename T, template <typename> typename MeshType>
+class MeshDeformerDataTest : public ::testing::Test {
+ public:
+  MeshDeformerDataTest()
+      : ::testing::Test(),
+        mesh_(SingleTriangleMaker<T, MeshType>().make()),
+        deformer_(&mesh_) {
+    // Create vertex positions that all lie in the xy plane.
+    DRAKE_DEMAND(mesh_.num_vertices() == 3);
+    q_.resize(mesh_.num_vertices() * 3);
+    q_.template segment<3>(0) = Vector3<T>::Zero();
+    q_.template segment<3>(3) = Vector3<T>::UnitX();
+    q_.template segment<3>(6) = Vector3<T>::UnitY();
+  }
+
+  void TestData() {
+    // Quick reality check that we don't start with the expected data.
+    EXPECT_FALSE(CompareMatrices(mesh_.face_normal(0), Vector3<T>::UnitZ()));
+    EXPECT_NE(mesh_.area(0), 0.5);
+    EXPECT_NE(mesh_.total_area(), 0.5);
+    const Vector3<T> expected_centroid(1.0 / 3.0, 1.0 / 3.0, 0.0);
+    EXPECT_FALSE(CompareMatrices(mesh_.element_centroid(0), expected_centroid));
+    EXPECT_FALSE(CompareMatrices(mesh_.centroid(), expected_centroid));
+
+    deformer_.SetAllPositions(q_);
+
+    EXPECT_TRUE(CompareMatrices(mesh_.face_normal(0), Vector3<T>::UnitZ()));
+    EXPECT_EQ(mesh_.area(0), 0.5);
+    EXPECT_EQ(mesh_.total_area(), 0.5);
+    EXPECT_TRUE(CompareMatrices(mesh_.element_centroid(0), expected_centroid));
+    EXPECT_TRUE(CompareMatrices(mesh_.centroid(), expected_centroid));
+  }
+
+ protected:
+  MeshType<T> mesh_;
+  MeshDeformer<MeshType<T>> deformer_;
+  VectorX<T> q_;
+};
+
+template <typename T>
+using TriangleMeshDataTest = MeshDeformerDataTest<T, TriangleSurfaceMesh>;
+TYPED_TEST_SUITE(TriangleMeshDataTest, ScalarTypes);
+TYPED_TEST(TriangleMeshDataTest, TestData) {
+  this->TestData();
+}
+
+template <typename T>
+using PolygonMeshDataTest = MeshDeformerDataTest<T, PolygonSurfaceMesh>;
+TYPED_TEST_SUITE(PolygonMeshDataTest, ScalarTypes);
+TYPED_TEST(PolygonMeshDataTest, TestData) {
+  this->TestData();
 }
 
 }  // namespace

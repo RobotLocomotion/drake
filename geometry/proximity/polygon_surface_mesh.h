@@ -16,6 +16,11 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
+// Forward declaration for friend declaration.
+template <typename>
+class MeshDeformer;
+}  // namespace internal
 
 // Forward declaration for friendship.
 template <typename T>
@@ -119,11 +124,11 @@ class PolygonSurfaceMesh {
    @pre v ∈ {0, 1, 2, ..., num_vertices()-1}. */
   const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
-    return vertices_M_[v];
+    return vertices_[v];
   }
 
   /** Returns the number of vertices in the mesh. */
-  int num_vertices() const { return static_cast<int>(vertices_M_.size()); }
+  int num_vertices() const { return static_cast<int>(vertices_.size()); }
 
   /** Returns the number of elements in the mesh. For %PolygonSurfaceMesh, an
    element is a polygon. Returns the same number as num_faces() and enables
@@ -301,6 +306,13 @@ class PolygonSurfaceMesh {
   }
 
  private:
+  /* Client attorney class that provides a means to modify vertex positions. */
+  friend class internal::MeshDeformer<PolygonSurfaceMesh<T>>;
+
+  /* Calculates and sets the area, normal, and centroid of all polygon faces.
+   Also computes and sets the centroid of the entire surface. */
+  void CalcAreasNormalsAndCentroid();
+
   // TODO(DamrongGuoy): Make CalcAreaNormalAndCentroid() return area, normal
   //  vector, and centroid instead of accumulating them into member
   //  variables. Therefore, the function would become publicly accessible, and
@@ -337,8 +349,9 @@ class PolygonSurfaceMesh {
    cᵢ, ..., cₘ entries for M polygons in the mesh. */
   std::vector<int> poly_indices_;
 
-  /* The vertices referenced by the mesh's polygons. */
-  std::vector<Vector3<T>> vertices_M_;
+  /* The vertices referenced by the mesh's polygons, measured and expressed in
+   the mesh's frame M. */
+  std::vector<Vector3<T>> vertices_;
 
   /* Derived quantities of the mesh -- computed as elements are added. */
 

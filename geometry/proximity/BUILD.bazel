@@ -586,6 +586,7 @@ drake_cc_library(
     srcs = ["mesh_deformer.cc"],
     hdrs = ["mesh_deformer.h"],
     deps = [
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
     ],
