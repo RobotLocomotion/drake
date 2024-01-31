@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -472,6 +473,33 @@ GTEST_TEST(ProcessModelDirectivesTest, Flatten) {
     reflattened_names.insert(info.model_name);
   }
   EXPECT_EQ(flat_names, reflattened_names);
+}
+
+// Test adapted from
+// https://github.com/RobotLocomotion/drake/pull/20757#issuecomment-1884115261
+// to verify the expected result of flattening two copies of the same file
+// containing a collision filter group.
+GTEST_TEST(ProcessModelDirectivesTest, FlattenCollisionGroups) {
+  MultibodyPlant<double> plant(0.0);
+  std::unique_ptr<Parser> parser = make_parser(&plant);
+
+  // Load the directives hierarchy.
+  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/flatten_test_top.dmd.yaml"));
+
+  // Flatten the directives hierarchy.
+  ModelDirectives flat_directives;
+  FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+
+  // Load the expected result of flattening.
+  const ModelDirectives expected_directives =
+    LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/flatten_test_expected.dmd.yaml"));
+
+  // Check that the flattened directives are identical to the expected ones.
+  const std::string flattened = yaml::SaveYamlString(flat_directives);
+  const std::string expected = yaml::SaveYamlString(expected_directives);
+  EXPECT_EQ(flattened, expected);
 }
 
 GTEST_TEST(ProcessModelDirectivesTest, FlattenWithWorld) {

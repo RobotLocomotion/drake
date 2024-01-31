@@ -1,0 +1,40 @@
+# Exemplar data adapted from
+# https://github.com/RobotLocomotion/drake/pull/20757#issuecomment-1884115261
+
+directives:
+- add_model_instance:
+    name: right
+- add_model:
+    name: right::panda
+    file: package://.../panda_arm.urdf
+- add_collision_filter_group:
+    name: right::panda_wrist_filter_group
+    members:
+    - right::panda::panda_link7
+- add_model:
+    name: right::camera
+    file: package://.../camera.sdf
+- add_collision_filter_group:
+    name: right::camera_filter_group
+    members:
+    - right::camera::body
+    ignored_collision_filter_groups:
+    - right::panda_wrist_filter_group
+- add_model_instance:
+    name: left
+- add_model:
+    name: left::panda
+    file: package://.../panda_arm.urdf
+- add_collision_filter_group:
+    name: left::panda_wrist_filter_group
+    members:
+    - left::panda::panda_link7
+- add_model:
+    name: left::camera
+    file: package://.../camera.sdf
+- add_collision_filter_group:
+    name: left::camera_filter_group
+    members:
+    - left::camera::body
+    ignored_collision_filter_groups:
+    - left::panda_wrist_filter_group
