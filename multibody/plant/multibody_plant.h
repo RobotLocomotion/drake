@@ -27,7 +27,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/topology/multibody_graph.h"
+#include "drake/multibody/topology/graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -3139,14 +3139,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                                       state);
   }
 
+  // TODO(sherm1) Rename this SetFreeBodyRandomTranslationDistribution()
+
   /// Sets the distribution used by SetRandomState() to populate the free
   /// body's x-y-z `position` with respect to World.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomPositionDistribution(
       const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
-    this->mutable_tree().SetFreeBodyRandomPositionDistributionOrThrow(body,
-                                                                      position);
+    this->mutable_tree().SetFreeBodyRandomTranslationDistributionOrThrow(
+        body, position);
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
@@ -4452,8 +4454,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().world_frame();
   }
 
-  /// Returns the number of bodies in the model, including the "world" body,
-  /// which is always part of the model.
+  /// Returns the number of RigidBody elements in the model, including the
+  /// "world" RigidBody, which is always part of the model.
   /// @see AddRigidBody().
   int num_bodies() const { return internal_tree().num_bodies(); }
 
@@ -4469,7 +4471,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   bool IsAnchored(const RigidBody<T>& body) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().get_topology().IsBodyAnchored(body.index());
+    return internal_tree().graph().links(body.index()).is_anchored();
   }
 
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant.
@@ -4583,7 +4585,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body) const;
 
   /// Returns all bodies whose kinematics are transitively affected by the given
-  /// vector of joints. The affected bodies are returned in increasing order of
+  /// vector of Joints. The affected bodies are returned in increasing order of
   /// body indexes. Note that this is a kinematic relationship rather than a
   /// dynamic one. For example, if one of the inboard joints is a free (6dof)
   /// joint, the kinematic influence is still felt even though dynamically
@@ -5074,7 +5076,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
+  // Internal-only access to LinkJointGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 #endif

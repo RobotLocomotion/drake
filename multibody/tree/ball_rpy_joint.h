@@ -237,8 +237,8 @@ class BallRpyJoint final : public Joint<T> {
   }
 
   // Joint<T> overrides:
-  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint()
-      const override;
+  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+      const internal::SpanningForest::Mobod& mobod) const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const override;
@@ -279,9 +279,6 @@ class BallRpyJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // This joint's damping constant in N⋅m⋅s.
-  double damping_{0};
 };
 
 template <typename T>

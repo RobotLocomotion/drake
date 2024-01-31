@@ -66,9 +66,10 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 
   // Constructor for an RpyFloatingMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M.
-  RpyFloatingMobilizer(const Frame<T>& inboard_frame_F,
+  RpyFloatingMobilizer(const SpanningForest::Mobod& mobod,
+                       const Frame<T>& inboard_frame_F,
                        const Frame<T>& outboard_frame_M)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   bool is_floating() const final { return true; }
 
@@ -164,6 +165,16 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @returns a constant reference to this mobilizer.
   const RpyFloatingMobilizer<T>& set_translation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
+
+  // Sets the distribution governing the random samples of the rpy angles
+  // component of the mobilizer state.
+  void set_random_angles_distribution(
+      const Vector3<symbolic::Expression>& angles);
+
+  // Sets the distribution governing the random samples of the translation
+  // component of the mobilizer state.
+  void set_random_translation_distribution(
+      const Vector3<symbolic::Expression>& p_FM);
 
   // Sets in context the state for this mobilizer so that the angular
   // velocity of the outboard frame M in the inboard frame F is w_FM.

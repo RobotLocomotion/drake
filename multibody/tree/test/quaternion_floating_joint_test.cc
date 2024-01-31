@@ -134,7 +134,7 @@ TEST_F(QuaternionFloatingJointTest, Damping) {
 TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   const Vector3d position(1., 2., 3.);
   const Vector3d angular_velocity(0.5, 0.5, 0.5);
-  const Vector3d translational_veloctiy(0.1, 0.2, 0.3);
+  const Vector3d translational_velocity(0.1, 0.2, 0.3);
   Quaternion<double> quaternion_A(1., 2., 3., 4.);
   Quaternion<double> quaternion_B(5., 6., 7., 8.);
   quaternion_A.normalize();
@@ -163,9 +163,9 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   // Angular velocity access:
   joint_->set_angular_velocity(context_.get(), angular_velocity);
   EXPECT_EQ(joint_->get_angular_velocity(*context_), angular_velocity);
-  joint_->set_translational_velocity(context_.get(), translational_veloctiy);
+  joint_->set_translational_velocity(context_.get(), translational_velocity);
   EXPECT_EQ(joint_->get_translational_velocity(*context_),
-            translational_veloctiy);
+            translational_velocity);
 
   // Joint locking.
   joint_->Lock(context_.get());
@@ -181,7 +181,7 @@ TEST_F(QuaternionFloatingJointTest, AddInOneForce) {
   // Since adding forces to individual degrees of freedom of this joint does
   // not make physical sense, this method should throw.
   EXPECT_THROW(joint_->AddInOneForce(*context_, 0, some_value, &forces),
-               std::logic_error);
+               std::exception);
 }
 
 TEST_F(QuaternionFloatingJointTest, Clone) {

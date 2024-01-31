@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -134,6 +135,32 @@ RpyFloatingMobilizer<T>::SetFromRigidTransform(
   set_angles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
   set_translation(context, X_FM.translation());
   return *this;
+}
+
+template <typename T>
+void RpyFloatingMobilizer<T>::set_random_angles_distribution(
+    const Vector3<symbolic::Expression>& angles) {
+  Vector<symbolic::Expression, 6> q;
+  if (this->get_random_state_distribution()) {
+    q = this->get_random_state_distribution()->template head<6>();
+  } else {
+    q = this->get_zero_position().template cast<symbolic::Expression>();
+  }
+  q.template head<3>() = angles;
+  MobilizerBase::set_random_position_distribution(q);
+}
+
+template <typename T>
+void RpyFloatingMobilizer<T>::set_random_translation_distribution(
+    const Vector3<symbolic::Expression>& p_FM) {
+  Vector<symbolic::Expression, 6> q;
+  if (this->get_random_state_distribution()) {
+    q = this->get_random_state_distribution()->template head<6>();
+  } else {
+    q = this->get_zero_position().template cast<symbolic::Expression>();
+  }
+  q.template tail<3>() = p_FM;
+  MobilizerBase::set_random_position_distribution(q);
 }
 
 template <typename T>
@@ -432,7 +459,8 @@ RpyFloatingMobilizer<T>::TemplatedDoCloneToScalar(
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<RpyFloatingMobilizer<ToScalar>>(
-      inboard_frame_clone, outboard_frame_clone);
+      tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
+      outboard_frame_clone);
 }
 
 template <typename T>
