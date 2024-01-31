@@ -30,6 +30,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -407,6 +408,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         DefineTemplateClassWithDefault<Class>(m, "Joint", param, cls_doc.doc);
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
+        .def("index", &Class::index, cls_doc.index.doc)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("parent_body", &Class::parent_body, py_rvp::reference_internal,
             cls_doc.parent_body.doc)
@@ -424,6 +426,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("num_velocities", &Class::num_velocities,
             cls_doc.num_velocities.doc)
+        .def("can_rotate", &Class::can_rotate, cls_doc.can_rotate.doc)
+        .def("can_translate", &Class::can_translate, cls_doc.can_translate.doc)
         .def("position_suffix", &Class::position_suffix,
             cls_doc.position_suffix.doc)
         .def("velocity_suffix", &Class::velocity_suffix,
@@ -462,6 +466,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_acceleration_limits.doc)
         .def("set_default_positions", &Class::set_default_positions,
             py::arg("default_positions"), cls_doc.set_default_positions.doc)
+        .def("SetDefaultPose",
+            py::overload_cast<const Quaternion<double>&,
+                const Vector3<double>&>(&Class::SetDefaultPose),
+            py::arg("q_FM"), py::arg("p_FM"),
+            cls_doc.SetDefaultPose.doc_quaternion)
+        .def("SetDefaultPose",
+            py::overload_cast<const math::RigidTransform<double>&>(
+                &Class::SetDefaultPose),
+            py::arg("X_FM"), cls_doc.SetDefaultPose.doc_transform)
+        .def("GetDefaultPose", &Class::GetDefaultPose,
+            cls_doc.GetDefaultPose.doc)
         .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
@@ -656,9 +671,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_default_quaternion", &Class::set_default_quaternion,
             py::arg("q_FM"), cls_doc.set_default_quaternion.doc)
         .def("set_default_position", &Class::set_default_position,
-            py::arg("p_FM"), cls_doc.set_default_position.doc)
-        .def("SetDefaultPose", &Class::SetDefaultPose, py::arg("X_FM"),
-            cls_doc.SetDefaultPose.doc);
+            py::arg("p_FM"), cls_doc.set_default_position.doc);
   }
 
   // RevoluteJoint
@@ -710,6 +723,66 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_default_angle.doc)
         .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
             cls_doc.set_default_angle.doc);
+  }
+
+  // RpyFloatingJoint
+  // TODO(sherm1) Finish this (WIP)
+  {
+    using Class = RpyFloatingJoint<T>;
+    constexpr auto& cls_doc = doc.RpyFloatingJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "RpyFloatingJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
+                      double>(),
+             py::arg("name"), py::arg("frame_on_parent"),
+             py::arg("frame_on_child"), py::arg("angular_damping") = 0,
+             py::arg("translational_damping") = 0, cls_doc.ctor.doc)
+        .def("angular_damping", &Class::angular_damping,
+             cls_doc.angular_damping.doc)
+        .def("translational_damping", &Class::translational_damping,
+             cls_doc.translational_damping.doc)
+        .def("get_angles", &Class::get_angles, py::arg("context"),
+             cls_doc.get_angles.doc)
+        .def("set_angles", &Class::set_angles, py::arg("context"),
+             py::arg("angles"), cls_doc.set_angles.doc)
+        .def("SetFromRotationMatrix", &Class::SetFromRotationMatrix,
+             py::arg("context"), py::arg("R_FM"),
+             cls_doc.SetFromRotationMatrix.doc)
+        .def("get_position", &Class::get_position, py::arg("context"),
+             cls_doc.get_position.doc)
+        .def("get_pose", &Class::get_pose, py::arg("context"),
+             cls_doc.get_pose.doc)
+        .def("set_position", &Class::set_position, py::arg("context"),
+             py::arg("p_FM"), cls_doc.set_position.doc)
+        .def("set_pose", &Class::set_pose, py::arg("context"), py::arg("X_FM"),
+             cls_doc.set_pose.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+             py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+             py::arg("context"), py::arg("w_FM"),
+             cls_doc.set_angular_velocity.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+             py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+             py::arg("context"), py::arg("v_FM"),
+             cls_doc.set_translational_velocity.doc)
+        .def("set_random_angles_distribution",
+             &Class::set_random_angles_distribution, py::arg("angles"),
+             cls_doc.set_random_angles_distribution.doc)
+        .def("set_random_position_distribution",
+             &Class::set_random_position_distribution, py::arg("p_FM"),
+             cls_doc.set_random_position_distribution.doc)
+        .def("get_default_angles", &Class::get_default_angles,
+             cls_doc.get_default_angles.doc)
+        .def("set_default_angles", &Class::set_default_angles,
+             py::arg("angles"), cls_doc.set_default_angles.doc)
+        .def("get_default_position", &Class::get_default_position,
+             cls_doc.get_default_position.doc)
+        .def("set_default_position", &Class::set_default_position,
+             py::arg("p_FM"), cls_doc.set_default_position.doc)
+        .def("get_default_pose", &Class::get_default_pose,
+             cls_doc.get_default_pose.doc);
   }
 
   // ScrewJoint
