@@ -279,9 +279,6 @@ class BallRpyJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // This joint's damping constant in N⋅m⋅s.
-  double damping_{0};
 };
 
 template <typename T>
