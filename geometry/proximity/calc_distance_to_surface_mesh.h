@@ -9,7 +9,7 @@ namespace geometry {
 namespace internal {
 
 /* Computes the shortest unsigned distance between the point p_WQ and any point
- on the surface mesh `mesh_W`. The returned valued is non-negative.
+ on the surface mesh `mesh_W`. The returned value is non-negative.
  The algorithm is accelerated with the bounding volume hierarchy `bvh_W` of
  the surface mesh.
  @pre Each element in `mesh_W` has non-zero area. */

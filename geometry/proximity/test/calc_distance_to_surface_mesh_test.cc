@@ -236,8 +236,7 @@ GTEST_TEST(CalcDistanceToSurfaceMeshTest, ManyTrianglesForRecursion) {
 
   const double distance_from_center =
       CalcDistanceToSurfaceMesh(Vector3d::Zero(), surface_W, bvh_W);
-  const double kHalfShortLength = kShortLength / 2;
-  EXPECT_NEAR(distance_from_center, kHalfShortLength, 1e-10);
+  EXPECT_NEAR(distance_from_center, kShortLength / 2, 1e-10);
 }
 
 }  // namespace

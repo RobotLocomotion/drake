@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <optional>
 #include <set>
 #include <vector>
 
@@ -39,12 +38,13 @@ std::vector<int> CollectUniqueVertices(
 
 /*
  Implements the public API ConvertVolumeToSurfaceMesh() with optional return
- of the boundary vertices that we can use internally.
+ of the boundary vertices that we can use internally. The returned integer
+ indices refer to vertices in the input `volume` mesh.
  */
 template <class T>
 TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
     const VolumeMesh<T>& volume,
-    std::vector<int>* return_boundary_vertices = nullptr);
+    std::vector<int>* boundary_vertices_out = nullptr);
 
 }  // namespace internal
 
