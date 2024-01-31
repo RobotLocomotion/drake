@@ -65,6 +65,11 @@ _IGNORED_REPOSITORIES = [
     "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
+# For these repositories, ignore any tags that match the specified regex.
+_IGNORED_TAGS = {
+    "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+"
+}
+
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
 # tags that share the match with the tag currently in use; the parentheses
@@ -72,8 +77,8 @@ _IGNORED_REPOSITORIES = [
 # (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
-    "gz_math_internal": "^(gz)",
-    "gz_utils_internal": "^(gz)",
+    "gz_math_internal": r"^(gz)",
+    "gz_utils_internal": r"^(gz)",
     "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
@@ -152,8 +157,10 @@ def _is_prerelease(commit, workspace):
     return prerelease
 
 
-def _latest_tag(gh_repo, workspace):
+def _latest_tag(gh_repo, workspace, ignore_re):
     for tag in gh_repo.tags():
+        if ignore_re and re.match(ignore_re, tag.name):
+            continue
         if _is_prerelease(tag.name, workspace):
             continue
         return tag.name
@@ -167,6 +174,7 @@ def _handle_github(workspace_name, gh, data):
     new_commit = None
     owner, repo_name = data["repository"].split("/")
     gh_repo = gh.repository(owner, repo_name)
+    ignore_re = _IGNORED_TAGS.get(workspace_name)
 
     # If we're tracking via git commit, then upgrade to the newest commit.
     if _smells_like_a_git_commit(old_commit):
@@ -176,7 +184,7 @@ def _handle_github(workspace_name, gh, data):
     # Sometimes prefer checking only tags, not releases.
     tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
     if tags_pattern == "":
-        new_commit = _latest_tag(gh_repo, workspace_name)
+        new_commit = _latest_tag(gh_repo, workspace_name, ignore_re)
         return old_commit, new_commit
 
     # Sometimes limit candidate tags to those matching a regex.
@@ -189,6 +197,8 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
+                    if ignore_re and re.match(ignore_re, tag.name):
+                        continue
                     if _is_prerelease(tag.name, workspace_name):
                         continue
                     new_commit = tag.name
@@ -199,10 +209,12 @@ def _handle_github(workspace_name, gh, data):
     # latest tag.
     try:
         new_commit = gh_repo.latest_release().tag_name
-        if _is_prerelease(new_commit, workspace_name):
-            new_commit = _latest_tag(gh_repo, workspace_name)
+        if ignore_re and re.match(ignore_re, new_commit):
+            new_commit = _latest_tag(gh_repo, workspace_name, ignore_re)
+        elif _is_prerelease(new_commit, workspace_name):
+            new_commit = _latest_tag(gh_repo, workspace_name, ignore_re)
     except github3.exceptions.NotFoundError:
-        new_commit = _latest_tag(gh_repo, workspace_name)
+        new_commit = _latest_tag(gh_repo, workspace_name, ignore_re)
     return old_commit, new_commit
 
 
