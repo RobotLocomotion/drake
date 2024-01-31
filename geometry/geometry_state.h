@@ -161,11 +161,11 @@ class GeometryState {
   }
 
   /** Implementation of SceneGraphInspector::GetAllGeometryIds().  */
-  std::vector<GeometryId> GetAllGeometryIds() const;
+  std::vector<GeometryId> GetAllGeometryIds(std::optional<Role> role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIds().  */
-  std::unordered_set<GeometryId> GetGeometryIds(
-      const GeometrySet& geometry_set, const std::optional<Role>& role) const;
+  std::unordered_set<GeometryId> GetGeometryIds(const GeometrySet& geometry_set,
+                                                std::optional<Role> role) const;
 
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;

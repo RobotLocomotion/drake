@@ -60,7 +60,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_geometries", &Class::num_geometries,
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
-            cls_doc.GetAllGeometryIds.doc)
+            py::arg("role") = std::nullopt, cls_doc.GetAllGeometryIds.doc)
         .def("GetGeometryIds", &Class::GetGeometryIds, py::arg("geometry_set"),
             py::arg("role") = std::nullopt, cls_doc.GetGeometryIds.doc)
         .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,

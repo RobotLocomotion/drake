@@ -227,20 +227,30 @@ GeometryState<T>::GeometryState(const GeometryState<U>& source)
     }
   }
 }
+
 template <typename T>
-std::vector<GeometryId> GeometryState<T>::GetAllGeometryIds() const {
-  std::vector<GeometryId> ids;
-  ids.reserve(geometries_.size());
-  for (const auto& id_geometry_pair : geometries_) {
-    ids.push_back(id_geometry_pair.first);
+std::vector<GeometryId> GeometryState<T>::GetAllGeometryIds(
+    std::optional<Role> role) const {
+  std::vector<GeometryId> result;
+  if (role.has_value()) {
+    for (const auto& [geometry_id, internal_geometry] : geometries_) {
+      if (internal_geometry.has_role(*role)) {
+        result.push_back(geometry_id);
+      }
+    }
+  } else {
+    result.reserve(geometries_.size());
+    for (const auto& [geometry_id, _] : geometries_) {
+      result.push_back(geometry_id);
+    }
   }
-  std::sort(ids.begin(), ids.end());
-  return ids;
+  std::sort(result.begin(), result.end());
+  return result;
 }
 
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
-    const GeometrySet& geometry_set, const std::optional<Role>& role) const {
+    const GeometrySet& geometry_set, std::optional<Role> role) const {
   return CollectIds(geometry_set, role, CollisionFilterScope::kAll);
 }
 
