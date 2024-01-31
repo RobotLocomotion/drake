@@ -338,6 +338,7 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
         "and has an interior.",
         result.get_solver_id().name(), result.get_solution_result()));
   }
+  log()->info("{}",result.GetSolution(r[0]));
   return result.GetSolution(x);
 }
 
@@ -859,7 +860,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       V_circumbody_ellipsoid);
 
   // Check if intersection and containment constraints are still satisfied after
-  // affine transforamtion, and revert if not.  There is currently no way to
+  // affine transformation, and revert if not.  There is currently no way to
   // constrain that the affine transformation upholds these constraints.
   for (int inter_ind = 0; inter_ind < static_cast<int> 
       (reduced_intersecting_polytopes.size()); ++inter_ind) {

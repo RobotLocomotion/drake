@@ -107,16 +107,16 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
-  /** Returns an inner approximation of the HPolyhedron, aiming to use fewer 
+  /** Returns an inner approximation of `this`, aiming to use fewer 
   faces.  Proceeds by incrementally translating faces inward and removing other
   faces that become redundant upon doing so.
   @param min_v_ratio is a lower bound for the ratio of the volume of the 
   returned inbody and the volume of `this`.
   @param do_affine_transformation specifies whether to call 
   OptimizeAffineTransformationInCircumbody(), to take an affine transformation 
-  of `this` to maximize its volume.  The affine transformation is reverted
-  if the resulting inbody violates conditions related to @p points_to_contain or 
-  @p intersecting_polytopes.
+  of the inner approximation to maximize its volume.  The affine transformation 
+  is reverted if the resulting inner approximation violates conditions related  
+  to `points_to_contain` or `intersecting_polytopes`.
   @param max_iterations is the maximum number of times to loop through all 
   faces.
   @param points_to_contain is an optional matrix whose columns are points that 
@@ -125,13 +125,13 @@ class HPolyhedron final : public ConvexSet {
   intersect with the returned inbody.
   @param keep_whole_intersection specifies whether the face translation
   step of the algorithm is prohibited from reducing the intersections with the
-  HPolyhedrons in @p intersecting_polytopes.  Regardless of the value of this
+  HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
   parameter, the intersections may be reduced by the affine transformation step
-  if @p do_affine_transformation is true.
+  if `do_affine_transformation` is true.
   @param intersection_pad is a distance by which each hyperplane is translated
   back outward after satisfing intersection constraints, subject to not
   surpassing the original hyperplane position.  In the case where
-  @p keep_whole_intersection is false, using a non-zero value for this parameter
+  `keep_whole_intersection` is false, using a non-zero value for this parameter
   prevents intersections from being single points.
   @param random_seed is a seed for a random number generator used to shuffle
   the ordering of hyperplanes in between iterations.
@@ -153,12 +153,11 @@ class HPolyhedron final : public ConvexSet {
 
   /** 
   Solves a semi-definite program to compute the maximum-volume affine 
-  transformation of `this`, subject to being a subset of another
-  HPolyhedron, and subject to the transformation matrix being positive 
+  transformation of `this`, subject to being a subset of `circumbody`,
+  and subject to the transformation matrix being positive 
   semi-definite.  The latter condition is necessary for convexity of the
   program.
-  @param circumbody is an HPolyhedron that must be a superset of the affine 
-  transformation of `this`.
+  @param circumbody is an HPolyhedron that must contain the returned inbody.
   @throws std::exception if the solver fails to solve the problem.*/
   [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(const 
       HPolyhedron& circumbody) const;

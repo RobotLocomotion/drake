@@ -247,7 +247,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("SimplifyByIncrementalFaceTranslation", 
             &HPolyhedron::SimplifyByIncrementalFaceTranslation,
             py::arg("min_v_ratio") = 0.1, py::arg("do_affine_transform") = true,
-            py::arg("max_iterations") = 5, 
+            py::arg("max_iterations") = 10, 
             py::arg("points_to_contain") = Eigen::MatrixXd(),
             py::arg("intersecting_polytopes") = std::vector<HPolyhedron>(),
             py::arg("keep_whole_intersection") = false,
