@@ -7,7 +7,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/proximity/mesh_deformer.h"
 
 namespace drake {
 namespace geometry {
@@ -116,7 +115,6 @@ TYPED_TEST(BvhUpdaterTest, Update) {
   MeshType mesh = this->MakeMesh(dist);
   Bvh<Aabb, MeshType> bvh(mesh);
   BvhUpdater<MeshType> updater(&mesh, &bvh);
-  MeshDeformer<MeshType> deformer(&mesh);
 
   /* First, confirm the initial conditions:
     - Topology of the BVH (a root with two leaves)
@@ -167,7 +165,7 @@ TYPED_TEST(BvhUpdaterTest, Update) {
   for (int i = 0; i < mesh.num_vertices(); ++i) {
     p_MVs.segment(i * 3, 3) << R * mesh.vertex(i);
   }
-  deformer.SetAllPositions(p_MVs);
+  mesh.SetAllPositions(p_MVs);
   updater.Update();
 
   /* Third, compare the updated bounding volumes with the expected boxes. In

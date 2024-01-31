@@ -4,12 +4,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace geometry {
-namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
@@ -26,6 +26,17 @@ struct Polygon {
   Vector3d normal;
   Vector3d centroid;
 };
+
+template <typename T>
+VectorX<T> ToVectorX(const std::vector<Vector3<T>>& input) {
+  VectorX<T> result(input.size() * 3);
+  for (int i = 0; i < ssize(input); ++i) {
+    for (int d = 0; d < 3; ++d) {
+      result(3 * i + d) = input[i](d);
+    }
+  }
+  return result;
+}
 
 template <typename T>
 class PolygonSurfaceMeshTest : public ::testing::Test {
@@ -117,6 +128,8 @@ class PolygonSurfaceMeshTest : public ::testing::Test {
     return {std::move(face_data), std::move(vertices)};
   }
 };
+
+namespace {
 
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(PolygonSurfaceMeshTest, ScalarTypes);
@@ -422,6 +435,85 @@ TYPED_TEST(PolygonSurfaceMeshTest, CalcGradientVectorOfLinearField) {
       "PolygonSurfaceMesh does not support this calculation. Defining a "
       "MeshFieldLinear on a PolygonSurfaceMesh requires field gradients to "
       "be provided at construction.");
+}
+
+TYPED_TEST(PolygonSurfaceMeshTest, ComputePositionDependentQuantities) {
+  using T = TypeParam;
+
+  /* we'll build a mesh consisting of these polygons. */
+  vector<Polygon> polygons = {this->MakeIsoscelesTriangle(),
+                              this->MakeSquare()};
+
+  PolygonSurfaceMesh<T> mesh = this->MakeMesh(polygons);
+  const int expected_face_count = 2;
+  ASSERT_EQ(mesh.num_faces(), expected_face_count);
+
+  const std::vector<Vector3<T>> vertices = {
+      // vertices for the triangle
+      Vector3<T>::Zero(), 2.0 * Vector3<T>::UnitX(), 2.0 * Vector3<T>::UnitZ(),
+      // vertices for the square
+      Vector3<T>::Zero(), 3.0 * Vector3<T>::UnitX(), Vector3<T>(3, 3, 0),
+      3.0 * Vector3<T>::UnitY()};
+
+  // triangle has area 2 and square has area 9.
+  std::vector<T> expected_areas = {2, 9};
+  const T expected_total_area = 11.0;
+  const std::vector<Vector3<T>> expected_face_normals = {-Vector3<T>::UnitY(),
+                                                         Vector3<T>::UnitZ()};
+  const std::vector<Vector3<T>> expected_face_centroids = {
+      Vector3<T>(2.0 / 3.0, 0.0, 2.0 / 3.0), Vector3<T>(1.5, 1.5, 0.0)};
+  const Vector3<T> expected_centroid =
+      (expected_areas[0] * expected_face_centroids[0] +
+       expected_areas[1] * expected_face_centroids[1]) /
+      expected_total_area;
+
+  // Returns true if all vertex position dependent quantities are as expected.
+  auto verify_position_dependent_quantities =
+      [&mesh](const std::vector<Vector3<T>>& positions,
+              const std::vector<T>& areas, const T& total_area,
+              const std::vector<Vector3<T>>& face_normals,
+              const std::vector<Vector3<T>>& face_centroids,
+              const Vector3<T>& centroid) -> bool {
+    DRAKE_DEMAND(ssize(positions) == mesh.num_vertices());
+    for (int i = 0; i < ssize(positions); ++i) {
+      if (!CompareMatrices(mesh.vertex(i), positions[i])) {
+        return false;
+      }
+    }
+    DRAKE_DEMAND(ssize(areas) == mesh.num_faces());
+    for (int i = 0; i < ssize(areas); ++i) {
+      if (areas[i] != mesh.area(i)) return false;
+    }
+    if (total_area != mesh.total_area()) return false;
+    DRAKE_DEMAND(ssize(face_normals) == mesh.num_faces());
+    for (int i = 0; i < ssize(face_normals); ++i) {
+      if (!CompareMatrices(mesh.face_normal(i), face_normals[i],
+                           4.0 * std::numeric_limits<T>::epsilon())) {
+        return false;
+      }
+      if (!CompareMatrices(mesh.element_centroid(i), face_centroids[i],
+                           4.0 * std::numeric_limits<T>::epsilon())) {
+        return false;
+      }
+    }
+    if (!CompareMatrices(mesh.centroid(), centroid,
+                         4.0 * std::numeric_limits<T>::epsilon())) {
+      return false;
+    }
+    return true;
+  };
+
+  // Check that we don't start with the expected quantities.
+  EXPECT_FALSE(verify_position_dependent_quantities(
+      vertices, expected_areas, expected_total_area, expected_face_normals,
+      expected_face_centroids, expected_centroid));
+
+  mesh.SetAllPositions(ToVectorX(vertices));
+
+  // Now, the vertex position dependent quantities should be updated.
+  EXPECT_TRUE(verify_position_dependent_quantities(
+      vertices, expected_areas, expected_total_area, expected_face_normals,
+      expected_face_centroids, expected_centroid));
 }
 
 GTEST_TEST(PolygonSurfaceMeshTestCornerCases, ZeroAreaPolygon) {
