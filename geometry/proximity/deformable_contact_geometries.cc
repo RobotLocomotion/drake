@@ -29,16 +29,19 @@ ApproximateSignedDistanceField(const VolumeMesh<double>* mesh) {
   const int num_vertices = mesh->num_vertices();
   vector<double> signed_distance;
   signed_distance.reserve(num_vertices);
-  std::set<int> boundary_vertices;
+  std::vector<int> boundary_vertices;
   const TriangleSurfaceMesh<double> surface_mesh =
       ConvertVolumeToSurfaceMeshWithBoundaryVertices(*mesh, &boundary_vertices);
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_of_surface(surface_mesh);
+  auto boundary_iter = boundary_vertices.begin();
   for (int v = 0; v < num_vertices; ++v) {
-    signed_distance.emplace_back(
-        (boundary_vertices.count(v))
-            ? 0  // The values of vertices on the surface are zero.
-            : -CalcDistanceToSurfaceMesh(mesh->vertex(v), surface_mesh,
-                                         bvh_of_surface));
+    if (boundary_iter != boundary_vertices.end() && *boundary_iter == v) {
+      ++boundary_iter;
+      signed_distance.push_back(0);
+      continue;
+    }
+    signed_distance.emplace_back(-CalcDistanceToSurfaceMesh(
+        mesh->vertex(v), surface_mesh, bvh_of_surface));
   }
   return make_unique<VolumeMeshFieldLinear<double, double>>(
       std::move(signed_distance), mesh);
