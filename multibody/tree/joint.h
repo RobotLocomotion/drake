@@ -454,6 +454,52 @@ class Joint : public MultibodyElement<T> {
     default_positions_ = default_positions;
     do_set_default_positions(default_positions);
   }
+
+  // TODO(sherm1) Consider implementing SetDefaultPose() for every joint type,
+  //  with the joint responsible for making a "best effort" to match the pose if
+  //  it can't do so exactly. Simbody has that feature and it has proven very
+  //  useful in practice.
+
+  // BTW This is implemented with a (quaternion,vector) pair rather than a rigid
+  // transform so that we can guarantee to preserve bit-perfect results when
+  // mapping a floating body default pose to the default positions of its
+  // inboard quaternion floating joint.
+
+  /// Sets this %Joint's default generalized positions q₀ such that the pose
+  /// of the child frame M in the parent frame F best matches the given pose.
+  /// The pose is given by quaternion `q_FM` and position vector `p_FM`, but
+  /// the %Joint may represent pose differently.
+  /// @note Currently this is implemented only for floating (6 dof) joints
+  /// which can represent any pose.
+  /// @throws std::exception if called for any %Joint type that does not
+  /// implement this function.
+  /// @see get_default_positions() to see the resulting q₀ after this call.
+  /// @pydrake_mkdoc_identifier{quaternion}
+  void SetDefaultPose(const Quaternion<double>& q_FM,
+                      const Vector3<double>& p_FM) {
+    DoSetDefaultPose(q_FM, p_FM);
+  }
+
+  /// Convenience function that converts the given transform to a
+  /// (quaternion, translation) pair and invokes the other SetDefaultPose()
+  /// signature.
+  /// @pydrake_mkdoc_identifier{transform}
+  void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
+    SetDefaultPose(X_FM.rotation().ToQuaternion(), X_FM.translation());
+  }
+
+  /// Returns this %Joint's default pose as a quaternion and position vector
+  /// pair. The %Joint converts its default generalized positions q₀ to the
+  /// pose X_FM(q₀) and returns that as a (quaternion, position) pair.
+  /// @note Currently this is implemented only for floating (6 dof) joints
+  /// which can represent any pose.
+  /// @throws std::exception if called for any %Joint type that does not
+  /// implement this function.
+  /// @see get_default_positions() to see the resulting q₀ after this call.
+  std::pair<Eigen::Quaternion<double>, Vector3<double>> GetDefaultPose()
+      const {
+    return DoGetDefaultPose();
+  }
   /// @}
 
   /// Returns all damping coefficients for joints that model viscous damping, of
@@ -601,12 +647,41 @@ class Joint : public MultibodyElement<T> {
 
   /// Implementation of the NVI set_default_positions(), see
   /// set_default_positions() for details. It is the responsibility of the
-  /// subclass to ensure that their joint implementation, should they have one,
-  /// is updated with @p default_positions.
+  /// subclass to ensure that its joint implementation (i.e., mobilizer), should
+  /// it have one, is updated with @p default_positions. Note that the
+  /// %Joint base class also stores default_positions (as a VectorX); the
+  /// implementing mobilizer should have the same value but as a fixed-size
+  /// vector.
   /// @note Implementations must meet the styleguide requirements for snake_case
   /// accessor methods.
   virtual void do_set_default_positions(
       const VectorX<double>& default_positions) = 0;
+
+  /// Implementation of the NVI SetDefaultPose(). This is optional for %Joint
+  /// subclasses _except_ for floating (6 dof) Joints. The subclass
+  /// should convert the input to the closest equivalent in generalized
+  /// coordinates and invoke set_default_positions() to record them. If the
+  /// subclass already uses (quaternion, translation) as generalized coordinates
+  /// (i.e. it's a quaternion_floating_joint) it must store those exactly.
+  virtual void DoSetDefaultPose(const Quaternion<double>& q_FM,
+                                const Vector3<double>& p_FM) {
+    unused(q_FM, p_FM);
+    throw std::logic_error(fmt::format(
+        "SetDefaultPose(): not implemented for joint type {}.", type_name()));
+  }
+
+  /// Implementation of the NVI GetDefaultPose(). This is optional for %Joint
+  /// subclasses _except_ for floating (6 dof) Joints. The subclass should
+  /// convert its default_positions to pose X_FM and return that as a
+  /// (quaternion, translation) pair. If the subclass already uses
+  /// (quaternion, translation) as generalized coordinates (i.e. it's a
+  /// quaternion_floating_joint) it must return those exactly (don't
+  /// convert to a transform first).
+  virtual std::pair<Eigen::Quaternion<double>, Vector3<double>>
+  DoGetDefaultPose() const {
+    throw std::logic_error(fmt::format(
+        "GetDefaultPose(): not implemented for joint type {}.", type_name()));
+  }
 
   /// Implementation of the NVI GetOnePosition() that must only be implemented
   /// by those joint subclasses that have a single degree of freedom.
