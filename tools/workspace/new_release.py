@@ -106,7 +106,7 @@ def _str_replace_forced(original, old, new):
         return original
     result = original.replace(old, new)
     if result == original:
-        raise RuntimeError(f"Could not find '{old}' to subtitute")
+        raise RuntimeError(f"Could not find '{old}' to substitute")
     return result
 
 
