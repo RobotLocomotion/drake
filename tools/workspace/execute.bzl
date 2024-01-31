@@ -1,3 +1,14 @@
+def homebrew_prefix(repo_ctx):
+    """Returns the prefix where Homebrew is expected to be found.
+    Fails when called on a non-macOS platform.
+    """
+    if repo_ctx.os.name != "mac os x":
+        fail("Not a homebrew OS: " + repo_ctx.os_name)
+    if repo_ctx.os.arch == "x86_64":
+        return "/usr/local"
+    else:
+        return "/opt/homebrew"
+
 def path(repo_ctx, additional_search_paths = []):
     """Return the value of the PATH environment variable that would be used by
     the which() command."""
@@ -6,14 +17,7 @@ def path(repo_ctx, additional_search_paths = []):
     # N.B. Ensure ${PATH} in each platform `tools/*.bazelrc` matches these
     # paths.
     if repo_ctx.os.name == "mac os x":
-        arch_result = repo_ctx.execute(["/usr/bin/arch"])
-        if arch_result.return_code != 0:
-            fail("Failure while running /usr/bin/arch")
-        if arch_result.stdout.strip() == "arm64":
-            homebrew_bin = "/opt/homebrew/bin"
-        else:
-            homebrew_bin = "/usr/local/bin"
-        search_paths = search_paths + [homebrew_bin]
+        search_paths = search_paths + [homebrew_prefix(repo_ctx) + "/bin"]
     search_paths = search_paths + ["/usr/bin", "/bin"]
     return ":".join(search_paths)
 
