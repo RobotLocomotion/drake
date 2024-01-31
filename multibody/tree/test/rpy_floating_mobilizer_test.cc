@@ -8,7 +8,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 
 namespace drake {
@@ -29,9 +29,9 @@ class RpyFloatingMobilizerTest : public MobilizerTester {
   // Creates a simple model consisting of a single body with a space xyz
   // floating mobilizer connecting it to the world.
   void SetUp() override {
-    mobilizer_ = &AddMobilizerAndFinalize(
-        std::make_unique<RpyFloatingMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame()));
+    mobilizer_ = &AddJointAndFinalize<RpyFloatingJoint, RpyFloatingMobilizer>(
+        std::make_unique<RpyFloatingJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame()));
   }
 
   // Helper to set the this fixture's context to an arbitrary non-zero state
@@ -121,6 +121,59 @@ TEST_F(RpyFloatingMobilizerTest, ZeroState) {
   mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
   EXPECT_TRUE(
       mobilizer_->CalcAcrossMobilizerTransform(*context_).IsExactlyIdentity());
+}
+
+TEST_F(RpyFloatingMobilizerTest, RandomState) {
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+
+  RpyFloatingMobilizer<double>* mutable_mobilizer =
+      &mutable_tree().get_mutable_variant(*mobilizer_);
+
+  // Default behavior is to set to zero.
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_TRUE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
+          .IsExactlyIdentity());
+  EXPECT_TRUE(mobilizer_->get_translation(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*context_).isZero());
+
+  Eigen::Matrix<symbolic::Expression, 3, 1> angles_distribution;
+  Eigen::Matrix<symbolic::Expression, 3, 1> translation_distribution;
+  for (int i = 0; i < 3; i++) {
+    angles_distribution[i] = (0.0125 * uniform(generator) + i + 1.0);
+    translation_distribution[i] = uniform(generator) + i + 1.0;
+  }
+
+  // Set position to be random, but not velocity (yet).
+  mutable_mobilizer->set_random_angles_distribution(angles_distribution);
+  mutable_mobilizer->set_random_translation_distribution(
+      translation_distribution);
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_FALSE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
+          .IsExactlyIdentity());
+  EXPECT_FALSE(mobilizer_->get_translation(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*context_).isZero());
+
+  // Set the velocity distribution.  Now both should be random.
+  Eigen::Matrix<symbolic::Expression, 6, 1> velocity_distribution;
+  for (int i = 0; i < 6; i++) {
+    velocity_distribution[i] = uniform(generator) - i - 1.0;
+  }
+  mutable_mobilizer->set_random_velocity_distribution(velocity_distribution);
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_FALSE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
+          .IsExactlyIdentity());
+  EXPECT_FALSE(mobilizer_->get_translation(*context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_translational_velocity(*context_).isZero());
 }
 
 // Verify the correctness of across-mobilizer quantities; X_FM, V_FM, A_FM.
@@ -247,7 +300,6 @@ TEST_F(RpyFloatingMobilizerTest, SingularityError) {
   DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNMatrix(*context_, &N),
                               ".*singularity.*");
 }
-
 
 }  // namespace
 }  // namespace internal
