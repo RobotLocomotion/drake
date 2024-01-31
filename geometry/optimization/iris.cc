@@ -927,7 +927,6 @@ void SetEdgeContainmentTerminationCondition(
     IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon,
     const double tol) {
-  // Set the options for IRIS
   const auto ab = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
   const auto hyperellipsoid = Hyperellipsoid(ab);
   options->starting_ellipse = hyperellipsoid;

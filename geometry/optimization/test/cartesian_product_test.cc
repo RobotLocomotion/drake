@@ -599,7 +599,7 @@ GTEST_TEST(CartesianProductTest, ScaledVolume) {
   Eigen::Vector2d b(0, 0);
   CartesianProduct S1(MakeConvexSets(V), A1, b);
   EXPECT_TRUE(S1.has_exact_volume());
-  // the determinent of A1 is -8, so the volume is 3/2 * 8 = 12
+  // the determinant of A1 is -8, so the volume is 3/2 * 8 = 12
   EXPECT_NEAR(S1.CalcVolume(), 12, 1e-6);
   Eigen::MatrixXd A2(2, 1);
   A2 << 1, 2;
@@ -616,7 +616,7 @@ GTEST_TEST(CartesianProductTest, ScaledVolume) {
         5, 1, 4,
         -2, 0, 1;
   // clang-format on
-  // the determinent of A3 is 7, so the volume is 10 * 7 * 3/2= 105
+  // the determinant of A3 is 7, so the volume is 10 * 7 * 3/2= 105
   CartesianProduct S3(MakeConvexSets(V, L), A3, Eigen::Vector3d::Zero());
   EXPECT_TRUE(S3.has_exact_volume());
   EXPECT_NEAR(S3.CalcVolume(), 105, 1e-6);

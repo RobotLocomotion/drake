@@ -130,11 +130,11 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
   const int dim = x_1.size();
   const Eigen::VectorXd center = (x_1 + x_2) / 2.0;
   const Eigen::VectorXd r_0 = (x_1 - x_2) / length;
-  // construct r_1, ..., r_{dim-1} such that r_0, ..., r_{dim-1} are orthonormal
-  // and r_0 is parallel to x_1 - x_2
-  // this is similar to the Gram-Schmidt process
-  // see https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
-  // with the small modification that we construct an orhtonormal basis
+  // Construct r_1, ..., r_{dim-1} such that r_0, ..., r_{dim-1} are orthonormal
+  // and r_0 is parallel to x_1 - x_2.
+  // This is similar to the Gram-Schmidt process
+  // (see https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process)
+  // with the small modification that we construct an orthonormal basis
   // from u_0, e_0, e_1, ..., e_{dim-1}, where e_i is the i-th standard basis
   // vector, and know that the result will have one less vector than the input.
   Eigen::MatrixXd I = Eigen::MatrixXd::Identity(dim, dim);
@@ -153,7 +153,6 @@ AffineBall AffineBall::MakeAffineBallFromLineSegment(
     }
     ++k;
   }
-  // this should never fail
   DRAKE_DEMAND(i == dim);
   Eigen::MatrixXd scale_matrix = epsilon * Eigen::MatrixXd::Identity(dim, dim);
   scale_matrix(0, 0) = length / 2.0;

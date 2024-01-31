@@ -550,7 +550,7 @@ GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest6) {
   Matrix2d A = E.A();
   A.col(1) *= -1;
   Hyperellipsoid E_negated = Hyperellipsoid(A, E.center());
-  // The determinent of A is now negative
+  // The determinant of A is now negative
   EXPECT_NEAR(E_negated.A().determinant(), -1, 1e-16);
   // The volume should be the same as we use the absolute value of the
   // determinant
