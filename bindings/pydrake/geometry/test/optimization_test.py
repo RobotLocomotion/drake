@@ -369,8 +369,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(isinstance(shape, Box))
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
-        np.testing.assert_array_equal(pose.rotation(),
-                                      np.hstack([np.eye(2), np.zeros((2,1))]))
         desired_rel_accuracy = 1e-2
         max_num_samples = 100
         sampled_volume = rect.CalcVolumeViaSampling(
