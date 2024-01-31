@@ -21,7 +21,7 @@ namespace {
 
 template <typename T>
 TriangleSurfaceMesh<double> ConvertVolumeToSurfaceMeshDouble(
-    const VolumeMesh<T>& volume_mesh, std::set<int>* boundary_vertices) {
+    const VolumeMesh<T>& volume_mesh, std::vector<int>* boundary_vertices) {
   TriangleSurfaceMesh<T> surface =
       ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume_mesh,
                                                      boundary_vertices);
@@ -46,7 +46,7 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
     const VolumeMesh<T>* mesh_M, const T& hydroelastic_modulus) {
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
   DRAKE_DEMAND(mesh_M != nullptr);
-  std::set<int> boundary_vertices;
+  std::vector<int> boundary_vertices;
   // The subscript _d is for the scalar type double.
   TriangleSurfaceMesh<double> surface_d =
       ConvertVolumeToSurfaceMeshDouble(*mesh_M, &boundary_vertices);
@@ -59,18 +59,20 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   T max_value(std::numeric_limits<double>::lowest());
   // First round, it's actually unsigned distance, not pressure values yet.
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh(surface_d);
-  int v = 0;
-  for (const Vector3<T>& p_MV : mesh_M->vertices()) {
-    T pressure(0);
-    if (!boundary_vertices.count(v)) {
-      Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
-      pressure = internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh);
+  auto boundary_iter = boundary_vertices.begin();
+  for (int v = 0; v < ssize(mesh_M->vertices()); ++v) {
+    if (boundary_iter != boundary_vertices.end() && *boundary_iter == v) {
+      ++boundary_iter;
+      pressure_values.push_back(0);
+      continue;
     }
-    pressure_values.emplace_back(pressure);
+    const Vector3<T>& p_MV = mesh_M->vertex(v);
+    const Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
+    T pressure = internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh);
+    pressure_values.push_back(pressure);
     if (max_value < pressure) {
       max_value = pressure;
     }
-    ++v;
   }
 
   if (max_value <= T(0)) {

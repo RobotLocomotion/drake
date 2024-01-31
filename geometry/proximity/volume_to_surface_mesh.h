@@ -44,7 +44,7 @@ std::vector<int> CollectUniqueVertices(
 template <class T>
 TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
     const VolumeMesh<T>& volume,
-    std::set<int>* return_boundary_vertices = nullptr);
+    std::vector<int>* return_boundary_vertices = nullptr);
 
 }  // namespace internal
 

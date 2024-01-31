@@ -118,16 +118,12 @@ std::vector<int> CollectUniqueVertices(
 
 template <class T>
 TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
-    const VolumeMesh<T>& volume, std::set<int>* return_boundary_vertices) {
+    const VolumeMesh<T>& volume, std::vector<int>* return_boundary_vertices) {
   const std::vector<std::array<int, 3>> boundary_faces =
       internal::IdentifyBoundaryFaces(volume.tetrahedra());
 
-  const std::vector<int> boundary_vertices =
+  std::vector<int> boundary_vertices =
       internal::CollectUniqueVertices(boundary_faces);
-  if (return_boundary_vertices != nullptr) {
-    *return_boundary_vertices =
-        std::set<int>(boundary_vertices.begin(), boundary_vertices.end());
-  }
 
   std::vector<Vector3<T>> surface_vertices;
   surface_vertices.reserve(boundary_vertices.size());
@@ -148,6 +144,9 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
                                volume_to_surface.at(face_vertices[2]));
   }
 
+  if (return_boundary_vertices != nullptr) {
+    *return_boundary_vertices = std::move(boundary_vertices);
+  }
   return TriangleSurfaceMesh<T>(std::move(surface_faces),
                                 std::move(surface_vertices));
 }
