@@ -64,19 +64,20 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
   return path;
 }
 
-std::vector<MobilizerIndex> FindMobilizersOnPath(
+std::vector<MobodIndex> FindMobilizersOnPath(
     const MultibodyPlant<double>& plant, BodyIndex start, BodyIndex end) {
   const std::vector<BodyIndex> path = FindPath(plant, start, end);
-  std::vector<MobilizerIndex> mobilizers_on_path;
+  std::vector<MobodIndex> mobilizers_on_path;
   mobilizers_on_path.reserve(path.size() - 1);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
-    const RigidBodyTopology& body_topology =
+    const RigidBodyTopology& rigid_body_topology =
         tree.get_topology().get_rigid_body(path[i]);
-    if (path[i] != world_index() && body_topology.parent_body == path[i + 1]) {
+    if (path[i] != world_index() &&
+        rigid_body_topology.parent_body == path[i + 1]) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i]'s inboard mobilizer.
-      mobilizers_on_path.push_back(body_topology.inboard_mobilizer);
+      mobilizers_on_path.push_back(rigid_body_topology.inboard_mobilizer);
     } else {
       // path[i] is the parent of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i+1]'s inboard mobilizer.
@@ -97,10 +98,10 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
   path_not_weld.reserve(path.size());
   path_not_weld.push_back(start);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
-  const std::vector<MobilizerIndex> mobilizer_indices =
+  const std::vector<MobodIndex> mobilizer_indices =
       FindMobilizersOnPath(plant, path[0], path.back());
   for (int i = 0; i < static_cast<int>(mobilizer_indices.size()); ++i) {
-    const MobilizerIndex mobilizer_index = mobilizer_indices[i];
+    const MobodIndex mobilizer_index = mobilizer_indices[i];
     const Mobilizer<double>& mobilizer = tree.get_mobilizer(mobilizer_index);
     if (mobilizer.num_positions() != 0) {
       path_not_weld.push_back(path[i + 1]);

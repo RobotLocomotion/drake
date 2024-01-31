@@ -18,7 +18,7 @@ namespace multibody {
 /// @anchor model_instance
 /// Model instance information for multibody trees.
 ///
-/// A MultiBodyTree is composed of a number of MultibodyElement items.  In
+/// A MultibodyTree is composed of a number of MultibodyElement items.  In
 /// more complex trees, these items will be loaded from multiple models
 /// (e.g. robot arm, attached gripper, free bodies being manipulated).  Each
 /// model may have a different controller or observer, so the ability to view
@@ -39,18 +39,18 @@ namespace multibody {
 /// sometimes specified explicitly, and sometimes inferred when the
 /// element is created.  The current convention is:
 ///
-/// * Body: Specified at creation
-/// * BodyNode: Same as the associated Body
-/// * Frame: Same as the associated Body
-/// * Joint: Same as the child frame
+/// * Link: Specified at creation
+/// * BodyNode: Same as the associated Link
+/// * Frame: Same as the associated Link
+/// * Joint: Same as the child Frame
 /// * JointActuator: Same as the associated Joint
 /// * Mobilizer:
-///   * Same as the joint (if created from a joint)
-///   * Same as the body (for free floating bodies)
-///   * When creating mobilizers for other reasons (e.g. for unit tests) the
+///   * Same as the Joint (if created from a Joint)
+///   * Same as the Link for free floating Links
+///   * When creating Mobilizers for other reasons (e.g. for unit tests) the
 ///     author should take care to choose a reasonable model instance.
 /// * ForceElement: Depends on the type of element
-///   * UniformGravityFieldElement: uses the world model instance
+///   * UniformGravityFieldElement: uses the World model instance
 
 namespace internal {
 

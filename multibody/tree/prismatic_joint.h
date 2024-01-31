@@ -304,12 +304,15 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   // Joint<T> finals:
-  std::unique_ptr<typename Joint<T>::BluePrint>
-  MakeImplementationBlueprint() const final {
+  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+      const internal::SpanningForest::Mobod& mobod) const final {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+    const auto [inboard_frame, outboard_frame] =
+        this->tree_frames(mobod.is_reversed());
+    // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
     auto prismatic_mobilizer =
         std::make_unique<internal::PrismaticMobilizer<T>>(
-            this->frame_on_parent(), this->frame_on_child(), axis_);
+            mobod, *inboard_frame, *outboard_frame, axis_);
     prismatic_mobilizer->set_default_position(this->default_positions());
     blue_print->mobilizer = std::move(prismatic_mobilizer);
     return blue_print;
