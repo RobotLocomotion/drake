@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/matrix_util.h"
@@ -115,6 +116,29 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSkewAdjoint) {
   const double tol{1e-10};
   EXPECT_TRUE(
       CompareMatrices(result, neg_two_y, tol, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           AddMatrixIsLorentzSeparableConstraint3by4) {
+  MathematicalProgram prog;
+  const int m = 3;
+  const int n = 4;
+
+  auto X = prog.NewContinuousVariables(3, 4, "X");
+  AddMatrixIsLorentzSeparableConstraint(X, &prog);
+
+  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
+  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 2);
+  EXPECT_EQ(ssize(prog.GetAllConstraints()), 3);
+
+  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
+      prog.positive_semidefinite_constraints()[0];
+  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
+
+  const Binding<LinearEqualityConstraint> X_equal_Wadj_Y_constraint = prog.linear_equality_constraints()[0];
+  const Binding<LinearEqualityConstraint> skewAdj_Y_constraint = prog.linear_equality_constraints()[1];
+
+  EXPECT_TRUE(false);
 }
 
 }  // namespace internal
