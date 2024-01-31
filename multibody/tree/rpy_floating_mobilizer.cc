@@ -137,6 +137,32 @@ RpyFloatingMobilizer<T>::SetFromRigidTransform(
 }
 
 template <typename T>
+void RpyFloatingMobilizer<T>::set_random_angles_distribution(
+    const Vector3<symbolic::Expression>& angles) {
+  Vector<symbolic::Expression, 6> q;
+  if (this->get_random_state_distribution()) {
+    q = this->get_random_state_distribution()->template head<6>();
+  } else {
+    q = this->get_zero_position().template cast<symbolic::Expression>();
+  }
+  q.template head<3>() = angles;
+  MobilizerBase::set_random_position_distribution(q);
+}
+
+template <typename T>
+void RpyFloatingMobilizer<T>::set_random_translation_distribution(
+    const Vector3<symbolic::Expression>& p_FM) {
+  Vector<symbolic::Expression, 6> q;
+  if (this->get_random_state_distribution()) {
+    q = this->get_random_state_distribution()->template head<6>();
+  } else {
+    q = this->get_zero_position().template cast<symbolic::Expression>();
+  }
+  q.template tail<3>() = p_FM;
+  MobilizerBase::set_random_position_distribution(q);
+}
+
+template <typename T>
 math::RigidTransform<T>
 RpyFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
