@@ -14,6 +14,8 @@ namespace internal {
 class SpanningForest;
 
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
+using ConstraintTypeIndex = TypeSafeIndex<class ConstraintTypeTag>;
+using ConstraintIndex = TypeSafeIndex<class ConstraintTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;
 
 /** Link properties that can affect how the forest model gets built. Or-ing

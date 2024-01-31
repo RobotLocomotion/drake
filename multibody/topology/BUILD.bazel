@@ -11,42 +11,28 @@ package(
 )
 
 drake_cc_library(
-    name = "multibody_graph",
-    srcs = [
-        "multibody_graph.cc",
-    ],
-    hdrs = [
-        "multibody_graph.h",
-    ],
-    deps = [
-        "//common:sorted_pair",
-        "//multibody/tree:multibody_tree_indexes",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_graph_test",
-    deps = [
-        ":multibody_graph",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_topology",
     srcs = [
         "link_joint_graph.cc",
+        "link_joint_graph_debug.cc",
         "spanning_forest.cc",
+        "spanning_forest_debug.cc",
+        "spanning_forest_mobod.cc",
     ],
     hdrs = [
         "forest.h",
         "graph.h",
         "link_joint_graph.h",
+        "link_joint_graph_constraint.h",
         "link_joint_graph_defs.h",
         "link_joint_graph_inlines.h",
         "link_joint_graph_joint.h",
         "link_joint_graph_link.h",
         "spanning_forest.h",
+        "spanning_forest_inlines.h",
+        "spanning_forest_loop_constraint.h",
+        "spanning_forest_mobod.h",
+        "spanning_forest_tree.h",
     ],
     deps = [
         "//common:copyable_unique_ptr",
@@ -56,6 +42,14 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "link_joint_graph_test",
+    deps = [
+        ":multibody_topology",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spanning_forest_test",
     deps = [
         ":multibody_topology",
         "//common/test_utilities:expect_throws_message",

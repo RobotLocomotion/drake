@@ -57,10 +57,11 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                           any value of the generalized coordinate.
    @pre `axis` must be a non-zero vector with norm at least root square of
    machine epsilon. */
-  ScrewMobilizer(const Frame<T>& inboard_frame_F,
+  ScrewMobilizer(const SpanningForest::Mobod& mobod,
+                 const Frame<T>& inboard_frame_F,
                  const Frame<T>& outboard_frame_M,
                  const Vector3<double>& axis, double screw_pitch)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M),
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
         screw_pitch_(screw_pitch) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
