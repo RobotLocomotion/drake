@@ -11,7 +11,6 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -25,7 +24,6 @@ using math::RollPitchYawd;
 using math::RotationMatrixd;
 using std::make_unique;
 using std::unique_ptr;
-using systems::Context;
 
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
@@ -34,7 +32,7 @@ class QuaternionFloatingMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<QuaternionFloatingJoint,
-                                          QuaternionFloatingMobilizer>(
+                                      QuaternionFloatingMobilizer>(
         std::make_unique<QuaternionFloatingJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame()));
   }
