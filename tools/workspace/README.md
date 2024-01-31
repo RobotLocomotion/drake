@@ -54,9 +54,9 @@ so that you can easily refer back to it as you proceed.
   bazel run //tools/workspace:new_release
 ```
 
-For each external in the report, add a commit that upgrades it, as follows:
-
-Run the script to perform one upgrade (for some external "foo"):
+For each external in the report, add a commit that upgrades it.  Typically,
+this can be done by running the script to perform one upgrade (for some
+external "foo"):
 
 ```
   bazel run //tools/workspace:new_release -- --lint --commit foo
@@ -78,15 +78,11 @@ If any edits are needed, stage the changes and amend the commit using
 Repeat this process for all upgrades.  You can re-run the ``new_release``
 report anytime, to get the remaining items that need attention.  You can also
 list several externals to try to update at once, although this will complicate
-making changes to those commits if needed.
-
-Finally, crate_universe needs to be updated manually by running
-tools/workspace/crate_universe/upgrade.sh. This may result in a number of files
-in ``tools/workspace/crate_universe/lock`` being added, removed or changed.
-In this case, commit *all* such changes with the commit message
-``[workspace] Upgrade crate_universe to latest``.
-If the update is included with another 'cohort' package, use the message
-``[workspace] Upgrade <COHORT(S)>, crate_universe to latest``.
+making changes to those commits if needed.  Note that some externals are
+reported as "may need upgrade".  This means that ``new_release`` is not able
+to automatically determine whether an upgrade is needed; therefore, these
+should always be upgraded.  (If no upgrade is needed, the upgrade will do
+nothing and will not create a commit.)
 
 Each external being upgraded should have exactly one commit that does the
 upgrade, and each commit should either a) only impact exactly one external, or
