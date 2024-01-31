@@ -121,82 +121,86 @@ double CalcSquaredDistanceToTriangle(const Vector3<double>& p_WQ,
 //  of "Real Time Collision Detection" (Christer Ericson) with fewer flops if
 //  performance is an issue for CalcSquaredDistanceToTriangle().
 
-double TraverseBvhForMinSquaredDistance(
-    const Vector3d& p_WQ, const TriangleSurfaceMesh<double>& mesh_W,
-    const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_W,
-    double closest_squared_distance_found_so_far) {
-  if (node_W.is_leaf()) {
-    for (int i = 0; i < node_W.num_element_indices(); ++i) {
-      const SurfaceTriangle& t = mesh_W.triangles()[node_W.element_index(i)];
-      closest_squared_distance_found_so_far =
-          std::min(closest_squared_distance_found_so_far,
-                   CalcSquaredDistanceToTriangle(
-                       p_WQ, {mesh_W.vertices()[t.vertex(0)],
-                              mesh_W.vertices()[t.vertex(1)],
-                              mesh_W.vertices()[t.vertex(2)]}));
+class BvhVisitor {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BvhVisitor);
+
+  static double CalcMinDistance(
+      const Vector3d& p_WQ, const TriangleSurfaceMesh<double>& mesh_W,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_W) {
+    BvhVisitor visitor{p_WQ, mesh_W};
+    visitor.Visit(node_W);
+    return std::sqrt(visitor.min_squared_);
+  }
+
+ private:
+  BvhVisitor(const Vector3d& p_WQ, const TriangleSurfaceMesh<double>& mesh_W)
+      : p_WQ_{p_WQ}, mesh_W_{mesh_W} {}
+
+  void Visit(const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_W) {
+    if (node_W.is_leaf()) {
+      for (int i = 0; i < node_W.num_element_indices(); ++i) {
+        const SurfaceTriangle& t = mesh_W_.triangles()[node_W.element_index(i)];
+        min_squared_ = std::min(min_squared_,
+                                CalcSquaredDistanceToTriangle(
+                                    p_WQ_, {mesh_W_.vertices()[t.vertex(0)],
+                                            mesh_W_.vertices()[t.vertex(1)],
+                                            mesh_W_.vertices()[t.vertex(2)]}));
+      }
+      return;
     }
-    return closest_squared_distance_found_so_far;
-  }
 
-  // The rest of this function is for the subtree of the internal node rooted
-  // at node_W.
+    // The rest of this function is for the subtree of the internal node rooted
+    // at node_W.
 
-  const Vector3d box_half_width_B = node_W.bv().half_width();
-  RigidTransformd X_WB = node_W.bv().pose();
-  Vector3d p_BQ = X_WB.inverse() * p_WQ;
+    const Vector3d box_half_width_B = node_W.bv().half_width();
+    const RigidTransformd& X_WB = node_W.bv().pose();
+    const Vector3d p_BQ = X_WB.inverse() * p_WQ_;
 
-  const auto [closest_point_on_box_boundary_B, grad_signed_distance_B,
-              is_Q_on_edge_or_vertex] =
-      point_distance::DistanceToPoint<double>::ComputeDistanceToBox<3>(
-          box_half_width_B, p_BQ);
-  unused(is_Q_on_edge_or_vertex);
-  // Mathematically we can calculate the signed distance phi from the gradient
-  // grad_phi, the query point Q and its closest point C on the box's
-  // boundary as:
-  //      phi = grad_phi.dot(Q - C)
-  // because:
-  // 1. The unsigned distance is clearly |Q-C|. We just need to set the
-  //    correct sign depending on the location of Q relative to the box.
-  // 2. grad_phi is a unit vector pointing outward from the box.  It is
-  //    parallel to Q-C (or antiparallel if Q is inside the box).
-  double signed_distance =
-      grad_signed_distance_B.dot(p_BQ - closest_point_on_box_boundary_B);
+    const auto [closest_point_on_box_boundary_B, grad_signed_distance_B, _] =
+        point_distance::DistanceToPoint<double>::ComputeDistanceToBox<3>(
+            box_half_width_B, p_BQ);
+    // Mathematically we can calculate the signed distance phi from the gradient
+    // grad_phi, the query point Q and its closest point C on the box's
+    // boundary as:
+    //      phi = grad_phi.dot(Q - C)
+    // because:
+    // 1. The unsigned distance is clearly |Q-C|. We just need to set the
+    //    correct sign depending on the location of Q relative to the box.
+    // 2. grad_phi is a unit vector pointing outward from the box.  It is
+    //    parallel to Q-C (or antiparallel if Q is inside the box).
+    const double signed_distance =
+        grad_signed_distance_B.dot(p_BQ - closest_point_on_box_boundary_B);
 
-  // Check for possible pruning.
-  if (signed_distance > 0) {
-    // The query point is outside, so we can get the lower bound.
-    double squared_distance_from_this_node_is_at_least =
-        signed_distance * signed_distance;
-    // Use the lower bound to possibly prune this subtree.
-    if (squared_distance_from_this_node_is_at_least >
-        closest_squared_distance_found_so_far) {
-      return closest_squared_distance_found_so_far;
+    // Check for possible pruning.
+    if (signed_distance > 0) {
+      // The query point is outside, so we can get the lower bound.
+      const double squared_distance_from_this_node_is_at_least =
+          signed_distance * signed_distance;
+      // Use the lower bound to possibly prune this subtree.
+      if (squared_distance_from_this_node_is_at_least > min_squared_) {
+        return;
+      }
     }
+
+    // We couldn't prune the subtree, recursively search both children.
+    this->Visit(node_W.left());
+    this->Visit(node_W.right());
   }
 
-  // We couldn't prune the subtree, recursively search both children.
-  double left_squared_distance = TraverseBvhForMinSquaredDistance(
-      p_WQ, mesh_W, node_W.left(), closest_squared_distance_found_so_far);
-  if (left_squared_distance < closest_squared_distance_found_so_far) {
-    closest_squared_distance_found_so_far = left_squared_distance;
-  }
-  double right_squared_distance = TraverseBvhForMinSquaredDistance(
-      p_WQ, mesh_W, node_W.right(), closest_squared_distance_found_so_far);
-  if (right_squared_distance < closest_squared_distance_found_so_far) {
-    closest_squared_distance_found_so_far = right_squared_distance;
-  }
+ private:
+  const Vector3<double>& p_WQ_;
+  const TriangleSurfaceMesh<double>& mesh_W_;
 
-  return closest_squared_distance_found_so_far;
-}
+  double min_squared_{std::numeric_limits<double>::infinity()};
+};
 
 }  // namespace
 
 double CalcDistanceToSurfaceMesh(
     const Vector3<double>& p_WQ, const TriangleSurfaceMesh<double>& mesh_W,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_W) {
-  return std::sqrt(TraverseBvhForMinSquaredDistance(
-      p_WQ, mesh_W, bvh_W.root_node(),
-      std::numeric_limits<double>::infinity()));
+  return BvhVisitor::CalcMinDistance(p_WQ, mesh_W, bvh_W.root_node());
 }
 
 }  // namespace internal
