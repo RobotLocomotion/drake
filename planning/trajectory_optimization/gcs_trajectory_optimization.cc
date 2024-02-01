@@ -115,7 +115,7 @@ PairwiseIntersectionsContinuousJoints(
         std::vector<std::pair<double, double>>());
     for (const int k : continuous_revolute_joints) {
       region_minimum_and_maximum_values_A.at(i).emplace_back(
-          GetMinimumAndMaximumValueAlongDimension(*convex_sets_A.at(i), k));
+          GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i], k));
     }
   }
 
@@ -131,7 +131,7 @@ PairwiseIntersectionsContinuousJoints(
           std::vector<std::pair<double, double>>());
       for (const int k : continuous_revolute_joints) {
         maybe_region_minimum_and_maximum_values_B.at(i).emplace_back(
-            GetMinimumAndMaximumValueAlongDimension(*convex_sets_B.at(i), k));
+            GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i], k));
       }
     }
   }
