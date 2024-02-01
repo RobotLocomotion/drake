@@ -1092,6 +1092,54 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, EdgesFromWrappedJoints) {
+  // With wrapping continous joints
+  Vector3d point_1(0.5, -12 * M_PI + 0.1, 12 * M_PI - 0.1);
+  Vector3d point_2(0.5, 12 * M_PI - 0.1, 0.0);
+  HPolyhedron box = HPolyhedron::MakeUnitBox(3);
+  const auto regions = MakeConvexSets(Point(point_1), Point(point_2), box);
+  // Let's make 4 scenarios
+  const std::vector<int> continuous_revolute_joints_1 = {};
+  const std::vector<int> continuous_revolute_joints_2 = {1};
+  const std::vector<int> continuous_revolute_joints_3 = {0, 2};
+  const std::vector<int> continuous_revolute_joints_4 = {2, 1};
+  // scenario 1: no wrapping, no edges
+  auto gcs_1 = GcsTrajectoryOptimization(3, continuous_revolute_joints_1);
+  gcs_1.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_1.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 2: wrapping on joint 1, point_2 <--> box
+  auto gcs_2 = GcsTrajectoryOptimization(3, continuous_revolute_joints_2);
+  gcs_2.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_2.graph_of_convex_sets().Edges().size(), 2);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      0);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      1);
+  // scenario 3: wrapping on joint 0 and 2, no edges
+  auto gcs_3 = GcsTrajectoryOptimization(3, continuous_revolute_joints_3);
+  gcs_3.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_3.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 4: wrapping on joint 1 and 2, point_1 <--> box and point_2 <-->
+  // box
+  auto gcs_4 = GcsTrajectoryOptimization(3, continuous_revolute_joints_4);
+  gcs_4.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_4.graph_of_convex_sets().Edges().size(), 4);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      2);
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   /*
              0, 2π

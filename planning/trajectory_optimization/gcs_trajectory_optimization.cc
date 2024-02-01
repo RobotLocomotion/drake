@@ -113,8 +113,8 @@ PairwiseIntersectionsContinuousJoints(
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     region_minimum_and_maximum_values_A.emplace_back(
         std::vector<std::pair<double, double>>());
-    for (const int& k : continuous_revolute_joints) {
-      region_minimum_and_maximum_values_A[i].emplace_back(
+    for (const int k : continuous_revolute_joints) {
+      region_minimum_and_maximum_values_A.at(i).emplace_back(
           GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i], k));
     }
   }
@@ -129,8 +129,8 @@ PairwiseIntersectionsContinuousJoints(
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
       maybe_region_minimum_and_maximum_values_B.emplace_back(
           std::vector<std::pair<double, double>>());
-      for (const int& k : continuous_revolute_joints) {
-        maybe_region_minimum_and_maximum_values_B[i].emplace_back(
+      for (const int k : continuous_revolute_joints) {
+        maybe_region_minimum_and_maximum_values_B.at(i).emplace_back(
             GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i], k));
       }
     }
@@ -150,9 +150,10 @@ PairwiseIntersectionsContinuousJoints(
 
       // First, we compute what the offset that should be applied to
       // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
-      for (const int k : continuous_revolute_joints) {
-        if (region_minimum_and_maximum_values_A[i][k].first <
-            region_minimum_and_maximum_values_B[j][k].first) {
+      for (int kk = 0; kk < ssize(continuous_revolute_joints); ++kk) {
+        const int k = continuous_revolute_joints.at(kk);
+        if (region_minimum_and_maximum_values_A.at(i).at(kk).first <
+            region_minimum_and_maximum_values_B.at(j).at(kk).first) {
           // In this case, the minimum value of convex_sets_A[i] along dimension
           // k is smaller than the minimum value of convex_sets_B[j] along
           // dimension k, so we must translate by a positive amount. By the
@@ -162,22 +163,24 @@ PairwiseIntersectionsContinuousJoints(
           // difference between the maximum value in convex_sets_B[j] and the
           // minimum value in convex_sets_A[i] is less than 2π. This is computed
           // by taking that difference, dividing by 2π, and truncating.
-          offset[k] =
+          offset(k) =
               2 * M_PI *
-              std::floor((region_minimum_and_maximum_values_B[j][k].second -
-                          region_minimum_and_maximum_values_A[i][k].first) /
-                         (2 * M_PI));
+              std::floor(
+                  (region_minimum_and_maximum_values_B.at(j).at(kk).second -
+                   region_minimum_and_maximum_values_A.at(i).at(kk).first) /
+                  (2 * M_PI));
         } else {
           // In this case, the minimum value of convex_sets_B[j] along dimension
           // k is smaller than the minimum value of convex_sets_A[i] along
           // dimension k. We do the same thing as above, but flip the order of
           // the sets. As a result, we also flip the sign of the resulting
           // translation.
-          offset[k] =
+          offset(k) =
               -2 * M_PI *
-              std::floor((region_minimum_and_maximum_values_A[i][k].second -
-                          region_minimum_and_maximum_values_B[j][k].first) /
-                         (2 * M_PI));
+              std::floor(
+                  (region_minimum_and_maximum_values_A.at(i).at(kk).second -
+                   region_minimum_and_maximum_values_B.at(j).at(kk).first) /
+                  (2 * M_PI));
         }
       }
 
@@ -195,8 +198,8 @@ PairwiseIntersectionsContinuousJoints(
       Aeq.rightCols(dimension) =
           Eigen::MatrixXd::Identity(dimension, dimension);
       prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
-      convex_sets_A[i]->AddPointInSetConstraints(&prog, x);
-      convex_sets_B[j]->AddPointInSetConstraints(&prog, y);
+      convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
+      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
       const auto result = Solve(prog);
       if (result.is_success()) {
         // Regions are overlapping, add edge (i, j). If we're adding edges
