@@ -1,6 +1,9 @@
 [vtk] Add missing member field initialization
 
-This fix should be submitted upstream.
+This patch has been upstreamed and will no longer apply, it
+can be deleted the next time drake upgrades VTK.
+
+https://gitlab.kitware.com/vtk/vtk/-/merge_requests/10860
 
 --- Filters/Sources/vtkCylinderSource.cxx
 +++ Filters/Sources/vtkCylinderSource.cxx
