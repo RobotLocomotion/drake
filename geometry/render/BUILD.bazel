@@ -13,12 +13,22 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
+        ":color_deprecated",
         ":light_parameter",
         ":render_camera",
         ":render_engine",
         ":render_label",
         ":render_material",
         ":render_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "color_deprecated",
+    hdrs = ["color_deprecated.h"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
     ],
 )
 

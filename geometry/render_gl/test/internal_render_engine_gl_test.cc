@@ -22,7 +22,6 @@
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
 DEFINE_bool(show_window, false, "Display render windows locally for debugging");
@@ -94,8 +93,6 @@ using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::CameraInfo;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -166,11 +163,12 @@ std::ostream& operator<<(std::ostream& out, const ScreenCoord& c) {
 
 // Utility struct for doing color testing; provides three mechanisms for
 // creating a common rgba color. We get colors from images (as a pointer to
-// unsigned bytes, as a (ColorI, alpha) pair, and from a normalized color. It's
+// unsigned bytes, as four separate ints, and from a normalized color. It's
 // nice to articulate tests without having to worry about those details.
 struct RgbaColor {
-  RgbaColor(const ColorI& c, int alpha) : r(c.r), g(c.g), b(c.b), a(alpha) {}
   explicit RgbaColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
+  RgbaColor(int r_in, int g_in, int b_in, int a_in)
+      : r(r_in), g(g_in), b(b_in), a(a_in) {}
   // We'll allow *implicit* conversion from Rgba to RgbaColor to increase the
   // utility of IsColorNear(), but only in the scope of this test.
   // NOLINTNEXTLINE(runtime/explicit)
@@ -186,10 +184,10 @@ struct RgbaColor {
 
   bool operator!=(const RgbaColor& c) const { return !(*this == c); }
 
-  int r;
-  int g;
-  int b;
-  int a;
+  int r{};
+  int g{};
+  int b{};
+  int a{};
 };
 
 std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
@@ -724,7 +722,7 @@ TEST_F(RenderEngineGlTest, BoxTest) {
         //  within 1/255 on each channel). However, as I increase the scale
         //  factor from 1.5 to 3.5 to 10.5, the observed color stretches further
         //  into the red. This is clearly not an overly precise test.
-        expected_color_ = RgbaColor(ColorI{135, 116, 15}, 255);
+        expected_color_ = RgbaColor(135, 116, 15, 255);
         // Quick proof that we're testing for a different color -- we're drawing
         // the red channel from our expected color.
         ASSERT_NE(kTextureColor.r(), expected_color_.r);
@@ -912,10 +910,9 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
     const Vector3d original_rgb(original_color.r, original_color.g,
                                 original_color.b);
     const Vector3d expected_rgb = original_rgb * std::cos(M_PI / 4.0);
-    expected_color_ = RgbaColor(ColorI{static_cast<int>(expected_rgb[0]),
-                                       static_cast<int>(expected_rgb[1]),
-                                       static_cast<int>(expected_rgb[2])},
-                                255);
+    expected_color_ = RgbaColor(static_cast<int>(expected_rgb[0]),
+                                static_cast<int>(expected_rgb[1]),
+                                static_cast<int>(expected_rgb[2]), 255);
     expected_label_ = deformable_label;
     expected_object_depth_ += 0.5;
 

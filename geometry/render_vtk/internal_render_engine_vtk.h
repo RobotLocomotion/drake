@@ -322,7 +322,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 
   // The color to clear the color buffer to.
-  systems::sensors::ColorD default_clear_color_;
+  Rgba default_clear_color_;
 
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.

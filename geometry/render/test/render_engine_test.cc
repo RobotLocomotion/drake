@@ -364,7 +364,9 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   }
 }
 
-GTEST_TEST(RenderEngine, ColorLabelConversion) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(RenderEngine, ColorLabelConversionDeprecated) {
   // Explicitly testing labels at *both* ends of the reserved space -- this
   // assumes that the reserved labels are at the top end; if that changes, we'll
   // need a different mechanism to get a large-valued label.
@@ -412,6 +414,35 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
   EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
   EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
   EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(RenderEngine, ColorLabelConversion) {
+  // Explicitly testing labels at *both* ends of the reserved space -- this
+  // assumes that the reserved labels are at the top end; if that changes, we'll
+  // need a different mechanism to get a large-valued label.
+  const std::array<RenderLabel, 3> labels{
+      RenderLabel(0),
+      RenderLabel(RenderLabel::kMaxUnreserved - 1),
+      RenderLabel::kEmpty,
+  };
+  for (size_t i = 0; i < labels.size(); ++i) {
+    for (size_t j = 0; j < labels.size(); ++j) {
+      if (i == j) {
+        // Colors should be invertible back to the original label.
+        const Rgba color = DummyRenderEngine::MakeRgbFromLabel(labels[i]);
+        const Vector3<uint8_t> pixel =
+            (color.rgba().head(3) * 255.0).template cast<uint8_t>();
+        const RenderLabel readback =
+            DummyRenderEngine::MakeLabelFromRgb(pixel[0], pixel[1], pixel[2]);
+        EXPECT_EQ(readback, labels[i]);
+      } else {
+        // Different labels should produce different colors.
+        EXPECT_NE(DummyRenderEngine::MakeRgbFromLabel(labels[i]),
+                  DummyRenderEngine::MakeRgbFromLabel(labels[j]));
+      }
+    }
+  }
 }
 
 // Tests the documented behavior for configuring the default render label.
