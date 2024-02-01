@@ -14,6 +14,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/render/color_deprecated.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_mesh.h"
@@ -21,7 +22,6 @@
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/camera_info.h"
-#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -405,38 +405,43 @@ class RenderEngine : public ShapeReifier {
    most humans cannot distinguish, but the computer can. Do not use these
    utilities to produce the prototypical "colored label" images.
 
-   The label-to-color conversion can produce one of two different color
-   encodings. These encodings are not exhaustive but they are typical of the
-   encodings that have proven useful. The supported color encodings consist of
-   three RGB channels where each channel is either _byte-valued_ in that they
-   are encoded with unsigned bytes in the range [0, 255] per channel or
-   _double-valued_ such that each channel is encoded with a double in the range
-   [0, 1]. Conversion to RenderLabel is only supported from byte-valued color
-   values.
-
    These utilities are provided as a _convenience_ to derived classes. Derived
    classes are not required to encode labels as colors in the same way. They are
    only obliged to return label images with proper label values according to
    the documented semantics.  */
   //@{
 
-  /** Transforms the given byte-valued RGB color value into its corresponding
-   RenderLabel.  */
-  static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
+  /** Transforms the given RGB color into its corresponding RenderLabel.  */
+  static RenderLabel MakeLabelFromRgb(uint8_t r, uint8_t g, uint8_t /* b */) {
+    // The blue channel is not currently used.
+    return RenderLabel(r | (g << 8), false);
+  }
+
+  /** Transforms the given render label into an RGB color.
+   The alpha channel will always be 1.0. */
+  static Rgba MakeRgbFromLabel(const RenderLabel& label) {
+    const uint8_t r = label.value_ & 0xFF;
+    const uint8_t g = (label.value_ >> 8) & 0xFF;
+    return Rgba{r / 255.0, g / 255.0, /* b = */ 0.0};
+  }
+
+  DRAKE_DEPRECATED("2024-05-01", "Use MakeLabelFromRgb instead")
+  static RenderLabel LabelFromColor(
+      const deprecated::internal::Color<int>& color) {
     return RenderLabel(color.r | (color.g << 8), false);
   }
 
-  /** Transforms `this` render label into a byte-valued RGB color.  */
-  static systems::sensors::ColorI GetColorIFromLabel(const RenderLabel& label) {
-    return systems::sensors::ColorI{label.value_ & 0xFF,
-                                    (label.value_ >> 8) & 0xFF, 0};
+  DRAKE_DEPRECATED("2024-05-01", "Use MakeLabelFromRgb instead")
+  static deprecated::internal::Color<int> GetColorIFromLabel(
+      const RenderLabel& label) {
+    return {label.value_ & 0xFF, (label.value_ >> 8) & 0xFF, 0};
   }
 
-  /** Transforms `this` render label into a double-valued RGB color.  */
-  static systems::sensors::ColorD GetColorDFromLabel(const RenderLabel& label) {
-    systems::sensors::ColorI i_color = GetColorIFromLabel(label);
-    return systems::sensors::ColorD{i_color.r / 255., i_color.g / 255.,
-                                    i_color.b / 255.};
+  DRAKE_DEPRECATED("2024-05-01", "Use MakeRgbFromLabel instead")
+  static deprecated::internal::Color<double> GetColorDFromLabel(
+      const RenderLabel& label) {
+    auto rgba = MakeRgbFromLabel(label);
+    return {rgba.r(), rgba.g(), rgba.b()};
   }
 
   //@}

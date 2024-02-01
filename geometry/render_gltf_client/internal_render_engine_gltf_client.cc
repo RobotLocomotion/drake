@@ -290,7 +290,7 @@ void SetRootPoses(nlohmann::json* gltf,
 
 /* Changes all material definitions to be an emissive flat color. This removes
  all references to textures. */
-void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
+void ChangeToLabelMaterials(nlohmann::json* gltf, const Rgba& color) {
   if (gltf->contains("materials")) {
     auto& materials = (*gltf)["materials"];
     for (auto& mat : materials) {
@@ -299,9 +299,9 @@ void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
       mat.erase("normalTexture");
       mat.erase("occlusionTexture");
       mat.erase("emissiveTexture");
-      mat["emissiveFactor"] = {color.r, color.g, color.b};
+      mat["emissiveFactor"] = {color.r(), color.g(), color.b()};
       auto& pbr = mat["pbrMetallicRoughness"];
-      pbr["baseColorFactor"] = {color.r, color.g, color.b, 1.0};
+      pbr["baseColorFactor"] = {color.r(), color.g(), color.b(), 1.0};
       pbr.erase("baseColorTexture");
       pbr.erase("metallicFactor");
       pbr.erase("roughnessFactor");
@@ -451,16 +451,15 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   // By convention (see render_gltf_client_doxygen.h), server-only artifacts are
   // colored white to indicate the "don't care" semantic.
   // Convert from RGB to Label.
-  const ColorI kDontCare{255, 255, 255};
-  ColorI color;
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
-      color.r = colored_label_image.at(x, y)[0];
-      color.g = colored_label_image.at(x, y)[1];
-      color.b = colored_label_image.at(x, y)[2];
-      label_image_out->at(x, y)[0] = color == kDontCare
-                                         ? render::RenderLabel::kDontCare
-                                         : RenderEngine::LabelFromColor(color);
+      const uint8_t r = colored_label_image.at(x, y)[0];
+      const uint8_t g = colored_label_image.at(x, y)[1];
+      const uint8_t b = colored_label_image.at(x, y)[2];
+      label_image_out->at(x, y)[0] =
+          (r == 255 && g == 255 && b == 255)
+              ? render::RenderLabel::kDontCare
+              : RenderEngine::MakeLabelFromRgb(r, g, b);
     }
   }
 
@@ -491,7 +490,7 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
   for (const auto& [id, record] : gltfs_) {
     nlohmann::json temp = record.contents;
     if (image_type == render_vtk::internal::kLabel) {
-      const ColorD color = RenderEngine::GetColorDFromLabel(record.label);
+      const Rgba color = RenderEngine::MakeRgbFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
     MergeGltf(&gltf, std::move(temp), record.path.string(), &merge_record);
