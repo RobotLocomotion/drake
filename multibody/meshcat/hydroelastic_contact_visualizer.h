@@ -91,6 +91,8 @@ class HydroelasticContactVisualizer {
   meshcat (with visible=false and active=false) as a side-effect. */
   VisibilityStatus& FindOrAdd(const std::string& path);
 
+  VisibilityStatus& FindOrAddWithoutArrow(const std::string& path);
+
   const std::shared_ptr<geometry::Meshcat> meshcat_;
   const ContactVisualizerParams params_;
 

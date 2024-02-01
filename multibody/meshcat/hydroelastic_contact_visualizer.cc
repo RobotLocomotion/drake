@@ -53,11 +53,18 @@ void HydroelasticContactVisualizer::Update(
 
     VisibilityStatus& status = FindOrAdd(path);
 
+    // Hack to add timestamp to the path of the contact surface.
+    std::string path_contact_surface_with_time =
+        fmt::format("{}/contact_surface/{}", path, time);
+    VisibilityStatus& surface_status =
+        FindOrAddWithoutArrow(path_contact_surface_with_time);
+
     // Decide whether the contact should be shown.
     const double force_norm = item.force_C_W.norm();
     const double moment_norm = item.moment_C_W.norm();
     status.active = (force_norm >= params_.force_threshold) ||
                     (moment_norm >= params_.moment_threshold);
+    surface_status.active = status.active;
     if (!status.active) {
       continue;
     }
@@ -153,9 +160,9 @@ void HydroelasticContactVisualizer::Update(
 
       // TODO(#17682): Applying color map values as *vertex colors* produces
       // terrible visual artifacts. See the referenced issue for discussion.
-      meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
+      meshcat_->SetTriangleColorMesh(path_contact_surface_with_time, item.p_WV,
                                      item.faces, colors, false);
-      meshcat_->SetTransform(path + "/contact_surface",
+      meshcat_->SetTransform(path_contact_surface_with_time,
                              RigidTransformd(-item.centroid_W));
     }
   }
@@ -199,6 +206,20 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
                       params_.hydro_moment_color);
   return iter->second;
 }
+
+HydroelasticContactVisualizer::VisibilityStatus&
+HydroelasticContactVisualizer::FindOrAddWithoutArrow(const std::string& path) {
+  auto iter = path_visibility_status_.find(path);
+  if (iter != path_visibility_status_.end()) {
+    return iter->second;
+  }
+
+  // Start with it being invisible, to prevent flickering at the origin.
+  iter = path_visibility_status_.insert({path, {false, false}}).first;
+  meshcat_->SetProperty(path, "visible", false, 0);
+  return iter->second;
+}
+
 
 }  // namespace internal
 }  // namespace meshcat
