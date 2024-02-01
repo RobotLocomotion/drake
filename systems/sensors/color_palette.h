@@ -1,71 +1,17 @@
 #pragma once
 
-#include <functional>
-#include <ostream>
 #include <unordered_map>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
-#include "drake/common/hash.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/geometry/render/color_deprecated.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Holds r, g, b values to represent a color pixel.
-///
-/// @tparam T A type for each color channel.
-template <typename T>
-struct Color {
-  T r;  /// Red.
-  T g;  /// Green.
-  T b;  /// Blue.
-
-  bool operator==(const Color<T>& other) const {
-    return this->r == other.r && this->g == other.g && this->b == other.b;
-  }
-
-  /// Implements the @ref hash_append concept.
-  template <class HashAlgorithm>
-  friend void hash_append(HashAlgorithm& hasher, const Color& item) noexcept {
-    using drake::hash_append;
-    hash_append(hasher, item.r);
-    hash_append(hasher, item.g);
-    hash_append(hasher, item.b);
-  }
-};
-
-template <typename T>
-std::ostream& operator<<(std::ostream& out, const Color<T>& color) {
-  out << "(" << color.r << ", " << color.g << ", " << color.b << ")";
-  return out;
-}
-
-}  // namespace sensors
-}  // namespace systems
-}  // namespace drake
-
-namespace std {
-template <typename T>
-struct hash<drake::systems::sensors::Color<T>> : public drake::DefaultHash {};
-}  // namespace std
-
-namespace drake {
-namespace systems {
-namespace sensors {
-
-/// Defines a color based on its three primary additive colors: red, green, and
-/// blue. Each of these primary additive colors are in the range of [0, 255].
-using ColorI = Color<int>;
-
-/// Defines a color based on its three primary additive colors: red, green, and
-/// blue. Each of these primary additive colors are in the range of [0, 1].
-using ColorD = Color<double>;
-
-// TODO(SeanCurtis-TRI): As indicated in #9628, provide unit tests for the
-// contents of this file.
 /// Creates and holds a palette of colors for visualizing different objects in a
 /// scene (the intent is for a different color to be applied to each identified
 /// object). The colors are chosen so as to be easily distinguishable. In other
@@ -76,9 +22,13 @@ using ColorD = Color<double>;
 ///
 /// @tparam IdType  The type of value used for label values.
 template <typename IdType>
-class ColorPalette {
+class DRAKE_DEPRECATED("2024-05-01",
+                       "This class is being removed") ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
+
+  using ColorD = drake::deprecated::internal::Color<double>;
+  using ColorI = drake::deprecated::internal::Color<int>;
 
   /// A constructor for %ColorPalette.
   ///
@@ -191,10 +141,3 @@ class ColorPalette {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
-
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::systems::sensors::Color<T>> : drake::ostream_formatter {
-};
-}  // namespace fmt
