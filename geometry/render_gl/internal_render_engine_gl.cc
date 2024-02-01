@@ -727,8 +727,8 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   // r,g,b,a color to represent it.
   auto label_encoder = [this](const PerceptionProperties& props) {
     const RenderLabel& label = this->GetRenderLabelOrThrow(props);
-    const ColorD color = this->GetColorDFromLabel(label);
-    return Vector4<float>(color.r, color.g, color.b, 1.f);
+    const Rgba color = RenderEngine::MakeRgbFromLabel(label);
+    return Vector4<float>(color.r(), color.g(), color.b(), 1.0f);
   };
   AddShader(make_unique<DefaultLabelShader>(label_encoder), RenderType::kLabel);
 }
@@ -1122,11 +1122,10 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   const RenderTarget render_target =
       GetRenderTarget(camera.core(), RenderType::kLabel);
   // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a member.
-  const ColorD empty_color =
-      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
-  float clear_color[4] = {static_cast<float>(empty_color.r),
-                          static_cast<float>(empty_color.g),
-                          static_cast<float>(empty_color.b), 1.f};
+  const Rgba empty_color = RenderEngine::MakeRgbFromLabel(RenderLabel::kEmpty);
+  float clear_color[4] = {static_cast<float>(empty_color.r()),
+                          static_cast<float>(empty_color.g()),
+                          static_cast<float>(empty_color.b()), 1.0f};
   glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
                             &clear_color[0]);
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -1369,13 +1368,10 @@ void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
   ImageRgba8U image(label_image_out->width(), label_image_out->height());
   glGetTextureImage(target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                     image.size() * sizeof(GLubyte), image.at(0, 0));
-  ColorI color;
   for (int y = 0; y < image.height(); ++y) {
     for (int x = 0; x < image.width(); ++x) {
-      color.r = image.at(x, y)[0];
-      color.g = image.at(x, y)[1];
-      color.b = image.at(x, y)[2];
-      *label_image_out->at(x, y) = RenderEngine::LabelFromColor(color);
+      *label_image_out->at(x, y) = RenderEngine::MakeLabelFromRgb(
+          image.at(x, y)[0], image.at(x, y)[1], image.at(x, y)[2]);
     }
   }
 }
