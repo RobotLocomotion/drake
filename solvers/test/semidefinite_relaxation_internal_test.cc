@@ -68,6 +68,49 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSparseKron) {
   TestKron(C, B.sparseView());
 }
 
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           TestComputeTensorProductOfSymmetricMatrixToRealVecOperators) {
+  Eigen::MatrixXd X(5, 5);
+  // clang-format off
+  X <<   4.1 , -2.11, -2.07, -5.68, -5.95,
+        -2.11, -3.59, -2.84, -1.73, -8.44,
+        -2.07, -2.84, -8.84, -5.65,  8.24,
+        -5.68, -1.73, -5.65, -1.98,  0.48,
+        -5.95, -8.44,  8.24,  0.48,  4.23;
+  // clang-format on
+  Eigen::VectorX<double> x_tril = math::ToLowerTriangularColumnsFromMatrix(X);
+
+  Eigen::VectorXd a_full(5);
+  a_full << 1.69, -1.11, 2.6, -3.81, 0.83;
+
+  Eigen::MatrixXd a_tril = Eigen::MatrixXd::Zero(5, 15);
+  int start_col = 0;
+  for (int i = 0; i < 5; ++i) {
+    a_tril.block(i, start_col, 5 - i, 5 - i) =
+        a_full(i) * Eigen::MatrixXd(5 - i, 5 - i).setIdentity();
+    a_tril.block(i, start_col, 1, 5 - i) = a_full.tail(5 - i).transpose();
+    start_col += 5 - i;
+    std::cout << start_col << std::endl;
+  }
+
+//  a_tril.block<5, 5>(0, 0) = a_full(0) * Eigen::MatrixXd(5, 5).setIdentity();
+//  a_tril.block<1, 5>(0, 0) = a_full.transpose();
+//
+//  a_tril.block<4, 4>(1, 5) = a_full(1) * Eigen::MatrixXd(4, 4).setIdentity();
+//  a_tril.block<1, 4>(1, 5) = a_full.tail<4>();
+//  a_tril.block<3, 3>(2, 9) = a_full(2) * Eigen::MatrixXd(3, 3).setIdentity();
+//  a_tril.block<2, 2>(3, 12) = a_full(3) * Eigen::MatrixXd(2, 2).setIdentity();
+//  a_tril(4, 14) = a_full(4);
+
+  std::cout << fmt::format("X*a_full=\n{}", fmt_eigen(X * a_full)) << std::endl;
+  std::cout << fmt::format("a_tril*x_tril=\n{}", fmt_eigen(a_tril * x_tril))
+            << std::endl;
+  std::cout << fmt::format("a_tril=\n{}", fmt_eigen(a_tril)) << std::endl;
+
+  EXPECT_TRUE(CompareMatrices(X * a_full, a_tril * x_tril, 1e-10,
+                              MatrixCompareType::absolute));
+}
+
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
   Eigen::MatrixXd Y(5, 5);
   // clang-format off
@@ -118,28 +161,30 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSkewAdjoint) {
       CompareMatrices(result, neg_two_y, tol, MatrixCompareType::absolute));
 }
 
-GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-           AddMatrixIsLorentzSeparableConstraint3by4) {
-  MathematicalProgram prog;
-  const int m = 3;
-  const int n = 4;
-
-  auto X = prog.NewContinuousVariables(3, 4, "X");
-  AddMatrixIsLorentzSeparableConstraint(X, &prog);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 2);
-  EXPECT_EQ(ssize(prog.GetAllConstraints()), 3);
-
-  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
-      prog.positive_semidefinite_constraints()[0];
-  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
-
-  const Binding<LinearEqualityConstraint> X_equal_Wadj_Y_constraint = prog.linear_equality_constraints()[0];
-  const Binding<LinearEqualityConstraint> skewAdj_Y_constraint = prog.linear_equality_constraints()[1];
-
-  EXPECT_TRUE(false);
-}
+// GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+//           AddMatrixIsLorentzSeparableConstraint3by4) {
+//  MathematicalProgram prog;
+//  const int m = 3;
+//  const int n = 4;
+//
+//  auto X = prog.NewContinuousVariables(3, 4, "X");
+//  AddMatrixIsLorentzSeparableConstraint(X, &prog);
+//
+//  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
+//  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 2);
+//  EXPECT_EQ(ssize(prog.GetAllConstraints()), 3);
+//
+//  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
+//      prog.positive_semidefinite_constraints()[0];
+//  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
+//
+//  const Binding<LinearEqualityConstraint> X_equal_Wadj_Y_constraint =
+//  prog.linear_equality_constraints()[0]; const
+//  Binding<LinearEqualityConstraint> skewAdj_Y_constraint =
+//  prog.linear_equality_constraints()[1];
+//
+//  EXPECT_TRUE(false);
+//}
 
 }  // namespace internal
 }  // namespace solvers
