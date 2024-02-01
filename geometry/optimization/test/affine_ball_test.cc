@@ -211,6 +211,17 @@ GTEST_TEST(AffineBallTest, NotAxisAligned) {
   EXPECT_TRUE(ab1.PointInSet(
       center + Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
 
+  // Negate the second column of B1: the resulting affine_ball
+  // should be the same as the first one.
+  Eigen::Matrix2d B1_negated = B1;
+  B1_negated.col(1) *= -1;
+  AffineBall ab1_negated(B1_negated, center);
+  // The determinant of B1_negated is is the negation of the determinant of B1.
+  EXPECT_NEAR(ab1_negated.B().determinant(), -ab1.B().determinant(), kTol);
+  // However the volume is the same because we use the absolute value of the
+  // determinant.
+  EXPECT_NEAR(ab1_negated.CalcVolume(), ab1.CalcVolume(), kTol);
+
   // Same as B1, but one of the axes is dropped. This makes it just a line
   // segment from (1-2/sqrt(2), 1-2/sqrt(2)) to (1+2/sqrt(2), 1+2/sqrt(2)).
   Eigen::Matrix2d B2;
@@ -413,6 +424,47 @@ GTEST_TEST(AffineBallTest,
         points.col(i) + (points.col(i) - center) * (1. + eps);
     EXPECT_FALSE(E.PointInSet(point_outside, tol));
   }
+}
+
+GTEST_TEST(AffineBallTest, MakeAffineBallFromLineSegment) {
+  const Vector3d x_1 = Vector3d{0.0, 0.0, 0.0};
+  const Vector3d x_2 = Vector3d{0.0, 0.0, 4.0};
+  const double segment_length = (x_1 - x_2).norm();
+  // Throws if called on a single point.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MakeAffineBallFromLineSegment(x_1, x_1), ".*same point.*");
+  AffineBall a_0 = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, 0);
+  EXPECT_TRUE(CompareMatrices(a_0.center(), (x_1 + x_2) / 2.0));
+  // This affine ball has affine dimension one.
+  EXPECT_TRUE(a_0.PointInSet(x_1));
+  EXPECT_TRUE(a_0.PointInSet(x_2));
+  // It does include center, but not a bit outside in y direction.
+  const double varepsilon = 1e-2;
+  EXPECT_TRUE(a_0.PointInSet(a_0.center()));
+  EXPECT_FALSE(a_0.PointInSet(a_0.center() + Vector3d{0.0, varepsilon, 0.0}));
+  EXPECT_NEAR(a_0.CalcVolume(), 0.0, 1e-6);
+  // Now give it some epsilon.
+  const double epsilon = 0.1;
+  AffineBall a_1 = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
+  EXPECT_EQ(AffineSubspace(a_1.B(), a_1.center()).AffineDimension(), 3);
+  // Check that the affine transformation matrix divided by hyperellipsoid
+  // axis length vectors is a rotation matrix.
+  const auto scale_back_vector =
+      Eigen::Vector3d{2 / (x_1 - x_2).norm(), 1 / epsilon, 1 / epsilon};
+  const auto rotation_matrix = a_1.B() * scale_back_vector.asDiagonal();
+  EXPECT_TRUE(CompareMatrices(rotation_matrix * rotation_matrix.transpose(),
+                              Eigen::Matrix3d::Identity(), 1e-6));
+  // It must contain both center and a bit off-center in x-y-z directions.
+  EXPECT_TRUE(a_1.PointInSet(a_1.center()));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{varepsilon, 0, 0}, 1e-9));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, varepsilon, 0}, 1e-9));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, 0, varepsilon}, 1e-9));
+  // let's check the volume of the affine ball, should be 4/3*pi*r_1*r_2*r_3,
+  // where r_1 = 2.5 (half the distance between x_1 and x_2), r_2 and r_3 are
+  // epsilon.
+  EXPECT_NEAR(a_1.CalcVolume(),
+              4.0 / 3 * M_PI * segment_length / 2.0 * std::pow(epsilon, 2),
+              1e-6);
 }
 
 }  // namespace optimization

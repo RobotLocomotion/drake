@@ -146,6 +146,7 @@ vtk_internal_repository = repository_rule(
         "patches": attr.label_list(
             default = [
                 "@drake//tools/workspace/vtk_internal:patches/common_core_version.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/filters_sources_cylinder.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/gltf_parser.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_image_formats.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_legacy_data_reader_uninit.patch",  # noqa
