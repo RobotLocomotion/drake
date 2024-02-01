@@ -164,8 +164,15 @@ class SlidingBoxTest : public ::testing::Test {
     DiagramBuilder<double> builder;
     const std::string full_name =
         FindResourceOrThrow("drake/multibody/plant/test/box.sdf");
+    geometry::SceneGraphConfig config;
+    // geometry::DefaultProximityProperties& props =
+    //     config.default_proximity_properties;
+    // props.hunt_crossley_dissipation = 0;
+    // props.dynamic_friction = 0;
+    // props.static_friction = 0;
     MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
-        &builder, std::make_unique<MultibodyPlant<double>>(time_step));
+        &builder, std::make_unique<MultibodyPlant<double>>(time_step),
+        std::make_unique<SceneGraph<double>>(config));
     plant.set_name("plant");
     Parser(&plant).AddModels(full_name);
 
