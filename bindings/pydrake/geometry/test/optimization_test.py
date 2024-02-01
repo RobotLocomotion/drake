@@ -379,7 +379,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertAlmostEqual(rect.CalcVolume(), sampled_volume.volume)
         self.assertGreaterEqual(sampled_volume.rel_accuracy,
                                 desired_rel_accuracy)
-        self.assertEqual(rect.SampledVolume(), max_num_samples)
+        self.assertEqual(sampled_volume.num_samples, max_num_samples)
 
         # Methods specific to Hyperrectangle
         np.testing.assert_array_equal(rect.lb(), -self.b)
@@ -410,7 +410,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertAlmostEqual(rect.CalcVolume(), sampled_volume.volume)
         self.assertGreaterEqual(sampled_volume.rel_accuracy,
                                 desired_rel_accuracy)
-        self.assertEqual(rect.SampledVolume(), max_num_samples)
+        self.assertEqual(sampled_volume.num_samples, max_num_samples)
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()
