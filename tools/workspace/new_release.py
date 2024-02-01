@@ -65,6 +65,12 @@ _IGNORED_REPOSITORIES = [
     "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
+# For these repositories, ignore any tags that match the specified regex.
+_IGNORED_TAGS = {
+    "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
+    "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
+}
+
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
 # tags that share the match with the tag currently in use; the parentheses
@@ -72,8 +78,8 @@ _IGNORED_REPOSITORIES = [
 # (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
-    "gz_math_internal": "^(gz)",
-    "gz_utils_internal": "^(gz)",
+    "gz_math_internal": r"^(gz)",
+    "gz_utils_internal": r"^(gz)",
     "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
@@ -142,19 +148,28 @@ def _smells_like_a_git_commit(revision):
     return len(revision) == 40
 
 
-def _is_prerelease(commit, workspace):
-    """Returns true iff commit seems to be a pre-release
+def _is_ignored_tag(commit, workspace):
+    """Returns true iff commit matches an ignore rule or seems to be a
+    pre-release.
     """
+    ignore_re = _IGNORED_TAGS.get(workspace)
+    if ignore_re and re.match(ignore_re, commit):
+        # Matches the regex of tag names to definitely ignore; do so quietly so
+        # we don't spam the user.
+        return True
+
     development_stages = ["alpha", "beta", "rc", "pre"]
     prerelease = any(stage in commit for stage in development_stages)
     if prerelease:
+        # Heuristically looks like a pre-release; ignore it, but log it for the
+        # user to check.
         print("Skipping prerelease {} for {}".format(commit, workspace))
     return prerelease
 
 
 def _latest_tag(gh_repo, workspace):
     for tag in gh_repo.tags():
-        if _is_prerelease(tag.name, workspace):
+        if _is_ignored_tag(tag.name, workspace):
             continue
         return tag.name
     print("Could not find any matching tags for {}".format(workspace))
@@ -189,7 +204,7 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_prerelease(tag.name, workspace_name):
+                    if _is_ignored_tag(tag.name, workspace_name):
                         continue
                     new_commit = tag.name
                     break
@@ -199,7 +214,7 @@ def _handle_github(workspace_name, gh, data):
     # latest tag.
     try:
         new_commit = gh_repo.latest_release().tag_name
-        if _is_prerelease(new_commit, workspace_name):
+        if _is_ignored_tag(new_commit, workspace_name):
             new_commit = _latest_tag(gh_repo, workspace_name)
     except github3.exceptions.NotFoundError:
         new_commit = _latest_tag(gh_repo, workspace_name)
