@@ -512,14 +512,13 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
     actors->InitTraversal();
     // For each source_actor, create a color, depth, and label actor.
     while (vtkActor* source_actor = actors->GetNextActor()) {
-      vtkSmartPointer<vtkActor> part_actor;
+      vtkNew<vtkActor> part_actor;
       if (i == ImageType::kColor) {
         // Color rendering can use the source_actor without changes.
-        part_actor = source_actor;
+        part_actor->ShallowCopy(source_actor);
       } else {
         // Depth and label images require new actors, based on the source, but
         // with changes to their materials (aka "mapper").
-        part_actor = vtkNew<vtkActor>();
         vtkNew<vtkOpenGLPolyDataMapper> mapper;
         part_actor->SetMapper(mapper);
         mapper->SetInputConnection(
