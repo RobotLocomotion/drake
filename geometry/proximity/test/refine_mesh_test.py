@@ -13,6 +13,7 @@ class TestRefineMesh(unittest.TestCase):
             self.assertNotEqual(a.read(), b.read())
 
     def test_refinement(self):
+        print("test_refinement")
         manifest = runfiles.Create()
         refiner = manifest.Rlocation(
             "drake/geometry/proximity/refine_mesh")
@@ -32,3 +33,20 @@ class TestRefineMesh(unittest.TestCase):
         subprocess.run(
             [refiner, direct_result_file, repeat_result_file], check=True)
         self.assertFalse(repeat_result_file.exists())
+
+    def test_refinement_warn_small_tetrahedron(self):
+        print("test_refinement_warn_small_tetrahedron")
+        manifest = runfiles.Create()
+        refiner = manifest.Rlocation(
+            "drake/geometry/proximity/refine_mesh")
+        mesh_file = manifest.Rlocation(
+            "drake/geometry/test/one_tetrahedron_4e-16m^3.vtk")
+        tmpdir = Path(os.environ["TEST_TMPDIR"])
+
+        # Refining one tetrahedron should yield a different mesh.
+        direct_result_file = tmpdir / "one_tetrahedron_4e-16m^3_refined.vtk"
+        subprocess.run(
+            [refiner, mesh_file, direct_result_file], check=True)
+        self.assert_files_different(mesh_file, direct_result_file)
+
+        # TODO(DamrongGuoy) Check warning messages.
