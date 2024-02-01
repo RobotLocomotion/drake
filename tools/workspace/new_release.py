@@ -43,7 +43,7 @@ import time
 import urllib
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Optional, Set
 
 import git
 import github3
@@ -55,6 +55,9 @@ _GITHUB_RULE_TYPES = [
     "github",
     "github_release_attachments"
 ]
+
+# Repository rule that uses an external upgrade script.
+_SCRIPTED_RULE_TYPE = "scripted"
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
@@ -84,6 +87,8 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
 
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
+    # clarabel_cpp uses crate_universe; be sure to keep them aligned.
+    {"clarabel_cpp_internal", "crate_universe"},
     # mypy uses mypy_extensions; be sure to keep them aligned.
     {"mypy_internal", "mypy_extensions_internal"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.
@@ -97,7 +102,7 @@ _COHORTS = (
 class UpgradeResult:
     was_upgraded: bool
     can_be_committed: bool = False
-    modified_paths: Optional[List[str]] = None
+    modified_paths: Optional[Set[str]] = None
     commit_message: Optional[str] = None
 
 
@@ -216,8 +221,11 @@ def _check_for_upgrades(gh, args, metadata):
         if rule_type in _GITHUB_RULE_TYPES:
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
         elif rule_type == "crate_universe":
-            # For details, see drake/tools/workspace/crate_universe/README.md.
+            # Crates are not updated individually.
             print(f"Ignoring {workspace_name} from rules_rust")
+            continue
+        elif rule_type == _SCRIPTED_RULE_TYPE:
+            print(f"{workspace_name} may need upgrade")
             continue
         elif rule_type == "manual":
             print("{} version {} needs manual inspection".format(
@@ -236,15 +244,44 @@ def _check_for_upgrades(gh, args, metadata):
                 workspace_name, old_commit))
 
 
+def _modified_paths(repo, root):
+    """Returns the set of paths under `root` which are added, removed or
+    altered.
+    """
+    assert os.path.isdir(os.path.join(repo.working_tree_dir, root))
+    if not root.endswith('/'):
+        root += '/'
+
+    result = set()
+    for item in repo.untracked_files:
+        if item.startswith(root):
+            result.add(item)
+
+    for other in [None, 'HEAD']:
+        for item in repo.index.diff(other):
+            if item.a_path.startswith(root):
+                result.add(item.a_path)
+            if item.b_path.startswith(root):
+                result.add(item.b_path)
+
+    return result
+
+
 def _is_unmodified(repo, path):
     """Returns true iff the given `path` is unmodified in the working tree of
     the given `git.Repo`, `repo`. If repo is None, returns False.
     """
     if repo is None:
         return False
-    for other in [None, 'HEAD']:
-        if path in [item.b_path for item in repo.index.diff(other)]:
-            return False
+
+    if os.path.isdir(os.path.join(repo.working_tree_dir, path)):
+        return len(_modified_paths(repo, path)) == 0
+
+    else:
+        for other in [None, 'HEAD']:
+            if path in [item.b_path for item in repo.index.diff(other)]:
+                return False
+
     return True
 
 
@@ -252,9 +289,9 @@ def _do_commit(local_drake_checkout, actually_commit,
                workspace_names, paths, message):
     if actually_commit:
         names = ", ".join(workspace_names)
-        path_args = zip(['-o'] * len(paths), paths)
+        local_drake_checkout.git.add('-A', *paths)
         local_drake_checkout.git.commit(
-            *path_args, '-m', "[workspace] " + message)
+            '-o', *paths, '-m', "[workspace] " + message)
         print("\n" + ("*" * 72))
         print(f"Done.  Changes for {names} were committed.")
         print("Be sure to review the changes and amend the commit if needed.")
@@ -362,49 +399,88 @@ def _do_upgrade_github_release_attachments(
     _rewrite_file_contents(bzl_filename, bzl_content)
 
 
+def _do_upgrade_scripted(
+        *,
+        temp_dir,
+        local_drake_checkout,
+        workspace_root,
+        script):
+    # Run the upgrade script.
+    repo_root = local_drake_checkout.working_tree_dir
+    subprocess.check_call([os.path.join(repo_root, workspace_root, script)])
+
+    # Look for modified paths.
+    return _modified_paths(local_drake_checkout, workspace_root)
+
+
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
+
     data = metadata[workspace_name]
     rule_type = data["repository_rule_type"]
-    if rule_type not in _GITHUB_RULE_TYPES:
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-
-    # Sanity check that an upgrade is possible.
-    old_commit, new_commit = _handle_github(workspace_name, gh, data)
-    if old_commit == new_commit:
-        return UpgradeResult(False)
-    elif new_commit is None:
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    print("Upgrading {} from {} to {}".format(
-        workspace_name, old_commit, new_commit))
-
-    # Determine if we should and can commit the changes made.
     bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
-    can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
-    if local_drake_checkout and not can_commit:
-        print(f"{bzl_filename} has local changes.")
-        print(f"Changes made for {workspace_name} will NOT be committed.")
 
-    if rule_type == "github":
-        _do_upgrade_github_archive(
+    if rule_type == _SCRIPTED_RULE_TYPE:
+        # Determine if we should and can commit the changes made.
+        workspace_root = f"tools/workspace/{workspace_name}/"
+        can_commit = _is_unmodified(local_drake_checkout, workspace_root)
+        if local_drake_checkout and not can_commit:
+            print(f"{workspace_root} has local changes.")
+            print(f"Changes made for {workspace_name} will NOT be committed.")
+
+        # Do the upgrade.
+        new_commit = None
+        modified_paths = _do_upgrade_scripted(
             temp_dir=temp_dir,
-            old_commit=old_commit,
-            new_commit=new_commit,
-            bzl_filename=bzl_filename,
-            repository=data["repository"],
+            local_drake_checkout=local_drake_checkout,
+            workspace_root=workspace_root,
+            script=data["upgrade_script"],
         )
+        if not len(modified_paths):
+            return UpgradeResult(False)
+
     else:
-        assert rule_type == "github_release_attachments"
-        _do_upgrade_github_release_attachments(
-            temp_dir=temp_dir,
-            old_commit=old_commit,
-            new_commit=new_commit,
-            bzl_filename=bzl_filename,
-            repository=data["repository"],
-            old_attachments=data["attachments"],
-        )
+        if rule_type not in _GITHUB_RULE_TYPES:
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+
+        # Sanity check that an upgrade is possible.
+        old_commit, new_commit = _handle_github(workspace_name, gh, data)
+        if old_commit == new_commit:
+            return UpgradeResult(False)
+        elif new_commit is None:
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+        print("Upgrading {} from {} to {}".format(
+            workspace_name, old_commit, new_commit))
+
+        # Determine if we should and can commit the changes made.
+        can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
+        if local_drake_checkout and not can_commit:
+            print(f"{bzl_filename} has local changes.")
+            print(f"Changes made for {workspace_name} will NOT be committed.")
+
+        # Do the upgrade.
+        if rule_type == "github":
+            _do_upgrade_github_archive(
+                temp_dir=temp_dir,
+                old_commit=old_commit,
+                new_commit=new_commit,
+                bzl_filename=bzl_filename,
+                repository=data["repository"],
+            )
+        else:
+            assert rule_type == "github_release_attachments"
+            _do_upgrade_github_release_attachments(
+                temp_dir=temp_dir,
+                old_commit=old_commit,
+                new_commit=new_commit,
+                bzl_filename=bzl_filename,
+                repository=data["repository"],
+                old_attachments=data["attachments"],
+            )
+
+        modified_paths = {bzl_filename}
 
     # Copy the downloaded tarball into the repository cache.
     print("Populating repository cache ...")
@@ -419,12 +495,13 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
 
     # Finalize the result.
     message = f"Upgrade {workspace_name} to latest"
-    if _smells_like_a_git_commit(new_commit):
-        message += " commit"
-    else:
-        message += f" release {new_commit}"
+    if new_commit:
+        if _smells_like_a_git_commit(new_commit):
+            message += " commit"
+        else:
+            message += f" release {new_commit}"
 
-    return UpgradeResult(True, can_commit, [bzl_filename], message)
+    return UpgradeResult(True, can_commit, modified_paths, message)
 
 
 def _do_upgrades(temp_dir, gh, local_drake_checkout,

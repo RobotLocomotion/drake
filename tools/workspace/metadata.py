@@ -52,4 +52,11 @@ def read_repository_metadata(repositories=None):
         except IOError:
             pass
 
+    # Add 'magic' metadata for repositories that don't/can't generate it the
+    # usual way.
+    result["crate_universe"] = {
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.sh",
+    }
+
     return result

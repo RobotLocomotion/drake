@@ -86,6 +86,12 @@ crate_http_archive = repository_rule(
 )
 
 def crate_universe_repositories(*, mirrors, excludes = []):
+    # This dependency is part of a "cohort" defined in
+    # drake/tools/workspace/new_release.py.  When practical, all members of
+    # this cohort should be updated at the same time.
+    #
+    # Metadata for this repository is additionally defined in
+    # drake/tools/workspace/metadata.py.
     for kwargs in ARCHIVES:
         if kwargs["name"] not in excludes:
             crate_http_archive(
