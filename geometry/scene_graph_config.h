@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/common/name_value.h"
@@ -21,9 +22,11 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(hydroelastic_modulus));
     a->Visit(DRAKE_NVP(mesh_resolution_hint));
     a->Visit(DRAKE_NVP(slab_thickness));
-    a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(dynamic_friction));
     a->Visit(DRAKE_NVP(static_friction));
+    a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
+    a->Visit(DRAKE_NVP(relaxation_time));
+    a->Visit(DRAKE_NVP(point_stiffness));
   }
   /** There are three valid options for `compliance_type`:
   - "undefined": hydroelastic contact will not be used.
@@ -39,12 +42,16 @@ struct DefaultProximityProperties {
   compliant contact (currently only for non-convex surface meshes) then the
   compliance type will fall back to "rigid". */
   bool compliance_type_rigid_fallback{true};
-  double hydroelastic_modulus{1e7};            // [Pa]
-  double mesh_resolution_hint{0.01};           // [m]
-  double slab_thickness{10.0};                 // [m]
-  double hunt_crossley_dissipation{1.25};      // [s/m]
-  double dynamic_friction{0.5};                // unitless
-  double static_friction{0.5};                 // unitless
+  std::optional<double> hydroelastic_modulus{1e7};            /**< [Pa] */
+  std::optional<double> mesh_resolution_hint{0.5};            /**< [m] */
+  std::optional<double> slab_thickness{10.0};                 /**< [m] */
+  /** Either both friction values must be populated, or neither. Providing
+  exactly one of them is an error. Friction quantities are unitless. */
+  std::optional<double> dynamic_friction{0.5};
+  std::optional<double> static_friction{0.5};
+  std::optional<double> hunt_crossley_dissipation;            /**< [s/m] */
+  std::optional<double> relaxation_time;                      /**< [s] */
+  std::optional<double> point_stiffness;                      /**< [N/m] */
 };
 
 /** The set of configurable properties on a SceneGraph.  When SceneGraph is
