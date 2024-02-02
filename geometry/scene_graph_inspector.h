@@ -409,12 +409,10 @@ class SceneGraphInspector {
   bool CollisionFiltered(GeometryId geometry_id1,
                          GeometryId geometry_id2) const;
 
-  /** Introspects the geometry indicated by the given `geometry_id`. The
-   geometry will be passed into the provided `reifier`. This is the mechanism by
-   which external code can discover and respond to the different types of
-   geometries stored in SceneGraph. See ShapeToString as an example.
-   @throws std::exception if the `geometry_id` does not refer to a valid
-   geometry.  */
+  DRAKE_DEPRECATED(
+      "2024-06-01",
+      "This shortcut function is being removed. "
+      "Instead, call inspector.GetShape(geometry_id).Reify(reifier)")
   void Reify(GeometryId geometry_id, ShapeReifier* reifier) const;
 
   /** Obtains a new GeometryInstance that copies the geometry indicated by the
