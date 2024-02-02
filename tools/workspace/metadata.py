@@ -57,6 +57,7 @@ def read_repository_metadata(repositories=None):
     result["crate_universe"] = {
         "repository_rule_type": "scripted",
         "upgrade_script": "upgrade.sh",
+        "downloads": {},
     }
 
     return result
