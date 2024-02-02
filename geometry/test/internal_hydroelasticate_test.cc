@@ -125,8 +125,10 @@ void DoTestHydroelasticate(
   EXPECT_TRUE(props->HasProperty(kHydroGroup, kElastic));
   EXPECT_TRUE(props->HasProperty(kHydroGroup, kRezHint));
   EXPECT_TRUE(props->HasProperty(kHydroGroup, kSlabThickness));
-  EXPECT_TRUE(props->HasProperty(kMaterialGroup, kHcDissipation));
   EXPECT_TRUE(props->HasProperty(kMaterialGroup, kFriction));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kHcDissipation));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kRelaxationTime));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kPointStiffness));
 }
 
 void DoTestGetProps(const Shape& shape,
