@@ -279,8 +279,11 @@ void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   VertexId vertex_id = vertex->id();
   DRAKE_THROW_UNLESS(vertices_.count(vertex_id) > 0);
   for (auto it = edges_.begin(); it != edges_.end();) {
-    if (it->second->u().id() == vertex_id ||
-        it->second->v().id() == vertex_id) {
+    if (it->second->u().id() == vertex_id) {
+      it->second->v().RemoveIncomingEdge(it->second.get());
+      it = edges_.erase(it);
+    } else if (it->second->v().id() == vertex_id) {
+      it->second->u().RemoveOutgoingEdge(it->second.get());
       it = edges_.erase(it);
     } else {
       ++it;
