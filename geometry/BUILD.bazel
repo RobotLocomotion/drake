@@ -935,6 +935,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "shape_to_string_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":shape_to_string",
     ],

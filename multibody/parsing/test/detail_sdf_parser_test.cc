@@ -2109,21 +2109,21 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
 }
 
 // Reports if the frame with the given id has a geometry with the given role
-// whose name is the same as what ShapeName(ShapeType{}) would produce.
+// whose name is the same as what ShapeType{}.type_name() would produce.
 template <typename ShapeType>
 ::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
                                          geometry::Role role,
                                          const SceneGraph<double>& scene_graph,
                                          const ShapeType& shape) {
   const auto& inspector = scene_graph.model_inspector();
-  const std::string name = geometry::ShapeName(shape).name();
+  const std::string name{shape.type_name()};
   try {
     // Note: MBP prepends the model index to the geometry name; in this case
     // that model instance  name is "test_robot".
     const geometry::GeometryId geometry_id =
         inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
-    const std::string shape_type =
-        geometry::ShapeName(inspector.GetShape(geometry_id)).name();
+    const std::string_view shape_type =
+        inspector.GetShape(geometry_id).type_name();
     if (shape_type != name) {
       return ::testing::AssertionFailure()
         << "Geometry with role " << role << " has wrong shape type."

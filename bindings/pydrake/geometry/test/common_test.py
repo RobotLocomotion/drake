@@ -391,9 +391,19 @@ class TestGeometryCore(unittest.TestCase):
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
             shape_cls = type(shape)
-            shape_copy = shape.Clone()
+            shape_cls_name = shape_cls.__name__
+
+            shape_clone = shape.Clone()
+            self.assertIsInstance(shape_clone, shape_cls)
+            self.assertIsNot(shape_clone, shape)
+
+            shape_copy = copy.deepcopy(shape)
             self.assertIsInstance(shape_copy, shape_cls)
-            self.assertIsNot(shape, shape_copy)
+            self.assertIsNot(shape_copy, shape)
+
+            new_shape = eval(repr(shape), dict([(shape_cls_name, shape_cls)]))
+            self.assertIsInstance(new_shape, shape_cls)
+            self.assertEqual(repr(new_shape), repr(shape))
 
     def test_shapes(self):
         # We'll test some invariants on all shapes as inherited from the Shape
