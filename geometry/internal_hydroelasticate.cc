@@ -163,8 +163,7 @@ template <typename T>
 void Hydroelasticate(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config) {
   DRAKE_DEMAND(geometry_state != nullptr);
-  auto gids = geometry_state->GetGeometryIds(
-      GeometrySet(geometry_state->GetAllGeometryIds()), Role::kProximity);
+  auto gids = geometry_state->GetAllGeometryIds(Role::kProximity);
   for (const auto& gid : gids) {
     Hydroelasticate(geometry_state, config, gid);
   }
