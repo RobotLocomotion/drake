@@ -477,7 +477,6 @@ drake_py_unittest(
         ":benchmarks_py",
         ":inverse_kinematics_py",
         ":parsing_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/planning",
     ],
 )

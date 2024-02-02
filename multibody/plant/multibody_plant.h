@@ -2519,26 +2519,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().GetPositionsAndVelocities(context, model_instance, qv_out);
   }
 
-  /// (Advanced -- **see warning**) Returns a mutable vector reference `[q; v]`
-  /// to the generalized positions q and generalized velocities v in a given
-  /// Context.
-  /// @warning Cache invalidation will occur when this is called but not if you
-  ///          subsequently write through the returned object. You should use
-  ///          SetPositionsAndVelocities() instead unless you are
-  ///          fully aware of the interactions with the caching mechanism (see
-  ///          @ref dangerous_get_mutable).
-  /// @throws std::exception if `context` is nullptr or if it does not
-  /// correspond to the context for a multibody model.
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Use GetPositionsAndVelocities() for constant access and "
-      "SetPositionsAndVelocities() to set the positions and velocities.")
-  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      systems::Context<T>* context) const {
-    this->ValidateContext(context);
-    return internal_tree().GetMutablePositionsAndVelocities(context);
-  }
-
   /// Sets generalized positions q and generalized velocities v in a given
   /// Context from a given vector [q; v]. Prefer this method over
   /// GetMutablePositionsAndVelocities().
@@ -2607,42 +2587,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     internal_tree().GetPositionsFromArray(
         model_instance, internal_tree().get_positions(context), q_out);
-  }
-
-  /// (Advanced -- **see warning**) Returns a mutable vector reference to the
-  /// generalized positions q in a given Context.
-  /// @warning Cache invalidation will occur when this is called but not
-  ///          if you subsequently write through the returned object. You
-  ///          should use SetPositions() instead unless you are fully aware
-  ///          of the possible interactions with the caching mechanism (see
-  ///          @ref dangerous_get_mutable).
-  /// @throws std::exception if the `context` is nullptr or if it does not
-  /// correspond to the Context for a multibody model.
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Use GetPositions() for constant access and SetPositions() "
-                   "to set positions.")
-  Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
-      systems::Context<T>* context) const {
-    this->ValidateContext(context);
-    return internal_tree().GetMutablePositions(context);
-  }
-
-  /// (Advanced) Returns a mutable vector reference to the generalized positions
-  /// q in a given State.
-  /// @note This method returns a reference to existing data, exhibits constant
-  ///       i.e., O(1) time complexity, and runs very quickly. No cache
-  ///       invalidation occurs.
-  /// @throws std::exception if the `state` is nullptr or if `context` does
-  ///         not correspond to the Context for a multibody model.
-  /// @pre `state` comes from this multibody model.
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Use GetPositions() for constant access and SetPositions() "
-                   "to set positions.")
-  Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    this->ValidateContext(context);
-    this->ValidateCreatedForThisSystem(state);
-    return internal_tree().get_mutable_positions(state);
   }
 
   /// Sets the generalized positions q in a given Context from a given vector.
@@ -2760,42 +2704,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     internal_tree().GetVelocitiesFromArray(
         model_instance, internal_tree().get_velocities(context), v_out);
-  }
-
-  /// (Advanced -- **see warning**) Returns a mutable vector reference to the
-  /// generalized velocities v in a given Context.
-  /// @warning Cache invalidation will occur when this is called but not
-  ///          if you subsequently write through the returned object. You
-  ///          should use SetVelocities() instead unless you are fully aware
-  ///          of the possible interactions with the caching mechanism (see
-  ///          @ref dangerous_get_mutable).
-  /// @throws std::exception if the `context` is nullptr or if it does not
-  /// correspond to the Context for a multibody model.
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Use GetVelocities() for constant access and "
-                   "SetVelocities() to set velocities.")
-  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
-      systems::Context<T>* context) const {
-    this->ValidateContext(context);
-    return internal_tree().GetMutableVelocities(context);
-  }
-
-  /// (Advanced) Returns a mutable vector reference to the generalized
-  /// velocities v in a given State.
-  /// @note This method returns a reference to existing data, exhibits constant
-  ///       i.e., O(1) time complexity, and runs very quickly. No cache
-  ///       invalidation occurs.
-  /// @throws std::exception if the `state` is nullptr or if `context` does
-  ///         not correspond to the Context for a multibody model.
-  /// @pre `state` comes from this multibody model.
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Use GetVelocities() for constant access and "
-                   "SetVelocities() to set velocities.")
-  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    this->ValidateContext(context);
-    this->ValidateCreatedForThisSystem(state);
-    return internal_tree().get_mutable_velocities(state);
   }
 
   /// Sets the generalized velocities v in a given Context from a given

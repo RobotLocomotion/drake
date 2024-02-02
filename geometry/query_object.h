@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"

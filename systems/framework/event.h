@@ -114,11 +114,8 @@ template <typename T> class System;
 
  #### Declaring update functions
 
- The preferred way to update state through events is to declare an update
- handler in your LeafSystem-derived-class. Some older Drake code computes
- state updates by overriding event dispatchers (e.g.,
- LeafSystem::DoCalcUnrestrictedUpdate()), **though that practice is discouraged
- and will soon be deprecated.**
+ The way to update state through events is to declare an update handler in your
+ LeafSystem-derived-class.
 
  A number of convenience functions are available in LeafSystem for declaring
  various trigger and event update combinations; see, e.g.,

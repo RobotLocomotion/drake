@@ -263,9 +263,7 @@ class System : public SystemBase {
   force-triggered event.
 
   @note There will always be at least one force-triggered event, though with no
-  associated handler. By default that will do nothing when triggered, but that
-  behavior can be changed by overriding the dispatcher DoPublish()
-  (not recommended).
+  associated handler (so will do nothing when triggered).
 
   The Simulator can be configured to call this in Simulator::Initialize() and at
   the start of each continuous integration step. See the Simulator API for more
@@ -1494,19 +1492,15 @@ class System : public SystemBase {
   Drake's LeafSystem and Diagram (plus a few unit tests) and those
   implementations must be `final`.
 
-  For a LeafSystem, these functions need to call the appropriate LeafSystem::DoX
-  event dispatcher. E.g. LeafSystem::DispatchPublishHandler() calls
-  LeafSystem::DoPublish(). User supplied custom event callbacks embedded in each
-  individual event need to be invoked in the LeafSystem::DoX handlers if
-  desired. For a LeafSystem, the pseudo code of the complete default publish
-  event handler dispatching is roughly:
+  For a LeafSystem, these functions need to call each event's handler callback,
+  For a LeafSystem, the pseudo code of the complete default publish event
+  handler dispatching is roughly:
   <pre>
     leaf_sys.Publish(context, event_collection)
     -> leaf_sys.DispatchPublishHandler(context, event_collection)
-       -> leaf_sys.DoPublish(context, event_collection.get_events())
-          -> for (event : event_collection_events):
-               if (event.has_handler)
-                 event.handler(context)
+        for (event : event_collection_events):
+          if (event.has_handler)
+            event.handler(context)
   </pre>
   Discrete update events and unrestricted update events are dispatched
   similarly for a LeafSystem. EventStatus is propagated upwards from the

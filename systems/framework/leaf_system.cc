@@ -5,7 +5,6 @@
 
 #include "absl/container/inlined_vector.h"
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value_checker.h"
@@ -469,24 +468,6 @@ int LeafSystem<T>::DeclareAbstractParameter(const AbstractValue& model_value) {
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicPublishNoHandler(
-    double period_sec, double offset_sec) {
-  DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
-}
-
-template <typename T>
-void LeafSystem<T>::DeclarePeriodicDiscreteUpdateNoHandler(
-    double period_sec, double offset_sec) {
-  DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
-}
-
-template <typename T>
-void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdateNoHandler(
-    double period_sec, double offset_sec) {
-  DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
-}
-
-template <typename T>
 ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
     int num_state_variables) {
   const int num_q = 0, num_v = 0;
@@ -741,37 +722,6 @@ SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
 }
 
 template <typename T>
-void LeafSystem<T>::DoPublish(
-    const Context<T>& context,
-    const std::vector<const PublishEvent<T>*>&) const {
-  // Sets this flag to indicate that the derived System did not override
-  // our default method. See DispatchPublishHandler() for how this is used.
-  context.set_use_default_implementation(true);
-}
-
-template <typename T>
-void LeafSystem<T>::DoCalcDiscreteVariableUpdates(
-    const Context<T>& context,
-    const std::vector<const DiscreteUpdateEvent<T>*>&,
-    DiscreteValues<T>*) const {
-  // Sets this flag to indicate that the derived System did not override
-  // our default method. See DispatchDiscreteVariableUpdateHandler() for how
-  // this is used.
-  context.set_use_default_implementation(true);
-}
-
-template <typename T>
-void LeafSystem<T>::DoCalcUnrestrictedUpdate(
-    const Context<T>& context,
-    const std::vector<const UnrestrictedUpdateEvent<T>*>&,
-    State<T>*) const {
-  // Sets this flag to indicate that the derived System did not override
-  // our default method. See DispatchUnrestrictedUpdateHandler() for how
-  // this is used.
-  context.set_use_default_implementation(true);
-}
-
-template <typename T>
 std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
     const InputPort<T>& input_port) const {
   std::unique_ptr<AbstractValue> model_result =
@@ -826,30 +776,13 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
   // This function shouldn't have been called if no publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
 
-  // Determine whether the derived System overloaded DoPublish(). If so, this
-  // flag will remain false; the default implementation sets it to true.
-  context.set_use_default_implementation(false);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  this->DoPublish(context, leaf_events.get_events());
-#pragma GCC diagnostic pop
-  if (!context.get_use_default_implementation()) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2024-02-01",
-        "Overriding LeafSystem::DoPublish is deprecated.");
-    // Derived system overrode the dispatcher and did not invoke the base class
-    // implementation so there is nothing else to do.
-    return EventStatus::Succeeded();
-  }
-
-  // Use our default dispatch policy.
   EventStatus overall_status = EventStatus::DidNothing();
   for (const PublishEvent<T>* event : leaf_events.get_events()) {
     const EventStatus per_event_status = event->handle(*this, context);
     overall_status.KeepMoreSevere(per_event_status);
-    // Unlike the discrete & unrestricted event policy, we don't stop
-    // handling publish events when one fails; we just report the first failure
-    // after all the publishes are done.
+    // Unlike the discrete & unrestricted event policy, we don't stop handling
+    // publish events when one fails; we just report the first failure after all
+    // the publishes are done.
   }
   return overall_status;
 }
@@ -868,25 +801,6 @@ EventStatus LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
   // Must initialize the output argument with current discrete state contents.
   discrete_state->SetFrom(context.get_discrete_state());
 
-  // Determine whether the derived System overloaded
-  // DoCalcDiscreteVariableUpdates(). If so, this flag will remain false; the
-  // default implementation sets it to true.
-  context.set_use_default_implementation(false);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-      discrete_state);  // in/out
-#pragma GCC diagnostic pop
-  if (!context.get_use_default_implementation()) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2024-02-01",
-        "Overriding LeafSystem::DoCalcDiscreteVariableUpdates is deprecated.");
-    // Derived system overrode the dispatcher and did not invoke the base class
-    // implementation so there is nothing else to do.
-    return EventStatus::Succeeded();
-  }
-
-  // Use our default dispatch policy.
   EventStatus overall_status = EventStatus::DidNothing();
   for (const DiscreteUpdateEvent<T>* event : leaf_events.get_events()) {
     const EventStatus per_event_status =
@@ -921,27 +835,11 @@ EventStatus LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
   DRAKE_DEMAND(leaf_events.HasEvents());
 
   // Must initialize the output argument with current state contents.
+  // TODO(sherm1) Shouldn't require preloading of the output state; better to
+  //  note just the changes since usually only a small subset will be changed by
+  //  the callback function.
   state->SetFrom(context.get_state());
 
-  // Determine whether the derived System overloaded
-  // DoCalcUnrestrictedUpdate(). If so, this flag will remain false; the
-  // default implementation sets it to true.
-  context.set_use_default_implementation(false);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
-                                        state);  // in/out
-#pragma GCC diagnostic pop
-  if (!context.get_use_default_implementation()) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2024-02-01",
-        "Overriding LeafSystem::DoCalcUnrestrictedUpdate is deprecated.");
-    // Derived system overrode the dispatcher and did not invoke the base class
-    // implementation so there is nothing else to do.
-    return EventStatus::Succeeded();
-  }
-
-  // Use our default dispatch policy.
   EventStatus overall_status = EventStatus::DidNothing();
   for (const UnrestrictedUpdateEvent<T>* event : leaf_events.get_events()) {
     const EventStatus per_event_status = event->handle(*this, context, state);
