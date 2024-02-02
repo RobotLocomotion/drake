@@ -1,6 +1,7 @@
 #include "drake/geometry/internal_hydroelasticate.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 
 #include "drake/common/never_destroyed.h"
@@ -19,12 +20,15 @@ void BackfillDefaults(ProximityProperties* properties,
   auto backfill = [&](const std::string& group_name, const std::string& name,
                       auto default_value) {
     if (properties->HasProperty(group_name, name)) { return; }
-    properties->UpdateProperty(group_name, name, default_value);
+    if (!default_value.has_value()) { return; }
+    properties->UpdateProperty(group_name, name, *default_value);
   };
 
-  backfill(kHydroGroup, kComplianceType,
-           internal::GetHydroelasticTypeFromString(
-               config.default_proximity_properties.compliance_type));
+  std::optional<HydroelasticType> optional_compliance{
+    internal::GetHydroelasticTypeFromString(
+        config.default_proximity_properties.compliance_type)
+  };
+  backfill(kHydroGroup, kComplianceType, optional_compliance);
   backfill(kHydroGroup, kElastic,
            config.default_proximity_properties.hydroelastic_modulus);
   backfill(kHydroGroup, kRezHint,
@@ -34,11 +38,16 @@ void BackfillDefaults(ProximityProperties* properties,
 
   backfill(kMaterialGroup, kHcDissipation,
            config.default_proximity_properties.hunt_crossley_dissipation);
-  multibody::CoulombFriction friction{
-    config.default_proximity_properties.static_friction,
-    config.default_proximity_properties.dynamic_friction,
-  };
-  backfill(kMaterialGroup, kFriction, friction);
+  if (config.default_proximity_properties.static_friction.has_value()) {
+    multibody::CoulombFriction<double> friction{
+      *config.default_proximity_properties.static_friction,
+      *config.default_proximity_properties.dynamic_friction,
+    };
+    std::optional<multibody::CoulombFriction<double>> optional_friction{
+      friction
+    };
+    backfill(kMaterialGroup, kFriction, optional_friction);
+  }
 }
 
 // Handle conversion details that require specific shape type
