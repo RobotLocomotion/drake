@@ -83,6 +83,13 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
   friend class GeometryStateValue;
 };
 
+void ThrowUnlessAbsentOr(
+    std::optional<double> property,
+    std::function<bool(double)> predicate) {
+  if (property.has_value()) {
+    DRAKE_THROW_UNLESS(predicate(*property));
+  }
+}
 
 // Throws if config values are invalid.
 void ValidateConfig(const SceneGraphConfig& config) {
@@ -91,23 +98,36 @@ void ValidateConfig(const SceneGraphConfig& config) {
   // This will throw if the type is invalid.
   internal::GetHydroelasticTypeFromString(props.compliance_type);
 
-  DRAKE_THROW_UNLESS(std::isfinite(props.hydroelastic_modulus));
-  DRAKE_THROW_UNLESS(std::isfinite(props.mesh_resolution_hint));
-  DRAKE_THROW_UNLESS(std::isfinite(props.slab_thickness));
-  DRAKE_THROW_UNLESS(std::isfinite(props.hunt_crossley_dissipation));
-  DRAKE_THROW_UNLESS(std::isfinite(props.dynamic_friction));
-  DRAKE_THROW_UNLESS(std::isfinite(props.static_friction));
 
-  DRAKE_THROW_UNLESS(props.hydroelastic_modulus > 0.0);
-  DRAKE_THROW_UNLESS(props.mesh_resolution_hint > 0.0);
-  DRAKE_THROW_UNLESS(props.slab_thickness > 0.0);
-  DRAKE_THROW_UNLESS(props.hunt_crossley_dissipation >= 0.0);
-  DRAKE_THROW_UNLESS(props.dynamic_friction >= 0.0);
-  DRAKE_THROW_UNLESS(props.static_friction >= 0.0);
+  auto isfinite = [](double x) { return std::isfinite(x); };
+  ThrowUnlessAbsentOr(props.hydroelastic_modulus, isfinite);
+  ThrowUnlessAbsentOr(props.mesh_resolution_hint, isfinite);
+  ThrowUnlessAbsentOr(props.slab_thickness, isfinite);
+  ThrowUnlessAbsentOr(props.dynamic_friction, isfinite);
+  ThrowUnlessAbsentOr(props.static_friction, isfinite);
+  ThrowUnlessAbsentOr(props.hunt_crossley_dissipation, isfinite);
+  ThrowUnlessAbsentOr(props.relaxation_time, isfinite);
+  ThrowUnlessAbsentOr(props.point_stiffness, isfinite);
 
-  // Since we can't conveniently use multibody::CoulombFriction, check now that
-  // the values are compatible.
-  DRAKE_THROW_UNLESS(props.static_friction >= props.dynamic_friction);
+  auto positive = [](double x) { return x > 0.0; };
+  auto nonnegative = [](double x) { return x >= 0.0; };
+  ThrowUnlessAbsentOr(props.hydroelastic_modulus, positive);
+  ThrowUnlessAbsentOr(props.mesh_resolution_hint, positive);
+  ThrowUnlessAbsentOr(props.slab_thickness, positive);
+  ThrowUnlessAbsentOr(props.dynamic_friction, nonnegative);
+  ThrowUnlessAbsentOr(props.static_friction, nonnegative);
+  ThrowUnlessAbsentOr(props.hunt_crossley_dissipation, nonnegative);
+  ThrowUnlessAbsentOr(props.relaxation_time, nonnegative);
+  ThrowUnlessAbsentOr(props.point_stiffness, nonnegative);
+
+  // Require either both friction quantities or neither.
+  DRAKE_THROW_UNLESS(props.static_friction.has_value() ==
+                     props.dynamic_friction.has_value());
+  if (props.static_friction.has_value()) {
+    // Since we can't conveniently use multibody::CoulombFriction, check now
+    // that the values are compatible.
+    DRAKE_THROW_UNLESS(*props.static_friction >= *props.dynamic_friction);
+  }
 }
 
 HydroelasticType GetConfiguredHydroelasticType(const SceneGraphConfig& config) {
