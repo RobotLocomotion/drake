@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":internal_geometry",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
+        ":mesh_deformation_interpolator",
         ":meshcat",
         ":meshcat_animation",
         ":meshcat_graphviz",
@@ -286,6 +287,28 @@ drake_cc_library(
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_deformation_interpolator",
+    srcs = ["mesh_deformation_interpolator.cc"],
+    hdrs = ["mesh_deformation_interpolator.h"],
+    deps = [
+        "//geometry:deformable_mesh",
+        "//geometry/proximity:sorted_triplet",
+        "//geometry/proximity:triangle_surface_mesh",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_deformation_interpolator_test",
+    deps = [
+        ":mesh_deformation_interpolator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_sphere_mesh",
     ],
 )
 

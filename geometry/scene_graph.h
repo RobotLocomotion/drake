@@ -546,12 +546,18 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // non-world frames.
   /** Registers a new deformable geometry G for this source. This registers
    geometry G on a frame F (indicated by `frame_id`). The registered geometry
-   has a meshed representation. The positions of the vertices of this mesh
-   representation are defined in the frame F (i.e., `q_FG`). Returns the
-   corresponding unique geometry id.
+   has one or more mesh representation depending on the GeometryProperties
+   assigned in the given GeometryInstance `geometry`. The positions of the
+   vertices of these meshes representation are defined in the frame F (i.e.,
+   `q_FG`) and are driven by the configurations received from the corresponding
+   source configuration port (see get_source_configuration_port()). This
+   function returns the unique geometry id of the registered geometry.
 
    Roles will be assigned to the registered geometry if the corresponding
-   GeometryInstance `geometry` has had properties assigned.
+   %GeometryInstance `geometry` has had properties assigned. Each role assigned
+   to the geometry will create a mesh representation of the geometry (e.g. a
+   volume mesh for proximity, a coarse surface mesh for illustration, and a
+   detailed, textured mesh for perception).
 
    This method modifies the underlying model and requires a new Context to be
    allocated. Potentially modifies proximity, perception, and illustration

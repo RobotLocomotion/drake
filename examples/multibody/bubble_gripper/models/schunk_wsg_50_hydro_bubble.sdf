@@ -1,0 +1,177 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="Schunk_Gripper">
+    <!-- This model is based on the Schunk WSG 050-110-P gripper
+    (https://schunk.com/fileadmin/pim/docs/IM0026091.PDF) with TRI's Punyo
+    bubble fingers attached (https://punyo.tech/#instructions).The model in
+    this file uses ellipsoidal hydroelastic volumes to model the ellipsoidal
+    caps of the bubble gripper. Only these ellipsoidal volumes have collision
+    geometry.
+   -->
+    <!--
+    Axes:
+      +Z - Pointing away from the fingertips.
+      +X - Pointing towards the camera.
+    Origin:
+      (0, 0, 0) at the bottom center of the gripper body.
+    -->
+    <link name="gripper">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.988882</mass>
+        <inertia>
+          <ixx>0.162992</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.162992</iyy>
+          <iyz>0</iyz>
+          <izz>0.164814</izz>
+        </inertia>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+      <visual name="gripper mesh">
+        <pose>0 0 -0.036 -1.5708 0 -1.5708</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_description/meshes/wsg_body.obj</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0 0 0 0</ambient>
+          <diffuse>0.525 0.525 0.525 1</diffuse>
+          <specular>0.525 0.525 0.525 1</specular>
+        </material>
+      </visual>
+    </link>
+    <frame name="body_frame">
+      <pose relative_to="gripper">0 0 0 0 0 0</pose>
+    </frame>
+    <frame name="grasp_frame">
+      <pose relative_to="gripper">0 0 -0.1725 0 0 0</pose>
+    </frame>
+    <link name="left_finger_bubble">
+      <pose>0 0 -0.0725 0 0 0</pose>
+      <inertial>
+        <!-- TODO(joemasterjohn) These inertial properties are bogus -->
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+      <!--For mesh visualization only-->
+      <visual name="left_finger_visual_mesh">
+        <pose>0 0.0 0 1.5708 0 3.14159</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/bubble_finger.obj</uri>
+            <scale>.001 .001 .001</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="left_finger">
+      <pose>0 0 -0.19 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+    </link>
+    <link name="right_finger_bubble">
+      <pose>0 0 -0.0725 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+      <!-- For mesh visualization only -->
+      <visual name="right_finger_visual_mesh">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/bubble_finger.obj</uri>
+            <scale>.001 .001 .001</scale>
+          </mesh>
+        </geometry>
+        <!-- Avoid rendering the finger so it doesn't block the bubble -->
+        <drake:accepting_renderer>nothing</drake:accepting_renderer>"
+      </visual>
+    </link>
+    <link name="right_finger">
+      <pose>0 0 -0.19 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+    </link>
+    <joint name="left_finger_sliding_joint" type="prismatic">
+      <parent>gripper</parent>
+      <child>left_finger_bubble</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <!-- Drake attaches an actuator to all and only joints with a nonzero
+             effort limit. -->
+        <limit>
+          <lower>-0.055</lower>
+          <upper>0</upper>
+          <effort>8000</effort>
+          <stiffness>15000</stiffness>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="left_finger_weld_joint" type="fixed">
+      <parent>left_finger_bubble</parent>
+      <child>left_finger</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
+    <joint name="right_finger_sliding_joint" type="prismatic">
+      <parent>gripper</parent>
+      <child>right_finger_bubble</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0.055</upper>
+          <effort>0</effort>
+          <stiffness>15000</stiffness>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="right_finger_weld_joint" type="fixed">
+      <parent>right_finger_bubble</parent>
+      <child>right_finger</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
+  </model>
+</sdf>

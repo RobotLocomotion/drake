@@ -143,9 +143,11 @@ class GeometryStateTester {
   }
 
   void FinalizeConfigurationUpdate() {
-    state_->FinalizeConfigurationUpdate(state_->kinematics_data_,
-                                        &state_->mutable_proximity_engine(),
-                                        state_->GetMutableRenderEngines());
+    state_->driven_deformable_meshes_.SetControlMeshPositions(
+        state_->kinematics_data_.q_WGs);
+    state_->FinalizeConfigurationUpdate(
+        state_->kinematics_data_, state_->driven_deformable_meshes_,
+        &state_->mutable_proximity_engine(), state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>
