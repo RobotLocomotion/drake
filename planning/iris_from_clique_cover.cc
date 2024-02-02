@@ -191,7 +191,7 @@ std::queue<HPolyhedron> IrisWorker(
       (clique_points - clique_ellipse.center())
           .colwise()
           .norm()
-          .maxCoeff(&nearest_point_col);
+          .minCoeff(&nearest_point_col);
       Eigen::VectorXd center = clique_points.col(nearest_point_col);
       iris_options.starting_ellipse =
           Hyperellipsoid(center, clique_ellipse.A());
