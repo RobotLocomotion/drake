@@ -83,7 +83,7 @@ namespace render {
  the PerceptionProperties, taking into account the configured default value and
  the documented @ref reserved_render_label "RenderLabel semantics"; see
  GetRenderLabelOrThrow().  */
-class RenderEngine : public ShapeReifier {
+class RenderEngine {
  public:
   /** Constructs a %RenderEngine with the given default render label. The
    default render label is applied to geometries that have not otherwise
