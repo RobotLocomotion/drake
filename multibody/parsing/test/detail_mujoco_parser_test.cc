@@ -34,7 +34,6 @@ using geometry::GeometryId;
 using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
-using geometry::ShapeName;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -296,16 +295,13 @@ TEST_F(MujocoParserTest, GeometryTypes) {
                                  const std::string& shape_name) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_name);
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kPerception, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_name);
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kIllustration, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_name);
   };
 
   // TODO(russt): Check the sizes of the shapes.  (It seems that none of our
