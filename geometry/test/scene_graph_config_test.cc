@@ -18,9 +18,11 @@ default_proximity_properties:
   hydroelastic_modulus: 2.0
   mesh_resolution_hint: 3.0
   slab_thickness: 4.0
-  hunt_crossley_dissipation: 5.0
-  dynamic_friction: 6.0
-  static_friction: 7.0
+  dynamic_friction: 5.0
+  static_friction: 6.0
+  hunt_crossley_dissipation: 7.0
+  relaxation_time: 8.0
+  point_stiffness: 9.0
 )""";
 
 GTEST_TEST(SceneGraphConfigTest, YamlTest) {
@@ -31,9 +33,11 @@ GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   EXPECT_EQ(props.hydroelastic_modulus, 2);
   EXPECT_EQ(props.mesh_resolution_hint, 3);
   EXPECT_EQ(props.slab_thickness, 4);
-  EXPECT_EQ(props.hunt_crossley_dissipation, 5);
-  EXPECT_EQ(props.dynamic_friction, 6);
-  EXPECT_EQ(props.static_friction, 7);
+  EXPECT_EQ(props.dynamic_friction, 5);
+  EXPECT_EQ(props.static_friction, 6);
+  EXPECT_EQ(props.hunt_crossley_dissipation, 7);
+  EXPECT_EQ(props.relaxation_time, 8);
+  EXPECT_EQ(props.point_stiffness, 9);
   EXPECT_EQ("\n" + SaveYamlString(config), kExampleConfig);
 }
 
