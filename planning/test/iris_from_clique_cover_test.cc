@@ -90,15 +90,15 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
 }
 
 /* A movable sphere with fixed boxes in all corners.
-┌─────┬───┬─────┐
-│     │   │     │
-│     │   │     │
-├─────┘   └─────┤
+┌───────────────┐
+│┌────┐   ┌────┐│
+││    │   │    ││
+│└────┘   └────┘│
 │       o       │
-├─────┐   ┌─────┤
-│     │   │     │
-│     │   │     │
-└─────┴───┴─────┘ */
+│┌────┐   ┌────┐│
+││    │   │    ││
+│└────┘   └────┘│
+└───────────────┘ */
 const char boxes_in_corners[] = R"""(
 <robot name="boxes">
   <link name="fixed">
@@ -158,6 +158,21 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
                 2, 2, -2, -2, 2,
                 0, 0, 0, 0, 0;
   meshcat->SetLine("Domain", env_points, 2.0, Rgba(0, 0, 1));
+  Eigen::Matrix3Xd centers = Eigen::Matrix3Xd::Zero(3, 4);
+  centers<< -1, 1, 1, -1,
+            1, 1, -1, -1,
+            0, 0, 0, 0;
+  Eigen::Matrix3Xd obs_points = Eigen::Matrix3Xd::Zero(3, 5);
+  obs_points << -0.6, 0.6, 0.6,-0.6,-0.6,
+                0.6, 0.6, -0.6, -0.6, 0.6,
+                0, 0, 0, 0, 0;
+  for(int obstacle_idx = 0; obstacle_idx<4; ++obstacle_idx){
+    Eigen::Matrix3Xd obstacle = obs_points;
+    obstacle.colwise() += centers.col(obstacle_idx);
+    meshcat->SetLine(fmt::format("/obstacles/obs_{}", obstacle_idx), obstacle, 2.0, Rgba(0, 0, 1));
+  }
+  
+  
   RobotDiagramBuilder<double> builder(0.0);
   params.robot_model_instances =
       builder.parser().AddModelsFromString(boxes_in_corners, "urdf");
@@ -171,7 +186,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   
   options.num_builders = 2;
   options.num_points_per_coverage_check = 100;
-  options.num_points_per_visibility_round = 25;
+  options.num_points_per_visibility_round = 400;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;
