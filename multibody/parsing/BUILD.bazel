@@ -256,12 +256,14 @@ drake_cc_library(
         "detail_urdf_geometry.h",
         "detail_urdf_parser.h",
     ],
+    data = ["urdf.rnc"],
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
+        ":detail_schema_checker",
         ":scoped_names",
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
@@ -930,9 +932,12 @@ install_files(
     files = [
         "drake_models.json",
         "package_downloader.py",
+        "urdf.rnc",
     ],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["urdf.rnc"])
 
 add_lint_tests(
     cpplint_extra_srcs = [
