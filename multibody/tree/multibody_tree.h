@@ -17,7 +17,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
@@ -791,20 +790,6 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
-
-    // Backwards compatibility for automatically-added floating joints whose
-    // names went from "$world_bodyname" to "bodyname". Does not attempt to
-    // support cases (rare, maybe nonexistent) where a conflict caused the new
-    // name to be prefixed by underscores. Remove this on or after 2024-02-01.
-    if (name.substr(0, 7) == "$world_") {
-      name.remove_prefix(7);
-      drake::log()->warn(
-          "GetJointByName($world_{}): Floating joint names are no longer "
-          "prefixed by '$world_'. Looking for joint {} instead. "
-          "Support for the '$world_' prefix is deprecated and will "
-          "be removed on or after 2024-02-01.", name, name);
-    }
-
     const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
     const JointType<T>* const typed_joint =
         dynamic_cast<const JointType<T>*>(&joint);
@@ -1162,44 +1147,6 @@ class MultibodyTree {
 
   // @name Methods to compute multibody Jacobians.
   // @{
-
-  // See MultibodyPlant method.
-  VectorX<T> CalcBiasForJacobianTranslationalVelocity(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
-    const int num_points = p_FP_list.cols();
-    DRAKE_THROW_UNLESS(num_points > 0 && p_FP_list.rows() == 3);
-
-    const Matrix3X<T> asBias_AFp_E = CalcBiasTranslationalAcceleration(
-        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
-
-    // This deprecated method needs to return a VectorX<T>.
-    VectorX<T> asBias_AFp_E_as_VectorX(3 * num_points);
-    for (int i = 0;  i < num_points; ++i) {
-      const Vector3<T> acceleration_bias_i = asBias_AFp_E.col(i);
-      for (int j = 0; j < 3;  ++j)
-        asBias_AFp_E_as_VectorX(3*i + j) = acceleration_bias_i(j);
-    }
-
-    return asBias_AFp_E_as_VectorX;
-  }
-
-  // See MultibodyPlant method.
-  Vector6<T> CalcBiasForJacobianSpatialVelocity(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
-    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
-        context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
-    return Abias_WFp.get_coeffs();
-  }
 
   // See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(

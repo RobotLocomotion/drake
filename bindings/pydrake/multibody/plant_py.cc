@@ -1071,44 +1071,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::get_contact_penalty_method_time_scale,
             cls_doc.get_contact_penalty_method_time_scale.doc)
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
-            py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Position and velocity accessors and mutators.
-    cls  // BR
-        .def("GetMutablePositionsAndVelocities",
-            WrapDeprecated(
-                cls_doc.GetMutablePositionsAndVelocities.doc_deprecated,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutablePositionsAndVelocities(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutablePositionsAndVelocities.doc_deprecated)
-        .def("GetMutablePositions",
-            WrapDeprecated(cls_doc.GetMutablePositions.doc_deprecated_1args,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutablePositions(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutablePositions.doc_deprecated_1args)
-        .def("GetMutableVelocities",
-            WrapDeprecated(cls_doc.GetMutableVelocities.doc_deprecated_1args,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutableVelocities(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutableVelocities.doc_deprecated_1args);
-#pragma GCC diagnostic pop
-    cls  // BR
+            py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc)
         .def(
             "GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)

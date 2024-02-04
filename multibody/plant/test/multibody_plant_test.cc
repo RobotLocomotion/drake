@@ -2854,20 +2854,6 @@ TEST_P(KukaArmTest, StateAccess) {
 
   // Modify positions and change xc expected to reflect changes to positions.
   for (int i = 0; i < plant_->num_positions(); ++i) xc_expected[i] *= -1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant_->GetMutablePositions(context_.get()) =
-      xc_expected.head(plant_->num_positions());
-#pragma GCC diagnostic pop
-  EXPECT_EQ(plant_->GetPositions(*context_),
-            xc_expected.head(plant_->num_positions()));
-  EXPECT_EQ(xc, xc_expected);
-
-  // SetPositions() should yield the same result.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant_->GetMutablePositions(context_.get()).setZero();
-#pragma GCC diagnostic pop
   plant_->SetPositions(context_.get(),
                        xc_expected.head(plant_->num_positions()));
   EXPECT_EQ(plant_->GetPositions(*context_),
@@ -2876,35 +2862,10 @@ TEST_P(KukaArmTest, StateAccess) {
   // Modify velocities and change xc_expected to reflect changes to velocities.
   for (int i = 0; i < plant_->num_velocities(); ++i)
     xc_expected[i + plant_->num_positions()] *= -1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant_->GetMutableVelocities(context_.get()) =
-      xc_expected.tail(plant_->num_velocities());
-#pragma GCC diagnostic pop
-  EXPECT_EQ(plant_->GetVelocities(*context_),
-            xc_expected.tail(plant_->num_velocities()));
-  EXPECT_EQ(xc, xc_expected);
-
-  // SetVelocities() should yield the same result.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant_->GetMutableVelocities(context_.get()).setZero();
-#pragma GCC diagnostic pop
   plant_->SetVelocities(context_.get(),
                         xc_expected.tail(plant_->num_velocities()));
   EXPECT_EQ(plant_->GetVelocities(*context_),
             xc_expected.tail(plant_->num_velocities()));
-  EXPECT_EQ(xc, xc_expected);
-
-  // Get a mutable state and modify it.
-  // Note: xc above is referencing values stored in the context. Therefore
-  // setting the entire state to zero changes the values referenced by xc.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
-#pragma GCC diagnostic pop
-  EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
-  plant_->SetPositionsAndVelocities(context_.get(), xc_expected);
   EXPECT_EQ(xc, xc_expected);
 
   // Ensure that call sites accepting a VectorBlock do not allocate.
@@ -4699,11 +4660,6 @@ GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
                        SpatialInertia<double>::MakeUnitary());
     plant.Finalize();
     EXPECT_NO_THROW(plant.GetJointByName("free_body"));
-
-    // Deprecated; remove after 2024-02-01.
-    // Previously floating joint names were prefixed with $world_.
-    // GetJointByName() removes that and logs a deprecation warning.
-    EXPECT_NO_THROW(plant.GetJointByName("$world_free_body"));
   }
 
   // Verify that in case of a name conflict, we prepend with underscores
@@ -4728,13 +4684,6 @@ GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
     plant.Finalize();
 
     EXPECT_NO_THROW(plant.GetJointByName("__base_body"));
-
-    // We do not have deprecation support for this case. Previously the
-    // added joint would have been named "$world_base_body". During the
-    // deprecation period, GetJointByName("$world_base_body") will strip
-    // "$world_" and incorrectly return the unrelated joint unfortunately named
-    // "base_body". However a warning will be logged noting that. (remove
-    // comment 2024-02-01)
   }
 }
 

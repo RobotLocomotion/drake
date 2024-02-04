@@ -5,7 +5,6 @@
 #include <string>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame_base.h"

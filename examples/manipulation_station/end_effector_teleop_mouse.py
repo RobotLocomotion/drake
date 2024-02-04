@@ -142,7 +142,7 @@ class MouseKeyboardTeleop(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublishNoHandler(0.01, 0.0)
+        self.DeclarePeriodicPublishEvent(0.01, 0.0, lambda _: None)
 
         self.teleop_manager = TeleopMouseKeyboardManager(grab_focus=grab_focus)
         self.roll = self.pitch = self.yaw = 0
