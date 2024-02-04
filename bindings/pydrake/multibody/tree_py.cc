@@ -394,16 +394,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
 
-// TODO(sherm1) Remove as of 2024-02-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("floating_velocities_start",
-            WrapDeprecated(cls_doc.floating_velocities_start.doc_deprecated,
-                &Class::floating_velocities_start),
-            cls_doc.floating_velocities_start.doc_deprecated);
-#pragma GCC diagnostic pop
-
     // Aliases for backwards compatibility (dispreferred).
     m.attr("Body") = m.attr("RigidBody");
     m.attr("Body_") = m.attr("RigidBody_");
@@ -862,14 +852,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("gains"), cls_doc.set_controller_gains.doc)
         .def("has_controller", &Class::has_controller,
             cls_doc.has_controller.doc);
-    constexpr char doc_deprecated_set_actuation_vector[] =
-        "The kwarg name 'u_instance' is deprecated and will be removed on "
-        "2024-02-01. Spell the argument name as 'u_actuator' instead.";
-    cls.def("set_actuation_vector",
-        WrapDeprecated(
-            doc_deprecated_set_actuation_vector, &Class::set_actuation_vector),
-        py::arg("u_instance"), py::arg("u"),
-        doc_deprecated_set_actuation_vector);
   }
 
   // Force Elements.

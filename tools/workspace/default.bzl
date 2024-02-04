@@ -24,7 +24,6 @@ load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_interna
 load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
 load("//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("//tools/workspace/eigen:repository.bzl", "eigen_repository")
-load("//tools/workspace/expat:repository.bzl", "expat_repository")
 load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
 load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
@@ -45,13 +44,10 @@ load("//tools/workspace/ipopt_internal_pkgconfig:repository.bzl", "ipopt_interna
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
-load("//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/liblapack:repository.bzl", "liblapack_repository")
 load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
-load("//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
-load("//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
@@ -169,10 +165,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "eigen" not in excludes:
         eigen_repository(name = "eigen")
-    if "expat" not in excludes:
-        # The @expat external is deprecated in Drake's WORKSPACE and will be
-        # removed on or after 2024-02-01.
-        expat_repository(name = "expat")
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)
     if "fmt" not in excludes:
@@ -213,26 +205,14 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         lcm_repository(name = "lcm", mirrors = mirrors)
     if "libblas" not in excludes:
         libblas_repository(name = "libblas")
-    if "libjpeg" not in excludes:
-        # The @libjpeg external is deprecated in Drake's WORKSPACE and will be
-        # removed on or after 2024-02-01.
-        libjpeg_repository(name = "libjpeg")
     if "libjpeg_turbo_internal" not in excludes:
         libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     if "liblapack" not in excludes:
         liblapack_repository(name = "liblapack")
     if "libpfm" not in excludes:
         libpfm_repository(name = "libpfm")
-    if "libpng" not in excludes:
-        # The @libpng external is deprecated in Drake's WORKSPACE and will be
-        # removed on or after 2024-02-01.
-        libpng_repository(name = "libpng")
     if "libpng_internal" not in excludes:
         libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
-    if "libtiff" not in excludes:
-        # The @libtiff external is deprecated in Drake's WORKSPACE and will be
-        # removed on or after 2024-02-01.
-        libtiff_repository(name = "libtiff")
     if "libtiff_internal" not in excludes:
         libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)  # noqa
     if "meshcat" not in excludes:

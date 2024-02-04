@@ -1266,26 +1266,12 @@ class TestPlant(unittest.TestCase):
         x = plant.GetPositionsAndVelocities(context)
         numpy_compare.assert_float_equal(x, np.zeros(4))
 
-        # WARNING: The following oddities occur from the fact that
-        # `ndarray[object]` cannot be referenced (#8116). Be careful when
-        # writing scalar-generic code.
-        if T == float:
-            # Can reference matrices. Use `x_ref`.
-            # Write into a mutable reference to the state vector.
-            with catch_drake_warnings(expected_count=1) as w:
-                x_ref = plant.GetMutablePositionsAndVelocities(context)
-            x_ref[:] = x0
+        # A convenience function to reset back to zero.
+        def set_zero():
+            plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
 
-            def set_zero():
-                x_ref.fill(0)
-
-        else:
-            # Cannot reference matrices. Use setters.
-            plant.SetPositionsAndVelocities(context, x0)
-
-            def set_zero():
-                plant.SetPositionsAndVelocities(
-                    context, np.zeros(nq + nv))
+        # Change x to non-zero values.
+        plant.SetPositionsAndVelocities(context, x0)
 
         # Verify that positions and velocities were set correctly.
         numpy_compare.assert_float_equal(plant.GetPositions(context), q0)
@@ -1318,15 +1304,6 @@ class TestPlant(unittest.TestCase):
         plant.GetDefaultPositions()
         plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
         plant.GetDefaultPositions(model_instance=instance)
-
-        if T == float:
-            # Test GetMutablePositions/Velocities
-            with catch_drake_warnings(expected_count=1) as w:
-                q_ref = plant.GetMutablePositions(context)
-            q_ref[:] = q0
-            with catch_drake_warnings(expected_count=1) as w:
-                v_ref = plant.GetMutableVelocities(context)
-            v_ref[:] = v0
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
@@ -1756,22 +1733,13 @@ class TestPlant(unittest.TestCase):
         x_desired[nq:nq+7] = v_iiwa_desired
         x_desired[nq+7:nq+nv] = v_gripper_desired
 
-        if T == float:
-            with catch_drake_warnings(expected_count=1) as w:
-                x = plant.GetMutablePositionsAndVelocities(context=context)
-            x[:] = x_desired
-        else:
-            plant.SetPositionsAndVelocities(context, x_desired)
+        plant.SetPositionsAndVelocities(context, x_desired)
 
         q = plant.GetPositions(context=context)
         v = plant.GetVelocities(context=context)
 
         # Get state from context.
         x = plant.GetPositionsAndVelocities(context=context)
-        if T == float:
-            with catch_drake_warnings(expected_count=1) as w:
-                x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
-            self.assertTrue(np.allclose(x_desired, x_tmp))
 
         # Get positions and velocities of specific model instances
         # from the position/velocity vector of the plant.
@@ -1850,8 +1818,6 @@ class TestPlant(unittest.TestCase):
             [0.4, 0.5, 0.6])
         self.assertNotEqual(link0.floating_positions_start(), -1)
         self.assertNotEqual(link0.floating_velocities_start_in_v(), -1)
-        with catch_drake_warnings(expected_count=1):
-            self.assertNotEqual(link0.floating_velocities_start(), -1)
         self.assertFalse(plant.IsVelocityEqualToQDot())
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
@@ -2005,9 +1971,6 @@ class TestPlant(unittest.TestCase):
                 u = np.array([0.1])
                 numpy_compare.assert_float_equal(
                     actuator.get_actuation_vector(u=u), [0.1])
-                with catch_drake_warnings(expected_count=1):
-                    actuator.set_actuation_vector(
-                        u_instance=np.array([0.2]), u=u)
                 actuator.set_actuation_vector(
                     u_actuator=np.array([0.2]), u=u)
                 numpy_compare.assert_float_equal(u, [0.2])

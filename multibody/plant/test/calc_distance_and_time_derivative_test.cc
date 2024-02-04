@@ -31,13 +31,6 @@ void CheckDistanceAndTimeDerivative(
   v.segment<3>(sphere_body.floating_velocities_start_in_v()) = omega_WS;
   v.segment<3>(sphere_body.floating_velocities_start_in_v() + 3) = v_WS;
 
-  // TODO(sherm1) Remove as of 2024-02-01
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(box_body.floating_velocities_start(),
-            14 + box_body.floating_velocities_start_in_v());
-#pragma GCC diagnostic push
-
   plant.SetPositions(plant_context, q);
   plant.SetVelocities(plant_context, v);
   const SignedDistanceWithTimeDerivative result =

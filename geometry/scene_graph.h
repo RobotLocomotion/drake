@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_set.h"

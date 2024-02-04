@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/rational_function.h"
 

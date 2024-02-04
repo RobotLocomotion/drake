@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
