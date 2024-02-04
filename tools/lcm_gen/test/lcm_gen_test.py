@@ -5,8 +5,10 @@ import unittest
 from bazel_tools.tools.python.runfiles import runfiles
 
 from drake.tools.lcm_gen import (
+    CppGen,
     Parser,
     PrimitiveType,
+    Struct,
     UserType,
 )
 
@@ -24,6 +26,10 @@ class BaseTest(unittest.TestCase):
         self._mike_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/mike.lcm"))
         assert self._mike_path.exists()
+
+        self._november_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/november.lcm"))
+        assert self._november_path.exists()
 
 
 class TestParser(BaseTest):
@@ -126,6 +132,17 @@ struct papa.mike {
         self.assertEqual(zulu.array_dims[0], "rows")
         self.assertEqual(zulu.array_dims[1], 2)
 
+    def test_parse_november(self):
+        """Checks the parse tree for `november.lcm`."""
+        november = Parser.parse(filename=self._november_path)
+        self.assertEqual(str(november), """\
+struct papa.november {
+  papa.lima alpha;
+  papa.lima bravo;
+  int32_t charlie;
+}
+""")
+
     def test_type_str(self):
         """Tests UserType.__str__. The end-to-end tests of the parser wouldn't
         usually hit these corner cases because most types are immediately
@@ -169,3 +186,47 @@ struct papa.mike {
     def test_missing_const_name(self):
         with self.assertRaisesRegex(SyntaxError, "Expected.*NAME"):
             self._parse_str('struct bad { const double /* name */ = 1; }')
+
+
+class TestCppGen(BaseTest):
+    """Tests for the CppGen class. For the most part, these merely compare the
+    generated code to a checked-in goal file. Testing that the generated code
+    works as intended happens in the C++ unit test `functional_test.cc`.
+    """
+
+    def test_lima_text(self):
+        """The generated text for lima.h exactly matches the goal file."""
+
+        lima_h_path = self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/lima.h")
+        with open(lima_h_path, encoding="utf-8") as f:
+            expected_text = f.read()
+        lima = Parser.parse(filename=self._lima_path)
+        dut = CppGen(struct=lima)
+        actual_text = dut.generate()
+        self.assertMultiLineEqual(expected_text, actual_text)
+
+    def test_november_text(self):
+        """The generated text for november.h exactly matches the goal file."""
+
+        november_h_path = self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/november.h")
+        with open(november_h_path, encoding="utf-8") as f:
+            expected_text = f.read()
+        november = Parser.parse(filename=self._november_path)
+        dut = CppGen(struct=november)
+        actual_text = dut.generate()
+        self.assertMultiLineEqual(expected_text, actual_text)
+
+    def test_no_package(self):
+        """Sanity test for a message without any LCM package specified."""
+        empty = Struct(typ=UserType(package=None, name="empty"))
+        actual_text = CppGen(struct=empty).generate()
+        lines = actual_text.splitlines()
+        while lines[0] == "" or lines[0][0] == "#":
+            # Skip over blank lines and preprocessor lines.
+            lines.pop(0)
+        # The first real line of code should be the class opener.
+        self.assertEqual(lines[0], "class empty {")
+        # The last real line of code should be the class closer.
+        self.assertEqual(lines[-1], "};")
