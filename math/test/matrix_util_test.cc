@@ -51,25 +51,57 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
   X1 << 1, 2,
         2, 3;
   // clang-format on
-  auto X1_result = ToSymmetricMatrixFromLowerTriangularColumns(x1);
+  auto X1_result = ToSymmetricMatrixFromLowerTriangularColumns(x1, false);
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(X1_result), Eigen::Matrix2d);
   EXPECT_TRUE(CompareMatrices(X1_result, X1));
 
-  // Tests a dynamic size vector.
-  Eigen::VectorXd x2(6);
-  x2 << 1, 2, 3, 4, 5, 6;
-  Eigen::Matrix3d X2;
+  // Tests the preserve inner product argument of a static size vector.
+  Eigen::Vector3d x2(-2, -7.1, 9);
+  Eigen::Matrix2d X2;
   // clang-format off
-  X2 << 1, 2, 3,
+  X2 << -2,  -7.1/sqrt(2),
+        -7.1/sqrt(2), 9;
+  auto X2_result = ToSymmetricMatrixFromLowerTriangularColumns(x2, true);
+  auto X1_result_preserve_inner_product = ToSymmetricMatrixFromLowerTriangularColumns(
+      x1, true);
+
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(X2_result), Eigen::Matrix2d);
+  EXPECT_TRUE(CompareMatrices(X2_result, X2));
+  EXPECT_DOUBLE_EQ(x1.transpose()*x2, (X1_result_preserve_inner_product.transpose()*X2_result).trace());
+
+
+  // Tests a dynamic size vector.
+  Eigen::VectorXd x3(6);
+  x3 << 1, 2, 3, 4, 5, 6;
+  Eigen::Matrix3d X3;
+  // clang-format off
+  X3 << 1, 2, 3,
         2, 4, 5,
         3, 5, 6;
   // clang-format on
-  EXPECT_TRUE(
-      CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2));
+  EXPECT_TRUE(CompareMatrices(
+      ToSymmetricMatrixFromLowerTriangularColumns(x3, false), X3));
+
+  // Tests the preserve inner product argument of a static size vector.
+  Eigen::VectorXd x4(6);
+  x4 << -1.2, -2.7, 3.1, -4.1, 5.9, 6.3;
+  Eigen::Matrix3d X4;
+  // clang-format off
+  X4 << -1.2,         -2.7/sqrt(2), 3.1/sqrt(2),
+        -2.7/sqrt(2), -4.1,         5.9/sqrt(2),
+         3.1/sqrt(2),  5.9/sqrt(2), 6.3;
+  // clang-format on
+  auto X4_result = ToSymmetricMatrixFromLowerTriangularColumns(x4, true);
+  auto X3_result_preserve_inner_product =
+      ToSymmetricMatrixFromLowerTriangularColumns(x3, true);
+  EXPECT_TRUE(CompareMatrices(X4_result, X4));
+  EXPECT_DOUBLE_EQ(
+      x3.transpose() * x4,
+      (X3_result_preserve_inner_product.transpose() * X4_result).trace());
 }
 
 GTEST_TEST(TestMatrixUtil, TestToLowerTriangularColumnFromMatrix) {
-  // Tests a static size vector.
+  // Tests a static size matrix.
   Eigen::Vector3d x1(1, 2, 3);
   Eigen::Matrix2d X1;
   // clang-format off
@@ -80,16 +112,46 @@ GTEST_TEST(TestMatrixUtil, TestToLowerTriangularColumnFromMatrix) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(x1_result), Eigen::Vector3d);
   EXPECT_TRUE(CompareMatrices(x1, x1_result));
 
-  // Tests a dynamic size vector.
-  Eigen::VectorXd x2(6);
-  x2 << 1, 2, 3, 4, 5, 6;
-  Eigen::Matrix3d X2;
+  // Tests the preserve inner product argument of a static size matrix.
+  Eigen::Vector3d x2(2.7, -7.9 * sqrt(2), 0.3);
+  Eigen::Matrix2d X2;
   // clang-format off
-  X2 << 1, 7, 8,
-        2, 4, 9,
+  X2 <<  2.7, -7.9,
+        -7.9, 0.3;
+  // clang-format on
+  auto x2_result = ToLowerTriangularColumnsFromMatrix(X2, true);
+  EXPECT_TRUE(CompareMatrices(x2, x2_result));
+  EXPECT_DOUBLE_EQ(
+      (ToLowerTriangularColumnsFromMatrix(X1, true)).transpose() *
+      (ToLowerTriangularColumnsFromMatrix(X2, true)),
+      (X1.transpose() * X2).trace());
+
+  // Tests a dynamic size vector.
+  Eigen::VectorXd x3(6);
+  x3 << 1, 2, 3, 4, 5, 6;
+  Eigen::Matrix3d X3;
+  // clang-format off
+  X3 << 1, 2, 3,
+        2, 4, 5,
         3, 5, 6;
   // clang-format on
-  EXPECT_TRUE(CompareMatrices(ToLowerTriangularColumnsFromMatrix(X2), x2));
+  EXPECT_TRUE(CompareMatrices(ToLowerTriangularColumnsFromMatrix(X3), x3));
+
+  // Tests the preserve inner product argument of a dynamic size matrix.
+  Eigen::VectorXd x4(6);
+  x4 << 1.7, -7.9*sqrt(2), 6.3*sqrt(2), -4.1, 9.2*sqrt(2), -0.6;
+  Eigen::Matrix3d X4;
+  // clang-format off
+  X4 <<  1.7, -7.9,  6.3,
+        -7.9, -4.1,  9.2,
+         6.3,  9.2, -0.6;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(ToLowerTriangularColumnsFromMatrix(X4, true), x4));
+  EXPECT_DOUBLE_EQ(
+      (ToLowerTriangularColumnsFromMatrix(X3, true)).transpose() *
+      ToLowerTriangularColumnsFromMatrix(X4, true),
+      (X3.transpose() * X4).trace());
+
 }
 
 GTEST_TEST(TestMatrixUtil, IsPositiveDefiniteTest) {

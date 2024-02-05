@@ -46,9 +46,8 @@ ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
   const int result_symmetric_space_cols =
       compute_inv_triangular_number(A.cols()) *
       compute_inv_triangular_number(B.cols());
-  const int result_cols = r_choose_2(result_symmetric_space_cols+1);
+  const int result_cols = r_choose_2(result_symmetric_space_cols + 1);
   const int result_rows = A.rows() * B.rows();
-
 
   Eigen::SparseMatrix<double> C(result_rows, result_cols);
   std::vector<Eigen::Triplet<double>> C_triplets;
@@ -57,15 +56,24 @@ ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
   int y_idx = 0;
   // Now iterate over the non-zero entries of the flattened outerproduct
   // A.col(i) * B.col(j).T for all (i,j) pairs in the operator domain space.
+
   for (int iA = 0; iA < A.outerSize(); ++iA) {
     for (int iB = 0; iB < B.outerSize(); ++iB) {
       for (SparseMatrix<double>::InnerIterator itA(A, iA); itA; ++itA) {
+        int i = itA.col();
         for (SparseMatrix<double>::InnerIterator itB(B, iB); itB; ++itB) {
+          int j = itB.col();
           y_idx = 0;
           for (int yc = 0; yc < result_symmetric_space_cols; ++yc) {
             for (int yr = yc; yr < result_symmetric_space_cols; ++yr) {
-              C_triplets.emplace_back(itA.row() * B.rows() + itB.row(), y_idx,
-                                      itA.value() * itB.value());
+              int row = itA.row() * B.rows() + itB.row();
+              int col = y_idx;
+              double value = itA.value() * itB.value();
+              //              std::cout << "C_triplets: " << row << ", " << col
+              //              << ", " << value
+              //                        << std::endl;
+
+              C_triplets.emplace_back(row, col, value);
               ++y_idx;
             }
           }
