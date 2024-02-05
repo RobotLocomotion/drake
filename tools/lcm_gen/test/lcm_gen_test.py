@@ -114,6 +114,7 @@ struct papa.mike {
   double delta[3];
   float foxtrot[4][5];
   papa.lima alpha;
+  string sierra;
   int32_t rows;
   int32_t cols;
   byte bravo[rows];
@@ -194,6 +195,16 @@ class TestCppGen(BaseTest):
     works as intended happens in the C++ unit test `functional_test.cc`.
     """
 
+    _HELP = """
+===========================================================================
+To replace the goal files with newly-regenerated copies, run this command:
+
+bazel run //tools/lcm_gen -- \
+  tools/lcm_gen/test/*.lcm --outdir=tools/lcm_gen/test/goal
+
+===========================================================================
+"""
+
     def test_lima_text(self):
         """The generated text for lima.h exactly matches the goal file."""
 
@@ -204,7 +215,19 @@ class TestCppGen(BaseTest):
         lima = Parser.parse(filename=self._lima_path)
         dut = CppGen(struct=lima)
         actual_text = dut.generate()
-        self.assertMultiLineEqual(expected_text, actual_text)
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
+
+    def test_mike_text(self):
+        """The generated text for mike.h exactly matches the goal file."""
+
+        mike_h_path = self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/mike.h")
+        with open(mike_h_path, encoding="utf-8") as f:
+            expected_text = f.read()
+        mike = Parser.parse(filename=self._mike_path)
+        dut = CppGen(struct=mike)
+        actual_text = dut.generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_november_text(self):
         """The generated text for november.h exactly matches the goal file."""
@@ -216,7 +239,7 @@ class TestCppGen(BaseTest):
         november = Parser.parse(filename=self._november_path)
         dut = CppGen(struct=november)
         actual_text = dut.generate()
-        self.assertMultiLineEqual(expected_text, actual_text)
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_no_package(self):
         """Sanity test for a message without any LCM package specified."""

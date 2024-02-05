@@ -10,6 +10,9 @@ struct mike {
   // Sub-struct (non-array), using unqualified (no package) name.
   lima alpha;
 
+  // Variable-length string.
+  string sierra;
+
   // Variable-sized arrays.
   int32_t rows;
   int32_t cols;
