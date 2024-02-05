@@ -52,40 +52,24 @@ ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
   Eigen::SparseMatrix<double> C(result_rows, result_cols);
   std::vector<Eigen::Triplet<double>> C_triplets;
 
-  int prod_row_idx = 0;
-  int y_idx = 0;
-  // Now iterate over the non-zero entries of the flattened outerproduct
-  // A.col(i) * B.col(j).T for all (i,j) pairs in the operator domain space.
-
-  for (int iA = 0; iA < A.outerSize(); ++iA) {
-    for (int iB = 0; iB < B.outerSize(); ++iB) {
-      for (SparseMatrix<double>::InnerIterator itA(A, iA); itA; ++itA) {
-        int i = itA.col();
-        for (SparseMatrix<double>::InnerIterator itB(B, iB); itB; ++itB) {
-          int j = itB.col();
-          y_idx = 0;
-          for (int yc = 0; yc < result_symmetric_space_cols; ++yc) {
-            for (int yr = yc; yr < result_symmetric_space_cols; ++yr) {
-              int row = itA.row() * B.rows() + itB.row();
-              int col = y_idx;
-              double value = itA.value() * itB.value();
-              //              std::cout << "C_triplets: " << row << ", " << col
-              //              << ", " << value
-              //                        << std::endl;
-
-              C_triplets.emplace_back(row, col, value);
-              ++y_idx;
-            }
-          }
+  // TODO(Alexandre.Amice) make this way more efficient.
+  for (int i = 0; i < result_symmetric_space_cols; ++i) {
+    Eigen::SparseVector<double> ei(A.cols());
+    ei.coeffRef(i) = 1;
+    for (int j = 0; j < result_symmetric_space_cols; ++j) {
+      Eigen::SparseVector<double> ej(B.cols());
+      ej.coeffRef(i) = 1;
+      SparseMatrix<double> temp = SparseKroneckerProduct(A * ei, B * ej);
+      for (int k = 0; k < temp.outerSize(); ++k) {
+        for (SparseMatrix<double>::InnerIterator it(temp, k); it; ++it) {
+          C_triplets.emplace_back(
+              math::SymmetricMatrixIndexToLowerTriangularLinearIndex(
+                  i, j, A.rows() * B.rows()),
+              it.col(), it.value());
         }
       }
-      ++prod_row_idx;
     }
   }
-  std::cout << "prod row = " << prod_row_idx << std::endl;
-  std::cout << "y_idx= " << y_idx << std::endl;
-  std::cout << fmt::format("C size = ({}, {})", C.rows(), C.cols())
-            << std::endl;
   C.setFromTriplets(C_triplets.begin(), C_triplets.end());
   return C;
 }
