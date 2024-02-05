@@ -121,50 +121,70 @@ def _impl(repo_ctx):
     create_modules_bzl(repo_ctx)
     repo_ctx.symlink(repo_ctx.attr.settings_bzl, "settings.bzl")
 
-vtk_internal_repository = repository_rule(
+_vtk_internal_repository_impl = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
-        "repository": attr.string(
-            default = "Kitware/VTK",
-        ),
-        "commit": attr.string(
-            # TODO(jwnimmer-tri) Once there's a tagged release with support
-            # for VTK_ABI_NAMESPACE, we should switch to an official version
-            # number here. That probably means waiting for the VTK 10 release.
-            default = "b3066f749b40a3b7f259bed8ce69b6a100ebdacf",
-        ),
-        "commit_pin": attr.int(
-            # See above. There's not any satisfactory tagged version yet.
-            default = 1,
-        ),
-        "sha256": attr.string(
-            default = "a1e4d7e2b9596597bf4ad5a6d6b0292c53247cc917b62a30bc8656d4a6342850",  # noqa
-        ),
-        "build_file": attr.label(
-            default = "@drake//tools/workspace/vtk_internal:package.BUILD.bazel",  # noqa
-        ),
-        "patches": attr.label_list(
-            default = [
-                "@drake//tools/workspace/vtk_internal:patches/common_core_version.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/filters_sources_cylinder.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/gltf_parser.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/io_image_formats.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/io_legacy_data_reader_uninit.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/rendering_opengl2_nobacktrace.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/vtkdoubleconversion_hidden.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/vtkfast_float_hidden.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/vtkglew_hidden.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/vtkpugixml_hidden.patch",  # noqa
-                "@drake//tools/workspace/vtk_internal:patches/vtksys_hidden.patch",  # noqa
-            ],
-        ),
+        "repository": attr.string(),
+        "commit": attr.string(),
+        "sha256": attr.string(),
+        "build_file": attr.label(),
+        "patches": attr.label_list(),
         "extra_strip_prefix": attr.string(),
         "mirrors": attr.string_list_dict(),
         # This attribute is specific to our rule, not setup_github_repository.
-        "settings_bzl": attr.label(
-            allow_single_file = True,
-            default = Label("@drake//tools/workspace/vtk_internal:settings.bzl"),  # noqa
-        ),
+        "settings_bzl": attr.label(allow_single_file = True),
     },
     implementation = _impl,
 )
+
+def _resolve_drake_abbreviation(name, label_str):
+    """De-abbreviates the given label_str as a Drake tools/workspace label.
+    If the label_str is None, returns None. If the label_str is relative,
+    interprets it relative to the "@drake//tools/workspace/{name}/" package
+    and returns an absolute label. Otherwise, returns the label_str unchanged.
+    """
+    if label_str == None:
+        return None
+    if label_str.startswith(":"):
+        return "@drake//tools/workspace/" + name + label_str
+    return label_str
+
+def vtk_internal_repository(
+        name,
+        repository = "Kitware/VTK",
+        # TODO(jwnimmer-tri) Once there's a tagged release with support for
+        # VTK_ABI_NAMESPACE, we should switch to an official version number
+        # here. That probably means waiting for the VTK 10 release.
+        commit = "1e12cb8353ba4dc478cb24054336a4eece5f7b05",
+        sha256 = "dc33b90d99edc9cc01f620969b8aba3f5e4e1be063eb258346f1e451d47653a0",  # noqa
+        build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/common_core_version.patch",
+            ":patches/gltf_parser.patch",
+            ":patches/io_image_formats.patch",
+            ":patches/io_legacy_data_reader_uninit.patch",
+            ":patches/rendering_opengl2_nobacktrace.patch",
+            ":patches/vtkdoubleconversion_hidden.patch",
+            ":patches/vtkfast_float_hidden.patch",
+            ":patches/vtkglew_hidden.patch",
+            ":patches/vtkpugixml_hidden.patch",
+            ":patches/vtksys_hidden.patch",
+        ],
+        settings_bzl = ":settings.bzl",
+        **kwargs):
+    build_file = _resolve_drake_abbreviation(name, build_file)
+    patches = [
+        _resolve_drake_abbreviation(name, one_patch)
+        for one_patch in (patches or [])
+    ]
+    settings_bzl = _resolve_drake_abbreviation(name, settings_bzl)
+    _vtk_internal_repository_impl(
+        name = name,
+        repository = repository,
+        commit = commit,
+        sha256 = sha256,
+        build_file = build_file,
+        patches = patches,
+        settings_bzl = settings_bzl,
+        **kwargs
+    )
