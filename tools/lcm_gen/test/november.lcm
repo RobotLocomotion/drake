@@ -1,0 +1,14 @@
+// A sample LCM message definition for unit testing.
+
+package papa;
+
+struct november {
+  // Sub-struct (non-array), using unqualified (no package) name.
+  lima alpha;
+
+  // Sub-struct (non-array), using qualified name.
+  papa.lima bravo;
+
+  // Tack a primitive onto the end.
+  int32_t charlie;
+}
