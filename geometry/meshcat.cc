@@ -263,9 +263,15 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(internal::UuidGenerator* uuid_generator)
-      : uuid_generator_(*uuid_generator) {
+  MeshcatShapeReifier(
+      internal::UuidGenerator* uuid_generator, FileStorage* file_storage,
+      std::vector<std::shared_ptr<const FileStorage::Handle>>* assets)
+      : uuid_generator_(*uuid_generator),
+        file_storage_(*file_storage),
+        assets_(*assets) {
     DRAKE_DEMAND(uuid_generator != nullptr);
+    DRAKE_DEMAND(file_storage != nullptr);
+    DRAKE_DEMAND(assets != nullptr);
   }
 
   ~MeshcatShapeReifier() = default;
@@ -373,6 +379,8 @@ class MeshcatShapeReifier : public ShapeReifier {
             filename, mtllib, (basedir / mtllib).string());
       }
     } else if (format == "gltf") {
+      assets_ =
+          internal::UnbundleGltfAssets(filename, &mesh_data, &file_storage_);
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshfileObjectData>();
       meshfile_object.uuid = uuid_generator_.GenerateRandom();
@@ -540,6 +548,8 @@ class MeshcatShapeReifier : public ShapeReifier {
 
  private:
   internal::UuidGenerator& uuid_generator_;
+  FileStorage& file_storage_;
+  std::vector<std::shared_ptr<const FileStorage::Handle>>& assets_;
 };
 
 int ToMeshcatColor(const Rgba& rgba) {
@@ -799,7 +809,8 @@ class Meshcat::Impl {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    MeshcatShapeReifier reifier(&uuid_generator_);
+    std::vector<std::shared_ptr<const FileStorage::Handle>> assets;
+    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, &assets);
     shape.Reify(&reifier, &data.object);
 
     if (std::holds_alternative<std::monostate>(data.object.object)) {
@@ -836,7 +847,7 @@ class Meshcat::Impl {
       data.object.material = std::move(material);
     }
 
-    Defer([this, data = std::move(data)]() {
+    Defer([this, data = std::move(data), assets = std::move(assets)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
@@ -848,6 +859,7 @@ class Meshcat::Impl {
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object().emplace() = std::move(message);
+      e.object()->assets = std::move(assets);
     });
   }
 
@@ -1163,15 +1175,6 @@ class Meshcat::Impl {
     });
   }
 
-  // Meshcat uses content-addressable storage ("CAS") to serve asset files.
-  // See https://en.wikipedia.org/wiki/Content-addressable_storage.
-  // This function returns the CAS URL for the given storage handle.
-  static std::string GetCasUrl(const FileStorage::Handle& asset) {
-    // This URL pattern must align with the pattern in HandleHttpGet() so if you
-    // change it, be sure to change both places.
-    return fmt::format("cas/sha256/{}", asset.sha256.to_string());
-  }
-
   // Sets the `property` of `path` to a CAS URL that refers to `file_path`. The
   // file is copied into memory (in `file_storage_`) so that our HTTP server can
   // serve it anytime a browser requests it.
@@ -1194,7 +1197,7 @@ class Meshcat::Impl {
     internal::SetPropertyData<std::string> data;
     data.path = FullPath(path);
     data.property = std::move(property);
-    data.value = GetCasUrl(*asset);
+    data.value = FileStorage::GetCasUrl(*asset);
 
     Defer([this, data = std::move(data), asset = std::move(asset)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1653,7 +1656,7 @@ class Meshcat::Impl {
       javascript += fmt::format(
           "casAssets[\"{}\"] = "
           "\"data:application/octet-binary;base64,{}\";\n",
-          GetCasUrl(*asset),
+          FileStorage::GetCasUrl(*asset),
           common_robotics_utilities::base64_helpers::Encode(
               std::vector<uint8_t>(asset->content.begin(),
                                    asset->content.end())));
@@ -2022,10 +2025,10 @@ class Meshcat::Impl {
       response->end(content);
       return;
     }
-    // Handle content-addressable storage. This must align with GetCasUrl(), so
-    // if you change it be sure to change both places.
-    if (url_path.substr(0, 12) == "/cas/sha256/") {
-      const std::string_view suffix = url_path.substr(12);
+    // Handle content-addressable storage. This must align with GetCasUrl() in
+    // FileStorage so if you change it be sure to change both places.
+    if (url_path.substr(0, 8) == "/cas-v1-") {
+      const std::string_view suffix = url_path.substr(8);
       std::optional<Sha256> key = Sha256::Parse(suffix);
       if (!key.has_value()) {
         drake::log()->warn("Meshcat: Malformed CAS key {}", suffix);
