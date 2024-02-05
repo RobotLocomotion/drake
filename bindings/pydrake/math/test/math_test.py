@@ -527,14 +527,12 @@ class TestMath(unittest.TestCase):
 
         lower_triangular = np.array([1, 2, 3, 4, 5, 6.])
         symmetric_mat = mut.ToSymmetricMatrixFromLowerTriangularColumns(
-            lower_triangular_columns=lower_triangular,
-            preserve_inner_products=False)
+            lower_triangular_columns=lower_triangular)
         np.testing.assert_array_equal(
             symmetric_mat, np.array([[1, 2, 3], [2, 4, 5], [3, 5, 6]]))
 
         lower_triangular2 = mut.ToLowerTriangularColumnsFromMatrix(
-            matrix=symmetric_mat,
-            preserve_inner_products=False)
+            matrix=symmetric_mat)
         np.testing.assert_array_equal(lower_triangular, lower_triangular2)
 
         minor_indices = {0, 2}

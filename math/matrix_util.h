@@ -72,20 +72,14 @@ namespace internal {
 template <typename Derived1, typename Derived2>
 void to_symmetric_matrix_from_lower_triangular_columns_impl(
     int rows, const Eigen::MatrixBase<Derived1>& lower_triangular_columns,
-    Eigen::MatrixBase<Derived2>* symmetric_matrix,
-    bool preserve_inner_products) {
+    Eigen::MatrixBase<Derived2>* symmetric_matrix) {
   int count = 0;
   for (int j = 0; j < rows; ++j) {
     (*symmetric_matrix)(j, j) = lower_triangular_columns(count);
     ++count;
     for (int i = j + 1; i < rows; ++i) {
-      if (preserve_inner_products) {
-        (*symmetric_matrix)(i, j) = lower_triangular_columns(count) / sqrt(2);
-        (*symmetric_matrix)(j, i) = lower_triangular_columns(count) / sqrt(2);
-      } else {
-        (*symmetric_matrix)(i, j) = lower_triangular_columns(count);
-        (*symmetric_matrix)(j, i) = lower_triangular_columns(count);
-      }
+      (*symmetric_matrix)(i, j) = lower_triangular_columns(count);
+      (*symmetric_matrix)(j, i) = lower_triangular_columns(count);
       ++count;
     }
   }
@@ -94,18 +88,12 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(
 
 /// Given a column vector containing the stacked columns of the lower triangular
 /// part of a square matrix, returning a symmetric matrix whose lower
-/// triangular part is the same as the original matrix. If
-/// preserve_inner_products is set to true, then the entries corresponding to
-/// the strictly lower triangular entries will be divided by sqrt(2). This can
-/// be done so that if x, y are column vectors, <x, y> =
-/// <ToSymmetricMatrixFromLowerTriangularColumns(x),
-/// ToSymmetricMatrixFromLowerTriangularColumns(y)>
+/// triangular part is the same as the original matrix.
 /// @pydrake_mkdoc_identifier{dynamic_size}
 template <typename Derived>
 drake::MatrixX<typename Derived::Scalar>
 ToSymmetricMatrixFromLowerTriangularColumns(
-    const Eigen::MatrixBase<Derived>& lower_triangular_columns,
-    bool preserve_inner_products = false) {
+    const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   int rows = (-1 + sqrt(1 + 8 * lower_triangular_columns.rows())) / 2;
 
   DRAKE_ASSERT(rows * (rows + 1) / 2 == lower_triangular_columns.rows());
@@ -114,67 +102,31 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   drake::MatrixX<typename Derived::Scalar> symmetric_matrix(rows, rows);
 
   internal::to_symmetric_matrix_from_lower_triangular_columns_impl(
-      rows, lower_triangular_columns, &symmetric_matrix,
-      preserve_inner_products);
+      rows, lower_triangular_columns, &symmetric_matrix);
   return symmetric_matrix;
 }
 
 /// Given a column vector containing the stacked columns of the lower triangular
 /// part of a square matrix, returning a symmetric matrix whose lower
-/// triangular part is the same as the original matrix. If
-/// preserve_inner_products is set to true, then the entries corresponding to
-/// the strictly lower triangular entries will be divided by sqrt(2).This can
-/// be done so that if x, y are column vectors, <x, y> =
-/// <ToSymmetricMatrixFromLowerTriangularColumns(x),
-/// ToSymmetricMatrixFromLowerTriangularColumns(y)>
+/// triangular part is the same as the original matrix.
 /// @tparam rows The number of rows in the symmetric matrix.
 template <int rows, typename Derived>
 Eigen::Matrix<typename Derived::Scalar, rows, rows>
 ToSymmetricMatrixFromLowerTriangularColumns(
-    const Eigen::MatrixBase<Derived>& lower_triangular_columns,
-    bool preserve_inner_products = false) {
+    const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, rows * (rows + 1) / 2);
 
   Eigen::Matrix<typename Derived::Scalar, rows, rows> symmetric_matrix(rows,
                                                                        rows);
 
   internal::to_symmetric_matrix_from_lower_triangular_columns_impl(
-      rows, lower_triangular_columns, &symmetric_matrix,
-      preserve_inner_products);
+      rows, lower_triangular_columns, &symmetric_matrix);
   return symmetric_matrix;
 }
 
 /// Given a square matrix, extract the lower triangular part as a stacked column
 /// vector. This is a particularly useful operation when vectorizing symmetric
-/// matrices. If
-/// preserve_inner_products is set to true, then the entries corresponding to
-/// the strictly lower triangular entries will be multied by sqrt(2). This can
-/// be done so that if X, Y are symmetric matrices, <X, Y> =
-/// <ToLowerTriangularColumnsFromMatrix(X),
-/// ToLowerTriangularColumnsFromMatrix(Y)>
-//template <typename Derived>
-//drake::VectorX<typename Derived::Scalar> ToLowerTriangularColumnsFromMatrix(
-//    const Eigen::MatrixBase<Derived>& matrix,
-//    bool preserve_inner_products = false) {
-//  DRAKE_ASSERT(matrix.rows() == matrix.cols());
-//  const int num_rows = (matrix.rows() * (matrix.rows() + 1)) / 2;
-//  drake::VectorX<typename Derived::Scalar> stacked_lower_triangular(num_rows);
-//  int row_count = 0;
-//  for (int c = 0; c < matrix.cols(); ++c) {
-//    const int num_elts = matrix.cols() - c;
-//    stacked_lower_triangular(row_count) = matrix(c, c);
-//    if (preserve_inner_products) {
-//      stacked_lower_triangular.segment(row_count + 1, num_elts - 1) =
-//          matrix.col(c).tail(num_elts - 1) * sqrt(2);
-//    } else {
-//      stacked_lower_triangular.segment(row_count + 1, num_elts - 1) =
-//          matrix.col(c).tail(num_elts - 1);
-//    }
-//
-//    row_count += num_elts;
-//  }
-//  return stacked_lower_triangular;
-//}
+/// matrices.
 template <typename Derived>
 drake::VectorX<typename Derived::Scalar> ToLowerTriangularColumnsFromMatrix(
     const Eigen::MatrixBase<Derived>& matrix) {
@@ -190,7 +142,6 @@ drake::VectorX<typename Derived::Scalar> ToLowerTriangularColumnsFromMatrix(
   }
   return stacked_lower_triangular;
 }
-
 
 /// Checks if a matrix is symmetric (with tolerance @p symmetry_tolerance --
 /// @see IsSymmetric) and has all eigenvalues greater than @p
@@ -297,42 +248,6 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
     minor_row_count += cur_block_row_size;
   }
   return minor;
-}
-
-/// Convert the index (i,j), with i ≥ j to the linear index when the lower
-/// triangular part of the symmetric matrix X is flattened into a column vector.
-int SymmetricMatrixIndexToLowerTriangularLinearIndex(int i, int j, int n) {
-  DRAKE_THROW_UNLESS(i < n && j < n && i >= j);
-  // TODO(Alexandre.Amice) make this way more efficient.
-  int ctr = 0;
-  for (int r = 0; r < n; ++r) {
-    for (int c = r; c < n; ++c) {
-      if (r == i && c == j) {
-        return ctr;
-      }
-      ctr++;
-    }
-  }
-  DRAKE_UNREACHABLE();
-}
-
-/// Convert the index l to the (i,j) pair with i ≥ j where (i,j) is the index in
-/// a symmetric matrix X of size n, and l is an index in the vector
-/// corresponding to the lower triangular part of X flattened into a vector.
-std::pair<int, int> LowerTriangularLinearIndexToSymmetricMatrixIndex(int l,
-                                                                     int n) {
-  DRAKE_THROW_UNLESS(l < 0.5 * n * (n + 1));
-  // TODO(Alexandre.Amice) make this way more efficient.
-  int ctr = 0;
-  for (int i = 0; i < n; ++i) {
-    for (int j = i; j < n; ++j) {
-      if (ctr == l) {
-        return {i, j};
-      }
-      ctr++;
-    }
-  }
-  DRAKE_UNREACHABLE();
 }
 
 }  // namespace math

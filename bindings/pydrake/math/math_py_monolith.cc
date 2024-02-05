@@ -497,23 +497,19 @@ void DoScalarIndependentDefinitions(py::module m) {
           doc.IsPositiveDefinite.doc)
       .def(
           "ToSymmetricMatrixFromLowerTriangularColumns",
-          [](const Eigen::Ref<const Eigen::VectorXd>& lower_triangular_columns,
-              bool preserve_inner_products) {
+          [](const Eigen::Ref<const Eigen::VectorXd>&
+                  lower_triangular_columns) {
             return ToSymmetricMatrixFromLowerTriangularColumns(
-                lower_triangular_columns, preserve_inner_products);
+                lower_triangular_columns);
           },
           py::arg("lower_triangular_columns"),
-          py::arg("preserve_inner_products") = false,
           doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size)
       .def(
           "ToLowerTriangularColumnsFromMatrix",
-          [](const Eigen::Ref<const MatrixX<T>>& matrix,
-              bool preserve_inner_products) {
-            return ToLowerTriangularColumnsFromMatrix(
-                matrix, preserve_inner_products);
+          [](const Eigen::Ref<const MatrixX<T>>& matrix) {
+            return ToLowerTriangularColumnsFromMatrix(matrix);
           },
-          py::arg("matrix"), py::arg("preserve_inner_products") = false,
-          doc.ToLowerTriangularColumnsFromMatrix.doc)
+          py::arg("matrix"), doc.ToLowerTriangularColumnsFromMatrix.doc)
       .def(
           "ExtractPrincipalSubmatrix",
           [](const Eigen::Ref<const MatrixX<T>>& matrix,
