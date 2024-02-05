@@ -9,10 +9,16 @@
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/parsing/model_instance_info.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// DMD adds one small bit of sugar to Drake's ScopedName idiom:  The name
+// "world" always refers to the world regardless of any enclosing scopes.
+ScopedName DmdScopedNameJoin(const std::string& namespace_name,
+                             const std::string& element_name);
 
 // TODO(#18052): diagnostic policy?
 parsing::ModelDirectives LoadModelDirectives(const DataSource& data_source);
