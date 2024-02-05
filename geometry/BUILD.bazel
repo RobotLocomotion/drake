@@ -508,6 +508,7 @@ drake_cc_library(
         "//common:sha256",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
+        "@nlohmann_internal//:nlohmann",
         "@stduuid_internal//:stduuid",
         "@uwebsockets_internal//:uwebsockets",
     ],
@@ -575,8 +576,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "meshcat_internal_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
     deps = [
         ":meshcat",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
