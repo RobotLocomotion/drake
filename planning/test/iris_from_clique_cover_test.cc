@@ -104,19 +104,19 @@ const char boxes_in_corners[] = R"""(
   <link name="fixed">
     <collision name="top_left">
       <origin rpy="0 0 0" xyz="-1 1 0"/>
-      <geometry><box size="1 1 1"/></geometry>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
     </collision>
     <collision name="top_right">
       <origin rpy="0 0 0" xyz="1 1 0"/>
-      <geometry><box size="1 1 1"/></geometry>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
     </collision>
     <collision name="bottom_left">
       <origin rpy="0 0 0" xyz="-1 -1 0"/>
-      <geometry><box size="1 1 1"/></geometry>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
     </collision>
     <collision name="bottom_right">
       <origin rpy="0 0 0" xyz="1 -1 0"/>
-      <geometry><box size="1 1 1"/></geometry>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
     </collision>
   </link>
   <joint name="fixed_link_weld" type="fixed">
@@ -125,7 +125,7 @@ const char boxes_in_corners[] = R"""(
   </joint>
   <link name="movable">
     <collision name="sphere">
-      <geometry><sphere radius="0.1"/></geometry>
+      <geometry><sphere radius="0.01"/></geometry>
     </collision>
   </link>
   <link name="for_joint"/>
@@ -157,19 +157,22 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   env_points << -2, 2, 2,-2,-2,
                 2, 2, -2, -2, 2,
                 0, 0, 0, 0, 0;
-  meshcat->SetLine("Domain", env_points, 2.0, Rgba(0, 0, 1));
+  meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
   Eigen::Matrix3Xd centers = Eigen::Matrix3Xd::Zero(3, 4);
-  centers<< -1, 1, 1, -1,
-            1, 1, -1, -1,
+  double c = 1.0;
+  centers<< -c, c, c, -c,
+            c, c, -c, -c,
             0, 0, 0, 0;
   Eigen::Matrix3Xd obs_points = Eigen::Matrix3Xd::Zero(3, 5);
-  obs_points << -0.6, 0.6, 0.6,-0.6,-0.6,
-                0.6, 0.6, -0.6, -0.6, 0.6,
+  //approximating offset due to sphere radius with fixed offset
+  double s = 0.7 + 0.01;
+  obs_points << -s, s, s,-s,-s,
+                s, s, -s, -s, s,
                 0, 0, 0, 0, 0;
   for(int obstacle_idx = 0; obstacle_idx<4; ++obstacle_idx){
     Eigen::Matrix3Xd obstacle = obs_points;
     obstacle.colwise() += centers.col(obstacle_idx);
-    meshcat->SetLine(fmt::format("/obstacles/obs_{}", obstacle_idx), obstacle, 2.0, Rgba(0, 0, 1));
+    meshcat->SetLine(fmt::format("/obstacles/obs_{}", obstacle_idx), obstacle, 8.0, Rgba(0, 0, 0));
   }
   
   
@@ -183,10 +186,12 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
       std::make_unique<SceneGraphCollisionChecker>(std::move(params));
 
   IrisFromCliqueCoverOptions options;
-  
+  options.meshcat = meshcat;
+
   options.num_builders = 2;
-  options.num_points_per_coverage_check = 100;
-  options.num_points_per_visibility_round = 400;
+  options.num_points_per_coverage_check = 1000;
+  options.num_points_per_visibility_round = 100;
+  options.coverage_termination_threshold = 0.4;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;
@@ -196,13 +201,24 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   EXPECT_GE(ssize(sets), 2);
   Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 12);
   int region_idx = 0;
+  
+  std::normal_distribution<double> gaussian;
+  // Choose a random direction.
+  Eigen::VectorXd direction(3);
+  
   for(auto h: sets){
+    for (int i = 0; i < direction.size(); ++i) {
+        direction[i] = abs(gaussian(generator));
+    }
+    direction.normalize();
+
     VPolytope vregion = VPolytope(h).GetMinimalRepresentation();
     points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();
-    meshcat->SetLine(fmt::format("iris_region_{}", region_idx), points, 2.0, Rgba(0, 1, 0));
+
+    meshcat->SetLine(fmt::format("iris_region_{}", region_idx), points, 2.0, Rgba(direction[0], direction[1], direction[2]));
     ++region_idx;
   }
   MaybePauseForUser();

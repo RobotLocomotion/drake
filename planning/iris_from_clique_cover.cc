@@ -25,7 +25,11 @@ using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::IrisInConfigurationSpace;
 using geometry::optimization::IrisOptions;
+using geometry::Sphere;
+using geometry::Meshcat;
+using geometry::Rgba;
 using graph_algorithms::MaxCliqueSolverBase;
+using math::RigidTransform;
 
 namespace {
 // A very simple implementation of a thread-safe asynchronous queue for use when
@@ -249,7 +253,6 @@ double ApproximatelyComputeCoverage(const HPolyhedron& domain,
     // Fail fast if there is nothing to check.
     return 0.0;
   }
-  if (!sets.empty()) {
     Eigen::MatrixXd sampled_points(domain.ambient_dimension(), num_samples);
     for (int i = 0; i < sampled_points.cols(); ++i) {
       *last_polytope_sample =
@@ -269,8 +272,8 @@ double ApproximatelyComputeCoverage(const HPolyhedron& domain,
         }
       }
     }
-    fraction_covered = static_cast<double>(num_in_sets.load()) / num_samples;
-  }
+  fraction_covered = static_cast<double>(num_in_sets.load()) / num_samples;
+
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
   return fraction_covered;
 }
@@ -297,12 +300,13 @@ void IrisInConfigurationSpaceFromCliqueCover(
   Parallelism visibility_graph_parallelism{
       std::min(options.visibility_graph_parallelism.num_threads(),
                checker.num_allocated_contexts())};
+  log()->info("Visibility Graph Construction with {} threads", visibility_graph_parallelism.num_threads());  
 
   int num_iterations = 0;
-  while (!ApproximatelyComputeCoverage(
+  while (ApproximatelyComputeCoverage(
              domain, *sets, options.num_points_per_coverage_check,
              options.point_in_set_tol, options.num_coverage_checkers, generator,
-             &last_polytope_sample) &&
+             &last_polytope_sample) < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
     Eigen::MatrixXd points(domain.ambient_dimension(),
                            num_points_per_visibility_round);
@@ -316,6 +320,21 @@ void IrisInConfigurationSpaceFromCliqueCover(
                         return set.PointInSet(last_polytope_sample);
                       }));
       points.col(i) = last_polytope_sample;
+    }
+
+    // debugging visualization
+    if (options.meshcat && domain.ambient_dimension() <= 3) {
+        Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
+        for (int pt_to_draw = 0; pt_to_draw < points.cols();
+            ++pt_to_draw) {
+        std::string path = fmt::format("iteration{:02}/sample_{:03}",
+                                        num_iterations, pt_to_draw);
+        options.meshcat->SetObject(path, Sphere(0.01),
+                                    geometry::Rgba(1, 0.1, 0.1, 1.0));
+        point_to_draw.head(domain.ambient_dimension()) = points.col(pt_to_draw);
+        options.meshcat->SetTransform(
+            path, RigidTransform<double>(point_to_draw));
+        }
     }
 
     Eigen::SparseMatrix<bool> visibility_graph =
@@ -339,7 +358,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
                                         *options.max_clique_solver,
                                         &visibility_graph, &computed_cliques);
     }};
-
+    
     // Build convex sets.
     std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
     build_sets_future.reserve(num_builders.num_threads());
