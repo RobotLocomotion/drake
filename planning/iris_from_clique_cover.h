@@ -12,6 +12,8 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/geometry/meshcat.h"
+
 
 namespace drake {
 namespace planning {
@@ -100,6 +102,11 @@ struct IrisFromCliqueCoverOptions {
    * will be overridden to be no larger than this implicit context parallelism.
    */
   Parallelism visibility_graph_parallelism{Parallelism::Max()};
+   /** Passing a meshcat instance may enable debugging visualizations; this
+  currently only happens in IrisInConfigurationSpace and when the
+  configuration space is <= 3 dimensional.*/
+  std::shared_ptr<geometry::Meshcat> meshcat{};
+
 };
 
 /**
