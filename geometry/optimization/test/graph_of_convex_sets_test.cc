@@ -170,6 +170,8 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   Edge* e1 = g.AddEdge(v1, v2);
   g.AddEdge(v1, v3);
   g.AddEdge(v3, v1);
+  EXPECT_EQ(v1->incoming_edges().size(), 1);
+  EXPECT_EQ(v1->outgoing_edges().size(), 2);
 
   EXPECT_EQ(g.Vertices().size(), 3);
   EXPECT_EQ(g.Edges().size(), 3);
@@ -179,12 +181,14 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e1);
+  EXPECT_EQ(v1->incoming_edges().size(), 0);
 
   g.RemoveVertex(v2);
   auto vertices = g.Vertices();
   EXPECT_EQ(vertices.size(), 1);
   EXPECT_EQ(vertices.at(0), v1);
   EXPECT_EQ(g.Edges().size(), 0);
+  EXPECT_EQ(v1->outgoing_edges().size(), 0);
 }
 
 /*
