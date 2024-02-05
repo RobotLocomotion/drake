@@ -154,46 +154,107 @@ class lima {
 
   // Given a field (or child element within a field), encodes it into the given
   // byte cursor and advances the cursor, returning true on success.
-  template <typename T>
-  static bool _encode_field(const T& _input, uint8_t** _cursor,
-                            uint8_t* _end) {
+  template <typename T, typename... Ints>
+  static bool _encode_field(const T& _input, uint8_t** _cursor, uint8_t* _end,
+                            Ints... _dims) {
     static_assert(!std::is_pointer_v<T>);
-    if constexpr (std::is_fundamental_v<T>) {
-      // POD input.
-      constexpr size_t N = sizeof(T);
-      if (*_cursor + N > _end) {
+    if constexpr (sizeof...(Ints) == 0) {
+      // With no array dimensions, just decode the field directly.
+      if constexpr (std::is_fundamental_v<T>) {
+        // POD input.
+        constexpr size_t N = sizeof(T);
+        if (*_cursor + N > _end) {
+          return false;
+        }
+        auto _swapped = _byteswap<N>(&_input);
+        std::memcpy(*_cursor, &_swapped, N);
+        *_cursor += N;
+        return true;
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        // String input.
+        const int32_t _size = _input.size() + 1;
+        const bool ok = (_input.size() < INT32_MAX) &&
+                        (*_cursor + 4 + _size <= _end) &&
+                        _encode_field(_size, _cursor, _end);
+        if (ok) {
+          std::memcpy(*_cursor, _input.c_str(), _size);
+        }
+        *_cursor += _size;
+        return ok;
+      } else {
+        // Struct input.
+        return _input.template _encode<false>(_cursor, _end);
+      }
+    } else {
+      // In case of a variable-size dimension, cross-check vs the size field.
+      const int64_t _dim = std::get<0>(std::make_tuple(_dims...));
+      if (static_cast<int64_t>(_input.size()) != _dim) {
         return false;
       }
-      auto _swapped = _byteswap<N>(&_input);
-      std::memcpy(*_cursor, &_swapped, N);
-      *_cursor += N;
+      // Encode each sub-item in turn.
+      for (const auto& _child : _input) {
+        const bool ok = [&](int /* _dim */, auto&&... _child_dims) {
+          return _encode_field(_child, _cursor, _end, _child_dims...);
+        }(_dims...);
+        if (!ok) {
+          return false;
+        }
+      }
       return true;
-    } else {
-      // Struct input.
-      return _input.template _encode<false>(_cursor, _end);
     }
   }
 
   // Given a pointer to a field (or child element within a field), decodes it
   // from the given byte cursor and advances the cursor, returning true on
   // success.
-  template <typename T>
+  template <typename T, typename... Ints>
   static bool _decode_field(T* _output, const uint8_t** _cursor,
-                            const uint8_t* _end) {
+                            const uint8_t* _end, Ints... _dims) {
     static_assert(!std::is_pointer_v<T>);
-    if constexpr (std::is_fundamental_v<T>) {
-      // POD output.
-      constexpr size_t N = sizeof(T);
-      if (*_cursor + N > _end) {
-        return false;
+    if constexpr (sizeof...(Ints) == 0) {
+      // With no array dimensions, just decode the field directly.
+      if constexpr (std::is_fundamental_v<T>) {
+        // POD output.
+        constexpr size_t N = sizeof(T);
+        if (*_cursor + N > _end) {
+          return false;
+        }
+        auto _swapped = _byteswap<N>(*_cursor);
+        std::memcpy(_output, &_swapped, N);
+        *_cursor += N;
+        return true;
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        // String output.
+        int32_t _size{};
+        const bool ok = (*_cursor + 4 <= _end) &&
+                        _decode_field(&_size, _cursor, _end) &&
+                        (_size > 0) && (*_cursor + _size <= _end);
+        if (ok) {
+          _output->replace(_output->begin(), _output->end(), *_cursor,
+                           *_cursor + _size - 1);
+        }
+        *_cursor += _size;
+        return ok;
+      } else {
+        // Struct output.
+        return _output->template _decode<false>(_cursor, _end);
       }
-      auto _swapped = _byteswap<N>(*_cursor);
-      std::memcpy(_output, &_swapped, N);
-      *_cursor += N;
-      return true;
     } else {
-      // Struct output.
-      return _output->template _decode<false>(_cursor, _end);
+      // In case of a variable-size dimension, resize our storage to match.
+      if constexpr (std::is_same_v<T, std::vector<typename T::value_type>>) {
+        const int64_t _dim = std::get<0>(std::make_tuple(_dims...));
+        _output->resize(_dim);
+      }
+      // Decode each sub-item in turn.
+      for (auto& _child : *_output) {
+        const bool ok = [&](int /* _dim */, auto&&... _child_dims) {
+          return _decode_field(&_child, _cursor, _end, _child_dims...);
+        }(_dims...);
+        if (!ok) {
+          return false;
+        }
+      }
+      return true;
     }
   }
 };
