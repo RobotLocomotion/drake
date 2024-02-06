@@ -328,6 +328,13 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
     {"model3::collision",             "nested::sub_model2::collision"},
     // From group 'across_sub_models'.
     {"nested::sub_model1::collision", "nested::sub_model2::collision"},
+    // From composite group 'group_4567'.
+    {"model4::collision", "model5::collision"},
+    {"model4::collision", "model6::collision"},
+    {"model4::collision", "model7::collision"},
+    {"model5::collision", "model6::collision"},
+    {"model5::collision", "model7::collision"},
+    {"model6::collision", "model7::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
 }
