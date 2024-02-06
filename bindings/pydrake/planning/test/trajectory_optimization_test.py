@@ -302,6 +302,24 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(normalized_traj_start, start, atol=1e-6)
         np.testing.assert_allclose(normalized_traj_end, end, atol=1e-6)
 
+        # We can also solve the convex restriction, by manually defining
+        # through which regions the path should go.
+        active_vertices = (source.Vertices()
+                           + regions.Vertices()
+                           + target.Vertices())
+        restricted_traj, restricted_result = (
+            gcs.SolveConvexRestriction(active_vertices)
+        )
+        self.assertTrue(restricted_result.is_success())
+        self.assertEqual(restricted_traj.rows(), 2)
+        self.assertEqual(restricted_traj.cols(), 1)
+        restricted_traj_start = restricted_traj.value(
+            restricted_traj.start_time()).squeeze()
+        restricted_traj_end = restricted_traj.value(
+            restricted_traj.end_time()).squeeze()
+        np.testing.assert_allclose(restricted_traj_start, start, atol=1e-6)
+        np.testing.assert_allclose(restricted_traj_end, end, atol=1e-6)
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
@@ -421,6 +439,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(main2.size(), len(vertices))
         self.assertIsInstance(main2.regions(), list)
         self.assertIsInstance(main2.regions()[0], HPolyhedron)
+        self.assertIsInstance(main2.Vertices(), list)
+        self.assertIsInstance(main2.Vertices()[0], GraphOfConvexSets.Vertex)
 
         # Add two start and goal regions.
         start1 = np.array([0.2, 0.2])
@@ -438,6 +458,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(source.size(), 2)
         self.assertIsInstance(source.regions(), list)
         self.assertIsInstance(source.regions()[0], Point)
+        self.assertIsInstance(source.Vertices(), list)
+        self.assertIsInstance(source.Vertices()[0], GraphOfConvexSets.Vertex)
 
         # Here we force a delay of 10 seconds at the goal.
         target = gcs.AddRegions(regions=[Point(goal1),
@@ -452,6 +474,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(target.size(), 2)
         self.assertIsInstance(target.regions(), list)
         self.assertIsInstance(target.regions()[0], Point)
+        self.assertIsInstance(target.Vertices(), list)
+        self.assertIsInstance(target.Vertices()[0], GraphOfConvexSets.Vertex)
 
         # We connect the subgraphs main1 and main2 by constraining it to
         # go through either of the subspaces.
