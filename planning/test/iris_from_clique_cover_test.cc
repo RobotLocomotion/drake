@@ -191,22 +191,36 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   options.num_builders = 2;
   options.num_points_per_coverage_check = 1000;
   options.num_points_per_visibility_round = 100;
-  options.coverage_termination_threshold = 0.4;
+  options.coverage_termination_threshold = 0.95;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;
 
   // TODO(Alexandre.Amice) make this test actually check the cross.
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets);
-  EXPECT_GE(ssize(sets), 2);
+  EXPECT_EQ(ssize(sets), 6);
+  //estimate coverage
+  const HPolyhedron& domain = options.iris_options.bounding_region.value_or(
+      HPolyhedron::MakeBox(checker->plant().GetPositionLowerLimits(),
+                           checker->plant().GetPositionUpperLimits()));
+  Eigen::VectorXd last_polytope_sample = domain.UniformSample(&generator);
+  double coverage_estimate = ApproximatelyComputeCoverage(domain, sets, *checker, options.num_points_per_coverage_check,
+             options.point_in_set_tol, options.num_coverage_checkers, &generator,
+             &last_polytope_sample);
+
+  // This left-sided bernoulli test should be true with Prboability ~ (1- 1e-9)
+  // Phi^-1(1e-9 - (N*p_0)/(\sqrt{N*p_0}(1-p_0))) = ~0.908 with p0 = 0.95 and N=1e3
+  EXPECT_GE(coverage_estimate, 0.9);
+  
   Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 12);
   int region_idx = 0;
   
   std::normal_distribution<double> gaussian;
-  // Choose a random direction.
+ 
   Eigen::VectorXd direction(3);
   
   for(auto h: sets){
+     // Choose a random direction.
     for (int i = 0; i < direction.size(); ++i) {
         direction[i] = abs(gaussian(generator));
     }

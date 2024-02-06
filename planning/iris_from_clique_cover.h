@@ -109,6 +109,15 @@ struct IrisFromCliqueCoverOptions {
 
 };
 
+/** TODO FIX DOCUMENTATION*/
+double ApproximatelyComputeCoverage(const geometry::optimization::HPolyhedron& domain,
+                                    const std::vector<geometry::optimization::HPolyhedron>& sets,
+                                    const CollisionChecker& checker,
+                                    const int num_samples,
+                                    const double point_in_set_tol,
+                                    const Parallelism& parallelism,
+                                    RandomGenerator* generator,
+                                    Eigen::VectorXd* last_polytope_sample);
 /**
  * Cover the configuration space in IRIS regions using the Visibility Clique
  * Cover Algorithm as described in

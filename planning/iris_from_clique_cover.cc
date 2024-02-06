@@ -226,6 +226,7 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
                               (num_vertices * num_vertices - s * s) / 2 +
                           (s * (s + 1)) / 2);
 }
+}  // namespace
 
 // Approximately compute the fraction of `domain` covered by `sets` by sampling
 // points uniformly at random in `domain` and checking whether the point lies in
@@ -281,7 +282,7 @@ double ApproximatelyComputeCoverage(const HPolyhedron& domain,
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
   return fraction_covered;
 }
-}  // namespace
+
 
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
