@@ -1,6 +1,10 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 
+#include <unordered_set>
+#include <vector>
+
 #include "drake/common/unused.h"
+#include "drake/multibody/parsing/detail_strongly_connected_components.h"
 #include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
@@ -29,6 +33,7 @@ void CollisionFilterGroupResolver::AddGroup(
     const DiagnosticPolicy& diagnostic,
     const std::string& group_name,
     const std::set<std::string>& body_names,
+    const std::set<std::string>& member_group_names,
     std::optional<ModelInstanceIndex> model_instance) {
   if (model_instance) {
     DRAKE_DEMAND(*model_instance < plant_->num_model_instances());
@@ -41,7 +46,7 @@ void CollisionFilterGroupResolver::AddGroup(
                                  full_group_name));
     return;
   }
-  if (body_names.empty()) {
+  if (body_names.empty() && member_group_names.empty()) {
     diagnostic.Error(fmt::format("group '{}' has no members", full_group_name));
     return;
   }
@@ -71,7 +76,24 @@ void CollisionFilterGroupResolver::AddGroup(
 
     geometry_set.Add(plant_->GetBodyFrameIdOrThrow(body->index()));
   }
-  groups_.insert({FullyQualify(group_name, model_instance), geometry_set});
+  groups_.insert({full_group_name, geometry_set});
+
+  // Group insertions get computed at resolution time. Here we build the
+  // directed graph of insertions, where edges point from the source group (the
+  // group whose members we should insert) to the destination group (the group
+  // into which we should insert members).
+  //
+  // Note that all of the successors in this graph (destinations) are name that
+  // we know to exist, because they have been built by this function. The keys
+  // of the graph map are names that need to be checked at resolution time.
+  for (const auto& insertion_group : member_group_names) {
+    const auto fq_insertion_group{
+      FullyQualify(insertion_group, model_instance)};
+    if (!group_insertion_graph_.count(fq_insertion_group)) {
+      group_insertion_graph_[fq_insertion_group] = {};
+    }
+    group_insertion_graph_[fq_insertion_group].insert(full_group_name);
+  }
 }
 
 void CollisionFilterGroupResolver::AddPair(
@@ -103,6 +125,62 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
   DRAKE_DEMAND(!is_resolved_);
   is_resolved_ = true;
 
+  // TODO(rpoyner-tri): The source-file locality for naming errors discovered
+  // here is not great. Consider some scheme for remembering the source code
+  // line (bundled in `diagnostic` passed to AddGroup/AddPair/etc.) together
+  // with the name to be checked.
+
+  // Resolve whole-group insertions, which requires analyzing the insertion
+  // graph and editing the map of groups.
+
+  // TODO(rpoyner-tri): what follows is a lot of graph math, based on strings
+  // for node labels; consider swapping strings for purpose-built integer index
+  // labels if this turns out to be too slow.
+
+  // First check the insertion source group names, emit errors and remove any
+  // broken ones. Check names in order so that the order of error messages is
+  // stable.
+  std::set<std::string> ordered_names;
+  std::vector<std::string> bad_names;
+  for (const auto& item : group_insertion_graph_) {
+    ordered_names.insert(item.first);
+  }
+  for (const auto& name : ordered_names) {
+    if (!FindGroup(diagnostic, name)) {
+      bad_names.push_back(name);
+    }
+  }
+  for (const auto& name : bad_names) {
+    group_insertion_graph_.erase(name);
+  }
+
+  // Compute the sequence of components, in reverse of insertion order.
+  SccResult<std::string> sccs =
+      strongly_connected_components(group_insertion_graph_);
+
+  // Execute the insertions.
+  for (auto it = sccs.rbegin(); it != sccs.rend(); ++it) {
+    const auto& scc = *it;
+    // The content to insert is the union of the scc's members' contents.
+    GeometrySet contents_union;
+    for (const auto& node : scc) {
+      contents_union.Add(groups_[node]);
+    }
+
+    // The destinations are the the union of the scc's' members' successors,
+    // plus the membership of the scc itself.
+    std::unordered_set<std::string> destinations{scc};
+    for (const auto& node : scc) {
+      destinations.merge(group_insertion_graph_[node]);
+    }
+
+    // Do the insertions.
+    for (const auto& destination : destinations) {
+      groups_[destination].Add(contents_union);
+    }
+  }
+
+  // Now that the groups are complete, evaluate the pairs into plant rules.
   for (const auto& [name_a, name_b] : pairs_) {
     const GeometrySet* set_a = FindGroup(diagnostic, name_a);
     const GeometrySet* set_b = FindGroup(diagnostic, name_b);
@@ -139,7 +217,7 @@ const GeometrySet* CollisionFilterGroupResolver::FindGroup(
 
 const RigidBody<double>* CollisionFilterGroupResolver::FindBody(
     std::string_view name,
-    ModelInstanceIndex model_instance) {
+    ModelInstanceIndex model_instance) const {
   if (plant_->HasBodyNamed(name, model_instance)) {
     return &plant_->GetBodyByName(name, model_instance);
   }

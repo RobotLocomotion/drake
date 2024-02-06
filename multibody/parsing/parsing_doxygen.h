@@ -50,7 +50,7 @@ future, we intend to update this documentation to itemize what isn't supported.
 Drake's SDFormat parsing supports composing multiple models into a single
 model, via lexical nesting and file inclusion. The file inclusion feature
 supports both SDFormat files and URDF files. Note that included URDF files pass
-through the Drake URDF parser, with all of it's extensions and limitations.
+through the Drake URDF parser, with all of its extensions and limitations.
 
 For full details, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#model-composition-proposed-behavior'>SDFormat documentation of model composition.</a>
@@ -92,11 +92,11 @@ Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 For Drake extensions to URDF format files, see
 @ref multibody_parsing_drake_extensions.
 
-@subsection multbody_parsing_urdf_unsupported URDF not supported by Drake
+@subsection multibody_parsing_urdf_unsupported URDF not supported by Drake
 
 Drake's parser does not implement all of the features of URDF. Here is a list
 of known URDF features that Drake does not use. For each, the parser applies
-one of several treaments:
+one of several treatments:
 
 - Issue a warning that the tag is unused.
 - Ignore silently, as documented below.
@@ -178,6 +178,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_joint
 - @ref tag_drake_linear_bushing_rpy
 - @ref tag_drake_member
+- @ref tag_drake_member_group
 - @ref tag_drake_mesh_resolution_hint
 - @ref tag_drake_mimic
 - @ref tag_drake_mu_dynamic
@@ -423,14 +424,15 @@ with the child link of the joint being defined.
 - SDFormat path: `//model/drake:collision_filter_group`
 - URDF path: `/robot/drake:collision_filter_group`
 - Syntax: Attributes `name` (string) and `ignore` (boolean); nested elements
-          `drake:member` and `drake:ignored_collision_filter_group`.
+          `drake:member`, `drake:member_group`, and
+          `drake:ignored_collision_filter_group`.
 
 @subsubsection tag_drake_collision_filter_group_semantics Semantics
 
 This element names a group of bodies to participate in collision filtering
 rules. If the `ignore` attribute is present and true-valued, the entire element
 is skipped during parsing. The nested elements must included one or more
-`drake:member` elements, and zero or more
+`drake:member` or `drake:member_group` elements, and zero or more
 `drake:ignored_collision_filter_group` elements.
 
 This element defines a new group name that is only available during parsing. It
@@ -445,7 +447,7 @@ different collision groups excludes collisions between members of those groups
 naming the same group twice excludes collisions within the group (see
 drake::geometry::CollisionFilterDeclaration::ExcludeWithin()).
 
-@see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group, @ref scoped_names
+@see @ref tag_drake_member, @ref tag_drake_member_group, @ref tag_drake_ignored_collision_filter_group, @ref scoped_names
 
 @subsection tag_drake_compliant_hydroelastic drake:compliant_hydroelastic
 
@@ -662,6 +664,22 @@ In SDFormat files only, the name may refer to a link within a nested model
 
 @see @ref tag_drake_collision_filter_group, @ref scoped_names
 
+@subsection tag_drake_member_group drake:member_group
+
+- SDFormat path: `//model/drake:collision_filter_group/drake:member_group`
+- URDF path: `/robot/drake:collision_filter_group/drake:member_group/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_member_group_semantics Semantics
+
+This element names a collision filter group (defined elsewhere in the model), all
+of whose members become members of the parent collision filter group.
+
+In SDFormat files only, the name may refer to a link within a nested model
+(either URDF or SDFormat) by using a scoped name.
+
+@see @ref tag_drake_collision_filter_group, @ref scoped_names
+
 @subsection tag_drake_mesh_resolution_hint drake:mesh_resolution_hint
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mesh_resolution_hint`
@@ -720,8 +738,8 @@ The provided (dimensionless) value sets the static friction parameter for
 CoulombFriction. Refer to @ref stribeck_approximation for details on the
 friction model.
 
-@warning Both `mu_dynamic` and `mu_static` are used by MultibodyPlant when the plant 
-`time_step=0`, but only `mu_dynamic` is used when `time_step>0`. Refer to 
+@warning Both `mu_dynamic` and `mu_static` are used by MultibodyPlant when the plant
+`time_step=0`, but only `mu_dynamic` is used when `time_step>0`. Refer to
 MultibodyPlant's constructor documentation for details.
 
 @see @ref tag_drake_proximity_properties, drake::multibody::CoulombFriction,
