@@ -153,6 +153,19 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
       return;
     }
   }
+  if (vpoly.ambient_dimension() == 1) {
+    // In 1D, QHull doesn't work. We can simply choose the largest and smallest
+    // points, and add a hyperplane there.
+    double min_val = vpoly.vertices().minCoeff();
+    double max_val = vpoly.vertices().maxCoeff();
+    Eigen::MatrixXd A(2, 1);
+    Eigen::VectorXd b(2);
+    // x <= max_val and x >= min_val (written as -x <= -min_val)
+    A << 1, -1;
+    b << max_val, -min_val;
+    *this = HPolyhedron(A, b);
+    return;
+  }
   // Next, handle the case where the VPolytope is not full dimensional.
   const AffineSubspace affine_hull(vpoly);
   if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
