@@ -242,6 +242,7 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 // that the MCMC sampling can continue. See @HPolyhedron for details.
 double ApproximatelyComputeCoverage(const HPolyhedron& domain,
                                     const std::vector<HPolyhedron>& sets,
+                                    const CollisionChecker& checker,
                                     const int num_samples,
                                     const double point_in_set_tol,
                                     const Parallelism& parallelism,
@@ -255,8 +256,11 @@ double ApproximatelyComputeCoverage(const HPolyhedron& domain,
   }
     Eigen::MatrixXd sampled_points(domain.ambient_dimension(), num_samples);
     for (int i = 0; i < sampled_points.cols(); ++i) {
-      *last_polytope_sample =
-          domain.UniformSample(generator, *last_polytope_sample);
+      do {
+        *last_polytope_sample =
+            domain.UniformSample(generator, *last_polytope_sample);
+      } while (  
+          !checker.CheckConfigCollisionFree(*last_polytope_sample));
       sampled_points.col(i) = *last_polytope_sample;
     }
 
@@ -304,7 +308,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
 
   int num_iterations = 0;
   while (ApproximatelyComputeCoverage(
-             domain, *sets, options.num_points_per_coverage_check,
+             domain, *sets, checker, options.num_points_per_coverage_check,
              options.point_in_set_tol, options.num_coverage_checkers, generator,
              &last_polytope_sample) < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
@@ -318,7 +322,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
           std::any_of(sets->begin(), sets->end(),
                       [&last_polytope_sample](const HPolyhedron& set) -> bool {
                         return set.PointInSet(last_polytope_sample);
-                      }));
+                      }) || !checker.CheckConfigCollisionFree(last_polytope_sample));
       points.col(i) = last_polytope_sample;
     }
 
