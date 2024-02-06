@@ -20,14 +20,13 @@ namespace drake {
 namespace planning {
 
 using Eigen::SparseMatrix;
-using Eigen::Triplet;
+using geometry::Meshcat;
+using geometry::Rgba;
+using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::IrisInConfigurationSpace;
 using geometry::optimization::IrisOptions;
-using geometry::Sphere;
-using geometry::Meshcat;
-using geometry::Rgba;
 using graph_algorithms::MaxCliqueSolverBase;
 using math::RigidTransform;
 
@@ -131,24 +130,28 @@ void ComputeGreedyTruncatedCliqueCover(
     AsyncQueue<VectorX<bool>>* computed_cliques) {
   float last_clique_size = std::numeric_limits<float>::infinity();
   int num_cliques = 0;
+  int num_points_left = adjacency_matrix->cols();
+  const int num_points_original = adjacency_matrix->cols();
   log()->info("Solving Max Clique with {} points", adjacency_matrix->cols());
   while (last_clique_size > minimum_clique_size &&
          adjacency_matrix->nonZeros() > minimum_clique_size) {
     const VectorX<bool> max_clique =
         max_clique_solver.SolveMaxClique(*adjacency_matrix);
     last_clique_size = max_clique.template cast<int>().sum();
+    num_points_left -= last_clique_size;
     if (last_clique_size > minimum_clique_size) {
       computed_cliques->push(max_clique);
       ++num_cliques;
       MakeFalseRowsAndColumns(max_clique, adjacency_matrix);
       log()->info(
           "Clique added to queue. There are {}/{} points left to cover.",
-          adjacency_matrix->nonZeros() / 2, adjacency_matrix->cols());
+          num_points_left, num_points_original);
     }
   }
   computed_cliques->done_filling();
   log()->info(
-      "Finished adding cliques. Total of {} added. Number of cliques left to "
+      "Finished adding cliques. Total of {} clique added. Number of cliques "
+      "left to "
       "process = {}",
       num_cliques, computed_cliques->size());
 }
@@ -163,6 +166,9 @@ std::queue<HPolyhedron> IrisWorker(
   // Copy the iris options as we will change the value of the starting ellipse
   // in this worker.
   IrisOptions iris_options = options.iris_options;
+  // Disable the iris meshcat option in this worker since we cannot write to
+  // meshcat from a different thread.
+  iris_options.meshcat = nullptr;
 
   std::queue<HPolyhedron> ret{};
   VectorX<bool> current_clique;
@@ -226,7 +232,6 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
                               (num_vertices * num_vertices - s * s) / 2 +
                           (s * (s + 1)) / 2);
 }
-}  // namespace
 
 // Approximately compute the fraction of `domain` covered by `sets` by sampling
 // points uniformly at random in `domain` and checking whether the point lies in
@@ -241,48 +246,44 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 // The value of `last_polytope_sample` is used to initialize the distribution
 // over the domain. The value of the final sample is written to this vector so
 // that the MCMC sampling can continue. See @HPolyhedron for details.
-double ApproximatelyComputeCoverage(const HPolyhedron& domain,
-                                    const std::vector<HPolyhedron>& sets,
-                                    const CollisionChecker& checker,
-                                    const int num_samples,
-                                    const double point_in_set_tol,
-                                    const Parallelism& parallelism,
-                                    RandomGenerator* generator,
-                                    Eigen::VectorXd* last_polytope_sample) {
+double ApproximatelyComputeCoverage(
+    const HPolyhedron& domain, const std::vector<HPolyhedron>& sets,
+    const CollisionChecker& checker, const int num_samples,
+    const double point_in_set_tol, const Parallelism& parallelism,
+    RandomGenerator* generator, Eigen::VectorXd* last_polytope_sample) {
   double fraction_covered = 0.0;
   if (sets.empty()) {
     log()->info("Current Fraction of Domain Covered = 0");
     // Fail fast if there is nothing to check.
     return 0.0;
   }
-    Eigen::MatrixXd sampled_points(domain.ambient_dimension(), num_samples);
-    for (int i = 0; i < sampled_points.cols(); ++i) {
-      do {
-        *last_polytope_sample =
-            domain.UniformSample(generator, *last_polytope_sample);
-      } while (  
-          !checker.CheckConfigCollisionFree(*last_polytope_sample));
-      sampled_points.col(i) = *last_polytope_sample;
-    }
+  Eigen::MatrixXd sampled_points(domain.ambient_dimension(), num_samples);
+  for (int i = 0; i < sampled_points.cols(); ++i) {
+    do {
+      *last_polytope_sample =
+          domain.UniformSample(generator, *last_polytope_sample);
+    } while (!checker.CheckConfigCollisionFree(*last_polytope_sample));
+    sampled_points.col(i) = *last_polytope_sample;
+  }
 
-    std::atomic<int> num_in_sets{0};
+  std::atomic<int> num_in_sets{0};
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(parallelism.num_threads()) schedule(static)
 #endif
-    for (int i = 0; i < sampled_points.cols(); ++i) {
-      for (const auto& set : sets) {
-        if (set.PointInSet(sampled_points.col(i), point_in_set_tol)) {
-          num_in_sets.fetch_add(1);
-          break;
-        }
+  for (int i = 0; i < sampled_points.cols(); ++i) {
+    for (const auto& set : sets) {
+      if (set.PointInSet(sampled_points.col(i), point_in_set_tol)) {
+        num_in_sets.fetch_add(1);
+        break;
       }
     }
+  }
   fraction_covered = static_cast<double>(num_in_sets.load()) / num_samples;
 
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
   return fraction_covered;
 }
-
+}  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
@@ -295,7 +296,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
                            checker.plant().GetPositionUpperLimits()));
   Eigen::VectorXd last_polytope_sample = domain.UniformSample(generator);
 
-  // Override the default options.
+  // Override options which are set too aggressively.
   const int minimum_clique_size =
       std::max(options.minimum_clique_size, checker.plant().num_positions());
   int num_points_per_visibility_round = std::max(
@@ -305,7 +306,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
   Parallelism visibility_graph_parallelism{
       std::min(options.visibility_graph_parallelism.num_threads(),
                checker.num_allocated_contexts())};
-  log()->info("Visibility Graph Construction with {} threads", visibility_graph_parallelism.num_threads());  
+  log()->info("Visibility Graph Construction with {} threads",
+              visibility_graph_parallelism.num_threads());
 
   int num_iterations = 0;
   while (ApproximatelyComputeCoverage(
@@ -319,27 +321,29 @@ void IrisInConfigurationSpaceFromCliqueCover(
       do {
         last_polytope_sample =
             domain.UniformSample(generator, last_polytope_sample);
-      } while (  // while the last polytope sample is in any of the sets.
+      } while (
+          // While the last polytope sample is in collision.
+          !checker.CheckConfigCollisionFree(last_polytope_sample) ||
+          // While the last polytope sample is in any of the sets.
           std::any_of(sets->begin(), sets->end(),
                       [&last_polytope_sample](const HPolyhedron& set) -> bool {
                         return set.PointInSet(last_polytope_sample);
-                      }) || !checker.CheckConfigCollisionFree(last_polytope_sample));
+                      }));
       points.col(i) = last_polytope_sample;
     }
 
-    // debugging visualization
-    if (options.meshcat && domain.ambient_dimension() <= 3) {
-        Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
-        for (int pt_to_draw = 0; pt_to_draw < points.cols();
-            ++pt_to_draw) {
+    // Show the samples used in build cliques. Debugging visualization
+    if (options.iris_options.meshcat && domain.ambient_dimension() <= 3) {
+      Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
+      for (int pt_to_draw = 0; pt_to_draw < points.cols(); ++pt_to_draw) {
         std::string path = fmt::format("iteration{:02}/sample_{:03}",
-                                        num_iterations, pt_to_draw);
-        options.meshcat->SetObject(path, Sphere(0.01),
-                                    geometry::Rgba(1, 0.1, 0.1, 1.0));
+                                       num_iterations, pt_to_draw);
+        options.iris_options.meshcat->SetObject(
+            path, Sphere(0.01), geometry::Rgba(1, 0.1, 0.1, 1.0));
         point_to_draw.head(domain.ambient_dimension()) = points.col(pt_to_draw);
-        options.meshcat->SetTransform(
+        options.iris_options.meshcat->SetTransform(
             path, RigidTransform<double>(point_to_draw));
-        }
+      }
     }
 
     Eigen::SparseMatrix<bool> visibility_graph =
@@ -363,7 +367,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
                                         *options.max_clique_solver,
                                         &visibility_graph, &computed_cliques);
     }};
-    
+
     // Build convex sets.
     std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
     build_sets_future.reserve(num_builders.num_threads());

@@ -102,22 +102,8 @@ struct IrisFromCliqueCoverOptions {
    * will be overridden to be no larger than this implicit context parallelism.
    */
   Parallelism visibility_graph_parallelism{Parallelism::Max()};
-   /** Passing a meshcat instance may enable debugging visualizations; this
-  currently only happens in IrisInConfigurationSpace and when the
-  configuration space is <= 3 dimensional.*/
-  std::shared_ptr<geometry::Meshcat> meshcat{};
-
 };
 
-/** TODO FIX DOCUMENTATION*/
-double ApproximatelyComputeCoverage(const geometry::optimization::HPolyhedron& domain,
-                                    const std::vector<geometry::optimization::HPolyhedron>& sets,
-                                    const CollisionChecker& checker,
-                                    const int num_samples,
-                                    const double point_in_set_tol,
-                                    const Parallelism& parallelism,
-                                    RandomGenerator* generator,
-                                    Eigen::VectorXd* last_polytope_sample);
 /**
  * Cover the configuration space in IRIS regions using the Visibility Clique
  * Cover Algorithm as described in
