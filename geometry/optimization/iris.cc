@@ -649,6 +649,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // For debugging visualization.
   Vector3d point_to_draw = Vector3d::Zero();
   int num_points_drawn = 0;
+  bool do_debugging_visualization = options.meshcat && nq <= 3 && false;
 
   const std::string seed_point_error_msg =
       "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
@@ -749,7 +750,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           guess = P_candidate.UniformSample(&generator, guess);
         }
         ++counter_example_searches_for_this_pair;
-        if (options.meshcat && nq <= 3) {
+        if (do_debugging_visualization) {
           ++num_points_drawn;
           point_to_draw.head(nq) = guess;
           std::string path = fmt::format("iteration{:02}/{:03}/guess",
@@ -760,7 +761,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                         RigidTransform<double>(point_to_draw));
         }
         if (prog.Solve(*solver, guess, &closest)) {
-          if (options.meshcat && nq <= 3) {
+          if (do_debugging_visualization) {
             point_to_draw.head(nq) = closest;
             std::string path = fmt::format("iteration{:02}/{:03}/found",
                                            iteration, num_points_drawn);
@@ -794,7 +795,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
         } else {
-          if (options.meshcat && nq <= 3) {
+          if (do_debugging_visualization) {
             point_to_draw.head(nq) = closest;
             std::string path = fmt::format("iteration{:02}/{:03}/closest",
                                            iteration, num_points_drawn);
