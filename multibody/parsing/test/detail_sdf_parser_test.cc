@@ -3266,6 +3266,9 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
     {"test::robot2::link3_sphere", "test::robot2::link5_sphere"},
     {"test::robot2::link3_sphere", "test::robot2::link6_sphere"},
     {"test::robot2::link5_sphere", "test::robot2::link6_sphere"},
+
+    // Filtered by group_of_groups.
+    {"test::robot1::link2_sphere", "test::robot2::link3_sphere"},
   };
   VerifyCollisionFilters(ids, expected_filters);
 
@@ -3292,10 +3295,13 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingErrorsTest) {
   <link name='a'/>
   <drake:collision_filter_group name="group_a">
     <drake:member></drake:member>
+    <drake:member_group></drake:member_group>
   </drake:collision_filter_group>
 </model>)"""));
   EXPECT_THAT(TakeError(), MatchesRegex(".*The tag <drake:member> is missing"
                                         " a required string value.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*The tag <drake:member_group> is"
+                                        " missing a required string value.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*'error2::group_a'.*no members"));
   FlushDiagnostics();
 

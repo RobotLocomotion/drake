@@ -109,6 +109,7 @@ drake_cc_library(
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
+        "detail_strongly_connected_components.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
     ],
@@ -667,6 +668,13 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_strongly_connected_components_test",
+    deps = [
+        ":detail_misc",
     ],
 )
 

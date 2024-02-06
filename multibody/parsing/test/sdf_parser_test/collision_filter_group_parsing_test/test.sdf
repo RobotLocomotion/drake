@@ -20,5 +20,11 @@
       <drake:member>robot1::link3</drake:member>
       <drake:ignored_collision_filter_group>robot2::group_link3</drake:ignored_collision_filter_group>
     </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_of_groups">
+      <!-- Build a group and rule from collision filter groups of nested robots. -->
+      <drake:member_group>robot1::group_link2</drake:member_group>
+      <drake:member_group>robot2::group_link3</drake:member_group>
+      <drake:ignored_collision_filter_group>group_of_groups</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
   </model>
 </sdf>
