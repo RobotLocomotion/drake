@@ -1250,6 +1250,7 @@ drake_cc_googletest(
         ":semidefinite_relaxation_internal",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        ":solve",
     ],
 )
 

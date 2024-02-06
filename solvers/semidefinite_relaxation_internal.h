@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -10,26 +13,46 @@ namespace internal {
 Eigen::SparseMatrix<double> SparseKroneckerProduct(
     const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B);
 
-// Let L and M be linear operators taking symmetric matrices to a real vectors,
-// and let A and B be their matrix representation operating on the columnwise
-// stacking of the lower triangular part of a symmetric matrix. This function
-// outputs a matrix representation of L ⊗ M (which notably is not as simple as A
-// ⊗ B).
-Eigen::SparseMatrix<double>
-ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
-    const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B);
-
 // Get the matrix for the map Y -> [tr(Y), y00 - ∑ᵢ₌₁ʳ⁻¹yᵢᵢ, 2y_{0i-1} when
 // applied to the lower triangular part of Y as a column. This map goes from
 // symmetric matrices with r - 1 rows to vectors with r rows.
 Eigen::SparseMatrix<double> GetWAdjForTril(const int r);
 
-// Returns the map where given the lower triangular part of a matrix Y with r
-// rows, returns 2 times the strictly lower triangular part (i.e. the part below
-// the main diagonal) stacked as a column. This is the adjoint of the map that
-// takes a vector and maps it to a skew symmetric matrix with the vector placed
-// on the strictly lower triangular part of the matrix.
-Eigen::SparseMatrix<double> GetSkewAdjointForLowerTri(const int r);
+// Given a vector expressing an element of Sⁿ ⊗ Sᵐ, return the symmetric matrix
+// of size Sⁿᵐ which it corresponds to.
+template <typename Derived>
+drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
+    const Eigen::MatrixBase<Derived>& tensor_vector, int n, int m) {
+  const int sym_elt_n = (n * (n + 1)) / 2;
+  const int sym_elt_m = (m * (m + 1)) / 2;
+  DRAKE_THROW_UNLESS(tensor_vector.rows() == sym_elt_n * sym_elt_m);
+
+  // TODO(Alexandre.Amice) Make this efficient
+  drake::MatrixX<typename Derived::Scalar> symmetric_matrix(n * m, n * m);
+  for (int i = 0; i < sym_elt_n; ++i) {
+    Eigen::SparseVector<double> ei(sym_elt_n);
+    ei.insert(i) = 1;
+    Eigen::MatrixXd symmetric_matrix_i =
+        math::ToSymmetricMatrixFromLowerTriangularColumns(ei.toDense());
+    for (int j = 0; j < sym_elt_m; ++j) {
+      Eigen::SparseVector<double> ej(sym_elt_m);
+      ej.insert(j) = 1;
+      Eigen::MatrixXd symmetric_matrix_j =
+          math::ToSymmetricMatrixFromLowerTriangularColumns(ej.toDense());
+
+      Eigen::SparseMatrix<double> kron = SparseKroneckerProduct(
+          symmetric_matrix_i.sparseView(), symmetric_matrix_j.sparseView());
+      for (int k = 0; k < kron.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(kron, k); it; ++it) {
+          if (it.value() > 0) {
+            symmetric_matrix(it.row(), it.col()) = tensor_vector(i * sym_elt_m + j);
+          }
+        }
+      }
+    }
+  }
+  return symmetric_matrix;
+}
 
 // Add the constraint that the matrix is Lorentz separable.
 // TODO(Alexandre.Amice) Move this to mathematical_program.h

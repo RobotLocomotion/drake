@@ -95,7 +95,6 @@ drake::MatrixX<typename Derived::Scalar>
 ToSymmetricMatrixFromLowerTriangularColumns(
     const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   int rows = (-1 + sqrt(1 + 8 * lower_triangular_columns.rows())) / 2;
-
   DRAKE_ASSERT(rows * (rows + 1) / 2 == lower_triangular_columns.rows());
   DRAKE_ASSERT(lower_triangular_columns.cols() == 1);
 
@@ -249,6 +248,5 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
   }
   return minor;
 }
-
 }  // namespace math
 }  // namespace drake

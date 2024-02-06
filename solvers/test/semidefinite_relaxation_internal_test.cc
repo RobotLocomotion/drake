@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -69,187 +70,66 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSparseKron) {
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-           TestComputeTensorProductOfSymmetricMatrixToRealVecOperators) {
-  const int n = 2;
-  const int tril_size = n * (n + 1) / 2;
-  Eigen::MatrixXd X(n, n);
-  // clang-format off
-  X <<   4.1 , -2.11,
-        -2.11, -3.59;
-  // clang-format on
-  Eigen::VectorX<double> x_tril = math::ToLowerTriangularColumnsFromMatrix(X);
-
-  Eigen::VectorXd a_full(n);
-  a_full << 1.69, -1.11;
-  Eigen::MatrixXd b_full(n, 2);
-  // clang-format off
-  b_full <<  -3.34, -7.19,
-             -4.02, -2.45;
-  // clang-format on
-
-  Eigen::MatrixXd a_tril = Eigen::MatrixXd::Zero(n, tril_size);
-  Eigen::MatrixXd b_tril = Eigen::MatrixXd::Zero(2 * n, tril_size);
-  int start_col = 0;
-  for (int i = 0; i < n; ++i) {
-    a_tril.block(i, start_col, n - i, n - i) =
-        a_full(i) * Eigen::MatrixXd(n - i, n - i).setIdentity();
-    a_tril.block(i, start_col, 1, n - i) = a_full.tail(n - i).transpose();
-
-    b_tril.block(i, start_col, n - i, n - i) =
-        b_full(i, 0) * Eigen::MatrixXd(n - i, n - i).setIdentity();
-    b_tril.block(i, start_col, 1, n - i) =
-        b_full.col(0).tail(n - i).transpose();
-
-    b_tril.block(i + n, start_col, n - i, n - i) =
-        b_full(i, 1) * Eigen::MatrixXd(n - i, n - i).setIdentity();
-    b_tril.block(n + i, start_col, 1, n - i) =
-        b_full.col(1).tail(n - i).transpose();
-
-    start_col += n - i;
+           TestToSymmetricMatrixFromTensorVector) {
+  // Check the 2x2 ⊗  3x3 case.
+  int num_elts =
+      3 * 6;  // There are 3 elements in 2x2 basis and 6 in the 3x3 basis.
+  VectorX<symbolic::Variable> y(num_elts);
+  for (int i = 0; i < num_elts; ++i) {
+    y(i) = symbolic::Variable("y_" + std::to_string(i));
   }
-
-  // Ensure that a_tril * x_tril == X * a_full.
-  Eigen::VectorXd X_times_a_full = X * a_full;
-  EXPECT_TRUE(CompareMatrices(X * a_full, a_tril * x_tril, 1e-10));
-  // Ensure that b_tril * x_tril == (X * b_tril).flatten().
-  Eigen::MatrixXd X_time_b_full = X * b_full;
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Map<Eigen::VectorXd>(X_time_b_full.data(), X_time_b_full.size()),
-      b_tril * x_tril, 1e-10));
-
-  Eigen::MatrixXd a_full_kron_b_full =
-      SparseKroneckerProduct(a_full.sparseView(), b_full.sparseView());
-  Eigen::MatrixXd a_tril_tensor_b_tril =
-      ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
-          a_tril.sparseView(), b_tril.sparseView());
-
-  // A test matrix in the tensor space
-  Eigen::MatrixXd X_kron(n * n, n * n);
+  Eigen::MatrixX<symbolic::Variable> Y =
+      ToSymmetricMatrixFromTensorVector(y, 2, 3);
+  Eigen::MatrixX<symbolic::Variable> Y_expected(6, 6);
   // clang-format off
-  for(int i=0; i<X_kron.rows(); ++i){
-    for(int j=i; j<X_kron.cols(); ++j) {
-      // Some arbitrary values.
-      X_kron(i,j) = std::pow(-1,2*i+3*j)*(i+7*j)/std::log(2*i+j+7);
+  Y_expected << y(0), y(1),  y(2),  y(6),  y(7),  y(8),
+                y(1), y(3),  y(4),  y(7),  y(9),  y(10),
+                y(2), y(4),  y(5),  y(8),  y(10), y(11),
+                y(6), y(7),  y(8),  y(12), y(13), y(14),
+                y(7), y(9),  y(10), y(13), y(15), y(16),
+                y(8), y(10), y(11), y(14), y(16), y(17);
+  // clang-format on
+  EXPECT_EQ(Y.rows(), 6);
+  EXPECT_EQ(Y.cols(), 6);
+  for (int i = 0; i < 6; ++i) {
+    for (int j = 0; j < 6; ++j) {
+      EXPECT_TRUE(Y_expected(i, j).equal_to(Y(i, j)));
     }
   }
-  // clang-format on
-  Eigen::VectorX<double> x_kron_tril =
-      math::ToLowerTriangularColumnsFromMatrix(X_kron);
 
-  // Check that X_kron * a_full_kron_b_full == a_tril_tensor_b_tril *
-  // x_kron_tril.
-  std::cout << fmt::format("a_full_kron_b_full size = ({}, {})",
-                           a_full_kron_b_full.rows(), a_full_kron_b_full.cols())
-            << std::endl;
-  std::cout << fmt::format("a_tril_tensor_b_tril = ({}, {}) ",
-                           a_tril_tensor_b_tril.rows(),
-                           a_tril_tensor_b_tril.cols())
-            << std::endl;
-  std::cout << fmt::format("a_full_kron_b_full:\n{}\n",
-                           fmt_eigen(a_full_kron_b_full))
-            << std::endl;
-  std::cout << fmt::format("a_tril:\n{}\n",
-                           fmt_eigen(a_tril))
-            << std::endl;
-  std::cout << fmt::format("b_tril:\n{}\n",
-                           fmt_eigen(b_tril))
-            << std::endl;
-  std::cout << fmt::format("a_tril_tensor_b_tril:\n{}\n",
-                           fmt_eigen(a_tril_tensor_b_tril))
-            << std::endl;
-  Eigen::MatrixXd test_product = X_kron * a_full_kron_b_full;
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Map<Eigen::VectorXd>(test_product.data(), test_product.size()),
-      a_tril_tensor_b_tril * x_kron_tril, 1e-10));
+  // Check the 4x4 ⊗  3x3 case.
+  num_elts = 10 * 6;
+  VectorX<symbolic::Variable> x(num_elts);
+  for (int i = 0; i < num_elts; ++i) {
+    x(i) = symbolic::Variable(fmt::format("x({}),", std::to_string(i)));
+  }
+  Eigen::MatrixX<symbolic::Variable> X =
+      ToSymmetricMatrixFromTensorVector(x, 4, 3);
+  Eigen::MatrixX<symbolic::Variable> X_expected(12, 12);
+  // The following was checked by hand. It may seem big, but it is necessary to
+  // check something this large.
+  // clang-format off
+  X_expected <<  x(0),  x(1),  x(2),  x(6),  x(7),  x(8), x(12), x(13), x(14), x(18), x(19), x(20),
+                 x(1),  x(3),  x(4),  x(7),  x(9), x(10), x(13), x(15), x(16), x(19), x(21), x(22),
+                 x(2),  x(4),  x(5),  x(8), x(10), x(11), x(14), x(16), x(17), x(20), x(22), x(23),
+                 x(6),  x(7),  x(8), x(24), x(25), x(26), x(30), x(31), x(32), x(36), x(37), x(38),
+                 x(7),  x(9), x(10), x(25), x(27), x(28), x(31), x(33), x(34), x(37), x(39), x(40),
+                 x(8), x(10), x(11), x(26), x(28), x(29), x(32), x(34), x(35), x(38), x(40), x(41),
+                x(12), x(13), x(14), x(30), x(31), x(32), x(42), x(43), x(44), x(48), x(49), x(50),
+                x(13), x(15), x(16), x(31), x(33), x(34), x(43), x(45), x(46), x(49), x(51), x(52),
+                x(14), x(16), x(17), x(32), x(34), x(35), x(44), x(46), x(47), x(50), x(52), x(53),
+                x(18), x(19), x(20), x(36), x(37), x(38), x(48), x(49), x(50), x(54), x(55), x(56),
+                x(19), x(21), x(22), x(37), x(39), x(40), x(49), x(51), x(52), x(55), x(57), x(58),
+                x(20), x(22), x(23), x(38), x(40), x(41), x(50), x(52), x(53), x(56), x(58), x(59);
+  // clang-format on
+  EXPECT_EQ(X.rows(), 12);
+  EXPECT_EQ(X.cols(), 12);
+  for (int i = 0; i < 12; ++i) {
+    for (int j = 0; j < 12; ++j) {
+      EXPECT_TRUE(X_expected(i, j).equal_to(X(i, j)));
+    }
+  }
 }
-//
-// GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-//           TestComputeTensorProductOfSymmetricMatrixToRealVecOperators) {
-//  Eigen::MatrixXd X(5, 5);
-//  // clang-format off
-//  X <<   4.1 , -2.11, -2.07, -5.68, -5.95,
-//        -2.11, -3.59, -2.84, -1.73, -8.44,
-//        -2.07, -2.84, -8.84, -5.65,  8.24,
-//        -5.68, -1.73, -5.65, -1.98,  0.48,
-//        -5.95, -8.44,  8.24,  0.48,  4.23;
-//  // clang-format on
-//  Eigen::VectorX<double> x_tril = math::ToLowerTriangularColumnsFromMatrix(X);
-//
-//  Eigen::VectorXd a_full(5);
-//  a_full << 1.69, -1.11, 2.6, -3.81, 0.83;
-//  Eigen::MatrixXd b_full(5, 2);
-//  // clang-format off
-//  b_full <<  -3.34, -7.19,
-//             -4.02, -2.45,
-//             -0.74,  0.55,
-//              1.65, -1.23,
-//             -2.98, -0.73;
-//  // clang-format on
-//
-//  Eigen::MatrixXd a_tril = Eigen::MatrixXd::Zero(5, 15);
-//  Eigen::MatrixXd b_tril = Eigen::MatrixXd::Zero(10, 15);
-//  int start_col = 0;
-//  for (int i = 0; i < 5; ++i) {
-//    a_tril.block(i, start_col, 5 - i, 5 - i) =
-//        a_full(i) * Eigen::MatrixXd(5 - i, 5 - i).setIdentity();
-//    a_tril.block(i, start_col, 1, 5 - i) = a_full.tail(5 - i).transpose();
-//
-//    b_tril.block(i, start_col, 5 - i, 5 - i) =
-//        b_full(i, 0) * Eigen::MatrixXd(5 - i, 5 - i).setIdentity();
-//    b_tril.block(i, start_col, 1, 5 - i) =
-//        b_full.col(0).tail(5 - i).transpose();
-//
-//    b_tril.block(i + 5, start_col, 5 - i, 5 - i) =
-//        b_full(i, 1) * Eigen::MatrixXd(5 - i, 5 - i).setIdentity();
-//    b_tril.block(5 + i, start_col, 1, 5 - i) =
-//        b_full.col(1).tail(5 - i).transpose();
-//
-//    start_col += 5 - i;
-//  }
-//
-//  // Ensure that a_tril * x_tril == X * a_full.
-//  Eigen::VectorXd X_times_a_full = X * a_full;
-//  EXPECT_TRUE(CompareMatrices(X * a_full, a_tril * x_tril, 1e-10));
-//  // Ensure that b_tril * x_tril == (X * b_tril).flatten().
-//  Eigen::MatrixXd X_time_b_full = X * b_full;
-//  EXPECT_TRUE(CompareMatrices(
-//      Eigen::Map<Eigen::VectorXd>(X_time_b_full.data(), X_time_b_full.size()),
-//      b_tril * x_tril, 1e-10));
-//
-//  Eigen::MatrixXd a_full_kron_b_full =
-//      SparseKroneckerProduct(a_full.sparseView(), b_full.sparseView());
-//  Eigen::MatrixXd a_tril_tensor_b_tril =
-//      ComputeTensorProductOfSymmetricMatrixToRealVecOperators(
-//          a_tril.sparseView(), b_tril.sparseView());
-//
-//  // A test matrix in the tensor space
-//  Eigen::MatrixXd X_kron(25, 25);
-//  // clang-format off
-//  for(int i=0; i<X_kron.rows(); ++i){
-//    for(int j=i; j<X_kron.cols(); ++j) {
-//      // Some arbitrary values.
-//      X_kron(i,j) = std::pow(-1,2*i+3*j)*(i+7*j)/std::log(2*i+j+7);
-//    }
-//  }
-//  // clang-format on
-//  Eigen::VectorX<double> x_kron_tril =
-//      math::ToLowerTriangularColumnsFromMatrix(X_kron);
-//
-//  // Check that X_kron * a_full_kron_b_full == a_tril_tensor_b_tril *
-//  // x_kron_tril.
-//  std::cout << fmt::format("a_full_kron_b_full size = ({}, {})",
-//  a_full_kron_b_full.rows(), a_full_kron_b_full.cols()) << std::endl;
-//  std::cout << fmt::format("a_tril_tensor_b_tril = ({}, {}) ",
-//  a_tril_tensor_b_tril.rows(), a_tril_tensor_b_tril.cols()) << std::endl;
-////  std::cout << fmt::format("a_full_kron_b_full:\n{}\n",
-/// fmt_eigen(a_full_kron_b_full)) << std::endl; /  std::cout <<
-/// fmt::format("a_tril_tensor_b_tril:\n{}\n", fmt_eigen(a_tril_tensor_b_tril))
-///<< std::endl;
-// Eigen::MatrixXd test_product = X_kron * a_full_kron_b_full;
-// EXPECT_TRUE(CompareMatrices(Eigen::Map<Eigen::VectorXd>(test_product.data(),
-// test_product.size()),
-//                              a_tril_tensor_b_tril * x_kron_tril, 1e-10));
-//}
 
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
   Eigen::MatrixXd Y(5, 5);
@@ -279,52 +159,150 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
   }
 }
 
-GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSkewAdjoint) {
-  Eigen::MatrixXd Y(5, 5);
-  // clang-format off
-  Y <<  0.  , -2.29, -0.11, -1.17,  2.48,
-        2.29,  0.  , -2.71, -3.52, -1.17,
-        0.11,  2.71,  0.  , -1.1 ,  3.07,
-        1.17,  3.52,  1.1 ,  0.  , -1.6 ,
-       -2.48,  1.17, -3.07,  1.6 ,  0.  ;
-  // clang-format on
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           AddMatrixIsLorentzSeparableConstraint3by4) {
+  MathematicalProgram prog;
+  const int m = 3;
+  const int n = 4;
 
-  Eigen::VectorXd neg_two_y(10);
-  neg_two_y << -2 * Y(1, 0), -2 * Y(2, 0), -2 * Y(3, 0), -2 * Y(4, 0),
-      -2 * Y(2, 1), -2 * Y(3, 1), -2 * Y(4, 1), -2 * Y(3, 2), -2 * Y(4, 2),
-      -2 * Y(4, 3);
+  auto X = prog.NewContinuousVariables(m, n, "X");
+  AddMatrixIsLorentzSeparableConstraint(X, &prog);
 
-  Eigen::SparseMatrix<double> W = GetSkewAdjointForLowerTri(5);
-  Eigen::VectorXd result = W * math::ToLowerTriangularColumnsFromMatrix(Y);
-  const double tol{1e-10};
-  EXPECT_TRUE(
-      CompareMatrices(result, neg_two_y, tol, MatrixCompareType::absolute));
+  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
+  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
+  EXPECT_EQ(ssize(prog.GetAllConstraints()), 2);
+
+  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
+      prog.positive_semidefinite_constraints()[0];
+  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
+
+  Eigen::VectorXd xm_lorentz(m);
+  xm_lorentz << 4, -1.7, 0.1;
+  Eigen::VectorXd xn_lorentz(n);
+  xn_lorentz << 13, -0.1, 5, -2.3;
+  Eigen::MatrixXd X_tensor_lorentz = xm_lorentz * xn_lorentz.transpose();
+  auto X_equal_lorentz_tensor_constraint =
+      prog.AddLinearEqualityConstraint(X == X_tensor_lorentz);
+  auto result = Solve(prog);
+  // X is required to be equal to a simple lorentz separable tensor therefore
+  // this program should be feasible.
+  EXPECT_TRUE(result.is_success());
+
+  prog.RemoveConstraint(X_equal_lorentz_tensor_constraint);
+  Eigen::VectorXd ym_lorentz(m);
+  ym_lorentz << 9.1, 1.3, 4.2;
+  Eigen::VectorXd yn_lorentz(n);
+  yn_lorentz << 2, -0.1, 0.5, -0.3;
+  Eigen::MatrixXd Y_tensor_lorentz = 2 * xm_lorentz * xn_lorentz.transpose() +
+                                     4 * ym_lorentz * yn_lorentz.transpose();
+  auto Y_equal_lorentz_tensor_constraint =
+      prog.AddLinearEqualityConstraint(X == Y_tensor_lorentz);
+  result = Solve(prog);
+  // X is required to be equal to a lorentz separable tensor therefore this
+  // program should be feasible.
+  EXPECT_TRUE(result.is_success());
+
+  // Two non-lorent vectors.
+  Eigen::VectorXd zm(m);
+  zm << -1.1, 2.3, 7.9;
+  Eigen::VectorXd zn(n);
+  zn << 0.1, 10.3, -0.2, 7.7;
+
+  prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
+  auto bad_constraint = prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint = prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint = prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
 }
 
-// GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-//           AddMatrixIsLorentzSeparableConstraint3by4) {
-//  MathematicalProgram prog;
-//  const int m = 3;
-//  const int n = 4;
-//
-//  auto X = prog.NewContinuousVariables(3, 4, "X");
-//  AddMatrixIsLorentzSeparableConstraint(X, &prog);
-//
-//  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-//  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 2);
-//  EXPECT_EQ(ssize(prog.GetAllConstraints()), 3);
-//
-//  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
-//      prog.positive_semidefinite_constraints()[0];
-//  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
-//
-//  const Binding<LinearEqualityConstraint> X_equal_Wadj_Y_constraint =
-//  prog.linear_equality_constraints()[0]; const
-//  Binding<LinearEqualityConstraint> skewAdj_Y_constraint =
-//  prog.linear_equality_constraints()[1];
-//
-//  EXPECT_TRUE(false);
-//}
+
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           AddMatrixIsLorentzSeparableConstraint4by3) {
+  MathematicalProgram prog;
+  const int m = 4;
+  const int n = 3;
+
+  auto X = prog.NewContinuousVariables(m, n, "X");
+  AddMatrixIsLorentzSeparableConstraint(X, &prog);
+
+  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
+  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
+  EXPECT_EQ(ssize(prog.GetAllConstraints()), 2);
+
+  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
+      prog.positive_semidefinite_constraints()[0];
+  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
+
+  Eigen::VectorXd xm_lorentz(m);
+  xm_lorentz << 5.1, 0.1, 2.3, -0.99;
+  Eigen::VectorXd xn_lorentz(n);
+  xn_lorentz << 4.7, -0.2, 3.7;
+  Eigen::MatrixXd X_tensor_lorentz = xm_lorentz * xn_lorentz.transpose();
+  auto X_equal_lorentz_tensor_constraint =
+      prog.AddLinearEqualityConstraint(X == X_tensor_lorentz);
+  auto result = Solve(prog);
+  // X is required to be equal to a simple lorentz separable tensor therefore
+  // this program should be feasible.
+  EXPECT_TRUE(result.is_success());
+
+  prog.RemoveConstraint(X_equal_lorentz_tensor_constraint);
+  Eigen::VectorXd ym_lorentz(m);
+  ym_lorentz << 1.7, 0.1, 0.3, -0.99;
+  Eigen::VectorXd yn_lorentz(n);
+  yn_lorentz << 2.9, -1.1, 0.25;
+  Eigen::MatrixXd Y_tensor_lorentz = 2.6 * xm_lorentz * yn_lorentz.transpose() +
+                                     7.9 * ym_lorentz * xn_lorentz.transpose();
+  auto Y_equal_lorentz_tensor_constraint =
+      prog.AddLinearEqualityConstraint(X == Y_tensor_lorentz);
+  result = Solve(prog);
+  // X is required to be equal to a lorentz separable tensor therefore this
+  // program should be feasible.
+  EXPECT_TRUE(result.is_success());
+
+  // Two non-lorent vectors.
+  Eigen::VectorXd zm(m);
+  zm << 1.09, -1.44,  1.58, -0.63;
+  Eigen::VectorXd zn(n);
+  zn << -2.04, -0.23, -3.87;
+
+  prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
+  auto bad_constraint = prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint = prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint = prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+}
 
 }  // namespace internal
 }  // namespace solvers
