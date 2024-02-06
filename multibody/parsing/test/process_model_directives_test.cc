@@ -328,6 +328,13 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
     {"model3::collision",             "nested::sub_model2::collision"},
     // From group 'across_sub_models'.
     {"nested::sub_model1::collision", "nested::sub_model2::collision"},
+    // From composite group 'group_4567'.
+    {"model4::collision", "model5::collision"},
+    {"model4::collision", "model6::collision"},
+    {"model4::collision", "model7::collision"},
+    {"model5::collision", "model6::collision"},
+    {"model5::collision", "model7::collision"},
+    {"model6::collision", "model7::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
 }
@@ -338,12 +345,45 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupNoSceneGraph) {
       FindResourceOrThrow(std::string(kTestDir) +
                           "/collision_filter_group.dmd.yaml"));
 
-
   MultibodyPlant<double> plant(0.0);
   ASSERT_FALSE(plant.geometry_source_is_registered());
   DRAKE_EXPECT_NO_THROW(
       ProcessModelDirectives(directives, &plant,
                              nullptr, make_parser(&plant).get()));
+}
+
+// Duplicate definition of collision filter groups raises an error.
+GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupDuplicateGroups) {
+  std::string kDmdYaml = R"""(
+directives:
+
+- add_model:
+    name: model1
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: model2
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_collision_filter_group:
+    name: bad_repeated
+    members: [model1::base]
+    ignored_collision_filter_groups: [bad_repeated]
+
+- add_collision_filter_group:
+    name: bad_repeated
+    members: [model2::base]
+    ignored_collision_filter_groups: [bad_repeated]
+)""";
+
+  ModelDirectives directives = LoadModelDirectivesFromString(kDmdYaml);
+
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ProcessModelDirectives(directives, &plant,
+                             nullptr, make_parser(&plant).get()),
+      ".*'bad_repeated'.*already.*defined.*");
 }
 
 // Test collision filter groups in ModelDirectives.
