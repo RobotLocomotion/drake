@@ -251,6 +251,44 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   const double shortest_path_duration =
       shortest_path_traj.end_time() - shortest_path_traj.start_time();
 
+  // Bob is having too much fun on the scooter and doesn't want to get off.
+  // He has a clear discrete path in mind that he firmly believes in, but still
+  // wants to find the shortest path.
+  // We can manually specify the vertices Bob wants to visit and solve the
+  // convex restriction.
+  const auto source_vertices = source.Vertices();
+  const auto scooter_vertices = scooter_regions.Vertices();
+  const auto target_vertices = target.Vertices();
+
+  std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+      active_vertices;
+  std::copy(source_vertices.begin(), source_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(scooter_vertices.begin(), scooter_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(target_vertices.begin(), target_vertices.end(),
+            std::back_inserter(active_vertices));
+
+  auto [detour_traj, detour_result] =
+      gcs.SolvePathAsConvexRestriction(active_vertices);
+  EXPECT_TRUE(detour_result.is_success());
+  EXPECT_EQ(detour_traj.rows(), 2);
+  EXPECT_EQ(detour_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(detour_traj.value(detour_traj.start_time()),
+                              start, 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(detour_traj.value(detour_traj.end_time()), goal, 1e-6));
+
+  // The detour should be longer than the shortest path.
+  double detour_path_length = 0.0;
+  for (double t = detour_traj.start_time(); t < detour_traj.end_time();
+       t += dt) {
+    const double t_next = std::min(t + dt, detour_traj.end_time());
+    const double dx = (detour_traj.value(t_next) - detour_traj.value(t)).norm();
+    detour_path_length += dx;
+  }
+  EXPECT_TRUE(detour_path_length > shortest_path_length);
+
   // Now we want to find the fastest path from S to G.
   // Add minimum time objective with a very high weight to overpower the
   // shortest path objective.
