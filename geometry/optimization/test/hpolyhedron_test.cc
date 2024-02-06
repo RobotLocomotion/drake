@@ -160,6 +160,28 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {
   EXPECT_TRUE(hpoly2.PointInSet(hpoly2.MaybeGetFeasiblePoint().value()));
 }
 
+GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope1D) {
+  const double eps = 1e-6;
+
+  Eigen::Matrix<double, 1, 4> vert1;
+  vert1 << 1, 0, 3, 2;
+  VPolytope v1(vert1);
+  EXPECT_NO_THROW(HPolyhedron{v1});
+  HPolyhedron h1(v1);
+  EXPECT_TRUE(h1.PointInSet(Vector1d(0)));
+  EXPECT_TRUE(h1.PointInSet(Vector1d(3)));
+  EXPECT_FALSE(h1.PointInSet(Vector1d(0 - eps)));
+  EXPECT_FALSE(h1.PointInSet(Vector1d(3 + eps)));
+
+  Eigen::Matrix<double, 1, 1> vert2;
+  vert2 << 43;
+  VPolytope v2(vert2);
+  HPolyhedron h2(v2);
+  EXPECT_TRUE(h2.PointInSet(Vector1d(43)));
+  EXPECT_FALSE(h2.PointInSet(Vector1d(43 - eps)));
+  EXPECT_FALSE(h2.PointInSet(Vector1d(43 + eps)));
+}
+
 void CheckHPolyhedronContainsVPolyhedron(const HPolyhedron& h,
                                          const VPolytope& v, double tol = 0) {
   for (int i = 0; i < v.vertices().cols(); ++i) {
