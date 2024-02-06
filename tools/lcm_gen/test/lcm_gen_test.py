@@ -21,15 +21,23 @@ class BaseTest(unittest.TestCase):
 
         self._lima_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/lima.lcm"))
-        assert self._lima_path.exists()
-
+        self._lima_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/lima.h"))
         self._mike_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/mike.lcm"))
-        assert self._mike_path.exists()
-
+        self._mike_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/mike.h"))
         self._november_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/november.lcm"))
+        self._november_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/november.h"))
+
+        assert self._lima_path.exists()
+        assert self._lima_h_path.exists()
+        assert self._mike_path.exists()
+        assert self._mike_h_path.exists()
         assert self._november_path.exists()
+        assert self._november_h_path.exists()
 
 
 class TestParser(BaseTest):
@@ -114,6 +122,7 @@ struct papa.mike {
   double delta[3];
   float foxtrot[4][5];
   papa.lima alpha;
+  string sierra;
   int32_t rows;
   int32_t cols;
   byte bravo[rows];
@@ -194,29 +203,36 @@ class TestCppGen(BaseTest):
     works as intended happens in the C++ unit test `functional_test.cc`.
     """
 
+    _HELP = """
+===========================================================================
+To replace the goal files with newly-regenerated copies, run this command:
+
+bazel run //tools/lcm_gen -- \
+  tools/lcm_gen/test/*.lcm --outdir=tools/lcm_gen/test/goal
+
+===========================================================================
+"""
+
     def test_lima_text(self):
         """The generated text for lima.h exactly matches the goal file."""
-
-        lima_h_path = self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/lima.h")
-        with open(lima_h_path, encoding="utf-8") as f:
-            expected_text = f.read()
         lima = Parser.parse(filename=self._lima_path)
-        dut = CppGen(struct=lima)
-        actual_text = dut.generate()
-        self.assertMultiLineEqual(expected_text, actual_text)
+        expected_text = self._lima_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=lima).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
+
+    def test_mike_text(self):
+        """The generated text for mike.h exactly matches the goal file."""
+        mike = Parser.parse(filename=self._mike_path)
+        expected_text = self._mike_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=mike).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_november_text(self):
         """The generated text for november.h exactly matches the goal file."""
-
-        november_h_path = self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/november.h")
-        with open(november_h_path, encoding="utf-8") as f:
-            expected_text = f.read()
         november = Parser.parse(filename=self._november_path)
-        dut = CppGen(struct=november)
-        actual_text = dut.generate()
-        self.assertMultiLineEqual(expected_text, actual_text)
+        expected_text = self._november_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=november).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_no_package(self):
         """Sanity test for a message without any LCM package specified."""
