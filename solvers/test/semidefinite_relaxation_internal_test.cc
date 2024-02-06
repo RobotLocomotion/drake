@@ -109,18 +109,19 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
   // The following was checked by hand. It may seem big, but it is necessary to
   // check something this large.
   // clang-format off
-  X_expected <<  x(0),  x(1),  x(2),  x(6),  x(7),  x(8), x(12), x(13), x(14), x(18), x(19), x(20),
-                 x(1),  x(3),  x(4),  x(7),  x(9), x(10), x(13), x(15), x(16), x(19), x(21), x(22),
-                 x(2),  x(4),  x(5),  x(8), x(10), x(11), x(14), x(16), x(17), x(20), x(22), x(23),
-                 x(6),  x(7),  x(8), x(24), x(25), x(26), x(30), x(31), x(32), x(36), x(37), x(38),
-                 x(7),  x(9), x(10), x(25), x(27), x(28), x(31), x(33), x(34), x(37), x(39), x(40),
-                 x(8), x(10), x(11), x(26), x(28), x(29), x(32), x(34), x(35), x(38), x(40), x(41),
-                x(12), x(13), x(14), x(30), x(31), x(32), x(42), x(43), x(44), x(48), x(49), x(50),
-                x(13), x(15), x(16), x(31), x(33), x(34), x(43), x(45), x(46), x(49), x(51), x(52),
-                x(14), x(16), x(17), x(32), x(34), x(35), x(44), x(46), x(47), x(50), x(52), x(53),
-                x(18), x(19), x(20), x(36), x(37), x(38), x(48), x(49), x(50), x(54), x(55), x(56),
-                x(19), x(21), x(22), x(37), x(39), x(40), x(49), x(51), x(52), x(55), x(57), x(58),
-                x(20), x(22), x(23), x(38), x(40), x(41), x(50), x(52), x(53), x(56), x(58), x(59);
+  // NOLINT
+  X_expected <<  x(0),  x(1),  x(2),  x(6),  x(7),  x(8), x(12), x(13), x(14), x(18), x(19), x(20),// NOLINT
+                 x(1),  x(3),  x(4),  x(7),  x(9), x(10), x(13), x(15), x(16), x(19), x(21), x(22),// NOLINT
+                 x(2),  x(4),  x(5),  x(8), x(10), x(11), x(14), x(16), x(17), x(20), x(22), x(23),// NOLINT
+                 x(6),  x(7),  x(8), x(24), x(25), x(26), x(30), x(31), x(32), x(36), x(37), x(38),// NOLINT
+                 x(7),  x(9), x(10), x(25), x(27), x(28), x(31), x(33), x(34), x(37), x(39), x(40),// NOLINT
+                 x(8), x(10), x(11), x(26), x(28), x(29), x(32), x(34), x(35), x(38), x(40), x(41),// NOLINT
+                x(12), x(13), x(14), x(30), x(31), x(32), x(42), x(43), x(44), x(48), x(49), x(50),// NOLINT
+                x(13), x(15), x(16), x(31), x(33), x(34), x(43), x(45), x(46), x(49), x(51), x(52),// NOLINT
+                x(14), x(16), x(17), x(32), x(34), x(35), x(44), x(46), x(47), x(50), x(52), x(53),// NOLINT
+                x(18), x(19), x(20), x(36), x(37), x(38), x(48), x(49), x(50), x(54), x(55), x(56),// NOLINT
+                x(19), x(21), x(22), x(37), x(39), x(40), x(49), x(51), x(52), x(55), x(57), x(58),// NOLINT
+                x(20), x(22), x(23), x(38), x(40), x(41), x(50), x(52), x(53), x(56), x(58), x(59);// NOLINT
   // clang-format on
   EXPECT_EQ(X.rows(), 12);
   EXPECT_EQ(X.cols(), 12);
@@ -209,28 +210,29 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
   zn << 0.1, 10.3, -0.2, 7.7;
 
   prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
-  auto bad_constraint = prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint = prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  auto bad_constraint =
+      prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
   result = Solve(prog);
   // X is required to be equal to something not that is not lorentz separable
   // therefore this should be infeasible.
   EXPECT_FALSE(result.is_success());
 
   prog.RemoveConstraint(bad_constraint);
-  bad_constraint = prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
+  bad_constraint =
+      prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint =
+      prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
   result = Solve(prog);
   // X is required to be equal to something not that is not lorentz separable
   // therefore this should be infeasible.
   EXPECT_FALSE(result.is_success());
 }
-
 
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
            AddMatrixIsLorentzSeparableConstraint4by3) {
@@ -277,27 +279,29 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
 
   // Two non-lorent vectors.
   Eigen::VectorXd zm(m);
-  zm << 1.09, -1.44,  1.58, -0.63;
+  zm << 1.09, -1.44, 1.58, -0.63;
   Eigen::VectorXd zn(n);
   zn << -2.04, -0.23, -3.87;
 
   prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
-  auto bad_constraint = prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint = prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  auto bad_constraint =
+      prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
   result = Solve(prog);
   // X is required to be equal to something not that is not lorentz separable
   // therefore this should be infeasible.
   EXPECT_FALSE(result.is_success());
 
   prog.RemoveConstraint(bad_constraint);
-  bad_constraint = prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
+  bad_constraint =
+      prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
+  result = Solve(prog);
+  // X is required to be equal to something not that is not lorentz separable
+  // therefore this should be infeasible.
+  EXPECT_FALSE(result.is_success());
+
+  prog.RemoveConstraint(bad_constraint);
+  bad_constraint =
+      prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
   result = Solve(prog);
   // X is required to be equal to something not that is not lorentz separable
   // therefore this should be infeasible.

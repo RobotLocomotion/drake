@@ -10,7 +10,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
-#include "drake/solvers/semidefinite_relaxation_internal.h"
 
 namespace drake {
 namespace solvers {

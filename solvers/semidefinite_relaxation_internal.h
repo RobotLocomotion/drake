@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -27,7 +25,7 @@ drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
   const int sym_elt_m = (m * (m + 1)) / 2;
   DRAKE_THROW_UNLESS(tensor_vector.rows() == sym_elt_n * sym_elt_m);
 
-  // TODO(Alexandre.Amice) Make this efficient
+  // TODO(Alexandre.Amice) Make this efficient.
   drake::MatrixX<typename Derived::Scalar> symmetric_matrix(n * m, n * m);
   for (int i = 0; i < sym_elt_n; ++i) {
     Eigen::SparseVector<double> ei(sym_elt_n);
@@ -45,7 +43,8 @@ drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
       for (int k = 0; k < kron.outerSize(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(kron, k); it; ++it) {
           if (it.value() > 0) {
-            symmetric_matrix(it.row(), it.col()) = tensor_vector(i * sym_elt_m + j);
+            symmetric_matrix(it.row(), it.col()) =
+                tensor_vector(i * sym_elt_m + j);
           }
         }
       }
