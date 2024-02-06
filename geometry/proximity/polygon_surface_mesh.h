@@ -25,6 +25,9 @@ class MeshDeformer;
 // Forward declaration for friendship.
 template <typename T>
 class PolygonSurfaceMesh;
+// Forward declaration of PolygonSurfaceMeshTest<T> for friend access.
+template <typename T>
+class PolygonSurfaceMeshTest;
 
 /** Representation of a polygonal face in a SurfacePolygon. */
 class SurfacePolygon {
@@ -124,11 +127,11 @@ class PolygonSurfaceMesh {
    @pre v ∈ {0, 1, 2, ..., num_vertices()-1}. */
   const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
-    return vertices_[v];
+    return vertices_M_[v];
   }
 
   /** Returns the number of vertices in the mesh. */
-  int num_vertices() const { return static_cast<int>(vertices_.size()); }
+  int num_vertices() const { return static_cast<int>(vertices_M_.size()); }
 
   /** Returns the number of elements in the mesh. For %PolygonSurfaceMesh, an
    element is a polygon. Returns the same number as num_faces() and enables
@@ -309,9 +312,11 @@ class PolygonSurfaceMesh {
   /* Client attorney class that provides a means to modify vertex positions. */
   friend class internal::MeshDeformer<PolygonSurfaceMesh<T>>;
 
+  friend class PolygonSurfaceMeshTest<T>;
+
   /* Calculates and sets the area, normal, and centroid of all polygon faces.
    Also computes and sets the centroid of the entire surface. */
-  void CalcAreasNormalsAndCentroid();
+  void ComputePositionDependentQuantities();
 
   // TODO(DamrongGuoy): Make CalcAreaNormalAndCentroid() return area, normal
   //  vector, and centroid instead of accumulating them into member
@@ -351,7 +356,7 @@ class PolygonSurfaceMesh {
 
   /* The vertices referenced by the mesh's polygons, measured and expressed in
    the mesh's frame M. */
-  std::vector<Vector3<T>> vertices_;
+  std::vector<Vector3<T>> vertices_M_;
 
   /* Derived quantities of the mesh -- computed as elements are added. */
 

@@ -9,7 +9,7 @@ template <typename T>
 void VolumeMesh<T>::TransformVertices(
     const math::RigidTransform<T>& transform) {
   const math::RigidTransform<T>& X_NM = transform;
-  for (Vector3<T>& vertex : vertices_) {
+  for (Vector3<T>& vertex : vertices_M_) {
     const Vector3<T> p_MV = vertex;
     vertex = X_NM * p_MV;
   }

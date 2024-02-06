@@ -145,7 +145,7 @@ class VolumeMesh {
    enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
              std::vector<Vector3<T>>&& vertices)
-      : elements_(std::move(elements)), vertices_(std::move(vertices)) {
+      : elements_(std::move(elements)), vertices_M_(std::move(vertices)) {
     if (elements_.empty()) {
       throw std::logic_error("A mesh must contain at least one tetrahedron");
     }
@@ -162,10 +162,10 @@ class VolumeMesh {
    */
   const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
-    return vertices_[v];
+    return vertices_M_[v];
   }
 
-  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_M_; }
 
   const std::vector<VolumeElement>& tetrahedra() const { return elements_; }
 
@@ -175,7 +175,7 @@ class VolumeMesh {
 
   /** Returns the number of vertices in the mesh.
    */
-  int num_vertices() const { return vertices_.size(); }
+  int num_vertices() const { return vertices_M_.size(); }
 
   /** Calculates volume of a tetrahedral element. It is a signed volume, i.e.,
    it can be negative depending on the order of the four vertices of the
@@ -186,10 +186,10 @@ class VolumeMesh {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
     //  it. CalcTetrahedronVolume(index) will call
     //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
-    const Vector3<T>& a = vertices_[elements_[e].vertex(0)];
-    const Vector3<T>& b = vertices_[elements_[e].vertex(1)];
-    const Vector3<T>& c = vertices_[elements_[e].vertex(2)];
-    const Vector3<T>& d = vertices_[elements_[e].vertex(3)];
+    const Vector3<T>& a = vertices_M_[elements_[e].vertex(0)];
+    const Vector3<T>& b = vertices_M_[elements_[e].vertex(1)];
+    const Vector3<T>& c = vertices_M_[elements_[e].vertex(2)];
+    const Vector3<T>& d = vertices_M_[elements_[e].vertex(3)];
     // Assume the first three vertices a, b, c define a triangle with its
     // right-handed normal pointing towards the inside of the tetrahedra. The
     // fourth vertex, d, is on the positive side of the plane defined by a,
@@ -314,6 +314,11 @@ class VolumeMesh {
   // Client attorney class that provides a means to modify vertex positions.
   friend class internal::MeshDeformer<VolumeMesh<T>>;
 
+  // Currently, VolumeMesh doesn't have any position dependent quantities, but
+  // requires the method to maintain MeshDeformer compatibility with the other
+  // mesh types.
+  void ComputePositionDependentQuantities() {}
+
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
@@ -322,8 +327,9 @@ class VolumeMesh {
 
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
-  // The vertices that are shared between the tetrahedral elements.
-  std::vector<Vector3<T>> vertices_;
+  // The vertices that are shared between the tetrahedral elements, measured and
+  // expressed in the mesh's frame M.
+  std::vector<Vector3<T>> vertices_M_;
 
   friend class VolumeMeshTester<T>;
 };
@@ -334,10 +340,10 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
   // the tetrahedron. Their positions are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)];
-  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)];
-  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)];
-  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)];
+  const Vector3<T>& p_MV = vertices_M_[elements_[e].vertex(i)];
+  const Vector3<T>& p_MA = vertices_M_[elements_[e].vertex((i + 1) % 4)];
+  const Vector3<T>& p_MB = vertices_M_[elements_[e].vertex((i + 2) % 4)];
+  const Vector3<T>& p_MC = vertices_M_[elements_[e].vertex((i + 3) % 4)];
 
   const Vector3<T> p_AV_M = p_MV - p_MA;
   const Vector3<T> p_AB_M = p_MB - p_MA;

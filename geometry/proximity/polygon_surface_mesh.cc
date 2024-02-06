@@ -17,14 +17,14 @@ template <typename T>
 PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
                                           vector<Vector3<T>> vertices)
     : face_data_(std::move(face_data)),
-      vertices_(std::move(vertices)),
+      vertices_M_(std::move(vertices)),
       p_MSc_(Vector3<T>::Zero()) {
-  CalcAreasNormalsAndCentroid();
+  ComputePositionDependentQuantities();
 }
 
 template <typename T>
 void PolygonSurfaceMesh<T>::TransformVertices(const RigidTransform<T>& X_NM) {
-  for (auto& v : vertices_) {
+  for (auto& v : vertices_M_) {
     v = X_NM * v;
   }
   for (auto& n : face_normals_) {
@@ -43,7 +43,7 @@ std::pair<Vector3<T>, Vector3<T>> PolygonSurfaceMesh<T>::CalcBoundingBox()
       Vector3<T>::Constant(std::numeric_limits<double>::max());
   Vector3<T> max_extent =
       Vector3<T>::Constant(std::numeric_limits<double>::lowest());
-  for (const auto& vertex : vertices_) {
+  for (const auto& vertex : vertices_M_) {
     min_extent = min_extent.cwiseMin(vertex);
     max_extent = max_extent.cwiseMax(vertex);
   }
@@ -58,7 +58,7 @@ bool PolygonSurfaceMesh<T>::Equal(const PolygonSurfaceMesh<T>& mesh) const {
 
   if (this->num_faces() != mesh.num_faces()) return false;
   if (this->num_vertices() != mesh.num_vertices()) return false;
-  if (this->vertices_ != mesh.vertices_) return false;
+  if (this->vertices_M_ != mesh.vertices_M_) return false;
   if (this->poly_indices_ != mesh.poly_indices_) return false;
   if (this->face_data_ != mesh.face_data_) return false;
 
@@ -66,7 +66,7 @@ bool PolygonSurfaceMesh<T>::Equal(const PolygonSurfaceMesh<T>& mesh) const {
 }
 
 template <class T>
-void PolygonSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
+void PolygonSurfaceMesh<T>::ComputePositionDependentQuantities() {
   /* Reset all areas, normals, and centroids because we accumulate into them. */
   total_area_ = 0;
   areas_.clear();
@@ -91,7 +91,7 @@ void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(const int poly_index) {
   const int data_index = poly_indices_[poly_index];
   const int v_count = face_data_[data_index];
   const int v_index_offset = data_index + 1;
-  const Vector3<T>& r_MA = vertices_[face_data_[v_index_offset]];
+  const Vector3<T>& r_MA = vertices_M_[face_data_[v_index_offset]];
 
   Vector3<T> p_MTc_scaled(0, 0, 0);
 
@@ -118,8 +118,8 @@ void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(const int poly_index) {
    For efficiency, we actually accumulate 2 * area in double_face_area and
    6 * p_MTc in p_MTc_scaled to defer otherwise redundant scaling operations. */
   for (int v = 1; v < v_count - 1; ++v) {
-    const Vector3<T>& r_MB = vertices_[face_data_[v_index_offset + v]];
-    const Vector3<T>& r_MC = vertices_[face_data_[v_index_offset + v + 1]];
+    const Vector3<T>& r_MB = vertices_M_[face_data_[v_index_offset + v]];
+    const Vector3<T>& r_MC = vertices_M_[face_data_[v_index_offset + v + 1]];
     const auto r_UV_M = r_MB - r_MA;
     const auto r_UW_M = r_MC - r_MA;
 
@@ -194,14 +194,14 @@ Vector3<T> PolygonSurfaceMesh<T>::CalcAveragePosition(const int poly_index) {
   const int data_index = poly_indices_[poly_index];
   const int v_count = face_data_[data_index];
   const int v_index_offset = data_index + 1;
-  const Vector3<T>& r_MA = vertices_[face_data_[v_index_offset]];
+  const Vector3<T>& r_MA = vertices_M_[face_data_[v_index_offset]];
 
   // Initialize the accumulation from the first vertex.
   Vector3<T> p_MVaccumulate(r_MA);
 
   // Accumulate the remaining vertices.
   for (int v = 1; v < v_count; ++v) {
-    p_MVaccumulate += vertices_[face_data_[v_index_offset + v]];
+    p_MVaccumulate += vertices_M_[face_data_[v_index_offset + v]];
   }
 
   return p_MVaccumulate / v_count;

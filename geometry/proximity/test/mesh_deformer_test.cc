@@ -126,41 +126,27 @@ TYPED_TEST(SurfaceMeshDeformerTest, SetAllPositions) {
   this->TestSetAllPositions();
 }
 
-// N.B. We can't use partial specialization on functions, so we create a factory
-// struct to serve the purpose.
-template <typename T, template <typename> typename MeshType>
-struct SingleTriangleMaker {
-  static MeshType<T> make() { throw std::logic_error("Unimplemented call"); }
-};
-
-// Makes a TriangleSurfaceMesh with a single triangle whose normal is _not_
-// along the z-axis.
-template <typename T>
-struct SingleTriangleMaker<T, TriangleSurfaceMesh> {
-  static TriangleSurfaceMesh<T> make() {
-    std::vector<Vector3<T>> vertices;
-    vertices.emplace_back(0, 0, 0);
-    vertices.emplace_back(0, 2, 0);
-    vertices.emplace_back(0, 0, 2);
+// Makes a mesh consisting of a single triangle whose normal is *not* along the
+// z-axis.
+template <typename MeshType>
+MeshType MakeSingleTriangle() {
+  using T = typename MeshType::ScalarType;
+  std::vector<Vector3<T>> vertices;
+  vertices.emplace_back(0, 0, 0);
+  vertices.emplace_back(0, 2, 0);
+  vertices.emplace_back(0, 0, 2);
+  // The mesh types only differ in how they describe faces.
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
     std::vector<SurfaceTriangle> triangles;
     triangles.emplace_back(0, 1, 2);
     return TriangleSurfaceMesh(std::move(triangles), std::move(vertices));
-  }
-};
-
-// Makes a PolygonSurfaceMesh with a single triangle whose normal is _not_ along
-// the z-axis.
-template <typename T>
-struct SingleTriangleMaker<T, PolygonSurfaceMesh> {
-  static PolygonSurfaceMesh<T> make() {
+  } else if constexpr (std::is_same_v<MeshType, PolygonSurfaceMesh<T>>) {
     std::vector<int> face_data{3, 0, 1, 2};
-    std::vector<Vector3<T>> vertices;
-    vertices.emplace_back(0, 0, 0);
-    vertices.emplace_back(0, 2, 0);
-    vertices.emplace_back(0, 0, 2);
     return PolygonSurfaceMesh(std::move(face_data), std::move(vertices));
+  } else {
+    throw std::logic_error("Unimplemented");
   }
-};
+}
 
 // Tests that for surface meshes, auxiliary quantities (face normal, face area,
 // and mesh centroid) are updated along with vertex position changes.
@@ -169,7 +155,7 @@ class MeshDeformerDataTest : public ::testing::Test {
  public:
   MeshDeformerDataTest()
       : ::testing::Test(),
-        mesh_(SingleTriangleMaker<T, MeshType>().make()),
+        mesh_(MakeSingleTriangle<MeshType<T>>()),
         deformer_(&mesh_) {
     // Create vertex positions that all lie in the xy plane.
     DRAKE_DEMAND(mesh_.num_vertices() == 3);
@@ -181,20 +167,15 @@ class MeshDeformerDataTest : public ::testing::Test {
 
   void TestData() {
     // Quick reality check that we don't start with the expected data.
-    EXPECT_FALSE(CompareMatrices(mesh_.face_normal(0), Vector3<T>::UnitZ()));
-    EXPECT_NE(mesh_.area(0), 0.5);
     EXPECT_NE(mesh_.total_area(), 0.5);
-    const Vector3<T> expected_centroid(1.0 / 3.0, 1.0 / 3.0, 0.0);
-    EXPECT_FALSE(CompareMatrices(mesh_.element_centroid(0), expected_centroid));
-    EXPECT_FALSE(CompareMatrices(mesh_.centroid(), expected_centroid));
 
     deformer_.SetAllPositions(q_);
 
-    EXPECT_TRUE(CompareMatrices(mesh_.face_normal(0), Vector3<T>::UnitZ()));
-    EXPECT_EQ(mesh_.area(0), 0.5);
+    // The deformer's only responsibility is to tell the mesh to update itself
+    // based on the fact that vertex positions have changed. Therefore, we only
+    // need evidence that it got invoked. Simply checking one dependent quantity
+    // would be enough
     EXPECT_EQ(mesh_.total_area(), 0.5);
-    EXPECT_TRUE(CompareMatrices(mesh_.element_centroid(0), expected_centroid));
-    EXPECT_TRUE(CompareMatrices(mesh_.centroid(), expected_centroid));
   }
 
  protected:
