@@ -2504,7 +2504,7 @@ TEST_F(GeometryStateTest, TestCollisionCandidates) {
                                 expected_candidates));
 
   // This relies on the correctness of CollisionFilterManager(). It implicitly
-  // tests that GeometryState::collisoin_filter_manager() produces a valid
+  // tests that GeometryState::collision_filter_manager() produces a valid
   // manager.
   while (!expected_candidates.empty()) {
     const auto pair = expected_candidates.begin();

@@ -207,7 +207,19 @@ void CollectCollisionFilterGroup(
 
     bodies.insert(body_name);
   }
-  resolver->AddGroup(diagnostic, group_name, bodies, model_instance);
+  std::set<std::string> member_groups;
+  for (auto member_node = next_child_element(group_node, "drake:member_group");
+       std::holds_alternative<sdf::ElementPtr>(member_node)
+           ? std::get<sdf::ElementPtr>(member_node) != nullptr
+           : std::get<tinyxml2::XMLElement*>(member_node) != nullptr;
+       member_node = next_sibling_element(member_node, "drake:member_group")) {
+    const std::string member_group_name = read_tag_string(member_node, "name");
+    if (member_group_name.empty()) { continue; }
+
+    member_groups.insert(member_group_name);
+  }
+  resolver->AddGroup(diagnostic, group_name, bodies, member_groups,
+                     model_instance);
 
   for (auto ignore_node = next_child_element(
            group_node, "drake:ignored_collision_filter_group");

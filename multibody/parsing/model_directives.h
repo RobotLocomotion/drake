@@ -175,9 +175,10 @@ struct AddCollisionFilterGroup {
       drake::log()->error(
           "add_collision_filter_group: `name` must be non-empty");
       return false;
-    } else if (members.empty()) {
+    } else if (members.empty() && member_groups.empty()) {
       drake::log()->error(
-          "add_collision_filter_group: `members` must be non-empty");
+          "add_collision_filter_group:"
+          " at least one of `members` or `member_groups` must be non-empty");
       return false;
     }
     return true;
@@ -187,6 +188,7 @@ struct AddCollisionFilterGroup {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(members));
+    a->Visit(DRAKE_NVP(member_groups));
     a->Visit(DRAKE_NVP(model_namespace));
     a->Visit(DRAKE_NVP(ignored_collision_filter_groups));
   }
@@ -201,6 +203,10 @@ struct AddCollisionFilterGroup {
   /// already added models. This data is analogous to a sequence of
   /// @ref tag_drake_member in XML model formats.
   std::vector<std::string> members;
+  /// Names of groups to add en masse as members of the group. May be scoped
+  /// and refer to bodies of already added models. This data is analogous to a
+  /// sequence of @ref tag_drake_member_group in XML model formats.
+  std::vector<std::string> member_groups;
   /// Names of groups against which to ignore collisions. If another group is
   /// named, collisions between this group and that group will be ignored. If
   /// this group is named, collisions within this group will be ignored. Names

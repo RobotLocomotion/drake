@@ -36,3 +36,32 @@ directives:
     members: [model3::base]
     ignored_collision_filter_groups: [nested::across_sub_models]
 
+- add_model:
+    name: model4
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: model5
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: model6
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: model7
+    file: package://process_model_directives_test/simple_model.sdf
+
+# Build a group from other groups.
+- add_collision_filter_group:
+    name: group_45
+    members: [model4::base, model5::base]
+
+- add_collision_filter_group:
+    name: group_67
+    members: [model6::base, model7::base]
+
+- add_collision_filter_group:
+    name: group_4567
+    member_groups: [group_45, group_67]
+    ignored_collision_filter_groups: [group_4567]

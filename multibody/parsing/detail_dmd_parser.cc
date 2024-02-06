@@ -163,8 +163,10 @@ void ParseModelDirectivesImpl(
       drake::log()->debug("  add_collision_filter_group: {}", group.name);
       std::set<std::string> member_set(group.members.begin(),
                                        group.members.end());
-      collision_resolver->AddGroup(
-          diagnostic, group.name, member_set, model_instance);
+      std::set<std::string> member_groups_set(group.member_groups.begin(),
+                                              group.member_groups.end());
+      collision_resolver->AddGroup(diagnostic, group.name, member_set,
+                                   member_groups_set, model_instance);
       for (const auto& ignored_group : group.ignored_collision_filter_groups) {
         collision_resolver->AddPair(
             diagnostic, group.name, ignored_group, model_instance);

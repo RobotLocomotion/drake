@@ -1798,9 +1798,9 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   // Get geometry ids for all the bodies.
   const geometry::SceneGraphInspector<double>& inspector =
       scene_graph_.model_inspector();
-  static constexpr int kNumLinks = 6;
+  static constexpr int kNumLinks = 10;
   std::vector<GeometryId> ids(1 + kNumLinks);  // allow 1-based indices.
-  for (int k = 1; k <= 6; ++k) {
+  for (int k = 1; k <= kNumLinks; ++k) {
     const auto geometry_id = inspector.GetGeometryIdByName(
         plant_.GetBodyFrameIdOrThrow(
             plant_.GetBodyByName(fmt::format("link{}", k)).index()),
@@ -1848,6 +1848,19 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   // (5, 6) - filtered by group_link56 ignores itself
   EXPECT_TRUE(inspector.CollisionFiltered(ids[5], ids[6]));
 
+  // To test composite group building, we have a separate set of geometries
+  // 7-10. They are combined into a single self-ignoring group.
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[7], ids[8]));
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[7], ids[9]));
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[7], ids[10]));
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[8], ids[9]));
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[8], ids[10]));
+  EXPECT_TRUE(inspector.CollisionFiltered(ids[9], ids[10]));
+
+  // Spot check that the two sets are separate.
+  EXPECT_FALSE(inspector.CollisionFiltered(ids[1], ids[10]));
+  EXPECT_FALSE(inspector.CollisionFiltered(ids[6], ids[7]));
+
   // Make sure we can add the model a second time.
   AddModelFromUrdfFile(full_name, "model2");
 }
@@ -1874,6 +1887,20 @@ TEST_F(UrdfParserTest, CollisionFilterGroupMissingLink) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:member> does not specify the required "
                   "attribute \"link\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
+}
+
+TEST_F(UrdfParserTest, CollisionFilterGroupMissingMemberGroupName) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a'/>
+      <drake:collision_filter_group name="group_a">
+        <drake:member_group/>
+      </drake:collision_filter_group>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(
+                  ".*The tag <drake:member_group> does not specify the"
+                  " required attribute \"name\"."));
   EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
 }
 
