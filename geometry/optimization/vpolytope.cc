@@ -156,6 +156,41 @@ VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
     return;
   }
 
+  if (hpoly.ambient_dimension() == 1) {
+    // In 1D, QHull doesn't work. We make a list of all hyperplanes that lower
+    // bound and upper bound the polytope, and choose the "innermost" points to
+    // make the VPolytope.
+    std::vector<double> supporting_above;
+    std::vector<double> supporting_below;
+    for (int i = 0; i < hpoly.b().size(); ++i) {
+      if (hpoly.A()(i, 0) > 0) {
+        supporting_above.push_back(hpoly.b()(i));
+      } else if (hpoly.A()(i, 0) < 0) {
+        supporting_below.push_back(-hpoly.b()(i));
+      }
+    }
+    // Because we know the HPolyhedron is bounded, it must have at least one
+    // supporting point above and below.
+    DRAKE_THROW_UNLESS(supporting_above.size() > 0);
+    DRAKE_THROW_UNLESS(supporting_below.size() > 0);
+    const double vpoly_min =
+        *std::max_element(supporting_below.begin(), supporting_below.end());
+    const double vpoly_max =
+        *std::min_element(supporting_above.begin(), supporting_above.end());
+    if (vpoly_min > vpoly_max) {
+      // In this case, there are a pair of infeasible inequalities, so the
+      // HPolyhedron is empty.
+      Eigen::Matrix<double, 1, 0> points;
+      *this = VPolytope(points);
+      return;
+    } else {
+      Eigen::Matrix<double, 1, 2> points;
+      points << vpoly_min, vpoly_max;
+      *this = VPolytope(points);
+      return;
+    }
+  }
+
   // Next, handle the case where the HPolyhedron is empty.
   if (hpoly.IsEmpty()) {
     // We construct a VPolytope with ambient_dimension() rows and zero columns,
