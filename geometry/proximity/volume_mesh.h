@@ -314,6 +314,9 @@ class VolumeMesh {
   // Client attorney class that provides a means to modify vertex positions.
   friend class internal::MeshDeformer<VolumeMesh<T>>;
 
+  // Currently, VolumeMesh doesn't have any position dependent quantities.
+  void ComputePositionDependentQuantities() {}
+
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.

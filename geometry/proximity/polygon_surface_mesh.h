@@ -25,6 +25,9 @@ class MeshDeformer;
 // Forward declaration for friendship.
 template <typename T>
 class PolygonSurfaceMesh;
+// Forward declaration of PolygonSurfaceMeshTest<T> for friend access.
+template <typename T>
+class PolygonSurfaceMeshTest;
 
 /** Representation of a polygonal face in a SurfacePolygon. */
 class SurfacePolygon {
@@ -309,9 +312,11 @@ class PolygonSurfaceMesh {
   /* Client attorney class that provides a means to modify vertex positions. */
   friend class internal::MeshDeformer<PolygonSurfaceMesh<T>>;
 
+  friend class PolygonSurfaceMeshTest<T>;
+
   /* Calculates and sets the area, normal, and centroid of all polygon faces.
    Also computes and sets the centroid of the entire surface. */
-  void CalcAreasNormalsAndCentroid();
+  void ComputePositionDependentQuantities();
 
   // TODO(DamrongGuoy): Make CalcAreaNormalAndCentroid() return area, normal
   //  vector, and centroid instead of accumulating them into member

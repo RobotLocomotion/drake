@@ -19,7 +19,7 @@ PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
     : face_data_(std::move(face_data)),
       vertices_(std::move(vertices)),
       p_MSc_(Vector3<T>::Zero()) {
-  CalcAreasNormalsAndCentroid();
+  ComputePositionDependentQuantities();
 }
 
 template <typename T>
@@ -66,7 +66,7 @@ bool PolygonSurfaceMesh<T>::Equal(const PolygonSurfaceMesh<T>& mesh) const {
 }
 
 template <class T>
-void PolygonSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
+void PolygonSurfaceMesh<T>::ComputePositionDependentQuantities() {
   /* Reset all areas, normals, and centroids because we accumulate into them. */
   total_area_ = 0;
   areas_.clear();

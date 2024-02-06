@@ -22,13 +22,9 @@ void MeshDeformer<MeshType>::SetAllPositions(
   for (int v = 0, i = 0; v < mesh_.num_vertices(); ++v, i += 3) {
     mesh_.vertices_[v] = Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]);
   }
-  // Update quantities that depend on the vertex positions.
-  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<
-                                             typename MeshType::ScalarType>> ||
-                std::is_same_v<MeshType, PolygonSurfaceMesh<
-                                             typename MeshType::ScalarType>>) {
-    mesh_.CalcAreasNormalsAndCentroid();
-  }
+  // Update position dependent quantities after the vertex positions have been
+  // updated.
+  mesh_.ComputePositionDependentQuantities();
 }
 
 template class MeshDeformer<VolumeMesh<double>>;

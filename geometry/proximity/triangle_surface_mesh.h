@@ -186,7 +186,7 @@ class TriangleSurfaceMesh {
     if (triangles_.empty()) {
       throw std::logic_error("A mesh must contain at least one triangle");
     }
-    CalcAreasNormalsAndCentroid();
+    ComputePositionDependentQuantities();
   }
 
   // TODO(SeanCurtis-TRI) This shouldn't be called "TransformVertices"; the name
@@ -432,7 +432,7 @@ class TriangleSurfaceMesh {
 
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
-  void CalcAreasNormalsAndCentroid();
+  void ComputePositionDependentQuantities();
 
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the triangle `t`. The gradient
@@ -462,7 +462,7 @@ class TriangleSurfaceMesh {
 };
 
 template <class T>
-void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
+void TriangleSurfaceMesh<T>::ComputePositionDependentQuantities() {
   total_area_ = 0;
   p_MSc_.setZero();
 
