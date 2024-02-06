@@ -461,7 +461,7 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
       const int v_index = joint.velocity_start();
       VectorX<T>& actuation =
           actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
-      actuation[v_index] = u[actuator_index];
+      actuation[v_index] = u[actuator.input_start()];
     }
   }
 }

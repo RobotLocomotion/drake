@@ -1295,7 +1295,7 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
     // This method assumes actuators on single dof joints. Assert this
     // condition.
     DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
-    B(actuator.joint().velocity_start(), int{actuator.index()}) = 1;
+    B(actuator.joint().velocity_start(), int{actuator.input_start()}) = 1;
   }
   return B;
 }
@@ -1723,8 +1723,7 @@ std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
   std::vector<std::string> names(num_actuators());
 
   for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator =
-        get_joint_actuator(JointActuatorIndex(actuator_index));
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_",
@@ -2334,7 +2333,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
       const Joint<T>& joint = actuator.joint();
       // We only support actuators on single dof joints for now.
       DRAKE_DEMAND(joint.num_velocities() == 1);
-      (*forces)[joint.velocity_start()] += u[actuator_index];
+      (*forces)[joint.velocity_start()] += u[actuator.input_start()];
     }
   }
 }

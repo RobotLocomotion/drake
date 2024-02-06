@@ -20,6 +20,7 @@
 ///   key into the Context for that element's state.
 
 #include <algorithm>
+#include <optional>
 #include <set>
 #include <stack>
 #include <string>
@@ -282,7 +283,6 @@ struct JointActuatorTopology {
   int actuator_index_start{-1};
   // The number of dofs actuated by this actuator.
   int num_dofs{-1};
-  bool removed{false};
 };
 
 // Data structure to store the topological information associated with a tree
@@ -488,12 +488,12 @@ class MultibodyTreeTopology {
   const JointActuatorTopology& get_joint_actuator(
       JointActuatorIndex index) const {
     DRAKE_ASSERT(index < ssize(joint_actuators_));
-    if (joint_actuators_[index].removed) {
+    if (!joint_actuators_[index].has_value()) {
       throw std::runtime_error(fmt::format(
           "The JointActuator with index {} was removed from the topology.",
           index));
     }
-    return joint_actuators_[index];
+    return *joint_actuators_[index];
   }
 
   // Returns a constant reference to the corresponding BodyNodeTopology given
@@ -699,8 +699,9 @@ class MultibodyTreeTopology {
     }
     const int actuator_index_start = num_actuated_dofs();
     const JointActuatorIndex actuator_index(ssize(joint_actuators_));
-    joint_actuators_.emplace_back(
-        actuator_index, actuator_index_start, num_dofs);
+    joint_actuators_.emplace_back(std::nullopt);
+    joint_actuators_.back().emplace(actuator_index, actuator_index_start,
+                                    num_dofs);
     num_actuated_dofs_ += num_dofs;
     return actuator_index;
   }
@@ -708,27 +709,39 @@ class MultibodyTreeTopology {
   // Removes `actuator_index` from the list of joint actuators. The
   // `actuator_index_start` will be modified if necessary for other actuators.
   // @throws std::exception if called post-Finalize.
+  // @throws std::exception if the actuator with the index `actuator_index` has
+  // already been removed.
   void RemoveJointActuator(JointActuatorIndex actuator_index) {
     DRAKE_DEMAND(actuator_index < ssize(joint_actuators_));
     if (is_valid()) {
       throw std::logic_error(
           "RemoveJointActuator() must be called pre-Finalize.");
     }
-    DRAKE_ASSERT(num_actuated_dofs_ >=
-                 joint_actuators_[actuator_index].num_dofs);
 
-    // Mark the actuator as "removed".
-    joint_actuators_[actuator_index].removed = true;
+    if (!joint_actuators_[actuator_index].has_value()) {
+      throw std::logic_error(
+          fmt::format("RemoveJointActuator(): Actuator with index {} has "
+                      "already been removed.",
+                      actuator_index));
+    }
+
+    DRAKE_ASSERT(num_actuated_dofs_ >=
+                 (*joint_actuators_[actuator_index]).num_dofs);
 
     // Reduce the total number of actuated dofs.
-    int num_dofs = joint_actuators_[actuator_index].num_dofs;
+    int num_dofs = (*joint_actuators_[actuator_index]).num_dofs;
     num_actuated_dofs_ -= num_dofs;
+
+    // Mark the actuator as "removed".
+    joint_actuators_[actuator_index] = std::nullopt;
 
     // Update the actuator_index_start for all joint actuators that come after
     // the one we just removed.
     for (JointActuatorIndex i(actuator_index); i < ssize(joint_actuators_);
          ++i) {
-      joint_actuators_[i].actuator_index_start -= num_dofs;
+      if (joint_actuators_[i].has_value()) {
+        (*joint_actuators_[i]).actuator_index_start -= num_dofs;
+      }
     }
   }
 
@@ -1203,7 +1216,7 @@ class MultibodyTreeTopology {
   std::vector<FrameTopology> frames_;
   std::vector<RigidBodyTopology> rigid_bodies_;
   std::vector<MobilizerTopology> mobilizers_;
-  std::vector<JointActuatorTopology> joint_actuators_;
+  std::vector<std::optional<JointActuatorTopology>> joint_actuators_;
   std::vector<BodyNodeTopology> body_nodes_;
 
   // Total number of generalized positions and velocities in the MultibodyTree

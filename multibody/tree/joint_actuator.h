@@ -122,8 +122,8 @@ class JointActuator final : public MultibodyElement<T> {
   ///   sub-class documentation.
   /// @param[in,out] u
   ///   Actuation values for the entire plant model to which `this` actuator
-  ///   belongs to, indexed by JointActuatorIndex. Only values corresponding to
-  ///   this actuator are changed.
+  ///   belongs to, indexed by JointActuator::input_start(). Only values
+  ///   corresponding to this actuator are changed.
   /// @throws std::exception if
   ///   `u_actuator.size() != this->num_inputs()`.
   /// @throws std::exception if u is nullptr.

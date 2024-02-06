@@ -729,7 +729,8 @@ void SapDriver<T>::AddPdControllerConstraints(
   if (plant().num_actuators() == 0) return;
 
   // Desired positions & velocities.
-  const int num_actuators = plant().num_actuators();
+  const int num_actuated_dofs = plant().num_actuated_dofs();
+
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
   const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
@@ -746,9 +747,9 @@ void SapDriver<T>::AddPdControllerConstraints(
       // controllers on locked joints is considered to be zero.
       if (!joint.is_locked(context)) {
         const double effort_limit = actuator.effort_limit();
-        const T& qd = desired_state[actuator.index()];
-        const T& vd = desired_state[num_actuators + actuator.index()];
-        const T& u0 = feed_forward_actuation[actuator.index()];
+        const T& qd = desired_state[actuator.input_start()];
+        const T& vd = desired_state[num_actuated_dofs + actuator.input_start()];
+        const T& u0 = feed_forward_actuation[actuator.input_start()];
 
         const T& q0 = joint.GetOnePosition(context);
         const int dof = joint.velocity_start();
