@@ -1048,9 +1048,54 @@ GcsTrajectoryOptimization::SolvePath(
     path_edges.erase(path_edges.end() - 1);
   }
 
+  return {ReconstructTrajectoryFromSolutionPath(path_edges, result), result};
+}
+
+std::pair<trajectories::CompositeTrajectory<double>,
+          solvers::MathematicalProgramResult>
+GcsTrajectoryOptimization::SolveConvexRestriction(
+    const std::vector<const Vertex*>& active_vertices,
+    const GraphOfConvexSetsOptions& options) {
+  DRAKE_DEMAND(active_vertices.size() > 1);
+
+  std::vector<const Edge*> active_edges;
+  for (size_t i = 0; i < active_vertices.size() - 1; ++i) {
+    bool vertices_connected = false;
+    for (const Edge* e : active_vertices[i]->outgoing_edges()) {
+      if (e->v().id() == active_vertices[i + 1]->id()) {
+        if (vertices_connected) {
+          throw std::runtime_error(fmt::format(
+              "Vertex: {} is connected to vertex: {} through multiple edges.",
+              active_vertices[i]->name(), active_vertices[i + 1]->name()));
+        }
+        active_edges.push_back(e);
+        vertices_connected = true;
+      }
+    }
+
+    if (!vertices_connected) {
+      throw std::runtime_error(fmt::format(
+          "Vertex: {} is not connected to vertex: {}.",
+          active_vertices[i]->name(), active_vertices[i + 1]->name()));
+    }
+  }
+
+  solvers::MathematicalProgramResult result =
+      gcs_.SolveConvexRestriction(active_edges, options);
+  if (!result.is_success()) {
+    return {CompositeTrajectory<double>({}), result};
+  }
+
+  return {ReconstructTrajectoryFromSolutionPath(active_edges, result), result};
+}
+
+CompositeTrajectory<double>
+GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
+    std::vector<const Edge*> edges,
+    const solvers::MathematicalProgramResult& result) {
   // Extract the path from the edges.
   std::vector<copyable_unique_ptr<Trajectory<double>>> bezier_curves;
-  for (const Edge* e : path_edges) {
+  for (const Edge* e : edges) {
     // Extract phi from the solution to rescale the control points and duration
     // in case we get the relaxed solution.
     const double phi_inv = 1 / result.GetSolution(e->phi());
@@ -1078,7 +1123,7 @@ GcsTrajectoryOptimization::SolvePath(
   }
 
   // Get the final control points from the solution.
-  const Edge& last_edge = *path_edges.back();
+  const Edge& last_edge = *edges.back();
   const double phi_inv = 1 / result.GetSolution(last_edge.phi());
   const int num_control_points =
       vertex_to_subgraph_[&last_edge.v()]->order() + 1;
@@ -1098,8 +1143,7 @@ GcsTrajectoryOptimization::SolvePath(
     bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
         start_time, start_time + h, edge_path_points));
   }
-
-  return {CompositeTrajectory<double>(bezier_curves), result};
+  return CompositeTrajectory<double>(bezier_curves);
 }
 
 Edge* GcsTrajectoryOptimization::AddEdge(Vertex* u, Vertex* v) {

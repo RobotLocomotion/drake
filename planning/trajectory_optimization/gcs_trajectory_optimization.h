@@ -85,6 +85,28 @@ class GcsTrajectoryOptimization final {
     /** Returns the number of vertices in the subgraph. */
     int size() const { return vertices_.size(); }
 
+    /** Returns constant reference to a vector of mutable pointers to the
+    vertices stored in the subgraph. The order of the vertices is the same as
+    the order the regions were added.*/
+    const std::vector<geometry::optimization::GraphOfConvexSets::Vertex*>&
+    Vertices() {
+      return vertices_;
+    }
+
+    /** Returns pointers to the vertices stored in the subgraph.
+    The order of the vertices is the same as the order the regions were added.
+    @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+    std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+    Vertices() const {
+      std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+          vertices;
+      vertices.reserve(vertices_.size());
+      for (const auto& v : vertices_) {
+        vertices.push_back(v);
+      }
+      return vertices;
+    }
+
     /** Returns the regions associated with this subgraph before the
     CartesianProduct. */
     const geometry::optimization::ConvexSets& regions() const {
@@ -499,6 +521,36 @@ class GcsTrajectoryOptimization final {
       const Subgraph& source, const Subgraph& target,
       const geometry::optimization::GraphOfConvexSetsOptions& options = {});
 
+  /** Solves a trajectory optimization problem through specific vertices.
+
+  This method allows for targeted optimization by considering only selected
+  active vertices, reducing the problem's complexity.
+  See geometry::optimization::GraphOfConvexSets::SolveConvexRestriction().
+  This API prefers a sequence of vertices over edges, as a user may know which
+  regions the solution should pass through.
+  GcsTrajectoryOptimization::AddRegions() automatically manages edge creation
+  and intersection checks, which makes passing a sequence of edges less
+  convenient.
+
+  @param active_vertices A sequence of ordered vertices of subgraphs to be
+    included in the problem.
+  @param options include all settings for solving the shortest path problem.
+
+  @pre There must be at least two vertices in active_vertices.
+  @throws std::exception if the vertices are not connected.
+  @throws std::exception if two vertices are connected by multiple edges. This
+    may happen if one connects two graphs through multiple subspaces, which is
+    currently not supported with this method.
+  @throws std::exception if the program cannot be written as a convex
+  optimization consumable by one of the standard solvers.*/
+  std::pair<trajectories::CompositeTrajectory<double>,
+            solvers::MathematicalProgramResult>
+  SolveConvexRestriction(
+      const std::vector<
+          const geometry::optimization::GraphOfConvexSets::Vertex*>&
+          active_vertices,
+      const geometry::optimization::GraphOfConvexSetsOptions& options = {});
+
   /** Provide a heuristic estimate of the complexity of the underlying
   GCS mathematical program, for regression testing purposes.
   Here we sum the total number of variable appearances in our costs and
@@ -527,6 +579,11 @@ class GcsTrajectoryOptimization final {
  private:
   const int num_positions_;
   const std::vector<int> continuous_revolute_joints_;
+
+  trajectories::CompositeTrajectory<double>
+  ReconstructTrajectoryFromSolutionPath(
+      std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> edges,
+      const solvers::MathematicalProgramResult& result);
 
   // Adds a Edge to gcs_ with the name "{u.name} -> {v.name}".
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
