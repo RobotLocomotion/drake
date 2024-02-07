@@ -86,6 +86,11 @@ class FileStorage final {
   /* Returns the number of files (i.e., `Handle`s) being stored. */
   [[nodiscard]] size_t size() const;
 
+  /* Meshcat uses content-addressable storage ("CAS") to serve asset files. See
+  https://en.wikipedia.org/wiki/Content-addressable_storage. This function
+  returns the CAS URL for the given storage handle. */
+  static std::string GetCasUrl(const FileStorage::Handle& asset);
+
  private:
   /* The implementation of Find(). Assumes that `mutex_` is already held. */
   [[nodiscard]] std::shared_ptr<const Handle> FindWhileLocked(
