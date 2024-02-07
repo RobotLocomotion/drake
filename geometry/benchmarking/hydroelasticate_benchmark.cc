@@ -10,11 +10,14 @@ namespace internal {
 
 namespace {
 
-int64_t e2i(HydroelasticType type) {
+// We can't pass enums through the google benchmark arguments feature. Here are
+// some conversion operators.
+
+int64_t enum2int(HydroelasticType type) {
   return static_cast<int64_t>(type);
 }
 
-HydroelasticType i2e(int64_t arg) {
+HydroelasticType int2enum(int64_t arg) {
   return static_cast<HydroelasticType>(arg);
 }
 
@@ -23,26 +26,29 @@ HydroelasticType i2e(int64_t arg) {
 class HydroelasticateBenchmark : public benchmark::Fixture {
  public:
   void SetupScene(const benchmark::State& state) {
-    DefaultProximityProperties dpp;
+    // Pull in the benchmark arguments:
+    // * compliance_type
+    // * num_geoms
     SceneGraphConfig scene_graph_config;
     scene_graph_config.default_proximity_properties.compliance_type =
-        GetStringFromHydroelasticType(i2e(state.range(0)));
-    ProximityProperties props;
-    if (scene_graph_config.default_proximity_properties.compliance_type ==
-        "unknown") {
-      // Simulate a manually annotated model.
-      props.UpdateProperty(kHydroGroup, kComplianceType,
-                           HydroelasticType::kSoft);
-      props.UpdateProperty(
-          kHydroGroup, kElastic,
-          scene_graph_config.default_proximity_properties.hydroelastic_modulus);
-      props.UpdateProperty(
-          kHydroGroup, kRezHint,
-          scene_graph_config.default_proximity_properties.mesh_resolution_hint);
-    }
+        GetStringFromHydroelasticType(int2enum(state.range(0)));
     int num_geoms = state.range(1);
-    scene_graph_ = std::make_unique<SceneGraph<double>>(scene_graph_config);
 
+    // If the default properties won't build hydroelastic assets, prepare some
+    // properties to simulate a manually annotated model.
+    ProximityProperties props;
+    // Make a convenient alias for the configured default properties.
+    const auto& config_props = scene_graph_config.default_proximity_properties;
+    if (config_props.compliance_type == "unknown") {
+      // Simulate a manually annotated model.
+      AddCompliantHydroelasticProperties(*config_props.mesh_resolution_hint,
+                                         *config_props.hydroelastic_modulus,
+                                         &props);
+    }
+
+    // Populate a scene graph with `num_geoms` geometries, and give them all a
+    // proximity role.
+    scene_graph_ = std::make_unique<SceneGraph<double>>(scene_graph_config);
     auto source_id = scene_graph_->RegisterSource("benchmark");
     auto frame_id =
         scene_graph_->RegisterFrame(source_id, GeometryFrame{"frame0"});
@@ -70,9 +76,9 @@ BENCHMARK_DEFINE_F(HydroelasticateBenchmark, CreateDefaultContext)
 
 BENCHMARK_REGISTER_F(HydroelasticateBenchmark, CreateDefaultContext)
     ->Unit(benchmark::kMillisecond)
-    ->ArgsProduct({{e2i(HydroelasticType::kUndefined),
-                    e2i(HydroelasticType::kRigid),
-                    e2i(HydroelasticType::kSoft)},
+    ->ArgsProduct({{enum2int(HydroelasticType::kUndefined),
+                    enum2int(HydroelasticType::kRigid),
+                    enum2int(HydroelasticType::kSoft)},
                    {1, 100}});
 
 }  // namespace internal
