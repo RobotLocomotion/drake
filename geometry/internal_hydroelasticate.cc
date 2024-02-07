@@ -24,24 +24,26 @@ void BackfillDefaults(ProximityProperties* properties,
     properties->UpdateProperty(group_name, name, *default_value);
   };
 
+  // Alias default_proximity_properties for convenience.
+  const auto& props = config.default_proximity_properties;
+
   std::optional<HydroelasticType> wrapped_compliance;
   wrapped_compliance.emplace(internal::GetHydroelasticTypeFromString(
-      config.default_proximity_properties.compliance_type));
+      props.compliance_type));
   backfill(kHydroGroup, kComplianceType, wrapped_compliance);
 
-  backfill(kHydroGroup, kElastic,
-           config.default_proximity_properties.hydroelastic_modulus);
-  backfill(kHydroGroup, kRezHint,
-           config.default_proximity_properties.mesh_resolution_hint);
-  backfill(kHydroGroup, kSlabThickness,
-           config.default_proximity_properties.slab_thickness);
+  backfill(kHydroGroup, kElastic, props.hydroelastic_modulus);
+  backfill(kHydroGroup, kRezHint, props.mesh_resolution_hint);
+  backfill(kHydroGroup, kSlabThickness, props.slab_thickness);
 
-  backfill(kMaterialGroup, kHcDissipation,
-           config.default_proximity_properties.hunt_crossley_dissipation);
-  if (config.default_proximity_properties.static_friction.has_value()) {
+  backfill(kMaterialGroup, kHcDissipation, props.hunt_crossley_dissipation);
+  if (props.static_friction.has_value()) {
+    // DefaultProximityProperties::ValidateOrThrow() enforces invariants on
+    // friction quantities.
+    DRAKE_DEMAND(props.dynamic_friction.has_value());
     multibody::CoulombFriction<double> friction{
-      *config.default_proximity_properties.static_friction,
-      *config.default_proximity_properties.dynamic_friction,
+      *props.static_friction,
+      *props.dynamic_friction,
     };
     std::optional<multibody::CoulombFriction<double>> wrapped_friction;
     wrapped_friction.emplace(friction);
