@@ -11,55 +11,39 @@
 
 namespace papa {
 
-class mike {
+class lima {
  public:
-  std::array<double, 3> delta;
-  std::array<std::array<float, 5>, 4> foxtrot;
-  papa::lima alpha;
-  std::string sierra;
-  int32_t rows;
-  int32_t cols;
-  std::vector<uint8_t> bravo;
-  std::vector<std::vector<int8_t>> india8;
-  std::array<std::vector<int16_t>, 7> india16;
-  std::vector<std::array<int32_t, 11>> india32;
-  std::array<papa::lima, 2> xray;
-  std::vector<papa::lima> yankee;
-  std::vector<std::array<papa::lima, 2>> zulu;
+  static constexpr double charlie_delta = 3.25e1;
+  static constexpr float charlie_foxtrot = 4.5e2;
+  static constexpr int8_t charlie_india8 = -8;
+  static constexpr int16_t charlie_india16 = 16;
+  static constexpr int32_t charlie_india32 = 32;
+  static constexpr int64_t charlie_india64 = 64;
+
+  bool golf;
+  uint8_t bravo;
+  double delta;
+  float foxtrot;
+  int8_t india8;
+  int16_t india16;
+  int32_t india32;
+  int64_t india64;
 
   // These functions match the expected API from the legacy lcm-gen tool,
   // but note that we use `int64_t` instead of `int` for byte counts.
   //@{
+  static const char* getTypeName() { return "lima"; }
   int64_t getEncodedSize() const { return 8 + _getEncodedSizeNoHash(); }
   int64_t _getEncodedSizeNoHash() const {
     int64_t _result = 0;
-    if (rows < 0) {
-      return _result;
-    }
-    if (cols < 0) {
-      return _result;
-    }
-    _result += 8 * 3;  // delta
-    _result += 4 * 4 * 5;  // foxtrot
-    _result += alpha._getEncodedSizeNoHash();
-    _result += sizeof(int32_t) + sierra.size() + 1;
-    _result += 4;  // rows
-    _result += 4;  // cols
-    _result += 1 * rows;  // bravo
-    _result += 1 * rows * cols;  // india8
-    _result += 2 * 7 * cols;  // india16
-    _result += 4 * rows * 11;  // india32
-    for (const auto& _xray_0 : xray) {
-      _result += _xray_0._getEncodedSizeNoHash();
-    }
-    for (const auto& _yankee_0 : yankee) {
-      _result += _yankee_0._getEncodedSizeNoHash();
-    }
-    for (const auto& _zulu_0 : zulu) {
-      for (const auto& _zulu_1 : _zulu_0) {
-        _result += _zulu_1._getEncodedSizeNoHash();
-      }
-    }
+    _result += 1;  // golf
+    _result += 1;  // bravo
+    _result += 8;  // delta
+    _result += 4;  // foxtrot
+    _result += 1;  // india8
+    _result += 2;  // india16
+    _result += 4;  // india32
+    _result += 8;  // india64
     return _result;
   }
   template <bool with_hash = true>
@@ -97,20 +81,14 @@ class mike {
   template <size_t N = 0>
   static constexpr uint64_t _get_hash_impl(
       const std::array<uint64_t, N>& parents = {}) {
-    const uint64_t base_hash = 0xd2dc16c61113f6b3ull;
-    std::array<uint64_t, N + 1> new_parents{base_hash};
+    const uint64_t base_hash = 0x35fef8dfc801b95eull;
     for (size_t n = 0; n < N; ++n) {
       if (parents[n] == base_hash) {
         // Special case for recursive message definition.
         return 0;
       }
-      new_parents[n + 1] = parents[n];
     }
-    const uint64_t composite_hash = base_hash
-        + papa::lima::_get_hash_impl(new_parents)
-        + papa::lima::_get_hash_impl(new_parents)
-        + papa::lima::_get_hash_impl(new_parents)
-        + papa::lima::_get_hash_impl(new_parents);
+    const uint64_t composite_hash = base_hash;
     return (composite_hash << 1) + ((composite_hash >> 63) & 1);
   }
 
@@ -119,22 +97,15 @@ class mike {
   bool _encode(uint8_t** _cursor, uint8_t* _end) const {
     constexpr int64_t _hash = _get_hash_impl();
     return  // true iff success
-        (rows >= 0) &&
-        (cols >= 0) &&
         (with_hash ? _encode_field(_hash, _cursor, _end) : true) &&
-        _encode_field(delta, _cursor, _end, ArrayDims<1>{3}) &&
-        _encode_field(foxtrot, _cursor, _end, ArrayDims<2>{4, 5}) &&
-        _encode_field(alpha, _cursor, _end) &&
-        _encode_field(sierra, _cursor, _end) &&
-        _encode_field(rows, _cursor, _end) &&
-        _encode_field(cols, _cursor, _end) &&
-        _encode_field(bravo, _cursor, _end, ArrayDims<1>{rows}) &&
-        _encode_field(india8, _cursor, _end, ArrayDims<2>{rows, cols}) &&
-        _encode_field(india16, _cursor, _end, ArrayDims<2>{7, cols}) &&
-        _encode_field(india32, _cursor, _end, ArrayDims<2>{rows, 11}) &&
-        _encode_field(xray, _cursor, _end, ArrayDims<1>{2}) &&
-        _encode_field(yankee, _cursor, _end, ArrayDims<1>{rows}) &&
-        _encode_field(zulu, _cursor, _end, ArrayDims<2>{rows, 2});
+        _encode_field(golf, _cursor, _end) &&
+        _encode_field(bravo, _cursor, _end) &&
+        _encode_field(delta, _cursor, _end) &&
+        _encode_field(foxtrot, _cursor, _end) &&
+        _encode_field(india8, _cursor, _end) &&
+        _encode_field(india16, _cursor, _end) &&
+        _encode_field(india32, _cursor, _end) &&
+        _encode_field(india64, _cursor, _end);
   }
 
   // New-style decoding.
@@ -145,21 +116,14 @@ class mike {
     return  // true iff success
         (with_hash ? _decode_field(&_hash, _cursor, _end) : true) &&
         (_hash == _expected_hash) &&
-        _decode_field(&delta, _cursor, _end, ArrayDims<1>{3}) &&
-        _decode_field(&foxtrot, _cursor, _end, ArrayDims<2>{4, 5}) &&
-        _decode_field(&alpha, _cursor, _end) &&
-        _decode_field(&sierra, _cursor, _end) &&
-        _decode_field(&rows, _cursor, _end) &&
-        (rows >= 0) &&
-        _decode_field(&cols, _cursor, _end) &&
-        (cols >= 0) &&
-        _decode_field(&bravo, _cursor, _end, ArrayDims<1>{rows}) &&
-        _decode_field(&india8, _cursor, _end, ArrayDims<2>{rows, cols}) &&
-        _decode_field(&india16, _cursor, _end, ArrayDims<2>{7, cols}) &&
-        _decode_field(&india32, _cursor, _end, ArrayDims<2>{rows, 11}) &&
-        _decode_field(&xray, _cursor, _end, ArrayDims<1>{2}) &&
-        _decode_field(&yankee, _cursor, _end, ArrayDims<1>{rows}) &&
-        _decode_field(&zulu, _cursor, _end, ArrayDims<2>{rows, 2});
+        _decode_field(&golf, _cursor, _end) &&
+        _decode_field(&bravo, _cursor, _end) &&
+        _decode_field(&delta, _cursor, _end) &&
+        _decode_field(&foxtrot, _cursor, _end) &&
+        _decode_field(&india8, _cursor, _end) &&
+        _decode_field(&india16, _cursor, _end) &&
+        _decode_field(&india32, _cursor, _end) &&
+        _decode_field(&india64, _cursor, _end);
   }
 
  private:

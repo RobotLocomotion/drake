@@ -351,6 +351,8 @@ _CPP_TEMPLATE = """\
 #include <utility>
 #include <vector>
 
+@@SUBSTRUCT_INCLUDES@@
+
 @@NAMESPACE_BEGIN@@
 
 class @@STRUCT_NAME@@ {
@@ -360,6 +362,7 @@ class @@STRUCT_NAME@@ {
   // These functions match the expected API from the legacy lcm-gen tool,
   // but note that we use `int64_t` instead of `int` for byte counts.
   //@{
+  static const char* getTypeName() { return "@@STRUCT_NAME@@"; }
   int64_t getEncodedSize() const { return 8 + _getEncodedSizeNoHash(); }
   int64_t _getEncodedSizeNoHash() const {
     int64_t _result = 0;
@@ -614,6 +617,7 @@ class CppGen:
     def generate(self):
         """Returns the C++ text for the message provided in the constructor."""
         self._result = _CPP_TEMPLATE
+        self._fill_includes()
         self._fill_names()
         self._fill_member_constants()
         self._fill_member_fields()
@@ -628,6 +632,20 @@ class CppGen:
         updated = self._result.replace(old, new)
         assert updated != self._result
         self._result = updated
+
+    def _fill_includes(self):
+        filenames = [
+            f"{field.typ.package}/{field.typ.name}.hpp"
+            for field in self._struct.fields
+            if isinstance(field.typ, UserType)
+        ]
+        includes = "\n".join([
+            f'#include "{filename}"\n'
+            for filename in sorted(set(filenames))
+        ])
+        if includes:
+            includes += "\n"
+        self._replace("@@SUBSTRUCT_INCLUDES@@\n\n", includes)
 
     def _fill_names(self):
         """Updates the namespace and struct names for this message."""
@@ -902,7 +920,7 @@ def main():
         struct = Parser.parse(filename=src)
         generator = CppGen(struct=struct)
         content = generator.generate()
-        path = args.outdir / f"{struct.typ.name}.h"
+        path = args.outdir / f"{struct.typ.name}.hpp"
         path.write_text(content, encoding="utf-8")
 
 

@@ -27,15 +27,16 @@ drake_py_binary(
         # it here to avoid duplicate linter complaints.
         "nolint",
     ],
+    visibility = ["//:__subpackages__"],
     deps = [":module_py"],
 )
 
 drake_py_unittest(
     name = "lcm_gen_test",
     data = [
-        "test/goal/lima.h",
-        "test/goal/mike.h",
-        "test/goal/november.h",
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
         "test/lima.lcm",
         "test/mike.lcm",
         "test/november.lcm",
@@ -133,9 +134,9 @@ cc_library(
     name = "papa",
     testonly = True,
     hdrs = [
-        "test/goal/lima.h",
-        "test/goal/mike.h",
-        "test/goal/november.h",
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
     ],
     include_prefix = "papa",
     strip_include_prefix = "test/goal",

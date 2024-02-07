@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "papa/lima.hpp"
+
 namespace papa {
 
 class november {
@@ -20,6 +22,7 @@ class november {
   // These functions match the expected API from the legacy lcm-gen tool,
   // but note that we use `int64_t` instead of `int` for byte counts.
   //@{
+  static const char* getTypeName() { return "november"; }
   int64_t getEncodedSize() const { return 8 + _getEncodedSizeNoHash(); }
   int64_t _getEncodedSizeNoHash() const {
     int64_t _result = 0;

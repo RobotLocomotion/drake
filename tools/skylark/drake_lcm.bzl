@@ -15,8 +15,14 @@ def drake_lcm_cc_library(
         deps = [],
         tags = [],
         strip_include_prefix = None,
+        use_new_lcm_gen = False,
         **kwargs):
-    """A wrapper to insert Drake-specific customizations."""
+    """A wrapper to insert Drake-specific customizations.
+
+    The use_new_lcm_gen flag is an instruction to use Drake's customized
+    lcm_gen tool (@drake//tools/lcm_gen), instead LCM's upstream lcm-gen.
+    Refer to //tools/lcm_gen for details.
+    """
 
     # Drake's *.lcm files all live in our //drake/lcmtypes package.  Per LCM
     # upstream convention, the include directory for generated code should
@@ -32,6 +38,7 @@ def drake_lcm_cc_library(
         deps = deps,
         tags = tags + ["nolint"],
         strip_include_prefix = strip_include_prefix,
+        _use_new_lcm_gen = use_new_lcm_gen,
         **kwargs
     )
     drake_installed_headers(

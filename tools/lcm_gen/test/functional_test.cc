@@ -8,9 +8,9 @@
 // lcm-gen tool. Here, we use those as an "oracle" to compare against.
 
 // clang-format off
-#include "papa/lima.h"
-#include "papa/mike.h"
-#include "papa/november.h"
+#include "papa/lima.hpp"
+#include "papa/mike.hpp"
+#include "papa/november.hpp"
 #include "romeo/lima.hpp"
 #include "romeo/mike.hpp"
 #include "romeo/november.hpp"
