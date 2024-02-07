@@ -358,6 +358,18 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
+double SpatialInertia<T>::CalcRatioGeometryDimensionsToMinimumInertiaDimensions(
+      const Vector3<double>& geometry_abc,
+      const Vector3<double>& inertia_abc) {
+  double lowest_ratio = std::numeric_limits<double>::max();
+  for (int i = 0;  i < 3; i++) {
+    if ( is_positive_finite(inertia_abc(i)) )
+      lowest_ratio = std::min(lowest_ratio, geometry_abc(i) / inertia_abc(i));
+  }
+  return lowest_ratio;
+}
+
+template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::operator+=(
     const SpatialInertia<T>& M_BP_E) {
   const T total_mass = get_mass() + M_BP_E.get_mass();
