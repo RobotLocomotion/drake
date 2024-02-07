@@ -355,13 +355,22 @@ install(
 
 install(
     name = "install",
-    install_tests = [":test/drake-lcm-spy_install_test.py"],
+    install_tests = select({
+        "@lcm//:lcm_install_java_is_off": [],
+        "//conditions:default": [
+            ":test/drake-lcm-spy_install_test.py",
+        ],
+    }),
     targets = [
         ":_generated_lcmtypes_drake_py",
-        ":drake-lcm-spy",
-        ":drake-lcm-spy-launcher",
-        ":lcmtypes_drake_java",
-    ],
+    ] + select({
+        "@lcm//:lcm_install_java_is_off": [],
+        "//conditions:default": [
+            ":drake-lcm-spy",
+            ":drake-lcm-spy-launcher",
+            ":lcmtypes_drake_java",
+        ],
+    }),
     rename = {
         "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
         "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
