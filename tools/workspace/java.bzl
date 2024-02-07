@@ -1,20 +1,19 @@
 load("//tools/skylark:pathutils.bzl", "basename")
-load("//tools/workspace:os.bzl", "determine_os")
 load(
     "@bazel_tools//tools/build_defs/repo:java.bzl",
     "java_import_external",
 )
 
 def _impl(repo_ctx):
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
+    os_name = repo_ctx.os.name
+    if os_name == "mac os x":
+        os_name = "osx"
 
     # Create the /jar/BUILD.bazel file.
     build_content = """\
 package(default_visibility = ["//visibility:public"])
 """
-    if os_result.target in repo_ctx.attr.local_os_targets:
+    if os_name in repo_ctx.attr.local_os_targets:
         is_local = True
         filename = basename(repo_ctx.attr.local_jar)
         repo_ctx.symlink(
@@ -75,8 +74,9 @@ def drake_java_import(
         mirrors):
     """A repository rule to bring in a Java dependency, either from the host's
     OS distribution, or else Maven. The list of local_os_targets indicates
-    which distributions provide this jar; for those, the local_jar is the full
-    path to the jar. Otherwise, the maven_jar will be used.
+    which OSs provide this jar; for those, the local_jar is the full path to
+    the jar. Otherwise, the maven_jar will be used. The recognized values for
+    OSs in the list of targets are either "linux" or "osx".
     """
     java_import_external(
         name = "_maven_{}".format(name),
