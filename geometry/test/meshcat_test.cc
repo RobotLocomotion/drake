@@ -50,6 +50,9 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
                            std::optional<int> expect_num_messages,
                            std::optional<std::string> expect_json,
                            bool expect_success = true) {
+  if (expect_num_messages) {
+    meshcat.Flush();
+  }
   std::vector<std::string> argv;
   argv.push_back(
       FindResourceOrThrow("drake/geometry/meshcat_websocket_client"));
