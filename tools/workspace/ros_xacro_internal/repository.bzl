@@ -10,8 +10,8 @@ def ros_xacro_internal_repository(
         # release, we are using it here because it aligns with the ROS Noetic
         # version released for Ubuntu 20.04.  See:
         # https://index.ros.org/p/xacro/github-ros-xacro/#noetic
-        commit = "1.14.16",
-        sha256 = "8031a544dded557c9c32345a3fceff416f703b615f9082b2c3aefe1b7612ad90",  # noqa
+        commit = "1.14.17",
+        sha256 = "ac277534b26772f0e231df6640570a8ae0472eabd7a94614bf757ac73489ff85",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/disable-console-print.patch",
