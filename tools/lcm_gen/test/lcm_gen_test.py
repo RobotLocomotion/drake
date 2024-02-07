@@ -21,23 +21,23 @@ class BaseTest(unittest.TestCase):
 
         self._lima_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/lima.lcm"))
-        self._lima_h_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/lima.h"))
+        self._lima_hpp_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/lima.hpp"))
         self._mike_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/mike.lcm"))
-        self._mike_h_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/mike.h"))
+        self._mike_hpp_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/mike.hpp"))
         self._november_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/november.lcm"))
-        self._november_h_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/november.h"))
+        self._november_hpp_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/november.hpp"))
 
         assert self._lima_path.exists()
-        assert self._lima_h_path.exists()
+        assert self._lima_hpp_path.exists()
         assert self._mike_path.exists()
-        assert self._mike_h_path.exists()
+        assert self._mike_hpp_path.exists()
         assert self._november_path.exists()
-        assert self._november_h_path.exists()
+        assert self._november_hpp_path.exists()
 
 
 class TestParser(BaseTest):
@@ -216,21 +216,21 @@ bazel run //tools/lcm_gen -- \
     def test_lima_text(self):
         """The generated text for lima.h exactly matches the goal file."""
         lima = Parser.parse(filename=self._lima_path)
-        expected_text = self._lima_h_path.read_text(encoding="utf-8")
+        expected_text = self._lima_hpp_path.read_text(encoding="utf-8")
         actual_text = CppGen(struct=lima).generate()
         self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_mike_text(self):
         """The generated text for mike.h exactly matches the goal file."""
         mike = Parser.parse(filename=self._mike_path)
-        expected_text = self._mike_h_path.read_text(encoding="utf-8")
+        expected_text = self._mike_hpp_path.read_text(encoding="utf-8")
         actual_text = CppGen(struct=mike).generate()
         self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
     def test_november_text(self):
         """The generated text for november.h exactly matches the goal file."""
         november = Parser.parse(filename=self._november_path)
-        expected_text = self._november_h_path.read_text(encoding="utf-8")
+        expected_text = self._november_hpp_path.read_text(encoding="utf-8")
         actual_text = CppGen(struct=november).generate()
         self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
 
