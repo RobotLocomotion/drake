@@ -13,9 +13,10 @@ from pydrake.common import (
     temp_directory,
 )
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import SceneGraph
+from pydrake.geometry import (Role, SceneGraph)
 from pydrake.multibody._inertia_fixer import (
     fix_inertia_from_string,
+    GEOM_INERTIA_ROLE_ORDER_DEFAULT,
     InertiaFixer,
 )
 from pydrake.multibody.plant import MultibodyPlant
@@ -348,6 +349,93 @@ class TestFixInertiaFromString(unittest.TestCase):
         output = fix_inertia_from_string(input_text, "urdf")
         self.assertEqual(expected_text, output)
 
+    def test_geom_inertia_role_order(self):
+        """
+        Tests using geom_inertia_role_order for a body with two very different
+        visual geometries.
+
+        Note that the sizes are different between the visual (illustration)
+        and collision (proximity) geometries, and that is reflected by the
+        resulant computed inertia.
+        """
+        input_text = """\
+<robot name="a">
+  <link name="world"/>
+  <link name="b">
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <!-- Large box -->
+        <box size="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+    <collision name="collision">
+      <geometry>
+        <!-- Small box -->
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>"""
+
+        expected_text_illustration = """\
+<robot name="a">
+  <link name="world"/>
+  <link name="b">
+    <inertial>
+      <inertia ixx="0.16667" ixy="0" ixz="0" iyy="0.16667" iyz="0" izz="0.16667"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <!-- Large box -->
+        <box size="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+    <collision name="collision">
+      <geometry>
+        <!-- Small box -->
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>"""  # noqa
+        output_illustration = fix_inertia_from_string(
+            input_text, "urdf", geom_inertia_role_order=[Role.kIllustration],
+        )
+        self.assertEqual(expected_text_illustration, output_illustration)
+
+        expected_text_proximity = """\
+<robot name="a">
+  <link name="world"/>
+  <link name="b">
+    <inertial>
+      <inertia ixx="0.0016667" ixy="0" ixz="0" iyy="0.0016667" iyz="0" izz="0.0016667"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <!-- Large box -->
+        <box size="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+    <collision name="collision">
+      <geometry>
+        <!-- Small box -->
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>"""  # noqa
+        output_proximity = fix_inertia_from_string(
+            input_text, "urdf", geom_inertia_role_order=[Role.kProximity],
+        )
+        self.assertEqual(expected_text_proximity, output_proximity)
+
 
 class FileHandlingFixture(unittest.TestCase):
     def setUp(self):
@@ -414,26 +502,50 @@ class TestFixInertiaProcess(FileHandlingFixture):
         self._old_env = os.environ.copy()
 
     def tearDown(self):
-        os.environ = self._old_env
+        # os.environ is not actually a dict(), but the copy made previously is
+        # a dict(). Therefore, restore things piecewise to preserve
+        # os.environ's additional behavior.
+        assert isinstance(self._old_env, dict)
+        assert not isinstance(os.environ, dict)
+        added = set(os.environ.keys()) - set(self._old_env.keys())
+        for k in added:
+            del os.environ[k]
+        for k in self._old_env.keys():
+            os.environ[k] = self._old_env[k]
         super().tearDown()
 
-    def subprocess_fix_inertia(self, input_path, output_path):
+    def subprocess_fix_inertia(
+        self, input_path, output_path, *, extra_args=[]
+    ):
         subprocess.run(
-            [self._dut, input_path, output_path],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            [self._dut, input_path, output_path] + extra_args, check=True
+        )
 
-    def do_test_model(self, resource):
+    def do_test_model(
+        self,
+        resource,
+        geom_inertia_role_order=GEOM_INERTIA_ROLE_ORDER_DEFAULT,
+        geom_inertia_role_order_args=None,
+    ):
         model_file = FindResourceOrThrow(resource)
         file_type = Path(model_file).suffix
         direct_result = self._temp_dir / "direct"
-        InertiaFixer(input_file=model_file,
-                     output_file=direct_result).fix_inertia()
+        InertiaFixer(
+            input_file=model_file,
+            output_file=direct_result,
+            geom_inertia_role_order=geom_inertia_role_order,
+        ).fix_inertia()
         self.assertIn('inertial', direct_result.read_text())
 
         subprocess_result = self._temp_dir / f"subprocess{file_type}"
-        self.subprocess_fix_inertia(model_file, subprocess_result)
+        extra_args = []
+        if geom_inertia_role_order_args is not None:
+            extra_args = (
+                ["--geom_inertia_role_order"] + geom_inertia_role_order_args
+            )
+        self.subprocess_fix_inertia(
+            model_file, subprocess_result, extra_args=extra_args
+        )
         self.assertIn('inertial', subprocess_result.read_text())
 
         # Direct invocation and subprocess invocation give the same result.
@@ -489,3 +601,10 @@ class TestFixInertiaProcess(FileHandlingFixture):
         os.environ['ROS_PACKAGE_PATH'] = str(Path(package_xml).parent)
         self.do_test_model(
             "drake/multibody/parsing/test/box_package/urdfs/box.urdf")
+
+    def test_geom_inertia_role_order(self):
+        self.do_test_model(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf",
+            geom_inertia_role_order=[Role.kIllustration],
+            geom_inertia_role_order_args=["illustration"],
+        )

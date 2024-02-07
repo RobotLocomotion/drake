@@ -1,0 +1,42 @@
+# The expected result of flattening `flatten_test_top.dmd.yaml`.
+directives:
+- add_model_instance:
+    name: right
+- add_model:
+    name: right::panda
+    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+- add_collision_filter_group:
+    name: panda_wrist_filter_group
+    model_namespace: right
+    members:
+    - panda::panda_link7
+- add_model:
+    name: right::camera
+    file: package://process_model_directives_test/fake_camera.sdf
+- add_collision_filter_group:
+    name: camera_filter_group
+    model_namespace: right
+    members:
+    - camera::body
+    ignored_collision_filter_groups:
+    - panda_wrist_filter_group
+- add_model_instance:
+    name: left
+- add_model:
+    name: left::panda
+    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+- add_collision_filter_group:
+    name: panda_wrist_filter_group
+    model_namespace: left
+    members:
+    - panda::panda_link7
+- add_model:
+    name: left::camera
+    file: package://process_model_directives_test/fake_camera.sdf
+- add_collision_filter_group:
+    name: camera_filter_group
+    model_namespace: left
+    members:
+    - camera::body
+    ignored_collision_filter_groups:
+    - panda_wrist_filter_group

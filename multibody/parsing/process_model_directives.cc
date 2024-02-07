@@ -21,6 +21,7 @@ namespace parsing {
 using std::make_unique;
 
 using drake::multibody::internal::CompositeParse;
+using drake::multibody::internal::DmdScopedNameJoin;
 using multibody::internal::DataSource;
 
 namespace {
@@ -37,23 +38,12 @@ std::unique_ptr<T> ConstructIfNullAndReassign(T** ptr, Args&&... args) {
   return out;
 }
 
-// This function must match the logic in
-// `detail_dmd_parser.cc`:`get_scoped_frame`, which applies the equivalent
-// construction operation in the building of the plant.
-std::string NamespaceJoin(const std::string& model_namespace,
-                          const std::string& name) {
-  // The world frame can never be namespaced, nor is any model permitted to
-  // itself be named or declare a frame named "world."
-  if (name == "world") return name;
-  return ScopedName::Join(model_namespace, name).to_string();
-}
-
 AddWeld ApplyDirectiveNamespace(const AddWeld& orig,
                                 const std::string& model_namespace) {
   if (model_namespace.empty()) return orig;
   AddWeld result = orig;
-  result.parent = NamespaceJoin(model_namespace, orig.parent);
-  result.child = NamespaceJoin(model_namespace, orig.child);
+  result.parent = DmdScopedNameJoin(model_namespace, orig.parent).to_string();
+  result.child = DmdScopedNameJoin(model_namespace, orig.child).to_string();
   return result;
 }
 
@@ -61,7 +51,7 @@ AddModel ApplyDirectiveNamespace(const AddModel& orig,
                                  const std::string& model_namespace) {
   if (model_namespace.empty()) return orig;
   AddModel result = orig;
-  result.name = NamespaceJoin(model_namespace, orig.name);
+  result.name = DmdScopedNameJoin(model_namespace, orig.name).to_string();
   return result;
 }
 
@@ -69,7 +59,7 @@ AddModelInstance ApplyDirectiveNamespace(const AddModelInstance& orig,
                                          const std::string& model_namespace) {
   if (model_namespace.empty()) return orig;
   AddModelInstance result = orig;
-  result.name = NamespaceJoin(model_namespace, orig.name);
+  result.name = DmdScopedNameJoin(model_namespace, orig.name).to_string();
   return result;
 }
 
@@ -79,9 +69,10 @@ AddFrame ApplyDirectiveNamespace(const AddFrame& orig,
   AddFrame result = orig;
   // Handle the general case of prepending the model namespace.
   if (!model_namespace.empty()) {
-    result.name = NamespaceJoin(model_namespace, orig.name);
+    result.name = DmdScopedNameJoin(model_namespace, orig.name).to_string();
     result.X_PF.base_frame =
-        NamespaceJoin(model_namespace, orig.X_PF.base_frame.value());
+        DmdScopedNameJoin(model_namespace, orig.X_PF.base_frame.value())
+            .to_string();
   }
   // Handle the special case of an add_frame name with no namespace.
   // Note that we don't need to update result.X_PF.base_frame -- it's already
@@ -94,21 +85,32 @@ AddFrame ApplyDirectiveNamespace(const AddFrame& orig,
     const std::string base_frame_namespace(
         ScopedName::Parse(orig.X_PF.base_frame.value()).get_namespace());
     const std::string orig_element(orig_scoped_name.get_element());
-    result.name = NamespaceJoin(model_namespace,
-                      NamespaceJoin(base_frame_namespace,
-                                    orig_element));
+    result.name =
+        DmdScopedNameJoin(
+            model_namespace,
+            DmdScopedNameJoin(base_frame_namespace,
+                              orig_element).to_string()).to_string();
   }
   return result;
 }
 
 AddCollisionFilterGroup ApplyDirectiveNamespace(
     const AddCollisionFilterGroup& orig, const std::string& model_namespace) {
-  // Model_namespace is not supported here, as `AddCollisionFilterGroup::name`
-  // is documented to be model_namespace-free.
-  // TODO(ggould-tri) The rest of the structure could concievably be salvaged
-  // rather than failing outright, but I don't yet see a sound use case.
-  DRAKE_THROW_UNLESS(model_namespace.empty());
-  return orig;
+  if (model_namespace.empty()) return orig;
+  AddCollisionFilterGroup result;
+  ScopedName orig_name =
+      DmdScopedNameJoin(orig.model_namespace.value_or(""), orig.name);
+  ScopedName full_name =
+      DmdScopedNameJoin(model_namespace, orig_name.to_string());
+  result.name = full_name.get_element();
+  if (!full_name.get_namespace().empty()) {
+    result.model_namespace = full_name.get_namespace();
+  }
+  // These will also have the `.model_namespace` applied.
+  result.members = orig.members;
+  result.ignored_collision_filter_groups =
+      orig.ignored_collision_filter_groups;
+  return result;
 }
 
 void FlattenModelDirectivesInternal(const ModelDirectives& directives,
@@ -123,7 +125,8 @@ void FlattenModelDirectivesInternal(const ModelDirectives& directives,
       FlattenModelDirectivesInternal(
           LoadModelDirectives(sub_file), package_map, out,
           (sub.model_namespace.has_value()
-               ? NamespaceJoin(model_namespace, *sub.model_namespace)
+               ? DmdScopedNameJoin(model_namespace, *sub.model_namespace)
+                     .to_string()
                : model_namespace));
     } else if (directive.add_weld) {
       ModelDirective result;

@@ -12,7 +12,6 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples import PendulumPlant, RimlessWheel
 from pydrake.symbolic import Expression
@@ -36,7 +35,6 @@ from pydrake.systems.framework import (
     DiscreteValues, DiscreteValues_,
     Event, Event_,
     EventStatus,
-    GenerateHtml,
     InputPort, InputPort_,
     InputPortIndex,
     kUseDefaultName,
@@ -841,12 +839,6 @@ class TestGeneral(unittest.TestCase):
             status.KeepMoreSevere(candidate=status), EventStatus)
         status = EventStatus.Failed(system=system, message="failed")
         self.assertIsInstance(status, EventStatus)
-
-    def test_generate_html(self):
-        system = ZeroOrderHold(period_sec=0.1, vector_size=1)
-        system.set_name("zoh")
-        with catch_drake_warnings(expected_count=1):
-            GenerateHtml(system, initial_depth=2)
 
     def test_diagram_builder_remove(self):
         builder = DiagramBuilder()

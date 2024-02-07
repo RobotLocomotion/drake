@@ -38,7 +38,6 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
 namespace drake {
@@ -63,8 +62,6 @@ using render::RenderEngine;
 using render::RenderLabel;
 using std::make_unique;
 using systems::sensors::CameraInfo;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -176,9 +173,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
   if (parameters.default_diffuse) {
     default_diffuse_.set(*parameters.default_diffuse);
   }
-
-  const auto& c = parameters.default_clear_color;
-  default_clear_color_ = ColorD{c(0), c(1), c(2)};
+  default_clear_color_.set(parameters.default_clear_color);
 
   InitializePipelines();
 }
@@ -361,13 +356,10 @@ void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
   ImageRgba8U image(intrinsics.width(), intrinsics.height());
   pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
 
-  ColorI color;
   for (int v = 0; v < intrinsics.height(); ++v) {
     for (int u = 0; u < intrinsics.width(); ++u) {
-      color.r = image.at(u, v)[0];
-      color.g = image.at(u, v)[1];
-      color.b = image.at(u, v)[2];
-      label_image_out->at(u, v)[0] = RenderEngine::LabelFromColor(color);
+      label_image_out->at(u, v)[0] = RenderEngine::MakeLabelFromRgb(
+          image.at(u, v)[0], image.at(u, v)[1], image.at(u, v)[2]);
     }
   }
 }
@@ -459,6 +451,8 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
 
 bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                     const RegistrationData& data) {
+  // TODO(SeanCurtis-TRI): introduce VtkDiagnosticEventObserver on the gltf
+  // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
   importer->SetFileName(file_name.c_str());
   importer->Update();
@@ -493,7 +487,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   }
 
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);
-  const ColorD label_color = RenderEngine::GetColorDFromLabel(label);
+  const Rgba label_color = RenderEngine::MakeRgbFromLabel(label);
 
   // The final assemblies associated with the GeometryId.
   PropArray prop_array;
@@ -510,14 +504,13 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
     actors->InitTraversal();
     // For each source_actor, create a color, depth, and label actor.
     while (vtkActor* source_actor = actors->GetNextActor()) {
-      vtkSmartPointer<vtkActor> part_actor;
+      vtkNew<vtkActor> part_actor;
       if (i == ImageType::kColor) {
         // Color rendering can use the source_actor without changes.
-        part_actor = source_actor;
+        part_actor->ShallowCopy(source_actor);
       } else {
         // Depth and label images require new actors, based on the source, but
         // with changes to their materials (aka "mapper").
-        part_actor = vtkNew<vtkActor>();
         vtkNew<vtkOpenGLPolyDataMapper> mapper;
         part_actor->SetMapper(mapper);
         mapper->SetInputConnection(
@@ -525,8 +518,8 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
         if (i == ImageType::kLabel) {
           // Label requires a mapper with the encoded RenderLabel color.
           part_actor->GetProperty()->LightingOff();
-          part_actor->GetProperty()->SetColor(label_color.r, label_color.g,
-                                              label_color.b);
+          part_actor->GetProperty()->SetColor(label_color.r(), label_color.g(),
+                                              label_color.b());
         } else if (i == ImageType::kDepth) {
           // Depth requires a mapper with the depth shader.
           vtkOpenGLShaderProperty* shader_prop =
@@ -679,17 +672,16 @@ void RenderEngineVtk::InitializePipelines() {
   // distance (e.g., infinity).
   pipelines_[ImageType::kDepth]->renderer->SetBackground(1., 1., 1.);
 
-  const ColorD empty_color =
-      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
+  const Rgba empty_color = RenderEngine::MakeRgbFromLabel(RenderLabel::kEmpty);
   pipelines_[ImageType::kLabel]->renderer->SetBackground(
-      empty_color.r, empty_color.g, empty_color.b);
+      empty_color.r(), empty_color.g(), empty_color.b());
 
   vtkOpenGLRenderer* renderer =
       vtkOpenGLRenderer::SafeDownCast(pipelines_[ImageType::kColor]->renderer);
   renderer->SetUseDepthPeeling(1);
   renderer->UseFXAAOn();
-  renderer->SetBackground(default_clear_color_.r, default_clear_color_.g,
-                          default_clear_color_.b);
+  renderer->SetBackground(default_clear_color_.r(), default_clear_color_.g(),
+                          default_clear_color_.b());
   renderer->SetBackgroundAlpha(1.0);
   // The only lights we add are this renderer's "active" lights.
   renderer->RemoveAllLights();
@@ -778,8 +770,8 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     // This is to disable shadows and to get an object painted with a single
     // color.
     label_actor->GetProperty()->LightingOff();
-    const auto color = RenderEngine::GetColorDFromLabel(label);
-    label_actor->GetProperty()->SetColor(color.r, color.g, color.b);
+    const Rgba color = RenderEngine::MakeRgbFromLabel(label);
+    label_actor->GetProperty()->SetColor(color.r(), color.g(), color.b());
     connect_actor(ImageType::kLabel);
   }
 

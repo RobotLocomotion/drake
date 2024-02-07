@@ -378,6 +378,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   // shape_specification.h
   {
     py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
+    shape_cls  // BR
+        .def("__repr__", [](const Shape& self) { return self.to_string(); });
     DefClone(&shape_cls);
 
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)

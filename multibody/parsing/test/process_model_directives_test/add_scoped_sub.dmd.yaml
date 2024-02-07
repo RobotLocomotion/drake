@@ -30,3 +30,9 @@ directives:
 - add_weld:
     parent: simple_model::frame
     child: extra_model::base
+
+- add_collision_filter_group:
+    name: sub_filter_group
+    members:
+    - extra_model::base
+    - simple_model::base

@@ -21,7 +21,7 @@ GTEST_TEST(WingTest, BasicTest) {
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant.Finalize();
 
-  const Body<double>& body = plant.GetBodyByName("box");
+  const RigidBody<double>& body = plant.GetBodyByName("box");
   Wing<double> wing(body.index(), 1.0);
 
   EXPECT_EQ(wing.num_input_ports(), 4);
@@ -39,7 +39,7 @@ GTEST_TEST(WingTest, FallingFlatPlate) {
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant->Finalize();
 
-  const Body<double>& body = plant->GetBodyByName("box");
+  const RigidBody<double>& body = plant->GetBodyByName("box");
   Wing<double>* wing = Wing<double>::AddToBuilder(
       &builder, plant, body.index(), kSurfaceArea,
       math::RigidTransform<double>::Identity(), kRho);
@@ -151,7 +151,7 @@ GTEST_TEST(WingTest, ScalarConversion) {
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant->Finalize();
 
-  const Body<double>& body = plant->GetBodyByName("box");
+  const RigidBody<double>& body = plant->GetBodyByName("box");
   Wing<double>::AddToBuilder(&builder, plant, body.index(), 1.0);
 
   auto diagram = builder.Build();
@@ -172,7 +172,7 @@ GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
   plant->Finalize();
   plant->set_name("plant");
 
-  const Body<double>& body = plant->GetBodyByName("box");
+  const RigidBody<double>& body = plant->GetBodyByName("box");
   Wing<double>::AddToBuilder(&builder, plant, body.index(), kSurfaceArea,
                              math::RigidTransform<double>::Identity());
 
@@ -186,7 +186,7 @@ GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
   EXPECT_TRUE(plant_ad != nullptr);
   systems::Context<AutoDiffXd>& plant_context_ad =
       plant_ad->GetMyMutableContextFromRoot(context_ad.get());
-  const Body<AutoDiffXd>& body_ad = plant_ad->GetBodyByName("box");
+  const RigidBody<AutoDiffXd>& body_ad = plant_ad->GetBodyByName("box");
   const SpatialVelocity<AutoDiffXd> V_WB(
       math::InitializeAutoDiff(Vector6d::Zero()));
   plant_ad->SetFreeBodySpatialVelocity(&plant_context_ad, body_ad, V_WB);

@@ -285,7 +285,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
-            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc);
+            py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
+        .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
+            cls_doc.RemoveConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(
@@ -393,7 +395,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
-            overload_cast_explicit<void, Context<T>*, const Body<T>&,
+            overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             cls_doc.SetFreeBodyPose.doc_3args)
@@ -464,7 +466,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetVelocities.doc_2args)
         .def(
             "SetFreeBodySpatialVelocity",
-            [](const Class* self, const Body<T>& body,
+            [](const Class* self, const RigidBody<T>& body,
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
               self->SetFreeBodySpatialVelocity(context, body, V_WB);
             },
@@ -479,7 +481,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
-                const Body<T>& body_B) {
+                const RigidBody<T>& body_B) {
               return self->EvalBodyPoseInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
@@ -487,7 +489,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "EvalBodySpatialVelocityInWorld",
             [](const Class* self, const Context<T>& context,
-                const Body<T>& body_B) {
+                const RigidBody<T>& body_B) {
               return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
@@ -770,6 +772,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::HasJointActuatorNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointActuatorNamed.doc_2args)
+        .def("HasFrameNamed",
+            overload_cast_explicit<bool, string_view>(&Class::HasFrameNamed),
+            py::arg("name"), cls_doc.HasFrameNamed.doc_1args)
+        .def("HasFrameNamed",
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
+                &Class::HasFrameNamed),
+            py::arg("name"), py::arg("model_instance"),
+            cls_doc.HasFrameNamed.doc_2args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, string_view>(
                 &Class::GetFrameByName),
@@ -783,12 +793,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetFrameIndices", &Class::GetFrameIndices,
             py::arg("model_instance"), cls_doc.GetFrameIndices.doc)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, string_view>(
+            overload_cast_explicit<const RigidBody<T>&, string_view>(
                 &Class::GetBodyByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetBodyByName.doc_1args)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, string_view,
+            overload_cast_explicit<const RigidBody<T>&, string_view,
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetBodyByName.doc_2args)
@@ -854,26 +864,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             cls_doc.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
-            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
-                const geometry::Shape&, const std::string&,
-                const Vector4<double>&>(&Class::RegisterVisualGeometry),
+            py::overload_cast<const RigidBody<T>&,
+                const RigidTransform<double>&, const geometry::Shape&,
+                const std::string&, const Vector4<double>&>(
+                &Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"),
             cls_doc.RegisterVisualGeometry
                 .doc_5args_body_X_BG_shape_name_diffuse_color)
         .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
-                const geometry::Shape&, const std::string&,
-                geometry::ProximityProperties>(
+            py::overload_cast<const RigidBody<T>&,
+                const RigidTransform<double>&, const geometry::Shape&,
+                const std::string&, geometry::ProximityProperties>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("properties"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_properties)
         .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
-                const geometry::Shape&, const std::string&,
-                const CoulombFriction<double>&>(
+            py::overload_cast<const RigidBody<T>&,
+                const RigidTransform<double>&, const geometry::Shape&,
+                const std::string&, const CoulombFriction<double>&>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"),
@@ -1004,9 +1015,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_contact_model", &Class::set_contact_model, py::arg("model"),
             cls_doc.set_contact_model.doc)
         .def("get_contact_model", &Class::get_contact_model,
-            cls_doc.get_contact_model.doc)
-        .def("set_discrete_contact_solver", &Class::set_discrete_contact_solver,
-            py::arg("contact_solver"), cls_doc.set_discrete_contact_solver.doc)
+            cls_doc.get_contact_model.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_discrete_contact_solver",
+            WrapDeprecated(cls_doc.set_discrete_contact_solver.doc_deprecated,
+                &Class::set_discrete_contact_solver),
+            py::arg("contact_solver"),
+            cls_doc.set_discrete_contact_solver.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("get_discrete_contact_solver", &Class::get_discrete_contact_solver,
             cls_doc.get_discrete_contact_solver.doc)
         .def("set_discrete_contact_approximation",
@@ -1052,44 +1071,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::get_contact_penalty_method_time_scale,
             cls_doc.get_contact_penalty_method_time_scale.doc)
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
-            py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Position and velocity accessors and mutators.
-    cls  // BR
-        .def("GetMutablePositionsAndVelocities",
-            WrapDeprecated(
-                cls_doc.GetMutablePositionsAndVelocities.doc_deprecated,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutablePositionsAndVelocities(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutablePositionsAndVelocities.doc_deprecated)
-        .def("GetMutablePositions",
-            WrapDeprecated(cls_doc.GetMutablePositions.doc_deprecated_1args,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutablePositions(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutablePositions.doc_deprecated_1args)
-        .def("GetMutableVelocities",
-            WrapDeprecated(cls_doc.GetMutableVelocities.doc_deprecated_1args,
-                [](const MultibodyPlant<T>* self,
-                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-                  return self->GetMutableVelocities(context);
-                }),
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            cls_doc.GetMutableVelocities.doc_deprecated_1args);
-#pragma GCC diagnostic pop
-    cls  // BR
+            py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc)
         .def(
             "GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)

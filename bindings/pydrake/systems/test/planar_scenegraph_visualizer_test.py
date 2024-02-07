@@ -5,7 +5,6 @@ import numpy as np
 import os
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Box, Mesh
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser

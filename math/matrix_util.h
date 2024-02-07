@@ -204,28 +204,32 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
 }
 
 /// Extracts the principal submatrix from the ordered set of indices. The
-/// indices must be in monotonically increasing order. This method makes
-/// no assumptions about the symmetry of the matrix, nor that the matrix is
-/// square. However, all indices must be valid for both rows and columns.
+/// indices must be in monotonically increasing order and non-empty. This method
+/// makes no assumptions about the symmetry of the matrix, nor that the matrix
+/// is square. However, all indices must be valid for both rows and columns.
 template <typename Derived>
 MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
     const Eigen::MatrixBase<Derived>& mat, const std::set<int>& indices) {
+  DRAKE_THROW_UNLESS(!indices.empty());
   // Stores the contiguous intervals of the index set of the minor. These
   // intervals include the first index but exclude the last, i.e.
   // [intervals[i][0], intervals[i][1]).
   std::vector<std::pair<int, int>> intervals;
-  int interval_start{*indices.begin()};
-  int last_idx{*indices.begin()};
-  DRAKE_ASSERT(last_idx >= 0);
-  for (const int& i : indices) {
-    DRAKE_ASSERT(i < mat.rows() && i < mat.cols());
-    if (i - last_idx > 1) {
-      intervals.emplace_back(interval_start, last_idx + 1);
-      interval_start = i;
+  auto it = indices.begin();
+  int interval_start{*it};
+  int interval_end{*it};
+  DRAKE_THROW_UNLESS(interval_start >= 0 && *it < mat.rows() &&
+                     *it < mat.cols());
+  // start iterating at the second element in the set.
+  for (++it; it != indices.end(); ++it) {
+    DRAKE_THROW_UNLESS(*it < mat.rows() && *it < mat.cols());
+    if (*it != interval_end + 1) {
+      intervals.emplace_back(interval_start, interval_end + 1);
+      interval_start = *it;
     }
-    last_idx = i;
+    interval_end = *it;
   }
-  intervals.emplace_back(last_idx, *indices.rbegin() + 1);
+  intervals.emplace_back(interval_start, interval_end + 1);
 
   MatrixX<typename Derived::Scalar> minor(indices.size(), indices.size());
   int minor_row_count = 0;

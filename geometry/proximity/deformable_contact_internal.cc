@@ -18,6 +18,7 @@ namespace deformable {
 
 void Geometries::RemoveGeometry(GeometryId id) {
   deformable_geometries_.erase(id);
+  rigid_geometries_pending_.erase(id);
   rigid_geometries_.erase(id);
 }
 
@@ -39,13 +40,20 @@ void Geometries::MaybeAddRigidGeometry(
 
 void Geometries::UpdateRigidWorldPose(
     GeometryId id, const math::RigidTransform<double>& X_WG) {
-  if (is_rigid(id)) {
-    rigid_geometries_.at(id).set_pose_in_world(X_WG);
+  if (auto iter = rigid_geometries_pending_.find(id);
+      iter != rigid_geometries_pending_.end()) {
+    iter->second.set_pose(X_WG);
+    return;
+  }
+  if (auto iter = rigid_geometries_.find(id); iter != rigid_geometries_.end()) {
+    iter->second.set_pose_in_world(X_WG);
+    return;
   }
 }
 
 void Geometries::AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh) {
   deformable_geometries_.insert({id, DeformableGeometry(std::move(mesh))});
+  FlushPendingRigidGeometry();
 }
 
 void Geometries::UpdateDeformableVertexPositions(
@@ -177,6 +185,12 @@ void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
 template <typename ShapeType>
 void Geometries::AddRigidGeometry(const ShapeType& shape,
                                   const ReifyData& data) {
+  if (enable_rigid_geometries_pending_ && deformable_geometries_.empty()) {
+    GeometryInstance instance(math::RigidTransform<double>{}, shape, "pending");
+    instance.set_proximity_properties(data.properties);
+    rigid_geometries_pending_.insert({data.id, std::move(instance)});
+    return;
+  }
   /* Forward to hydroelastics to construct the geometry. */
   std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
       internal::hydroelastic::MakeRigidRepresentation(shape, data.properties);
@@ -185,6 +199,18 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
   DRAKE_DEMAND(hydro_rigid_geometry.has_value());
   rigid_geometries_.insert(
       {data.id, RigidGeometry(hydro_rigid_geometry->release_mesh())});
+}
+
+void Geometries::FlushPendingRigidGeometry() {
+  DRAKE_DEMAND(!deformable_geometries_.empty());
+  auto worklist = std::move(rigid_geometries_pending_);
+  rigid_geometries_pending_.clear();
+  for (const auto& [id, geometry_instance] : worklist) {
+    const ProximityProperties* props = geometry_instance.proximity_properties();
+    DRAKE_DEMAND(props != nullptr);
+    MaybeAddRigidGeometry(geometry_instance.shape(), id, *props,
+                          geometry_instance.pose());
+  }
 }
 
 }  // namespace deformable

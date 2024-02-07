@@ -36,9 +36,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+using drake::geometry::internal::HydroelasticType;
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
-using drake::geometry::internal::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_shared;
@@ -151,8 +151,8 @@ void CopyFclObjectsOrThrow(
 // collision objects (the map populated by CopyFclObjectsOrThrow()).
 void BuildTreeFromReference(
     const fcl::DynamicAABBTreeCollisionManager<double>& other,
-    const std::unordered_map<const CollisionObjectd*,
-                             CollisionObjectd*>& copy_map,
+    const std::unordered_map<const CollisionObjectd*, CollisionObjectd*>&
+        copy_map,
     fcl::DynamicAABBTreeCollisionManager<double>* target) {
   std::vector<CollisionObjectd*> other_objects;
   other.getObjects(other_objects);
@@ -179,18 +179,16 @@ template <typename T, typename DataType>
 void FclCollide(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                 const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
                 DataType* data, fcl::CollisionCallBack<T> callback) {
-  tree1.collide(
-      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
-      callback);
+  tree1.collide(const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2),
+                data, callback);
 }
 
 template <typename T, typename DataType>
 void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                  const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
                  DataType* data, fcl::DistanceCallBack<T> callback) {
-  tree1.distance(
-      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
-      callback);
+  tree1.distance(const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2),
+                 data, callback);
 }
 
 // Compare function to use with ordering PenetrationAsPointPairs.
@@ -229,8 +227,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     anchored_objects_.clear();
 
     // Copy all of the geometry.
-    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
-        object_map;
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(other.anchored_objects_, &anchored_objects_,
                           &object_map);
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
@@ -257,8 +254,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // types, modify this map to the appropriate scalar and modify consuming
     // functions accordingly.
     // Copy all of the geometry.
-    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
-        object_map;
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(anchored_objects_, &engine->anchored_objects_,
                           &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
@@ -382,13 +378,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   // Returns the total number of **rigid** geometries in this engine.
-  int num_geometries() const {
-    return num_dynamic() + num_anchored();
-  }
+  int num_geometries() const { return num_dynamic() + num_anchored(); }
 
-  int num_dynamic() const {
-    return static_cast<int>(dynamic_objects_.size());
-  }
+  int num_dynamic() const { return static_cast<int>(dynamic_objects_.size()); }
 
   int num_anchored() const {
     return static_cast<int>(anchored_objects_.size());
@@ -472,14 +464,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     int num_faces{0};
     if (convex.extension() == ".obj") {
       // Don't bother triangulating; Convex supports polygons.
-      std::tie(shared_verts, shared_faces, num_faces) =
-          ReadObjFile(convex.filename(), convex.scale(),
-                      false /* triangulate */);
-    } else if  (convex.extension() == ".vtk") {
-      auto surface_mesh = ConvertVolumeToSurfaceMesh(
-          ReadVtkToVolumeMesh(convex.filename()));
-      shared_verts = make_shared<const std::vector<Vector3d>>(
-          surface_mesh.vertices());
+      std::tie(shared_verts, shared_faces, num_faces) = ReadObjFile(
+          convex.filename(), convex.scale(), false /* triangulate */);
+    } else if (convex.extension() == ".vtk") {
+      auto surface_mesh =
+          ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(convex.filename()));
+      shared_verts =
+          make_shared<const std::vector<Vector3d>>(surface_mesh.vertices());
       shared_faces = make_shared<std::vector<int>>();
     } else {
       throw std::runtime_error(fmt::format(
@@ -503,8 +494,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.radius(),
-                                                    cylinder.length());
+    auto fcl_cylinder =
+        make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
     ProcessGeometriesForDeformableContact(cylinder, user_data);
@@ -550,9 +541,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (mesh.extension() == ".vtk") {
         // TODO(rpoyner-tri): could take convex hull here.
         shared_verts = make_shared<const std::vector<Vector3d>>(
-            ConvertVolumeToSurfaceMesh(
-                ReadVtkToVolumeMesh(mesh.filename()))
-            .vertices());
+            ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(mesh.filename()))
+                .vertices());
       } else if (mesh.extension() == ".obj") {
         // Don't bother triangulating; we're ignoring the faces.
         std::tie(shared_verts, std::ignore, std::ignore) =
@@ -670,8 +660,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     std::vector<SignedDistanceToPoint<T>> distances;
 
-    point_distance::CallbackData<T> data{
-        &query_point, threshold, p_WQ, &X_WGs, &distances};
+    point_distance::CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs,
+                                         &distances};
 
     // Perform query of point vs dynamic objects.
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
@@ -1017,9 +1007,10 @@ void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
 }
 
 template <typename T>
-void ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
-    const ProximityProperties& props) {
+void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
+                                             const RigidTransformd& X_WG,
+                                             GeometryId id,
+                                             const ProximityProperties& props) {
   impl_->AddAnchoredGeometry(shape, X_WG, id, props);
 }
 

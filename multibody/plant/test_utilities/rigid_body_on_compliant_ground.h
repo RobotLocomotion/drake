@@ -44,6 +44,7 @@ struct ContactTestConfig {
   // testing of cases using the hydroelastic contact model, whether point
   // contact is used or not.
   ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
+  // Option that allows to exercise the TAMSI and SAP solver code paths
   DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
 };
 
@@ -54,13 +55,12 @@ std::ostream& operator<<(std::ostream& out, const ContactTestConfig& c) {
   return out;
 }
 
-// The purpose of this fixture is to verify the implementation of TamsiDriver's
-// CalcContactSolverResults(). In this regard this is more of an integration
-// test where the correctness of the results rely on the ability of the driver
-// to properly setup a contact problem for TAMSI using MultibodyPlant (for
+// The purpose of this fixture is to unit test the implementation of TamsiDriver
+// and SapDriver's contact computations. In this regard this is more of an
+// integration test where the correctness of the results rely on the ability of
+// the driver to properly setup a contact problem using MultibodyPlant (for
 // kinematics and dynamics) and CompliantContactManager's services (for
-// contact), and solve it with TAMSI. MultibodyPlant, CompliantContactManager
-// and TamsiSolver are tested elsewhere.
+// contact), and solve it with the corresponding solver.
 class RigidBodyOnCompliantGround
     : public ::testing::TestWithParam<ContactTestConfig> {
  public:
@@ -76,7 +76,18 @@ class RigidBodyOnCompliantGround
     DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
     plant_ = &items.plant;
-    plant_->set_discrete_contact_solver(config.contact_solver);
+    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+    // arbitrarily choose two model approximations to accomplish this.
+    switch (config.contact_solver) {
+      case DiscreteContactSolver::kTamsi:
+        plant_->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kTamsi);
+        break;
+      case DiscreteContactSolver::kSap:
+        plant_->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kSap);
+        break;
+    }
 
     // We change the default gravity magnitude so that numbers are simpler to
     // work with.

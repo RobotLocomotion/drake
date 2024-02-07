@@ -219,9 +219,11 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     if constexpr (std::is_floating_point_v<T>) {
-      // We must be sure to add the required leading period for special values.
-      auto scalar = internal::Node::MakeScalar(fmt::format(
-          "{}{}", std::isfinite(value) ? "" : ".", fmt_floating_point(value)));
+      std::string value_str = std::isfinite(value) ? fmt_floating_point(value)
+                              : std::isnan(value)  ? ".nan"
+                              : (value > 0)        ? ".inf"
+                                                   : "-.inf";
+      auto scalar = internal::Node::MakeScalar(std::move(value_str));
       scalar.SetTag(internal::JsonSchemaTag::kFloat);
       root_.Add(nvp.name(), std::move(scalar));
       return;

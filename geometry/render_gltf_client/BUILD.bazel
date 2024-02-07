@@ -94,15 +94,12 @@ drake_cc_library(
         ":internal_http_service",
         ":internal_http_service_curl",
         ":render_engine_gltf_client_params",
+        "//common:sha256",
         "//common:temp_directory",
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
-        "//systems/sensors:vtk_image_reader_writer",
-        "@picosha2_internal//:picosha2",
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkCommonDataModel",
-        "@vtk_internal//:vtkIOImage",
+        "//systems/sensors:image_io",
     ],
 )
 

@@ -17,6 +17,9 @@ def github_archive(
     """A macro to be called in the WORKSPACE that adds an external from GitHub
     using a workspace rule.
 
+    This rule downloads the source code. To download attachments instead, see
+    github_release_attachments().
+
     Args:
         name: required name is the rule name and so is used for @name//...
             labels when referring to this archive from BUILD files.
@@ -272,7 +275,7 @@ def github_download_and_extract(
 
     upgrade_advice = "\n".join(
         [line.strip() for line in upgrade_advice.strip().split("\n")],
-    )
+    ).replace("\\\n", "\\\n    ")
 
     # Create a summary file for Drake maintainers.
     generate_repository_metadata(
@@ -391,3 +394,151 @@ def _urls(*, repository, commit, mirrors):
         for url in result_with_nulls
         if url != None
     ]
+
+def github_release_attachments(
+        name,
+        repository = None,
+        commit = None,
+        attachments = None,
+        build_file = None,
+        mirrors = None,
+        upgrade_advice = None,
+        **kwargs):
+    """A macro to be called in the WORKSPACE that adds an external from GitHub
+    using a workspace rule.
+
+    This rule downloads attachments from posted releases (e.g., precompiled
+    binaries). To download a git source archive instead, see github_archive().
+
+    Args:
+        name: required name is the rule name and so is used for @name//...
+            labels when referring to this archive from BUILD files.
+        repository: required GitHub repository name in the form
+            organization/project.
+        commit: required commit is the tag name to download.
+        attachments: required dict whose keys are the filenames (attachment
+            names) to download and values are the expected SHA-256 checksums.
+        build_file: required build file is the BUILD file label to use for
+            building this external. As a Drake-specific abbreviation, when
+            provided as a relative label (e.g., ":package.BUILD.bazel"), it
+            will be taken as relative to the "@drake//tools/workspace/{name}/"
+            package.
+        mirrors: required mirrors is a dict from string to list-of-string with
+            key "github_release_attachments", where the list-of-strings are
+            URLs to use, formatted using {repository}, {commit}, and {filename}
+            string substitutions. The mirrors.bzl file in this directory
+            provides a reasonable default value.
+        upgrade_advice: optional string that describes extra steps that should
+            be taken when upgrading to a new version.
+            Used by //tools/workspace:new_release.
+    """
+    if not repository:
+        fail("Missing repository=")
+    if not commit:
+        fail("Missing commit=")
+    if not attachments:
+        fail("Missing attachments=")
+    if not build_file:
+        fail("Missing build_file=")
+    if not mirrors:
+        fail("Missing mirrors=; see mirrors.bzl")
+
+    build_file = _resolve_drake_abbreviation(name, build_file)
+
+    _github_release_attachments_real(
+        name = name,
+        repository = repository,
+        commit = commit,
+        attachments = attachments,
+        build_file = build_file,
+        mirrors = mirrors,
+        upgrade_advice = upgrade_advice,
+        **kwargs
+    )
+
+# Helper stub to implement a repository_rule in terms of a setup() function.
+def _github_release_attachments_real_impl(repository_ctx):
+    result = setup_github_release_attachments(repository_ctx)
+    if result.error != None:
+        fail("Unable to complete setup for " +
+             "@{} repository: {}".format(
+                 repository_ctx.name,
+                 result.error,
+             ))
+
+_github_release_attachments_real = repository_rule(
+    implementation = _github_release_attachments_real_impl,
+    attrs = {
+        "repository": attr.string(
+            mandatory = True,
+        ),
+        "commit": attr.string(
+            mandatory = True,
+        ),
+        "attachments": attr.string_dict(
+            mandatory = True,
+        ),
+        "build_file": attr.label(
+            mandatory = True,
+        ),
+        "mirrors": attr.string_list_dict(
+            mandatory = True,
+            allow_empty = False,
+        ),
+        "upgrade_advice": attr.string(
+            default = "",
+        ),
+    },
+)
+
+def setup_github_release_attachments(repository_ctx):
+    """This is a reusable formulation of the github_release_attachments macro.
+    It is identical to the macro except that it returns a status struct instead
+    of failing internally. The result struct has a field `error` that will be
+    non-None iff there were any errors. Consult the macro documentation for
+    additional API details.
+    """
+
+    repository = repository_ctx.attr.repository
+    commit = repository_ctx.attr.commit
+    attachments = repository_ctx.attr.attachments
+    mirrors = repository_ctx.attr.mirrors
+    upgrade_advice = getattr(repository_ctx.attr, "upgrade_advice", "")
+    patterns = mirrors.get("github_release_attachments")
+
+    # Download everything.
+    downloads = []
+    for filename, sha256 in attachments.items():
+        urls = [
+            pattern.format(
+                repository = repository,
+                commit = commit,
+                filename = filename,
+            )
+            for pattern in patterns
+        ]
+        repository_ctx.download(
+            urls,
+            output = filename,
+            sha256 = _sha256(sha256),
+        )
+        downloads.append(dict(
+            urls = urls,
+            sha256 = sha256,
+        ))
+
+    # Add the BUILD file.
+    repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
+
+    # Create a summary file for Drake maintainers.
+    generate_repository_metadata(
+        repository_ctx,
+        repository_rule_type = "github_release_attachments",
+        repository = repository,
+        commit = commit,
+        attachments = attachments,
+        downloads = downloads,
+        upgrade_advice = upgrade_advice,
+    )
+
+    return struct(error = None)

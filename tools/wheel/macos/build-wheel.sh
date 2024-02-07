@@ -15,29 +15,69 @@ readonly git_root="$(
     realpath ./$(git rev-parse --show-cdup)
 )"
 
-if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <drake-version>" >&2
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 <drake-version> <python-version>" >&2
     exit 1
 fi
+
+readonly python_version="$2"
+readonly python="python$python_version"
+
+readonly python_prefix="$(brew --prefix python@$python_version)"
+readonly python_executable="$python_prefix/bin/$python"
 
 # -----------------------------------------------------------------------------
 # Clean up from old builds.
 # -----------------------------------------------------------------------------
 
-rm -rf "/opt/drake-wheel-build/wheel"
-rm -rf "/opt/drake"
+rm -rf "/opt/drake-wheel-build/$python"
+rm -rf "/opt/drake-dist/$python"
+
+if [ -e "/opt/drake" ]; then
+    echo "Unable to proceed: /opt/drake exists" \
+         "(left over from a failed build?)" >&2
+    exit 1
+fi
+
+# -----------------------------------------------------------------------------
+# Set up a Python virtual environment with the latest setuptools.
+# -----------------------------------------------------------------------------
+
+# TODO(matthew.woehlke) If/when we fix the Drake build to get its (PyPI)
+# dependencies some other way, note that, as of writing, building the actual
+# wheel has additional dependencies; this logic may need to lower rather than
+# being deleted outright. See (and consider partly reverting) the commit that
+# added this comment.
+
+readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
+
+# NOTE: Xcode ships python3, make sure to use the one from brew.
+"$python_executable" -m venv "$pyvenv_root"
+
+# We also need pythonX.Y-config, which isn't created as of writing (see also
+# https://github.com/pypa/virtualenv/issues/169). Don't fail if it already
+# exists, though, e.g. if the bug has been fixed.
+ln -s "$python_prefix/bin/$python-config" \
+      "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
+
+. "$pyvenv_root/bin/activate"
+
+pip install -r "$git_root/setup/mac/binary_distribution/requirements.txt"
+pip install -r "$git_root/setup/mac/source_distribution/requirements.txt"
 
 # -----------------------------------------------------------------------------
 # Build and "install" Drake.
 # -----------------------------------------------------------------------------
 
-readonly build_root="/opt/drake-wheel-build/drake-build"
+readonly build_root="/opt/drake-wheel-build/$python/drake-build"
 
 mkdir -p "$build_root"
 cd "$build_root"
 
 # Add wheel-specific bazel options.
 cat > "$build_root/drake.bazelrc" << EOF
+build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
+build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_OS=macos_wheel
 build --repo_env=SNOPT_PATH=git
 build --config=packaging
@@ -47,7 +87,8 @@ EOF
 
 # Install Drake.
 cmake "$git_root" \
-    -DCMAKE_INSTALL_PREFIX=/opt/drake
+    -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
+    -DPython_EXECUTABLE="$pyvenv_root/bin/$python"
 make install
 
 # Build wheel tools.
@@ -63,16 +104,8 @@ ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
 find "$build_root" -type d -print0 | xargs -0 chmod u+w
 
 # -----------------------------------------------------------------------------
-# Set up a Python virtual environment with the latest setuptools.
+# Install tools to build the wheel.
 # -----------------------------------------------------------------------------
-
-rm -rf  "/opt/drake-wheel-build/python"
-
-# NOTE: Xcode ships python3, make sure to use the one from brew.
-$(brew --prefix python@3.11)/bin/python3.11 \
-    -m venv "/opt/drake-wheel-build/python"
-
-. "/opt/drake-wheel-build/python/bin/activate"
 
 pip install --upgrade \
     delocate \
@@ -81,17 +114,20 @@ pip install --upgrade \
 
 ln -s \
     "$build_root/bazel-bin/tools/wheel/strip_rpath" \
-    "/opt/drake-wheel-build/python/bin/strip_rpath"
+    "$pyvenv_root/bin/strip_rpath"
 
 ln -s \
     "$build_root/bazel-bin/tools/wheel/change_lpath" \
-    "/opt/drake-wheel-build/python/bin/change_lpath"
+    "$pyvenv_root/bin/change_lpath"
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
-mkdir -p "/opt/drake-wheel-build/wheel"
+mkdir -p "/opt/drake-wheel-build/$python/wheel"
+
+ln -s "/opt/drake-dist/$python" \
+      "/opt/drake"
 
 cp \
     "$resource_root/image/setup.py" \
@@ -100,3 +136,5 @@ cp \
 export DRAKE_VERSION="$1"
 
 "$resource_root/image/build-wheel.sh"
+
+rm "/opt/drake"

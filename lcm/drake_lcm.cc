@@ -7,7 +7,6 @@
 #include <vector>
 
 #include <glib.h>
-#include <lcm/lcm-cpp.hpp>  // N.B. C++ is used only by get_lcm_instance().
 #include <lcm/lcm.h>
 
 #include "drake/common/drake_assert.h"
@@ -82,7 +81,6 @@ class DrakeLcm::Impl {
   std::string lcm_url_;
   bool deferred_initialization_{};
   lcm_t* lcm_{};
-  std::unique_ptr<::lcm::LCM> lcm_cpp_;  // Typically nullptr.
   const std::string channel_suffix_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
   std::string handle_subscriptions_error_message_;
@@ -108,12 +106,8 @@ std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }
 
-::lcm::LCM* DrakeLcm::get_native() {
-  if (impl_->lcm_cpp_ == nullptr) {
-    // Create the C++ wrapper only when requested by the user or our unit test.
-    impl_->lcm_cpp_ = std::make_unique<::lcm::LCM>(impl_->lcm_);
-  }
-  return impl_->lcm_cpp_.get();
+void* DrakeLcm::get_native_lcm_handle_for_unit_testing() {
+  return impl_->lcm_;
 }
 
 void DrakeLcm::Publish(const std::string& channel, const void* data,

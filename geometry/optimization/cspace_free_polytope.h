@@ -11,7 +11,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
@@ -181,7 +180,7 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   };
 
   struct FindSeparationCertificateGivenPolytopeOptions final
-      : FindSeparationCertificateOptions {
+      : public FindSeparationCertificateOptions {
     ~FindSeparationCertificateGivenPolytopeOptions() override = default;
     // If a row in C*s<=d is redundant (this row is implied by other rows in
     // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian

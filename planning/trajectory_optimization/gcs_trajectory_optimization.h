@@ -11,6 +11,7 @@
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace planning {
@@ -527,11 +528,6 @@ class GcsTrajectoryOptimization final {
   const int num_positions_;
   const std::vector<int> continuous_revolute_joints_;
 
-  /* Computes the minium and maximum values that can be attained along a certain
-  dimension for a point constrained to lie within a convex set. */
-  const std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
-      const geometry::optimization::ConvexSet& region, int dimension) const;
-
   // Adds a Edge to gcs_ with the name "{u.name} -> {v.name}".
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
       geometry::optimization::GraphOfConvexSets::Vertex* u,
@@ -550,6 +546,12 @@ class GcsTrajectoryOptimization final {
       global_velocity_bounds_{};
   std::vector<int> global_continuity_constraints_{};
 };
+
+/** Returns a list of indices in the plant's generalized positions which
+correspond to a continuous revolute joint (a revolute joint with no joint
+limits). This includes the revolute component of a planar joint */
+std::vector<int> GetContinuousRevoluteJointIndices(
+    const multibody::MultibodyPlant<double>& plant);
 
 }  // namespace trajectory_optimization
 }  // namespace planning

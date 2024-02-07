@@ -48,7 +48,6 @@ drake_cc_package_library(
         ":system",
         ":system_base",
         ":system_constraint",
-        ":system_html",
         ":system_output",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
@@ -354,15 +353,6 @@ drake_cc_library(
         "//common:essential",
         "//common:pointer_cast",
         "//common:value",
-    ],
-)
-
-drake_cc_library(
-    name = "system_html",
-    srcs = ["system_html.cc"],
-    hdrs = ["system_html.h"],
-    deps = [
-        ":system",
     ],
 )
 

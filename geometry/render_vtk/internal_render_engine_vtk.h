@@ -88,6 +88,7 @@ enum ImageType {
 
 /* See documentation of MakeRenderEngineVtk().  */
 class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
+                                        private ShapeReifier,
                                         private ModuleInitVtkRenderingOpenGL2 {
  public:
   /* @name Does not allow copy, move, or assignment  */
@@ -113,7 +114,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   /* @name    Shape reification  */
   //@{
-  using RenderEngine::ImplementGeometry;
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
@@ -322,7 +323,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 
   // The color to clear the color buffer to.
-  systems::sensors::ColorD default_clear_color_;
+  Rgba default_clear_color_;
 
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.

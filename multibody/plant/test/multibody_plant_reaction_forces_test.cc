@@ -134,7 +134,20 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
 
-    plant_->set_discrete_contact_solver(config.contact_solver);
+    if (plant_->is_discrete()) {
+      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+      // arbitrarily choose two model approximations to accomplish this.
+      switch (config.contact_solver) {
+        case DiscreteContactSolver::kTamsi:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kTamsi);
+          break;
+        case DiscreteContactSolver::kSap:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kSap);
+          break;
+      }
+    }
 
     plant_->Finalize();
 
@@ -813,8 +826,8 @@ class WeldedBoxesTest : public ::testing::Test {
     EXPECT_EQ(F_Bcm_W.rotational(), t_Bcm_W_expected);
   }
 
-  const Body<double>* boxA_{nullptr};
-  const Body<double>* boxB_{nullptr};
+  const RigidBody<double>* boxA_{nullptr};
+  const RigidBody<double>* boxB_{nullptr};
   std::unique_ptr<MultibodyPlant<double>> plant_{nullptr};
   const WeldJoint<double>* weld1_{nullptr};
   const WeldJoint<double>* weld2_{nullptr};

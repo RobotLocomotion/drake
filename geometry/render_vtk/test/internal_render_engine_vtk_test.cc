@@ -28,7 +28,9 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_io.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
+#include "drake/visualization/colorize_depth_image.h"
 
 /* Note: enabling this causes failures with two tests. Try running as:
 
@@ -78,6 +80,7 @@ using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;
+using render::DepthRange;
 using render::DepthRenderCamera;
 using render::LightParameter;
 using render::RenderCameraCore;
@@ -88,14 +91,14 @@ using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
 using systems::sensors::CameraInfo;
-using systems::sensors::Color;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageGrey8U;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
+using visualization::ColorizeDepthImage;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -126,18 +129,63 @@ const double kColorPixelTolerance = 1.001;
 // *4X* larger (in area) than the default image size.
 const double kDepthTolerance = 1e-3;
 
+// An RGBA color denoted using four `int`s, offering nice conversion
+// constructors and operators to ease the pain of creating test values.
+struct TestColor {
+  // Constructs from three or four `int`s.
+  constexpr TestColor(int r_in, int g_in, int b_in, int a_in = 255)
+      : r(r_in), g(g_in), b(b_in), a(a_in) {}
+
+  // Constructs from an array of four bytes.
+  explicit TestColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
+
+  // Constructs from a vector of four doubles (each in the range [0..1]).
+  explicit TestColor(const Vector4d& norm_color)
+      : r(static_cast<int>(norm_color(0) * 255)),
+        g(static_cast<int>(norm_color(1) * 255)),
+        b(static_cast<int>(norm_color(2) * 255)),
+        a(static_cast<int>(norm_color(3) * 255)) {}
+
+  // This implicit conversion is extremely convenient.
+  // NOLINTNEXTLINE(runtime/explicit)
+  TestColor(const Rgba& rgba) : TestColor(rgba.rgba()) {}
+
+  // Converts back to an Rgba.
+  Rgba ToRgba() const {
+    return Rgba(r / 255.0, g / 255.0, b / 255.0, a / 255.0);
+  }
+
+  bool operator==(const TestColor& c) const {
+    return r == c.r && g == c.g && b == c.b && a == c.a;
+  }
+
+  bool operator!=(const TestColor& c) const { return !(*this == c); }
+
+  int r{0};
+  int g{0};
+  int b{0};
+  int a{255};
+};
+
+std::ostream& operator<<(std::ostream& out, const TestColor& c) {
+  out << "(" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << ")";
+  return out;
+}
+
 // Background (sky) and terrain colors.
-const ColorI kBgColor = {254u, 127u, 0u};
+constexpr TestColor kBgColor{254, 127, 0};
+
 // We need a color that we can see the effects of illumination on.
-const ColorD kTerrainColorD{0.498, 0.498, 0.6};
-const ColorI kTerrainColorI{127, 127, 153};
+constexpr TestColor kTerrainColor{127, 127, 153};
+
 // box.png contains a single pixel with the color (4, 241, 33). If the image
 // changes, the expected color would likewise have to change.
-const ColorI kTextureColor{4, 241, 33};
+constexpr TestColor kTextureColor{4, 241, 33};
 
 // Provide a default visual color for these tests -- it is intended to be
 // different from the default color of the VTK render engine.
-const ColorI kDefaultVisualColor = {229u, 229u, 229u};
+constexpr TestColor kDefaultVisualColor{229, 229, 229};
+
 const float kDefaultDistance{3.f};
 
 const RenderLabel kDefaultLabel{13531};
@@ -159,47 +207,8 @@ std::ostream& operator<<(std::ostream& out, const ScreenCoord& c) {
   return out;
 }
 
-// Utility struct for doing color testing; provides three mechanisms for
-// creating a common rgba color. We get colors from images (as a pointer to
-// unsigned bytes, as a (ColorI, alpha) pair, and from a normalized color. It's
-// nice to articulate tests without having to worry about those details.
-struct RgbaColor {
-  RgbaColor(const Color<int>& c, int alpha)
-      : r(c.r), g(c.g), b(c.b), a(alpha) {}
-  explicit RgbaColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
-  explicit RgbaColor(const Vector4d& norm_color)
-      : r(static_cast<int>(norm_color(0) * 255)),
-        g(static_cast<int>(norm_color(1) * 255)),
-        b(static_cast<int>(norm_color(2) * 255)),
-        a(static_cast<int>(norm_color(3) * 255)) {}
-  // We'll allow *implicit* conversion from Rgba to RgbaColor to increase the
-  // utility of IsColorNear(), but only in the scope of this test.
-  // NOLINTNEXTLINE(runtime/explicit)
-  RgbaColor(const Rgba& rgba)
-      : r(static_cast<int>(rgba.r() * 255)),
-        g(static_cast<int>(rgba.g() * 255)),
-        b(static_cast<int>(rgba.b() * 255)),
-        a(static_cast<int>(rgba.a() * 255)) {}
-
-  bool operator==(const RgbaColor& c) const {
-    return r == c.r && g == c.g && b == c.b && a == c.a;
-  }
-
-  bool operator!=(const RgbaColor& c) const { return !(*this == c); }
-
-  int r;
-  int g;
-  int b;
-  int a;
-};
-
-std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
-  out << "(" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << ")";
-  return out;
-}
-
 // Tests color within tolerance.
-bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
+bool IsColorNear(const TestColor& expected, const TestColor& tested,
                  double tolerance = kColorPixelTolerance) {
   using std::abs;
   return (abs(expected.r - tested.r) < tolerance &&
@@ -211,9 +220,9 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
 // Tests that the color in the given `image` located at screen coordinate `p`
 // matches the `expected` color to within the given `tolerance`.
 ::testing::AssertionResult CompareColor(
-    const RgbaColor& expected, const ImageRgba8U& image, const ScreenCoord& p,
+    const TestColor& expected, const ImageRgba8U& image, const ScreenCoord& p,
     double tolerance = kColorPixelTolerance) {
-  RgbaColor tested(image.at(p.x, p.y));
+  TestColor tested(image.at(p.x, p.y));
   if (IsColorNear(expected, tested, tolerance)) {
     return ::testing::AssertionSuccess();
   }
@@ -275,13 +284,12 @@ class RenderEngineVtkTest : public ::testing::Test {
   }
 
   // Confirms that all pixels in the member color image have the same value.
-  void VerifyUniformColor(const ColorI& pixel, int alpha,
+  void VerifyUniformColor(const TestColor& pixel,
                           const ImageRgba8U* color = nullptr) {
     if (color == nullptr) color = &color_;
-    const RgbaColor test_color{pixel, alpha};
     for (int y = 0; y < color->height(); ++y) {
       for (int x = 0; x < color->width(); ++x) {
-        ASSERT_TRUE(CompareColor(test_color, *color, ScreenCoord{x, y}));
+        ASSERT_TRUE(CompareColor(pixel, *color, ScreenCoord{x, y}));
       }
     }
   }
@@ -393,8 +401,8 @@ class RenderEngineVtkTest : public ::testing::Test {
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
-    EXPECT_FALSE(IsColorNear(RgbaColor(kDefaultVisualColor, 1.),
-                             RgbaColor(renderer_->default_diffuse())));
+    EXPECT_FALSE(IsColorNear(kDefaultVisualColor,
+                             TestColor(renderer_->default_diffuse())));
   }
 
   // Tests that instantiate their own renderers can initialize their renderers
@@ -406,9 +414,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     if (add_terrain) {
       PerceptionProperties material;
       material.AddProperty("label", "id", RenderLabel::kDontCare);
-      material.AddProperty(
-          "phong", "diffuse",
-          Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b, 1.0});
+      material.AddProperty("phong", "diffuse", kTerrainColor.ToRgba());
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /* needs update */);
@@ -440,8 +446,8 @@ class RenderEngineVtkTest : public ::testing::Test {
 
   // Resets all expected values to the initial, default values.
   void ResetExpectations() {
-    expected_color_ = RgbaColor{kDefaultVisualColor, 255};
-    expected_outlier_color_ = RgbaColor(kTerrainColorI, 255);
+    expected_color_ = kDefaultVisualColor;
+    expected_outlier_color_ = kTerrainColor;
     expected_outlier_depth_ = 3.f;
     expected_object_depth_ = 2.f;
     // We expect each test to explicitly set this.
@@ -521,13 +527,13 @@ class RenderEngineVtkTest : public ::testing::Test {
         << "Label at: " << inlier << " for test: " << name;
   }
 
-  RgbaColor expected_color_{kDefaultVisualColor, 255};
-  RgbaColor expected_outlier_color_{kDefaultVisualColor, 255};
+  TestColor expected_color_{kDefaultVisualColor};
+  TestColor expected_outlier_color_{kDefaultVisualColor};
   float expected_outlier_depth_{3.f};
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
-  RgbaColor default_color_{kDefaultVisualColor, 255};
+  TestColor default_color_{kDefaultVisualColor};
 
   // We store a reference depth camera; we can always derive a color camera
   // from it; they have the same intrinsics and we grab the global
@@ -554,20 +560,21 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(RigidTransformd::Identity());
   Render();
 
-  VerifyUniformColor(kBgColor, 255u);
+  VerifyUniformColor(kBgColor);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
 
 // Confirm that the color image clear color gets successfully configured.
 TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
-  std::vector<ColorI> backgrounds{{10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
+  std::vector<TestColor> backgrounds{
+      {10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
   for (const auto& bg : backgrounds) {
     RenderEngineVtkParams params{
         {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
     RenderEngineVtk engine(params);
     Render(&engine);
-    VerifyUniformColor(bg, 255u);
+    VerifyUniformColor(bg);
   }
 }
 
@@ -583,7 +590,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
     renderer_->UpdateViewpoint(X_WC_);
     Render();
     SCOPED_TRACE(fmt::format("Valid depth return: {}", depth));
-    VerifyUniformColor(kTerrainColorI, 255u);
+    VerifyUniformColor(kTerrainColor);
     VerifyUniformLabel(RenderLabel::kDontCare);
     VerifyUniformDepth(depth);
   }
@@ -593,7 +600,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   renderer_->UpdateViewpoint(X_WC_);
   Render();
   SCOPED_TRACE("Closer than near");
-  VerifyUniformColor(kTerrainColorI, 255u);
+  VerifyUniformColor(kTerrainColor);
   VerifyUniformLabel(RenderLabel::kDontCare);
   VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooClose);
 
@@ -602,7 +609,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   renderer_->UpdateViewpoint(X_WC_);
   Render();
   SCOPED_TRACE("Farther than far");
-  VerifyUniformColor(kTerrainColorI, 255u);
+  VerifyUniformColor(kTerrainColor);
   VerifyUniformLabel(RenderLabel::kDontCare);
   VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooFar);
 }
@@ -648,9 +655,9 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
     // That implies it's starting its search *in the sky*. That implies that the
     // top row is zero and the bottom row is height - 1.
     for (int y = 0; y < intrinsics.height(); ++y) {
-      if ((static_cast<uint8_t>(kBgColor.r != color.at(0, y)[0])) ||
-          (static_cast<uint8_t>(kBgColor.g != color.at(0, y)[1])) ||
-          (static_cast<uint8_t>(kBgColor.b != color.at(0, y)[2]))) {
+      if ((kBgColor.r != color.at(0, y)[0]) ||
+          (kBgColor.g != color.at(0, y)[1]) ||
+          (kBgColor.b != color.at(0, y)[2])) {
         actual_horizon = y;
         break;
       }
@@ -726,14 +733,13 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
         // When we scale the image differently, we'll radically change the
         // color at that same corner.
 
-        expected_color_ = RgbaColor(ColorI{130, 119, 16}, 255);
+        expected_color_ = TestColor(130, 119, 16, 255);
         // Quick proof that we're testing for a different color -- we're drawing
         // the red channel from our expected color.
         ASSERT_NE(kTextureColor.r, expected_color_.r);
       } else {
         // Otherwise the expected is simply the texture color of box.png.
-        expected_color_ =
-            use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+        expected_color_ = use_texture ? kTextureColor : default_color_;
       }
 
       PerformCenterShapeTest(
@@ -752,8 +758,7 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   for (const bool use_texture : {false, true}) {
     Init(X_WC_, true);
     PopulateSphereTest(renderer_.get(), use_texture);
-    expected_color_ =
-        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    expected_color_ = use_texture ? kTextureColor : default_color_;
     PerformCenterShapeTest(
         renderer_.get(),
         fmt::format("Sphere test {}", use_texture ? "textured" : "rgba")
@@ -766,7 +771,8 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
   RenderEngineVtk renderer;
   InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
   const int int_alpha = 128;
-  default_color_ = RgbaColor(kDefaultVisualColor, int_alpha);
+  default_color_ = kDefaultVisualColor;
+  default_color_.a = int_alpha;
   PopulateSphereTest(&renderer);
   const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const auto& intrinsics = camera.core().intrinsics();
@@ -783,18 +789,18 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
   // colors.
   // In both cases, the resultant alpha will always be a full 255 (because the
   // background is a full 255).
-  auto blend = [](const ColorI& c1, const ColorI& c2, double alpha) {
-    int r = static_cast<int>(c1.r * alpha + (c2.r * (1 - alpha)));
-    int g = static_cast<int>(c1.g * alpha + (c2.g * (1 - alpha)));
-    int b = static_cast<int>(c1.b * alpha + (c2.b * (1 - alpha)));
-    return ColorI{r, g, b};
+  auto blend = [](const TestColor& c1, const TestColor& c2, double alpha) {
+    auto r = static_cast<uint8_t>(c1.r * alpha + (c2.r * (1 - alpha)));
+    auto g = static_cast<uint8_t>(c1.g * alpha + (c2.g * (1 - alpha)));
+    auto b = static_cast<uint8_t>(c1.b * alpha + (c2.b * (1 - alpha)));
+    return TestColor{r, g, b, 255};
   };
   const double linear_factor = int_alpha / 255.0;
-  const RgbaColor expect_linear{
-      blend(kDefaultVisualColor, kTerrainColorI, linear_factor), 255};
+  const TestColor expect_linear =
+      blend(kDefaultVisualColor, kTerrainColor, linear_factor);
   const double quad_factor = linear_factor * (-linear_factor + 2);
-  const RgbaColor expect_quad{
-      blend(kDefaultVisualColor, kTerrainColorI, quad_factor), 255};
+  const TestColor expect_quad =
+      blend(kDefaultVisualColor, kTerrainColor, quad_factor);
 
   const ScreenCoord inlier = GetInlier(intrinsics);
   EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
@@ -823,8 +829,7 @@ TEST_F(RenderEngineVtkTest, CapsuleTest) {
     renderer_->UpdatePoses(
         unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
-    expected_color_ =
-        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    expected_color_ = use_texture ? kTextureColor : default_color_;
     PerformCenterShapeTest(renderer_.get(), "Capsule test");
   }
 }
@@ -904,8 +909,7 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
     renderer_->UpdatePoses(
         unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
-    expected_color_ =
-        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    expected_color_ = use_texture ? kTextureColor : default_color_;
     PerformCenterShapeTest(renderer_.get(), "Cylinder test");
   }
 }
@@ -990,12 +994,97 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
     renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
         {id, RigidTransformd::Identity()}});
 
-    expected_color_ =
-        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    expected_color_ = use_texture ? kTextureColor : default_color_;
     PerformCenterShapeTest(
         renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
+}
+
+// There have been circumstances in which a glTF model, when rendered in depth
+// or label images, displays the wrong transform. This examines the alignment
+// of a glTF file in three images. The "wrong" transform entailed compounded
+// transforms -- extra scale, transform, and rotation. So, we make sure they're
+// all non-identity so we can detect if any of those quantities lead to a
+// different appearance.
+TEST_F(RenderEngineVtkTest, GltfColorVsDepth) {
+  // Position the pyramid at some arbitrary point in space with a small spin
+  // around its vertical axis (the scale is applied while registering).
+  const RigidTransformd X_WP{RotationMatrixd::MakeZRotation(M_PI / 6),
+                             Vector3d(1, -2, 3)};
+  // Offset the camera from the pyramid in the Wx direction, looking in the -Wx
+  // direction (with +Wz up).
+  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2, 0, M_PI / 2));
+  const RigidTransformd X_WC(R_WC, X_WP.translation() + Vector3d(3.5, 0, 0));
+  Init(X_WC);
+
+  // Write test outputs so we can inspect the images in case of failure.
+  auto log_image = [](const auto& image, std::string_view name) {
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::filesystem::path out_dir(dir);
+      ImageIo{}.Save(image, out_dir / fmt::format("{}_test.png", name));
+    }
+  };
+
+  PerceptionProperties material;
+  // Pick a label that will be easily discernible in the saved image.
+  const RenderLabel label(255 * 15);
+  material.AddProperty("label", "id", label);
+  const GeometryId id = GeometryId::get_new_id();
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  renderer_->RegisterVisual(id, Mesh(filename, 0.5), material, X_WP,
+                            false /* needs update */);
+  const int size = 64;
+  ImageRgba8U color_image(size, size);
+  const ColorRenderCamera color_camera(
+      {"unused", {size, size, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
+  renderer_->RenderColorImage(color_camera, &color_image);
+  log_image(color_image, "GltfColorVsDepth_color");
+
+  ImageDepth32F depth32_image(size, size);
+  // Simple depth range -- just make sure near and far encloses the pyramid.
+  const DepthRenderCamera depth_camera(color_camera.core(), {0.1, 10});
+  renderer_->RenderDepthImage(depth_camera, &depth32_image);
+  {
+    ColorizeDepthImage<double> colorizer;
+    ImageRgba8U color_depth(size, size);
+    colorizer.Calc(depth32_image, &color_depth);
+    log_image(color_depth, "GltfColorVsDepth_depth");
+  }
+
+  ImageLabel16I label_image(size, size);
+  renderer_->RenderLabelImage(color_camera, &label_image);
+  log_image(label_image, "GltfColorVsDepth_label");
+
+  // Everywhere the depth is finite, we should have the expected label value and
+  // a color that is *not* the background.
+  // Likewise, everywhere the label is the expected label, we should have a
+  // finite depth and non-background color.
+  // However, a non-background color does not imply finite depth nor expected
+  // label because of anti-aliasing between the pyramid and the background.
+  bool gltf_visible = false;
+  for (int r = 0; r < color_image.height(); ++r) {
+    for (int c = 0; c < color_image.width(); ++c) {
+      // Depth implies color and label.
+      if (*depth32_image.at(c, r) < std::numeric_limits<double>::infinity()) {
+        const TestColor color(color_image.at(c, r));
+        ASSERT_NE(color, kBgColor);
+        ASSERT_EQ(RenderLabel(*label_image.at(c, r)), label);
+        gltf_visible = true;
+      }
+      // Label implies color and depth.
+      if (*label_image.at(c, r) == label) {
+        const TestColor color(color_image.at(c, r));
+        ASSERT_NE(color, kBgColor);
+        ASSERT_NE(*depth32_image.at(c, r),
+                  std::numeric_limits<double>::infinity());
+        gltf_visible = true;
+      }
+    }
+  }
+  // The depth image wasn't all infinite values.
+  ASSERT_TRUE(gltf_visible);
 }
 
 // A simple regression test to make sure that we are supporting all of the
@@ -1127,8 +1216,8 @@ TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
     // PBR (to match). Therefore, the expected outlier color needs to shift
     // to account for the material change.
     expected_outlier_color_ = mesh.extension() == ".gltf"
-                                  ? RgbaColor(Rgba(0.4392, 0.4392, 0.4745))
-                                  : RgbaColor{kTerrainColorI, 255};
+                                  ? TestColor(Rgba(0.4392, 0.4392, 0.4745))
+                                  : kTerrainColor;
     expected_label_ = RenderLabel(3);
     // Note: Passing diffuse color or texture to a glTF spawns a warning.
     PerceptionProperties material;
@@ -1308,12 +1397,12 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
 TEST_F(RenderEngineVtkTest, RemoveVisual) {
   Init(X_WC_, true);
   PopulateSphereTest(renderer_.get());
-  RgbaColor default_color = expected_color_;
+  TestColor default_color = expected_color_;
   RenderLabel default_label = expected_label_;
   float default_depth = expected_object_depth_;
 
   // Positions a sphere centered at <0, 0, z> with the given color.
-  auto add_sphere = [this](const RgbaColor& diffuse, double z,
+  auto add_sphere = [this](const TestColor& diffuse, double z,
                            GeometryId geometry_id) {
     const double kRadius = 0.5;
     Sphere sphere{kRadius};
@@ -1335,7 +1424,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   };
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
-  auto set_expectations = [this](const RgbaColor& color, float depth,
+  auto set_expectations = [this](const TestColor& color, float depth,
                                  RenderLabel label)
 // Optimizers on some platforms break code and cause test failures. Worse
 // still, there is no agreement on attribute spelling.
@@ -1351,7 +1440,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   };
 
   // Add another sphere of a different color in front of the default sphere
-  const RgbaColor color1(Color<int>{128, 128, 255}, 255);
+  const TestColor color1(128, 128, 255, 255);
   float depth1{};
   RenderLabel label1{};
   const GeometryId id1 = GeometryId::get_new_id();
@@ -1360,7 +1449,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
 
   // Add a _third_ sphere in front of the second.
-  const RgbaColor color2(Color<int>{128, 255, 128}, 255);
+  const TestColor color2(128, 255, 128, 255);
   float depth2{};
   RenderLabel label2{};
   const GeometryId id2 = GeometryId::get_new_id();
@@ -1524,7 +1613,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
 
   DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
   expected_label_ = RenderLabel::kDontCare;
-  expected_color_ = RgbaColor(renderer.default_diffuse());
+  expected_color_ = TestColor(renderer.default_diffuse());
 
   PerformCenterShapeTest(&renderer, "Default properties; don't care label");
 }
@@ -1658,7 +1747,7 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
 
   struct Config {
     RigidTransformd X_WR;
-    RgbaColor expected_color;
+    TestColor expected_color;
     std::string description;
   };
   const std::vector<Config> configs{
@@ -1694,7 +1783,7 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
       const int mid_height = image.height() / 2;
       for (int r : {0, mid_height}) {
         for (int c = 0; c < image.width(); ++c) {
-          RgbaColor dut(image.at(c, r));
+          TestColor dut(image.at(c, r));
           if (!IsColorNear(dut, config.expected_color)) {
             EXPECT_EQ(dut, config.expected_color)
                 << "at pixel (" << c << ", " << r << ")";
@@ -1718,7 +1807,7 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
 TEST_F(RenderEngineVtkTest, SingleLight) {
   struct Config {
     LightParameter light;
-    RgbaColor expected_color;
+    TestColor expected_color;
     std::string description;
     std::string target_type;
   };
@@ -1739,7 +1828,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
   const int cy = image.height() / 2;
 
   const Rgba light_color(0.25, 0.5, 0.75);
-  const Rgba kTerrainRgba(kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b);
+  const Rgba kTerrainRgba(kTerrainColor.ToRgba());
   const Rgba modulated_color = kTerrainRgba * light_color;
 
   // We'll omit the light type to save space, setting it once in the test loop.
@@ -1828,7 +1917,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
         SCOPED_TRACE(renderer_ptr == clone_vtk ? "Cloned" : "Original");
         EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
 
-        const RgbaColor test_color(image.at(cx, cy));
+        const TestColor test_color(image.at(cx, cy));
         EXPECT_TRUE(IsColorNear(test_color, config.expected_color))
             << "  test color: " << test_color << "\n"
             << "  expected color: " << config.expected_color;
@@ -1866,9 +1955,8 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
 
   EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
 
-  const RgbaColor test_color(image.at(cx, cy));
-  const Rgba terrain_rgba(kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b);
-  const RgbaColor expected_color = terrain_rgba.scale_rgb(0.75);
+  const TestColor test_color(image.at(cx, cy));
+  const TestColor expected_color = kTerrainColor.ToRgba().scale_rgb(0.75);
   EXPECT_TRUE(IsColorNear(test_color, expected_color))
       << "  test color: " << test_color << "\n"
       << "  expected color: " << expected_color;
@@ -2020,15 +2108,15 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
     constexpr int tolerance = 20;
 
     // Test the center (illumination on the sphere).
-    const RgbaColor center_color(image.at(cx, cy));
+    const TestColor center_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(center_color, config.sphere_color, tolerance))
         << "  test color: " << center_color << "\n"
         << "  expected sphere color: " << config.sphere_color;
 
     // Test the background (we see the right part of the environment map
     // or none at all, if we're not using the sky box).
-    const RgbaColor edge_color(image.at(ex, ey));
-    const RgbaColor bg_color = config.show_map ? config.bg_color : clear_color;
+    const TestColor edge_color(image.at(ex, ey));
+    const TestColor bg_color = config.show_map ? config.bg_color : clear_color;
     EXPECT_TRUE(IsColorNear(edge_color, bg_color, tolerance))
         << "  test bg color: " << edge_color << "\n"
         << "  expected bg color: " << bg_color;
@@ -2047,7 +2135,7 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
 // This test we'll simply confirm that the introduction of a glTF shows an
 // illumination change without any other step (indicating material promotion).
 TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
-  auto test_sphere_color = [this](const RgbaColor expected_color,
+  auto test_sphere_color = [this](const TestColor expected_color,
                                   RenderEngineVtk* renderer) {
     const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
     ImageRgba8U image(camera.core().intrinsics().width(),
@@ -2058,7 +2146,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
 
     renderer->RenderColorImage(camera, &image);
 
-    const RgbaColor sampled_color(image.at(cx, cy));
+    const TestColor sampled_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(sampled_color, expected_color))
         << "  rendered color: " << sampled_color << "\n"
         << "  expected color: " << expected_color;
@@ -2077,8 +2165,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     auto renderer = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
     PopulateSphereTest(renderer.get(), true);
-    const RgbaColor texture_color(kTextureColor, 255);
-    test_sphere_color(texture_color, renderer.get());
+    test_sphere_color(kTextureColor, renderer.get());
   }
 
   // Add a glTF file; material promoted to PBR no longer matches Phong color.
@@ -2099,7 +2186,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
 
     // We should still basically be green (because of the green texture), but
     // the saturation and brightness changes in the presence of PBR material.
-    const RgbaColor pbr_texture_color(ColorI{66, 152, 68}, 255);
+    const TestColor pbr_texture_color(66, 152, 68, 255);
     test_sphere_color(pbr_texture_color, renderer_.get());
   }
 }
@@ -2123,9 +2210,9 @@ AdjacentPixel Compare(const typename ImageDepth32F::T* curr_pixel,
 
 AdjacentPixel Compare(const typename ImageRgba8U::T* curr_pixel,
                       const typename ImageRgba8U::T* next_pixel) {
-  const RgbaColor ground(kTerrainColorI, 255);
-  const RgbaColor curr(curr_pixel);
-  const RgbaColor next(next_pixel);
+  const TestColor ground(kTerrainColor);
+  const TestColor curr(curr_pixel);
+  const TestColor next(next_pixel);
 
   const bool curr_is_ground =
       curr.r == ground.r && curr.g == ground.g && curr.b == ground.b;
@@ -2347,7 +2434,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Far plane in front of scene");
-    VerifyUniformColor(kBgColor, 255u, &color);
+    VerifyUniformColor(kBgColor, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }
@@ -2371,7 +2458,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Near plane beyond scene");
-    VerifyUniformColor(kBgColor, 255u, &color);
+    VerifyUniformColor(kBgColor, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }

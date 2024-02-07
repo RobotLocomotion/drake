@@ -23,6 +23,7 @@ using FrameId = drake::Identifier<class FrameTag>;
 /** Type used to identify geometry instances in SceneGraph. */
 class GeometryId : public drake::Identifier<class GeometryTag> {
   using Base = drake::Identifier<class GeometryTag>;
+
  public:
   GeometryId() = default;
 

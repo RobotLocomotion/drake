@@ -520,12 +520,12 @@ TEST_F(RenderClientTest, LoadColorImageBad) {
   // Failure case 1: no such file.
   DRAKE_EXPECT_THROWS_MESSAGE(
       RenderClient::LoadColorImage("/no/such/file", &ignored),
-      ".*cannot load.*/no/such/file.*");
+      ".*open.*/no/such/file.*");
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
       RenderClient::LoadColorImage(Touch(scratch_ / "fake.png"), &ignored),
-      ".*cannot load.*fake.*");
+      ".*fake.*Not a PNG.*");
 
   // Failure case 3: wrong image dimensions (on each axis).
   for (const bool selector : {true, false}) {
@@ -545,7 +545,7 @@ TEST_F(RenderClientTest, LoadColorImageBad) {
   // Failure case 4: wrong number of channels (== 1) instead of 3 or 4.
   DRAKE_EXPECT_THROWS_MESSAGE(
       RenderClient::LoadColorImage(kTestDepthImage16UPngPath, &ignored),
-      ".*PNG image.*has 1 channel.*");
+      ".*scalar=16U into scalar=8U.*");
 }
 
 TEST_F(RenderClientTest, LoadDepth32FGood) {
@@ -572,15 +572,15 @@ TEST_F(RenderClientTest, LoadDepth16UPngGood) {
 TEST_F(RenderClientTest, LoadDepthImageBad) {
   ImageDepth32F ignored(kTestImageWidth, kTestImageHeight, 0);
 
-  // Failure case 1: invalid extension.
+  // Failure case 1: not a depth image.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadDepthImage("/no/such/file_ext.foo", &ignored),
-      ".*unsupported file extension");
+      RenderClient::LoadDepthImage(kTestRgbImagePath, &ignored),
+      ".*unsupported depth pixel.*");
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadDepthImage(Touch(scratch_ / "fake.tiff"), &ignored),
-      ".*cannot load.*fake.*");
+      RenderClient::LoadDepthImage(Touch(scratch_ / "fake.empty"), &ignored),
+      ".*fake.*Unknown file type.*");
 
   // Failure case 3: wrong image dimensions (on each axis).
   for (const bool selector : {true, false}) {

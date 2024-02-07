@@ -42,14 +42,15 @@ int SceneGraphInspector<T>::num_geometries() const {
 }
 
 template <typename T>
-std::vector<GeometryId> SceneGraphInspector<T>::GetAllGeometryIds() const {
+std::vector<GeometryId> SceneGraphInspector<T>::GetAllGeometryIds(
+    std::optional<Role> role) const {
   DRAKE_DEMAND(state_ != nullptr);
-  return state_->GetAllGeometryIds();
+  return state_->GetAllGeometryIds(role);
 }
 
 template <typename T>
 std::unordered_set<GeometryId> SceneGraphInspector<T>::GetGeometryIds(
-    const GeometrySet& geometry_set, const std::optional<Role>& role) const {
+    const GeometrySet& geometry_set, std::optional<Role> role) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->GetGeometryIds(geometry_set, role);
 }

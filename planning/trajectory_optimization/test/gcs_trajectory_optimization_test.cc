@@ -6,10 +6,16 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 
@@ -24,13 +30,22 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
+using geometry::optimization::Hyperrectangle;
+using geometry::optimization::Intersection;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
+using multibody::MultibodyPlant;
+using multibody::PlanarJoint;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
 using solvers::MathematicalProgram;
 
 bool GurobiOrMosekSolverAvailable() {
@@ -1077,6 +1092,54 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, EdgesFromWrappedJoints) {
+  // With wrapping continous joints
+  Vector3d point_1(0.5, -12 * M_PI + 0.1, 12 * M_PI - 0.1);
+  Vector3d point_2(0.5, 12 * M_PI - 0.1, 0.0);
+  HPolyhedron box = HPolyhedron::MakeUnitBox(3);
+  const auto regions = MakeConvexSets(Point(point_1), Point(point_2), box);
+  // Let's make 4 scenarios
+  const std::vector<int> continuous_revolute_joints_1 = {};
+  const std::vector<int> continuous_revolute_joints_2 = {1};
+  const std::vector<int> continuous_revolute_joints_3 = {0, 2};
+  const std::vector<int> continuous_revolute_joints_4 = {2, 1};
+  // scenario 1: no wrapping, no edges
+  auto gcs_1 = GcsTrajectoryOptimization(3, continuous_revolute_joints_1);
+  gcs_1.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_1.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 2: wrapping on joint 1, point_2 <--> box
+  auto gcs_2 = GcsTrajectoryOptimization(3, continuous_revolute_joints_2);
+  gcs_2.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_2.graph_of_convex_sets().Edges().size(), 2);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      0);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      1);
+  // scenario 3: wrapping on joint 0 and 2, no edges
+  auto gcs_3 = GcsTrajectoryOptimization(3, continuous_revolute_joints_3);
+  gcs_3.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_3.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 4: wrapping on joint 1 and 2, point_1 <--> box and point_2 <-->
+  // box
+  auto gcs_4 = GcsTrajectoryOptimization(3, continuous_revolute_joints_4);
+  gcs_4.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_4.graph_of_convex_sets().Edges().size(), 4);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      2);
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   /*
              0, 2π
@@ -1141,6 +1204,29 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
     EXPECT_EQ(traj1.get_number_of_segments(), 2);
     EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
     EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
+
+    // Now check that the wraparound is supported when adding edges between
+    // subgraphs.
+    Vector1d start_alternate(start[0] - 4.0 * M_PI);
+    Vector1d goal_alternate(goal[0] + 6.0 * M_PI);
+    auto& source1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(start_alternate)), 0);
+    auto& target1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(goal_alternate)), 0);
+
+    gcs1.AddEdges(source1_alternate, regions1);
+    gcs1.AddEdges(regions1, target1_alternate);
+
+    // source1_alternate and target1_alternate should each be connected to one
+    // set in regions1, so there should now be 10 edges.
+    EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 10);
+
+    auto [traj1_alternate, result1_alternate] =
+        gcs1.SolvePath(source1, target1);
+    ASSERT_TRUE(result1_alternate.is_success());
+    EXPECT_NEAR(result1_alternate.get_optimal_cost(), expected_cost_wraparound,
+                tol);
+    EXPECT_EQ(traj1_alternate.get_number_of_segments(), 2);
   }
 
   // Now no wraparound
@@ -1211,6 +1297,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
     std::vector<int> continuous_joints;
     double expected_cost{};
     int edge_count{};
+    Eigen::Vector2d start_offset_works;
+    Eigen::Vector2d start_offset_fails;
   };
 
   const std::vector<TestConfig> configs{
@@ -1220,13 +1308,17 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
        // edges Edges crossing the corners gives us 8 more bidirectional edges
        // (16 edges) The start and goal are each connected to one set, so 42
        // total.
-       .edge_count = 42},
+       .edge_count = 42,
+       .start_offset_works = {0.0, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 2.0 * M_PI}},
       {.name = "One wraparound",
        .continuous_joints = {0},
        .expected_cost = expected_cost_one_wraparound,
        // One wraparound adds 3 new edges wrapping around along the rows, and
        // also 4 new edges crossing the rows, so 14 new directional edges.
-       .edge_count = 56},
+       .edge_count = 56,
+       .start_offset_works = {-2.0 * M_PI, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 4.0 * M_PI}},
       {.name = "Two wraparound",
        .continuous_joints = {0, 1},
        .expected_cost = expected_cost_both_wraparound,
@@ -1234,7 +1326,11 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
        // columns, and also 4 new edges crossing the columns, and finally 2 more
        // edges connecting the opposite corners (e.g. top-left to bottom-right),
        // so 18 new directional edges.
-       .edge_count = 74}};
+       .edge_count = 74,
+       .start_offset_works = {-2.0 * M_PI, 4.0 * M_PI},
+       .start_offset_fails = {0.0, 0.0}}};
+  // For two wraparound, none fail, so we use a conditional
+  // check in the test body to skip this case.
   for (const TestConfig& config : configs) {
     SCOPED_TRACE(config.name);
     GcsTrajectoryOptimization gcs(2, config.continuous_joints);
@@ -1255,6 +1351,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
     EXPECT_NEAR(result.get_optimal_cost(), config.expected_cost, tol);
     EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
     EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+    auto& source2 = gcs.AddRegions(
+        MakeConvexSets(Point(start + config.start_offset_works)), 0);
+    gcs.AddEdges(source2, regions);
+
+    auto [traj2, result2] = gcs.SolvePath(source2, target, options);
+    EXPECT_TRUE(result2.is_success());
+    EXPECT_NEAR(result2.get_optimal_cost(), config.expected_cost, tol);
+
+    if (config.continuous_joints.size() != 2) {
+      // When both dimensions are continuous revolute, any start offset will
+      // work, so we want to skip it.
+      auto& source3 = gcs.AddRegions(
+          MakeConvexSets(Point(start + config.start_offset_fails)), 0);
+      gcs.AddEdges(source3, regions);
+
+      auto [traj3, result3] = gcs.SolvePath(source3, target, options);
+      EXPECT_FALSE(result3.is_success());
+    }
   }
 }
 
@@ -1320,6 +1435,47 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
       GcsTrajectoryOptimization(1, continuous_revolute_joints),
       ".*Each joint index in continuous_revolute_joints must lie in the "
       "interval.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& first_body =
+      plant.AddRigidBody("first_body", SpatialInertia<double>());
+  const RigidBody<double>& second_body =
+      plant.AddRigidBody("second_body", SpatialInertia<double>());
+  const RigidBody<double>& third_body =
+      plant.AddRigidBody("third_body", SpatialInertia<double>());
+  const RigidBody<double>& fourth_body =
+      plant.AddRigidBody("fourth_body", SpatialInertia<double>());
+
+  // Add a planar joint without limits
+  plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
+                              {}, Eigen::Matrix<double, 3, 1>::Zero());
+
+  // Add a planar joint with limits
+  std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
+      "second_joint", first_body.body_frame(), second_body.body_frame(),
+      Eigen::Matrix<double, 3, 1>::Zero()));
+  second_joint_ptr->set_position_limits(Eigen::Vector3d{-1.0, -1.0, -1.0},
+                                        Eigen::Vector3d{1.0, 1.0, 1.0});
+  plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
+
+  // Add a revolute joint without limits
+  plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
+
+  // Add a revolute joint with limits
+  plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
+                                -1.0, 1.0);
+
+  plant.Finalize();
+
+  const std::vector<int> continuous_joint_indices =
+      trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
+  ASSERT_EQ(continuous_joint_indices.size(), 2);
+  EXPECT_EQ(continuous_joint_indices[0], 2);
+  EXPECT_EQ(continuous_joint_indices[1], 6);
 }
 
 }  // namespace

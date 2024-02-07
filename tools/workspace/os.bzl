@@ -175,7 +175,7 @@ def _determine_macos(repository_ctx):
 
     # Match supported macOS release(s).
     (macos_release,) = sw_vers.stdout.strip().split(".")[:1]
-    if macos_release not in ["12", "13"]:
+    if macos_release not in ["12", "13", "14"]:
         print("WARNING: unsupported macOS '%s'" % macos_release)
 
     # Check which arch we should be using.
@@ -195,6 +195,8 @@ def _determine_macos(repository_ctx):
 
 def determine_os(repository_ctx):
     """
+    DO NOT USE THIS IN NEW CODE. We are working to remove this from Drake.
+
     A repository_rule helper function that determines which of the supported
     build environments (OS versions or wheel environments) we should target.
 

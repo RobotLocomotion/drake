@@ -13,7 +13,7 @@ void DefinePlanningVisibilityGraph(py::module m) {
 
   m.def("VisibilityGraph", &planning::VisibilityGraph, py::arg("checker"),
       py::arg("points"), py::arg("parallelize") = true,
-      doc.VisibilityGraph.doc);
+      py::call_guard<py::gil_scoped_release>(), doc.VisibilityGraph.doc);
 }
 
 }  // namespace internal

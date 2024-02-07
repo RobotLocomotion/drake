@@ -106,15 +106,6 @@ PYBIND11_MODULE(controllers, m) {
             &Class::get_output_port_generalized_force,
             py_rvp::reference_internal,
             cls_doc.get_output_port_generalized_force.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("get_output_port_force",
-            WrapDeprecated(cls_doc.get_output_port_force.doc_deprecated,
-                &Class::get_output_port_force),
-            py_rvp::reference_internal,
-            cls_doc.get_output_port_force.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // TODO(eric.cousineau): Expose multiple inheritance from

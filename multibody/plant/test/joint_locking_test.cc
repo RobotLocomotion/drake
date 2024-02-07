@@ -328,7 +328,18 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
       bool weld_elbow, DiscreteContactSolver solver) {
     std::unique_ptr<MultibodyPlant<double>> plant;
     plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
-    plant->set_discrete_contact_solver(solver);
+    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+    // arbitrarily choose two model approximations to accomplish this.
+    switch (solver) {
+      case DiscreteContactSolver::kTamsi:
+        plant->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kTamsi);
+        break;
+      case DiscreteContactSolver::kSap:
+        plant->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kSap);
+        break;
+    }
 
     const RigidBody<double>& body1 =
         plant->AddRigidBody("upper_arm", SpatialInertia<double>::MakeUnitary());
@@ -486,7 +497,18 @@ class FilteredContactResultsTest
     systems::DiagramBuilder<double> builder;
     plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.01 /* time_step */).plant;
     plant_->set_contact_model(config.contact_model);
-    plant_->set_discrete_contact_solver(config.solver);
+    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+    // arbitrarily choose two model approximations to accomplish this.
+    switch (config.solver) {
+      case DiscreteContactSolver::kTamsi:
+        plant_->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kTamsi);
+        break;
+      case DiscreteContactSolver::kSap:
+        plant_->set_discrete_contact_approximation(
+            DiscreteContactApproximation::kSap);
+        break;
+    }
 
     const RigidBody<double>& ball_A = AddBall("ball_A");
     const RigidBody<double>& ball_B = AddBall("ball_B");

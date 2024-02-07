@@ -86,8 +86,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "slack_value",
     "sortOnOther",
     "wrapper",
-    # This fix is pending a deprecation removal (#20115) 2024-01-01.
-    "N3lcm",
 ]
 
 

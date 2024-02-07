@@ -82,6 +82,9 @@ class MultibodyElement {
   /// Constructor which allows specifying a model instance.
   explicit MultibodyElement(ModelInstanceIndex model_instance);
 
+  /// Both the model instance and element index are specified.
+  explicit MultibodyElement(ModelInstanceIndex model_instance, int64_t index);
+
   /// Returns this element's unique index.
   template <typename ElementIndexType>
   ElementIndexType index_impl() const {

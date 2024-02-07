@@ -215,8 +215,15 @@ each of the properties and then discuss how they can be specified.
   - Notes on choosing a value:
     - For objects that are nominally rigid, starting with zero-damping is good.
     - If the behavior seems “jittery”, gradually increase the amount of
-      dissipation. Typical values would remain in the range [0, 3] with 1 being
-      a typical damping amount.
+      dissipation. Typical values would remain in the range [0, 100] with 10 to
+      50 being a typical damping amount.
+    - The inverse of the Hunt-Crossley dissipation is the maximum bounce
+      velocity between two objects. Therefore, if maximum bounce velocities of
+      10 cm/s are acceptable, a dissipation of 10 s/m will keep bounce
+      velocities bounded to this range.
+    - Warning: values larger than about 500 s/m are unphysical and typically
+      lead to numerical problems. Due to time discretization errors, the user
+      will see objects that take a long time to go back to their rest state.
     - Remember, as this value increases, your simulation will lose energy at a
       higher rate.
   - See @ref mbp_dissipation_model "Modeling Dissipation" for details.
@@ -267,6 +274,21 @@ tag. Consider the following SDFormat example:
           <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
           <drake:hydroelastic_modulus>5e7</drake:hydroelastic_modulus>
           <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    …
+and the following equivalent URDF example:
+
+    …
+      <collision name="body1_collision">
+        <geometry>
+          ...
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:mesh_resolution_hint value="0.1"/>
+          <drake:hydroelastic_modulus value="5e7/>
+          <drake:hunt_crossley_dissipation value="1.25/>
         </drake:proximity_properties>
       </collision>
     …
@@ -610,16 +632,22 @@ indicate what can and cannot be done with hydroelastic contact.
 
 @subsection hug_dissipation_and_solver Current dissipation models
 
-- SAP does not support Hunt-Crossley dissipation at this time for both
-  point and hydroelastic contact
-  (issue [19320](https://github.com/RobotLocomotion/drake/issues/19320)).
-  See the documentation for that in the
-  [MultibodyPlant documentation.]
+- The TAMSI (DiscreteContactApproximation::kTamsi), Similar
+  (DiscreteContactApproximation::kSimilar), and Lagged
+  (DiscreteContactApproximation::kLagged) model approximations use a
+  Hunt-Crossley model of dissipation, parameterized by
+  `hunt_crossley_dissipation`, for both point and hydroelastic contact. The SAP
+  approximation parameter `relaxation_time` is ignored by these approximations.
+- The SAP model approximation (DiscreteContactApproximation::kSap) uses a linear
+  Kelvin–Voigt model of dissipation parameterized by `relaxation_time`, for both
+  point and hydroelastic contact. The Hunt-Crossley dissipation parameter is
+  ignored by this approximation.
+- We allow the user to specify both `hunt_crossley_dissipation` (TAMSI, Similar
+  and Lagged discrete approximations as well as continuous plant model) and
+  `relaxation_time` (SAP approximation specific parameter) on the model, but the
+  parameter may be ignored depending on your plant configuration. See the
+  documentation for that in the [MultibodyPlant documentation.]
   (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
-  We allow the user to specify both hunt_crossley_dissipation (TAMSI and
-  continuous mode parameter) and relaxation_time (SAP specific parameter) on
-  the model, but the parameter may be ignored depending on your plant
-  configuration.
 
 @section hydro_appendix_examples_and_tutorials Appendix C: Examples and Tutorials
 - Example

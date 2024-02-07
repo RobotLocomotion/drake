@@ -136,7 +136,9 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
+        "//systems/sensors:image_io",
         "//systems/sensors/test_utilities:image_compare",
+        "//visualization:colorize_depth_image",
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
@@ -178,6 +180,35 @@ drake_cc_googletest(
     deps = [
         ":render_engine_vtk_params",
         "//common/yaml",
+    ],
+)
+
+# The generated glTF file can be removed when we're no longer testing the glTF
+# parser patch (see :internal_vtk_gltf_parser_patch_test).
+
+genrule(
+    name = "gltf_pyramid_no_color_texture",
+    srcs = ["//geometry/render:test/meshes/fully_textured_pyramid.gltf"],
+    outs = ["test/pyramid_no_color_texture.gltf"],
+    cmd = "sed '/baseColorTexture/,/},/d' $< > $@",
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "patch_test_models",
+    testonly = 1,
+    srcs = [":gltf_pyramid_no_color_texture"],
+)
+
+drake_cc_googletest(
+    name = "internal_vtk_gltf_parser_patch_test",
+    data = [":patch_test_models"],
+    deps = [
+        ":factory",
+        "//common:find_resource",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 

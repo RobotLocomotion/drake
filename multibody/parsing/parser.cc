@@ -74,11 +74,6 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
   return AddModels(file_name);
 }
 
-std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
-    const std::string& file_name) {
-  return AddModels(file_name);
-}
-
 std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
     const std::string& file_contents, const std::string& file_type) {
   DataSource data_source(DataSource::kContents, &file_contents);
@@ -87,22 +82,6 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
   return parser.AddAllModels(data_source, model_name_prefix_,
                              composite->workspace());
-}
-
-ModelInstanceIndex Parser::AddModelFromFile(
-    const std::string& file_name,
-    const std::string& model_name) {
-  DataSource data_source(DataSource::kFilename, &file_name);
-  ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
-  auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  std::optional<ModelInstanceIndex> maybe_model;
-  maybe_model = parser.AddModel(data_source, model_name, model_name_prefix_,
-                                composite->workspace());
-  if (!maybe_model.has_value()) {
-    throw std::runtime_error(
-        fmt::format("{}: parsing failed", file_name));
-  }
-  return *maybe_model;
 }
 
 }  // namespace multibody

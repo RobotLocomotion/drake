@@ -158,11 +158,8 @@ class PendulumTests : public ::testing::Test {
     SpatialInertia<double> M_L = M_Lcm.Shift(-p_LoLcm);
 
     // Adds the upper and lower links of the pendulum.
-    // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
-    upper_link_ =
-        &model_->AddBody(make_unique<RigidBody<double>>("UpperLink", M_U));
-    // Using: const BodyType<T>& AddBody(Args&&... args)
-    lower_link_ = &model_->AddBody<RigidBody>("LowerLink", M_L);
+    upper_link_ = &model_->AddRigidBody("UpperLink", M_U);
+    lower_link_ = &model_->AddRigidBody("LowerLink", M_L);
 
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
@@ -227,48 +224,39 @@ class PendulumTests : public ::testing::Test {
   }
 
   // Helper method to extract a pose from the position kinematics.
-  // TODO(amcastro-tri):
-  // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
   template <typename T>
   static const RigidTransform<T> get_body_pose_in_world(
       const MultibodyTree<T>& tree,
       const PositionKinematicsCache<T>& pc,
-      const Body<T>& body) {
+      const RigidBody<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    const MobodIndex mobod_index = topology.get_body(body.index()).mobod_index;
+    const MobodIndex mobod_index =
+        topology.get_rigid_body(body.index()).mobod_index;
     return RigidTransform<T>(pc.get_X_WB(mobod_index));
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
   // cache.
-  // TODO(amcastro-tri):
-  // Replace this by a method
-  // Body<T>::get_spatial_velocity_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
   static const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
       const MultibodyTree<double>& tree,
       const VelocityKinematicsCache<double>& vc,
-      const Body<double>& body) {
+      const RigidBody<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.index()).mobod_index);
+    return vc.get_V_WB(topology.get_rigid_body(body.index()).mobod_index);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
   // kinematics cache.
-  // TODO(amcastro-tri):
-  // Replace this by a method
-  // Body<T>::get_spatial_acceleration_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
   static const SpatialAcceleration<double>&
   get_body_spatial_acceleration_in_world(
       const MultibodyTree<double>& tree,
-      const AccelerationKinematicsCache<double>& ac, const Body<double>& body) {
+      const AccelerationKinematicsCache<double>& ac,
+      const RigidBody<double>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by MobodIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.index()).mobod_index);
+    return ac.get_A_WB(topology.get_rigid_body(body.index()).mobod_index);
   }
 
  protected:
@@ -282,13 +270,13 @@ class PendulumTests : public ::testing::Test {
   // Add elements to this model_ and then transfer the whole thing to
   // a MultibodyTreeSystem for execution.
   std::unique_ptr<MultibodyTree<double>> model_;
-  const Body<double>* world_body_{nullptr};
+  const RigidBody<double>* world_body_{nullptr};
 
   // Bodies:
   const RigidBody<double>* upper_link_{nullptr};
   const RigidBody<double>* lower_link_{nullptr};
   // Frames:
-  const BodyFrame<double>* shoulder_inboard_frame_{nullptr};
+  const RigidBodyFrame<double>* shoulder_inboard_frame_{nullptr};
   const FixedOffsetFrame<double>* shoulder_outboard_frame_{nullptr};
   const Frame<double>* elbow_inboard_frame_{nullptr};
   const Frame<double>* elbow_outboard_frame_{nullptr};
@@ -435,7 +423,7 @@ TEST_F(PendulumTests, Finalize) {
 
   // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
-  EXPECT_THROW(model_->AddBody<RigidBody>("B", M_Bo_B), std::logic_error);
+  EXPECT_THROW(model_->AddRigidBody("B", M_Bo_B), std::logic_error);
   EXPECT_THROW(
       model_->AddFrame<FixedOffsetFrame>("F", *lower_link_, X_LEo_),
       std::logic_error);
@@ -457,7 +445,7 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   CreatePendulumModel();
 
   // Vector of references.
-  vector<std::reference_wrapper<const Body<double>>> bodies;
+  vector<std::reference_wrapper<const RigidBody<double>>> bodies;
   bodies.push_back(*world_body_);
   bodies.push_back(*upper_link_);
   bodies.push_back(*lower_link_);

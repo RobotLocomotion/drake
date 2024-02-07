@@ -21,12 +21,14 @@ class RenderEngineTester {
 
   int num_geometries() const {
     return static_cast<int>(engine_.update_ids_.size() +
-                            engine_.anchored_ids_.size());
+                            engine_.anchored_ids_.size() +
+                            engine_.deformable_mesh_dofs_.size());
   }
 
   bool has_id(GeometryId id) const {
     return engine_.update_ids_.count(id) > 0 ||
-           engine_.anchored_ids_.count(id) > 0;
+           engine_.anchored_ids_.count(id) > 0 ||
+           engine_.deformable_mesh_dofs_.count(id) > 0;
   }
 
  private:
@@ -35,7 +37,9 @@ class RenderEngineTester {
 
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using std::set;
@@ -70,11 +74,150 @@ class MinimumEngine : public RenderEngine {
   std::unique_ptr<RenderEngine> DoClone() const override { return nullptr; }
 };
 
+GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
+  DummyRenderEngine engine;
+
+  geometry::internal::RenderMesh mesh;
+  mesh.positions.resize(1, 3);
+  mesh.normals.resize(1, 3);
+  mesh.uvs.resize(1, 2);
+  const Vector3d initial_q = Vector3d(1, 2, 3);
+  const Vector3d initial_normal = Vector3d(-1, 0, 0);
+  mesh.positions.row(0) = initial_q;
+  mesh.normals.row(0) = initial_normal;
+  mesh.uvs.row(0) = Vector2d(1, 0).transpose();
+
+  PerceptionProperties properties = engine.accepting_properties();
+  const GeometryId id0 = GeometryId::get_new_id();
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  engine.RegisterDeformableVisual(id0, {mesh}, properties);
+  // Throw if id is already registered.
+  EXPECT_THROW(engine.RegisterDeformableVisual(id0, {mesh}, properties),
+               std::exception);
+  // Throw if no mesh is specified.
+  EXPECT_THROW(engine.RegisterDeformableVisual(id1, {}, properties),
+               std::exception);
+  // Register a geometry with multiple meshes.
+  engine.RegisterDeformableVisual(id1, {mesh, mesh}, properties);
+
+  // Register another geometry with a property that prevents the registration.
+  const PerceptionProperties skip_properties = engine.rejecting_properties();
+  engine.RegisterDeformableVisual(id2, {mesh}, skip_properties);
+
+  EXPECT_EQ(engine.num_registered(), 2);
+  EXPECT_TRUE(engine.is_registered(id0));
+  EXPECT_TRUE(engine.is_registered(id1));
+  EXPECT_TRUE(engine.has_geometry(id0));
+  EXPECT_TRUE(engine.has_geometry(id1));
+  // Verify that geometry with arbitrary id is not registered.
+  EXPECT_FALSE(engine.is_registered(GeometryId::get_new_id()));
+  EXPECT_FALSE(engine.has_geometry(GeometryId::get_new_id()));
+  // Verify that geometry with id2 is not registered.
+  EXPECT_FALSE(engine.is_registered(id2));
+  EXPECT_FALSE(engine.has_geometry(id2));
+
+  {
+    const std::vector<VectorXd>& q0 = engine.world_configurations(id0);
+    ASSERT_EQ(q0.size(), 1);
+    EXPECT_EQ(q0[0], initial_q);
+    const std::vector<VectorXd>& q1 = engine.world_configurations(id1);
+    ASSERT_EQ(q1.size(), 2);
+    EXPECT_EQ(q1[0], initial_q);
+    EXPECT_EQ(q1[1], initial_q);
+  }
+
+  {
+    const std::vector<VectorXd>& n0 = engine.world_normals(id0);
+    ASSERT_EQ(n0.size(), 1);
+    EXPECT_EQ(n0[0], initial_normal);
+    const std::vector<VectorXd>& n1 = engine.world_normals(id1);
+    ASSERT_EQ(n1.size(), 2);
+    EXPECT_EQ(n1[0], initial_normal);
+    EXPECT_EQ(n1[1], initial_normal);
+  }
+
+  // Update id0 but not id1.
+  VectorXd new_q(3);
+  VectorXd new_normal(3);
+  new_q << 4, 5, 6;
+  new_normal << 7, 8, 9;
+  new_normal.normalize();
+  engine.UpdateDeformableConfigurations(id0, {new_q}, {new_normal});
+  {
+    const std::vector<VectorXd>& q0 = engine.world_configurations(id0);
+    ASSERT_EQ(q0.size(), 1);
+    EXPECT_EQ(q0[0], new_q);
+    const std::vector<VectorXd>& q1 = engine.world_configurations(id1);
+    ASSERT_EQ(q1.size(), 2);
+    EXPECT_EQ(q1[0], initial_q);
+    EXPECT_EQ(q1[1], initial_q);
+  }
+  {
+    const std::vector<VectorXd>& n0 = engine.world_normals(id0);
+    ASSERT_EQ(n0.size(), 1);
+    EXPECT_EQ(n0[0], new_normal);
+    const std::vector<VectorXd>& n1 = engine.world_normals(id1);
+    ASSERT_EQ(n1.size(), 2);
+    EXPECT_EQ(n1[0], initial_normal);
+    EXPECT_EQ(n1[1], initial_normal);
+  }
+
+  // Now update id1 to verify that updates to a multi-mesh geometry go to the
+  // right meshes.
+  VectorXd another_q(3);
+  VectorXd another_normal(3);
+  another_q << 40, 50, 60;
+  another_normal << 70, 80, 90;
+  another_normal.normalize();
+  engine.UpdateDeformableConfigurations(id1, {new_q, another_q},
+                                        {new_normal, another_normal});
+  {
+    const std::vector<VectorXd>& q1 = engine.world_configurations(id1);
+    ASSERT_EQ(q1.size(), 2);
+    EXPECT_EQ(q1[0], new_q);
+    EXPECT_EQ(q1[1], another_q);
+    const std::vector<VectorXd>& n1 = engine.world_normals(id1);
+    ASSERT_EQ(n1.size(), 2);
+    EXPECT_EQ(n1[0], new_normal);
+    EXPECT_EQ(n1[1], another_normal);
+  }
+
+  // Now we test for throw conditions for the update.
+  // Non-existant geometry.
+  const GeometryId fake_id = GeometryId::get_new_id();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}),
+      "No deformable geometry with id.*");
+  // Wrong number of vertex positions/normals.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q, new_q}, {new_normal}),
+      "Vertex data for the wrong number of meshes.*1 meshes are "
+      "registered.*vertex positions for 2 meshes and vertex normals for 1 "
+      "meshes are provided.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q},
+                                            {new_normal, new_normal}),
+      "Vertex data for the wrong number of meshes.*1 meshes are "
+      "registered.*vertex positions for 1 meshes and vertex normals for 2 "
+      "meshes are provided.*");
+  // Wrong size for the vertex positions/normal vectors.
+  VectorXd incorrectly_sized_vector(4);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {incorrectly_sized_vector},
+                                            {new_normal}),
+      "Wrong dofs in vertex positions and/or normals.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateDeformableConfigurations(id0, {new_q},
+                                            {incorrectly_sized_vector}),
+      "Wrong dofs in vertex positions and/or normals.*");
+}
+
 // Tests the RenderEngine-specific functionality for managing registration of
-// geometry and its corresponding update behavior. The former should configure
-// each geometry correctly on whether it gets updated or not, and the latter
-// will confirm that the right geometries get updated.
-GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
+// rigid geometry and its corresponding update behavior. The former should
+// configure each geometry correctly on whether it gets updated or not, and the
+// latter will confirm that the right geometries get updated.
+GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
   // Change the default render label to something registerable.
   DummyRenderEngine engine({RenderLabel::kDontCare});
 
@@ -180,6 +323,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
 
   set<GeometryId> ids;
 
+  // Register rigid geometries.
   for (int i = 0; i < need_update_count + anchored_count; ++i) {
     const GeometryId id = GeometryId::get_new_id();
     const bool is_dynamic = i % 2 == 0;  // alternate dynamic, anchored, etc.
@@ -190,6 +334,17 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
     }
     ids.insert(id);
   }
+
+  // Register a single deformable geometry.
+  geometry::internal::RenderMesh mesh;
+  GeometryId deformable_id = GeometryId::get_new_id();
+  const bool accepted =
+      engine.RegisterDeformableVisual(deformable_id, {mesh}, add_properties);
+  if (!accepted) {
+    throw std::logic_error("The geometry wasn't accepted for registration");
+  }
+  ids.insert(deformable_id);
+
   RenderEngineTester tester(&engine);
 
   // Case: invalid ids don't get removed.
@@ -197,7 +352,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
 
   // Case: Systematically remove remaining geometries and confirm state --
   // because of how geometries were added, this will alternate dynamic,
-  // anchored, dynamic, etc.
+  // anchored, dynamic, etc, with the last geometry being deformable.
   while (!ids.empty()) {
     const GeometryId id = *ids.begin();
     EXPECT_TRUE(engine.RemoveGeometry(id));
@@ -209,7 +364,9 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   }
 }
 
-GTEST_TEST(RenderEngine, ColorLabelConversion) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(RenderEngine, ColorLabelConversionDeprecated) {
   // Explicitly testing labels at *both* ends of the reserved space -- this
   // assumes that the reserved labels are at the top end; if that changes, we'll
   // need a different mechanism to get a large-valued label.
@@ -257,6 +414,35 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
   EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
   EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
   EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(RenderEngine, ColorLabelConversion) {
+  // Explicitly testing labels at *both* ends of the reserved space -- this
+  // assumes that the reserved labels are at the top end; if that changes, we'll
+  // need a different mechanism to get a large-valued label.
+  const std::array<RenderLabel, 3> labels{
+      RenderLabel(0),
+      RenderLabel(RenderLabel::kMaxUnreserved - 1),
+      RenderLabel::kEmpty,
+  };
+  for (size_t i = 0; i < labels.size(); ++i) {
+    for (size_t j = 0; j < labels.size(); ++j) {
+      if (i == j) {
+        // Colors should be invertible back to the original label.
+        const Rgba color = DummyRenderEngine::MakeRgbFromLabel(labels[i]);
+        const Vector3<uint8_t> pixel =
+            (color.rgba().head(3) * 255.0).template cast<uint8_t>();
+        const RenderLabel readback =
+            DummyRenderEngine::MakeLabelFromRgb(pixel[0], pixel[1], pixel[2]);
+        EXPECT_EQ(readback, labels[i]);
+      } else {
+        // Different labels should produce different colors.
+        EXPECT_NE(DummyRenderEngine::MakeRgbFromLabel(labels[i]),
+                  DummyRenderEngine::MakeRgbFromLabel(labels[j]));
+      }
+    }
+  }
 }
 
 // Tests the documented behavior for configuring the default render label.

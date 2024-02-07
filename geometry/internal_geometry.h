@@ -72,13 +72,13 @@ class InternalGeometry {
   /* Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
    */
-  bool operator==(const InternalGeometry &other) const {
+  bool operator==(const InternalGeometry& other) const {
     return id_ == other.id_;
   }
 
   /* Compares two %InternalGeometry instances for inequality. See operator==()
    for the definition of equality.  */
-  bool operator!=(const InternalGeometry &other) const {
+  bool operator!=(const InternalGeometry& other) const {
     return !(*this == other);
   }
 
@@ -210,26 +210,18 @@ class InternalGeometry {
 
   /* Removes the proximity role assigned to this geometry -- if there was
    no proximity role previously, this has no effect.  */
-  void RemoveProximityRole() {
-    proximity_props_ = std::nullopt;
-  }
+  void RemoveProximityRole() { proximity_props_ = std::nullopt; }
 
   /* Removes the illustration role assigned to this geometry -- if there was
    no illustration role previously, this has no effect.  */
-  void RemoveIllustrationRole() {
-    illustration_props_ = std::nullopt;
-  }
+  void RemoveIllustrationRole() { illustration_props_ = std::nullopt; }
 
   /* Removes the perception role assigned to this geometry -- if there was
    no perception role previously, this has no effect.  */
-  void RemovePerceptionRole() {
-    perception_props_ = std::nullopt;
-  }
+  void RemovePerceptionRole() { perception_props_ = std::nullopt; }
 
   /* Changes the name of the geometry to `name`. */
-  void set_name(const std::string& name) {
-    name_ = name;
-  }
+  void set_name(const std::string& name) { name_ = name; }
 
   //@}
 

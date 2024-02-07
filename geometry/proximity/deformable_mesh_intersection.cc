@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/deformable_mesh_with_bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 
 namespace drake {
@@ -76,7 +76,7 @@ class DeformableSurfaceVolumeIntersector
 
 void AddDeformableRigidContactSurface(
     const VolumeMeshFieldLinear<double, double>& deformable_sdf,
-    const DeformableVolumeMesh<double>& deformable_mesh,
+    const DeformableVolumeMeshWithBvh<double>& deformable_mesh,
     const GeometryId deformable_id, const GeometryId rigid_id,
     const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,

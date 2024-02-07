@@ -260,6 +260,7 @@ drake_py_unittest(
     data = [
         ":libdrake.so",
     ],
+    tags = ["no_kcov"],
 )
 
 drake_py_unittest(

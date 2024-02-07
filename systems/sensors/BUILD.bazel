@@ -106,6 +106,7 @@ drake_cc_library(
         ":rgbd_sensor",
         ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
+        "//common:overloaded",
         "//geometry/render_gl",
         "//geometry/render_gltf_client",
         "//geometry/render_vtk",
@@ -270,7 +271,10 @@ drake_cc_binary(
 drake_cc_library(
     name = "color_palette",
     hdrs = ["color_palette.h"],
-    deps = ["//common"],
+    deps = [
+        "//common",
+        "//geometry/render:color_deprecated",
+    ],
 )
 
 drake_cc_library(

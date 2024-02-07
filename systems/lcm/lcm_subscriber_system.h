@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/basic_vector.h"

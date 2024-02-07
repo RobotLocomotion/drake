@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -258,18 +258,18 @@ class BallRpyJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::SpaceXYZMobilizer<T>* get_mobilizer() const {
+  const internal::RpyBallMobilizer<T>* get_mobilizer() const {
     DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::SpaceXYZMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::SpaceXYZMobilizer<T>*>(
+    const internal::RpyBallMobilizer<T>* mobilizer =
+        dynamic_cast<const internal::RpyBallMobilizer<T>*>(
             this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
 
-  internal::SpaceXYZMobilizer<T>* get_mutable_mobilizer() {
+  internal::RpyBallMobilizer<T>* get_mutable_mobilizer() {
     DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::SpaceXYZMobilizer<T>*>(
+    auto* mobilizer = dynamic_cast<internal::RpyBallMobilizer<T>*>(
         this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;

@@ -3,7 +3,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples import (
     CreateClutterClearingYcbObjectList,
     CreateManipulationClassYcbObjectList,

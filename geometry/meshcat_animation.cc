@@ -19,18 +19,18 @@ void MeshcatAnimation::SetTransform(int frame, const std::string& path,
 }
 
 void MeshcatAnimation::SetProperty(int frame, const std::string& path,
-                  const std::string& property, bool value) {
+                                   const std::string& property, bool value) {
   SetProperty(frame, path, property, "boolean", value);
 }
 
 void MeshcatAnimation::SetProperty(int frame, const std::string& path,
-                  const std::string& property, double value) {
+                                   const std::string& property, double value) {
   SetProperty(frame, path, property, "number", value);
 }
 
 void MeshcatAnimation::SetProperty(int frame, const std::string& path,
-                  const std::string& property,
-                  const std::vector<double>& value) {
+                                   const std::string& property,
+                                   const std::vector<double>& value) {
   SetProperty(frame, path, property, "vector", value);
 }
 

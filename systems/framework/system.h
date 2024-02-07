@@ -17,7 +17,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -32,9 +31,6 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/witness_function.h"
-
-// TODO(jwnimmer-tri) Remove on 2024-01-01 upon completion of deprecation.
-#include <sstream>
 
 namespace drake {
 namespace systems {
@@ -267,9 +263,7 @@ class System : public SystemBase {
   force-triggered event.
 
   @note There will always be at least one force-triggered event, though with no
-  associated handler. By default that will do nothing when triggered, but that
-  behavior can be changed by overriding the dispatcher DoPublish()
-  (not recommended).
+  associated handler (so will do nothing when triggered).
 
   The Simulator can be configured to call this in Simulator::Initialize() and at
   the start of each continuous integration step. See the Simulator API for more
@@ -1207,31 +1201,6 @@ class System : public SystemBase {
   // Add this base class function into this Doxygen section.
   using SystemBase::GetGraphvizString;
 
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling or overriding this function, either "
-      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
-  virtual void GetGraphvizFragment(int max_depth, std::stringstream* dot) const;
-  using SystemBase::GetGraphvizFragment;  // Don't shadow.
-
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling or overriding this function, either "
-      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
-  virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
-                                         int max_depth,
-                                         std::stringstream* dot) const;
-
-  DRAKE_DEPRECATED(
-      "2024-01-01",
-      "Instead of calling or overriding this function, either "
-      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
-  virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
-                                          int max_depth,
-                                          std::stringstream* dot) const;
-
-  DRAKE_DEPRECATED("2024-01-01", "Call GetGraphvizFragment() instead")
-  int64_t GetGraphvizId() const;
   //@}
 
   //----------------------------------------------------------------------------
@@ -1523,19 +1492,15 @@ class System : public SystemBase {
   Drake's LeafSystem and Diagram (plus a few unit tests) and those
   implementations must be `final`.
 
-  For a LeafSystem, these functions need to call the appropriate LeafSystem::DoX
-  event dispatcher. E.g. LeafSystem::DispatchPublishHandler() calls
-  LeafSystem::DoPublish(). User supplied custom event callbacks embedded in each
-  individual event need to be invoked in the LeafSystem::DoX handlers if
-  desired. For a LeafSystem, the pseudo code of the complete default publish
-  event handler dispatching is roughly:
+  For a LeafSystem, these functions need to call each event's handler callback,
+  For a LeafSystem, the pseudo code of the complete default publish event
+  handler dispatching is roughly:
   <pre>
     leaf_sys.Publish(context, event_collection)
     -> leaf_sys.DispatchPublishHandler(context, event_collection)
-       -> leaf_sys.DoPublish(context, event_collection.get_events())
-          -> for (event : event_collection_events):
-               if (event.has_handler)
-                 event.handler(context)
+        for (event : event_collection_events):
+          if (event.has_handler)
+            event.handler(context)
   </pre>
   Discrete update events and unrestricted update events are dispatched
   similarly for a LeafSystem. EventStatus is propagated upwards from the
@@ -1923,15 +1888,6 @@ class System : public SystemBase {
   SystemScalarConverter& get_mutable_system_scalar_converter() {
     return system_scalar_converter_;
   }
-
-  // TODO(jwnimmer-tri) On 2024-01-01 upon completion of deprecation, there will
-  // no longer be any reason for System<T> to override this SystemBase function.
-  // At that point, we should remove this particular override.
-  /** The NVI implementation of SystemBase::GetGraphvizFragment() for subclasses
-  to override if desired. The default behavior should be sufficient in most
-  cases. */
-  GraphvizFragment DoGetGraphvizFragment(
-      const GraphvizFragmentParams& params) const override;
 
  private:
   // For any T1 & T2, System<T1> considers System<T2> a friend, so that System

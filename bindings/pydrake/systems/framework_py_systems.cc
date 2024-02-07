@@ -12,7 +12,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_html.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/vector_system.h"
@@ -111,12 +110,6 @@ struct Impl {
     // downcasting when trying to bind `PyLeafSystem::DoCalcTimeDerivatives` to
     // `py::class_<LeafSystem<T>, ...>`.
     using Base::DoCalcTimeDerivatives;
-
-    // To be removed with deprecation on 2024-02-01.
-    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
-    using Base::DeclarePeriodicPublishNoHandler;
-    using Base::DoCalcDiscreteVariableUpdates;
-    using Base::DoPublish;
   };
 
   // Provide flexible inheritance to leverage prior binding information, per
@@ -129,16 +122,6 @@ struct Impl {
     using Base::Base;
 
     // Trampoline virtual methods.
-
-    void DoPublish(const Context<T>& context,
-        const vector<const PublishEvent<T>*>& events) const override {
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
-      // If the macro did not return, use default functionality.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      Base::DoPublish(context, events);
-#pragma GCC diagnostic pop
-    }
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
@@ -154,18 +137,6 @@ struct Impl {
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
-    void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-        const std::vector<const DiscreteUpdateEvent<T>*>& events,
-        DiscreteValues<T>* discrete_state) const override {
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
-          "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
-      // If the macro did not return, use default functionality.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
-#pragma GCC diagnostic pop
-    }
-
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -173,6 +144,7 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      py::gil_scoped_acquire guard;
       auto wrapped =
           [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
         PYBIND11_OVERLOAD_INT(
@@ -248,20 +220,6 @@ struct Impl {
    public:
     using Base = py::wrapper<VectorSystemPublic>;
     using Base::Base;
-
-    // Trampoline virtual methods.
-    void DoPublish(const Context<T>& context,
-        const vector<const PublishEvent<T>*>& events) const override {
-      // Copied from above, since we cannot use `PyLeafSystemBase` due to final
-      // overrides of some methods.
-      PYBIND11_OVERLOAD_INT(
-          void, VectorSystem<T>, "DoPublish", &context, events);
-      // If the macro did not return, use default functionality.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      Base::DoPublish(context, events);
-#pragma GCC diagnostic pop
-    }
 
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -977,37 +935,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<const AbstractValue&>(
                 &LeafSystemPublic::DeclareAbstractState),
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    leaf_system_cls  // BR
-        .def("DeclarePeriodicPublishNoHandler",
-            WrapDeprecated(
-                doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc_deprecated,
-                &LeafSystemPublic::DeclarePeriodicPublishNoHandler),
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc_deprecated)
-        .def("DeclarePeriodicDiscreteUpdateNoHandler",
-            WrapDeprecated(doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
-                               .doc_deprecated,
-                &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler),
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
-                .doc_deprecated)
-        .def("DoPublish",
-            WrapDeprecated(
-                "Directly calling DoPublish() is no longer allowed. Use "
-                "ForcedPublish() instead. "
-                "This function will be removed from Drake on 2024-02-01.",
-                &LeafSystemPublic::DoPublish),
-            doc.LeafSystem.DoPublish.doc)
-        .def("DoCalcDiscreteVariableUpdates",
-            WrapDeprecated(
-                "Directly calling DoCalcDiscreteVariableUpdates() is no longer "
-                "allowed. Use CalcForcedDiscreteVariableUpdate() instead. "
-                "This function will be removed from Drake on 2024-02-01.",
-                &LeafSystemPublic::DoCalcDiscreteVariableUpdates),
-            doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc);
-#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
@@ -1323,14 +1250,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     converter.attr("SupportedConversionPairs") =
         GetPyParamList(ConversionPairs{});
   }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GenerateHtml",
-      WrapDeprecated(doc.GenerateHtml.doc_deprecated, &GenerateHtml),
-      py::arg("system"), py::arg("initial_depth") = 1,
-      doc.GenerateHtml.doc_deprecated);
-#pragma GCC diagnostic pop
 }
 
 }  // namespace

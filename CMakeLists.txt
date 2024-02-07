@@ -220,8 +220,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
-# The supported Python major/minor versions should match those listed in both
-# doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
+# The supported Python major/minor versions should match those listed in
+# doc/_pages/from_source.md.
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.11)
 else()
@@ -465,6 +465,12 @@ option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
+endif()
+
+option(WITH_OPENMP "Build with support for OpenMP" OFF)
+
+if(WITH_OPENMP)
+  string(APPEND BAZEL_CONFIG " --config=omp")
 endif()
 
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL

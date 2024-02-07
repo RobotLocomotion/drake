@@ -24,9 +24,24 @@ drake_cc_package_library(
         ":cspace_free_polytope_base",
         ":cspace_free_structs",
         ":cspace_separating_plane",
+        ":geodesic_convexity",
         ":graph_of_convex_sets",
         ":iris",
         ":iris_internal",
+    ],
+)
+
+drake_cc_library(
+    name = "geodesic_convexity",
+    srcs = ["geodesic_convexity.cc"],
+    hdrs = ["geodesic_convexity.h"],
+    interface_deps = [
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+    deps = [
+        "//geometry/optimization:convex_set",
+        "//solvers:solve",
     ],
 )
 
@@ -68,6 +83,7 @@ drake_cc_library(
     deps = [
         "//geometry:read_obj",
         "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
         "//solvers:get_program_type",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
@@ -157,6 +173,7 @@ drake_cc_library(
     name = "cspace_free_structs",
     hdrs = ["cspace_free_structs.h"],
     deps = [
+        "//common:parallelism",
         "//common/symbolic:rational_function",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
@@ -410,6 +427,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geodesic_convexity_test",
+    deps = [
+        ":convex_set",
+        ":geodesic_convexity",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "graph_of_convex_sets_test",
     timeout = "moderate",
     shard_count = 8,
@@ -480,6 +506,7 @@ drake_cc_googletest(
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )

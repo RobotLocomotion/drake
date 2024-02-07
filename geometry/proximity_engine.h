@@ -27,7 +27,8 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometryState;
+template <typename T>
+class GeometryState;
 
 namespace internal {
 
@@ -206,8 +207,7 @@ class ProximityEngine {
    GeometryState::ComputeSignedDistancePairwiseClosestPoints().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
-  std::vector<SignedDistancePair<T>>
-  ComputeSignedDistancePairwiseClosestPoints(
+  std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
@@ -223,13 +223,11 @@ class ProximityEngine {
   /* Implementation of GeometryState::ComputeSignedDistanceToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
-  std::vector<SignedDistanceToPoint<T>>
-  ComputeSignedDistanceToPoint(
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
-
 
   //----------------------------------------------------------------------------
   /* @name                Collision Queries
@@ -323,7 +321,8 @@ class ProximityEngine {
   explicit ProximityEngine(Impl* impl);
 
   // Engine on one scalar can see the members of other engines.
-  template <typename> friend class ProximityEngine;
+  template <typename>
+  friend class ProximityEngine;
 
   // Facilitate testing.
   friend class ProximityEngineTester;

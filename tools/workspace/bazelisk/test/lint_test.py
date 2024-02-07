@@ -1,12 +1,18 @@
 import unittest
 
 _HOW_TO_FIX = """
+If you're seeing this, you probably didn't follow the upgrade instuctions in
+tools/workspace/bazelisk/repository.bzl. Here they are again...
+
+************************************************************************
 To update Drake's vendored copy of bazelisk:
+
 $ cd drake
-$ bazel fetch @bazelisk//:LICENSE
-$ cp bazel-drake/external/bazelisk/LICENSE \
-     bazel-drake/external/bazelisk/bazelisk.py \
-     third_party/com_github_bazelbuild_bazelisk/
+$ bazel build @bazelisk//:*
+$ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
+    bazel-drake/external/bazelisk/LICENSE \\
+    bazel-drake/external/bazelisk/bazelisk.py
+************************************************************************
 """
 
 
