@@ -630,6 +630,43 @@ class SpatialInertia {
     return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
         inertia_shape_factor);
   }
+
+  /// Return ½-lengths, orientation, and position of a box whose mass is
+  /// concentrated in 8 particles at the box's corners and whose spatial inertia
+  /// is equal to `this` spatial inertia. The physical geometry of the actual
+  /// underlying object must be larger than this box as this box is a minimum
+  /// bounding box for the actual geometry.
+  /// See @ref spatial_inertia_equivalent_shapes
+  /// "Spatial inertia equivalent shapes" for more details.
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() const {
+    constexpr double inertia_shape_factor = 1.0;
+    return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
+        inertia_shape_factor);
+  }
+
+  /// Compares the geometrical dimensions [a b c] described in @p geometry_abc
+  /// with the dimensions [x y z] described in @p inertia_xyz and returns the
+  /// lowest ratio of a/x, b/y, c/z -- or std::numeric_limits<double>::max()
+  /// if x, y, z are all 0. If lowest ratio is smaller than 1, the physical
+  /// object is too small to generate the associated inertia properties.
+  /// @param[in] geometry_abc the dimensions [a b c] of the bounding box that
+  /// contains all the molecules for a physical object. One way to calculate
+  /// these dimensions is from a physical object's geometry, e.g., its collision
+  /// geometry (or perhaps its visual geometry).
+  /// @param[in] inertia_xyz the dimensions [x y z] of the minimum bounding box
+  /// from the spatial inertia associated with the physical object. One way to
+  /// calculate that spatial inertia is with the physical object's geometry.
+  /// Another way is to use CAD/CAE tools and (hopefully) accurately transcribe
+  /// the mass and inertia properties from the CAD/CAE tool to Drake, e.g., via
+  /// the mass properties XML tags in a URDF, SDF, or USD file.
+  /// @note If both geometry_abc and inertia_xyz are properly calculated, the
+  /// physical object's bounding box should be larger than spatial inertia's
+  /// minimum bounding box, i.e. a ≥ x, b ≥ y, c ≥ z.
+  /// @pre The bounding boxes must be measured in the same frame.
+  static double CalcRatioGeometryDimensionsToMinimumInertiaDimensions(
+      const Vector3<double>& geometry_abc,
+      const Vector3<double>& inertia_xyz);
   ///@}
 
   /// Copy to a full 6x6 matrix representation.
