@@ -90,7 +90,7 @@ namespace internal {
  These exceptions to the "shared" data have to be explicitly managed for each
  clone. Furthermore, the work has to be done with the engine's OpenGl context
  bound. Currently, all of this "clean up" work is done in DoClone(). */
-class RenderEngineGl final : public render::RenderEngine {
+class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
  public:
   /* @name Does not allow public copy, move, or assignment  */
   //@{
@@ -114,7 +114,7 @@ class RenderEngineGl final : public render::RenderEngine {
 
   /* @name    Shape reification  */
   //@{
-  using render::RenderEngine::ImplementGeometry;
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) final;
   void ImplementGeometry(const Capsule& capsule, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;

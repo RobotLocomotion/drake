@@ -50,6 +50,12 @@ import github3
 
 from drake.tools.workspace.metadata import read_repository_metadata
 
+logger = logging.getLogger('new_release')
+logger.setLevel(logging.INFO)
+
+warn = logger.warning
+info = logger.info
+
 # Repository rules that fetch from GitHub.
 _GITHUB_RULE_TYPES = [
     "github",
@@ -168,7 +174,7 @@ def _is_ignored_tag(commit, workspace):
     if prerelease:
         # Heuristically looks like a pre-release; ignore it, but log it for the
         # user to check.
-        print("Skipping prerelease {} for {}".format(commit, workspace))
+        warn(f"Skipping prerelease {commit} for {workspace}")
     return prerelease
 
 
@@ -177,7 +183,7 @@ def _latest_tag(gh_repo, workspace):
         if _is_ignored_tag(tag.name, workspace):
             continue
         return tag.name
-    print("Could not find any matching tags for {}".format(workspace))
+    warn(f"Could not find any matching tags for {workspace}")
     return None
 
 
@@ -242,11 +248,11 @@ def _check_for_upgrades(gh, args, metadata):
             # "scripted"-rule-type upgrade of "crate_universe".
             continue
         elif rule_type == _SCRIPTED_RULE_TYPE:
-            print(f"{workspace_name} may need upgrade")
+            info(f"{workspace_name} may need upgrade")
             continue
         elif rule_type == "manual":
-            print("{} version {} needs manual inspection".format(
-                workspace_name, data.get("version", "???")))
+            warn(f"{workspace_name} version %s needs manual inspection",
+                 data.get("version", "???"))
             continue
         else:
             raise RuntimeError(
@@ -254,11 +260,11 @@ def _check_for_upgrades(gh, args, metadata):
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
-            print("{} needs upgrade from {} to {}".format(
-                workspace_name, old_commit, new_commit))
+            info(f"{workspace_name} needs upgrade"
+                 f" from {old_commit} to {new_commit}")
         else:
-            print("{} version {} needs manual inspection".format(
-                workspace_name, old_commit))
+            warn(f"{workspace_name} version {old_commit}"
+                 " needs manual inspection")
 
 
 def _modified_paths(repo, root):
@@ -309,16 +315,20 @@ def _do_commit(local_drake_checkout, actually_commit,
         local_drake_checkout.git.add('-A', *paths)
         local_drake_checkout.git.commit(
             '-o', *paths, '-m', "[workspace] " + message)
-        print("\n" + ("*" * 72))
-        print(f"Done.  Changes for {names} were committed.")
-        print("Be sure to review the changes and amend the commit if needed.")
-        print(("*" * 72) + "\n")
+        info("")
+        info("*" * 72)
+        info(f"Done.  Changes for {names} were committed.")
+        info("Be sure to review the changes and amend the commit if needed.")
+        info("*" * 72)
+        info("")
     else:
-        print("\n" + ("*" * 72))
-        print("Done.  Be sure to review and commit the changes:")
-        print(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
-        print(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
-        print(("*" * 72) + "\n")
+        info("")
+        info("*" * 72)
+        info("Done.  Be sure to review and commit the changes:")
+        info(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
+        info(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
+        info("*" * 72)
+        info("")
 
 
 def _download(url, local_filename):
@@ -368,7 +378,7 @@ def _do_upgrade_github_archive(
     assert checksum_line_num is not None
 
     # Download the new source archive.
-    print("Downloading new archive...")
+    info("Downloading new archive...")
     new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
     new_filename = new_commit.replace("/", "_")
     new_checksum = _download(new_url, f"{temp_dir}/{new_filename}.tar.gz")
@@ -394,7 +404,7 @@ def _do_upgrade_github_release_attachments(
         bzl_content = f.read()
 
     # Download the new attachments.
-    print("Downloading new attachments...")
+    info("Downloading new attachments...")
     new_attachments = {}
     for filename in old_attachments.keys():
         new_url = (f"https://github.com/{repository}/"
@@ -444,8 +454,8 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
         if local_drake_checkout and not can_commit:
-            print(f"{workspace_root} has local changes.")
-            print(f"Changes made for {workspace_name} will NOT be committed.")
+            warn(f"{workspace_root} has local changes.")
+            warn(f"Changes made for {workspace_name} will NOT be committed.")
 
         # Do the upgrade.
         new_commit = None
@@ -468,14 +478,13 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
             return UpgradeResult(False)
         elif new_commit is None:
             raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-        print("Upgrading {} from {} to {}".format(
-            workspace_name, old_commit, new_commit))
+        info(f"Upgrading {workspace_name} from {old_commit} to {new_commit}")
 
         # Determine if we should and can commit the changes made.
         can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
         if local_drake_checkout and not can_commit:
-            print(f"{bzl_filename} has local changes.")
-            print(f"Changes made for {workspace_name} will NOT be committed.")
+            warn(f"{bzl_filename} has local changes.")
+            warn(f"Changes made for {workspace_name} will NOT be committed.")
 
         # Do the upgrade.
         if rule_type == "github":
@@ -500,15 +509,17 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         modified_paths = {bzl_filename}
 
     # Copy the downloaded tarball into the repository cache.
-    print("Populating repository cache ...")
+    info("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
     # Check for additional instructions.
     upgrade_advice = data.get("upgrade_advice", "")
     if len(upgrade_advice):
-        print("\n" + ("*" * 72))
-        print(upgrade_advice)
-        print(("*" * 72) + "\n")
+        warn("")
+        warn("*" * 72)
+        warn(upgrade_advice)
+        warn("*" * 72)
+        warn("")
 
     # Finalize the result.
     message = f"Upgrade {workspace_name} to latest"
@@ -552,7 +563,7 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
         cohort = ', '.join(modified_workspace_names)
 
         if not can_commit:
-            print(f"Changes made for {cohort} will NOT be committed.")
+            warn(f"Changes made for {cohort} will NOT be committed.")
 
         message = f"Upgrade {cohort} to latest\n\n"
         message += "- " + "\n- ".join(commit_messages)
@@ -600,12 +611,15 @@ def main():
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(message)s")
+
     if args.use_password and not args.user:
         parser.error("Couldn't guess github username; you must supply --user.")
 
     # Log in to github.
     if args.use_password:
-        prompt = "Password for https://{}@github.com: ".format(args.user)
+        prompt = f"Password for https://{args.user}@github.com: "
         gh = github3.login(
             username=args.user,
             password=getpass.getpass(prompt))
@@ -636,10 +650,9 @@ def main():
         local_drake_checkout = None
 
     # Grab the workspace metadata.
-    print("Collecting bazel repository details...")
+    info("Collecting bazel repository details...")
     metadata = read_repository_metadata(repositories=workspaces)
-    if args.verbose:
-        print(json.dumps(metadata, sort_keys=True, indent=2))
+    logging.debug(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
         visited_workspaces = set()
@@ -661,7 +674,7 @@ def main():
                 visited_workspaces.update(cohort_workspaces)
     else:
         # Run our report of what's available.
-        print("Checking for new releases...")
+        info("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
 
     if args.lint:

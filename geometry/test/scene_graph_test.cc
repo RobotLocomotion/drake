@@ -629,24 +629,20 @@ TEST_F(SceneGraphTest, ChangeShape) {
       query_object().inspector();
 
   // Confirm the shape in the model and context is of the expected type.
-  ASSERT_EQ(ShapeName(sphere).name(),
-            ShapeName(model_inspector.GetShape(g_id)).name());
-  ASSERT_EQ(ShapeName(sphere).name(),
-            ShapeName(context_inspector.GetShape(g_id)).name());
+  ASSERT_EQ(sphere.type_name(), model_inspector.GetShape(g_id).type_name());
+  ASSERT_EQ(sphere.type_name(), context_inspector.GetShape(g_id).type_name());
 
   // Change shape without changing pose.
   const Box box(1.5, 2.5, 3.5);
 
   scene_graph_.ChangeShape(source_id, g_id, box);
-  EXPECT_EQ(ShapeName(box).name(),
-            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_EQ(box.type_name(), model_inspector.GetShape(g_id).type_name());
   EXPECT_TRUE(
       CompareMatrices(X_WG_original.GetAsMatrix34(),
                       model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
 
   scene_graph_.ChangeShape(context_.get(), source_id, g_id, box);
-  EXPECT_EQ(ShapeName(box).name(),
-            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_EQ(box.type_name(), context_inspector.GetShape(g_id).type_name());
   EXPECT_TRUE(
       CompareMatrices(X_WG_original.GetAsMatrix34(),
                       context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
@@ -659,15 +655,13 @@ TEST_F(SceneGraphTest, ChangeShape) {
   const RigidTransformd X_WG_new = X_WG_original * X_WG_original;
 
   scene_graph_.ChangeShape(source_id, g_id, cylinder, X_WG_new);
-  EXPECT_EQ(ShapeName(cylinder).name(),
-            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_EQ(cylinder.type_name(), model_inspector.GetShape(g_id).type_name());
   EXPECT_TRUE(
       CompareMatrices(X_WG_new.GetAsMatrix34(),
                       model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
 
   scene_graph_.ChangeShape(context_.get(), source_id, g_id, cylinder, X_WG_new);
-  EXPECT_EQ(ShapeName(cylinder).name(),
-            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_EQ(cylinder.type_name(), context_inspector.GetShape(g_id).type_name());
   EXPECT_TRUE(
       CompareMatrices(X_WG_new.GetAsMatrix34(),
                       context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));

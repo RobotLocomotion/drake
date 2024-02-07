@@ -50,6 +50,9 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
                            std::optional<int> expect_num_messages,
                            std::optional<std::string> expect_json,
                            bool expect_success = true) {
+  if (expect_num_messages) {
+    meshcat.Flush();
+  }
   std::vector<std::string> argv;
   argv.push_back(
       FindResourceOrThrow("drake/geometry/meshcat_websocket_client"));
@@ -633,7 +636,7 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   EXPECT_EQ(data.type, "set_property");
   EXPECT_EQ(data.path, "/Background/<object>");
   EXPECT_EQ(data.property, "environment_map");
-  EXPECT_THAT(data.value, testing::StartsWith("cas/sha256/"));
+  EXPECT_THAT(data.value, testing::StartsWith("cas-"));
 
   // Clear the map with an empty string.
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));

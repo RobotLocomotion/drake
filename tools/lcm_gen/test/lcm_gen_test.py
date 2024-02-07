@@ -5,8 +5,10 @@ import unittest
 from bazel_tools.tools.python.runfiles import runfiles
 
 from drake.tools.lcm_gen import (
+    CppGen,
     Parser,
     PrimitiveType,
+    Struct,
     UserType,
 )
 
@@ -19,11 +21,23 @@ class BaseTest(unittest.TestCase):
 
         self._lima_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/lima.lcm"))
-        assert self._lima_path.exists()
-
+        self._lima_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/lima.h"))
         self._mike_path = Path(self._manifest.Rlocation(
             "drake/tools/lcm_gen/test/mike.lcm"))
+        self._mike_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/mike.h"))
+        self._november_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/november.lcm"))
+        self._november_h_path = Path(self._manifest.Rlocation(
+            "drake/tools/lcm_gen/test/goal/november.h"))
+
+        assert self._lima_path.exists()
+        assert self._lima_h_path.exists()
         assert self._mike_path.exists()
+        assert self._mike_h_path.exists()
+        assert self._november_path.exists()
+        assert self._november_h_path.exists()
 
 
 class TestParser(BaseTest):
@@ -108,6 +122,7 @@ struct papa.mike {
   double delta[3];
   float foxtrot[4][5];
   papa.lima alpha;
+  string sierra;
   int32_t rows;
   int32_t cols;
   byte bravo[rows];
@@ -125,6 +140,17 @@ struct papa.mike {
         self.assertEqual(zulu.typ.name, "lima")
         self.assertEqual(zulu.array_dims[0], "rows")
         self.assertEqual(zulu.array_dims[1], 2)
+
+    def test_parse_november(self):
+        """Checks the parse tree for `november.lcm`."""
+        november = Parser.parse(filename=self._november_path)
+        self.assertEqual(str(november), """\
+struct papa.november {
+  papa.lima alpha;
+  papa.lima bravo;
+  int32_t charlie;
+}
+""")
 
     def test_type_str(self):
         """Tests UserType.__str__. The end-to-end tests of the parser wouldn't
@@ -169,3 +195,54 @@ struct papa.mike {
     def test_missing_const_name(self):
         with self.assertRaisesRegex(SyntaxError, "Expected.*NAME"):
             self._parse_str('struct bad { const double /* name */ = 1; }')
+
+
+class TestCppGen(BaseTest):
+    """Tests for the CppGen class. For the most part, these merely compare the
+    generated code to a checked-in goal file. Testing that the generated code
+    works as intended happens in the C++ unit test `functional_test.cc`.
+    """
+
+    _HELP = """
+===========================================================================
+To replace the goal files with newly-regenerated copies, run this command:
+
+bazel run //tools/lcm_gen -- \
+  tools/lcm_gen/test/*.lcm --outdir=tools/lcm_gen/test/goal
+
+===========================================================================
+"""
+
+    def test_lima_text(self):
+        """The generated text for lima.h exactly matches the goal file."""
+        lima = Parser.parse(filename=self._lima_path)
+        expected_text = self._lima_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=lima).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
+
+    def test_mike_text(self):
+        """The generated text for mike.h exactly matches the goal file."""
+        mike = Parser.parse(filename=self._mike_path)
+        expected_text = self._mike_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=mike).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
+
+    def test_november_text(self):
+        """The generated text for november.h exactly matches the goal file."""
+        november = Parser.parse(filename=self._november_path)
+        expected_text = self._november_h_path.read_text(encoding="utf-8")
+        actual_text = CppGen(struct=november).generate()
+        self.assertMultiLineEqual(expected_text, actual_text, self._HELP)
+
+    def test_no_package(self):
+        """Sanity test for a message without any LCM package specified."""
+        empty = Struct(typ=UserType(package=None, name="empty"))
+        actual_text = CppGen(struct=empty).generate()
+        lines = actual_text.splitlines()
+        while lines[0] == "" or lines[0][0] == "#":
+            # Skip over blank lines and preprocessor lines.
+            lines.pop(0)
+        # The first real line of code should be the class opener.
+        self.assertEqual(lines[0], "class empty {")
+        # The last real line of code should be the class closer.
+        self.assertEqual(lines[-1], "};")

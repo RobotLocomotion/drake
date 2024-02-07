@@ -187,11 +187,16 @@ struct AddCollisionFilterGroup {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(members));
+    a->Visit(DRAKE_NVP(model_namespace));
     a->Visit(DRAKE_NVP(ignored_collision_filter_groups));
   }
 
-  /// Name of group to be added. Must not be a scoped name.
+  /// Name of group to be added.  This is an unscoped name, and must be
+  /// unique either globally or within its specified model namespace.
   std::string name;
+  /// Optional model namespace.  Allows `name` to be reused between models
+  /// and lets you use the scoped name in `ignored_collision_filter_groups`.
+  std::optional<std::string> model_namespace;
   /// Names of members of the group. May be scoped and refer to bodies of
   /// already added models. This data is analogous to a sequence of
   /// @ref tag_drake_member in XML model formats.

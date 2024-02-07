@@ -120,7 +120,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
         "Rigid {} shapes are not currently supported for deformable "
         "contact; registration is allowed, but an error will be thrown "
         "during contact.",
-        ShapeName(shape));
+        shape.type_name());
     return {};
   }
   auto surface_mesh = std::make_unique<TriangleSurfaceMesh<double>>(

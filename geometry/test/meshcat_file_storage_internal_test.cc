@@ -61,6 +61,10 @@ GTEST_TEST(MeshcatFileStorageInternalTest, BasicWorkflow) {
   EXPECT_EQ(repeat_content, "");
   EXPECT_EQ(repeat_hint, "");
 
+  // The CAS URLs are as expected.
+  EXPECT_EQ(FileStorage::GetCasUrl(*one), FileStorage::GetCasUrl(*repeat));
+  EXPECT_NE(FileStorage::GetCasUrl(*one), FileStorage::GetCasUrl(*two));
+
   // Look up the first item.
   HandlePtr find_one = dut.Find(one_sha256);
   ASSERT_TRUE(find_one);

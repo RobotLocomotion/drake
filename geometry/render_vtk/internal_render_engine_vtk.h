@@ -88,6 +88,7 @@ enum ImageType {
 
 /* See documentation of MakeRenderEngineVtk().  */
 class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
+                                        private ShapeReifier,
                                         private ModuleInitVtkRenderingOpenGL2 {
  public:
   /* @name Does not allow copy, move, or assignment  */
@@ -113,7 +114,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   /* @name    Shape reification  */
   //@{
-  using RenderEngine::ImplementGeometry;
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
