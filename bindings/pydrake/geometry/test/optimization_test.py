@@ -264,6 +264,12 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box_intersect_unit_box.FindRedundant()
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
+        
+        # Check Simplify SimplifyByIncrementalFaceTranslation binding with 
+        # default input parameters.
+        h6 = h_box.SimplifyByIncrementalFaceTranslation()
+        self.assertIsInstance(h6, mut.HPolyhedron)
+        self.assertEqual(h6.ambient_dimension(), 3)
 
         # This polyhedron is intentionally constructed to be an empty set.
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
