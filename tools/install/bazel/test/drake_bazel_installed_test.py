@@ -54,6 +54,13 @@ http_archive(
     strip_prefix = "rules_python-{rules_python_commit}",
     urls = {rules_python_urls!r},
 )
+load(
+    "@rules_python//python/private:internal_config_repo.bzl",
+    "internal_config_repo",
+)
+internal_config_repo(
+    name = "rules_python_internal",
+)
 
 new_local_repository(
     name = "drake_binary",
