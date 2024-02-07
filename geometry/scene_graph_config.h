@@ -27,6 +27,7 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(relaxation_time));
     a->Visit(DRAKE_NVP(point_stiffness));
+    ValidateOrThrow();
   }
   /** There are three valid options for `compliance_type`:
   - "undefined": hydroelastic contact will not be used.
@@ -52,6 +53,9 @@ struct DefaultProximityProperties {
   std::optional<double> hunt_crossley_dissipation;            /**< [s/m] */
   std::optional<double> relaxation_time;                      /**< [s] */
   std::optional<double> point_stiffness;                      /**< [N/m] */
+
+  /** Throws if the values are inconsistent. */
+  void ValidateOrThrow() const;
 };
 
 /** The set of configurable properties on a SceneGraph.  When SceneGraph is
@@ -68,6 +72,9 @@ struct SceneGraphConfig {
   /** Configures the SceneGraph hydroelastic auto-configuration feature. @see
   @ref hug_quick_hydro .*/
   DefaultProximityProperties default_proximity_properties;
+
+  /** Throws if the values are inconsistent. */
+  void ValidateOrThrow() const;
 };
 
 }  // namespace geometry
