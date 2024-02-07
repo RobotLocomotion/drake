@@ -315,8 +315,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "scene_graph_config",
+    srcs = ["scene_graph_config.cc"],
     hdrs = ["scene_graph_config.h"],
     deps = [
+        ":proximity_properties",
         "//common:name_value",
     ],
 )
