@@ -83,53 +83,6 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
   friend class GeometryStateValue;
 };
 
-void ThrowUnlessAbsentOr(
-    std::optional<double> property,
-    std::function<bool(double)> predicate) {
-  if (property.has_value()) {
-    DRAKE_THROW_UNLESS(predicate(*property));
-  }
-}
-
-// Throws if config values are invalid.
-void ValidateConfig(const SceneGraphConfig& config) {
-  const auto& props = config.default_proximity_properties;
-
-  // This will throw if the type is invalid.
-  internal::GetHydroelasticTypeFromString(props.compliance_type);
-
-
-  auto isfinite = [](double x) { return std::isfinite(x); };
-  ThrowUnlessAbsentOr(props.hydroelastic_modulus, isfinite);
-  ThrowUnlessAbsentOr(props.mesh_resolution_hint, isfinite);
-  ThrowUnlessAbsentOr(props.slab_thickness, isfinite);
-  ThrowUnlessAbsentOr(props.dynamic_friction, isfinite);
-  ThrowUnlessAbsentOr(props.static_friction, isfinite);
-  ThrowUnlessAbsentOr(props.hunt_crossley_dissipation, isfinite);
-  ThrowUnlessAbsentOr(props.relaxation_time, isfinite);
-  ThrowUnlessAbsentOr(props.point_stiffness, isfinite);
-
-  auto positive = [](double x) { return x > 0.0; };
-  auto nonnegative = [](double x) { return x >= 0.0; };
-  ThrowUnlessAbsentOr(props.hydroelastic_modulus, positive);
-  ThrowUnlessAbsentOr(props.mesh_resolution_hint, positive);
-  ThrowUnlessAbsentOr(props.slab_thickness, positive);
-  ThrowUnlessAbsentOr(props.dynamic_friction, nonnegative);
-  ThrowUnlessAbsentOr(props.static_friction, nonnegative);
-  ThrowUnlessAbsentOr(props.hunt_crossley_dissipation, nonnegative);
-  ThrowUnlessAbsentOr(props.relaxation_time, nonnegative);
-  ThrowUnlessAbsentOr(props.point_stiffness, nonnegative);
-
-  // Require either both friction quantities or neither.
-  DRAKE_THROW_UNLESS(props.static_friction.has_value() ==
-                     props.dynamic_friction.has_value());
-  if (props.static_friction.has_value()) {
-    // Since we can't conveniently use multibody::CoulombFriction, check now
-    // that the values are compatible.
-    DRAKE_THROW_UNLESS(*props.static_friction >= *props.dynamic_friction);
-  }
-}
-
 HydroelasticType GetConfiguredHydroelasticType(const SceneGraphConfig& config) {
   return internal::GetHydroelasticTypeFromString(
       config.default_proximity_properties.compliance_type);
@@ -235,7 +188,7 @@ SceneGraph<T>::SceneGraph()
 template <typename T>
 SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
     : SceneGraph() {
-  ValidateConfig(config);
+  config.ValidateOrThrow();
   hub_.mutable_config() = config;
 }
 
@@ -286,7 +239,7 @@ SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
 
 template <typename T>
 void SceneGraph<T>::set_config(const SceneGraphConfig& config) {
-  ValidateConfig(config);
+  config.ValidateOrThrow();
   hub_.mutable_config() = config;
 }
 
