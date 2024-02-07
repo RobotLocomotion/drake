@@ -59,5 +59,10 @@ def read_repository_metadata(repositories=None):
         "upgrade_script": "upgrade.sh",
         "downloads": {},
     }
+    result["rust_toolchain"] = {
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.py",
+        "downloads": {},
+    }
 
     return result
