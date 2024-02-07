@@ -1329,6 +1329,22 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
+  // For the previous solid box spatial inertia M_BBcm_B, verify the theoretical
+  // minimum bounding box is smaller than the actual solid box by a factor which
+  // scales via inertia_shape_factor. See @ref spatial_inertia_equivalent_shapes
+  // "Spatial inertia equivalent shapes" for details. Since the
+  // inertia_shape_factor for a solid box is 1.0 / 3.0 whereas the
+  // inertia_shape_factor for the minimum bounding box is 1.0, ensure the
+  // minimum bounding box has ½-lengths lmax = a/3, lmed = b/3, lmin = c/3.
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
+  std::tie(abc, X_BA) =
+      M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  Vector3<double> min_abc = std::sqrt(1.0 / 3.0) * Vector3<double>(a, b, c);
+  EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
+  EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+
   // Translate the solid box B and ensure half-lengths and principal axes are
   // unchanged, whereas the position vector returned in X_BA has changed.
   const Vector3<double> p_BoBcm_B(1.2, 3.4, 5.6);
@@ -1338,11 +1354,18 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
 
+  // Repeat the previous test for the minimum bounding box B.
+  std::tie(abc, X_BA) =
+      M_BBo_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
+  EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
+
   // Rotate the solid box B so R_BE is not the identity matrix. Verify ½-lengths
   // are unchanged and principal axes directions Ax Ay Az are parallel to
   // Bx, By, Bz (although Bx ≠ Ex, By ≠ Ey).
   // Note: This tests a rotational inertia with non-zero products of inertia.
-  drake::math::RotationMatrix<double> R_BE =
+  const drake::math::RotationMatrix<double> R_BE =
       drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
   SpatialInertia<double> M_BBo_E = M_BBo_B.ReExpress(R_BE);
   const Vector3<double> G_products = M_BBo_E.get_unit_inertia().get_products();
@@ -1356,14 +1379,28 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // is whether these principal axes (represented by Ax_B, Ay_B, Az_B) are
   // parallel to the right-handed unit vectors Ex_B, Ey_B, Ez_B stored in the
   // columns of R_BE and whether they form a right-handed set.
-  const drake::math::RotationMatrix<double> R_BA = X_BA.rotation();
-  const Vector3<double> Ax_B = R_BA.col(0), Ex_B = R_BE.col(0);
-  const Vector3<double> Ay_B = R_BA.col(1), Ey_B = R_BE.col(1);
-  const Vector3<double> Az_B = R_BA.col(2), Ez_B = R_BE.col(2);
-  EXPECT_NEAR(std::abs(Az_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
-  EXPECT_NEAR(std::abs(Ax_B.dot(Ex_B)), 1.0, kTolerance);  // Px parallel to Cx.
-  EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Py parallel to Cy.
-  EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Pz parallel to Cz.
+  drake::math::RotationMatrix<double> R_BA = X_BA.rotation();
+  Vector3<double> Ax_B = R_BA.col(0), Ex_B = R_BE.col(0);
+  Vector3<double> Ay_B = R_BA.col(1), Ey_B = R_BE.col(1);
+  Vector3<double> Az_B = R_BA.col(2), Ez_B = R_BE.col(2);
+  EXPECT_NEAR(std::abs(Az_B(2)), 1.0, kTolerance);  // Az = [0 0 1] or [0 0 -1]
+  EXPECT_NEAR(std::abs(Ax_B.dot(Ex_B)), 1.0, kTolerance);  // Ax parallel to Ex.
+  EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Ay parallel to Ey.
+  EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Az parallel to Ez.
+  EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
+
+  // Repeat the previous test for the minimum bounding box B.
+  std::tie(abc, X_BA) =
+      M_BBo_E.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
+  R_BA = X_BA.rotation();
+  Ax_B = R_BA.col(0);
+  Ay_B = R_BA.col(1);
+  Az_B = R_BA.col(2);
+  EXPECT_NEAR(std::abs(Az_B(2)), 1.0, kTolerance);  // Az = [0 0 1] or [0 0 -1]
+  EXPECT_NEAR(std::abs(Ax_B.dot(Ex_B)), 1.0, kTolerance);  // Ax parallel to Ex.
+  EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Ay parallel to Ey.
+  EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Az parallel to Ez.
   EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
 }
 
