@@ -7,7 +7,7 @@ namespace internal {
 template <typename MeshType>
 void DeformableMeshWithBvh<MeshType>::UpdateVertexPositions(
     const Eigen::Ref<const VectorX<T>>& q) {
-  deformable_mesh_.UpdateVertexPositions(q);
+  deformable_mesh_.SetAllPositions(q);
   bvh_updater_.Update();
 }
 

@@ -207,6 +207,23 @@ Vector3<T> PolygonSurfaceMesh<T>::CalcAveragePosition(const int poly_index) {
   return p_MVaccumulate / v_count;
 }
 
+template <class T>
+void PolygonSurfaceMesh<T>::SetAllPositions(
+    const Eigen::Ref<const VectorX<T>>& p_MVs) {
+  if (p_MVs.size() != 3 * num_vertices()) {
+    throw std::runtime_error(
+        fmt::format("SetAllPositions(): Attempting to deform a mesh with {} "
+                    "vertices with data for {} vertices",
+                    num_vertices(), p_MVs.size()));
+  }
+  for (int v = 0, i = 0; v < num_vertices(); ++v, i += 3) {
+    vertices_M_[v] = Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]);
+  }
+  // Update position dependent quantities after the vertex positions have been
+  // updated.
+  ComputePositionDependentQuantities();
+}
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class PolygonSurfaceMesh)
 

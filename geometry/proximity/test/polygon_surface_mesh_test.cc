@@ -28,6 +28,17 @@ struct Polygon {
 };
 
 template <typename T>
+VectorX<T> ToVectorX(const std::vector<Vector3<T>>& input) {
+  VectorX<T> result(input.size() * 3);
+  for (int i = 0; i < ssize(input); ++i) {
+    for (int d = 0; d < 3; ++d) {
+      result(3 * i + d) = input[i](d);
+    }
+  }
+  return result;
+}
+
+template <typename T>
 class PolygonSurfaceMeshTest : public ::testing::Test {
  protected:
   /* Adds the given polygon to the raw vertex and face data for exercising the
@@ -115,15 +126,6 @@ class PolygonSurfaceMeshTest : public ::testing::Test {
       AddPolygon(polygon, &face_data, &vertices);
     }
     return {std::move(face_data), std::move(vertices)};
-  }
-
-  void SetVertices(const std::vector<Vector3<T>>& vertices,
-                   PolygonSurfaceMesh<T>* mesh) {
-    mesh->vertices_M_ = vertices;
-  }
-
-  void ComputePositionDependentQuantities(PolygonSurfaceMesh<T>* mesh) {
-    mesh->ComputePositionDependentQuantities();
   }
 };
 
@@ -452,7 +454,6 @@ TYPED_TEST(PolygonSurfaceMeshTest, ComputePositionDependentQuantities) {
       // vertices for the square
       Vector3<T>::Zero(), 3.0 * Vector3<T>::UnitX(), Vector3<T>(3, 3, 0),
       3.0 * Vector3<T>::UnitY()};
-  this->SetVertices(vertices, &mesh);
 
   // triangle has area 2 and square has area 9.
   std::vector<T> expected_areas = {2, 9};
@@ -468,10 +469,17 @@ TYPED_TEST(PolygonSurfaceMeshTest, ComputePositionDependentQuantities) {
 
   // Returns true if all vertex position dependent quantities are as expected.
   auto verify_position_dependent_quantities =
-      [&mesh](const std::vector<T>& areas, const T& total_area,
+      [&mesh](const std::vector<Vector3<T>>& positions,
+              const std::vector<T>& areas, const T& total_area,
               const std::vector<Vector3<T>>& face_normals,
               const std::vector<Vector3<T>>& face_centroids,
               const Vector3<T>& centroid) -> bool {
+    DRAKE_DEMAND(ssize(positions) == mesh.num_vertices());
+    for (int i = 0; i < ssize(positions); ++i) {
+      if (!CompareMatrices(mesh.vertex(i), positions[i])) {
+        return false;
+      }
+    }
     DRAKE_DEMAND(ssize(areas) == mesh.num_faces());
     for (int i = 0; i < ssize(areas); ++i) {
       if (areas[i] != mesh.area(i)) return false;
@@ -495,17 +503,16 @@ TYPED_TEST(PolygonSurfaceMeshTest, ComputePositionDependentQuantities) {
     return true;
   };
 
-  // Check at least one of the vertex position dependent quantities is wrong
-  // after updating the vertex positions and before
-  // `ComputePositionBasedQuantities()`.
+  // Check that we don't start with the expected quantities.
   EXPECT_FALSE(verify_position_dependent_quantities(
-      expected_areas, expected_total_area, expected_face_normals,
+      vertices, expected_areas, expected_total_area, expected_face_normals,
       expected_face_centroids, expected_centroid));
 
-  this->ComputePositionDependentQuantities(&mesh);
+  mesh.SetAllPositions(ToVectorX(vertices));
+
   // Now, the vertex position dependent quantities should be updated.
   EXPECT_TRUE(verify_position_dependent_quantities(
-      expected_areas, expected_total_area, expected_face_normals,
+      vertices, expected_areas, expected_total_area, expected_face_normals,
       expected_face_centroids, expected_centroid));
 }
 

@@ -1,4 +1,6 @@
-#include "drake/geometry/proximity/mesh_deformer.h"
+/* @file
+ Test SetAllPositions() functions for VolumeMesh, TriangleSurfaceMesh, and
+ PolygonSurfaceMesh. */
 
 #include <gtest/gtest.h>
 
@@ -38,12 +40,30 @@ struct BoxMaker<T, TriangleSurfaceMesh> {
   }
 };
 
+template <typename T>
+struct BoxMaker<T, PolygonSurfaceMesh> {
+  static TriangleSurfaceMesh<T> make(const Box& box) {
+    // Volume mesh to tri mesh.
+    TriangleSurfaceMesh<T> tri_mesh =
+        ConvertVolumeToSurfaceMesh(MakeBoxVolumeMeshWithMa<T>(box));
+    // Tri mesh to polygon mesh.
+    std::vector<int> face_data;
+    for (int f = 0; f < tri_mesh.num_triangles(); ++f) {
+      face_data.emplace_back(3);
+      for (int i = 0; i < 3; ++i) {
+        face_data.emplace_back(tri_mesh.triangles()[f].vertex(i));
+      }
+    }
+    return PolygonSurfaceMesh<T>(std::move(face_data), tri_mesh.vertices());
+  }
+};
+
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 
-/* The mesh deformer has two independent axes to test: the type of mesh (volume
- vs surface) and the scalar type for the mesh (double or AutoDiffXd). This test
- provides the basis for testing the constructor and the vertex position
- updating for all four combinations.
+/* There are two independent axes to test: the type of mesh (volume vs triangle
+ vs polygon) and the scalar type for the mesh (double or AutoDiffXd). This test
+ provides the basis for testing the vertex position updating
+ for all six combinations.
 
  See below where we instantiate this test fixture explicitly on each type of
  mesh and then use gtest to iterate over the scalar types. */
@@ -51,9 +71,7 @@ template <typename T, template <typename> typename MeshType>
 class MeshDeformerTest : public ::testing::Test {
  public:
   MeshDeformerTest()
-      : ::testing::Test(),
-        mesh_(BoxMaker<T, MeshType>().make(Box(1, 2, 3))),
-        deformer_(&mesh_) {
+      : ::testing::Test(), mesh_(BoxMaker<T, MeshType>().make(Box(1, 2, 3))) {
     // Create some nonsensical vertex positions -- these monotonically
     // increasing values will *not* match the original box.
     q_.resize(mesh_.num_vertices() * 3);
@@ -62,30 +80,23 @@ class MeshDeformerTest : public ::testing::Test {
     }
   }
 
-  /* Tests the constructor. */
-  void TestConstructor() {
-    // The test class constructs it, so, we'll simply confirm that the deformer
-    // has the mesh.
-    EXPECT_EQ(&deformer_.mesh(), &mesh_);
-  }
-
   void TestSetAllPositions() {
     // Quick reality check that we don't start in a deformed configuration.
     ASSERT_FALSE(MatchesQ());
-    deformer_.SetAllPositions(q_);
+    mesh_.SetAllPositions(q_);
     EXPECT_TRUE(MatchesQ());
 
     const int q_size = q_.rows();
 
     const VectorX<T> too_small(q_size - 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        deformer_.SetAllPositions(too_small),
-        ".+SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
+        mesh_.SetAllPositions(too_small),
+        ".*SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
 
     const VectorX<T> too_large(q_size + 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        deformer_.SetAllPositions(too_large),
-        ".+SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
+        mesh_.SetAllPositions(too_large),
+        ".*SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
   }
 
   /* Reports if the mesh coordinates match the arbitrary q-values to which we
@@ -98,7 +109,6 @@ class MeshDeformerTest : public ::testing::Test {
 
  protected:
   MeshType<T> mesh_;
-  MeshDeformer<MeshType<T>> deformer_;
   VectorX<T> q_;
 };
 
@@ -106,28 +116,28 @@ template <typename T>
 using VolumeMeshDeformerTest = MeshDeformerTest<T, VolumeMesh>;
 TYPED_TEST_SUITE(VolumeMeshDeformerTest, ScalarTypes);
 
-TYPED_TEST(VolumeMeshDeformerTest, Construction) {
-  this->TestConstructor();
-}
-
 TYPED_TEST(VolumeMeshDeformerTest, SetAllPositions) {
   this->TestSetAllPositions();
 }
 
 template <typename T>
-using SurfaceMeshDeformerTest = MeshDeformerTest<T, TriangleSurfaceMesh>;
-TYPED_TEST_SUITE(SurfaceMeshDeformerTest, ScalarTypes);
+using TriangleSurfaceMeshDeformerTest =
+    MeshDeformerTest<T, TriangleSurfaceMesh>;
+TYPED_TEST_SUITE(TriangleSurfaceMeshDeformerTest, ScalarTypes);
 
-TYPED_TEST(SurfaceMeshDeformerTest, Construction) {
-  this->TestConstructor();
-}
-
-TYPED_TEST(SurfaceMeshDeformerTest, SetAllPositions) {
+TYPED_TEST(TriangleSurfaceMeshDeformerTest, SetAllPositions) {
   this->TestSetAllPositions();
 }
 
-// Makes a mesh consisting of a single triangle whose normal is *not* along the
-// z-axis.
+template <typename T>
+using PolygonSurfaceMeshDeformerTest = MeshDeformerTest<T, TriangleSurfaceMesh>;
+TYPED_TEST_SUITE(PolygonSurfaceMeshDeformerTest, ScalarTypes);
+
+TYPED_TEST(PolygonSurfaceMeshDeformerTest, SetAllPositions) {
+  this->TestSetAllPositions();
+}
+
+// Makes a mesh consisting of a single triangle whose area is *not* 0.5.
 template <typename MeshType>
 MeshType MakeSingleTriangle() {
   using T = typename MeshType::ScalarType;
@@ -154,9 +164,7 @@ template <typename T, template <typename> typename MeshType>
 class MeshDeformerDataTest : public ::testing::Test {
  public:
   MeshDeformerDataTest()
-      : ::testing::Test(),
-        mesh_(MakeSingleTriangle<MeshType<T>>()),
-        deformer_(&mesh_) {
+      : ::testing::Test(), mesh_(MakeSingleTriangle<MeshType<T>>()) {
     // Create vertex positions that all lie in the xy plane.
     DRAKE_DEMAND(mesh_.num_vertices() == 3);
     q_.resize(mesh_.num_vertices() * 3);
@@ -169,7 +177,7 @@ class MeshDeformerDataTest : public ::testing::Test {
     // Quick reality check that we don't start with the expected data.
     EXPECT_NE(mesh_.total_area(), 0.5);
 
-    deformer_.SetAllPositions(q_);
+    mesh_.SetAllPositions(q_);
 
     // The deformer's only responsibility is to tell the mesh to update itself
     // based on the fact that vertex positions have changed. Therefore, we only
@@ -180,7 +188,6 @@ class MeshDeformerDataTest : public ::testing::Test {
 
  protected:
   MeshType<T> mesh_;
-  MeshDeformer<MeshType<T>> deformer_;
   VectorX<T> q_;
 };
 

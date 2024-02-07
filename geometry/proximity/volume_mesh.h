@@ -80,12 +80,6 @@ inline bool operator!=(const VolumeElement& e1, const VolumeElement& e2) {
   return !(e1 == e2);
 }
 
-namespace internal {
-// Forward declaration for friend declaration.
-template <typename>
-class MeshDeformer;
-}  // namespace internal
-
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
 template <typename T>
@@ -310,15 +304,18 @@ class VolumeMesh {
    new frame N. */
   void TransformVertices(const math::RigidTransform<T>& transform);
 
+  /** Updates the position of all vertices in the mesh. Each sequential triple
+   in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a position
+   vector associated with the iᵗʰ vertex. The position values are interpreted to
+   be measured and expressed in the same frame as the mesh to be deformed.
+
+   @param p_MVs  Vertex positions for the mesh's N vertices flattened into a
+                 vector (where each position vector is measured and expressed in
+                 the mesh's original frame).
+   @throws std::exception if p_MVs.size() != 3 * num_vertices() */
+  void SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs);
+
  private:
-  // Client attorney class that provides a means to modify vertex positions.
-  friend class internal::MeshDeformer<VolumeMesh<T>>;
-
-  // Currently, VolumeMesh doesn't have any position dependent quantities, but
-  // requires the method to maintain MeshDeformer compatibility with the other
-  // mesh types.
-  void ComputePositionDependentQuantities() {}
-
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
