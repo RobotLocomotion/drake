@@ -95,6 +95,8 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
 _COHORTS = (
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
     {"clarabel_cpp_internal", "crate_universe"},
+    # rules_rust uses rust_toolchain; be sure to keep them aligned.
+    {"rules_rust", "rust_toolchain"},
     # mypy uses mypy_extensions; be sure to keep them aligned.
     {"mypy_internal", "mypy_extensions_internal"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.
