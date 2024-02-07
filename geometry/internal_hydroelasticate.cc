@@ -24,11 +24,11 @@ void BackfillDefaults(ProximityProperties* properties,
     properties->UpdateProperty(group_name, name, *default_value);
   };
 
-  std::optional<HydroelasticType> optional_compliance{
-    internal::GetHydroelasticTypeFromString(
-        config.default_proximity_properties.compliance_type)
-  };
-  backfill(kHydroGroup, kComplianceType, optional_compliance);
+  std::optional<HydroelasticType> wrapped_compliance;
+  wrapped_compliance.emplace(internal::GetHydroelasticTypeFromString(
+      config.default_proximity_properties.compliance_type));
+  backfill(kHydroGroup, kComplianceType, wrapped_compliance);
+
   backfill(kHydroGroup, kElastic,
            config.default_proximity_properties.hydroelastic_modulus);
   backfill(kHydroGroup, kRezHint,
@@ -43,10 +43,9 @@ void BackfillDefaults(ProximityProperties* properties,
       *config.default_proximity_properties.static_friction,
       *config.default_proximity_properties.dynamic_friction,
     };
-    std::optional<multibody::CoulombFriction<double>> optional_friction{
-      friction
-    };
-    backfill(kMaterialGroup, kFriction, optional_friction);
+    std::optional<multibody::CoulombFriction<double>> wrapped_friction;
+    wrapped_friction.emplace(friction);
+    backfill(kMaterialGroup, kFriction, wrapped_friction);
   }
 }
 
