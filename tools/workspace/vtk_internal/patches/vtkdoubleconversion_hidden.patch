@@ -14,8 +14,8 @@ This situation is unique to Drake, so we won't to upstream this patch.
  #include <cstdlib>
  #include <cstring>
 
---- IO/Core/vtkNumberToString.cxx
-+++ IO/Core/vtkNumberToString.cxx
+--- Common/Core/vtkNumberToString.cxx
++++ Common/Core/vtkNumberToString.cxx
 @@ -7,6 +7,11 @@
  #include VTK_DOUBLECONVERSION_HEADER(double-conversion.h)
  // clang-format on
