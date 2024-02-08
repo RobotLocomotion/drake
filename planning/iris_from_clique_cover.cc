@@ -7,6 +7,7 @@
 #include <limits>
 #include <mutex>
 #include <queue>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -54,6 +55,10 @@ namespace {
 template <typename T>
 class AsyncQueue {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AsyncQueue);
+
+  AsyncQueue() : queue_{}, mutex_{}, condition_{}, still_filling_{true} {};
+
   void push(const T& value) {
     std::unique_lock<std::mutex> lock(mutex_);
     queue_.push(value);
@@ -67,17 +72,17 @@ class AsyncQueue {
   // filling and when the queue is completely empty.
   // Marked no lint since the linter really dislikes passing a non-const
   // reference.
-  bool pop(T& write_reference /*NOLINT*/) {
+  std::optional<T> pop() {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this] {
       return !queue_.empty() || !still_filling_;
     });
     if (!queue_.empty()) {
-      write_reference = queue_.front();
+      const T ret = queue_.front();
       queue_.pop();
-      return true;
+      return ret;
     }
-    return false;
+    return std::nullopt;
   }
 
   // Signal that the producer thread will stop producing jobs.
@@ -92,7 +97,7 @@ class AsyncQueue {
   std::queue<T> queue_;
   std::mutex mutex_;
   std::condition_variable condition_;
-  bool still_filling_ = true;
+  std::atomic<bool> still_filling_ = true;
 };
 
 // Sets mat(i, :) and mat(:, i) to false if mask(i) is true.
@@ -132,7 +137,8 @@ void ComputeGreedyTruncatedCliqueCover(
   int num_cliques = 0;
   int num_points_left = adjacency_matrix->cols();
   const int num_points_original = adjacency_matrix->cols();
-  log()->info("Solving Max Clique with {} points", adjacency_matrix->cols());
+  log()->info("Solving Max Clique Cover with {} points",
+              adjacency_matrix->cols());
   while (last_clique_size > minimum_clique_size &&
          adjacency_matrix->nonZeros() > minimum_clique_size) {
     const VectorX<bool> max_clique =
@@ -162,22 +168,24 @@ std::queue<HPolyhedron> IrisWorker(
     const CollisionChecker& checker,
     const Eigen::Ref<const Eigen::MatrixXd>& points, const int builder_id,
     const IrisFromCliqueCoverOptions& options,
-    AsyncQueue<VectorX<bool>>* computed_cliques) {
+    AsyncQueue<VectorX<bool>>* computed_cliques, bool disable_meshcat = true) {
   // Copy the iris options as we will change the value of the starting ellipse
   // in this worker.
   IrisOptions iris_options = options.iris_options;
   // Disable the iris meshcat option in this worker since we cannot write to
   // meshcat from a different thread.
-  iris_options.meshcat = nullptr;
+  if (disable_meshcat) {
+    iris_options.meshcat = nullptr;
+  }
 
   std::queue<HPolyhedron> ret{};
-  VectorX<bool> current_clique;
-  while (computed_cliques->pop(current_clique)) {
-    const int clique_size = current_clique.template cast<int>().sum();
+  std::optional<VectorX<bool>> current_clique = computed_cliques->pop();
+  while (current_clique.has_value()) {
+    const int clique_size = current_clique->template cast<int>().sum();
     Eigen::MatrixXd clique_points(points.rows(), clique_size);
     int clique_col = 0;
-    for (int i = 0; i < ssize(current_clique); ++i) {
-      if (current_clique(i)) {
+    for (int i = 0; i < ssize(current_clique.value()); ++i) {
+      if (current_clique.value()(i)) {
         clique_points.col(clique_col) = points.col(i);
         ++clique_col;
       }
@@ -212,6 +220,8 @@ std::queue<HPolyhedron> IrisWorker(
     ret.emplace(IrisInConfigurationSpace(
         checker.plant(), checker.plant_context(builder_id), iris_options));
     log()->debug("Iris builder thread  {} has constructed a set.", builder_id);
+
+    current_clique = computed_cliques->pop();
   }
   log()->debug("Iris builder thread {} has completed.", builder_id);
   return ret;
@@ -299,20 +309,20 @@ void IrisInConfigurationSpaceFromCliqueCover(
   // Override options which are set too aggressively.
   const int minimum_clique_size =
       std::max(options.minimum_clique_size, checker.plant().num_positions());
+
   int num_points_per_visibility_round = std::max(
       options.num_points_per_visibility_round, 2 * minimum_clique_size);
-  Parallelism num_builders{std::min(options.num_builders.num_threads(),
-                                    checker.num_allocated_contexts())};
-  Parallelism visibility_graph_parallelism{
-      std::min(options.visibility_graph_parallelism.num_threads(),
-               checker.num_allocated_contexts())};
-  log()->info("Visibility Graph Construction with {} threads",
-              visibility_graph_parallelism.num_threads());
+
+  Parallelism max_collision_checker_parallelism{std::min(
+      options.parallelism.num_threads(), checker.num_allocated_contexts())};
+
+  log()->debug("Visibility Graph will use {} threads",
+               max_collision_checker_parallelism.num_threads());
 
   int num_iterations = 0;
   while (ApproximatelyComputeCoverage(
              domain, *sets, checker, options.num_points_per_coverage_check,
-             options.point_in_set_tol, options.num_coverage_checkers, generator,
+             options.point_in_set_tol, options.parallelism, generator,
              &last_polytope_sample) < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
     Eigen::MatrixXd points(domain.ambient_dimension(),
@@ -332,7 +342,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       points.col(i) = last_polytope_sample;
     }
 
-    // Show the samples used in build cliques. Debugging visualization
+    // Show the samples used in build cliques. Debugging visualization.
     if (options.iris_options.meshcat && domain.ambient_dimension() <= 3) {
       Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
       for (int pt_to_draw = 0; pt_to_draw < points.cols(); ++pt_to_draw) {
@@ -347,7 +357,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
     }
 
     Eigen::SparseMatrix<bool> visibility_graph =
-        VisibilityGraph(checker, points, visibility_graph_parallelism);
+        VisibilityGraph(checker, points, max_collision_checker_parallelism);
     // Reserve more space for the newly built sets. Typically, we won't get
     // this worst case number of new cliques, so we only reserve half of the
     // worst case.
@@ -356,38 +366,57 @@ void IrisInConfigurationSpaceFromCliqueCover(
                       visibility_graph.cols(), options.minimum_clique_size) /
                       2);
 
+    // Now solve the max clique cover and build new sets.
+    int num_new_sets{0};
     // The computed cliques from the max clique solver. These will get pulled
     // off the queue by the set builder workers to build the sets.
     AsyncQueue<VectorX<bool>> computed_cliques;
-
-    // Compute truncated clique cover.
-    std::thread clique_cover_thread{[&visibility_graph, &options,
-                                     &computed_cliques]() {
+    if (options.parallelism.num_threads() == 1) {
       ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
                                         *options.max_clique_solver,
                                         &visibility_graph, &computed_cliques);
-    }};
+      IrisWorker(checker, points, 0, options, &computed_cliques,
+                 false /* No need to disable meshcat */);
+    } else {
+      // Compute truncated clique cover.
+      std::thread clique_cover_thread{[&visibility_graph, &options,
+                                       &computed_cliques]() {
+        ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
+                                          *options.max_clique_solver,
+                                          &visibility_graph, &computed_cliques);
+      }};
 
-    // Build convex sets.
-    std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
-    build_sets_future.reserve(num_builders.num_threads());
-    for (int i = 0; i < num_builders.num_threads(); ++i) {
-      build_sets_future.emplace_back(
-          std::async(std::launch::async, IrisWorker, std::ref(checker), points,
-                     i, std::ref(options), &computed_cliques));
-    }
-    // The clique cover and the convex sets are computed asynchronously. Wait
-    // for all the threads to join and then add the new sets to built sets.
-    clique_cover_thread.join();
-    int num_new_sets{0};
-    for (auto& new_set_queue_future : build_sets_future) {
-      std::queue<HPolyhedron> new_set_queue{new_set_queue_future.get()};
-      while (!new_set_queue.empty()) {
-        sets->push_back(std::move(new_set_queue.front()));
-        new_set_queue.pop();
-        ++num_new_sets;
+      // We will use one thread to build cliques and the remaining threads to
+      // build IRIS regions. If this number is 0, then this function will end up
+      // single threaded.
+      const int num_builder_threads = options.parallelism.num_threads() - 1;
+      std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
+      build_sets_future.reserve(num_builder_threads);
+      // Build convex sets.
+      for (int i = 0; i < num_builder_threads; ++i) {
+        build_sets_future.emplace_back(
+            std::async(std::launch::async, IrisWorker, std::ref(checker),
+                       points, i, std::ref(options), &computed_cliques,
+                       // NOLINTNEXTLINE
+                       true /* Disable meshcat since Iris runs outside the main thread */));
+      }
+      // The clique cover and the convex sets are computed asynchronously. Wait
+      // for all the threads to join and then add the new sets to built sets.
+      clique_cover_thread.join();
+      for (auto& new_set_queue_future : build_sets_future) {
+        std::queue<HPolyhedron> new_set_queue{new_set_queue_future.get()};
+        while (!new_set_queue.empty()) {
+          sets->push_back(std::move(new_set_queue.front()));
+          new_set_queue.pop();
+          ++num_new_sets;
+        }
       }
     }
+    log()->info(
+        "{} new sets added in IrisFromCliqueCover at iteration {}. Total sets "
+        "= {}",
+        num_new_sets, num_iterations, ssize(*sets));
+
     if (num_new_sets == 0) {
       num_points_per_visibility_round *= 2;
     }

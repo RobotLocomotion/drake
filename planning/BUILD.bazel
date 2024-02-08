@@ -375,8 +375,8 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
         "//common/test_utilities:maybe_pause_for_user",
-        "//multibody/parsing:parser",
         "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
     ],
 )

@@ -27,7 +27,7 @@ using geometry::optimization::Hyperrectangle;
 using geometry::optimization::IrisOptions;
 using geometry::optimization::VPolytope;
 
-// Draw a
+// Draw a two dimensional polytope in meshcat.
 void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
                      const Eigen::Ref<const Eigen::Vector3d>& color,
                      std::shared_ptr<Meshcat> meshcat) {
@@ -40,6 +40,60 @@ void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
 
   meshcat->SetLine(meshcat_name, points, 2.0,
                    Rgba(color(0), color(1), color(2)));
+}
+
+GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
+           TestIrisFromCliqueCoverOptions) {
+  IrisFromCliqueCoverOptions options;
+
+  EXPECT_EQ(options.iris_options.iteration_limit, 1);
+  options.iris_options.iteration_limit = 100;
+  EXPECT_EQ(options.iris_options.iteration_limit, 100);
+
+  EXPECT_EQ(options.coverage_termination_threshold, 0.7);
+  options.coverage_termination_threshold = 0.1;
+  EXPECT_EQ(options.coverage_termination_threshold, 0.1);
+
+  EXPECT_EQ(options.iteration_limit, 100);
+  options.iteration_limit = 10;
+  EXPECT_EQ(options.iteration_limit, 10);
+
+  EXPECT_EQ(options.num_points_per_coverage_check, 1000);
+  options.num_points_per_coverage_check = 10;
+  EXPECT_EQ(options.num_points_per_coverage_check, 10);
+
+  EXPECT_EQ(options.parallelism.num_threads(),
+            Parallelism::Max().num_threads());
+  options.parallelism = Parallelism{100};
+  EXPECT_EQ(options.parallelism.num_threads(), 100);
+
+  EXPECT_EQ(options.minimum_clique_size, 3);
+  options.minimum_clique_size = 5;
+  EXPECT_EQ(options.minimum_clique_size, 5);
+
+  EXPECT_EQ(options.num_points_per_visibility_round, 200);
+  options.num_points_per_visibility_round = 10;
+  EXPECT_EQ(options.num_points_per_visibility_round, 10);
+
+  class DummyMaxCliqueSolver final
+      : public graph_algorithms::MaxCliqueSolverBase {
+    VectorX<bool> DoSolveMaxClique(
+        const Eigen::SparseMatrix<bool>& adjacency_matrix) const {
+      // Always returns an empty clique.
+      return VectorX<bool>::Zero(adjacency_matrix.rows());
+    }
+  };
+  options.max_clique_solver =
+      std::unique_ptr<graph_algorithms::MaxCliqueSolverBase>(
+          new DummyMaxCliqueSolver());
+
+  EXPECT_EQ(options.rank_tol_for_lowner_john_ellipse, 1e-6);
+  options.rank_tol_for_lowner_john_ellipse = 1e-3;
+  EXPECT_EQ(options.rank_tol_for_lowner_john_ellipse, 1e-3);
+
+  EXPECT_EQ(options.point_in_set_tol, 1e-6);
+  options.point_in_set_tol = 1e-3;
+  EXPECT_EQ(options.point_in_set_tol, 1e-3);
 }
 
 /* A movable sphere in a box.
@@ -60,6 +114,7 @@ const char free_box[] = R"""(
     </collision>
   </link>
   <link name="for_joint"/>
+
   <joint name="x" type="prismatic">
     <axis xyz="1 0 0"/>
     <limit lower="-2" upper="2"/>
@@ -89,7 +144,6 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   IrisFromCliqueCoverOptions options;
 
-  options.num_builders = 2;
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 25;
   std::vector<HPolyhedron> sets;
@@ -197,7 +251,6 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   IrisFromCliqueCoverOptions options;
   options.iris_options.meshcat = meshcat;
 
-  options.num_builders = 2;
   options.num_points_per_coverage_check = 1000;
   options.num_points_per_visibility_round = 100;
   options.coverage_termination_threshold = 0.95;
@@ -242,27 +295,28 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
     }
     color.normalize();
     VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
-    Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_{}", i),
-                    color, meshcat);
+    Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_{}", i), color,
+                    meshcat);
   }
 
   // Now check the coverage by drawing points from the manual decomposition and
   // checking if they are inside the IrisFromCliqueCover decomposition.
   int num_samples_per_set = 1000;
   int num_in_automatic_decomposition = 0;
-  for(const auto& manual_set: manual_decomposition) {
-    for(int i = 0; i < num_samples_per_set; ++i) {
-     Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-     for(const auto& set: sets) {
-       if(set.PointInSet(sample)) {
-         ++num_in_automatic_decomposition;
-         break;
-       }
-     }
+  for (const auto& manual_set : manual_decomposition) {
+    for (int i = 0; i < num_samples_per_set; ++i) {
+      Eigen::Vector2d sample = manual_set.UniformSample(&generator);
+      for (const auto& set : sets) {
+        if (set.PointInSet(sample)) {
+          ++num_in_automatic_decomposition;
+          break;
+        }
+      }
     }
   }
-  double coverage_estimate = static_cast<double>(num_in_automatic_decomposition) /
-                             static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+  double coverage_estimate =
+      static_cast<double>(num_in_automatic_decomposition) /
+      static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
   EXPECT_GE(coverage_estimate, 0.9);
 
   MaybePauseForUser();

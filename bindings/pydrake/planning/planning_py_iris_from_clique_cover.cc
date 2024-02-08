@@ -39,9 +39,8 @@ void DefinePlanningIrisFromCliqueCover(py::module m) {
       .def_readwrite("num_points_per_coverage_check",
           &IrisFromCliqueCoverOptions::num_points_per_coverage_check,
           cls_doc.num_points_per_coverage_check.doc)
-      .def_readwrite("num_coverage_checkers",
-          &IrisFromCliqueCoverOptions::num_coverage_checkers,
-          cls_doc.num_coverage_checkers.doc)
+      .def_readwrite("parallelism", &IrisFromCliqueCoverOptions::parallelism,
+          cls_doc.parallelism.doc)
       .def_readwrite("minimum_clique_size",
           &IrisFromCliqueCoverOptions::minimum_clique_size,
           cls_doc.minimum_clique_size.doc)
@@ -54,17 +53,12 @@ void DefinePlanningIrisFromCliqueCover(py::module m) {
             return self.max_clique_solver.get();
           },
           py_rvp::reference_internal)
-      .def_readwrite("num_builders", &IrisFromCliqueCoverOptions::num_builders,
-          cls_doc.num_builders.doc)
       .def_readwrite("rank_tol_for_lowner_john_ellipse",
           &IrisFromCliqueCoverOptions::rank_tol_for_lowner_john_ellipse,
           cls_doc.rank_tol_for_lowner_john_ellipse.doc)
       .def_readwrite("point_in_set_tol",
           &IrisFromCliqueCoverOptions::point_in_set_tol,
-          cls_doc.point_in_set_tol.doc)
-      .def_readwrite("visibility_graph_parallelism",
-          &IrisFromCliqueCoverOptions::visibility_graph_parallelism,
-          cls_doc.visibility_graph_parallelism.doc);
+          cls_doc.point_in_set_tol.doc);
 
   m.def(
       "IrisInConfigurationSpaceFromCliqueCover",

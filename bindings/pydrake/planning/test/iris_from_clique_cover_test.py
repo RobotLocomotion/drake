@@ -65,20 +65,19 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         self.assertEqual(options.iteration_limit, 10)
         options.num_points_per_coverage_check = 100
         self.assertEqual(options.num_points_per_coverage_check, 100)
-        options.num_coverage_checkers = Parallelism(7)
-        self.assertEqual(options.num_coverage_checkers.num_threads(), 7)
+        options.parallelism = Parallelism(3)
+        self.assertEqual(options.parallelism.num_threads(), 3)
         options.minimum_clique_size = 2
         self.assertEqual(options.minimum_clique_size, 2)
         options.num_points_per_visibility_round = 150
         self.assertEqual(options.num_points_per_visibility_round, 150)
-        options.num_builders = Parallelism(2)
-        self.assertEqual(options.num_builders.num_threads(), 2)
         options.rank_tol_for_lowner_john_ellipse = 1e-3
         self.assertEqual(options.rank_tol_for_lowner_john_ellipse, 1e-3)
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
-        options.visibility_graph_parallelism = Parallelism(3)
-        self.assertEqual(options.visibility_graph_parallelism.num_threads(), 3)
+
+        self.assertIsInstance(options.max_clique_solver,
+                              mut.MaxCliqueSolverBase)
 
         def test_iris_in_configuration_space_from_clique_cover(self):
             cross_cspace_urdf = """

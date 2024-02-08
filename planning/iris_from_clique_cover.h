@@ -6,26 +6,33 @@
 #include <vector>
 
 #include "drake/common/parallelism.h"
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 #include "drake/planning/scene_graph_collision_checker.h"
-#include "drake/geometry/meshcat.h"
-
 
 namespace drake {
 namespace planning {
 /**
- * The default configurations for running IRIS when building a convex set from a
- * clique. Currently, it is recommended to only run IRIS for one iteration when
+ * The default configurations for running Iris when building a convex set from a
+ * clique. Currently, it is recommended to only run Iris for one iteration when
  * building from a clique so as to avoid discarding the information gained from
  * the clique.
  */
 struct IrisFromCliqueCoverOptions {
   /**
-   * The options used on internal calls to IRIS.
+   * The options used on internal calls to Iris.
+   *
+   * Note that `IrisOptions` can optionally include a meshcat instance to
+   * provide debugging visualization. If this is provided `IrisFromCliqueCover`
+   * will provide debug visualization in meshcat showing where in configuration
+   * space it is drawing from. However, if the parallelism option is set to
+   * allow more than 1 thread, then the debug visualizations of internal Iris
+   * calls will be disabled. This is due to a limitation of drawing to meshcat
+   * from outside the main thread.
    */
   geometry::optimization::IrisOptions iris_options{.iteration_limit = 1};
 
@@ -46,9 +53,11 @@ struct IrisFromCliqueCoverOptions {
   int num_points_per_coverage_check{static_cast<int>(1e3)};
 
   /**
-   * The amount of parallelism to use when performing the coverage check.
+   * The amount of parallelism to use. This algorithm makes heavy use of
+   * parallelism at many points and thus it is highly recommended to set this to
+   * the maximum tolerable parallelism.
    */
-  Parallelism num_coverage_checkers{Parallelism::Max()};
+  Parallelism parallelism{Parallelism::Max()};
 
   /**
    * The minimum size of the cliques used to construct a region. If this is set
@@ -67,20 +76,12 @@ struct IrisFromCliqueCoverOptions {
   int num_points_per_visibility_round{200};
 
   /**
-   * The max clique solver used.
+   * The max clique solver used. If parallelism is set to allow more than 1
+   * thread, then this class **must** be implemented in C++.
    */
   std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
       max_clique_solver{
           new planning::graph_algorithms::MaxCliqueSolverViaMip()};
-
-  /**
-   * The number of threads used to build sets. It is recommended to set this no
-   * larger than the hardware concurrency - 1 of the current machine. If this
-   * number is larger than the implicit_context_parallelism of the collision
-   * checker used in IrisInConfigurationSpaceFromCliqueCover then it will be
-   * overridden to be no larger than this implicit context parallelism.
-   */
-  Parallelism num_builders{std::max(1, Parallelism::Max().num_threads() - 1)};
 
   /**
    * The rank tolerance used for computing the
@@ -94,18 +95,10 @@ struct IrisFromCliqueCoverOptions {
    * HPolyhedron. See @ConvexSet::PointInSet.
    */
   double point_in_set_tol{1e-6};
-
-  /**
-   * The amount of parallelism to use when constructing the visibility graph. If
-   * this number is larger than the implicit_context_parallelism of the
-   * collision checker used in IrisInConfigurationSpaceFromCliqueCover then it
-   * will be overridden to be no larger than this implicit context parallelism.
-   */
-  Parallelism visibility_graph_parallelism{Parallelism::Max()};
 };
 
 /**
- * Cover the configuration space in IRIS regions using the Visibility Clique
+ * Cover the configuration space in Iris regions using the Visibility Clique
  * Cover Algorithm as described in
  *
  * P. Werner, A. Amice, T. Marcucci, D. Rus, R. Tedrake "Approximating Robot
@@ -114,7 +107,9 @@ struct IrisFromCliqueCoverOptions {
  * https://arxiv.org/abs/2310.02875
  *
  * @param checker The collision checker containing the plant and it's associated
- * scene_graph
+ * scene_graph.
+ * @param There are points in the algorithm requiring randomness. The generator
+ * controls this source of randomness.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
  */
