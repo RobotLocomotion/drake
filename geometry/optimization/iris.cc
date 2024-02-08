@@ -649,7 +649,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // For debugging visualization.
   Vector3d point_to_draw = Vector3d::Zero();
   int num_points_drawn = 0;
-  bool do_debugging_visualization = options.meshcat && nq <= 3 && false;
+  bool do_debugging_visualization = options.meshcat && nq <= 3;
 
   const std::string seed_point_error_msg =
       "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
