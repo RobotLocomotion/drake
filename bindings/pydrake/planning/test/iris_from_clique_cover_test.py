@@ -1,13 +1,11 @@
-import numpy as np
-import scipy.sparse as sp
 import unittest
 
 import pydrake.planning as mut
-from pydrake.common.test_utilities import numpy_compare
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.planning import (RobotDiagramBuilder,
                               SceneGraphCollisionChecker,
                               CollisionCheckerParams)
+from pydrake.solvers import MosekSolver, GurobiSolver
 
 import textwrap
 
@@ -140,8 +138,11 @@ class TestIrisFromCliqueCover(unittest.TestCase):
 
             generator = RandomGenerator(0)
 
-            sets = mut.IrisInConfigurationSpaceFromCliqueCover(
-                checker=checker, options=options, generator=generator, sets=[]
-            )
+            if(MosekSolver.is_enabled() or GurobiSolver.is_enabled()):
+                # We need a MIP solver to be available to run this method.
+                sets = mut.IrisInConfigurationSpaceFromCliqueCover(
+                    checker=checker, options=options, generator=generator,
+                    sets=[]
+                )
 
             self.assertGreaterEqual(len(sets), 1)

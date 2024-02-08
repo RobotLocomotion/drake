@@ -112,6 +112,15 @@ struct IrisFromCliqueCoverOptions {
  * controls this source of randomness.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
+ *
+ * Note that this method requires an implementation of a MaxCliqueSolverBase
+ * which must be implemented in C++. The only current such solver implemented by
+ * Drake is MaxCliqueSolverViaMip which requires the availability of a
+ * Mixed-Integer Linear Programming solver (e.g. Gurobi and/or Mosek). We
+ * recommend enabling those solvers if possible
+ * (https://drake.mit.edu/bazel.html#proprietary_solvers). The method will throw
+ * if MaxCliqueSolverViaMip cannot solve the max clique problem. @see
+ * MaxCliqueSolverViaMip.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
