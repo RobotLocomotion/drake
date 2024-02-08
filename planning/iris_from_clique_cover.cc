@@ -277,6 +277,9 @@ double ApproximatelyComputeCoverage(
   }
 
   std::atomic<int> num_in_sets{0};
+#if !defined(_OPENMP)
+  unused(parallelism);
+#endif
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(parallelism.num_threads()) schedule(static)
 #endif
