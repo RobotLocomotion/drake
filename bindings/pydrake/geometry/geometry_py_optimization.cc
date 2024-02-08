@@ -83,6 +83,17 @@ void DefineGeometryOptimization(py::module m) {
 
   py::module::import("pydrake.solvers");
 
+  // SampledVolume. This struct must be declared before ConvexSet as methods in
+  // ConvexSet depend on this struct.
+  {
+    py::class_<SampledVolume>(m, "SampledVolume", doc.SampledVolume.doc)
+        .def_readwrite(
+            "volume", &SampledVolume::volume, doc.SampledVolume.volume.doc)
+        .def_readwrite("rel_accuracy", &SampledVolume::rel_accuracy,
+            doc.SampledVolume.rel_accuracy.doc)
+        .def_readwrite("num_samples", &SampledVolume::num_samples,
+            doc.SampledVolume.num_samples.doc);
+  }
   // ConvexSet
   {
     const auto& cls_doc = doc.ConvexSet;
@@ -132,16 +143,6 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("generator"), py::arg("desired_rel_accuracy") = 1e-2,
             py::arg("max_num_samples") = 1e4,
             cls_doc.CalcVolumeViaSampling.doc);
-  }
-  // SampledVolume
-  {
-    py::class_<SampledVolume>(m, "SampledVolume", doc.SampledVolume.doc)
-        .def_readwrite(
-            "volume", &SampledVolume::volume, doc.SampledVolume.volume.doc)
-        .def_readwrite("rel_accuracy", &SampledVolume::rel_accuracy,
-            doc.SampledVolume.rel_accuracy.doc)
-        .def_readwrite("num_samples", &SampledVolume::num_samples,
-            doc.SampledVolume.num_samples.doc);
   }
   // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.

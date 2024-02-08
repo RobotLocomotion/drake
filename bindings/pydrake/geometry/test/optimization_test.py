@@ -369,17 +369,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(isinstance(shape, Box))
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
-        desired_rel_accuracy = 1e-2
-        max_num_samples = 100
-        sampled_volume = rect.CalcVolumeViaSampling(
-            generator=generator,
-            desired_rel_accuracy=desired_rel_accuracy,
-            max_num_samples=max_num_samples
-        )
-        self.assertAlmostEqual(rect.CalcVolume(), sampled_volume.volume)
-        self.assertGreaterEqual(sampled_volume.rel_accuracy,
-                                desired_rel_accuracy)
-        self.assertEqual(sampled_volume.num_samples, max_num_samples)
 
         # Methods specific to Hyperrectangle
         np.testing.assert_array_equal(rect.lb(), -self.b)
@@ -397,7 +386,7 @@ class TestGeometryOptimization(unittest.TestCase):
         bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
         self.assertIsInstance(bbox, mut.Hyperrectangle)
 
-    def test_sampled_volume(self):
+    def test_calc_volume_via_sampling(self):
         rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
         generator = RandomGenerator()
         desired_rel_accuracy = 1e-2
