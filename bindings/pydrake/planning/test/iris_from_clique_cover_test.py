@@ -138,7 +138,8 @@ class TestIrisFromCliqueCover(unittest.TestCase):
 
             generator = RandomGenerator(0)
 
-            if(MosekSolver.is_enabled() or GurobiSolver.is_enabled()):
+            if (MosekSolver().available() and MosekSolver().enabled()) or (
+                 GurobiSolver().available() and GurobiSolver().enabled()):
                 # We need a MIP solver to be available to run this method.
                 sets = mut.IrisInConfigurationSpaceFromCliqueCover(
                     checker=checker, options=options, generator=generator,
