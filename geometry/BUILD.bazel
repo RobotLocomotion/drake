@@ -947,6 +947,7 @@ drake_cc_googletest(
     name = "scene_graph_config_test",
     deps = [
         ":scene_graph_config",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )
