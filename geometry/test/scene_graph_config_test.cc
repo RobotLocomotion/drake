@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
@@ -39,6 +40,163 @@ GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   EXPECT_EQ(props.relaxation_time, 8);
   EXPECT_EQ(props.point_stiffness, 9);
   EXPECT_EQ("\n" + SaveYamlString(config), kExampleConfig);
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidDefault) {
+  const SceneGraphConfig kDefault;
+  EXPECT_NO_THROW(kDefault.ValidateOrThrow());
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateCompliance) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.compliance_type = "nope";
+  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
+                              "Unknown hydroelastic_type: 'nope'");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateModulus) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.hydroelastic_modulus = 0;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hydroelastic_modulus' \\(0\\) must be a positive, finite value.");
+  props.hydroelastic_modulus = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hydroelastic_modulus' \\(nan\\) must be a positive, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateRezHint) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.mesh_resolution_hint = 0;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'mesh_resolution_hint' \\(0\\) must be a positive, finite value.");
+  props.mesh_resolution_hint = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'mesh_resolution_hint' \\(nan\\) must be a positive, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateSlabThickness) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.slab_thickness = 0;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'slab_thickness' \\(0\\) must be a positive, finite value.");
+  props.slab_thickness = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'slab_thickness' \\(nan\\) must be a positive, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateDynamicFriction) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.dynamic_friction = -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'dynamic_friction' \\(-1\\) must be a non-negative, finite value.");
+  props.dynamic_friction = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'dynamic_friction' \\(nan\\) must be a non-negative, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.static_friction = -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'static_friction' \\(-1\\) must be a non-negative, finite value.");
+  props.static_friction = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'static_friction' \\(nan\\) must be a non-negative, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.hunt_crossley_dissipation = -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hunt_crossley_dissipation' \\(-1\\) must be a non-negative,"
+      " finite value.");
+  props.hunt_crossley_dissipation = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hunt_crossley_dissipation' \\(nan\\) must be a non-negative,"
+      " finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateRelaxationTime) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.relaxation_time = -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'relaxation_time' \\(-1\\) must be a non-negative, finite value.");
+  props.relaxation_time = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'relaxation_time' \\(nan\\) must be a non-negative, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidatePointStiffness) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+  props.point_stiffness = -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'point_stiffness' \\(-1\\) must be a non-negative, finite value.");
+  props.point_stiffness = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'point_stiffness' \\(nan\\) must be a non-negative, finite value.");
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidateCoulombFriction) {
+  SceneGraphConfig config;
+  auto &props = config.default_proximity_properties;
+
+  // This configuration fails a pre-condition of CoulombFriction. We do not
+  // test them all here; it has its own tests.
+  props.static_friction = 0;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The given dynamic friction \\(0.5\\) is greater than"
+      " the given static friction \\(0\\); dynamic friction must be"
+      " less than or equal to static friction.");
+
+  // This configuration fails a pre-condition of DefaultProximityProperties.
+  props.static_friction.reset();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " either both 'static_friction' \\(nullopt\\) and"
+      " 'dynamic_friction' \\(0.5\\) must have a value, or neither.");
 }
 
 }  // namespace

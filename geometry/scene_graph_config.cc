@@ -2,19 +2,45 @@
 
 #include <functional>
 
-#include "drake/common/drake_throw.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace geometry {
 
-// TODO(rpoyner-tri): re-write this for better, more friendly error messages.
+// Conditions, that if not met, could trigger an exception.
+enum Condition {
+  kPositiveFinite,
+  kNonNegativeFinite,
+};
 
+// Check the value of `name`d `property` for `condition`. If it is not met,
+// throw an exception with a nice message.
 void ThrowUnlessAbsentOr(
+    std::string name,
     std::optional<double> property,
-    std::function<bool(double)> predicate) {
-  if (property.has_value()) {
-    DRAKE_THROW_UNLESS(predicate(*property));
+    Condition condition) {
+  if (!property.has_value()) { return; }
+  double value = *property;
+  std::string_view condition_name;
+  bool should_throw{false};
+  switch (condition) {
+    case kPositiveFinite: {
+      should_throw = (!std::isfinite(value) || value <= 0.0);
+      condition_name = "positive, finite";
+      break;
+    }
+    case kNonNegativeFinite: {
+      should_throw = (!std::isfinite(value) || value < 0.0);
+      condition_name = "non-negative, finite";
+      break;
+    }
+  }
+  if (should_throw) {
+    throw std::logic_error(
+        fmt::format("Invalid scene graph configuration:"
+                    " '{}' ({}) must be a {} value.",
+                    name, value, condition_name));
   }
 }
 
@@ -22,34 +48,33 @@ void DefaultProximityProperties::ValidateOrThrow() const {
   // This will throw if the type is invalid.
   internal::GetHydroelasticTypeFromString(compliance_type);
 
-  auto isfinite = [](double x) { return std::isfinite(x); };
-  ThrowUnlessAbsentOr(hydroelastic_modulus, isfinite);
-  ThrowUnlessAbsentOr(mesh_resolution_hint, isfinite);
-  ThrowUnlessAbsentOr(slab_thickness, isfinite);
-  ThrowUnlessAbsentOr(dynamic_friction, isfinite);
-  ThrowUnlessAbsentOr(static_friction, isfinite);
-  ThrowUnlessAbsentOr(hunt_crossley_dissipation, isfinite);
-  ThrowUnlessAbsentOr(relaxation_time, isfinite);
-  ThrowUnlessAbsentOr(point_stiffness, isfinite);
+#define DRAKE_ENFORCE(prop, cond) ThrowUnlessAbsentOr(#prop, prop, cond)
+  DRAKE_ENFORCE(hydroelastic_modulus, kPositiveFinite);
+  DRAKE_ENFORCE(mesh_resolution_hint, kPositiveFinite);
+  DRAKE_ENFORCE(slab_thickness, kPositiveFinite);
 
-  auto positive = [](double x) { return x > 0.0; };
-  auto nonnegative = [](double x) { return x >= 0.0; };
-  ThrowUnlessAbsentOr(hydroelastic_modulus, positive);
-  ThrowUnlessAbsentOr(mesh_resolution_hint, positive);
-  ThrowUnlessAbsentOr(slab_thickness, positive);
-  ThrowUnlessAbsentOr(dynamic_friction, nonnegative);
-  ThrowUnlessAbsentOr(static_friction, nonnegative);
-  ThrowUnlessAbsentOr(hunt_crossley_dissipation, nonnegative);
-  ThrowUnlessAbsentOr(relaxation_time, nonnegative);
-  ThrowUnlessAbsentOr(point_stiffness, nonnegative);
+  DRAKE_ENFORCE(dynamic_friction, kNonNegativeFinite);
+  DRAKE_ENFORCE(static_friction, kNonNegativeFinite);
+  DRAKE_ENFORCE(hunt_crossley_dissipation, kNonNegativeFinite);
+  DRAKE_ENFORCE(relaxation_time, kNonNegativeFinite);
+  DRAKE_ENFORCE(point_stiffness, kNonNegativeFinite);
+#undef DRAKE_ENFORCE
 
   // Require either both friction quantities or neither.
-  DRAKE_THROW_UNLESS(static_friction.has_value() ==
-                     dynamic_friction.has_value());
+  if (static_friction.has_value() != dynamic_friction.has_value()) {
+    auto value_or_nullopt = [](auto x) {
+      return x ? fmt::format("{}", *x) : "nullopt";
+    };
+    throw std::logic_error(
+        fmt::format("Invalid scene graph configuration:"
+                    " either both 'static_friction' ({}) and"
+                    " 'dynamic_friction' ({}) must have a value, or neither.",
+                    value_or_nullopt(static_friction),
+                    value_or_nullopt(dynamic_friction)));
+  }
   if (static_friction.has_value()) {
-    // Since we can't conveniently use multibody::CoulombFriction, check now
-    // that the values are compatible.
-    DRAKE_THROW_UNLESS(*static_friction >= *dynamic_friction);
+    // The constructor throws nice messages if its invariants fail.
+    multibody::CoulombFriction coulomb{*static_friction, *dynamic_friction};
   }
 }
 
