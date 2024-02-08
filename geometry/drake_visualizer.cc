@@ -81,8 +81,8 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   // Saves the location and orientation of the visualization geometry in the
   // `lcmt_viewer_geometry_data` object. The location and orientation are
   // specified in the body's frame.
-  Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
-  position = X_PG.translation().template cast<float>();
+  EigenMapView(geometry_data.position) =
+      X_PG.translation().template cast<float>();
   // LCM quaternion must be w, x, y, z.
   Quaterniond q(X_PG.rotation().ToQuaternion());
   geometry_data.quaternion[0] = q.w();
@@ -90,8 +90,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   geometry_data.quaternion[2] = q.y();
   geometry_data.quaternion[3] = q.z();
 
-  Eigen::Map<Eigen::Vector4f>(geometry_data.color) =
-      in_color.rgba().cast<float>();
+  EigenMapView(geometry_data.color) = in_color.rgba().cast<float>();
 
   // There are *two* ways to use the MESH geometry type. One is to set the
   // string value with a path to a parseable mesh file (see
@@ -177,8 +176,7 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
 
   geometry_data.string_data = deformable_data.name;
 
-  Eigen::Map<Eigen::Vector4f>(geometry_data.color) =
-      in_color.rgba().cast<float>();
+  EigenMapView(geometry_data.color) = in_color.rgba().cast<float>();
 
   // We can define the mesh in the float data as:
   // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
@@ -363,8 +361,7 @@ class ShapeToLcm : public ShapeReifier {
     // Saves the location and orientation of the visualization geometry in the
     // `lcmt_viewer_geometry_data` object. The location and orientation are
     // specified in the body's frame.
-    Eigen::Map<Eigen::Vector3f> position(geometry_data_.position);
-    position = X_PG_.translation().cast<float>();
+    EigenMapView(geometry_data_.position) = X_PG_.translation().cast<float>();
     // LCM quaternion must be w, x, y, z.
     Quaterniond q(X_PG_.rotation().ToQuaternion());
     geometry_data_.quaternion[0] = q.w();
@@ -372,8 +369,8 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.quaternion[2] = q.y();
     geometry_data_.quaternion[3] = q.z();
 
-    Eigen::Map<Eigen::Vector4f>(geometry_data_.color) =
-        in_color.rgba().cast<float>();
+    EigenMapView(geometry_data_.color) = in_color.rgba().cast<float>();
+
     return geometry_data_;
   }
 

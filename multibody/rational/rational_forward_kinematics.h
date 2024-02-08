@@ -187,7 +187,7 @@ class RationalForwardKinematics {
   const MultibodyPlant<double>& plant() const { return plant_; }
 
   Eigen::Map<const VectorX<symbolic::Variable>> s() const {
-    return Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size());
+    return EigenMapView(s_);
   }
 
   /** map_mobilizer_to_s_index_[mobilizer_index] returns the starting index of

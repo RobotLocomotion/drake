@@ -226,12 +226,6 @@ class ContactResultMaker final : public LeafSystem<double> {
     message.num_point_pair_contacts = num_pairs;
     message.point_pair_contact_info.resize(num_pairs);
 
-    auto write_double3 = [](const Vector3d& src, double* dest) {
-      dest[0] = src(0);
-      dest[1] = src(1);
-      dest[2] = src(2);
-    };
-
     const auto& inspector = query_object.inspector();
 
     // Contact surfaces.
@@ -271,11 +265,11 @@ class ContactResultMaker final : public LeafSystem<double> {
 
         // Fake contact *force* and *moment* data, with some variations across
         // different faces to facilitate visualizer testing.
-        write_double3(surface.centroid(), surface_message.centroid_W);
-        write_double3(Vector3<double>(1.2 * (i + 1), 0, 0),
-                      surface_message.force_C_W);
-        write_double3(Vector3<double>(0, 0, 0.5 * (i + 1)),
-                      surface_message.moment_C_W);
+        EigenMapView(surface_message.centroid_W) = surface.centroid();
+        EigenMapView(surface_message.force_C_W) =
+            Vector3<double>(1.2 * (i + 1), 0, 0);
+        EigenMapView(surface_message.moment_C_W) =
+            Vector3<double>(0, 0, 0.5 * (i + 1));
 
         // Write fake quadrature data.
         surface_message.num_quadrature_points = surface.num_faces();
@@ -284,11 +278,11 @@ class ContactResultMaker final : public LeafSystem<double> {
         for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
           lcmt_hydroelastic_quadrature_per_point_data_for_viz&
               quad_data_message = surface_message.quadrature_point_data[j];
-          write_double3(surface.centroid(j), quad_data_message.p_WQ);
-          write_double3(Vector3d(0, 0.2 + (j * 0.005), 0),
-                        quad_data_message.vt_BqAq_W);
-          write_double3(Vector3d(0, -0.2 - (j * 0.005), 0),
-                        quad_data_message.traction_Aq_W);
+          EigenMapView(quad_data_message.p_WQ) = surface.centroid(j);
+          EigenMapView(quad_data_message.vt_BqAq_W) =
+              Vector3d(0, 0.2 + (j * 0.005), 0);
+          EigenMapView(quad_data_message.traction_Aq_W) =
+              Vector3d(0, -0.2 - (j * 0.005), 0);
         }
 
         // Now write the *real* mesh.
@@ -350,9 +344,9 @@ class ContactResultMaker final : public LeafSystem<double> {
       // Fake contact *force* data from strictly contact data. Contact point
       // is midway between the two contact points and force = normal.
       const Vector3d contact_point = (pair.p_WCa + pair.p_WCb) / 2.0;
-      write_double3(contact_point, info_message.contact_point);
-      write_double3(pair.nhat_BA_W, info_message.contact_force);
-      write_double3(pair.nhat_BA_W, info_message.normal);
+      EigenMapView(info_message.contact_point) = contact_point;
+      EigenMapView(info_message.contact_force) = pair.nhat_BA_W;
+      EigenMapView(info_message.normal) = pair.nhat_BA_W;
     }
   }
 

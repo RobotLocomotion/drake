@@ -189,12 +189,9 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
       std::vector<VectorXd> initial_positions;
       std::vector<VectorXd> initial_normals;
       for (int i = 0; i < ssize(render_meshes); ++i) {
-        VectorXd flat_positions =
-            Eigen::Map<const VectorXd>(render_meshes[i].positions.data(),
-                                       render_meshes[i].positions.size());
+        VectorXd flat_positions = EigenMapView(render_meshes[i].positions);
         initial_positions.push_back(std::move(flat_positions));
-        VectorXd flat_normals = Eigen::Map<const VectorXd>(
-            render_meshes[i].normals.data(), render_meshes[i].normals.size());
+        VectorXd flat_normals = EigenMapView(render_meshes[i].normals);
         initial_normals.push_back(std::move(flat_normals));
       }
       q_WGs_[id] = std::move(initial_positions);
