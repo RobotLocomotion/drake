@@ -146,4 +146,4 @@ class TestIrisFromCliqueCover(unittest.TestCase):
                     sets=[]
                 )
 
-            self.assertGreaterEqual(len(sets), 1)
+                self.assertGreaterEqual(len(sets), 1)
