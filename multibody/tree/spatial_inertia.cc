@@ -358,15 +358,23 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
-double SpatialInertia<T>::CalcRatioGeometryDimensionsToMinimumInertiaDimensions(
-      const Vector3<double>& geometry_abc,
-      const Vector3<double>& inertia_abc) {
-  double lowest_ratio = std::numeric_limits<double>::max();
-  for (int i = 0;  i < 3; i++) {
-    if ( is_positive_finite(inertia_abc(i)) )
-      lowest_ratio = std::min(lowest_ratio, geometry_abc(i) / inertia_abc(i));
+void SpatialInertia<T>::ThrowIfMaxDimensionLargerThanAllowable(
+    double largest_allowable_dimension) const {
+  DRAKE_ASSERT(largest_allowable_dimension >= 0);
+  // For a minimum bounding box with ½-lengths a, b, c, the box's largest
+  // dimension is its diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
+  auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  const double max_length = (2.0 * abc).norm();
+  if (max_length > largest_allowable_dimension) {
+    std::string error_message = fmt::format("Spatial inertia fails"
+      " SpatialInertia::ThrowIfMaxDimensionLargerThanAllowable()."
+      "\nSpatial inertia's minimum bounding box space-diagonal is {}."
+      "\nThe maximum allowable dimension is {}.\n",
+      max_length, largest_allowable_dimension);
+    error_message += fmt::format("{}", *this);
+    WriteExtraCentralInertiaProperties(&error_message);
+    throw std::runtime_error(error_message);
   }
-  return lowest_ratio;
 }
 
 template <typename T>
