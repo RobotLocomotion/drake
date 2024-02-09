@@ -605,6 +605,20 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
             retain_map_defaults=False)
         self.assertDictEqual(result.value, dict(some_key=1.0))
 
+    def test_load_inferred_schema(self):
+        data = dedent("""
+        value:
+          some_key: 1.0
+        """)
+        result = yaml_load_typed(data=data, defaults=MapStruct())
+        self.assertIsInstance(result, MapStruct)
+        self.assertDictEqual(result.value, dict(
+            nominal_float=nan,
+            some_key=1.0))
+
+        with self.assertRaisesRegex(Exception, "At least one"):
+            yaml_load_typed(data=data)
+
     def test_load_string_options(self):
         data = dedent("""
         value: some_value
