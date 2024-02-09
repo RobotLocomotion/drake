@@ -1335,7 +1335,7 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // "Spatial inertia equivalent shapes" for details. Since the
   // inertia_shape_factor for a solid box is 1.0 / 3.0 whereas the
   // inertia_shape_factor for the minimum bounding box is 1.0, ensure the
-  // minimum bounding box has ½-lengths lmax = a/3, lmed = b/3, lmin = c/3.
+  // minimum bounding box has ½-lengths lmax = a/√3, lmed = b/√3, lmin = c/√3.
   // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
   // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
   std::tie(abc, X_BA) =
@@ -1402,6 +1402,13 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Ay parallel to Ey.
   EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Az parallel to Ez.
   EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
+
+  // Ensure an exception is thrown if spatial inertia corresponds to a minimum
+  // bounding box that is larger than allowable.
+  DRAKE_EXPECT_NO_THROW(M_BBo_E.ThrowIfMaxDimensionLargerThanAllowable(9.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      M_BBo_E.ThrowIfMaxDimensionLargerThanAllowable(8.0),
+      "[^]* minimum bounding box space-diagonal is [^]*");
 }
 
 }  // namespace
