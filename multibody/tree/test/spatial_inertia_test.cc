@@ -1402,12 +1402,26 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Ay parallel to Ey.
   EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Az parallel to Ez.
   EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
+}
+
+GTEST_TEST(SpatialInertia, ThrowIfInertiaPropertiesSignalHugeObject) {
+  // Consider a box B with dimensions 300, 400, 1200 (space-diagonal of 1300).
+  const double a = 150, b = 200, c = 600;  // ½-lengths of sides.
+  const double mass = 1.0;
+  const SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::SolidBoxWithMass(mass, 2*a, 2*b, 2*c);
 
   // Ensure an exception is thrown if spatial inertia corresponds to a minimum
   // bounding box that is larger than allowable.
-  DRAKE_EXPECT_NO_THROW(M_BBo_E.ThrowIfMaxDimensionLargerThanAllowable(9.0));
+  const double largest_allowable_dimension = 1300 / std::sqrt(3);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      M_BBo_E.ThrowIfMaxDimensionLargerThanAllowable(8.0),
+    M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(),
+    "[^]* minimum bounding box space-diagonal is [^]*");
+  DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+          1.01 * largest_allowable_dimension));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+          0.99 * largest_allowable_dimension),
       "[^]* minimum bounding box space-diagonal is [^]*");
 }
 

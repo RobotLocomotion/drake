@@ -645,15 +645,14 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Throws an exception if `this` spatial inertia has an associated minimum
+  /// Throw an exception if `this` spatial inertia has an associated minimum
   /// bounding box size that is larger than allowable.
   /// @param[in] largest_allowable_dimension the largest allowable dimension
-  /// associated with `this` spatial inertia in any direction.  By default, this
-  /// is a value of 400 meters. This value was chosen based on the Bagger 293
-  /// (≈ 224 m long) which is the world's largest bucket-wheel excavator and
-  /// the world's largest and heaviest land vehicle. It dwarfs the world's
-  /// largest humanoid robot (Mononofu ≈ 8.5 m tall), and the USA space shuttle
-  /// (≈ 37 m long) even with its Canada robot arm (≈ 15 m long).
+  /// associated with `this` spatial inertia in any direction. The default value
+  /// of 400 meters was chosen based on the Bagger 293 (≈ 224 m long) bucket-
+  /// wheel excavator which is the world's largest and heaviest land vehicle.
+  /// It dwarfs the world's largest humanoid robot (Mononofu ≈ 8.5 m tall, and
+  /// the USA space shuttle (≈ 37 m long) even with its 15 m Canada robot arm.
   void ThrowIfMaxDimensionLargerThanAllowable(
       double largest_allowable_dimension = 400) const;
   ///@}
