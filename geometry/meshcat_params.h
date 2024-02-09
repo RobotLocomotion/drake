@@ -2,6 +2,8 @@
 
 #include <optional>
 #include <string>
+#include <variant>
+#include <vector>
 
 #include "drake/common/name_value.h"
 
@@ -17,6 +19,7 @@ struct MeshcatParams {
     a->Visit(DRAKE_NVP(host));
     a->Visit(DRAKE_NVP(port));
     a->Visit(DRAKE_NVP(web_url_pattern));
+    a->Visit(DRAKE_NVP(initial_properties));
     a->Visit(DRAKE_NVP(show_stats_plot));
   }
 
@@ -47,6 +50,27 @@ struct MeshcatParams {
     "all interfaces".
   */
   std::string web_url_pattern{"http://{host}:{port}"};
+
+  /** A helper struct for the `initial_properties` params. */
+  struct PropertyTuple {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(path));
+      a->Visit(DRAKE_NVP(property));
+      a->Visit(DRAKE_NVP(value));
+    }
+
+    std::string path;
+    std::string property;
+    std::variant<std::vector<double>, std::string, bool, double> value;
+  };
+
+  /** Configures the initial conditions for Meshcat. These properties will be
+  applied immediately during construction. This can be used to change defaults
+  such as background, lighting, etc. */
+  std::vector<PropertyTuple> initial_properties;
 
   /** Determines whether or not to display the stats plot widget in the Meshcat
   user interface. This plot including realtime rate and WebGL render
