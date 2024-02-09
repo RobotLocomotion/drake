@@ -42,6 +42,7 @@ using geometry::optimization::HPolyhedron;
 using geometry::optimization::Intersection;
 using geometry::optimization::PartitionConvexSet;
 using geometry::optimization::Point;
+using geometry::optimization::internal::ComputeOffsetContinuousRevoluteJoints;
 using geometry::optimization::internal::GetMinimumAndMaximumValueAlongDimension;
 using geometry::optimization::internal::ThrowsForInvalidContinuousJointsList;
 using multibody::Joint;
@@ -112,11 +113,8 @@ PairwiseIntersectionsContinuousJoints(
   // Compute the bounding boxes.
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     region_minimum_and_maximum_values_A.emplace_back(
-        std::vector<std::pair<double, double>>());
-    for (const int k : continuous_revolute_joints) {
-      region_minimum_and_maximum_values_A.at(i).emplace_back(
-          GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i], k));
-    }
+        GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
+                                                continuous_revolute_joints));
   }
 
   bool compute_intersections_within_A = convex_sets_B.size() == 0;
@@ -128,15 +126,12 @@ PairwiseIntersectionsContinuousJoints(
   } else {
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
       maybe_region_minimum_and_maximum_values_B.emplace_back(
-          std::vector<std::pair<double, double>>());
-      for (const int k : continuous_revolute_joints) {
-        maybe_region_minimum_and_maximum_values_B.at(i).emplace_back(
-            GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i], k));
-      }
+          GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
+                                                  continuous_revolute_joints));
     }
   }
 
-  VectorXd offset = Eigen::VectorXd::Zero(dimension);
+  VectorXd offset;
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
       if (compute_intersections_within_A && j <= i) {
@@ -146,43 +141,12 @@ PairwiseIntersectionsContinuousJoints(
         continue;
       }
 
-      offset.setZero();
-
       // First, we compute what the offset that should be applied to
       // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
-      for (int kk = 0; kk < ssize(continuous_revolute_joints); ++kk) {
-        const int k = continuous_revolute_joints.at(kk);
-        if (region_minimum_and_maximum_values_A.at(i).at(kk).first <
-            region_minimum_and_maximum_values_B.at(j).at(kk).first) {
-          // In this case, the minimum value of convex_sets_A[i] along dimension
-          // k is smaller than the minimum value of convex_sets_B[j] along
-          // dimension k, so we must translate by a positive amount. By the
-          // convexity radius property (which has already been checked), we know
-          // that the width of each set is strictly less than π. So we need to
-          // translate convex_sets_A[i] by some multiple of 2π such that the
-          // difference between the maximum value in convex_sets_B[j] and the
-          // minimum value in convex_sets_A[i] is less than 2π. This is computed
-          // by taking that difference, dividing by 2π, and truncating.
-          offset(k) =
-              2 * M_PI *
-              std::floor(
-                  (region_minimum_and_maximum_values_B.at(j).at(kk).second -
-                   region_minimum_and_maximum_values_A.at(i).at(kk).first) /
-                  (2 * M_PI));
-        } else {
-          // In this case, the minimum value of convex_sets_B[j] along dimension
-          // k is smaller than the minimum value of convex_sets_A[i] along
-          // dimension k. We do the same thing as above, but flip the order of
-          // the sets. As a result, we also flip the sign of the resulting
-          // translation.
-          offset(k) =
-              -2 * M_PI *
-              std::floor(
-                  (region_minimum_and_maximum_values_A.at(i).at(kk).second -
-                   region_minimum_and_maximum_values_B.at(j).at(kk).first) /
-                  (2 * M_PI));
-        }
-      }
+      offset = ComputeOffsetContinuousRevoluteJoints(
+          dimension, continuous_revolute_joints,
+          region_minimum_and_maximum_values_A.at(i),
+          region_minimum_and_maximum_values_B.at(j));
 
       // Now that we know the offset that is for each dimension, we actually
       // check if the sets intersect.
@@ -515,13 +479,6 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       throw std::runtime_error("Subspace must be a Point or HPolyhedron.");
     }
   }
-  if (!continuous_revolute_joints().empty() && subspace != nullptr) {
-    // Wraparound edges are not yet implemented for EdgesBetweenSubgraphs when a
-    // subspace is given.
-    drake::log()->warn(
-        "The wraparound edges used for continuous revolute joints are not yet "
-        "implemented for EdgesBetweenSubgraphs when a subspace is given.");
-  }
 
   ur_trajectory_ = BezierCurve<double>(
       0, 1, MatrixXd::Zero(num_positions(), from_subgraph_order_ + 1));
@@ -539,80 +496,90 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
-  if (subspace == nullptr) {
-    const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-        PairwiseIntersectionsContinuousJoints(from_subgraph.regions(),
-                                              to_subgraph.regions(),
-                                              continuous_revolute_joints());
-    for (const auto& edge : edge_data) {
-      int i = std::get<0>(edge);
-      int j = std::get<1>(edge);
-      Eigen::VectorXd edge_offset = std::get<2>(edge);
-
-      // Add edge.
-      Vertex* u = from_subgraph.vertices_[i];
-      Vertex* v = to_subgraph.vertices_[j];
-      Edge* uv_edge = traj_opt_.AddEdge(u, v);
-      edges_.emplace_back(uv_edge);
-
-      // Add path continuity constraints. We instead enforce the constraint
-      // u - v = -tau_uv, via Ax = -edge_offset, A = [I, -I],
-      // x = [u_controls.col(order); v_controls.col(0)].
-      const auto path_continuity_constraint =
-          std::make_shared<LinearEqualityConstraint>(A, -edge_offset);
-      uv_edge->AddConstraint(Binding<Constraint>(
-          path_continuity_constraint,
-          ConcatenateVariableRefList(
-              {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
-               GetControlPointsV(*uv_edge).col(0)})));
+  std::vector<VectorXd> sets_A_subspace_offset;
+  if (subspace != nullptr) {
+    std::vector<std::pair<double, double>> subspace_revolute_joints_bbox =
+        GetMinimumAndMaximumValueAlongDimension(*subspace,
+                                                continuous_revolute_joints());
+    for (const auto& region : from_subgraph.regions()) {
+      std::vector<std::pair<double, double>> set_revolute_joints_bbox =
+          GetMinimumAndMaximumValueAlongDimension(*region,
+                                                  continuous_revolute_joints());
+      sets_A_subspace_offset.push_back(ComputeOffsetContinuousRevoluteJoints(
+          num_positions(), continuous_revolute_joints(),
+          set_revolute_joints_bbox, subspace_revolute_joints_bbox));
     }
-  } else {
+  }
+
+  const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
+      PairwiseIntersectionsContinuousJoints(from_subgraph.regions(),
+                                            to_subgraph.regions(),
+                                            continuous_revolute_joints());
+  for (const auto& edge : edge_data) {
+    int i = std::get<0>(edge);
+    int j = std::get<1>(edge);
+    Eigen::VectorXd edge_offset = std::get<2>(edge);
+
+    // Check if the overlap between the sets is contained in the subspace.
+    if (subspace != nullptr) {
+      Eigen::VectorXd subspace_offset = sets_A_subspace_offset[i];
+      if (!RegionsConnectThroughSubspace(*from_subgraph.regions()[i],
+                                         *to_subgraph.regions()[j], *subspace,
+                                         edge_offset, subspace_offset)) {
+        continue;
+      }
+    }
+
+    // Add edge.
+    Vertex* u = from_subgraph.vertices_[i];
+    Vertex* v = to_subgraph.vertices_[j];
+    Edge* uv_edge = traj_opt_.AddEdge(u, v);
+    edges_.emplace_back(uv_edge);
+
+    // Add path continuity constraints. We instead enforce the constraint
+    // u - v = -tau_uv, via Ax = -edge_offset, A = [I, -I],
+    // x = [u_controls.col(order); v_controls.col(0)].
     const auto path_continuity_constraint =
-        std::make_shared<LinearEqualityConstraint>(
-            A, VectorXd::Zero(num_positions()));
+        std::make_shared<LinearEqualityConstraint>(A, -edge_offset);
+    uv_edge->AddConstraint(Binding<Constraint>(
+        path_continuity_constraint,
+        ConcatenateVariableRefList(
+            {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
+             GetControlPointsV(*uv_edge).col(0)})));
 
-    // TODO(wrangelvid) this can be parallelized.
-    for (int i = 0; i < ssize(from_subgraph); ++i) {
-      for (int j = 0; j < ssize(to_subgraph); ++j) {
-        if (from_subgraph.regions()[i]->IntersectsWith(
-                *to_subgraph.regions()[j])) {
-          if (subspace != nullptr) {
-            // Check if the regions are connected through the subspace.
-            if (!RegionsConnectThroughSubspace(*from_subgraph.regions()[i],
-                                               *to_subgraph.regions()[j],
-                                               *subspace)) {
-              continue;
-            }
-          }
+    if (subspace != nullptr) {
+      // Add subspace constraints to the last control point of the u vertex.
+      const auto vars = GetControlPointsU(*uv_edge).col(from_subgraph_order_);
 
-          // Add edge.
-          Vertex* u = from_subgraph.vertices_[i];
-          Vertex* v = to_subgraph.vertices_[j];
-          Edge* uv_edge = traj_opt_.AddEdge(u, v);
-          edges_.emplace_back(uv_edge);
-
-          // Add path continuity constraints.
-          uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
-              path_continuity_constraint,
-              ConcatenateVariableRefList(
-                  {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
-                   GetControlPointsV(*uv_edge).col(0)})));
-
-          if (subspace != nullptr) {
-            // Add subspace constraints to the first control point of the v
-            // vertex. Since we are using zeroth order continuity, the last
-            // control point
-            const auto vars = v->x().segment(0, num_positions());
-            solvers::MathematicalProgram prog;
-            const VectorX<symbolic::Variable> x =
-                prog.NewContinuousVariables(num_positions(), "x");
-            subspace->AddPointInSetConstraints(&prog, x);
-            for (const auto& binding : prog.GetAllConstraints()) {
-              const std::shared_ptr<Constraint>& constraint =
-                  binding.evaluator();
-              uv_edge->AddConstraint(Binding<Constraint>(constraint, vars));
-            }
-          }
+      // subspace will either be a Point or HPolyhedron. We check if it's a
+      // Point via the method ConvexSet::MaybeGetPoint(), which will return a
+      // value for Point, and won't return a value for HPolyhedron.
+      std::optional<VectorXd> subspace_point = subspace->MaybeGetPoint();
+      if (subspace_point.has_value()) {
+        // Encode u = subspace_point + subspace_offset via the linear equality
+        // constraint [I][u] = [subspace_point + subspace_offset].
+        const auto subgraph_constraint =
+            std::make_shared<LinearEqualityConstraint>(
+                Eigen::MatrixXd::Identity(num_positions(), num_positions()),
+                subspace_point.value() + sets_A_subspace_offset[i]);
+        uv_edge->AddConstraint(Binding<Constraint>(subgraph_constraint, vars));
+      } else if (typeid(*subspace) == typeid(HPolyhedron)) {
+        const HPolyhedron* hpoly = dynamic_cast<const HPolyhedron*>(subspace);
+        const Eigen::MatrixXd& hpoly_A = hpoly->A();
+        const Eigen::VectorXd& hpoly_b = hpoly->b();
+        solvers::MathematicalProgram prog;
+        const VectorX<symbolic::Variable> x =
+            prog.NewContinuousVariables(num_positions(), "x");
+        // To translate the HPolyhedron, rewrite A*(x+offset)<=b as
+        // Ax<=b-A*offset.
+        prog.AddLinearConstraint(
+            hpoly_A,
+            Eigen::VectorXd::Constant(hpoly_b.size(),
+                                      std::numeric_limits<double>::infinity()),
+            hpoly_b - (hpoly_A * sets_A_subspace_offset[i]), x);
+        for (const auto& binding : prog.GetAllConstraints()) {
+          const std::shared_ptr<Constraint>& constraint = binding.evaluator();
+          uv_edge->AddConstraint(Binding<Constraint>(constraint, vars));
         }
       }
     }
@@ -622,18 +589,67 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
 EdgesBetweenSubgraphs::~EdgesBetweenSubgraphs() = default;
 
 bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
-    const ConvexSet& A, const ConvexSet& B, const ConvexSet& subspace) {
+    const ConvexSet& A, const ConvexSet& B, const ConvexSet& subspace,
+    std::optional<const VectorXd> maybe_set_B_offset,
+    std::optional<const VectorXd> maybe_subspace_offset) {
   DRAKE_THROW_UNLESS(A.ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(A.ambient_dimension() == B.ambient_dimension());
   DRAKE_THROW_UNLESS(A.ambient_dimension() == subspace.ambient_dimension());
+  DRAKE_THROW_UNLESS(maybe_set_B_offset.has_value() ==
+                     maybe_subspace_offset.has_value());
+  if (maybe_set_B_offset.has_value()) {
+    DRAKE_THROW_UNLESS(maybe_set_B_offset.value().size() ==
+                       A.ambient_dimension());
+    DRAKE_THROW_UNLESS(maybe_subspace_offset.value().size() ==
+                       A.ambient_dimension());
+  }
   if (std::optional<VectorXd> subspace_point = subspace.MaybeGetPoint()) {
     // If the subspace is a point, then the point must be in both A and B.
-    return A.PointInSet(*subspace_point) && B.PointInSet(*subspace_point);
-  } else {
+    if (maybe_set_B_offset.has_value()) {
+      // Compute the value of the point such that it can be directly checked for
+      // containment in A. We take its given value, and subtract the offset from
+      // the set to the subspace.
+      const VectorXd point_in_A_coords =
+          *subspace_point - maybe_subspace_offset.value();
+      // Compute the value of the point such that it can be directly checked for
+      // containment in B. We take the value of the point that can be checked
+      // for A, and add the offset form A to B.
+      const VectorXd point_in_B_coords =
+          point_in_A_coords + maybe_set_B_offset.value();
+      return A.PointInSet(point_in_A_coords) && B.PointInSet(point_in_B_coords);
+    } else {
+      return A.PointInSet(*subspace_point) && B.PointInSet(*subspace_point);
+    }
+  } else if (!maybe_set_B_offset.has_value()) {
     // Otherwise, we can formulate a problem to check if a point is contained in
     // A, B and the subspace.
     Intersection intersection(MakeConvexSets(A, B, subspace));
     return !intersection.IsEmpty();
+  } else {
+    // The program has to be different if there's an offset.
+    const int dimension = A.ambient_dimension();
+    MathematicalProgram prog;
+    VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
+    VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
+    VectorXDecisionVariable z = prog.NewContinuousVariables(dimension);
+    A.AddPointInSetConstraints(&prog, x);
+    B.AddPointInSetConstraints(&prog, y);
+    subspace.AddPointInSetConstraints(&prog, z);
+
+    MatrixXd equality_constraint_matrix(dimension, 2 * dimension);
+    equality_constraint_matrix.leftCols(dimension) =
+        MatrixXd::Identity(dimension, dimension);
+    equality_constraint_matrix.rightCols(dimension) =
+        -MatrixXd::Identity(dimension, dimension);
+    // y = x + B_offset as [I, -I][y; x] = [B_offset].
+    prog.AddLinearEqualityConstraint(equality_constraint_matrix,
+                                     maybe_set_B_offset.value(), {x, y});
+    // z = x + subspace_offset as [I, -I][z; x] = [subspace_offset]
+    prog.AddLinearEqualityConstraint(equality_constraint_matrix,
+                                     maybe_subspace_offset.value(), {x, z});
+
+    const auto result = Solve(prog);
+    return result.is_success();
   }
 }
 

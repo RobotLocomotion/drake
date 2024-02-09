@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
@@ -15,6 +16,8 @@ namespace optimization {
 using geometry::optimization::Hyperrectangle;
 using geometry::optimization::Intersection;
 using geometry::optimization::VPolytope;
+using geometry::optimization::internal::ComputeOffsetContinuousRevoluteJoints;
+using geometry::optimization::internal::GetMinimumAndMaximumValueAlongDimension;
 
 GTEST_TEST(GeodesicConvexityTest, PartitionConvexSetAPI) {
   Eigen::Matrix<double, 2, 4> vertices;
@@ -206,6 +209,76 @@ GTEST_TEST(GeodesicConvexityTest, PartitionConvexSet4) {
                                      *set, continuous_revolute_joints);
   }
   EXPECT_FALSE(all_satisfy);
+}
+
+GTEST_TEST(GeodesicConvexityTest, GetMinimumAndMaximumValueAlongDimension) {
+  Eigen::Matrix<double, 2, 4> vertices;
+  // clang-format off
+  vertices << -2.0, 2.0, -2.0, 2.0,
+               0.0, 0.0,  4.0, 4.0;
+  // clang-format on
+  VPolytope v(vertices);
+  const double kTol = 1e-11;
+
+  std::pair<double, double> min_max;
+  min_max = GetMinimumAndMaximumValueAlongDimension(v, 0);
+  EXPECT_NEAR(min_max.first, -2.0, kTol);
+  EXPECT_NEAR(min_max.second, 2.0, kTol);
+  min_max = GetMinimumAndMaximumValueAlongDimension(v, 1);
+  EXPECT_NEAR(min_max.first, 0.0, kTol);
+  EXPECT_NEAR(min_max.second, 4.0, kTol);
+
+  std::vector<std::pair<double, double>> min_maxs =
+      GetMinimumAndMaximumValueAlongDimension(v, std::vector<int>{0, 1});
+  ASSERT_EQ(min_maxs.size(), 2);
+  EXPECT_NEAR(min_maxs[0].first, -2.0, kTol);
+  EXPECT_NEAR(min_maxs[0].second, 2.0, kTol);
+  EXPECT_NEAR(min_maxs[1].first, 0.0, kTol);
+  EXPECT_NEAR(min_maxs[1].second, 4.0, kTol);
+}
+
+GTEST_TEST(GeodesicConvexityTest, ComputeOffset) {
+  // 1D example.
+  Eigen::Matrix<double, 1, 2> points1;
+  Eigen::Matrix<double, 1, 2> points2;
+  Eigen::Matrix<double, 1, 2> points3;
+  points1 << 0, 3;
+  points2 << 2.5, 5.5;
+  points3 << 5, 8;
+  const VPolytope v1(points1);
+  const VPolytope v2(points2);
+  const VPolytope v3(points3);
+  std::vector<int> continuous_revolute_joints{0};
+
+  const auto v1_bbox =
+      GetMinimumAndMaximumValueAlongDimension(v1, continuous_revolute_joints);
+  const auto v2_bbox =
+      GetMinimumAndMaximumValueAlongDimension(v2, continuous_revolute_joints);
+  const auto v3_bbox =
+      GetMinimumAndMaximumValueAlongDimension(v3, continuous_revolute_joints);
+
+  const int num_positions = 1;
+  const double kTol = 1e-9;
+
+  Eigen::VectorXd offset;
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v1_bbox, v2_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v2_bbox, v1_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v1_bbox, v3_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(2 * M_PI), kTol));
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v3_bbox, v1_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(-2 * M_PI), kTol));
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v2_bbox, v3_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
+  offset = ComputeOffsetContinuousRevoluteJoints(
+      num_positions, continuous_revolute_joints, v3_bbox, v2_bbox);
+  EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
 }
 
 }  // namespace optimization
