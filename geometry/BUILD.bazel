@@ -483,6 +483,7 @@ drake_cc_library(
         "meshcat.h",
         "meshcat_file_storage_internal.h",
         "meshcat_internal.h",
+        "meshcat_params.h",
         "meshcat_types_internal.h",
     ],
     data = [":meshcat_resources"],
@@ -582,6 +583,14 @@ drake_cc_googletest(
     deps = [
         ":meshcat",
         "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_params_test",
+    deps = [
+        ":meshcat",
+        "//common/yaml:yaml_io",
     ],
 )
 
