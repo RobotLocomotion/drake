@@ -21,35 +21,50 @@ using Eigen::VectorXd;
 
 std::pair<double, double> internal::GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension) {
-  DRAKE_THROW_UNLESS(dimension >= 0 && dimension < region.ambient_dimension());
+  return internal::GetMinimumAndMaximumValueAlongDimension(
+      region, std::vector<int>{dimension})[0];
+}
+
+std::vector<std::pair<double, double>>
+internal::GetMinimumAndMaximumValueAlongDimension(const ConvexSet& region,
+                                                  std::vector<int> dimensions) {
+  std::vector<std::pair<double, double>> bounds;
   MathematicalProgram prog;
   VectorXDecisionVariable y =
       prog.NewContinuousVariables(region.ambient_dimension());
   region.AddPointInSetConstraints(&prog, y);
   VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
-  objective_vector[dimension] = 1;
-  auto objective = prog.AddLinearCost(objective_vector, y);
+  for (const auto& dimension : dimensions) {
+    DRAKE_THROW_UNLESS(dimension >= 0 &&
+                       dimension < region.ambient_dimension());
+    objective_vector.setZero();
+    objective_vector[dimension] = 1;
+    auto objective = prog.AddLinearCost(objective_vector, y);
 
-  auto result = Solve(prog);
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        "GcsTrajectoryOptimization: Failed to compute lower bound of a convex "
-        "set!");
+    auto result = Solve(prog);
+    if (!result.is_success()) {
+      throw std::runtime_error(
+          "GcsTrajectoryOptimization: Failed to compute lower bound of a "
+          "convex "
+          "set!");
+    }
+    const double lower_bound = result.GetSolution(y)[dimension];
+
+    objective_vector[dimension] = -1;
+    objective.evaluator()->UpdateCoefficients(objective_vector);
+
+    result = Solve(prog);
+    if (!result.is_success()) {
+      throw std::runtime_error(
+          "GcsTrajectoryOptimization: Failed to compute upper bound of a "
+          "convex "
+          "set!");
+    }
+    const double upper_bound = result.GetSolution(y)[dimension];
+    bounds.push_back({lower_bound, upper_bound});
   }
-  const double lower_bound = result.GetSolution(y)[dimension];
 
-  objective_vector[dimension] = -1;
-  objective.evaluator()->UpdateCoefficients(objective_vector);
-
-  result = Solve(prog);
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        "GcsTrajectoryOptimization: Failed to compute upper bound of a convex "
-        "set!");
-  }
-  const double upper_bound = result.GetSolution(y)[dimension];
-
-  return {lower_bound, upper_bound};
+  return bounds;
 }
 
 void internal::ThrowsForInvalidContinuousJointsList(

@@ -29,6 +29,10 @@ dimension for a point constrained to lie within a convex set.
 std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension);
 
+/* Convenience overload for a list of dimensions. */
+std::vector<std::pair<double, double>> GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, std::vector<int> dimensions);
+
 /* Helper function to assert that a given list of continuous revolute joint
 indices satisfies the requirements for the constructor to
 GcsTrajectoryOptimization, as well as any static functions that may take in
