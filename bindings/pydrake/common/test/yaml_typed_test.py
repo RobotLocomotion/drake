@@ -109,6 +109,14 @@ class NullableVariantStruct:
 
 
 @dc.dataclass
+class FloatVariantStruct:
+    """TODO(jwnimmer-tri) Add C++ tests for this kind of thing. At the moment,
+    the C++ example_structs.h doesn't have any twin for this type.
+    """
+    value: typing.Union[typing.List[float], float] = nan
+
+
+@dc.dataclass
 class ListVariantStruct:
     value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
         dc.field(default_factory=lambda: list([nan])))
@@ -401,6 +409,22 @@ class TestYamlTypedRead(unittest.TestCase,
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
                 yaml_load_typed(schema=VariantStruct, data=data,
                                 defaults=defaults, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_generic_variant(self, *, options):
+        """When the schema has a Union[List[T], U, ...], we must be careful to
+        never call List[T]() like a constructor; we must call list() instead.
+
+        This kind of problem cannot occur in the C++ type system, so this test
+        case doesn't have any twin inside yaml_read_archive_test.cc.
+        """
+        data = "value: !!float 2.0"
+        x = yaml_load_typed(schema=FloatVariantStruct, data=data, **options)
+        self.assertEqual(x.value, 2.0)
+
+        data = "value: [1.0, 2.0]"
+        x = yaml_load_typed(schema=FloatVariantStruct, data=data, **options)
+        self.assertEqual(x.value, [1.0, 2.0])
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_missing(self, *, options):
