@@ -54,7 +54,6 @@ For the record, the velocity and effort limits:
 |Axis 6 (A6)|40 Nm      |180 deg/s    |
 |Axis 7 (A7)|40 Nm      |180 deg/s    |
 
-
 ### Velocity and Effort Limits for IIWA 14
 
 Velocity and effort limits were derived from the third table at page 30 of the
