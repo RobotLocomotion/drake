@@ -256,7 +256,10 @@ class GcsTrajectoryOptimization final {
     bool RegionsConnectThroughSubspace(
         const geometry::optimization::ConvexSet& A,
         const geometry::optimization::ConvexSet& B,
-        const geometry::optimization::ConvexSet& subspace);
+        const geometry::optimization::ConvexSet& subspace,
+        std::optional<const Eigen::VectorXd> maybe_set_B_offset = std::nullopt,
+        std::optional<const Eigen::VectorXd> maybe_subspace_offset =
+            std::nullopt);
 
     /* Extracts the control points variables from an edge. */
     Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsU(

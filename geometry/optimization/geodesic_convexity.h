@@ -23,11 +23,19 @@ namespace optimization {
 namespace internal {
 
 /* Computes the minimum and maximum values that can be attained along a certain
-dimension for a point constrained to lie within a convex set.
+dimension for a point constrained to lie within a convex set region.
 @throws std::exception if dimension is outside the interval
 [0, region.ambient_dimension()). */
 std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension);
+
+/* Convenience overload to find the minimum and maximum values that can be
+attained along a list of dimensions for a point constrained to lie within a
+convex set.
+@throws std::exception if any entry of dimensions is outside the interval
+[0, region.ambient_dimension()). */
+std::vector<std::pair<double, double>> GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, std::vector<int> dimensions);
 
 /* Helper function to assert that a given list of continuous revolute joint
 indices satisfies the requirements for the constructor to
@@ -35,6 +43,21 @@ GcsTrajectoryOptimization, as well as any static functions that may take in
 such a list. */
 void ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints);
+
+/* Given a list of continuous revolute joints, and a list of minimum and maximum
+values along the dimensions corresponding to those revolute joints for two
+convex sets, compute the translation that should be applied to the first convex
+set to align it with the second, such that can directly be checked without
+considering the 2π wraparound that may occur with continuous revolute joints.
+@throws std::exception if continuous_bbox_A.size() != continuous_bbox_B.size().
+@throws std::exception if num_positions and continuous_revolute_joints do not
+satisfy the conditions checked by
+internal::ThrowsForInvalidContinuousJointsList.
+*/
+Eigen::VectorXd ComputeOffset(
+    const int num_positions, const std::vector<int>& continuous_revolute_joints,
+    const std::vector<std::pair<double, double>>& continuous_bbox_A,
+    const std::vector<std::pair<double, double>>& continuous_bbox_B);
 }  // namespace internal
 
 /** Given a convex set, and a list of indices corresponding to continuous
