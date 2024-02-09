@@ -23,11 +23,28 @@ namespace optimization {
 namespace internal {
 
 /* Computes the minimum and maximum values that can be attained along a certain
-dimension for a point constrained to lie within a convex set.
+dimension for a point constrained to lie within a convex set region.
+@param region is the convex set we're examining.
+@param dimension specifies for which dimension we compute the minimum and
+maximum values.
 @throws std::exception if dimension is outside the interval
 [0, region.ambient_dimension()). */
 std::pair<double, double> GetMinimumAndMaximumValueAlongDimension(
     const ConvexSet& region, int dimension);
+
+/* Convenience overload to find the minimum and maximum values that can be
+attained along a list of dimensions for a point constrained to lie within a
+convex set.
+@param region is the convex set we're examining.
+@param dimensions specifies a list of dimensions for which we compute the
+minimum and maximum values.
+@returns a vector of pairs, where the entry in index i is the pair (min, max)
+describing the minimum and maximum value along the dimension given by index i
+of the input dimensions vector.
+@throws std::exception if any entry of dimensions is outside the interval
+[0, region.ambient_dimension()). */
+std::vector<std::pair<double, double>> GetMinimumAndMaximumValueAlongDimension(
+    const ConvexSet& region, std::vector<int> dimensions);
 
 /* Helper function to assert that a given list of continuous revolute joint
 indices satisfies the requirements for the constructor to
@@ -35,6 +52,23 @@ GcsTrajectoryOptimization, as well as any static functions that may take in
 such a list. */
 void ThrowsForInvalidContinuousJointsList(
     int num_positions, const std::vector<int>& continuous_revolute_joints);
+
+/* Given two convex sets A and B with ambient dimension num_positions, we denote
+a subset of those positions as continuous_revolute_joints, and the bounding box
+along these positions is obtained via GetMinimumAndMaximumValueAlongDimension().
+This function takes in the bounding boxes, and computes the translation that
+should be applied to the first convex set to align it with the second, such that
+intersections can directly be checked without considering the 2π wraparound that
+may occur with continuous revolute joints.
+@throws std::exception if continuous_bbox_A.size() != continuous_bbox_B.size().
+@throws std::exception if num_positions and continuous_revolute_joints do not
+satisfy the conditions checked by
+internal::ThrowsForInvalidContinuousJointsList.
+*/
+Eigen::VectorXd ComputeOffsetContinuousRevoluteJoints(
+    const int num_positions, const std::vector<int>& continuous_revolute_joints,
+    const std::vector<std::pair<double, double>>& continuous_bbox_A,
+    const std::vector<std::pair<double, double>>& continuous_bbox_B);
 }  // namespace internal
 
 /** Given a convex set, and a list of indices corresponding to continuous
