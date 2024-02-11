@@ -1,0 +1,138 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load("@drake//tools/workspace/openusd_internal:defs.bzl", "usd_library")
+
+package(default_visibility = ["//visibility:private"])
+
+cmake_configure_file(
+    name = "config_genrule",
+    src = "pxr/pxr.h.in",
+    out = "pxr/pxr.h",
+    cmakelists = [
+        "cmake/defaults/Version.cmake",
+    ],
+    defines = [
+        "PXR_EXTERNAL_NAMESPACE=pxr",
+        "PXR_INTERNAL_NAMESPACE=pxrInternal",
+        "PXR_PREFER_SAFETY_OVER_SPEED",
+        "PXR_PYTHON_SUPPORT_ENABLED=0",
+        "PXR_USE_NAMESPACES=1",
+        # TODO(jwnimmer-tri) Compute this from the major/minor/patch.
+        "PXR_VERSION=2402",
+    ],
+)
+
+cc_library(
+    name = "pxr_h",
+    hdrs = [":pxr/pxr.h"],
+)
+
+usd_library(
+    name = "arch",
+    subdir = "base/arch",
+)
+
+usd_library(
+    name = "gf",
+    subdir = "base/gf",
+)
+
+usd_library(
+    name = "js",
+    subdir = "base/js",
+)
+
+usd_library(
+    name = "plug",
+    subdir = "base/plug",
+)
+
+usd_library(
+    name = "tf",
+    subdir = "base/tf",
+)
+
+usd_library(
+    name = "trace",
+    subdir = "base/trace",
+)
+
+usd_library(
+    name = "vt",
+    subdir = "base/vt",
+)
+
+usd_library(
+    name = "work",
+    subdir = "base/work",
+)
+
+usd_library(
+    name = "ar",
+    subdir = "usd/ar",
+)
+
+usd_library(
+    name = "kind",
+    subdir = "usd/kind",
+)
+
+usd_library(
+    name = "ndr",
+    subdir = "usd/ndr",
+)
+
+usd_library(
+    name = "pcp",
+    subdir = "usd/pcp",
+)
+
+usd_library(
+    name = "sdr",
+    subdir = "usd/sdr",
+)
+
+usd_library(
+    name = "sdf",
+    subdir = "usd/sdf",
+)
+
+usd_library(
+    name = "usd",
+    subdir = "usd/usd",
+)
+
+usd_library(
+    name = "usdGeom",
+    subdir = "usd/usdGeom",
+)
+
+usd_library(
+    name = "usdShade",
+    subdir = "usd/usdShade",
+)
+
+usd_library(
+    name = "usdUtils",
+    subdir = "usd/usdUtils",
+)
+
+cc_binary(
+    name = "usdcat",
+    srcs = ["pxr/usd/bin/usdcat/usdcat.cpp"],
+    copts = ["-w"],
+    deps = [
+        ":tf",
+        ":sdf",
+        ":usd",
+        ":usdUtils",
+    ],
+    visibility = [
+        "@drake//tools/workspace/openusd_internal:__pkg__",
+    ],
+)

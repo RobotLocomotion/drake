@@ -179,4 +179,12 @@ config_setting(
     values = {"define": "NO_SCS=ON"},
 )
 
+# We are exploring adding USD support to Drake. For the moment, it is opt-in.
+# See https://github.com/PixarAnimationStudios/OpenUSD for details.
+# Use `--define=WITH_USD=ON` on the bazel command line to enable it.
+config_setting(
+    name = "with_usd",
+    values = {"define": "WITH_USD=ON"},
+)
+
 add_lint_tests()
