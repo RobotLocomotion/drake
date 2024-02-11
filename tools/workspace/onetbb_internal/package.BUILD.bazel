@@ -1,0 +1,19 @@
+# -*- bazel -*-
+
+cc_library(
+    name = "tbb",
+    hdrs = glob([
+        "include/oneapi/*.h",
+        "include/oneapi/tbb/*.h",
+        "include/oneapi/tbb/detail/*.h",
+    ]),
+    includes = [
+        "include/oneapi",
+    ],
+    deps = [
+        # TODO(jwnimmer-tri) This should just be the TBB runtime, not the
+        # entirety of MOSEK.
+        "@mosek",
+    ],
+    visibility = ["//visibility:public"],
+)

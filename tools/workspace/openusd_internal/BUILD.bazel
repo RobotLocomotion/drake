@@ -1,0 +1,28 @@
+load("//tools/workspace:generate_file.bzl", "generate_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+alias(
+    name = "usdcat",
+    actual = "@openusd_internal//:usdcat",
+    tags = [
+        # Only compile this binary when the usdcat_help test needs it.
+        "manual",
+    ],
+)
+
+generate_file(
+    name = "empty.sh",
+    # When WITH_USD is off, this serves as a test stub dummy.
+    content = "echo 'WITH_USD is not ON'",
+)
+
+sh_test(
+    name = "usdcat_help",
+    srcs = select({
+        "//tools:with_usd": [":usdcat"],
+        "//conditions:default": ["empty.sh"],
+    }),
+    args = ["--help"],
+)
+
+add_lint_tests()
