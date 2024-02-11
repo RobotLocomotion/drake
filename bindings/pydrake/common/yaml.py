@@ -375,9 +375,12 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             refined_yaml_value = yaml_value
             refined_value_schema = generic_args[0]
         # Self-call, but now with an updated value and type.
-        if not isinstance(getter(), refined_value_schema):
+        refined_value_schema_origin = typing.get_origin(refined_value_schema)
+        if refined_value_schema_origin is None:
+            refined_value_schema_origin = refined_value_schema
+        if not isinstance(getter(), refined_value_schema_origin):
             setter(_create_from_schema(
-                schema=refined_value_schema,
+                schema=refined_value_schema_origin,
                 forthcoming_value=yaml_value))
         _merge_yaml_dict_item_into_target(
             options=options, name=name, yaml_value=refined_yaml_value,
