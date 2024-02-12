@@ -836,7 +836,7 @@ class Meshcat {
   the visualizer immediately (because meshcat animations do not support
   SetObject).
   */
-  void StartRecording(double frames_per_second = 32.0,
+  void StartRecording(double frames_per_second = 64.0,
                       bool set_visualizations_while_recording = true);
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
