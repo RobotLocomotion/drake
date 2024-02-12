@@ -15,7 +15,7 @@ def drake_lcm_cc_library(
         deps = [],
         tags = [],
         strip_include_prefix = None,
-        use_new_lcm_gen = False,
+        use_new_lcm_gen = True,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 

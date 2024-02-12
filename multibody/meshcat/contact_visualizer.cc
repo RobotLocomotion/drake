@@ -243,9 +243,7 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
 
       const std::vector<T>& field_pressures =
           contact_surface.tri_e_MN().values();
-      const VectorX<T> pressure_T =
-          Eigen::Map<const VectorX<T>, Eigen::Unaligned>(
-              field_pressures.data(), field_pressures.size());
+      const VectorX<T> pressure_T = EigenMapView(field_pressures);
       const Eigen::VectorXd pressure = ExtractDoubleOrThrow(pressure_T);
       result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
                            force_C_W, moment_C_W, vertices, faces, pressure);
@@ -275,9 +273,7 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
 
       const std::vector<T>& field_pressures =
           contact_surface.poly_e_MN().values();
-      const VectorX<T> pressure_T =
-          Eigen::Map<const VectorX<T>, Eigen::Unaligned>(
-              field_pressures.data(), field_pressures.size());
+      const VectorX<T> pressure_T = EigenMapView(field_pressures);
       const Eigen::VectorXd pressure = ExtractDoubleOrThrow(pressure_T);
 
       result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,

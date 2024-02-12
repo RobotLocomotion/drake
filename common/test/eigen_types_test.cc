@@ -85,6 +85,47 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
   // EXPECT_FALSE((is_eigen_vector_of<std::string, double>::value));
 }
 
+GTEST_TEST(MapViewTest, CStyleArray) {
+  double foo[3] = {};
+  EXPECT_EQ(EigenMapView(foo).rows(), 3);
+  EXPECT_EQ(EigenMapView(foo).cols(), 1);
+  EigenMapView(foo) = Vector3d::Constant(1.0);
+  EXPECT_EQ(foo[1], 1.0);
+
+  const double bar[3] = {1.0, 2.0, 3.0};
+  EXPECT_EQ(EigenMapView(bar).rows(), 3);
+  EXPECT_EQ(EigenMapView(bar).cols(), 1);
+  const Eigen::Vector3d quux = EigenMapView(bar);
+  EXPECT_EQ(quux[1], 2.0);
+}
+
+GTEST_TEST(MapViewTest, StdArray) {
+  std::array<double, 3> foo = {};
+  EigenMapView(foo) = Vector3d::Constant(1.0);
+  EXPECT_EQ(foo[1], 1.0);
+
+  const std::array<double, 3> bar = {1.0, 2.0, 3.0};
+  const Eigen::Vector3d quux = EigenMapView(bar);
+  EXPECT_EQ(quux[1], 2.0);
+}
+
+GTEST_TEST(MapViewTest, StdVector) {
+  std::vector<double> foo;
+  EXPECT_EQ(EigenMapView(foo).size(), 0);
+
+  foo.resize(3);
+  EXPECT_EQ(EigenMapView(foo).rows(), 3);
+  EXPECT_EQ(EigenMapView(foo).cols(), 1);
+  EigenMapView(foo) = Vector3d::Constant(1.0);
+  EXPECT_EQ(foo[1], 1.0);
+
+  const std::vector<double> bar = {1.0, 2.0, 3.0};
+  EXPECT_EQ(EigenMapView(bar).rows(), 3);
+  EXPECT_EQ(EigenMapView(bar).cols(), 1);
+  const Eigen::Vector3d quux = EigenMapView(bar);
+  EXPECT_EQ(quux[1], 2.0);
+}
+
 GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
   EigenPtr<const Matrix3d> null_ptr = nullptr;
   EXPECT_FALSE(null_ptr);
