@@ -1777,9 +1777,10 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
     return this->DeclareVectorInputPort(kUseDefaultName, size).get_index();
   }
 
-  InputPortIndex AddAbstractInputPort() {
-    return this->DeclareAbstractInputPort(
-        kUseDefaultName, Value<std::string>{}).get_index();
+  template <typename Name = UseDefaultName>
+  InputPortIndex AddAbstractInputPort(Name name = kUseDefaultName) {
+    return this->DeclareAbstractInputPort(name, Value<std::string>{})
+        .get_index();
   }
 
   OutputPortIndex AddAbstractOutputPort(
@@ -2278,22 +2279,27 @@ GTEST_TEST(LeafSystemCloneTest, Unsupported) {
 
 GTEST_TEST(GraphvizTest, Attributes) {
   DefaultFeedthroughSystem system;
+  system.set_name("<hello&world>");
   const std::string dot = system.GetGraphvizString();
   // Check that left-to-right ranking is imposed.
   EXPECT_THAT(dot, ::testing::HasSubstr("rankdir=LR"));
   // Check that NiceTypeName provides a bold class header.
   EXPECT_THAT(dot, ::testing::HasSubstr("<B>DefaultFeedthroughSystem</B>"));
+  // Check that HTML special characters the name were replaced.
+  EXPECT_THAT(dot, ::testing::HasSubstr("name=&lt;hello&amp;world&gt;"));
 }
 
 GTEST_TEST(GraphvizTest, Ports) {
   DefaultFeedthroughSystem system;
   system.AddVectorInputPort(/* size = */ 0);
-  system.AddAbstractInputPort();
+  system.AddAbstractInputPort(/*name = */ "<force&torque>");
   system.AddAbstractOutputPort();
   const std::string dot = system.GetGraphvizString();
   EXPECT_THAT(dot, ::testing::HasSubstr("PORT=\"u0\""));
   EXPECT_THAT(dot, ::testing::HasSubstr("PORT=\"u1\""));
   EXPECT_THAT(dot, ::testing::HasSubstr("PORT=\"y0\""));
+  // Check that HTML special characters port names were replaced.
+  EXPECT_THAT(dot, ::testing::HasSubstr("&lt;force&amp;torque&gt;"));
 }
 
 GTEST_TEST(GraphvizTest, Split) {

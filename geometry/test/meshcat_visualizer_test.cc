@@ -321,6 +321,36 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
       X_7_message);
 }
 
+// Confirm that the default frame rates match the publish period of the
+// visualizer. Otherwise the rounding to an animation frame done in
+// MeshcatAnimation can lead to odd visualization artifacts, like the first
+// visualized frame not being the initial state. (Technically, it's OK to have
+// the visualizer's publish period be any integer multiple of the meshcat
+// recording's keyframe period; for expediency, we just test for exact
+// equality.)
+TEST_F(MeshcatVisualizerWithIiwaTest, RecordingFrameRate) {
+  MeshcatVisualizerParams params;
+  SetUpDiagram(params);
+
+  // StartRecording via the MeshcatVisualizer API.
+  visualizer_->StartRecording();
+  MeshcatAnimation* animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(1.0 / animation->frames_per_second(), params.publish_period);
+  visualizer_->DeleteRecording();
+
+  // Set the animation to a different frame rate before our final test, for good
+  // measure.
+  meshcat_->StartRecording(12.3);
+  animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(animation->frames_per_second(), 12.3);
+  visualizer_->DeleteRecording();
+
+  // StartRecording via the Meshcat API.
+  meshcat_->StartRecording();
+  animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(1.0 / animation->frames_per_second(), params.publish_period);
+}
+
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   SetUpDiagram();
 

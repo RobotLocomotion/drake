@@ -94,6 +94,7 @@ cc_test(
         # Some of these tests take too long under valgrind for CI.
         "no_memcheck",
     ],
+    shard_count = 4,
     timeout = "moderate",
     deps = [
         ":common_robotics_utilities",

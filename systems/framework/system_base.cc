@@ -55,6 +55,31 @@ std::string SystemBase::GetSystemPathname() const {
          GetSystemName();
 }
 
+namespace {
+/* Returns a copy of the given text, with HTML's special characters replaced
+with their safe equivalents. */
+std::string HtmlEscape(std::string_view text) {
+  std::string result;
+  for (char ch : text) {
+    // N.B. This works fine even with utf-8 text.
+    if (ch == '<') {
+      result += "&lt;";
+      continue;
+    }
+    if (ch == '>') {
+      result += "&gt;";
+      continue;
+    }
+    if (ch == '&') {
+      result += "&amp;";
+      continue;
+    }
+    result += ch;
+  }
+  return result;
+}
+}  // namespace
+
 std::string SystemBase::GetGraphvizString(
     std::optional<int> max_depth,
     const std::map<std::string, std::string>& options) const {
@@ -81,12 +106,14 @@ SystemBase::GraphvizFragment SystemBase::GetGraphvizFragment(
   const std::string system_type = std::regex_replace(
       NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this)),
       std::regex("<.*>$"), std::string());
-  params.header_lines.push_back(fmt::format("<B>{}</B>", system_type));
+  params.header_lines.push_back(
+      fmt::format("<B>{}</B>", HtmlEscape(system_type)));
 
   // If we have a name, then add it to the header.
   const std::string system_name = this->get_name();
   if (!system_name.empty() && system_name != this->GetMemoryObjectName()) {
-    params.header_lines.push_back(fmt::format("name={}", system_name));
+    params.header_lines.push_back(
+        fmt::format("name={}", HtmlEscape(system_name)));
   }
 
   return DoGetGraphvizFragment(params);
@@ -223,7 +250,7 @@ std::vector<std::string> SystemBase::GetGraphvizPortLabels(bool input) const {
       else
         return GetOutputPortBaseOrThrow("", i, /* warn_deprecated = */ false);
     }();
-    std::string label = port.get_name();
+    std::string label = HtmlEscape(port.get_name());
     // For deprecated ports, use strikethrough and a unicode headstone (🪦).
     if (port.get_deprecation().has_value()) {
       label = fmt::format("<S>{}</S>\xF0\x9F\xAA\xA6", label);

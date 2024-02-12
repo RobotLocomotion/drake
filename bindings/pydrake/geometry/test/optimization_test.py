@@ -340,6 +340,9 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.Hyperrectangle()
         rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
 
+        # Used for testing methods that require randomness.
+        generator = RandomGenerator()
+
         # Methods inherited from ConvexSet
         self.assertEqual(rect.ambient_dimension(), self.b.shape[0])
         self.assertTrue(rect.IntersectsWith(rect))
@@ -371,7 +374,6 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(rect.lb(), -self.b)
         np.testing.assert_array_equal(rect.ub(), self.b)
         np.testing.assert_array_equal(rect.Center(), np.zeros_like(self.b))
-        generator = RandomGenerator()
         sample = rect.UniformSample(generator=generator)
         self.assertEqual(sample.shape, (self.b.shape[0],))
         hpoly = rect.MakeHPolyhedron()
@@ -383,6 +385,21 @@ class TestGeometryOptimization(unittest.TestCase):
         other = mut.VPolytope(np.eye(2))
         bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
         self.assertIsInstance(bbox, mut.Hyperrectangle)
+
+    def test_calc_volume_via_sampling(self):
+        rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
+        generator = RandomGenerator()
+        desired_rel_accuracy = 1e-2
+        max_num_samples = 100
+        sampled_volume = rect.CalcVolumeViaSampling(
+            generator=generator,
+            desired_rel_accuracy=desired_rel_accuracy,
+            max_num_samples=max_num_samples
+        )
+        self.assertAlmostEqual(rect.CalcVolume(), sampled_volume.volume)
+        self.assertGreaterEqual(sampled_volume.rel_accuracy,
+                                desired_rel_accuracy)
+        self.assertEqual(sampled_volume.num_samples, max_num_samples)
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()

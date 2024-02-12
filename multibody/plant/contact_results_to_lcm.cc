@@ -141,14 +141,12 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(bool dummy)
 
 namespace {
 
-// Writes a Vector3<T> to an array of doubles (with a conversion to double as
-// necessary).
-// @pre dest points to a block of memory sufficient to hold three doubles.
-template <typename T>
-static void write_double3(const Vector3<T>& src, double* dest) {
-  dest[0] = ExtractDoubleOrThrow(src(0));
-  dest[1] = ExtractDoubleOrThrow(src(1));
-  dest[2] = ExtractDoubleOrThrow(src(2));
+// Assigns `a = b`, with some helper sugar for casting.
+// @param a is some array or container that has a value_type of `double`.
+// @param b is some Eigen::Vector<T> which we'll call ExtractDoubleOrThrow on.
+template <typename A, typename B>
+void assign_double(A&& a, const B& b) {
+  EigenMapView(a) = ExtractDoubleOrThrow(b);
 }
 
 }  // namespace
@@ -178,9 +176,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     info_msg.body1_name = body_names_.at(contact_info.bodyA_index());
     info_msg.body2_name = body_names_.at(contact_info.bodyB_index());
 
-    write_double3(contact_info.contact_point(), info_msg.contact_point);
-    write_double3(contact_info.contact_force(), info_msg.contact_force);
-    write_double3(contact_info.point_pair().nhat_BA_W, info_msg.normal);
+    assign_double(info_msg.contact_point, contact_info.contact_point());
+    assign_double(info_msg.contact_force, contact_info.contact_force());
+    assign_double(info_msg.normal, contact_info.point_pair().nhat_BA_W);
   }
 
   message.num_hydroelastic_contacts =
@@ -214,11 +212,11 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_message.collision_count2 = name2.geometry_count;
 
     // Resultant force quantities.
-    write_double3(contact_surface.centroid(), surface_message.centroid_W);
-    write_double3(hydroelastic_contact_info.F_Ac_W().translational(),
-                  surface_message.force_C_W);
-    write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
-                  surface_message.moment_C_W);
+    assign_double(surface_message.centroid_W, contact_surface.centroid());
+    assign_double(surface_message.force_C_W,
+                  hydroelastic_contact_info.F_Ac_W().translational());
+    assign_double(surface_message.moment_C_W,
+                  hydroelastic_contact_info.F_Ac_W().rotational());
 
     // Write all quadrature points on the contact surface.
     const std::vector<HydroelasticQuadraturePointData<T>>&
@@ -231,11 +229,11 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
       lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_message =
           surface_message.quadrature_point_data[j];
-      write_double3(quadrature_point_data[j].p_WQ, quad_data_message.p_WQ);
-      write_double3(quadrature_point_data[j].vt_BqAq_W,
-                    quad_data_message.vt_BqAq_W);
-      write_double3(quadrature_point_data[j].traction_Aq_W,
-                    quad_data_message.traction_Aq_W);
+      assign_double(quad_data_message.p_WQ, quadrature_point_data[j].p_WQ);
+      assign_double(quad_data_message.vt_BqAq_W,
+                    quadrature_point_data[j].vt_BqAq_W);
+      assign_double(quad_data_message.traction_Aq_W,
+                    quadrature_point_data[j].traction_Aq_W);
     }
 
     // Now build the mesh.

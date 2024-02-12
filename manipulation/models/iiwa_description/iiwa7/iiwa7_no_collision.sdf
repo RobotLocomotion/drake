@@ -62,8 +62,8 @@
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>176</effort>
+          <velocity>1.7104226670</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -110,8 +110,8 @@
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>176</effort>
+          <velocity>1.7104226670</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -158,8 +158,8 @@
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>110</effort>
+          <velocity>1.7453292520</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -206,8 +206,8 @@
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>110</effort>
+          <velocity>2.2689280276</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -254,8 +254,8 @@
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>110</effort>
+          <velocity>2.4434609528</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -303,8 +303,8 @@
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>40</effort>
+          <velocity>3.1415926536</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -351,8 +351,8 @@
         <limit>
           <lower>-3.05433</lower>
           <upper>3.05433</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>40</effort>
+          <velocity>3.1415926536</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>

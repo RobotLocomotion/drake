@@ -215,6 +215,26 @@ struct is_eigen_nonvector_of
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
 
+/// Given a random access container (like std::vector, std::array, or C array),
+/// returns an Eigen::Map view into that container. Because this effectively
+/// forms a reference to borrowed memory, you must be be careful using the
+/// return value as anything other than a temporary. The Map return value
+/// currently uses Eigen::Dynamic size at compile time even when the container
+/// is fixed-size (e.g., std::array); if that ever turns into a performance
+/// bottleneck in practice, it would be plausible to interrogate the size and
+/// return a fixed-size Map, instead.
+template <typename Container>
+auto EigenMapView(Container&& c) {
+  using ElementRef = decltype(std::declval<Container&>()[size_t{}]);
+  using Element = std::remove_reference_t<ElementRef>;
+  if constexpr (std::is_const_v<Element>) {
+    using Scalar = std::remove_const_t<Element>;
+    return Eigen::Map<const VectorX<Scalar>>(std::data(c), std::size(c));
+  } else {
+    return Eigen::Map<VectorX<Element>>(std::data(c), std::size(c));
+  }
+}
+
 /// This wrapper class provides a way to write non-template functions taking raw
 /// pointers to Eigen objects as parameters while limiting the number of copies,
 /// similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
