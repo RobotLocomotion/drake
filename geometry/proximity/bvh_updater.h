@@ -15,9 +15,6 @@ namespace internal {
  to the BVH which compares its current configuration against the underlying
  mesh data, updating the BVH state to maintain correct spatial culling.
 
- This will frequently be combined with a MeshDeformer so that when a mesh is
- updated, the corresponding Bvh can likewise be updated.
-
  This current incarnation only supports Bvhs constructed with axis-aligned
  bounding boxes.
 

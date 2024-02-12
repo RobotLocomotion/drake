@@ -2,9 +2,9 @@
 
 #include <utility>
 
-#include "drake/geometry/deformable_mesh.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/bvh_updater.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -14,8 +14,7 @@ namespace internal {
 //  in a public manner, move this out of internal and into geometry.
 /* Representation of a mesh whose vertices can be moved. The mesh is equipped
  with a bounding volume hierarchy (BVH) acceleration structure that is updated
- every time the vertices are moved. Consider using DeformableMesh instead if you
- don't need the BVH.
+ every time the vertices are moved.
 
  @tparam MeshType TriangleSurfaceMesh<T> or VolumeMesh<T> where T is double or
                   AutoDiffXd. */
@@ -73,7 +72,7 @@ class DeformableMeshWithBvh {
 
   /* Access to the underlying mesh. Represents the most recent configuration
    based either on construction or a call to UpdateVertexPositions(). */
-  const MeshType& mesh() const { return deformable_mesh_.mesh(); }
+  const MeshType& mesh() const { return deformable_mesh_; }
 
   // TODO(SeanCurtis-TRI): We're currently returning an object defined in the
   //  internal namespace. Right now it's not bad because DeformableMeshWithBvh
@@ -99,13 +98,12 @@ class DeformableMeshWithBvh {
   // specification leaves the ordering of evaluating those two expressions as
   // unspecified. We cannot guarantee that we'll construct the BVH before moving
   // the mesh's contents out. So, it has its own initialization.
-  DeformableMeshWithBvh(DeformableMesh<MeshType> deformable_mesh_M,
-                        Bvh<Aabb, MeshType> bvh_M)
+  DeformableMeshWithBvh(MeshType deformable_mesh_M, Bvh<Aabb, MeshType> bvh_M)
       : deformable_mesh_(std::move(deformable_mesh_M)),
         bvh_(std::move(bvh_M)),
         bvh_updater_(&mesh(), &bvh_) {}
 
-  DeformableMesh<MeshType> deformable_mesh_;
+  MeshType deformable_mesh_;
   Bvh<Aabb, MeshType> bvh_;
   BvhUpdater<MeshType> bvh_updater_;
 };
