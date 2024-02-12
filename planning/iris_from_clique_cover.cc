@@ -39,8 +39,13 @@ namespace {
 // When the producer pushes onto the queue, they automatically signal to the
 // consumers that a job is available. When the producer threads is done filling
 // the queue, they signal this via the done_filling() method. i.e the producer
-// code should be similar to: while(true) { queue.push(do_work(..)); if(done) {
-//   queue.stop_filling()
+// code should be similar to:
+// while(true) {
+//   queue.push(do_work(..));
+//   if(done) {
+//      queue.done_filling();
+//      break;
+// }
 // }
 //
 // Consumers threads should be implemented as:
@@ -48,7 +53,7 @@ namespace {
 // while(queue.pop(elt)) {
 //  do_work(...)
 // }
-// The loop will exits when the producer thread has both signalled that no
+// The loop will exit when the producer thread has both signalled that no
 // more jobs are being created, and when the underlying queue is completely
 // empty. Note that this loop will not poll the pop method unnecessarily, as if
 // the queue is filling, pop will wait until a job is available.
@@ -66,12 +71,10 @@ class AsyncQueue {
     condition_.notify_one();
   }
 
-  // A modification of the pop method. Returns true if a job was successfully
-  // acquired. If the queue is still filling, pop will wait for a job rather
-  // than returning spuriously. Only returns false when both the queue is done
-  // filling and when the queue is completely empty.
-  // Marked no lint since the linter really dislikes passing a non-const
-  // reference.
+  // A modification of the pop method which acquires an element of type T if the
+  // queue is non-empty. If the queue is empty, but still filling, then pop will
+  // wait until an element becomes available. If the queue is empty and done
+  // filling, this method will return nullopt.
   std::optional<T> pop() {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this] {
@@ -119,15 +122,11 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
 // and adds this largest clique to @p computed_cliques. This clique is then
 // removed from the adjacency matrix, and a new maximal clique is computed.
 // This process continue until no clique of size @p minimum_clique can be
-// found. At this point, set the value of @p clique_cover_computed to true.
+// found. At this point, the queue calls done_filling() so that downstream
+// workers know to expect no more cliques.
 //
-// Note:
-// 1. Access to @p computed_cliques must be locked by @p computed_cliques_lock
-// as other worker threads will be asynchronously pulling off of this queue to
-// build convex sets in IrisInConfigurationSpaceFromCliqueCover.
-//
-// 2. The adjacency matrix will be mutated by this method and be mostly useless
-// after this method is called.
+// Note: The adjacency matrix will be mutated by this method and be mostly
+// useless after this method is called.
 void ComputeGreedyTruncatedCliqueCover(
     const int minimum_clique_size,
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
@@ -154,6 +153,8 @@ void ComputeGreedyTruncatedCliqueCover(
           num_points_left, num_points_original);
     }
   }
+  // This line signals to the iris workers that no further cliques will be added
+  // to the queue. Removing this line will cause an infinite loop.
   computed_cliques->done_filling();
   log()->info(
       "Finished adding cliques. Total of {} clique added. Number of cliques "
@@ -162,8 +163,11 @@ void ComputeGreedyTruncatedCliqueCover(
       num_cliques, computed_cliques->size());
 }
 
-// Pulls cliques from @p computed_cliques and constructs Iris regions by seeding
-// Iris with the minimum circumscribed ellipse.
+// Pulls cliques from @p computed_cliques and constructs Iris regions using the
+// provided Iris options, but seeding Iris with the minimum circumscribed
+// ellipse of the clique. As this method may run in a separate thread, we
+// provide an option to forcefully disable meshcat in Iris. This must happen as
+// meshcat cannot be written to outside the main thread.
 std::queue<HPolyhedron> IrisWorker(
     const CollisionChecker& checker,
     const Eigen::Ref<const Eigen::MatrixXd>& points, const int builder_id,
@@ -250,7 +254,7 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
 // The `generator` is used as the source of randomness for drawing points from
 // domain.
 //
-// The sampled points are checked for inclusion  in `sets` in parallel, with the
+// The sampled points are checked for inclusion in `sets` in parallel, with the
 // degree of parallelism determined by `parallelism`.
 //
 // The value of `last_polytope_sample` is used to initialize the distribution
@@ -382,12 +386,10 @@ void IrisInConfigurationSpaceFromCliqueCover(
                  false /* No need to disable meshcat */);
     } else {
       // Compute truncated clique cover.
-      std::thread clique_cover_thread{[&visibility_graph, &options,
-                                       &computed_cliques]() {
-        ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
-                                          *options.max_clique_solver,
-                                          &visibility_graph, &computed_cliques);
-      }};
+      std::future<void> clique_future{std::async(
+          std::launch::async, ComputeGreedyTruncatedCliqueCover,
+          options.minimum_clique_size, std::ref(*options.max_clique_solver),
+          &visibility_graph, &computed_cliques)};
 
       // We will use one thread to build cliques and the remaining threads to
       // build IRIS regions. If this number is 0, then this function will end up
@@ -405,7 +407,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       }
       // The clique cover and the convex sets are computed asynchronously. Wait
       // for all the threads to join and then add the new sets to built sets.
-      clique_cover_thread.join();
+      clique_future.get();
       for (auto& new_set_queue_future : build_sets_future) {
         std::queue<HPolyhedron> new_set_queue{new_set_queue_future.get()};
         while (!new_set_queue.empty()) {
