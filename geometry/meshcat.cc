@@ -664,6 +664,14 @@ class Meshcat::Impl {
       websocket_thread_.join();
       throw std::runtime_error("Meshcat failed to open a websocket port.");
     }
+
+    for (const auto& item : params_.initial_properties) {
+      std::visit(
+          [this, &item](const auto& value) {
+            this->SetProperty(item.path, item.property, value);
+          },
+          item.value);
+    }
   }
 
   ~Impl() {
