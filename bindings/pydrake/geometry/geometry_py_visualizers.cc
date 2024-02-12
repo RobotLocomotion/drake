@@ -343,7 +343,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
         .def("StartRecording", &Class::StartRecording,
-            py::arg("frames_per_second") = 32.0,
+            py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,
             cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)
