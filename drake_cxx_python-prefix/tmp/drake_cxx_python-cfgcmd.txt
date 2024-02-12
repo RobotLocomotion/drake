@@ -1,1 +1,0 @@
-cmd='/usr/bin/bazel;info;--announce_rc'
