@@ -171,17 +171,18 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
   // Makes a set of actuation values for each model instance. Values are
   // arbitrary, though non-zero.
   // If iiwa_within_limits is false, the actuation vector for the iiwa arm will
-  // be above effort limits (300 Nm) for joints 1 and 2 and below effort limits
-  // (-300 Nm) for joints 4, 5, and 6. The returned tuple packs each model's
-  // actuation as {arm, acrobot, gripper, box}.
+  // be above effort limits for joints 1 and 2 and below effort limits for
+  // joints 4, 5, and 6. The returned tuple packs each model's actuation as
+  // {arm, acrobot, gripper, box}.
   static std::tuple<VectorXd, VectorXd, VectorXd> MakeActuationForEachModel(
       bool iiwa_within_limits) {
-    // N.B. Per SDFormat model, effort limits are 300 Nm. We set some of the
-    // actuation values to be outside this limit.
+    // N.B. Per SDFormat model, effort limits are [176, 176, 110, 110, 110,
+    // 40, 40] Nm.
+    // We set some of the actuation values to be outside this limit.
     const VectorXd arm_u =
         iiwa_within_limits
-            ? (VectorXd(7) << 50, 40, 55, -35, -40, -45, -40).finished()
-            : (VectorXd(7) << 350, 400, 55, -350, -400, -450, -40).finished();
+            ? (VectorXd(7) << 50, 40, 55, -35, -40, -35, -40).finished()
+            : (VectorXd(7) << 200, 200, 55, -160, -120, -45, -45).finished();
     const VectorXd gripper_u = VectorXd::LinSpaced(2, 1.0, 2.0);
     const VectorXd acrobot_u = VectorXd::LinSpaced(2, 3.0, 4.0);
     return std::make_tuple(arm_u, acrobot_u, gripper_u);
@@ -582,7 +583,10 @@ TEST_F(ActuatedIiiwaArmTest,
 
   // We clamp u to be within the iiwa effort limits so that we can make an
   // equivalent vector or generalized forces below.
-  const VectorXd arm_u_clamped = arm_u.array().min(300).max(-300);
+  const VectorXd limits =
+      (VectorXd(7) << 176, 176, 110, 110, 110, 40, 40).finished();
+  const VectorXd arm_u_clamped =
+      arm_u.array().min(limits.array()).max(-limits.array());
   const VectorXd expected_u =
       AssembleFullModelActuation(arm_u_clamped, acrobot_u, gripper_u);
 
@@ -626,7 +630,7 @@ TEST_F(ActuatedIiiwaArmTest,
   // in the actuation output.
   plant_->GetJointByName("iiwa_joint_4").Lock(context_.get());
   const VectorXd arm_u_when_joint4_is_locked =
-      (VectorXd(7) << 300, 300, 55, -350, -300, -300, -40).finished();
+      (VectorXd(7) << 176, 176, 55, -160, -110, -40, -40).finished();
   const VectorXd expected_u_when_joint4_is_locked = AssembleFullModelActuation(
       arm_u_when_joint4_is_locked, acrobot_u, gripper_u);
   VerifyNetActuationOutputPorts(arm_u_when_joint4_is_locked, acrobot_u,
