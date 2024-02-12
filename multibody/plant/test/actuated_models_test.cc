@@ -182,7 +182,7 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     const VectorXd arm_u =
         iiwa_within_limits
             ? (VectorXd(7) << 50, 40, 55, -35, -40, -35, -40).finished()
-            : (VectorXd(7) << 226, 276, 55, -160, -210, -190, -40).finished();
+            : (VectorXd(7) << 180, 190, 55, -160, -120, -45, -40).finished();
     const VectorXd gripper_u = VectorXd::LinSpaced(2, 1.0, 2.0);
     const VectorXd acrobot_u = VectorXd::LinSpaced(2, 3.0, 4.0);
     return std::make_tuple(arm_u, acrobot_u, gripper_u);
