@@ -139,6 +139,19 @@ TEST_F(PrismaticJointTest, ContextDependentAccess) {
   // Joint locking.
   joint1_->Lock(context_.get());
   EXPECT_EQ(joint1_->get_translation_rate(*context_), 0.);
+
+  // Damping.
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  EXPECT_NO_THROW(
+      joint1_->SetDampingVector(context_.get(), Vector1d(some_value)));
+  EXPECT_EQ(joint1_->GetDamping(*context_), some_value);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(some_value));
+
+  EXPECT_NO_THROW(joint1_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
 }
 
 // Tests API to apply torques to a joint.

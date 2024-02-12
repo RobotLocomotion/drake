@@ -138,6 +138,19 @@ TEST_F(RevoluteJointTest, ContextDependentAccess) {
   // Angular rate access:
   joint1_->set_angular_rate(context_.get(), some_value);
   EXPECT_EQ(joint1_->get_angular_rate(*context_), some_value);
+
+  // Damping.
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  EXPECT_NO_THROW(
+      joint1_->SetDampingVector(context_.get(), Vector1d(some_value)));
+  EXPECT_EQ(joint1_->GetDamping(*context_), some_value);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(some_value));
+
+  EXPECT_NO_THROW(joint1_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
 }
 
 // Tests API to apply torques to a joint.

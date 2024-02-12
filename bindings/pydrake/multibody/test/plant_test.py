@@ -1839,6 +1839,7 @@ class TestPlant(unittest.TestCase):
         """
         array_T = np.vectorize(T)
         damping = 2.
+        different_damping = 3.4
         x_axis = [1., 0., 0.]
         X_PC = RigidTransform_[float](p=[1., 2., 3.])
 
@@ -1855,7 +1856,7 @@ class TestPlant(unittest.TestCase):
                 name="planar",
                 frame_on_parent=P,
                 frame_on_child=C,
-                damping=[1., 2., 3.],
+                damping=[damping, damping, damping],
             )
 
         def make_prismatic_joint(plant, P, C):
@@ -1960,9 +1961,29 @@ class TestPlant(unittest.TestCase):
                     "tau", default_model_instance()))
                 self.assertIsInstance(actuator, JointActuator_[T])
 
+            damping_vector = []
+            default_damping_vector = []
+
+            if joint.name() != "weld":
+                damping_vector = joint.num_velocities() * [damping]
+                different_damping_vector = \
+                    joint.num_velocities() * [different_damping]
+
+                numpy_compare.assert_equal(
+                    joint.damping_vector(), damping_vector)
+
+                joint.set_default_damping_vector(
+                    damping=different_damping_vector)
+
+                numpy_compare.assert_equal(
+                    joint.damping_vector(), different_damping_vector)
+
+                joint.set_default_damping_vector(damping=damping_vector)
+
             if joint.name() in ["prismatic", "revolute"]:
                 # This must be called pre-Finalize().
                 joint.set_default_damping(damping=damping)
+                self.assertEqual(joint.damping(), damping)
 
             plant.Finalize()
             context = plant.CreateDefaultContext()
@@ -1994,6 +2015,17 @@ class TestPlant(unittest.TestCase):
                 self.assertTrue(joint.is_locked(context))
                 joint.Unlock(context)
                 self.assertFalse(joint.is_locked(context))
+
+            if joint.name() != "weld":
+                numpy_compare.assert_equal(
+                    joint.GetDampingVector(context), array_T(damping_vector))
+                joint.SetDampingVector(context,
+                                       array_T(different_damping_vector))
+                numpy_compare.assert_equal(
+                    joint.GetDampingVector(context),
+                    array_T(different_damping_vector))
+                joint.SetDampingVector(context,
+                                       array_T(damping_vector))
 
             if joint.name() == "ball_rpy":
                 joint.damping()
@@ -2062,6 +2094,11 @@ class TestPlant(unittest.TestCase):
                 joint.acceleration_upper_limit()
                 joint.get_default_translation()
                 joint.set_default_translation(translation=0.0)
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(damping))
+                joint.SetDamping(context, T(different_damping))
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(different_damping))
             elif joint.name() == "quaternion_floating":
                 self.assertEqual(joint.angular_damping(), damping)
                 self.assertEqual(joint.translational_damping(), damping)
@@ -2115,6 +2152,11 @@ class TestPlant(unittest.TestCase):
                 joint.AddInOneForce(
                     context=context, joint_dof=0, joint_tau=0.0, forces=forces)
                 joint.AddInDamping(context=context, forces=forces)
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(damping))
+                joint.SetDamping(context, T(different_damping))
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(different_damping))
             elif joint.name() == "screw":
                 self.assertEqual(joint.damping(), damping)
                 joint.damping()
@@ -2132,6 +2174,11 @@ class TestPlant(unittest.TestCase):
                 # Check the Joint base class sugar for 1dof.
                 joint.GetOnePosition(context=context)
                 joint.GetOneVelocity(context=context)
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(damping))
+                joint.SetDamping(context, T(different_damping))
+                numpy_compare.assert_equal(
+                    joint.GetDamping(context), T(different_damping))
             elif joint.name() == "universal":
                 self.assertEqual(joint.damping(), damping)
                 set_point = array_T([1., 2.])

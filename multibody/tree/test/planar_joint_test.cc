@@ -146,6 +146,12 @@ TEST_F(PlanarJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), Vector2d(0., 0.));
   EXPECT_EQ(joint_->get_angular_velocity(*context_), 0.);
+
+  // Damping.
+  const Vector3d different_damping = Vector3d::Constant(5.6);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector3d::Constant(kDamping));
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding

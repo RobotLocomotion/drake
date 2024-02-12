@@ -205,7 +205,7 @@ class BallRpyJoint final : public Joint<T> {
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
-    t_BMo_F = -damping() * w_FM;
+    t_BMo_F = -this->GetDampingVector(context)[0] * w_FM;
   }
 
  private:
@@ -279,9 +279,6 @@ class BallRpyJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // This joint's damping constant in N⋅m⋅s.
-  double damping_{0};
 };
 
 template <typename T>

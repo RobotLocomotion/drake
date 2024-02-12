@@ -134,6 +134,21 @@ TEST_F(ScrewJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), 0.);
   EXPECT_EQ(joint_->get_angular_velocity(*context_), 0.);
+
+  // Damping.
+  EXPECT_EQ(joint_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  const double different_damping = 5.6;
+
+  EXPECT_NO_THROW(
+      joint_->SetDampingVector(context_.get(), Vector1d(different_damping)));
+  EXPECT_EQ(joint_->GetDamping(*context_), different_damping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(different_damping));
+
+  EXPECT_NO_THROW(joint_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(kDamping));
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding

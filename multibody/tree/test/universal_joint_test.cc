@@ -133,6 +133,11 @@ TEST_F(UniversalJointTest, ContextDependentAccess) {
   // Joint locking.
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_angular_rates(*context_), Vector2d(0., 0.));
+
+  // Damping.
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector2d::Constant(kDamping));
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), some_value));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), some_value);
 }
 
 // Tests API to apply torques to individual dof of joint.

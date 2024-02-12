@@ -465,7 +465,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
-            cls_doc.is_locked.doc);
+            cls_doc.is_locked.doc)
+        .def("damping_vector", &Class::damping_vector,
+            cls_doc.damping_vector.doc)
+        .def("set_default_damping_vector", &Class::set_default_damping_vector,
+            py::arg("damping"), cls_doc.set_default_damping_vector.doc)
+        .def("GetDampingVector", &Class::GetDampingVector, py::arg("context"),
+            cls_doc.GetDampingVector.doc)
+        .def("SetDampingVector", &Class::SetDampingVector, py::arg("context"),
+            py::arg("damping"), cls_doc.SetDampingVector.doc);
   }
 
   // BallRpyJoint
@@ -594,7 +602,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("translation"), cls_doc.set_default_translation.doc)
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
-            cls_doc.set_random_translation_distribution.doc);
+            cls_doc.set_random_translation_distribution.doc)
+        .def("GetDamping", &Class::GetDamping, py::arg("context"),
+            cls_doc.GetDamping.doc)
+        .def("SetDamping", &Class::SetDamping, py::arg("context"),
+            py::arg("damping"), cls_doc.SetDamping.doc);
   }
 
   // QuaternionFloatingJoint
@@ -709,7 +721,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_default_angle", &Class::get_default_angle,
             cls_doc.get_default_angle.doc)
         .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
-            cls_doc.set_default_angle.doc);
+            cls_doc.set_default_angle.doc)
+        .def("GetDamping", &Class::GetDamping, py::arg("context"),
+            cls_doc.GetDamping.doc)
+        .def("SetDamping", &Class::SetDamping, py::arg("context"),
+            py::arg("damping"), cls_doc.SetDamping.doc);
   }
 
   // ScrewJoint
@@ -757,7 +773,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_angular_velocity.doc)
         .def("set_random_pose_distribution",
             &Class::set_random_pose_distribution, py::arg("theta"),
-            cls_doc.set_random_pose_distribution.doc);
+            cls_doc.set_random_pose_distribution.doc)
+        .def("GetDamping", &Class::GetDamping, py::arg("context"),
+            cls_doc.GetDamping.doc)
+        .def("SetDamping", &Class::SetDamping, py::arg("context"),
+            py::arg("damping"), cls_doc.SetDamping.doc);
   }
 
   // UniversalJoint

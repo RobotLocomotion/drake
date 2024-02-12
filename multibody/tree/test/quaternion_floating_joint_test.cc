@@ -171,6 +171,16 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_angular_velocity(*context_), Vector3d::Zero());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), Vector3d::Zero());
+
+  // Damping.
+  const Vector6d damping =
+      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
+       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
+          .finished();
+  const Vector6d different_damping = Vector6d::Constant(5.6);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), damping);
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
 }
 
 // Tests API to apply torques to joint.
