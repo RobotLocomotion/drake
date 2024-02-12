@@ -118,7 +118,7 @@ TEST_F(PlanarJointTest, GetJointLimits) {
 
 TEST_F(PlanarJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
-  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.
@@ -146,6 +146,12 @@ TEST_F(PlanarJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), Vector2d(0., 0.));
   EXPECT_EQ(joint_->get_angular_velocity(*context_), 0.);
+
+  // Damping.
+  const Vector3d different_damping = Vector3d::Constant(5.6);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector3d::Constant(kDamping));
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding
@@ -171,6 +177,29 @@ TEST_F(PlanarJointTest, AddInOneForce) {
   auto F2 = forces2.body_forces().cbegin();
   for (auto& F1 : forces1.body_forces())
     EXPECT_TRUE(F1.IsApprox(*F2++, kEpsilon));
+}
+
+// Tests API to add in damping forces.
+TEST_F(PlanarJointTest, AddInDampingForces) {
+  const Vector2d translational_velocity = Vector2d(0.1, 0.2);
+  const double angular_velocity = 0.3;
+  const double translational_damping = 0.5 * kDamping;
+  const double angular_damping = 0.4 * kDamping;
+
+  const Vector3d damping_forces_expected =
+      (Vector3d() << -translational_damping * translational_velocity,
+       -angular_damping * angular_velocity)
+          .finished();
+
+  joint_->set_translational_velocity(context_.get(), translational_velocity);
+  joint_->set_angular_velocity(context_.get(), angular_velocity);
+  joint_->SetDampingVector(
+      context_.get(),
+      Vector3d(translational_damping, translational_damping, angular_damping));
+
+  MultibodyForces<double> forces(tree());
+  joint_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_forces_expected);
 }
 
 TEST_F(PlanarJointTest, Clone) {

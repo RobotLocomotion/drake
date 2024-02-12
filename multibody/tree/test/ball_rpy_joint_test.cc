@@ -116,7 +116,7 @@ TEST_F(BallRpyJointTest, GetJointLimits) {
 
 TEST_F(BallRpyJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
-  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.
@@ -133,6 +133,11 @@ TEST_F(BallRpyJointTest, ContextDependentAccess) {
   // Joint locking.
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_angular_velocity(*context_), Vector3d(0., 0., 0.));
+
+  // Damping.
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector3d::Constant(kDamping));
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), some_value));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), some_value);
 }
 
 // Tests API to apply torques to joint.
@@ -144,6 +149,21 @@ TEST_F(BallRpyJointTest, AddInOneForce) {
   // not make physical sense, this method should throw.
   EXPECT_THROW(joint_->AddInOneForce(*context_, 0, some_value, &forces),
                std::logic_error);
+}
+
+// Tests API to add in damping forces.
+TEST_F(BallRpyJointTest, AddInDampingForces) {
+  const Vector3d angular_velocity(0.1, 0.2, 0.3);
+  const double damping = 3 * kDamping;
+
+  const Vector3d damping_forces_expected = -damping * angular_velocity;
+
+  joint_->set_angular_velocity(context_.get(), angular_velocity);
+  joint_->SetDampingVector(context_.get(), Vector3d::Constant(damping));
+
+  MultibodyForces<double> forces(tree());
+  joint_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_forces_expected);
 }
 
 TEST_F(BallRpyJointTest, Clone) {

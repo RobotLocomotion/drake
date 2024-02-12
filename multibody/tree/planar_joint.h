@@ -86,7 +86,7 @@ class PlanarJoint final : public Joint<T> {
   /// rate for `this` joint (see get_angular_velocity()) and τ the torque on
   /// child body B expressed in frame F as t_B_F = τ⋅Fz_F.
   // TODO(amcastro-tri): return reference instead.
-  Vector3<double> damping() const { return this->damping_vector(); }
+  Vector3<double> damping() const { return this->default_damping_vector(); }
 
   /// @name Context-dependent value access
   /// @{
@@ -282,7 +282,7 @@ class PlanarJoint final : public Joint<T> {
             &forces->mutable_generalized_forces());
     const Vector2<T>& v_translation = get_translational_velocity(context);
     const T& v_angular = get_angular_velocity(context);
-    const Vector3<double> damping_coeff = damping();
+    const Vector3<T> damping_coeff = this->GetDampingVector(context);
     tau[0] -= damping_coeff[0] * v_translation[0];
     tau[1] -= damping_coeff[1] * v_translation[1];
     tau[2] -= damping_coeff[2] * v_angular;

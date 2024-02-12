@@ -286,9 +286,6 @@ class SapDriver {
   const double near_rigid_threshold_;
   systems::CacheIndex contact_problem_;
   systems::CacheIndex sap_results_;
-  // Vector of joint damping coefficients, of size plant().num_velocities().
-  // This information is extracted during the call to ExtractModelInfo().
-  VectorX<T> joint_damping_;
   // Parameters for SAP.
   contact_solvers::internal::SapSolverParameters sap_parameters_;
 };

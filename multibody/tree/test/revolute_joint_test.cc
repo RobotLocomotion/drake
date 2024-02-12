@@ -121,11 +121,11 @@ TEST_F(RevoluteJointTest, Damping) {
   std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
   auto& joint = model->GetMutableJointByName<RevoluteJoint>("Joint1");
   EXPECT_EQ(joint.damping(), kDamping);
-  EXPECT_EQ(joint.damping_vector(), Vector1d(kDamping));
+  EXPECT_EQ(joint.default_damping_vector(), Vector1d(kDamping));
   const double new_damping = 2.0 * kDamping;
   joint.set_default_damping(new_damping);
   EXPECT_EQ(joint.damping(), new_damping);
-  EXPECT_EQ(joint.damping_vector(), Vector1d(new_damping));
+  EXPECT_EQ(joint.default_damping_vector(), Vector1d(new_damping));
 }
 
 // Context-dependent value access.
@@ -138,6 +138,19 @@ TEST_F(RevoluteJointTest, ContextDependentAccess) {
   // Angular rate access:
   joint1_->set_angular_rate(context_.get(), some_value);
   EXPECT_EQ(joint1_->get_angular_rate(*context_), some_value);
+
+  // Damping.
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  EXPECT_NO_THROW(
+      joint1_->SetDampingVector(context_.get(), Vector1d(some_value)));
+  EXPECT_EQ(joint1_->GetDamping(*context_), some_value);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(some_value));
+
+  EXPECT_NO_THROW(joint1_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
 }
 
 // Tests API to apply torques to a joint.
@@ -162,6 +175,21 @@ TEST_F(RevoluteJointTest, AddInTorques) {
   auto F2 = forces2.body_forces().cbegin();
   for (auto& F1 : forces1.body_forces())
     EXPECT_TRUE(F1.IsApprox(*F2++, kEpsilon));
+}
+
+// Tests API to add in damping forces.
+TEST_F(RevoluteJointTest, AddInDampingForces) {
+  const double angular_velocity = 0.1;
+  const double damping = 0.2 * kDamping;
+
+  const Vector1d damping_force_expected(-damping * angular_velocity);
+
+  joint1_->set_angular_rate(context_.get(), angular_velocity);
+  joint1_->SetDamping(context_.get(), damping);
+
+  MultibodyForces<double> forces(tree());
+  joint1_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_force_expected);
 }
 
 TEST_F(RevoluteJointTest, Clone) {

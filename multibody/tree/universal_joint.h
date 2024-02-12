@@ -96,7 +96,7 @@ class UniversalJoint final : public Joint<T> {
   /// axis.
   double damping() const {
     // N.B. Both damping coefficients are set to the same value for this joint.
-    return this->damping_vector()[0];
+    return this->default_damping_vector()[0];
   }
 
   /// @name Context-dependent value access
@@ -205,7 +205,7 @@ class UniversalJoint final : public Joint<T> {
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector2<T>& theta_dot = get_angular_rates(context);
-    tau = -damping() * theta_dot;
+    tau = -this->GetDampingVector(context)[0] * theta_dot;
   }
 
  private:

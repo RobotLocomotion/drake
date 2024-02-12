@@ -79,7 +79,7 @@ class BallRpyJoint final : public Joint<T> {
   /// torque on child body B (to which M is rigidly attached).
   double damping() const {
     // N.B. All damping coefficients are set to the same value for this joint.
-    return this->damping_vector()[0];
+    return this->default_damping_vector()[0];
   }
 
   /// @name Context-dependent value access
@@ -205,7 +205,7 @@ class BallRpyJoint final : public Joint<T> {
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
-    t_BMo_F = -damping() * w_FM;
+    t_BMo_F = -this->GetDampingVector(context)[0] * w_FM;
   }
 
  private:

@@ -108,7 +108,7 @@ TEST_F(ScrewJointTest, GetJointLimits) {
 
 TEST_F(ScrewJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
-  EXPECT_EQ(joint_->damping_vector(), Vector1d(kDamping));
+  EXPECT_EQ(joint_->default_damping_vector(), Vector1d(kDamping));
 }
 
 // Context-dependent value access.
@@ -134,6 +134,21 @@ TEST_F(ScrewJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), 0.);
   EXPECT_EQ(joint_->get_angular_velocity(*context_), 0.);
+
+  // Damping.
+  EXPECT_EQ(joint_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  const double different_damping = 5.6;
+
+  EXPECT_NO_THROW(
+      joint_->SetDampingVector(context_.get(), Vector1d(different_damping)));
+  EXPECT_EQ(joint_->GetDamping(*context_), different_damping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(different_damping));
+
+  EXPECT_NO_THROW(joint_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint_->GetDampingVector(*context_), Vector1d(kDamping));
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding
@@ -159,6 +174,21 @@ TEST_F(ScrewJointTest, AddInOneForce) {
   auto F2 = forces2.body_forces().cbegin();
   for (auto& F1 : forces1.body_forces())
     EXPECT_TRUE(F1.IsApprox(*F2++, kEpsilon));
+}
+
+// Tests API to add in damping forces.
+TEST_F(ScrewJointTest, AddInDampingForces) {
+  const double angular_velocity = 0.1;
+  const double damping = 0.2 * kDamping;
+
+  const Vector1d damping_force_expected(-damping * angular_velocity);
+
+  joint_->set_angular_velocity(context_.get(), angular_velocity);
+  joint_->SetDamping(context_.get(), damping);
+
+  MultibodyForces<double> forces(tree());
+  joint_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_force_expected);
 }
 
 TEST_F(ScrewJointTest, Clone) {

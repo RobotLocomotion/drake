@@ -66,14 +66,6 @@ SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
     : manager_(manager), near_rigid_threshold_(near_rigid_threshold) {
   DRAKE_DEMAND(manager != nullptr);
   DRAKE_DEMAND(near_rigid_threshold >= 0.0);
-  // Collect joint damping coefficients into a vector.
-  joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
-  for (JointIndex j(0); j < plant().num_joints(); ++j) {
-    const Joint<T>& joint = plant().get_joint(j);
-    const int velocity_start = joint.velocity_start();
-    const int nv = joint.num_velocities();
-    joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
-  }
 }
 
 template <typename T>
@@ -146,7 +138,7 @@ void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
   // external actuation, evaluated at the previous state x₀.
   // The dynamics matrix is defined as:
   //   A = ∂m/∂v = (M + dt⋅D)
-  M.diagonal() += plant().time_step() * joint_damping_;
+  M.diagonal() += plant().time_step() * plant().EvalJointDampingCache(context);
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);

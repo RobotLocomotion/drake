@@ -82,7 +82,7 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// Returns `this` joint's damping constant in N⋅s/m.
-  double damping() const { return this->damping_vector()[0]; }
+  double damping() const { return this->default_damping_vector()[0]; }
 
   /// Sets the default value of viscous damping for this joint, in N⋅s/m.
   /// @throws std::exception if damping is negative.
@@ -174,6 +174,25 @@ class PrismaticJoint final : public Joint<T> {
     return *this;
   }
 
+  /// Returns the Context dependent damping coefficient stored as a parameter in
+  /// `context`. Refer to damping() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  const T& GetDamping(const Context<T>& context) const {
+    return this->GetDampingVector(context)[0];
+  }
+
+  /// Sets the value of the viscous damping coefficient for this joint, stored
+  /// as a parameter in `context`. Refer to damping() for details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @param[in] damping The damping value.
+  /// @throws std::exception if `damping` is negative.
+  void SetDamping(Context<T>* context, const T& damping) const {
+    DRAKE_THROW_UNLESS(damping >= 0);
+    this->SetDampingVector(context, Vector1<T>(damping));
+  }
+
   /// @}
 
   /// Gets the default translation. Wrapper for the more general
@@ -240,7 +259,8 @@ class PrismaticJoint final : public Joint<T> {
   /// viscous law `f = -d⋅v`, with d the damping coefficient (see damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
-    const T damping_force = -this->damping() * get_translation_rate(context);
+    const T damping_force =
+        -this->GetDamping(context) * get_translation_rate(context);
     AddInForce(context, damping_force, forces);
   }
 

@@ -363,15 +363,22 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid. This method adds into
-  `forces` a dissipative torque according to the viscous law `τ = -d⋅ω`, with
-  d the damping coefficient (see damping()). */
+  the translational component of `forces` for `this` joint a dissipative force
+  according to the viscous law `f = -d⋅v`, with d the damping coefficient (see
+  translational_damping()). This method also adds into the angular component of
+  `forces` for `this` joint a dissipative torque according to the viscous law
+  `τ = -d⋅ω`, with d the damping coefficient (see angular_damping()). */
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> t_BMo_F =
         get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
-    t_BMo_F = -angular_damping() * w_FM;
+    const Vector3<T>& v_FM = get_translational_velocity(context);
+    const T& angular_damping = this->GetDampingVector(context)[0];
+    const T& translational_damping = this->GetDampingVector(context)[3];
+    t_BMo_F.template head<3>() = -angular_damping * w_FM;
+    t_BMo_F.template tail<3>() = -translational_damping * v_FM;
   }
 
  private:

@@ -85,8 +85,10 @@ void QuaternionFloatingJoint<T>::DoAddInDamping(
           &forces->mutable_generalized_forces());
   const Vector3<T>& w_FM = get_angular_velocity(context);
   const Vector3<T>& v_FM = get_translational_velocity(context);
-  t_BMo_F.template head<3>() -= angular_damping() * w_FM;
-  t_BMo_F.template tail<3>() -= translational_damping() * v_FM;
+  const T& angular_damping = this->GetDampingVector(context)[0];
+  const T& translational_damping = this->GetDampingVector(context)[3];
+  t_BMo_F.template head<3>() -= angular_damping * w_FM;
+  t_BMo_F.template tail<3>() -= translational_damping * v_FM;
 }
 
 }  // namespace multibody

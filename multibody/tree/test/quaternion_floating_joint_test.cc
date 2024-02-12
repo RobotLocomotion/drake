@@ -124,7 +124,7 @@ TEST_F(QuaternionFloatingJointTest, Damping) {
   EXPECT_EQ(joint_->angular_damping(), kAngularDamping);
   EXPECT_EQ(joint_->translational_damping(), kTranslationalDamping);
   EXPECT_EQ(
-      joint_->damping_vector(),
+      joint_->default_damping_vector(),
       (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
        kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
           .finished());
@@ -171,6 +171,17 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_angular_velocity(*context_), Vector3d::Zero());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), Vector3d::Zero());
+
+  // Damping.
+  const Vector6d damping =
+      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
+       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
+          .finished();
+  const Vector6d different_damping =
+      (Vector6d() << 2.3, 2.3, 2.3, 4.5, 4.5, 4.5).finished();
+  EXPECT_EQ(joint_->GetDampingVector(*context_), damping);
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
 }
 
 // Tests API to apply torques to joint.
@@ -182,6 +193,31 @@ TEST_F(QuaternionFloatingJointTest, AddInOneForce) {
   // not make physical sense, this method should throw.
   EXPECT_THROW(joint_->AddInOneForce(*context_, 0, some_value, &forces),
                std::exception);
+}
+
+// Tests API to add in damping forces.
+TEST_F(QuaternionFloatingJointTest, AddInDampingForces) {
+  const Vector3d angular_velocity(0.1, 0.2, 0.3);
+  const Vector3d translational_veloctiy(0.4, 0.5, 0.6);
+  const double angular_damping = 3 * kAngularDamping;
+  const double translational_damping = 4 * kTranslationalDamping;
+
+  const Vector6d damping_forces_expected =
+      (Vector6d() << -angular_damping * angular_velocity,
+       -translational_damping * translational_veloctiy)
+          .finished();
+
+  joint_->set_angular_velocity(context_.get(), angular_velocity);
+  joint_->set_translational_velocity(context_.get(), translational_veloctiy);
+  joint_->SetDampingVector(
+      context_.get(),
+      (Vector6d() << angular_damping, angular_damping, angular_damping,
+       translational_damping, translational_damping, translational_damping)
+          .finished());
+
+  MultibodyForces<double> forces(tree());
+  joint_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_forces_expected);
 }
 
 TEST_F(QuaternionFloatingJointTest, Clone) {

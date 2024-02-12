@@ -92,7 +92,7 @@ TEST_F(WeldJointTest, GetJointLimits) {
 }
 
 TEST_F(WeldJointTest, Damping) {
-  EXPECT_EQ(joint_->damping_vector().size(), 0);
+  EXPECT_EQ(joint_->default_damping_vector().size(), 0);
 }
 
 TEST_F(WeldJointTest, JointLocking) {
