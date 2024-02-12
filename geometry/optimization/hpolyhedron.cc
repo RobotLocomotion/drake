@@ -338,7 +338,6 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
         "and has an interior.",
         result.get_solver_id().name(), result.get_solution_result()));
   }
-  log()->info("{}",result.GetSolution(r[0]));
   return result.GetSolution(x);
 }
 
