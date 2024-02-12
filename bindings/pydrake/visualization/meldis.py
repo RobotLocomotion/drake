@@ -26,10 +26,14 @@ convenient::
 """
 
 import argparse
+import os
+import sys
 import webbrowser
 
 from pydrake.common import configure_logging as _configure_logging
+from pydrake.common.yaml import yaml_load_typed as _yaml_load_typed
 from pydrake.visualization._meldis import Meldis as _Meldis
+from pydrake.visualization._meldis import _DEFAULT_MESHCAT_PARAMS
 
 
 def _available_browsers():
@@ -43,7 +47,10 @@ def _available_browsers():
         return []
 
 
-def _main():
+def _main(args=None):
+    # Make cwd be what the user expected, not the runfiles tree.
+    if "BUILD_WORKING_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
     _configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -75,13 +82,24 @@ def _main():
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
     parser.add_argument(
+        "--meshcat-params", metavar="PATH",
+        help="Filesystem path to a YAML or JSON config for MeshcatParams. "
+        "This can be used to configure Meshcat's initial properties. "
+        "For options that are available as both command line arguments and "
+        "YAML params (e.g., --port), the command line takes precedence.")
+    parser.add_argument(
         "--environment_map", metavar="PATH",
         help="Filesystem path to an image to be used as an environment map. "
              "It must be an image type normally used by your browser (e.g., "
              ".jpg, .png, etc.). HDR images are not supported yet."
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args)
+    meshcat_params = None
+    if args.meshcat_params is not None:
+        meshcat_params = _yaml_load_typed(
+            filename=args.meshcat_params, defaults=_DEFAULT_MESHCAT_PARAMS)
     meldis = _Meldis(meshcat_host=args.host, meshcat_port=args.port,
+                     meshcat_params=meshcat_params,
                      environment_map=args.environment_map)
     if args.browser is not None and args.browser_new is None:
         args.browser_new = 1
@@ -101,4 +119,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    _main(args=sys.argv[1:])
