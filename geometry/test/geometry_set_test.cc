@@ -58,14 +58,15 @@ GTEST_TEST(GeometrySetTests, ConversionConstructor) {
   auto frame_list = {FrameId::get_new_id(), FrameId::get_new_id()};
   std::vector<FrameId> frame_vector{frame_list};
 
-  auto test_single_source_constructor = [](
-      const GeometrySet& set, const auto& source, int expected_frame_count,
-      int expected_geometry_count, const char* message) {
-    GeometrySetTester set_tester(&set);
-    EXPECT_EQ(set_tester.num_frames(), expected_frame_count) << message;
-    EXPECT_EQ(set_tester.num_geometries(), expected_geometry_count) << message;
-    ExpectContainsAll(set_tester, source, message);
-  };
+  auto test_single_source_constructor =
+      [](const GeometrySet& set, const auto& source, int expected_frame_count,
+         int expected_geometry_count, const char* message) {
+        GeometrySetTester set_tester(&set);
+        EXPECT_EQ(set_tester.num_frames(), expected_frame_count) << message;
+        EXPECT_EQ(set_tester.num_geometries(), expected_geometry_count)
+            << message;
+        ExpectContainsAll(set_tester, source, message);
+      };
 
   GeometrySet set1(g_id);
   test_single_source_constructor(set1, std::set<GeometryId>{g_id}, 0, 1,
@@ -138,10 +139,8 @@ GTEST_TEST(GeometrySetTests, ConversionConstructor) {
   EXPECT_EQ(tester12.num_frames(), static_cast<int>(frame_vector.size()));
   EXPECT_EQ(tester12.num_geometries(),
             static_cast<int>(geometry_vector.size()));
-  ExpectContainsAll(tester12, geometry_vector,
-                    "Geometry vector, frame vector");
-  ExpectContainsAll(tester12, frame_vector,
-                    "Geometry vector, frame vector");
+  ExpectContainsAll(tester12, geometry_vector, "Geometry vector, frame vector");
+  ExpectContainsAll(tester12, frame_vector, "Geometry vector, frame vector");
 }
 
 GTEST_TEST(GeometrySetTests, SingleFrameAdd) {
@@ -364,4 +363,3 @@ GTEST_TEST(GeometrySetTests, GeometrySetAdd) {
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
-

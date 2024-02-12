@@ -32,8 +32,6 @@ command line.
 
 import argparse
 import getpass
-import git
-import github3
 import hashlib
 import json
 import logging
@@ -43,24 +41,44 @@ import shlex
 import subprocess
 import time
 import urllib
-
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Optional, Set
+
+import git
+import github3
 
 from drake.tools.workspace.metadata import read_repository_metadata
+
+logger = logging.getLogger('new_release')
+logger.setLevel(logging.INFO)
+
+warn = logger.warning
+info = logger.info
+
+# Repository rules that fetch from GitHub.
+_GITHUB_RULE_TYPES = [
+    "github",
+    "github_release_attachments"
+]
+
+# Repository rule that uses an external upgrade script.
+_SCRIPTED_RULE_TYPE = "scripted"
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3_internal",
-    # The @petsc external is deprecated in Drake's WORKSPACE and will be
-    # removed on or after 2023-11-01.
-    "petsc",
     "pybind11",
     "usockets_internal",  # Pinned due to upstream regression.
     "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
+
+# For these repositories, ignore any tags that match the specified regex.
+_IGNORED_TAGS = {
+    "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
+    "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
+}
 
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
@@ -69,8 +87,8 @@ _IGNORED_REPOSITORIES = [
 # (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
-    "gz_math_internal": "^(gz)",
-    "gz_utils_internal": "^(gz)",
+    "gz_math_internal": r"^(gz)",
+    "gz_utils_internal": r"^(gz)",
     "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
@@ -81,8 +99,12 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
 
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
+    # clarabel_cpp uses crate_universe; be sure to keep them aligned.
+    {"clarabel_cpp_internal", "crate_universe"},
     # mypy uses mypy_extensions; be sure to keep them aligned.
     {"mypy_internal", "mypy_extensions_internal"},
+    # rules_rust uses rust_toolchain; be sure to keep them aligned.
+    {"rules_rust", "rust_toolchain"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.
     {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
     # uwebsockets depends on usockets; be sure to keep them aligned.
@@ -94,8 +116,24 @@ _COHORTS = (
 class UpgradeResult:
     was_upgraded: bool
     can_be_committed: bool = False
-    modified_paths: Optional[List[str]] = None
+    modified_paths: Optional[Set[str]] = None
     commit_message: Optional[str] = None
+
+
+def _str_replace_forced(original, old, new):
+    if old == new:
+        return original
+    result = original.replace(old, new)
+    if result == original:
+        raise RuntimeError(f"Could not find '{old}' to substitute")
+    return result
+
+
+def _rewrite_file_contents(path, new_content):
+    """Atomically replace the contents of path with new_content."""
+    with open(f"{path}.new", "w", encoding="utf-8") as f:
+        f.write(new_content)
+    os.rename(f"{path}.new", path)
 
 
 def _check_output(args):
@@ -123,22 +161,31 @@ def _smells_like_a_git_commit(revision):
     return len(revision) == 40
 
 
-def _is_prerelease(commit, workspace):
-    """Returns true iff commit seems to be a pre-release
+def _is_ignored_tag(commit, workspace):
+    """Returns true iff commit matches an ignore rule or seems to be a
+    pre-release.
     """
+    ignore_re = _IGNORED_TAGS.get(workspace)
+    if ignore_re and re.match(ignore_re, commit):
+        # Matches the regex of tag names to definitely ignore; do so quietly so
+        # we don't spam the user.
+        return True
+
     development_stages = ["alpha", "beta", "rc", "pre"]
     prerelease = any(stage in commit for stage in development_stages)
     if prerelease:
-        print("Skipping prerelease {} for {}".format(commit, workspace))
+        # Heuristically looks like a pre-release; ignore it, but log it for the
+        # user to check.
+        warn(f"Skipping prerelease {commit} for {workspace}")
     return prerelease
 
 
 def _latest_tag(gh_repo, workspace):
     for tag in gh_repo.tags():
-        if _is_prerelease(tag.name, workspace):
+        if _is_ignored_tag(tag.name, workspace):
             continue
         return tag.name
-    print("Could not find any matching tags for {}".format(workspace))
+    warn(f"Could not find any matching tags for {workspace}")
     return None
 
 
@@ -170,7 +217,7 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_prerelease(tag.name, workspace_name):
+                    if _is_ignored_tag(tag.name, workspace_name):
                         continue
                     new_commit = tag.name
                     break
@@ -180,20 +227,11 @@ def _handle_github(workspace_name, gh, data):
     # latest tag.
     try:
         new_commit = gh_repo.latest_release().tag_name
-        if _is_prerelease(new_commit, workspace_name):
+        if _is_ignored_tag(new_commit, workspace_name):
             new_commit = _latest_tag(gh_repo, workspace_name)
     except github3.exceptions.NotFoundError:
         new_commit = _latest_tag(gh_repo, workspace_name)
     return old_commit, new_commit
-
-
-def _handle_buildifier(gh, data):
-    assert data["name"] == "buildifier"
-    old_version = data["version"]
-    time.sleep(0.2)  # Don't make github angry.
-    gh_repo = gh.repository("bazelbuild", "buildtools")
-    new_version = next(gh_repo.tags()).name
-    return old_version, new_version
 
 
 def _check_for_upgrades(gh, args, metadata):
@@ -202,100 +240,125 @@ def _check_for_upgrades(gh, args, metadata):
             continue
         if data.get("version_pin"):
             continue
-        key = data["repository_rule_type"]
-        if key == "github":
+        rule_type = data["repository_rule_type"]
+        if rule_type in _GITHUB_RULE_TYPES:
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
-        elif key == "crate_universe":
-            # For details, see drake/tools/workspace/crate_universe/README.md.
-            print(f"Ignoring {workspace_name} from rules_rust")
+        elif rule_type == "crate_universe":
+            # "crate_universe" repositories are individual *output*
+            # repositories generated by the master repository rule
+            # crate_universe_repositories().  Upgrades happen via the
+            # "scripted"-rule-type upgrade of "crate_universe".
             continue
-        elif key in ["pypi", "pypi_wheel"]:
-            # TODO(jwnimmer-tri) Implement for real.
-            print("{} version {} needs manual inspection".format(
-                workspace_name, data["version"]))
+        elif rule_type == _SCRIPTED_RULE_TYPE:
+            info(f"{workspace_name} may need upgrade")
             continue
-        elif workspace_name == "buildifier":
-            assert key == "manual"
-            old_commit, new_commit = _handle_buildifier(gh, data)
-        elif key == "manual":
-            print("{} version {} needs manual inspection".format(
-                workspace_name, data.get("version", "???")))
+        elif rule_type == "manual":
+            warn(f"{workspace_name} version %s needs manual inspection",
+                 data.get("version", "???"))
             continue
         else:
-            raise RuntimeError("Bad key " + key)
+            raise RuntimeError(
+                f"Bad rule type {rule_type} in {workspace_name}")
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
-            print("{} needs upgrade from {} to {}".format(
-                workspace_name, old_commit, new_commit))
+            info(f"{workspace_name} needs upgrade"
+                 f" from {old_commit} to {new_commit}")
         else:
-            print("{} version {} needs manual inspection".format(
-                workspace_name, old_commit))
+            warn(f"{workspace_name} version {old_commit}"
+                 " needs manual inspection")
 
 
-def _is_modified(repo, path):
-    """Returns true iff the given `path` is modified in the working tree of the
-    given `git.Repo`, `repo`.
+def _modified_paths(repo, root):
+    """Returns the set of paths under `root` which are added, removed or
+    altered.
     """
+    assert os.path.isdir(os.path.join(repo.working_tree_dir, root))
+    if not root.endswith('/'):
+        root += '/'
+
+    result = set()
+    for item in repo.untracked_files:
+        if item.startswith(root):
+            result.add(item)
+
     for other in [None, 'HEAD']:
-        if path in [item.b_path for item in repo.index.diff(other)]:
-            return True
-    return False
+        for item in repo.index.diff(other):
+            if item.a_path.startswith(root):
+                result.add(item.a_path)
+            if item.b_path.startswith(root):
+                result.add(item.b_path)
+
+    return result
+
+
+def _is_unmodified(repo, path):
+    """Returns true iff the given `path` is unmodified in the working tree of
+    the given `git.Repo`, `repo`. If repo is None, returns False.
+    """
+    if repo is None:
+        return False
+
+    if os.path.isdir(os.path.join(repo.working_tree_dir, path)):
+        return len(_modified_paths(repo, path)) == 0
+
+    else:
+        for other in [None, 'HEAD']:
+            if path in [item.b_path for item in repo.index.diff(other)]:
+                return False
+
+    return True
 
 
 def _do_commit(local_drake_checkout, actually_commit,
                workspace_names, paths, message):
     if actually_commit:
         names = ", ".join(workspace_names)
-        path_args = zip(['-o'] * len(paths), paths)
+        local_drake_checkout.git.add('-A', *paths)
         local_drake_checkout.git.commit(
-            *path_args, '-m', "[workspace] " + message)
-        print("\n" + ("*" * 72))
-        print(f"Done.  Changes for {names} were committed.")
-        print("Be sure to review the changes and amend the commit if needed.")
-        print(("*" * 72) + "\n")
+            '-o', *paths, '-m', "[workspace] " + message)
+        info("")
+        info("*" * 72)
+        info(f"Done.  Changes for {names} were committed.")
+        info("Be sure to review the changes and amend the commit if needed.")
+        info("*" * 72)
+        info("")
     else:
-        print("\n" + ("*" * 72))
-        print("Done.  Be sure to review and commit the changes:")
-        print(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
-        print(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
-        print(("*" * 72) + "\n")
+        info("")
+        info("*" * 72)
+        info("Done.  Be sure to review and commit the changes:")
+        info(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
+        info(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
+        info("*" * 72)
+        info("")
 
 
-def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
-    """Returns an `UpgradeResult` describing what (if anything) was done."""
-    if workspace_name not in metadata:
-        raise RuntimeError(f"Unknown repository {workspace_name}")
-    data = metadata[workspace_name]
-    if data["repository_rule_type"] != "github":
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    repository = data["repository"]
-    upgrade_advice = data["upgrade_advice"]
+def _download(url, local_filename):
+    """Given a url, downloads it to the local_filename (overwriting anything
+    that was there previously). Returns the sha256 checksum.
+    """
+    hasher = hashlib.sha256()
+    with open(local_filename, "wb") as f:
+        with urllib.request.urlopen(url) as response:
+            while True:
+                data = response.read(4096)
+                if not data:
+                    break
+                hasher.update(data)
+                f.write(data)
+    return hasher.hexdigest()
 
+
+def _do_upgrade_github_archive(
+        *,
+        temp_dir,
+        old_commit,
+        new_commit,
+        bzl_filename,
+        repository):
     # Slurp the file we're supposed to modify.
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
     with open(bzl_filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
-
-    # Determine if we should and can commit the changes made.
-    if local_drake_checkout is not None:
-        if _is_modified(local_drake_checkout, bzl_filename):
-            print(f"{bzl_filename} has local changes.")
-            print(f"Changes made for {workspace_name} will NOT be committed.")
-            can_commit = False
-        else:
-            can_commit = True
-    else:
-        can_commit = False
-
-    # Figure out what to upgrade.
-    old_commit, new_commit = _handle_github(workspace_name, gh, data)
-    if old_commit == new_commit:
-        return UpgradeResult(False)
-    elif new_commit is None:
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    print("Upgrading {} from {} to {}".format(
-        workspace_name, old_commit, new_commit))
 
     # Locate the two hexadecimal lines we need to edit.
     commit_line_re = re.compile(
@@ -317,46 +380,158 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     assert checksum_line_num is not None
 
     # Download the new source archive.
-    print("Downloading new archive...")
+    info("Downloading new archive...")
     new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
-    hasher = hashlib.sha256()
-    with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
-        with urllib.request.urlopen(new_url) as response:
-            while True:
-                data = response.read(4096)
-                if not data:
-                    break
-                hasher.update(data)
-                temp.write(data)
-            new_checksum = hasher.hexdigest()
+    new_filename = new_commit.replace("/", "_")
+    new_checksum = _download(new_url, f"{temp_dir}/{new_filename}.tar.gz")
 
     # Update the repository.bzl contents and then write it out.
     lines[commit_line_num] = commit_line_re.sub(
         new_commit, lines[commit_line_num])
     lines[checksum_line_num] = checksum_line_re.sub(
         new_checksum, lines[checksum_line_num])
-    with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line)
-    os.rename(bzl_filename + ".new", bzl_filename)
+    _rewrite_file_contents(bzl_filename, ''.join(lines))
+
+
+def _do_upgrade_github_release_attachments(
+        *,
+        temp_dir,
+        old_commit,
+        new_commit,
+        bzl_filename,
+        repository,
+        old_attachments):
+    # Slurp the file we're supposed to modify.
+    with open(bzl_filename, "r", encoding="utf-8") as f:
+        bzl_content = f.read()
+
+    # Download the new attachments.
+    info("Downloading new attachments...")
+    new_attachments = {}
+    for filename in old_attachments.keys():
+        new_url = (f"https://github.com/{repository}/"
+                   f"releases/download/{new_commit}/{filename}")
+        new_checksum = _download(new_url, f"{temp_dir}/{filename}")
+        new_attachments[filename] = new_checksum
+
+    # Update the repository.bzl contents and then write it out.
+    bzl_content = _str_replace_forced(
+        bzl_content,
+        f'commit = "{old_commit}"',
+        f'commit = "{new_commit}"')
+    for filename, old_checksum in old_attachments.items():
+        new_checksum = new_attachments[filename]
+        bzl_content = _str_replace_forced(
+            bzl_content,
+            f'"{old_checksum}"',
+            f'"{new_checksum}"')
+    _rewrite_file_contents(bzl_filename, bzl_content)
+
+
+def _do_upgrade_scripted(
+        *,
+        temp_dir,
+        local_drake_checkout,
+        workspace_root,
+        script):
+    # Run the upgrade script.
+    repo_root = local_drake_checkout.working_tree_dir
+    subprocess.check_call([os.path.join(repo_root, workspace_root, script)])
+
+    # Look for modified paths.
+    return _modified_paths(local_drake_checkout, workspace_root)
+
+
+def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
+    """Returns an `UpgradeResult` describing what (if anything) was done."""
+    if workspace_name not in metadata:
+        raise RuntimeError(f"Unknown repository {workspace_name}")
+
+    data = metadata[workspace_name]
+    rule_type = data["repository_rule_type"]
+    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+
+    if rule_type == _SCRIPTED_RULE_TYPE:
+        # Determine if we should and can commit the changes made.
+        workspace_root = f"tools/workspace/{workspace_name}/"
+        can_commit = _is_unmodified(local_drake_checkout, workspace_root)
+        if local_drake_checkout and not can_commit:
+            warn(f"{workspace_root} has local changes.")
+            warn(f"Changes made for {workspace_name} will NOT be committed.")
+
+        # Do the upgrade.
+        new_commit = None
+        modified_paths = _do_upgrade_scripted(
+            temp_dir=temp_dir,
+            local_drake_checkout=local_drake_checkout,
+            workspace_root=workspace_root,
+            script=data["upgrade_script"],
+        )
+        if not len(modified_paths):
+            return UpgradeResult(False)
+
+    else:
+        if rule_type not in _GITHUB_RULE_TYPES:
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+
+        # Sanity check that an upgrade is possible.
+        old_commit, new_commit = _handle_github(workspace_name, gh, data)
+        if old_commit == new_commit:
+            return UpgradeResult(False)
+        elif new_commit is None:
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+        info(f"Upgrading {workspace_name} from {old_commit} to {new_commit}")
+
+        # Determine if we should and can commit the changes made.
+        can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
+        if local_drake_checkout and not can_commit:
+            warn(f"{bzl_filename} has local changes.")
+            warn(f"Changes made for {workspace_name} will NOT be committed.")
+
+        # Do the upgrade.
+        if rule_type == "github":
+            _do_upgrade_github_archive(
+                temp_dir=temp_dir,
+                old_commit=old_commit,
+                new_commit=new_commit,
+                bzl_filename=bzl_filename,
+                repository=data["repository"],
+            )
+        else:
+            assert rule_type == "github_release_attachments"
+            _do_upgrade_github_release_attachments(
+                temp_dir=temp_dir,
+                old_commit=old_commit,
+                new_commit=new_commit,
+                bzl_filename=bzl_filename,
+                repository=data["repository"],
+                old_attachments=data["attachments"],
+            )
+
+        modified_paths = {bzl_filename}
 
     # Copy the downloaded tarball into the repository cache.
-    print("Populating repository cache ...")
+    info("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
     # Check for additional instructions.
+    upgrade_advice = data.get("upgrade_advice", "")
     if len(upgrade_advice):
-        print("\n" + ("*" * 72))
-        print(upgrade_advice)
-        print(("*" * 72) + "\n")
+        warn("")
+        warn("*" * 72)
+        warn(upgrade_advice)
+        warn("*" * 72)
+        warn("")
 
+    # Finalize the result.
     message = f"Upgrade {workspace_name} to latest"
-    if _smells_like_a_git_commit(new_commit):
-        message += " commit"
-    else:
-        message += f" release {new_commit}"
+    if new_commit:
+        if _smells_like_a_git_commit(new_commit):
+            message += " commit"
+        else:
+            message += f" release {new_commit}"
 
-    return UpgradeResult(True, can_commit, [bzl_filename], message)
+    return UpgradeResult(True, can_commit, modified_paths, message)
 
 
 def _do_upgrades(temp_dir, gh, local_drake_checkout,
@@ -390,7 +565,7 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
         cohort = ', '.join(modified_workspace_names)
 
         if not can_commit:
-            print(f"Changes made for {cohort} will NOT be committed.")
+            warn(f"Changes made for {cohort} will NOT be committed.")
 
         message = f"Upgrade {cohort} to latest\n\n"
         message += "- " + "\n- ".join(commit_messages)
@@ -438,12 +613,15 @@ def main():
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(message)s")
+
     if args.use_password and not args.user:
         parser.error("Couldn't guess github username; you must supply --user.")
 
     # Log in to github.
     if args.use_password:
-        prompt = "Password for https://{}@github.com: ".format(args.user)
+        prompt = f"Password for https://{args.user}@github.com: "
         gh = github3.login(
             username=args.user,
             password=getpass.getpass(prompt))
@@ -474,10 +652,9 @@ def main():
         local_drake_checkout = None
 
     # Grab the workspace metadata.
-    print("Collecting bazel repository details...")
+    info("Collecting bazel repository details...")
     metadata = read_repository_metadata(repositories=workspaces)
-    if args.verbose:
-        print(json.dumps(metadata, sort_keys=True, indent=2))
+    logging.debug(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
         visited_workspaces = set()
@@ -499,7 +676,7 @@ def main():
                 visited_workspaces.update(cohort_workspaces)
     else:
         # Run our report of what's available.
-        print("Checking for new releases...")
+        info("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
 
     if args.lint:

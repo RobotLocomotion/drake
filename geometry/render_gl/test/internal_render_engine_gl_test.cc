@@ -22,7 +22,6 @@
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
 DEFINE_bool(show_window, false, "Display render windows locally for debugging");
@@ -87,14 +86,13 @@ using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::CameraInfo;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -165,11 +163,12 @@ std::ostream& operator<<(std::ostream& out, const ScreenCoord& c) {
 
 // Utility struct for doing color testing; provides three mechanisms for
 // creating a common rgba color. We get colors from images (as a pointer to
-// unsigned bytes, as a (ColorI, alpha) pair, and from a normalized color. It's
+// unsigned bytes, as four separate ints, and from a normalized color. It's
 // nice to articulate tests without having to worry about those details.
 struct RgbaColor {
-  RgbaColor(const ColorI& c, int alpha) : r(c.r), g(c.g), b(c.b), a(alpha) {}
   explicit RgbaColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
+  RgbaColor(int r_in, int g_in, int b_in, int a_in)
+      : r(r_in), g(g_in), b(b_in), a(a_in) {}
   // We'll allow *implicit* conversion from Rgba to RgbaColor to increase the
   // utility of IsColorNear(), but only in the scope of this test.
   // NOLINTNEXTLINE(runtime/explicit)
@@ -185,10 +184,10 @@ struct RgbaColor {
 
   bool operator!=(const RgbaColor& c) const { return !(*this == c); }
 
-  int r;
-  int g;
-  int b;
-  int a;
+  int r{};
+  int g{};
+  int b{};
+  int a{};
 };
 
 std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
@@ -345,8 +344,7 @@ class RenderEngineGlTest : public ::testing::Test {
   // Verifies the "outlier" pixels for the given camera belong to the terrain.
   // If images are provided, the given images will be tested, otherwise the
   // member images will be tested.
-  void VerifyOutliers(const RenderEngineGl& renderer,
-                      const DepthRenderCamera& camera,
+  void VerifyOutliers(const DepthRenderCamera& camera,
                       const ImageRgba8U* color_in = nullptr,
                       const ImageDepth32F* depth_in = nullptr,
                       const ImageLabel16I* label_in = nullptr) const {
@@ -464,9 +462,9 @@ class RenderEngineGlTest : public ::testing::Test {
     expected_color_ = RgbaColor{default_color_};
   }
 
-  // Performs the work to test the rendering with a sphere centered in the
+  // Performs the work to test the rendering with a shape centered in the
   // image. To pass, the renderer will have to have been populated with a
-  // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
+  // compliant shape and camera configuration (e.g., PopulateSphereTest()).
   void PerformCenterShapeTest(RenderEngineGl* renderer,
                               const DepthRenderCamera* camera = nullptr) {
     const DepthRenderCamera& cam = camera ? *camera : depth_camera_;
@@ -479,15 +477,14 @@ class RenderEngineGlTest : public ::testing::Test {
     ImageLabel16I label(w, h);
     Render(renderer, &cam, &color, &depth, &label);
 
-    VerifyCenterShapeTest(*renderer, cam, color, depth, label);
+    VerifyCenterShapeTest(cam, color, depth, label);
   }
 
-  void VerifyCenterShapeTest(const RenderEngineGl& renderer,
-                             const DepthRenderCamera& camera,
+  void VerifyCenterShapeTest(const DepthRenderCamera& camera,
                              const ImageRgba8U& color,
                              const ImageDepth32F& depth,
                              const ImageLabel16I& label) const {
-    VerifyOutliers(renderer, camera, &color, &depth, &label);
+    VerifyOutliers(camera, &color, &depth, &label);
 
     // Verifies inside the sphere.
     const ScreenCoord inlier = GetInlier(camera.core().intrinsics());
@@ -725,7 +722,7 @@ TEST_F(RenderEngineGlTest, BoxTest) {
         //  within 1/255 on each channel). However, as I increase the scale
         //  factor from 1.5 to 3.5 to 10.5, the observed color stretches further
         //  into the red. This is clearly not an overly precise test.
-        expected_color_ = RgbaColor(ColorI{135, 116, 15}, 255);
+        expected_color_ = RgbaColor(135, 116, 15, 255);
         // Quick proof that we're testing for a different color -- we're drawing
         // the red channel from our expected color.
         ASSERT_NE(kTextureColor.r(), expected_color_.r);
@@ -809,6 +806,136 @@ TEST_F(RenderEngineGlTest, TransparentSphereTest) {
       << "\n  Found " << at_pixel;
 }
 
+// Performs the shape-centered-in-the-image test with a deformable mesh. In
+// particular, we register a deformable geometry with a single mesh (with or
+// without texture) and update the vertex positions and normals with some
+// curated values. We then render color, depth, and label images to verify they
+// match our expectations at certain pixel locations. Though this doesn't
+// explicitly confirm the vertex positions and normals of all vertices are
+// correctly updated, it proves some updates happened and provides strong
+// indications that the updates are as expected. Note that this only tests a
+// deformable geometry with a single render mesh, and we use the success of that
+// test to indicate vertices are correctly updated for all meshes.
+TEST_F(RenderEngineGlTest, DeformableTest) {
+  for (const bool use_texture : {false, true}) {
+    Init(X_WR_, true);
+    ResetExpectations();
+
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data in the build system.
+    auto filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
+
+    RenderLabel deformable_label(847);
+    expected_label_ = deformable_label;
+    PerceptionProperties material = simple_material(use_texture);
+    // This is a dummy placeholder to allow invoking LoadRenderMeshesFromObj(),
+    // the actual diffuse color either comes from the mtl file or the
+    Rgba unused_diffuse_color(1, 1, 1, 1);
+    std::vector<geometry::internal::RenderMesh> render_meshes =
+        geometry::internal::LoadRenderMeshesFromObj(filename, material,
+                                                    unused_diffuse_color);
+    ASSERT_EQ(render_meshes.size(), 1);
+
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterDeformableVisual(id, render_meshes, material);
+
+    expected_color_ = use_texture ? RgbaColor(kTextureColor) : default_color_;
+
+    SCOPED_TRACE(
+        fmt::format("Deformable test -- has texture: {}", use_texture));
+
+    PerformCenterShapeTest(renderer_.get());
+
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_q_WG = render_meshes[0].positions;
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_nhat_W = render_meshes[0].normals;
+    // Helper lambda to translate all vertex positions by the same vector.
+    auto translate_all_vertices = [&initial_q_WG](const Vector3d& t_W) {
+      auto result = initial_q_WG;
+      for (int i = 0; i < result.rows(); ++i) {
+        result.row(i) += t_W;
+      }
+      return result;
+    };
+    // Helper lambda to reshape an Nx3 matrix to a flat vector with 3N entries.
+    auto flatten = [](const Eigen::Matrix<double, Eigen::Dynamic, 3,
+                                          Eigen::RowMajor>& input) {
+      return VectorXd(Eigen::Map<const VectorXd>(input.data(), input.size()));
+    };
+
+    // The box has half edge length 1.0 and has its center and the center of the
+    // image. Assuming infinite resolution, when the box is translated by (t_x,
+    // 0, 0), we expect the center of the image to be part of the box if t_x is
+    // in the interval (-1, 1) and part of the terrain if t_x < -1 or if
+    // t_x > 1. With finite resolution, the boundary is somewhat "blurred".
+
+    // Pixel at center renders box.
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(0.99, 0, 0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+    PerformCenterShapeTest(renderer_.get());
+
+    // Pixel at center renders the terrain.
+    expected_color_ = expected_outlier_color_;
+    expected_object_depth_ = expected_outlier_depth_;
+    expected_label_ = expected_outlier_label_;
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(1.01, 0, 0.0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+    PerformCenterShapeTest(renderer_.get());
+
+    // Test normals are updated by making all vertex normals point along the
+    // direction of (1, 0, 1) in the world frame. As a result, angle between the
+    // normal and the light direction is 45 degrees.
+    auto new_nhat_W = initial_nhat_W;
+    for (int r = 0; r < new_nhat_W.rows(); ++r) {
+      new_nhat_W.row(r) = Vector3d(1, 0, 1).normalized();
+    }
+
+    // With the prescribed normals, we expect to see rgb values scaled by
+    // cos(π/4). We also expect the object depth to increase by 0.5 as we
+    // translate all vertices in the -z direction by 0.5.
+    ResetExpectations();
+    RgbaColor original_color =
+        use_texture ? RgbaColor(kTextureColor) : default_color_;
+    const Vector3d original_rgb(original_color.r, original_color.g,
+                                original_color.b);
+    const Vector3d expected_rgb = original_rgb * std::cos(M_PI / 4.0);
+    expected_color_ = RgbaColor(static_cast<int>(expected_rgb[0]),
+                                static_cast<int>(expected_rgb[1]),
+                                static_cast<int>(expected_rgb[2]), 255);
+    expected_label_ = deformable_label;
+    expected_object_depth_ += 0.5;
+
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(0, 0, -0.5)))},
+        std::vector<VectorXd>{flatten(new_nhat_W)});
+    PerformCenterShapeTest(renderer_.get());
+
+    // Now we remove the geometry, and the center pixel should again render the
+    // terrain.
+    renderer_->RemoveGeometry(id);
+    expected_color_ = expected_outlier_color_;
+    expected_object_depth_ = expected_outlier_depth_;
+    expected_label_ = expected_outlier_label_;
+    PerformCenterShapeTest(renderer_.get());
+
+    // Confirm that we can still add the geometry back.
+    renderer_->RegisterDeformableVisual(id, render_meshes, material);
+  }
+}
+
 // Performs the shape-centered-in-the-image test with a capsule.
 TEST_F(RenderEngineGlTest, CapsuleTest) {
   Init(X_WR_, true);
@@ -871,7 +998,7 @@ TEST_F(RenderEngineGlTest, CapsuleRotatedTest) {
   Render(renderer_.get());
 
   SCOPED_TRACE("Capsule rotated test");
-  VerifyOutliers(*renderer_, depth_camera_);
+  VerifyOutliers(depth_camera_);
 
   // Verifies the inliers towards the ends of the capsule and ensures its
   // length attribute is respected as opposed to just its radius. This
@@ -1497,7 +1624,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   EXPECT_NO_THROW(Render());
 }
 
-// Tests the ability to configure the RenderEngineGl's default render label.
+// Tests that RenderEngineGl's default render label is kDontCare.
 TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
   // A variation of PopulateSphereTest(), but uses an empty set of properties.
   // The result should be compatible with the running the sphere test.
@@ -1511,56 +1638,15 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
     engine->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
   };
 
-  // Case: The engine's default is "don't care".
-  {
-    RenderEngineGl renderer;
-    InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
+  // The engine's default is "don't care".
+  RenderEngineGl renderer;
+  InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
 
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
+  DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
+  expected_label_ = RenderLabel::kDontCare;
+  expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
 
-    SCOPED_TRACE("Default properties; don't care label");
-    PerformCenterShapeTest(&renderer);
-  }
-
-  // Case: Change render engine's default to explicitly be unspecified; must
-  // throw.
-  {
-    RenderEngineGl renderer{{.default_label = RenderLabel::kUnspecified}};
-    InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
-  }
-
-  // Case: Change render engine's default to don't care. Label image should
-  // report don't care.
-  {
-    ResetExpectations();
-    RenderEngineGlParams params;
-    params.default_label = RenderLabel::kDontCare;
-    RenderEngineGl renderer{params};
-    InitializeRenderer(X_WR_, true /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
-
-    SCOPED_TRACE("Default properties; don't care label");
-    PerformCenterShapeTest(&renderer);
-  }
-
-  // Case: Change render engine's default to invalid default value; must throw.
-  {
-    for (RenderLabel label :
-         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineGl({.default_label = label}),
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
-    }
-  }
+  PerformCenterShapeTest(&renderer);
 }
 
 // Tests to see if the two images are *exactly* equal - down to the last bit.

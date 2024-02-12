@@ -140,10 +140,6 @@ When testing the values of NumPy matrices, please review the documentation in
   - File Names: `*.py`, `*_py.cc`
     - Each `*_py.cc` file should only define one package (a module; optionally
     with multiple submodules under it).
-    - *Note*: If you need to split up a `{module}_py.cc` file for compilation
-    speed and clarity, use `{module}_py_{part}.cc` for source and
-    `{module}_py_{part}.h` for headers, and then include the headers into the
-    original module source file. `{part}` may not necessarily be a submodule.
 
 - `*_pybind`: A C++ library for adding pybind-specific utilities to be consumed
   by C++.
@@ -185,6 +181,21 @@ components being built.
 @anchor PydrakeModuleDefinitions
 ## pybind Module Definitions
 
+- Module bindings must always be split into parts (to avoid large files that
+  would bloat our compile times). The easiest way to understand this pattern is
+  probably to look at an existing module that follows the convention (e.g.,
+  `pydrake/geometry/**` or `pydrake/visualization/**`), but here's a summary of
+  the rules:
+  - foo_py.h: provides function signatures for the various "Define..." helper
+    functions that comprise the module. In general, splitting into more
+    (smaller) helper functions is better than fewer (larger) helper functions.
+  - foo_py.cc: uses PYBIND11_MODULE to define the package or module, by
+    importing other dependent modules, calling the "Define..." helper functions,
+    and possibly defining submodules.  Must not itself add bindings; it must
+    always call helpers that add them.
+  - foo_py_bar.cc: the definition for the "DefineBar" helper function.
+  - foo_py_quux.cc: the definition for the "DefineQuux" helper function.
+  - ... etc.
 - Modules should be defined within the drake::pydrake namespace. Please review
 this namespace for available helper methods / classes.
 - Any Drake pybind module should include `pydrake_pybind.h`.
@@ -214,8 +225,8 @@ the following:
   - As an example:
 
         # .../my_component.h
-        #include "drake/math/rigid_transform.h"
-        RigidTransformd MyMethod();
+        #include "drake/geometry/meshcat.h"
+        void MyMethod(std::shared_ptr<Meshcat> meshcat);
 
         # bindings/.../BUILD.bazel
         drake_pybind_library(
@@ -223,14 +234,14 @@ the following:
             ...
             py_deps = [
                 ...
-                "//bindings/pydrake/math",
+                "//bindings/pydrake/geometry",
             ],
             ...
         )
 
         # bindings/.../my_method_py.cc
         PYBIND_MODULE(my_method, m) {
-          py::module::import("pydrake.math");
+          py::module::import("pydrake.geometry");
           m.def("MyMethod", &MyMethod, ...);
         }
 

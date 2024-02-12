@@ -33,9 +33,13 @@ void AddUnitQuaternionConstraintOnPlant(
   for (BodyIndex body_index{0}; body_index < plant.num_bodies(); ++body_index) {
     const auto& body = plant.get_body(body_index);
     if (body.has_quaternion_dofs()) {
+      Vector4<symbolic::Variable> quat_vars =
+          q_vars.segment<4>(body.floating_positions_start());
       prog->AddConstraint(solvers::Binding<solvers::Constraint>(
-          std::make_shared<UnitQuaternionConstraint>(),
-          q_vars.segment<4>(body.floating_positions_start())));
+          std::make_shared<UnitQuaternionConstraint>(), quat_vars));
+      if (prog->GetInitialGuess(quat_vars).array().isNaN().all()) {
+        prog->SetInitialGuess(quat_vars, Eigen::Vector4d(1, 0, 0, 0));
+      }
     }
   }
 }

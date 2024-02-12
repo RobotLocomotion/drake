@@ -11,6 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/overloaded.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gltf_client/factory.h"
@@ -47,14 +48,6 @@ using multibody::MultibodyPlant;
 using multibody::parsing::GetScopedFrameByName;
 
 namespace {
-
-// Boilerplate for std::visit.
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
 
 // Given a valid string containing a supported RenderEngine class name, returns
 // the full name as would be returned by SceneGraph::GetRendererTypeName().
@@ -134,9 +127,9 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   bool already_exists = !type_name.empty();
 
   if (already_exists) {
-    std::visit(
+    visit_overloaded<void>(
         overloaded{
-            [&type_name, &config](const std::string& class_name) -> void {
+            [&type_name, &config](const std::string& class_name) {
               if (!class_name.empty() &&
                   LookupEngineType(class_name) != type_name) {
                 throw std::logic_error(fmt::format(
@@ -146,7 +139,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                     config.renderer_name, class_name, type_name));
               }
             },
-            [&config](auto&&) -> void {
+            [&config](auto&&) {
               throw std::logic_error(fmt::format(
                   "Invalid camera configuration; requested renderer_name "
                   " = '{}' with renderer parameters, but the named renderer "
@@ -159,7 +152,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   if (already_exists) return;
 
-  std::visit(
+  visit_overloaded<void>(
       overloaded{
           [&config, scene_graph](const std::string& class_name) {
             MakeEngineByClassName(class_name, config, scene_graph);
@@ -192,7 +185,7 @@ void ApplyCameraConfig(const CameraConfig& config,
                        const MultibodyPlant<double>* plant,
                        SceneGraph<double>* scene_graph,
                        DrakeLcmInterface* lcm) {
-  if (!(config.rgb || config.depth)) {
+  if (!(config.rgb || config.depth || config.label)) {
     return;
   }
 
@@ -231,11 +224,12 @@ void ApplyCameraConfig(const CameraConfig& config,
     camera_sys = builder->AddSystem<RgbdSensorAsync>(
         scene_graph, frame_A, X_AB, config.fps, config.capture_offset,
         config.output_delay,
-        config.rgb ? std::optional<ColorRenderCamera>{color_camera}
-                   : std::nullopt,
+        (config.rgb || config.label)
+            ? std::optional<ColorRenderCamera>{color_camera}
+            : std::nullopt,
         config.depth ? std::optional<DepthRenderCamera>{depth_camera}
                      : std::nullopt,
-        /* render_label_image = */ false);
+        config.label);
     camera_sys->set_name(fmt::format("rgbd_sensor_{}", config.name));
     builder->Connect(scene_graph->get_query_output_port(),
                      camera_sys->get_input_port());
@@ -245,6 +239,10 @@ void ApplyCameraConfig(const CameraConfig& config,
   lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyCameraConfig",
                            config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
+  if (lcm->get_lcm_url() == LcmBuses::kLcmUrlMemqNull) {
+    // The user has opted-out of LCM.
+    return;
+  }
 
   // TODO(jwnimmer-tri) When the Simulator has concurrent update + publish
   // events, it effectively runs the publish event before the update event.
@@ -259,6 +257,7 @@ void ApplyCameraConfig(const CameraConfig& config,
       config.name, config.fps, lcm_publisher_offset,
       config.rgb ? &camera_sys->GetOutputPort("color_image") : nullptr,
       config.depth ? &camera_sys->GetOutputPort("depth_image_16u") : nullptr,
+      config.label ? &camera_sys->GetOutputPort("label_image") : nullptr,
       config.do_compress, builder, lcm);
 }
 

@@ -8,7 +8,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
+#include "drake/geometry/deformable_mesh_with_bvh.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
@@ -41,7 +41,7 @@ class DeformableGeometry {
 
   /* Returns the volume mesh representation of the deformable geometry at
    current configuration. */
-  const DeformableVolumeMesh<double>& deformable_mesh() const {
+  const DeformableVolumeMeshWithBvh<double>& deformable_mesh() const {
     return *deformable_mesh_;
   }
 
@@ -67,7 +67,7 @@ class DeformableGeometry {
   const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
  private:
-  std::unique_ptr<DeformableVolumeMesh<double>> deformable_mesh_;
+  std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_mesh_;
   /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
    invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
    `CalcSignedDistanceField()` that guarantees to return the up-to-date mesh
@@ -120,7 +120,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
         "Rigid {} shapes are not currently supported for deformable "
         "contact; registration is allowed, but an error will be thrown "
         "during contact.",
-        ShapeName(shape));
+        shape.type_name());
     return {};
   }
   auto surface_mesh = std::make_unique<TriangleSurfaceMesh<double>>(

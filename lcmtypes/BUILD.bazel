@@ -3,6 +3,7 @@ package(default_visibility = ["//visibility:public"])
 load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_transitive_installed_hdrs_filegroup",
 )
@@ -21,6 +22,7 @@ load(
     "drake_lcm_java_library",
     "drake_lcm_py_library",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":defs.bzl", "ALL_LCM_SRCS")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -325,7 +327,6 @@ drake_java_binary(
     visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
-        "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
 
@@ -356,13 +357,22 @@ install(
 
 install(
     name = "install",
-    install_tests = [":test/drake-lcm-spy_install_test.py"],
+    install_tests = select({
+        "@lcm//:lcm_install_java_is_off": [],
+        "//conditions:default": [
+            ":test/drake-lcm-spy_install_test.py",
+        ],
+    }),
     targets = [
         ":_generated_lcmtypes_drake_py",
-        ":drake-lcm-spy",
-        ":drake-lcm-spy-launcher",
-        ":lcmtypes_drake_java",
-    ],
+    ] + select({
+        "@lcm//:lcm_install_java_is_off": [],
+        "//conditions:default": [
+            ":drake-lcm-spy",
+            ":drake-lcm-spy-launcher",
+            ":lcmtypes_drake_java",
+        ],
+    }),
     rename = {
         "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
         "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
@@ -372,17 +382,43 @@ install(
         "@commons_io//jar",
         "@lcm//:lcm-java",
         "@net_sf_jchart2d//jar",
-        "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
         "@org_apache_xmlgraphics_commons//jar",
     ],
     deps = [
         ":install_drake_cc_headers",
-        "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
     ],
 )
 
 # === test/ ===
+
+# TODO(jwnimmer-tri) We use this to test the `use_new_lcm_gen = True` flag.
+# Once we turn on that flag by default, we can probably ditch this test.
+generate_file(
+    name = "test_message.lcm",
+    content = """
+package drake;
+struct test_message { double value; }
+""",
+    visibility = ["//visibility:private"],
+)
+
+drake_lcm_cc_library(
+    name = "test_message",
+    lcm_package = "drake",
+    lcm_srcs = ["test_message.lcm"],
+    use_new_lcm_gen = True,
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "test_message_test",
+    deps = [
+        ":test_message",
+        "//lcm:lcm_messages",
+    ],
+)
+
 drake_py_test(
     name = "nested_types_test",
     deps = [

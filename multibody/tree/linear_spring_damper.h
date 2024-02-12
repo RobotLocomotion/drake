@@ -10,7 +10,7 @@
 namespace drake {
 namespace multibody {
 
-template <typename T> class Body;
+template <typename T> class RigidBody;
 
 /// This %ForceElement models a spring-damper attached between two points on
 /// two different bodies.
@@ -62,13 +62,13 @@ class LinearSpringDamper final : public ForceElement<T> {
   /// @throws std::exception if `stiffness` is negative.
   /// @throws std::exception if `damping` is negative.
   LinearSpringDamper(
-      const Body<T>& bodyA, const Vector3<double>& p_AP,
-      const Body<T>& bodyB, const Vector3<double>& p_BQ,
+      const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
+      const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
       double free_length, double stiffness, double damping);
 
-  const Body<T>& bodyA() const { return bodyA_; }
+  const RigidBody<T>& bodyA() const { return bodyA_; }
 
-  const Body<T>& bodyB() const { return bodyB_; }
+  const RigidBody<T>& bodyB() const { return bodyB_; }
 
   /// The position p_AP of point P on body A as measured and expressed in body
   /// frame A.
@@ -137,9 +137,9 @@ class LinearSpringDamper final : public ForceElement<T> {
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc) const;
 
-  const Body<T>& bodyA_;
+  const RigidBody<T>& bodyA_;
   const Vector3<double> p_AP_;
-  const Body<T>& bodyB_;
+  const RigidBody<T>& bodyB_;
   const Vector3<double> p_BQ_;
   double free_length_;
   double stiffness_;

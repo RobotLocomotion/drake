@@ -33,7 +33,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
   const double kMass = 1.0;
   SpatialInertia<double> M_Bcm(kMass, Vector3<double>::Zero(), G_Bcm);
 
-  body_ = &this->mutable_tree().template AddBody<RigidBody>("B", M_Bcm);
+  body_ = &this->mutable_tree().AddRigidBody("B", M_Bcm);
   joint_ = &this->mutable_tree().template AddJoint<BallRpyJoint>(
           "ball_rpy_joint", tree().world_body(), {}, *body_, {});
 
@@ -54,7 +54,7 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
 
   const internal::Mobilizer<T>& mobilizer = joint_->GetMobilizerInUse();
   const auto* xyz_mobilizer =
-      dynamic_cast<const internal::SpaceXYZMobilizer<T>*>(&mobilizer);
+      dynamic_cast<const internal::RpyBallMobilizer<T>*>(&mobilizer);
   DRAKE_DEMAND(xyz_mobilizer != nullptr);
 
   xyz_mobilizer->set_angular_velocity(
@@ -77,14 +77,14 @@ template<typename T>
 math::RigidTransform<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   auto& pc = this->EvalPositionKinematics(context);
-  return math::RigidTransform<T>(pc.get_X_WB(body_->node_index()));
+  return math::RigidTransform<T>(pc.get_X_WB(body_->mobod_index()));
 }
 
 template<typename T>
 SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
   auto& vc = this->EvalVelocityKinematics(context);
-  return vc.get_V_WB(body_->node_index());
+  return vc.get_V_WB(body_->mobod_index());
 }
 
 }  // namespace test

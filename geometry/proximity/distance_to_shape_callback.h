@@ -14,8 +14,9 @@
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
 
-/** @file Provides the structures and logic to support signed distance queries
- between shapes.  */
+/** @file
+ Provides the structures and logic to support signed distance queries between
+ shapes.  */
 
 namespace drake {
 namespace geometry {
@@ -173,7 +174,9 @@ class DistancePairGeometry {
  unsupported combination of geometry types and scalar type.  */
 template <typename T>
 void CalcDistanceFallback(const fcl::CollisionObjectd& a,
+                          const math::RigidTransform<T>&,
                           const fcl::CollisionObjectd& b,
+                          const math::RigidTransform<T>&,
                           const fcl::DistanceRequestd&,
                           SignedDistancePair<T>* /* pair_data */) {
   // By default, there is no fallback. For every scalar type for which one
@@ -190,7 +193,9 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
  */
 template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
+                                  const math::RigidTransformd& X_WA,
                                   const fcl::CollisionObjectd& b,
+                                  const math::RigidTransformd& X_WB,
                                   const fcl::DistanceRequestd& request,
                                   SignedDistancePair<double>* pair_data);
 

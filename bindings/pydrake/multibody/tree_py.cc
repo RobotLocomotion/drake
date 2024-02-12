@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
@@ -288,11 +287,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
-    using Class = BodyFrame<T>;
-    constexpr auto& cls_doc = doc.BodyFrame;
+    using Class = RigidBodyFrame<T>;
+    constexpr auto& cls_doc = doc.RigidBodyFrame;
     auto cls = DefineTemplateClassWithDefault<Class, Frame<T>>(
-        m, "BodyFrame", param, cls_doc.doc);
+        m, "RigidBodyFrame", param, cls_doc.doc);
     // No need to re-bind element mixins from `Frame`.
+
+    // TODO(sherm1) This is deprecated; remove 2024-04-01.
+    m.attr("BodyFrame") = m.attr("RigidBodyFrame");
+    m.attr("BodyFrame_") = m.attr("RigidBodyFrame_");
   }
 
   {
@@ -306,7 +309,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
             py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
-        .def(py::init<const std::string&, const Body<T>&,
+        .def(py::init<const std::string&, const RigidBody<T>&,
                  const math::RigidTransform<double>&>(),
             py::arg("name"), py::arg("bodyB"), py::arg("X_BF"),
             cls_doc.ctor.doc_3args)
@@ -317,14 +320,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), cls_doc.GetPoseInParentFrame.doc);
   }
 
-  // Bodies.
+  // Rigid bodies.
   {
-    using Class = Body<T>;
-    constexpr auto& cls_doc = doc.Body;
-    auto cls =
-        DefineTemplateClassWithDefault<Class>(m, "Body", param, cls_doc.doc);
+    using Class = RigidBody<T>;
+    constexpr auto& cls_doc = doc.RigidBody;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RigidBody", param, cls_doc.doc);
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
+        .def(py::init<const std::string&, const SpatialInertia<double>&>(),
+            py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
+        .def(py::init<const std::string&, ModelInstanceIndex,
+                 const SpatialInertia<double>&>(),
+            py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
+            cls_doc.ctor.doc_3args)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
@@ -334,8 +343,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
             cls_doc.floating_positions_start.doc)
-        .def("floating_velocities_start", &Class::floating_velocities_start,
-            cls_doc.floating_velocities_start.doc)
+        .def("floating_velocities_start_in_v",
+            &Class::floating_velocities_start_in_v,
+            cls_doc.floating_velocities_start_in_v.doc)
         .def("floating_position_suffix", &Class::floating_position_suffix,
             cls_doc.floating_position_suffix.doc)
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
@@ -365,21 +375,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
-            cls_doc.is_locked.doc);
-  }
-
-  {
-    using Class = RigidBody<T>;
-    constexpr auto& cls_doc = doc.RigidBody;
-    auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
-        m, "RigidBody", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<const std::string&, const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
-        .def(py::init<const std::string&, ModelInstanceIndex,
-                 const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
-            cls_doc.ctor.doc_3args)
+            cls_doc.is_locked.doc)
         .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
         .def("default_com", &Class::default_com, py_rvp::reference_internal,
             cls_doc.default_com.doc)
@@ -397,6 +393,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
+
+    // Aliases for backwards compatibility (dispreferred).
+    m.attr("Body") = m.attr("RigidBody");
+    m.attr("Body_") = m.attr("RigidBody_");
   }
 
   // Joints.
@@ -852,14 +852,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("gains"), cls_doc.set_controller_gains.doc)
         .def("has_controller", &Class::has_controller,
             cls_doc.has_controller.doc);
-    constexpr char doc_deprecated_set_actuation_vector[] =
-        "The kwarg name 'u_instance' is deprecated and will be removed on "
-        "2024-02-01. Spell the argument name as 'u_actuator' instead.";
-    cls.def("set_actuation_vector",
-        WrapDeprecated(
-            doc_deprecated_set_actuation_vector, &Class::set_actuation_vector),
-        py::arg("u_instance"), py::arg("u"),
-        doc_deprecated_set_actuation_vector);
   }
 
   // Force Elements.
@@ -877,8 +869,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
         m, "LinearSpringDamper", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<const Body<T>&, const Vector3<double>&, const Body<T>&,
-                 const Vector3<double>&, double, double, double>(),
+        .def(py::init<const RigidBody<T>&, const Vector3<double>&,
+                 const RigidBody<T>&, const Vector3<double>&, double, double,
+                 double>(),
             py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
             py::arg("p_BQ"), py::arg("free_length"), py::arg("stiffness"),
             py::arg("damping"), cls_doc.ctor.doc)
@@ -1051,7 +1044,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
             py_rvp::reference_internal, cls_doc.mutable_generalized_forces.doc)
         // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
-        // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
+        // they use `internal::MobodIndex`. Instead, use force API in Body.
         .def("AddInForces", &Class::AddInForces, py::arg("addend"),
             cls_doc.AddInForces.doc);
     DefCopyAndDeepCopy(&cls);
@@ -1178,22 +1171,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("Lz"), cls_doc.SolidBox.doc)
         .def_static(
             "SolidCube", &Class::SolidCube, py::arg("L"), cls_doc.SolidCube.doc)
-        .def_static("SolidCylinder",
-            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
-            overload_cast_explicit<Class, const T&, const T&,
-                const Vector3<T>&>(&Class::SolidCylinder),
-            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+        .def_static("SolidCylinder", &Class::SolidCylinder, py::arg("radius"),
+            py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinder.doc)
-        .def_static("SolidCapsule",
-            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
-            overload_cast_explicit<Class, const T&, const T&,
-                const Vector3<T>&>(&Class::SolidCapsule),
-            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
-            cls_doc.SolidCapsule.doc)
-        .def_static("SolidCylinderAboutEnd",
-            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
-            overload_cast_explicit<Class, const T&, const T&,
-                const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
+        .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("radius"),
+            py::arg("length"), py::arg("unit_vector"), cls_doc.SolidCapsule.doc)
+        .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderAboutEnd.doc)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric,
@@ -1215,57 +1198,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
             }));
     DefCopyAndDeepCopy(&cls);
-    // TODO(jwnimmer-tri) Remove as of 2023-12-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char doc_factory_deprecated[] = R"""(
-This overload spelling of a UnitInertia factory method is deprecated.
-
-The named arguments for the UnitInertia factory methods have been renamed:
- - ``r`` → ``radius``
- - ``L`` → ``length``
- - ``J`` → ``moment_parallel``
- - ``K`` → ``moment_perpendicular``
- - ``b_E`` → ``unit_vector``
-
-The old argument names will be removed from Drake on or after 2023-12-01.
-
-The ``unit_vector`` argument no longer has a default value, and must already
-have been normalized by the caller. Passing in a non-normalized unit vector
-will result in a warning for now, but an exception on or after 2023-12-01.
-)""";
-    cls  // BR
-        .def_static("SolidCylinder",
-            WrapDeprecated(doc_factory_deprecated,
-                [](const T& r, const T& L, const Vector3<T>& b_E) {
-                  return Class::SolidCylinder(r, L, b_E);
-                }),
-            py::arg("r"), py::arg("L"),
-            py::arg("b_E") = Vector3<T>::UnitZ().eval(), doc_factory_deprecated)
-        .def_static("SolidCylinderAboutEnd",
-            WrapDeprecated(doc_factory_deprecated,
-                [](const T& r, const T& L) {
-                  return Class::SolidCylinderAboutEnd(r, L);
-                }),
-            py::arg("r"), py::arg("L"), doc_factory_deprecated)
-        .def_static("SolidCapsule",
-            WrapDeprecated(doc_factory_deprecated,
-                [](const T& r, const T& L, const Vector3<T>& unit_vector) {
-                  return Class::SolidCapsule(r, L, unit_vector);
-                }),
-            py::arg("r"), py::arg("L"),
-            py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
-            doc_factory_deprecated)
-        .def_static("AxiallySymmetric",
-            WrapDeprecated(doc_factory_deprecated, &Class::AxiallySymmetric),
-            py::arg("J"), py::arg("K"), py::arg("b_E"), doc_factory_deprecated)
-        .def_static("StraightLine",
-            WrapDeprecated(doc_factory_deprecated, &Class::StraightLine),
-            py::arg("K"), py::arg("b_E"), doc_factory_deprecated)
-        .def_static("ThinRod",
-            WrapDeprecated(doc_factory_deprecated, &Class::ThinRod),
-            py::arg("L"), py::arg("b_E"), doc_factory_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // SpatialInertia

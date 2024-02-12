@@ -131,12 +131,8 @@ def _designate_wrapped_lines(lines):
     return [x == Flag.WRAP for x in flags]
 
 
-def _rewrite_one_text(*, text, edit_include, inline_namespace):
+def _rewrite_one_text(*, text, inline_namespace):
     """Rewrites the C++ file contents in `text` with specific alterations:
-
-    - The paths in #include statements are replaced per the (old, new) pairs in
-    the include_edit list. The pairs are literal strings that must be a prefix
-    of the path.
 
     - Wraps an inline namespace "drake_vendor" with hidden symbol visibility
     around all of the code in file (but not any #include statements).
@@ -154,12 +150,6 @@ def _rewrite_one_text(*, text, edit_include, inline_namespace):
     Tricks like including non-standalone files (`#include "helpers.inc"`)
     may not work.
     """
-    # Re-spell the project's own include statements.
-    for old_inc, new_inc in edit_include:
-        pattern = r'^(\s*#\s*include\s*["<])' + re.escape(old_inc)
-        replacement = r'\1' + new_inc
-        text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
-
     # If the file is a mixed C/C++ header, then we need to leave it alone.
     if '\nextern "C" {\n' in text:
         return text
@@ -206,8 +196,7 @@ def _rewrite_one_text(*, text, edit_include, inline_namespace):
     return text
 
 
-def _rewrite_one_file(*, old_filename, new_filename, edit_include,
-                      inline_namespace):
+def _rewrite_one_file(*, old_filename, new_filename, inline_namespace):
     """Reads in old_filename and write into new_filename with specific
     alterations as described by _rewrite_one_string().
     """
@@ -215,7 +204,7 @@ def _rewrite_one_file(*, old_filename, new_filename, edit_include,
     with open(old_filename, 'r', encoding='utf-8') as in_file:
         old_text = in_file.read()
 
-    new_text = _rewrite_one_text(text=old_text, edit_include=edit_include,
+    new_text = _rewrite_one_text(text=old_text,
                                  inline_namespace=inline_namespace)
 
     # Write out the altered file.
@@ -233,10 +222,6 @@ def _split_pair(arg):
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--edit-include', action='append', default=[],
-        type=_split_pair, metavar='OLD:NEW',
-        help='Project-local include spellings rewrite')
-    parser.add_argument(
         '--no-inline-namespace', dest='inline_namespace', action='store_false',
         help='Set visibility directly without an inline namespace wrapper')
     parser.add_argument(
@@ -245,7 +230,6 @@ def _main():
     args = parser.parse_args()
     for old_filename, new_filename in args.rewrite:
         _rewrite_one_file(
-            edit_include=args.edit_include,
             inline_namespace=args.inline_namespace,
             old_filename=old_filename,
             new_filename=new_filename)

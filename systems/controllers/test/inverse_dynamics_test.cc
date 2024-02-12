@@ -46,13 +46,12 @@ class InverseDynamicsTest : public ::testing::Test {
     EXPECT_TRUE(inverse_dynamics_context_->is_stateless());
 
     // Checks that the number of input and output ports are as desired.
-    // (N.B. During the deprecation window, each port appears twice.)
     if (mode == InverseDynamics<double>::kGravityCompensation) {
-      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 2);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 1);
     } else {
-      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 4);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 2);
     }
-    EXPECT_EQ(inverse_dynamics_->num_output_ports(), 2);
+    EXPECT_EQ(inverse_dynamics_->num_output_ports(), 1);
   }
 
   void CheckGravityTorque(const Eigen::VectorXd& position) {
@@ -238,42 +237,6 @@ GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   id_sym = systems::System<double>::ToSymbolic(id_with_ownership);
   EXPECT_EQ(id_sym->get_input_port_estimated_state().size(), num_states);
   EXPECT_TRUE(id_sym->is_pure_gravity_compensation());
-}
-
-GTEST_TEST(InverseDynamicsDeprecatedTest, SmokeTest) {
-  // Create the plant.
-  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
-  mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("iiwa_link_0"));
-  mbp->Finalize();
-
-  // Create the device under test.
-  auto mode = InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics;
-  auto dut = make_unique<InverseDynamics<double>>(mbp.get(), mode);
-
-  // Compute inverse dynamics using the dut system.
-  Eigen::VectorXd q(7);
-  Eigen::VectorXd v(7);
-  Eigen::VectorXd vd_d(7);
-  for (int i = 0; i < 7; ++i) {
-    q[i] = i * 0.1 - 0.3;
-    v[i] = i - 3;
-    vd_d[i] = i - 3;
-  }
-  auto context = dut->CreateDefaultContext();
-  dut->GetInputPort("u0").FixValue(context.get(),
-                                   (VectorXd(14) << q, v).finished());
-  dut->GetInputPort("u1").FixValue(context.get(), vd_d);
-  auto torque = dut->GetOutputPort("y0").Eval(*context);
-
-  // Check against the expected torque computed directly.
-  auto mbp_context = mbp->CreateDefaultContext();
-  const VectorXd expected_torque =
-      controllers_test::ComputeTorque(*mbp, q, v, vd_d, mbp_context.get());
-  EXPECT_TRUE(CompareMatrices(torque, expected_torque, 1e-10,
-                              MatrixCompareType::absolute));
 }
 
 }  // namespace

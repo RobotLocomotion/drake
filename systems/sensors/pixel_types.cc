@@ -24,11 +24,6 @@ std::string to_string(PixelType x) {
       return "Depth32F";
     case PixelType::kLabel16I:
       return "Label16I";
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case PixelType::kExpr:
-      return "Expr";
-#pragma GCC diagnostic pop
   }
   DRAKE_UNREACHABLE();
 }
@@ -49,11 +44,6 @@ std::string to_string(PixelFormat x) {
       return "Depth";
     case PixelFormat::kLabel:
       return "Label";
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case PixelFormat::kExpr:
-      return "Expr";
-#pragma GCC diagnostic pop
   }
   DRAKE_UNREACHABLE();
 }

@@ -1,16 +1,8 @@
 load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
-def glib_repository(
-        name,
-        licenses = ["restricted"],  # LGPL-2.0+
-        modname = "glib-2.0",
-        pkg_config_paths = [],
-        homebrew_subdir = "opt/glib/lib/pkgconfig",
-        **kwargs):
+def glib_repository(name):
     pkg_config_repository(
         name = name,
-        licenses = licenses,
-        modname = modname,
-        pkg_config_paths = pkg_config_paths,
-        **kwargs
+        licenses = ["restricted"],  # LGPL-2.0+
+        modname = "glib-2.0",
     )

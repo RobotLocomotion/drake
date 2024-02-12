@@ -209,7 +209,10 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
         .def("GetNumActiveConnections", &Class::GetNumActiveConnections,
             cls_doc.GetNumActiveConnections.doc)
-        .def("Flush", &Class::Flush, cls_doc.Flush.doc)
+        .def("Flush", &Class::Flush,
+            // Internally this function both blocks on a worker thread and
+            // sleeps; for both reasons, we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(), cls_doc.Flush.doc)
         .def("SetObject",
             py::overload_cast<std::string_view, const Shape&, const Rgba&>(
                 &Class::SetObject),
@@ -274,6 +277,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("target_in_world"), cls_doc.SetCameraTarget.doc)
         .def("SetCameraPose", &Class::SetCameraPose, py::arg("camera_in_world"),
             py::arg("target_in_world"), cls_doc.SetCameraPose.doc)
+        .def("GetTrackedCameraPose", &Class::GetTrackedCameraPose,
+            cls_doc.GetTrackedCameraPose.doc)
         .def("SetTransform",
             py::overload_cast<std::string_view, const math::RigidTransformd&,
                 const std::optional<double>&>(&Class::SetTransform),
@@ -333,9 +338,12 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
         .def("GetGamepad", &Class::GetGamepad, cls_doc.GetGamepad.doc)
-        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc)
+        .def("StaticHtml", &Class::StaticHtml,
+            // This function costs a non-trivial amount of CPU time and blocks
+            // on a worker thread; for both reasons, we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
         .def("StartRecording", &Class::StartRecording,
-            py::arg("frames_per_second") = 32.0,
+            py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,
             cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)
@@ -345,29 +353,45 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteRecording.doc)
         .def("get_mutable_recording", &Class::get_mutable_recording,
             py_rvp::reference_internal, cls_doc.get_mutable_recording.doc)
-        .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc)
-        // These methods are intended to primarily for testing. Because they
-        // are excluded from C++ Doxygen, we bind them privately here.
-        .def(
-            "_GetPackedObject",
-            [](const Class& self, std::string_view path) {
-              return py::bytes(self.GetPackedObject(path));
-            },
+        .def("HasPath", &Class::HasPath, py::arg("path"),
+            // This function blocks on a worker thread so must release the GIL.
+            py::call_guard<py::gil_scoped_release>(), cls_doc.HasPath.doc);
+
+    // This helper wraps a Meshcat::GetPacked{Foo} member function to release
+    // the GIL during the call (because the member function blocks to wait for a
+    // worker thread) and then copies the result into py::bytes while holding
+    // the GIL.
+    auto wrap_get_packed_foo = []<typename... Args>(
+        std::string(Class::*member_function)(Args...) const) {
+      return [member_function](const Class& self, Args... args) {
+        std::string result;
+        {
+          py::gil_scoped_release unlock;
+          result = (self.*member_function)(args...);
+        }
+        return py::bytes(result);
+      };
+    };  // NOLINT(readability/braces)
+
+    // The remaining methods are intended to primarily for testing. Because they
+    // are excluded from C++ Doxygen, we bind them privately here.
+    meshcat  // BR
+        .def("_GetPackedObject", wrap_get_packed_foo(&Class::GetPackedObject),
             py::arg("path"))
+        .def("_GetPackedTransform",
+            wrap_get_packed_foo(&Class::GetPackedTransform), py::arg("path"))
+        .def("_GetPackedProperty",
+            wrap_get_packed_foo(&Class::GetPackedProperty), py::arg("path"),
+            py::arg("property"))
         .def(
-            "_GetPackedTransform",
-            [](const Class& self, std::string_view path) {
-              return py::bytes(self.GetPackedTransform(path));
+            "_InjectWebsocketMessage",
+            [](Class& self, py::bytes message) {
+              std::string_view message_view = message;
+              // This call blocks on a worker thread so must release the GIL.
+              py::gil_scoped_release unlock;
+              self.InjectWebsocketMessage(message_view);
             },
-            py::arg("path"))
-        .def(
-            "_GetPackedProperty",
-            [](const Class& self, std::string_view path,
-                std::string_view property) {
-              return py::bytes(
-                  self.GetPackedProperty(path, std::string{property}));
-            },
-            py::arg("path"), py::arg("property"));
+            py::arg("message"));
 
     const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
     py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(

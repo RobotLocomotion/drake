@@ -57,7 +57,7 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
 
   for (const auto& solver : solvers) {
     SCOPED_TRACE(fmt::format("Using solver: {}", solver.first));
-    if (!solver.second->available()) {
+    if (!(solver.second->available() && solver.second->enabled())) {
       continue;
     }
     DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result));
@@ -587,7 +587,7 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
-    if (!solver.second->available()) {
+    if (!(solver.second->available() && solver.second->enabled())) {
       continue;
     }
 

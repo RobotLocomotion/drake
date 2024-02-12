@@ -6,7 +6,6 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import (
@@ -90,19 +89,6 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("default_diffuse", repr(params))
         copy.copy(params)
 
-    def test_render_engine_vtk_params_deprecated(self):
-        """The default_label attribute is deprecated; make sure it still works,
-        for now.
-        """
-        params = mut.RenderEngineVtkParams()
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(params.default_label, None)
-        label = mut.RenderLabel(10)
-        with catch_drake_warnings(expected_count=1):
-            params = mut.RenderEngineVtkParams(default_label=label)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(params.default_label, label)
-
     def test_render_engine_gl_params(self):
         # A default constructor exists.
         mut.RenderEngineGlParams()
@@ -118,16 +104,6 @@ class TestGeometryRender(unittest.TestCase):
 
         self.assertIn("default_clear_color", repr(params))
         copy.copy(params)
-
-    def test_render_engine_gl_params_deprecated(self):
-        """The default_label attribute is deprecated; make sure it still works,
-        for now.
-        """
-        label = mut.RenderLabel(10)
-        with catch_drake_warnings(expected_count=1):
-            params = mut.RenderEngineGlParams(default_label=label)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(params.default_label, label)
 
     def test_render_engine_gltf_client_params(self):
         # A default constructor exists.
@@ -145,16 +121,6 @@ class TestGeometryRender(unittest.TestCase):
 
         self.assertIn("render_endpoint", repr(params))
         copy.copy(params)
-
-    def test_render_engine_gltf_client_params_deprecated(self):
-        """The render_label attribute is deprecated; make sure it still works,
-        for now.
-        """
-        label = mut.RenderLabel(10)
-        with catch_drake_warnings(expected_count=1):
-            dut = mut.RenderEngineGltfClientParams(default_label=label)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.default_label, label)
 
     def test_render_label(self):
         RenderLabel = mut.RenderLabel

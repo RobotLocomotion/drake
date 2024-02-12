@@ -1,0 +1,18 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # SGI-B-2.0
+
+cc_library(
+    name = "opengl",
+    linkopts = select({
+        "@drake//tools/skylark:osx": [
+            "-framework OpenGL",
+        ],
+        "//conditions:default": [
+            "-lOpenGL",
+        ],
+    }),
+    visibility = ["//visibility:public"],
+)

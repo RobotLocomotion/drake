@@ -3,6 +3,8 @@ Downloads and unpacks a precompiled version of drake-visualizer (a subset of
 Director, https://git.io/vNKjq) and makes it available to be used as a
 dependency of shell scripts.
 
+The drake_visualizer binaries are *only* provided for Ubuntu 20.04 Focal.
+
 Archive naming convention:
     dv-<version>-g<commit>-python-<python version>-qt-<qt version>
         -vtk-<vtk version>-<platform>-<arch>[-<rebuild>]
@@ -27,18 +29,11 @@ Argument:
 """
 
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
-load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "execute_and_return")
 
 def _impl(repository_ctx):
-    os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-
-    if os_result.ubuntu_release == "20.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-5.tar.gz"  # noqa
-        sha256 = "ddf85e332c0b7be8b13e81e6627a94f09a70517b7f82d7a49e50367b20cede87"  # noqa
-        python_version = "3.8"
-    else:
+    release = execute_and_return(repository_ctx, ["lsb_release", "-sr"])
+    if release.error or release.stdout.strip() != "20.04":
         repository_ctx.file("defs.bzl", "ENABLED = False")
         repository_ctx.symlink(
             Label("@drake//tools/workspace/drake_visualizer:package-stub.BUILD.bazel"),  # noqa
@@ -47,15 +42,15 @@ def _impl(repository_ctx):
         return
 
     repository_ctx.file("defs.bzl", "ENABLED = True")
-    urls = [
-        x.format(archive = archive)
-        for x in repository_ctx.attr.mirrors.get("director")
-    ]
-    root_path = repository_ctx.path("")
 
+    archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-5.tar.gz"  # noqa
+    sha256 = "ddf85e332c0b7be8b13e81e6627a94f09a70517b7f82d7a49e50367b20cede87"  # noqa
     repository_ctx.download_and_extract(
-        urls,
-        output = root_path,
+        [
+            x.format(archive = archive)
+            for x in repository_ctx.attr.mirrors.get("director")
+        ],
+        output = repository_ctx.path(""),
         sha256 = sha256,
         type = "tar.gz",
     )
@@ -68,9 +63,7 @@ def _impl(repository_ctx):
             Label("@drake//tools/workspace/drake_visualizer:patches/warn_gltf.patch"),  # noqa
         ],
         patch_args = [
-            "--directory=lib/python{}/site-packages/director".format(
-                python_version,
-            ),
+            "--directory=lib/python3.8/site-packages/director",
         ],
     )
 

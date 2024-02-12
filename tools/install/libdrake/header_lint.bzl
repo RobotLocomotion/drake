@@ -14,10 +14,6 @@ _ALLOWED_EXTERNALS = [
 
     # The entries that follow are defects; we should work to remove them.
     "zlib",
-
-    # TODO(jwnimmer-tri) On 2023-11-01 upon completion of deprecation removal,
-    # also remove this item from this list.
-    "optitrack",
 ]
 
 # Drake's allowed list of public preprocessor definitions. The only things

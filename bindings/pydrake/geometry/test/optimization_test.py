@@ -31,7 +31,7 @@ class TestGeometryOptimization(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.A = np.eye(3)
-        self.b = [1.0, 1.0, 1.0]
+        self.b = np.array([1.0, 1.0, 1.0])
         self.prog = MathematicalProgram()
         self.x = self.prog.NewContinuousVariables(3, "x")
         self.t = self.prog.NewContinuousVariables(1, "t")[0]
@@ -92,6 +92,12 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.AffineBall.MakeUnitBall(dim=2)
 
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
+
+        points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points, rank_tol=1e-2)
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points)
 
     def test_affine_subspace(self):
         dut = mut.AffineSubspace()
@@ -231,14 +237,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(h5, mut.HPolyhedron)
         np.testing.assert_array_equal(h5.A(), h_box.A())
         np.testing.assert_array_equal(h5.b(), np.zeros(6))
-
         generator = RandomGenerator()
         sample = h_box.UniformSample(generator=generator)
         self.assertEqual(sample.shape, (3,))
         self.assertEqual(
             h_box.UniformSample(generator=generator,
-                                previous_sample=sample).shape, (3, ))
-
+                                previous_sample=sample,
+                                mixing_steps=7).shape, (3, ))
+        h_box.UniformSample(generator=generator, mixing_steps=7)
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn
@@ -335,6 +341,71 @@ class TestGeometryOptimization(unittest.TestCase):
         e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
         mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
+
+    def test_hyperrectangle(self):
+        mut.Hyperrectangle()
+        rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
+
+        # Used for testing methods that require randomness.
+        generator = RandomGenerator()
+
+        # Methods inherited from ConvexSet
+        self.assertEqual(rect.ambient_dimension(), self.b.shape[0])
+        self.assertTrue(rect.IntersectsWith(rect))
+        self.assertTrue(rect.IsBounded())
+        self.assertFalse(rect.IsEmpty())
+        self.assertTrue(rect.MaybeGetPoint() is None)
+        point = rect.MaybeGetFeasiblePoint()
+        self.assertTrue(point is not None)
+        self.assertTrue(rect.PointInSet(x=point, tol=0.0))
+        new_vars, new_constraints = rect.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
+        self.assertGreater(len(new_constraints), 0)
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, x=self.x, t=self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = rect.AddPointInNonnegativeScalingConstraints(
+            prog=self.prog, A=self.Ay, b=self.by, c=self.cz, d=self.dz,
+            x=self.y, t=self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        shape, pose = rect.ToShapeWithPose()
+        self.assertTrue(isinstance(shape, Box))
+        np.testing.assert_array_equal(pose.translation(),
+                                      np.zeros_like(self.b))
+
+        # Methods specific to Hyperrectangle
+        np.testing.assert_array_equal(rect.lb(), -self.b)
+        np.testing.assert_array_equal(rect.ub(), self.b)
+        np.testing.assert_array_equal(rect.Center(), np.zeros_like(self.b))
+        sample = rect.UniformSample(generator=generator)
+        self.assertEqual(sample.shape, (self.b.shape[0],))
+        hpoly = rect.MakeHPolyhedron()
+        box = mut.HPolyhedron.MakeBox(rect.lb(), rect.ub())
+        np.testing.assert_array_equal(hpoly.A(), box.A())
+        np.testing.assert_array_equal(hpoly.b(), box.b())
+        assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
+
+        other = mut.VPolytope(np.eye(2))
+        bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
+        self.assertIsInstance(bbox, mut.Hyperrectangle)
+
+    def test_calc_volume_via_sampling(self):
+        rect = mut.Hyperrectangle(lb=-self.b, ub=self.b)
+        generator = RandomGenerator()
+        desired_rel_accuracy = 1e-2
+        max_num_samples = 100
+        sampled_volume = rect.CalcVolumeViaSampling(
+            generator=generator,
+            desired_rel_accuracy=desired_rel_accuracy,
+            max_num_samples=max_num_samples
+        )
+        self.assertAlmostEqual(rect.CalcVolume(), sampled_volume.volume)
+        self.assertGreaterEqual(sampled_volume.rel_accuracy,
+                                desired_rel_accuracy)
+        self.assertEqual(sampled_volume.num_samples, max_num_samples)
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()
@@ -558,6 +629,8 @@ class TestGeometryOptimization(unittest.TestCase):
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
+        options.bounding_region = mut.HPolyhedron.MakeBox(
+            lb=[-6, -6, -6], ub=[6, 6, 6])
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
@@ -669,16 +742,12 @@ class TestGeometryOptimization(unittest.TestCase):
         source = spp.AddVertex(set=mut.Point([0.1]), name="source")
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
-        with catch_drake_warnings(expected_count=1) as w:
-            edge1 = spp.AddEdge(u_id=source.id(),
-                                v_id=target.id(),
-                                name="edge1")
+        edge1 = spp.AddEdge(u=source, v=target, name="edge1")
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
-        with catch_drake_warnings(expected_count=1) as w:
-            result = spp.SolveShortestPath(
-                source_id=source.id(), target_id=target.id(), options=options)
-            self.assertIsInstance(result, MathematicalProgramResult)
+        result = spp.SolveShortestPath(
+            source=source, target=target, options=options)
+        self.assertIsInstance(result, MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
@@ -757,17 +826,15 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Edges()), 2)
         spp.RemoveEdge(edge0)
         self.assertEqual(len(spp.Edges()), 1)
-        with catch_drake_warnings(expected_count=1) as w:
-            spp.RemoveEdge(edge1.id())
-            self.assertEqual(len(spp.Edges()), 0)
+        spp.RemoveEdge(edge1)
+        self.assertEqual(len(spp.Edges()), 0)
 
         # Remove Vertices
         self.assertEqual(len(spp.Vertices()), 2)
         spp.RemoveVertex(source)
         self.assertEqual(len(spp.Vertices()), 1)
-        with catch_drake_warnings(expected_count=1) as w:
-            spp.RemoveVertex(target.id())
-            self.assertEqual(len(spp.Vertices()), 0)
+        spp.RemoveVertex(target)
+        self.assertEqual(len(spp.Vertices()), 0)
 
 
 class TestCspaceFreePolytope(unittest.TestCase):
@@ -839,13 +906,17 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         # FindSeparationCertificateOptions
         find_separation_options = mut.FindSeparationCertificateOptions()
-        find_separation_options.num_threads = 1
+        with catch_drake_warnings(expected_count=1):
+            find_separation_options.num_threads = 1
+        find_separation_options.parallelism = False
         find_separation_options.verbose = True
         find_separation_options.solver_id = ScsSolver.id()
         find_separation_options.terminate_at_failure = False
         find_separation_options.solver_options = solver_options
 
-        self.assertEqual(find_separation_options.num_threads, 1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(find_separation_options.num_threads, 1)
+        self.assertEqual(find_separation_options.parallelism.num_threads(), 1)
         self.assertTrue(find_separation_options.verbose)
         self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
         self.assertFalse(find_separation_options.terminate_at_failure)
@@ -856,8 +927,10 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
             dut.FindSeparationCertificateGivenPolytopeOptions()
-        self.assertEqual(
-            lagrangian_options.num_threads, -1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(lagrangian_options.num_threads, int)
+        self.assertIsInstance(
+            lagrangian_options.parallelism.num_threads(), int)
         self.assertFalse(
             lagrangian_options.verbose)
         self.assertEqual(
@@ -869,16 +942,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.solver_options)
         self.assertFalse(
             lagrangian_options.ignore_redundant_C)
-        num_threads = 1
-        lagrangian_options.num_threads = num_threads
+        with catch_drake_warnings(expected_count=1):
+            lagrangian_options.num_threads = 1
+        lagrangian_options.parallelism = False
         lagrangian_options.verbose = True
         lagrangian_options.solver_id = ScsSolver.id()
         lagrangian_options.terminate_at_failure = False
         lagrangian_options.solver_options = solver_options
         lagrangian_options.ignore_redundant_C = True
-        self.assertEqual(
-            lagrangian_options.num_threads,
-            num_threads)
+        self.assertEqual(lagrangian_options.parallelism.num_threads(), 1)
         self.assertTrue(
             lagrangian_options.verbose)
         self.assertEqual(
@@ -1161,3 +1233,21 @@ class TestCspaceFreePolytope(unittest.TestCase):
                          C_init.shape[0])
         self.assertEqual(len(negative_test_lagrangian.s_lower()), 1)
         self.assertEqual(len(negative_test_lagrangian.s_upper()), 1)
+
+    def test_partition_convex_set(self):
+        big_convex_set = mut.VPolytope(np.array([[0, 4]]))
+        out = mut.PartitionConvexSet(big_convex_set, [0])
+        self.assertEqual(len(out), 2)
+        self.assertTrue(isinstance(out[0], mut.ConvexSet))
+
+        mut.PartitionConvexSet(big_convex_set, [0], 1e-5)
+        mut.PartitionConvexSet(convex_set=big_convex_set,
+                               continuous_revolute_joints=[0],
+                               epsilon=1e-5)
+        mut.PartitionConvexSet([big_convex_set], [0])
+        mut.PartitionConvexSet([big_convex_set], [0], 1e-5)
+        mut.PartitionConvexSet(convex_sets=[big_convex_set],
+                               continuous_revolute_joints=[0],
+                               epsilon=1e-5)
+        mut.CheckIfSatisfiesConvexityRadius(convex_set=big_convex_set,
+                                            continuous_revolute_joints=[0])

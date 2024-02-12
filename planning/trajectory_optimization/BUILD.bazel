@@ -109,7 +109,9 @@ drake_cc_library(
         "//common",
         "//common/trajectories:bezier_curve",
         "//common/trajectories:composite_trajectory",
+        "//geometry/optimization:geodesic_convexity",
         "//geometry/optimization:graph_of_convex_sets",
+        "//multibody/plant",
         "//solvers:solve",
     ],
 )
@@ -184,6 +186,7 @@ drake_cc_googletest(
         ":kinematic_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:constraint",
+        "//solvers:ipopt_solver",
         "//solvers:osqp_solver",
         "//solvers:solve",
     ],

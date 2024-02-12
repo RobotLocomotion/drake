@@ -1,4 +1,3 @@
-coinor-libcoinutils3v5
 default-jre
 jupyter-notebook
 libblas3
@@ -13,7 +12,6 @@ libglx0
 libgomp1
 libhdf5-103
 libjchart2d-java
-libjpeg-turbo8
 libjsoncpp1
 liblapack3
 libmumps-seq-5.2.1
@@ -38,6 +36,5 @@ python3-matplotlib
 python3-numpy
 python3-pil
 python3-pydot
-python3-pygame
 python3-yaml
 zlib1g

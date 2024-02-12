@@ -1,6 +1,7 @@
 #include "drake/common/schema/rotation.h"
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/overloaded.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -8,12 +9,6 @@ namespace drake {
 namespace schema {
 
 using symbolic::Expression;
-
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 Rotation::Rotation(const math::RotationMatrix<double>& arg)
     : Rotation(math::RollPitchYaw<double>(arg)) {}
@@ -24,19 +19,18 @@ Rotation::Rotation(const math::RollPitchYaw<double>& arg) {
 }
 
 bool Rotation::IsDeterministic() const {
-  using Result = bool;
-  return std::visit(overloaded{
-    [](const Identity&) -> Result {
+  return visit_overloaded<bool>(overloaded{
+    [](const Identity&) {
       return true;
     },
-    [](const Rpy& rpy) -> Result {
+    [](const Rpy& rpy) {
       return schema::IsDeterministic(rpy.deg);
     },
-    [](const AngleAxis& aa) -> Result {
+    [](const AngleAxis& aa) {
       return schema::IsDeterministic(aa.angle_deg) &&
              schema::IsDeterministic(aa.axis);
     },
-    [](const Uniform&) -> Result {
+    [](const Uniform&) {
       return false;
     },
   }, value);
@@ -71,22 +65,22 @@ Vector<Expression, Size> deg2rad(
 
 math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
   using Result = math::RotationMatrix<Expression>;
-  return std::visit(overloaded{
-    [](const Identity&) -> Result {
+  return visit_overloaded<Result>(overloaded{
+    [](const Identity&) {
       return Result{};
     },
-    [](const Rpy& rpy) -> Result {
+    [](const Rpy& rpy) {
       const Vector3<Expression> rpy_rad = deg2rad(rpy.deg);
       return Result{math::RollPitchYaw<Expression>(rpy_rad)};
     },
-    [](const AngleAxis& aa) -> Result {
+    [](const AngleAxis& aa) {
       const Expression angle_rad = deg2rad(aa.angle_deg);
       const Vector3<Expression> axis =
           schema::ToDistributionVector(aa.axis)->ToSymbolic().normalized();
       const Eigen::AngleAxis<Expression> theta_lambda(angle_rad, axis);
       return Result{theta_lambda};
     },
-    [](const Uniform&) -> Result {
+    [](const Uniform&) {
       RandomGenerator generator;
       return math::UniformlyRandomRotationMatrix<Expression>(&generator);
     },

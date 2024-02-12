@@ -14,9 +14,9 @@ cc_library_vendored(
     srcs = ["tiny_obj_loader.cc"],
     srcs_vendored = ["drake_src/tiny_obj_loader.cc"],
     hdrs = ["tiny_obj_loader.h"],
-    hdrs_vendored = ["drake_hdr/tiny_obj_loader.h"],
+    hdrs_vendored = ["drake_src/tiny_obj_loader.h"],
     defines = ["TINYOBJLOADER_USE_DOUBLE=1"],
-    includes = ["drake_hdr"],
+    includes = ["drake_src"],
     linkstatic = 1,
 )
 

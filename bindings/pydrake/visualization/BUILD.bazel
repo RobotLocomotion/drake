@@ -37,14 +37,11 @@ drake_pybind_library(
     cc_srcs = [
         "visualization_py.cc",
         "visualization_py_config.cc",
+        "visualization_py_image_systems.cc",
         "visualization_py_sliders.cc",
         "visualization_py.h",
     ],
     package_info = PACKAGE_INFO,
-    py_data = [
-        "_rgbd_camera_sliders.dmd.yaml",
-        "_rgbd_camera_sliders.sdf",
-    ],
     py_deps = [
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/planning",
@@ -52,7 +49,6 @@ drake_pybind_library(
         "//bindings/pydrake/systems",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake/symbolic",
         "//lcmtypes:lcmtypes_drake_py",
     ],
     py_srcs = [
@@ -127,15 +123,6 @@ install_files(
     },
 )
 
-install_files(
-    name = "install_models",
-    dest = "share/drake/bindings/pydrake/visualization",
-    files = [
-        "_rgbd_camera_sliders.dmd.yaml",
-        "_rgbd_camera_sliders.sdf",
-    ],
-)
-
 PY_LIBRARIES = [
     ":visualization",
 ]
@@ -148,7 +135,6 @@ install(
     targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES) + [
-        ":install_models",
         ":install_wrapper_scripts",
     ],
 )
@@ -157,6 +143,14 @@ drake_py_unittest(
     name = "config_test",
     deps = [
         ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "image_systems_test",
+    deps = [
+        ":visualization",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
@@ -203,11 +197,19 @@ drake_py_unittest(
     flaky = True,
     deps = [
         ":model_visualizer",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
 drake_py_unittest(
     name = "plotting_test",
+    deps = [
+        ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "sliders_test",
     deps = [
         ":visualization",
     ],
@@ -233,16 +235,20 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "visualization_test",
+    name = "lcm_image_array_viewer_test",
     deps = [
-        ":visualization",
+        ":_lcm_image_array_viewer_py",
     ],
 )
 
 drake_py_unittest(
-    name = "lcm_image_array_viewer_test",
-    deps = [
-        ":_lcm_image_array_viewer_py",
+    name = "multicam_scenario_test",
+    # Note: It's safe to use lcm in the test because it uses a non-default URL
+    # and only transmits status messages.
+    allow_network = ["lcm:meshcat"],
+    data = [
+        "test/multicam_scenario.yaml",
+        "//examples/hardware_sim:hardware_sim_py",
     ],
 )
 

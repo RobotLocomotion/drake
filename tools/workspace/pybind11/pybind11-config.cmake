@@ -51,7 +51,7 @@ unset(_targetsDefined)
 unset(_targetsNotDefined)
 unset(_expectedTargets)
 
-set(pybind11_VERSION "2.9.0.dev1")
+set(pybind11_VERSION "2.11.1")
 
 add_library(pybind11::embed INTERFACE IMPORTED)
 set_target_properties(pybind11::embed PROPERTIES

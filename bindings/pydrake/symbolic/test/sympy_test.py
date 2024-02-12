@@ -22,6 +22,7 @@ class TestSympy(unittest.TestCase):
         q, r = [Variable(name, BOOLEAN) for name in "q r".split()]
         inputs = [
             # Constants.
+            1,
             1.0,
             np.nan,
             Expression(1.0),
@@ -99,7 +100,7 @@ class TestSympy(unittest.TestCase):
         readback = mut.from_sympy(converted, memo=memo)
 
         # When the input was a built-in type, np.testing works well.
-        if isinstance(item, (float, bool)):
+        if isinstance(item, (float, int, bool)):
             np.testing.assert_equal(item, readback)
             return
 
@@ -120,7 +121,7 @@ class TestSympy(unittest.TestCase):
                   f"{readback_str} (from {converted_str})")
 
     def _test_one_eval(self, item):
-        if isinstance(item, (float, bool, Variable)):
+        if isinstance(item, (float, int, bool, Variable)):
             # Skip this case. Evaluation is not particularly interesting.
             return
 

@@ -10,93 +10,30 @@
 
 #include <fmt/format.h>
 
-// To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkImageData.h>     // vtkCommonDataModel
-#include <vtkImageWriter.h>   // vtkIOImage
-#include <vtkNew.h>           // vtkCommonCore
-#include <vtkSmartPointer.h>  // vtkCommonCore
-
-#include "drake/systems/sensors/vtk_image_reader_writer.h"
+#include "drake/systems/sensors/image_io.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
-namespace {
-
-template <PixelType kPixelType>
-void SaveToFileHelper(const Image<kPixelType>& image,
-                      const std::string& file_path) {
-  const int width = image.width();
-  const int height = image.height();
-  const int num_channels = Image<kPixelType>::kNumChannels;
-
-  vtkSmartPointer<vtkImageWriter> writer;
-  vtkNew<vtkImageData> vtk_image;
-  vtk_image->SetDimensions(width, height, 1);
-
-  // NOTE: This excludes *many* of the defined `PixelType` values.
-  switch (kPixelType) {
-    case PixelType::kRgba8U:
-    case PixelType::kGrey8U:
-      vtk_image->AllocateScalars(VTK_UNSIGNED_CHAR, num_channels);
-      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
-      break;
-    case PixelType::kDepth16U:
-      vtk_image->AllocateScalars(VTK_UNSIGNED_SHORT, num_channels);
-      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
-      break;
-    case PixelType::kDepth32F:
-      vtk_image->AllocateScalars(VTK_FLOAT, num_channels);
-      writer = internal::MakeWriter(ImageFileFormat::kTiff, file_path);
-      break;
-    case PixelType::kLabel16I:
-      vtk_image->AllocateScalars(VTK_UNSIGNED_SHORT, num_channels);
-      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
-      break;
-    default:
-      throw std::logic_error(
-          "Unsupported image type; cannot be written to file");
-  }
-
-  auto image_ptr = reinterpret_cast<typename Image<kPixelType>::T*>(
-      vtk_image->GetScalarPointer());
-  const int num_scalar_components = vtk_image->GetNumberOfScalarComponents();
-  DRAKE_DEMAND(num_scalar_components == num_channels);
-
-  for (int v = height - 1; v >= 0; --v) {
-    for (int u = 0; u < width; ++u) {
-      for (int c = 0; c < num_channels; ++c) {
-        image_ptr[c] =
-            static_cast<typename Image<kPixelType>::T>(image.at(u, v)[c]);
-      }
-      image_ptr += num_scalar_components;
-    }
-  }
-
-  writer->SetInputData(vtk_image.GetPointer());
-  writer->Write();
-}
-
-}  // namespace
 
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path) {
-  SaveToFileHelper(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToTiff(const ImageDepth32F& image, const std::string& file_path) {
-  SaveToFileHelper(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kTiff);
 }
 
 void SaveToPng(const ImageDepth16U& image, const std::string& file_path) {
-  SaveToFileHelper(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path) {
-  SaveToFileHelper(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 void SaveToPng(const ImageGrey8U& image, const std::string& file_path) {
-  SaveToFileHelper(image, file_path);
+  ImageIo{}.Save(image, file_path, ImageFileFormat::kPng);
 }
 
 ImageWriter::ImageWriter() {
@@ -111,6 +48,10 @@ ImageWriter::ImageWriter() {
   extensions_[PixelType::kDepth16U] = ".png";
   labels_[PixelType::kGrey8U] = "grey_scale";
   extensions_[PixelType::kGrey8U] = ".png";
+
+  // Declares a forced publish event to accommodate non-periodic image saving,
+  // e.g., when saving images outside of Simulator::AdvanceTo.
+  DeclareForcedPublishEvent(&ImageWriter::WriteAllImages);
 }
 
 template <PixelType kPixelType>
@@ -221,15 +162,16 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
           std::move(port_name), std::move(file_name_format), publish_period,
           start_time);
     }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case PixelType::kExpr:
-      break;
-#pragma GCC diagnostic pop
   }
   throw std::logic_error(fmt::format(
       "ImageWriter::DeclareImageInputPort does not support pixel_type={}",
       static_cast<int>(pixel_type)));
+}
+
+void ImageWriter::ResetAllImageCounts() const {
+  for (const auto& port_info : port_info_) {
+    port_info.count = 0;
+  }
 }
 
 template <PixelType kPixelType>
@@ -237,9 +179,15 @@ void ImageWriter::WriteImage(const Context<double>& context, int index) const {
   const auto& port = get_input_port(index);
   const ImagePortInfo& data = port_info_[index];
   const Image<kPixelType>& image = port.Eval<Image<kPixelType>>(context);
-  SaveToFileHelper(
-      image, MakeFileName(data.format, data.pixel_type, context.get_time(),
-                          port.get_name(), data.count++));
+  ImageIo{}.Save(image,
+                 MakeFileName(data.format, data.pixel_type, context.get_time(),
+                              port.get_name(), data.count++));
+}
+
+EventStatus ImageWriter::WriteAllImages(const Context<double>& context) const {
+  auto periodic_events = this->AllocateCompositeEventCollection();
+  this->GetPeriodicEvents(context, periodic_events.get());
+  return this->Publish(context, periodic_events->get_publish_events());
 }
 
 std::string ImageWriter::MakeFileName(const std::string& format,

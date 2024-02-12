@@ -115,8 +115,8 @@ std::pair<ColorRenderCamera, DepthRenderCamera> CameraConfig::MakeCameras()
 }
 
 void CameraConfig::ValidateOrThrow() const {
-  // If we haven't specified color or depth, it is trivially valid.
-  if (!(rgb || depth)) {
+  // If we haven't specified any image types, it is trivially valid.
+  if (!(rgb || depth || label)) {
     return;
   }
 

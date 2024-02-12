@@ -1,0 +1,22 @@
+[nlopt] Use the anonymous namespace for a file-local class
+
+This is filed as https://github.com/stevengj/nlopt/pull/535 upstream.
+
+--- src/algs/stogo/stogo.cc
++++ src/algs/stogo/stogo.cc
+@@ -4,6 +4,7 @@
+ #include "stogo.h"
+ #include "global.h"
+ 
++namespace {
+ class MyGlobal : public Global {
+ protected:
+   objective_func my_func;
+@@ -25,6 +26,7 @@
+     return 0.0;
+   }
+ };
++}  // namespace
+ 
+ int stogo_minimize(int n,
+ 		   objective_func fgrad, void *data,

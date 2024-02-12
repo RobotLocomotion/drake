@@ -94,15 +94,12 @@ drake_cc_library(
         ":internal_http_service",
         ":internal_http_service_curl",
         ":render_engine_gltf_client_params",
+        "//common:sha256",
         "//common:temp_directory",
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
-        "//systems/sensors:vtk_image_reader_writer",
-        "@picosha2_internal//:picosha2",
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkCommonDataModel",
-        "@vtk_internal//:vtkIOImage",
+        "//systems/sensors:image_io",
     ],
 )
 
@@ -283,13 +280,22 @@ drake_cc_binary(
     ],
 )
 
+filegroup(
+    name = "gltf_client_test_models",
+    testonly = True,
+    data = [
+        ":test/4_color_texture.png",
+        ":test/example_scene.sdf",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
 drake_cc_binary(
     name = "client_demo",
     testonly = True,
     srcs = ["test/client_demo.cc"],
     data = [
-        ":test/4_color_texture.png",
-        ":test/example_scene.sdf",
+        ":gltf_client_test_models",
         "//manipulation/models/ycb:models",
     ],
     deps = [
@@ -352,6 +358,7 @@ filegroup(
         "test/red_box.gltf",
         "test/textured_green_box.gltf",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_googletest(
@@ -365,6 +372,26 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+filegroup(
+    name = "all_gltfs_and_images",
+    testonly = True,
+    srcs = glob([
+        "test/*.gltf",
+        "test/*.png",
+        "test/*.tiff",
+    ]),
+)
+
+drake_py_unittest(
+    name = "file_size_test",
+    data = [
+        ":all_gltfs_and_images",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 

@@ -32,7 +32,6 @@ load(
     "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
     "git_repo",
 )
-load("//tools/workspace:os.bzl", "determine_os")
 load("//tools/workspace:execute.bzl", "execute_and_return")
 
 def snopt_repository(
@@ -151,10 +150,6 @@ def _setup_local_archive(repo_ctx, snopt_path):
         _setup_deferred_failure(repo_ctx, error)
 
 def _impl(repo_ctx):
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-
     updated_attrs = None
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
 
@@ -185,18 +180,10 @@ def _impl(repo_ctx):
         _setup_local_archive(repo_ctx, snopt_path)
 
     # Add in the helper.
-    if os_result.is_ubuntu or os_result.is_manylinux:
-        repo_ctx.symlink(
-            Label("@drake//tools/workspace/snopt:fortran-ubuntu.bzl"),
-            "fortran.bzl",
-        )
-    elif os_result.is_macos or os_result.is_macos_wheel:
-        repo_ctx.symlink(
-            Label("@drake//tools/workspace/snopt:fortran-macos.bzl"),
-            "fortran.bzl",
-        )
-    else:
-        fail("Operating system is NOT supported {}".format(os_result))
+    repo_ctx.symlink(
+        Label("@drake//tools/workspace/snopt:fortran.bzl"),
+        "fortran.bzl",
+    )
 
     return updated_attrs
 

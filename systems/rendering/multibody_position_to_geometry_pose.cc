@@ -36,8 +36,7 @@ MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
 }
 
 template <typename T>
-void MultibodyPositionToGeometryPose<T>::Configure(
-    bool input_multibody_state) {
+void MultibodyPositionToGeometryPose<T>::Configure(bool input_multibody_state) {
   // Either we don't own the plant, or we own the plant we're storing the
   // reference for.
   DRAKE_DEMAND(owned_plant_ == nullptr || owned_plant_.get() == &plant_);
@@ -55,7 +54,7 @@ void MultibodyPositionToGeometryPose<T>::Configure(
 
   this->DeclareInputPort("position", kVectorValued,
                          input_multibody_state ? plant_.num_multibody_states()
-                                          : plant_.num_positions());
+                                               : plant_.num_positions());
   this->DeclareAbstractOutputPort(
       "geometry_pose",
       [this]() {
@@ -77,8 +76,9 @@ void MultibodyPositionToGeometryPose<T>::CalcGeometryPose(
   // MultibodyPlant to compute the outputs.
   // TODO(eric.cousineau): Place `plant_context_` in the cache of `context`,
   // and remove mutable member.
-  plant_.GetMutablePositions(plant_context_.get()) =
-      this->get_input_port().Eval(context).head(plant_.num_positions());
+  plant_.SetPositions(
+      plant_context_.get(),
+      this->get_input_port().Eval(context).head(plant_.num_positions()));
 
   // Evaluate the plant's output port.
   plant_.get_geometry_poses_output_port().Calc(*plant_context_, output);

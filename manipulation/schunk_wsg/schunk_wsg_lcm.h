@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file This file contains classes dealing with sending/receiving
-/// LCM messages related to the Schunk WSG gripper.
+/// @file
+/// This file contains classes dealing with sending/receiving LCM messages
+/// related to the Schunk WSG gripper.
 
 #include <memory>
 #include <vector>

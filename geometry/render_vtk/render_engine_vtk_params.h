@@ -83,10 +83,6 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(environment_map));
   }
 
-  /** (Deprecated.) The default_label is no longer configurable. <br>
-   This will be removed from Drake on or after 2023-12-01. */
-  std::optional<render::RenderLabel> default_label;
-
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused
     by RenderEngineVtk.  */

@@ -173,7 +173,7 @@ servers that need to be confirmed.  Open each of the following jobs and search
 for ``REMOTE_CACHE_KEY`` and confirm it has a value:
 
 - [https://drake-jenkins.csail.mit.edu/job/linux-focal-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-focal-clang-bazel-continuous-release/lastBuild/consoleFull)
-- [https://drake-jenkins.csail.mit.edu/job/mac-arm-monterey-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-monterey-clang-bazel-continuous-release/lastBuild/consoleFull)
+- [https://drake-jenkins.csail.mit.edu/job/mac-arm-ventura-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-ventura-clang-bazel-continuous-release/lastBuild/consoleFull)
 
 Message indicating a problem:
 

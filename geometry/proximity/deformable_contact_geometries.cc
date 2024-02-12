@@ -25,15 +25,22 @@ using std::vector;
 std::unique_ptr<VolumeMeshFieldLinear<double, double>>
 ApproximateSignedDistanceField(const VolumeMesh<double>* mesh) {
   DRAKE_DEMAND(mesh != nullptr);
+  const int num_vertices = mesh->num_vertices();
   vector<double> signed_distance;
-  signed_distance.reserve(mesh->num_vertices());
+  signed_distance.reserve(num_vertices);
+  std::vector<int> boundary_vertices;
   const TriangleSurfaceMesh<double> surface_mesh =
-      ConvertVolumeToSurfaceMesh(*mesh);
-  /* The values for vertices on the surface are zero (to the accuracy of
-   `CalcDistanceSurfaceMesh`). */
-  for (const Vector3<double>& vertex : mesh->vertices()) {
-    signed_distance.emplace_back(
-        -CalcDistanceToSurfaceMesh(vertex, surface_mesh));
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(*mesh, &boundary_vertices);
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_of_surface(surface_mesh);
+  auto boundary_iter = boundary_vertices.begin();
+  for (int v = 0; v < num_vertices; ++v) {
+    if (boundary_iter != boundary_vertices.end() && *boundary_iter == v) {
+      ++boundary_iter;
+      signed_distance.push_back(0);
+      continue;
+    }
+    signed_distance.emplace_back(-CalcDistanceToSurfaceMesh(
+        mesh->vertex(v), surface_mesh, bvh_of_surface));
   }
   return make_unique<VolumeMeshFieldLinear<double, double>>(
       std::move(signed_distance), mesh);
@@ -49,8 +56,8 @@ DeformableGeometry& DeformableGeometry::operator=(
     const DeformableGeometry& other) {
   if (this == &other) return *this;
 
-  deformable_mesh_ =
-      std::make_unique<DeformableVolumeMesh<double>>(*other.deformable_mesh_);
+  deformable_mesh_ = std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+      *other.deformable_mesh_);
   // We can't simply copy the field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   signed_distance_field_ =
@@ -59,8 +66,8 @@ DeformableGeometry& DeformableGeometry::operator=(
 }
 
 DeformableGeometry::DeformableGeometry(VolumeMesh<double> mesh)
-    : deformable_mesh_(
-          std::make_unique<DeformableVolumeMesh<double>>(std::move(mesh))),
+    : deformable_mesh_(std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+          std::move(mesh))),
       signed_distance_field_(
           ApproximateSignedDistanceField(&deformable_mesh_->mesh())) {}
 

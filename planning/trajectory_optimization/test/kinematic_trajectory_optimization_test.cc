@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
@@ -310,6 +311,11 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
         trajopt_.control_points().col(i));
   }
   trajopt_.AddDurationConstraint(1, 1);
+
+  // Help IPOPT.
+  trajopt_.AddPositionBounds(Vector3d::Constant(-20), Vector3d::Constant(20));
+  trajopt_.get_mutable_prog().SetSolverOption(solvers::IpoptSolver::id(), "tol",
+                                              1e-6);
 
   MathematicalProgramResult result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());

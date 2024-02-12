@@ -158,6 +158,8 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final;
+  void DoCalcActuation(const systems::Context<T>& context,
+                       VectorX<T>* forces) const final;
 
   // Computes non-constraint forces and the accelerations they induce.
   void CalcAccelerationsDueToNonConstraintForcesCache(

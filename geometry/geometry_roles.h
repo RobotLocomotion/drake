@@ -164,7 +164,7 @@ class ProximityProperties final : public GeometryProperties {
  Examples of functionality that depends on the perception role:
    - render::RenderEngineVtk
  */
-class PerceptionProperties final : public GeometryProperties{
+class PerceptionProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PerceptionProperties);
   // TODO(SeanCurtis-TRI): Should this have a render label built in?
@@ -197,9 +197,9 @@ enum class Role {
 /** The operations that can be performed on the given properties when assigning
  roles to geometry.  */
 enum class RoleAssign {
-  kNew,      ///< Assign the properties to a geometry that doesn't already have
-             ///< the role.
-  kReplace   ///< Replace the existing role properties completely.
+  kNew,     ///< Assign the properties to a geometry that doesn't already have
+            ///< the role.
+  kReplace  ///< Replace the existing role properties completely.
 };
 
 /** @name  Geometry role to string conversions

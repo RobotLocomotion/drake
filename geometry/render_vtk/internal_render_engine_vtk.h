@@ -20,6 +20,7 @@
 #include <vtkSmartPointer.h>         // vtkCommonCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
@@ -87,6 +88,7 @@ enum ImageType {
 
 /* See documentation of MakeRenderEngineVtk().  */
 class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
+                                        private ShapeReifier,
                                         private ModuleInitVtkRenderingOpenGL2 {
  public:
   /* @name Does not allow copy, move, or assignment  */
@@ -112,7 +114,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   /* @name    Shape reification  */
   //@{
-  using RenderEngine::ImplementGeometry;
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
@@ -296,6 +298,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // The engine's configuration parameters.
   const RenderEngineVtkParams parameters_;
 
+  // VTK error and/or warning messages end up here.
+  drake::internal::DiagnosticPolicy diagnostic_;
+
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
   // By design, all of the geometry is shared across clones of the render
@@ -318,7 +323,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 
   // The color to clear the color buffer to.
-  systems::sensors::ColorD default_clear_color_;
+  Rgba default_clear_color_;
 
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.

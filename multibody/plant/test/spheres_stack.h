@@ -42,6 +42,10 @@ static constexpr double nan() {
 // on top the first sphere. They are assigned to be rigid-hydroelastic,
 // compliant-hydroelastic, or non-hydroelastic to test various cases of
 // contact quantities computed by the CompliantContactManager.
+//
+// N.B. This testing class only exercises the SapDriver code paths. In
+// particular, it uses the DiscreteContactApproximation::kSap contact model
+// approximation.
 class SpheresStack {
  public:
   // Contact model parameters.
@@ -117,8 +121,8 @@ class SpheresStack {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
-    // N.B. Currently only SAP goes through the manager.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // Add model of the ground.
     if (ground_params) {

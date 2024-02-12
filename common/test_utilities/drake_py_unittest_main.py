@@ -7,6 +7,7 @@ import argparse
 from importlib.machinery import SourceFileLoader
 import io
 import os
+from pathlib import Path
 import re
 import sys
 import trace
@@ -23,6 +24,11 @@ except ImportError:
 
 def _unittest_main(*, module, argv, testRunner):
     """Just like unittest.main, but obeys TEST_TOTAL_SHARDS.
+
+    Refer to https://bazel.build/reference/test-encyclopedia#test-sharding for
+    an overview of the sharding protocol used by the Bazel test runner that
+    invokes us.
+
     Only a subset of unittest.main's kwargs are supported.
     """
     # In case sharding won't be used, delegate to the vanilla unittest.main.
@@ -38,6 +44,10 @@ def _unittest_main(*, module, argv, testRunner):
         unittest.main(module=module, argv=argv, warnings=False,
                       testRunner=testRunner)
         return
+
+    # Affirm to the test environment that we are cognizant of sharding.
+    if "TEST_SHARD_STATUS_FILE" in os.environ:
+        Path(os.environ["TEST_SHARD_STATUS_FILE"]).touch()
 
     # Run only some of the tests, per the BUILD.bazel's shard_count.
     total_shards = int(os.environ["TEST_TOTAL_SHARDS"])

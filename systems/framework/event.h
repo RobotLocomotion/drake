@@ -7,7 +7,6 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -115,11 +114,8 @@ template <typename T> class System;
 
  #### Declaring update functions
 
- The preferred way to update state through events is to declare an update
- handler in your LeafSystem-derived-class. Some older Drake code computes
- state updates by overriding event dispatchers (e.g.,
- LeafSystem::DoCalcUnrestrictedUpdate()), **though that practice is discouraged
- and will soon be deprecated.**
+ The way to update state through events is to declare an update handler in your
+ LeafSystem-derived-class.
 
  A number of convenience functions are available in LeafSystem for declaring
  various trigger and event update combinations; see, e.g.,
@@ -578,38 +574,14 @@ class PublishEvent final : public Event<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PublishEvent);
   bool is_discrete_update() const override { return false; }
 
-  /** (Deprecated.) */
-  using PublishCallback DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.") =
-      std::function<void(const Context<T>&, const PublishEvent<T>&)>;
-
-  /** (Deprecated.) */
-  using SystemCallback DRAKE_DEPRECATED(
-      "2023-12-01", "Callbacks must return an EventStatus, not void.") =
-      std::function<void(const System<T>&, const Context<T>&,
-                         const PublishEvent<T>&)>;
-
   /** Constructs an empty PublishEvent. */
   PublishEvent() = default;
 
-  /** Constructs a PublishEvent with the given callback function.
-
-  The following three callback signatures are supported:
-  - `(const System<T>& const Context<T>&,
-      const PublishEvent<T>&) -> EventStatus`
-  - `(const System<T>& const Context<T>&,
-     const PublishEvent<T>&) -> void`
-  - `(const Context<T>&,
-      const PublishEvent<T>&) -> void`
-
-  @warning All signatures except the first one are deprecated and will be
-  removed from Drake on or after 2023-12-01. */
-  template <typename Function>
-  explicit PublishEvent(const Function& callback) {
-    set_callback(callback);
-  }
+  /** Constructs a PublishEvent with the given callback function. */
+  explicit PublishEvent(
+      const std::function<EventStatus(const System<T>&, const Context<T>&,
+                                      const PublishEvent<T>&)>& callback)
+      : callback_(callback) {}
 
 #if !defined(DRAKE_DOXYGEN_CXX)
   /* (Internal use only) */
@@ -620,7 +592,7 @@ class PublishEvent final : public Event<T> {
   template <typename Function>
   PublishEvent(const TriggerType& trigger_type, const Function& callback) {
     this->set_trigger_type(trigger_type);
-    this->set_callback(callback);
+    callback_ = callback;
   }
 #endif
 
@@ -636,57 +608,6 @@ class PublishEvent final : public Event<T> {
   }
 
  private:
-  // This overload matches SFINAE iff the given Function uses the "modern"
-  // spelling of the callback signature (i.e., returns an EventStatus). On
-  // 2023-12-01 once the other overloads disappear, we can nix the SFINAE.
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                EventStatus, std::invoke_result_t<
-                                 Function, const System<T>&, const Context<T>&,
-                                 const PublishEvent<T>&>>>* = nullptr>
-  void set_callback(const Function& callback) {
-    callback_ = callback;
-  }
-
-  // This overload matches SFINAE iff the given Function uses the legacy
-  // PublishCallback spelling of the callback signature.
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                void, std::invoke_result_t<Function, const Context<T>&,
-                                           const PublishEvent<T>&>>>* = nullptr>
-  DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](const System<T>&, const Context<T>& context,
-                                  const PublishEvent<T>& event) {
-      legacy_callback(context, event);
-      return EventStatus::Succeeded();
-    };
-  }
-
-  // This overload matches SFINAE iff the given Function uses the legacy
-  // SystemCallback spelling of the callback signature.
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                void, std::invoke_result_t<Function, const System<T>&,
-                                           const Context<T>&,
-                                           const PublishEvent<T>&>>>* = nullptr>
-  DRAKE_DEPRECATED("2023-12-01",
-                   "Callbacks must return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](const System<T>& system,
-                                  const Context<T>& context,
-                                  const PublishEvent<T>& event) {
-      legacy_callback(system, context, event);
-      return EventStatus::Succeeded();
-    };
-  }
-
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
     PublishEvent event(*this);
@@ -719,39 +640,15 @@ class DiscreteUpdateEvent final : public Event<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiscreteUpdateEvent);
   bool is_discrete_update() const override { return true; }
 
-  /** (Deprecated.) */
-  using DiscreteUpdateCallback DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.") =
-      std::function<void(const Context<T>&, const DiscreteUpdateEvent<T>&,
-                         DiscreteValues<T>*)>;
-
-  /** (Deprecated.) */
-  using SystemCallback DRAKE_DEPRECATED(
-      "2023-12-01", "Callbacks must return an EventStatus, not void.") =
-      std::function<void(const System<T>&, const Context<T>&,
-                         const DiscreteUpdateEvent<T>&, DiscreteValues<T>*)>;
-
   /** Constructs an empty DiscreteUpdateEvent. */
   DiscreteUpdateEvent() = default;
 
-  /** Constructs a DiscreteUpdateEvent with the given callback function.
-
-  The following three callback signatures are supported:
-  - `(const System<T>& const Context<T>&,
-      const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) -> EventStatus`
-  - `(const System<T>& const Context<T>&,
-      const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) -> void`
-  - `(const Context<T>&,
-      const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) -> void`
-
-  @warning All signatures except the first one are deprecated and will be
-  removed from Drake on or after 2023-12-01. */
-  template <typename Function>
-  explicit DiscreteUpdateEvent(const Function& callback) {
-    set_callback(callback);
-  }
+  /** Constructs a DiscreteUpdateEvent with the given callback function. */
+  explicit DiscreteUpdateEvent(
+      const std::function<EventStatus(const System<T>&, const Context<T>&,
+                                      const DiscreteUpdateEvent<T>&,
+                                      DiscreteValues<T>*)>& callback)
+      : callback_(callback) {}
 
 #if !defined(DRAKE_DOXYGEN_CXX)
   /* (Internal use only) */
@@ -763,7 +660,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   DiscreteUpdateEvent(const TriggerType& trigger_type,
                       const Function& callback) {
     this->set_trigger_type(trigger_type);
-    this->set_callback(callback);
+    callback_ = callback;
   }
 #endif
 
@@ -781,62 +678,6 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
  private:
-  // This overload matches SFINAE iff the given Function uses the "modern"
-  // spelling of the callback signature (i.e., returns an EventStatus).
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                EventStatus, std::invoke_result_t<
-                                 Function, const System<T>&, const Context<T>&,
-                                 const DiscreteUpdateEvent<T>&,
-                                 DiscreteValues<T>*>>>* = nullptr>
-  void set_callback(const Function& callback) {
-    callback_ = callback;
-  }
-
-  // This overload matches iff the given Function uses the legacy
-  // DiscreteUpdateCallback spelling of the callback signature.
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                void, std::invoke_result_t<Function, const Context<T>&,
-                                           const DiscreteUpdateEvent<T>&,
-                                           DiscreteValues<T>*>>>* = nullptr>
-  DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](const System<T>&, const Context<T>& context,
-                                  const DiscreteUpdateEvent<T>& event,
-                                  DiscreteValues<T>* discrete_state) {
-      legacy_callback(context, event, discrete_state);
-      return EventStatus::Succeeded();
-    };
-  }
-
-  // This overload matches iff the given Function uses the legacy
-  // SystemCallback spelling of the callback signature.
-  template <
-      typename Function,
-      // When SFINAE matches, this argument will be `void* = nullptr`.
-      std::enable_if_t<std::is_same_v<
-          void, std::invoke_result_t<
-                    Function, const System<T>&, const Context<T>&,
-                    const DiscreteUpdateEvent<T>&, DiscreteValues<T>*>>>* =
-          nullptr>
-  DRAKE_DEPRECATED("2023-12-01",
-                   "Callbacks must return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](const System<T>& system,
-                                  const Context<T>& context,
-                                  const DiscreteUpdateEvent<T>& event,
-                                  DiscreteValues<T>* discrete_state) {
-      legacy_callback(system, context, event, discrete_state);
-      return EventStatus::Succeeded();
-    };
-  }
-
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
     DiscreteUpdateEvent<T> event(*this);
@@ -869,39 +710,15 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnrestrictedUpdateEvent);
   bool is_discrete_update() const override { return false; }
 
-  /** (Deprecated.) */
-  using UnrestrictedUpdateCallback DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.") =
-      std::function<void(const Context<T>&, const UnrestrictedUpdateEvent<T>&,
-                         State<T>*)>;
-
-  /** (Deprecated.) */
-  using SystemCallback DRAKE_DEPRECATED(
-      "2023-12-01", "Callbacks must return an EventStatus, not void.") =
-      std::function<void(const System<T>&, const Context<T>&,
-                         const UnrestrictedUpdateEvent<T>&, State<T>*)>;
-
   /** Constructs an empty UnrestrictedUpdateEvent. */
   UnrestrictedUpdateEvent() = default;
 
-  /** Constructs an UnrestrictedUpdateEvent with the given callback function.
-
-  The following three callback signatures are supported:
-  - `(const System<T>& const Context<T>&,
-      const UnrestrictedUpdateEvent<T>&, State<T>*) -> EventStatus`
-  - `(const System<T>& const Context<T>&,
-      const UnrestrictedUpdateEvent<T>&, State<T>*) -> void`
-  - `(const Context<T>&,
-      const UnrestrictedUpdateEvent<T>&, State<T>*) -> void`
-
-  @warning All signatures except the first one are deprecated and will be
-  removed from Drake on or after 2023-12-01. */
-  template <typename Function>
-  explicit UnrestrictedUpdateEvent(const Function& callback) {
-    set_callback(callback);
-  }
+  /** Constructs an UnrestrictedUpdateEvent with the given callback function. */
+  explicit UnrestrictedUpdateEvent(
+      const std::function<EventStatus(const System<T>&, const Context<T>&,
+                                      const UnrestrictedUpdateEvent<T>&,
+                                      State<T>*)>& callback)
+      : callback_(callback) {}
 
 #if !defined(DRAKE_DOXYGEN_CXX)
   /* (Internal use only) */
@@ -913,7 +730,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   UnrestrictedUpdateEvent(const TriggerType& trigger_type,
                           const Function& callback) {
     this->set_trigger_type(trigger_type);
-    this->set_callback(callback);
+    callback_ = callback;
   }
 #endif
 
@@ -930,60 +747,6 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   }
 
  private:
-  // This overload matches SFINAE iff the given Function uses the "modern"
-  // spelling of the callback signature (i.e., returns an EventStatus).
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                EventStatus,
-                std::invoke_result_t<
-                    Function, const System<T>&, const Context<T>&,
-                    const UnrestrictedUpdateEvent<T>&, State<T>*>>>* = nullptr>
-  void set_callback(const Function& callback) {
-    callback_ = callback;
-  }
-
-  // This overload matches SFINAE iff the given Function uses the legacy
-  // UnrestrictedUpdateCallback spelling of the callback signature.
-  template <typename Function,
-            // When SFINAE matches, this argument will be `void* = nullptr`.
-            std::enable_if_t<std::is_same_v<
-                void, std::invoke_result_t<Function, const Context<T>&,
-                                           const UnrestrictedUpdateEvent<T>&,
-                                           State<T>*>>>* = nullptr>
-  DRAKE_DEPRECATED(
-      "2023-12-01",
-      "Callbacks must accept a `const System<T>&` as their first argument "
-      "and return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](const System<T>&, const Context<T>& context,
-                                  const UnrestrictedUpdateEvent<T>& event,
-                                  State<T>* state) {
-      legacy_callback(context, event, state);
-      return EventStatus::Succeeded();
-    };
-  }
-
-  // This overload matches SFINAE iff the given Function uses the legacy
-  // SystemCallback spelling of the callback signature.
-  template <
-      typename Function,
-      // When SFINAE matches, this argument will be `void* = nullptr`.
-      std::enable_if_t<std::is_same_v<
-          void, std::invoke_result_t<
-                    Function, const System<T>&, const Context<T>&,
-                    const UnrestrictedUpdateEvent<T>&, State<T>*>>>* = nullptr>
-  DRAKE_DEPRECATED("2023-12-01",
-                   "Callbacks must return an EventStatus, not void.")
-  void set_callback(const Function& legacy_callback) {
-    callback_ = [legacy_callback](
-                    const System<T>& system, const Context<T>& context,
-                    const UnrestrictedUpdateEvent<T>& event, State<T>* state) {
-      legacy_callback(system, context, event, state);
-      return EventStatus::Succeeded();
-    };
-  }
-
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
     UnrestrictedUpdateEvent<T> event(*this);

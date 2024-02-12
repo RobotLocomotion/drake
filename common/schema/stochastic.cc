@@ -6,16 +6,11 @@
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/unused.h"
 
 using drake::symbolic::Expression;
 using std::unique_ptr;
-
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 namespace drake {
 namespace schema {
@@ -188,20 +183,20 @@ drake::VectorX<Expression> ToSymbolic(
 }
 
 bool IsDeterministic(const DistributionVariant& var) {
-  return std::visit(overloaded{
-    [](const double&) -> bool {
+  return visit_overloaded<bool>(overloaded{
+    [](const double&) {
       return true;
     },
-    [](const Deterministic&) -> bool {
+    [](const Deterministic&) {
       return true;
     },
-    [](const Gaussian& arg) -> bool {
+    [](const Gaussian& arg) {
       return arg.stddev == 0.0;
     },
-    [](const Uniform& arg) -> bool {
+    [](const Uniform& arg) {
       return arg.min == arg.max;
     },
-    [](const UniformDiscrete& arg) -> bool {
+    [](const UniformDiscrete& arg) {
       return arg.values.size() == 1;
     },
   }, var);
@@ -355,44 +350,36 @@ drake::VectorX<Expression> UniformVector<Size>::ToSymbolic() const {
 template <int Size>
 unique_ptr<DistributionVector> ToDistributionVector(
     const DistributionVectorVariant<Size>& vec) {
-  return std::visit(overloaded{
+  return visit_overloaded<unique_ptr<DistributionVector>>(overloaded{
     // NOLINTNEXTLINE(whitespace/line_length)
-    [](const drake::Vector<double, Size>& arg) -> unique_ptr<DistributionVector> {
+    [](const drake::Vector<double, Size>& arg) {
       return std::make_unique<DeterministicVector<Size>>(arg);
     },
-    [](const DeterministicVector<Size>& arg) -> unique_ptr<DistributionVector> {
+    [](const DeterministicVector<Size>& arg) {
       return std::make_unique<DeterministicVector<Size>>(arg);
     },
-    [](const GaussianVector<Size>& arg) -> unique_ptr<DistributionVector> {
+    [](const GaussianVector<Size>& arg) {
       return std::make_unique<GaussianVector<Size>>(arg);
     },
-    [](const UniformVector<Size>& arg) -> unique_ptr<DistributionVector> {
+    [](const UniformVector<Size>& arg) {
       return std::make_unique<UniformVector<Size>>(arg);
     },
-    [](const Deterministic& arg) -> unique_ptr<DistributionVector> {
+    [](const Deterministic& arg) {
       return std::make_unique<DeterministicVector<Size>>(
           Eigen::VectorXd::Constant(1, arg.value));
     },
-    [](const Gaussian& arg) -> unique_ptr<DistributionVector> {
+    [](const Gaussian& arg) {
       return std::make_unique<GaussianVector<Size>>(
           Eigen::VectorXd::Constant(1, arg.mean),
           Eigen::VectorXd::Constant(1, arg.stddev));
     },
-    [](const Uniform& arg) -> unique_ptr<DistributionVector> {
+    [](const Uniform& arg) {
       return std::make_unique<UniformVector<Size>>(
           Eigen::VectorXd::Constant(1, arg.min),
           Eigen::VectorXd::Constant(1, arg.max));
     },
-    [](const internal::InvalidVariantSelection<Deterministic>&)
-        -> unique_ptr<DistributionVector> {
-      DRAKE_UNREACHABLE();
-    },
-    [](const internal::InvalidVariantSelection<Gaussian>&)
-        -> unique_ptr<DistributionVector> {
-      DRAKE_UNREACHABLE();
-    },
-    [](const internal::InvalidVariantSelection<Uniform>&)
-        -> unique_ptr<DistributionVector> {
+    []<typename T>(const internal::InvalidVariantSelection<T>&)
+        -> std::nullptr_t {
       DRAKE_UNREACHABLE();
     },
   }, vec);
@@ -400,35 +387,30 @@ unique_ptr<DistributionVector> ToDistributionVector(
 
 template <int Size>
 bool IsDeterministic(const DistributionVectorVariant<Size>& vec) {
-  return std::visit(overloaded{
-    [](const drake::Vector<double, Size>&) -> bool {
+  return visit_overloaded<bool>(overloaded{
+    [](const drake::Vector<double, Size>&) {
       return true;
     },
-    [](const DeterministicVector<Size>&) -> bool {
+    [](const DeterministicVector<Size>&) {
       return true;
     },
-    [](const GaussianVector<Size>& arg) -> bool {
+    [](const GaussianVector<Size>& arg) {
       return arg.stddev.isZero(0.0);
     },
-    [](const UniformVector<Size>& arg) -> bool {
+    [](const UniformVector<Size>& arg) {
       return arg.min == arg.max;
     },
-    [](const Deterministic&) -> bool {
+    [](const Deterministic&) {
       return true;
     },
-    [](const Gaussian& arg) -> bool {
+    [](const Gaussian& arg) {
       return arg.stddev == 0.0;
     },
-    [](const Uniform& arg) -> bool {
+    [](const Uniform& arg) {
       return arg.min == arg.max;
     },
-    [](const internal::InvalidVariantSelection<Deterministic>&) -> bool {
-      DRAKE_UNREACHABLE();
-    },
-    [](const internal::InvalidVariantSelection<Gaussian>&) -> bool {
-      DRAKE_UNREACHABLE();
-    },
-    [](const internal::InvalidVariantSelection<Uniform>&) -> bool {
+    []<typename T>(const internal::InvalidVariantSelection<T>&)
+        -> std::false_type {
       DRAKE_UNREACHABLE();
     },
   }, vec);

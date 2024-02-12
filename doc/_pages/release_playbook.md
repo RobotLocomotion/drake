@@ -14,6 +14,9 @@ increasing.
 
 Begin this process around 1 week prior to the intended release date.
 
+The release engineering tools (relnotes, download_release_candidate,
+push_release, etc.) are supported only on Ubuntu (not macOS).
+
 ## Prior to release
 
 1. Choose the next version number.
@@ -110,7 +113,7 @@ the main body of the document:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-packaging/>
       3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-monterey-unprovisioned-clang-bazel-nightly-packaging/>
-      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-monterey-unprovisioned-clang-bazel-nightly-packaging/>
+      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-bazel-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
@@ -123,13 +126,15 @@ the main body of the document:
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
-   1. Open the following five Jenkins jobs (e.g., each in its own
+   1. Open the following seven Jenkins jobs (e.g., each in its own
       new browser tab):
-      - [Linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS x86 Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-release/)
-      - [macOS arm Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-monterey-unprovisioned-clang-wheel-staging-release/)
+      - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-release/)
+      - [macOS x86 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-release/)
+      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
       - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-packaging/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-packaging/)
+      - [macOS x86 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-bazel-staging-packaging/)
+      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-bazel-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -138,18 +143,17 @@ the main body of the document:
       - If you mistakenly provide the "v" in "release_version", your build will
         appear to work, but actually fail 5-6 minutes later.
    5. Click "Build"; each build will take around an hour, give or take.
-   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the linux
+   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the Linux
       job will produce multiple `.whl` files (in the same job).
    7. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
-      tag the release until all five builds have succeeded.
-3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
-   sure that the nightly build git sha from the prior steps matches the
-   ``newest_commit`` whose changes are enumerated in the notes.  Some dates
-   are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-   them all. There is also a dummy date 2099-12-31 that should also be changed.
-   1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
-      the upcoming v1.N.0 and YYYYMMDD.
+      tag the release until all seven builds have succeeded.
+3. Update the release notes to have the ``YYYY-MM-DD`` we choose.
+   1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
+   2. Make sure that the nightly build git sha from the prior steps matches the
+      ``newest_commit`` whose changes are enumerated in the notes.
+   3. Update the github links within ``doc/_pages/from_binary.md`` to reflect
+      the upcoming v1.N.0.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
@@ -174,13 +178,13 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the 39 release files from
+      them." and then choose for upload the 45 release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 12: 4 `.tar.gz` + 8 checksums
       - 6: 2 `.deb` + 4 checksums
       - 15: 5 linux `.whl` + 10 checksums
-      - 3: 1 macOS x86 `.whl` + 2 checksums
-      - 3: 1 macOS arm `.whl` + 2 checksums
+      - 3: 2 macOS x86 `.whl` + 4 checksums
+      - 3: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
@@ -190,8 +194,8 @@ the main body of the document:
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release"
-   3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually 
-      tag docker images and upload the releases to S3. Be sure to provide her 
+   3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually
+      tag docker images and upload the releases to S3. Be sure to provide her
       with the release tag in the same ping.
    4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
       repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
@@ -231,7 +235,7 @@ the email address associated with your github account.
 1. Post a new slack thread in ``#releases`` saying that you're beginning the
    tutorials deployment now (so that others are aware of the potentially-
    disruptive changes).
-2. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
+2. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/Dockerfile):
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
@@ -252,7 +256,7 @@ the email address associated with your github account.
       tweak the Dockerfile before Deepnote will allow you to re-run the
       Build.  For example, add `&& true` to the end of a RUN line.
 3. For reference (no action required), the
-   [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Frequirements.txt)
+   [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/requirements.txt)
    file should have the following content:
    ```
    ipywidgets==7.7.0

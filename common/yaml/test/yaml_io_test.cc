@@ -21,14 +21,6 @@ namespace yaml {
 namespace test {
 namespace {
 
-std::string ReadTestFileAsString(const std::string& filename) {
-  std::ifstream input(filename, std::ios::binary);
-  DRAKE_DEMAND(!input.fail());
-  std::stringstream buffer;
-  buffer << input.rdbuf();
-  return buffer.str();
-}
-
 GTEST_TEST(YamlIoTest, LoadString) {
   const std::string data = R"""(
 value:
@@ -182,7 +174,7 @@ GTEST_TEST(YamlIoTest, SaveFile) {
   const std::string filename = temp_directory() + "/SaveFile1.yaml";
   const StringStruct data{.value = "save_file_1"};
   SaveYamlFile(filename, data);
-  const auto result = ReadTestFileAsString(filename);
+  const auto result = ReadFileOrThrow(filename);
   EXPECT_EQ(result, "value: save_file_1\n");
 }
 
@@ -194,7 +186,7 @@ GTEST_TEST(YamlIoTest, SaveFileAllArgs) {
   data.value.insert({"save_file_4", 1.0});
   ASSERT_EQ(data.value.size(), 2);
   SaveYamlFile(filename, data, child_name, {defaults});
-  const auto result = ReadTestFileAsString(filename);
+  const auto result = ReadFileOrThrow(filename);
   EXPECT_EQ(result, "some_child:\n  value:\n    save_file_4: 1.0\n");
 }
 

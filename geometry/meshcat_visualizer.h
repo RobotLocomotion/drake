@@ -84,51 +84,27 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    to determine whether this should be called on initialization. */
   void Delete() const;
 
-  /** Sets a flag indicating that subsequent publish events should also be
-  "recorded" into a MeshcatAnimation.  The data in these events will be
-  combined with any frames previously added to the animation; if the same
-  transform/property is set at the same time, then it will overwrite the
-  existing frame in the animation.  Frames are added at the index
-  MeshcatAnimation::frame(context.get_time()).
-
-  @param set_transforms_while_recording if true, then each Publish will set the
-  transform in Meshcat *and* record the transform in the animation.  Set to
-  false to avoid updating the visualization during recording.  Note that
-  animations do not support SetObject, so the objects must still be sent to the
-  visualizer during the recording.
-
-  @returns a mutable pointer to the current recording.  See
-  get_mutable_recording().
-  */
+  /** Convenience function that calls Meshcat::StartRecording on the underlying
+   Meshcat object, with `frames_per_second = 1 / publish_period`; refer to
+   Meshcat::StartRecording for full documentation. */
   MeshcatAnimation* StartRecording(bool set_transforms_while_recording = true);
 
-  /** Sets a flag to pause/stop recording.  When stopped, publish events will
-  not add frames to the animation. */
+  /** Convenience function that calls Meshcat::StopRecording on the underlying
+   Meshcat object; refer to Meshcat::StopRecording for full documentation. */
   void StopRecording();
 
-  /** Sends the recording to Meshcat as an animation. The published animation
-  only includes transforms and properties; the objects that they modify must be
-  sent to the visualizer separately (e.g. by calling Publish()). */
+  /** Convenience function that calls Meshcat::PublishRecording on the
+   underlying Meshcat object; refer to Meshcat::PublishRecording for full
+   documentation. */
   void PublishRecording() const;
 
-  /** Deletes the current animation holding the recorded frames.  Animation
-  options (autoplay, repetitions, etc) will also be reset, and any pointers
-  obtained from get_mutable_recording() will be rendered invalid. This does
-  *not* currently remove the animation from Meshcat. */
+  /** Convenience function that calls Meshcat::DeleteRecording on the underlying
+   Meshcat object; refer to Meshcat::DeleteRecording for full documentation. */
   void DeleteRecording();
 
-  /** Returns a mutable pointer to this MeshcatVisualizer's unique
-  MeshcatAnimation object in which the frames will be recorded. This pointer
-  can be used to set animation properties (like autoplay, the loop mode, number
-  of repetitions, etc), and can be passed to supporting visualizers (e.g.
-  MeshcatPointCloudVisualizer and MeshcatContactVisualizer) so that they record
-  into the same animation.
-
-  The MeshcatAnimation object will only remain valid for the lifetime of `this`
-  or until DeleteRecording() is called.
-
-  @throws std::exception if meshcat does not have a recording.
-  */
+  /** Convenience function that calls Meshcat::get_mutable_recording on the
+   underlying Meshcat object; refer to Meshcat::get_mutable_recording for full
+   documentation. */
   MeshcatAnimation* get_mutable_recording();
 
   /** Returns the QueryObject-valued input port. It should be connected to

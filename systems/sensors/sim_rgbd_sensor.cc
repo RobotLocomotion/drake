@@ -62,12 +62,13 @@ void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
                                   double publish_offset,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,
+                                  const OutputPort<double>* label_port,
                                   bool do_compress,
                                   DiagramBuilder<double>* builder,
                                   drake::lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(builder != nullptr);
   DRAKE_DEMAND(lcm != nullptr);
-  if (!rgb_port && !depth_16u_port) return;
+  if (!rgb_port && !depth_16u_port && !label_port) return;
 
   auto image_to_lcm_image_array =
       builder->AddSystem<ImageToLcmImageArrayT>(do_compress);
@@ -84,6 +85,12 @@ void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
             "rgb");
     builder->Connect(*rgb_port, lcm_rgb_port);
   }
+  if (label_port) {
+    const auto& lcm_label_port =
+        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kLabel16I>(
+            "label");
+    builder->Connect(*label_port, lcm_label_port);
+  }
   auto image_array_lcm_publisher =
       builder->AddSystem(lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           fmt::format("DRAKE_RGBD_CAMERA_IMAGES_{}", serial), lcm, 1.0 / fps,
@@ -95,13 +102,14 @@ void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
 void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_camera,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,
+                                  const OutputPort<double>* label_port,
                                   bool do_compress,
                                   DiagramBuilder<double>* builder,
                                   drake::lcm::DrakeLcmInterface* lcm) {
   const double publish_offset = 0.0;
   AddSimRgbdSensorLcmPublisher(sim_camera.serial(), sim_camera.rate_hz(),
                                publish_offset, rgb_port, depth_16u_port,
-                               do_compress, builder, lcm);
+                               label_port, do_compress, builder, lcm);
 }
 
 }  // namespace internal

@@ -1,14 +1,14 @@
 #pragma once
 
-/* @file Detects if a tetrahedral mesh evaluates to zero signed-distance
- anywhere in its interior. A hydroelastic pressure field built
- on a mesh with this defect will have zero pressure in its interior.
- Because signed distance is defined at vertices and interpolated everywhere
- else, detection focuses on positive dimensional simplices (tetrahedra,
- triangles, edges).  A simplex is problematic, if all of its vertices lie on
- the boundary, and if the simplex intersects the mesh's interior.
- For example, a mesh with only a single tetrahedron is problematic since all its
- vertices lie on the mesh's boundary.
+/* @file
+ Detects if a tetrahedral mesh evaluates to zero signed-distance anywhere in its
+ interior. A hydroelastic pressure field built on a mesh with this defect will
+ have zero pressure in its interior.  Because signed distance is defined at
+ vertices and interpolated everywhere else, detection focuses on positive
+ dimensional simplices (tetrahedra, triangles, edges).  A simplex is
+ problematic, if all of its vertices lie on the boundary, and if the simplex
+ intersects the mesh's interior.  For example, a mesh with only a single
+ tetrahedron is problematic since all its vertices lie on the mesh's boundary.
 
  A tetrahedral mesh may have other problems. For example, a tetrahedron with
  all vertices at the same distance from the boundary. A hydroelastic pressure

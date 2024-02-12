@@ -4,151 +4,15 @@ import sys
 import textwrap
 import unittest
 
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import RenderLabel
 from pydrake.math import RollPitchYaw, RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.sensors import (
-    ImageDepth16U,
-    ImageDepth32F,
-    ImageLabel16I,
-    ImageRgba8U,
-)
-from pydrake.visualization import (
-    ColorizeDepthImage,
-    ColorizeLabelImage,
-    ConcatenateImages,
-    VideoWriter,
-)
+from pydrake.visualization import VideoWriter
 
 
 _PLATFORM_SUPPORTS_CV2 = "darwin" not in sys.platform
-
-
-class TestColorizeDepthImage(unittest.TestCase):
-
-    def _get_expected_color(self):
-        """Creates a color image with the expected values. I.e., the closest
-        pixel is white and the farthest pixel is black. The rest of the pixels
-        are set to the default invalid color.
-        """
-        default_invalid_color = [100, 0, 0, 255]
-        expected_color = ImageRgba8U(6, 2)
-        expected_color.mutable_data[:] = default_invalid_color
-        expected_color.at(5, 0)[:] = [255, 255, 255, 255]
-        expected_color.at(5, 1)[:] = [0, 0, 0, 255]
-        return expected_color
-
-    def _get_depth32f(self):
-        """Creates a 32F depth image with only two valid values."""
-        depth = ImageDepth32F(6, 2, math.inf)
-        depth.at(0, 0)[:] = -3.0
-        depth.at(5, 0)[:] = 1.0
-        depth.at(5, 1)[:] = 2.0
-        return depth
-
-    def _get_depth16u(self):
-        """Creates a 16U depth image with only two valid values."""
-        depth = ImageDepth16U(6, 2, 0)
-        depth.at(0, 0)[:] = 2 ** 16 - 1  # kTooFar.
-        depth.at(5, 0)[:] = 1000
-        depth.at(5, 1)[:] = 2000
-        return depth
-
-    def test_badly_connected_inputs(self):
-        dut = ColorizeDepthImage()
-        context = dut.CreateDefaultContext()
-
-        # No values for both input ports should raise an exception.
-        with self.assertRaises(AssertionError):
-            dut._calc_output(context, ImageRgba8U())
-
-        dut.GetInputPort("depth_image_32f").FixValue(
-            context, self._get_depth32f()
-        )
-        dut.GetInputPort("depth_image_16u").FixValue(
-            context, self._get_depth16u()
-        )
-        # Set values for both input ports should also raise an exception.
-        with self.assertRaises(AssertionError):
-            dut._calc_output(context, ImageRgba8U())
-
-    def test_smoke(self):
-        """Runs all of the code once for both types of depth inputs and spot
-        checks a sample image.
-        """
-        test_cases = {
-            "depth_image_32f": self._get_depth32f(),
-            "depth_image_16u": self._get_depth16u(),
-        }
-        for port_name, depth in test_cases.items():
-            dut = ColorizeDepthImage()
-            context = dut.CreateDefaultContext()
-
-            dut.GetInputPort(port_name).FixValue(context, depth)
-
-            actual_color = dut.GetOutputPort("color_image").Eval(context)
-            expected_color = self._get_expected_color()
-            numpy_compare.assert_allclose(
-                actual_color.data, expected_color.data, atol=1)
-
-
-class TestColorizeLabelImage(unittest.TestCase):
-
-    def test_smoke(self):
-        """Runs all of the code once and spot checks a sample image."""
-        dut = ColorizeLabelImage()
-        context = dut.CreateDefaultContext()
-
-        # Input a label image with just one non-empty value.
-        # Note that kEmpty is NOT a zero value; zero is the first real label.
-        label = ImageLabel16I(6, 2, int(RenderLabel.kEmpty))
-        label.at(5, 1)[:] = 0
-        dut.GetInputPort("label_image").FixValue(context, label)
-
-        # Expect a color image with a matching value.
-        # Label #0 happens to be matplotlib "tableau blue" (#1F77B4).
-        expected_color = ImageRgba8U(6, 2, 0)
-        expected_color.at(5, 1)[:] = [31, 119, 180, 255]
-
-        # Check the colorized image.
-        actual_color = dut.GetOutputPort("color_image").Eval(context)
-        numpy_compare.assert_allclose(
-            actual_color.data, expected_color.data, atol=0)
-
-
-class TestConcatenateImages(unittest.TestCase):
-
-    def test_smoke(self):
-        """Runs all of the code once and spot checks a sample image."""
-        dut = ConcatenateImages(rows=2, cols=3)
-        context = dut.CreateDefaultContext()
-
-        # Set up the inputs.
-        red_counter = 1
-        for row in range(2):
-            for col in range(3):
-                image = ImageRgba8U(4, 2)
-                image.at(0, 0)[:] = (red_counter, 0, 0, 255)
-                dut.get_input_port(row=row, col=col).FixValue(context, image)
-                red_counter += 1
-
-        # Expect the red pixels in the correct order.
-        expected = ImageRgba8U(12, 4, 0)
-        expected.at(0, 0)[:] = (1, 0, 0, 255)
-        expected.at(4, 0)[:] = (2, 0, 0, 255)
-        expected.at(8, 0)[:] = (3, 0, 0, 255)
-        expected.at(0, 2)[:] = (4, 0, 0, 255)
-        expected.at(4, 2)[:] = (5, 0, 0, 255)
-        expected.at(8, 2)[:] = (6, 0, 0, 255)
-
-        # Check the actual image.
-        actual = dut.GetOutputPort("color_image").Eval(context)
-        numpy_compare.assert_allclose(
-            actual.data, expected.data, atol=1)
 
 
 class TestVideoWriter(unittest.TestCase):

@@ -3,6 +3,9 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/multibody/deformable_torus/parallel_gripper_controller.h"
+#include "drake/examples/multibody/deformable_torus/point_source_force_field.h"
+#include "drake/examples/multibody/deformable_torus/suction_cup_controller.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
@@ -17,35 +20,51 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_double(simulation_time, 8.0, "Desired duration of the simulation [s].");
+DEFINE_double(simulation_time, 12.0, "Desired duration of the simulation [s].");
 DEFINE_double(realtime_rate, 1.0, "Desired real time rate.");
 DEFINE_double(time_step, 1e-2,
               "Discrete time step for the system [s]. Must be positive.");
-DEFINE_double(E, 1e4, "Young's modulus of the deformable body [Pa].");
+DEFINE_double(E, 3e4, "Young's modulus of the deformable body [Pa].");
 DEFINE_double(nu, 0.4, "Poisson's ratio of the deformable body, unitless.");
-DEFINE_double(density, 1e3, "Mass density of the deformable body [kg/m³].");
+DEFINE_double(density, 1e3,
+              "Mass density of the deformable body [kg/m³]. We observe that "
+              "density above 2400 kg/m³ makes the torus too heavy to be picked "
+              "up by the suction gripper.");
 DEFINE_double(beta, 0.01,
               "Stiffness damping coefficient for the deformable body [1/s].");
+DEFINE_string(gripper, "parallel",
+              "Type of gripper used to pick up the deformable torus. Options "
+              "are: 'parallel' and 'suction'.");
 
+using drake::examples::deformable_torus::ParallelGripperController;
+using drake::examples::deformable_torus::PointSourceForceField;
+using drake::examples::deformable_torus::SuctionCupController;
 using drake::geometry::AddContactMaterial;
 using drake::geometry::Box;
+using drake::geometry::Capsule;
+using drake::geometry::Ellipsoid;
 using drake::geometry::GeometryInstance;
 using drake::geometry::IllustrationProperties;
 using drake::geometry::Mesh;
 using drake::geometry::ProximityProperties;
+using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlant;
-using drake::multibody::Body;
 using drake::multibody::CoulombFriction;
+using drake::multibody::DeformableBodyId;
+using drake::multibody::DeformableModel;
+using drake::multibody::ModelInstanceIndex;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
+using drake::multibody::RigidBody;
+using drake::multibody::SpatialInertia;
 using drake::multibody::fem::DeformableBodyConfig;
-using drake::multibody::DeformableBodyId;
-using drake::multibody::DeformableModel;
 using drake::systems::BasicVector;
 using drake::systems::Context;
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
@@ -53,99 +72,92 @@ namespace drake {
 namespace examples {
 namespace {
 
-/* We create a leaf system that uses PD control to output a force signal to
- a gripper to follow a close-lift-open motion sequence. The signal is
- 2-dimensional with the first element corresponding to the wrist degree of
- freedom and the second element corresponding to the left finger degree of
- freedom. This control is a time-based state machine, where forces change based
- on the context time. This is strictly for demo purposes and is not intended to
- generalize to other cases. There are four states: 0. The fingers are open in
- the initial state.
-  1. The fingers are closed to secure a grasp.
-  2. The gripper is lifted to a prescribed final height.
-  3. The fingers are open to loosen a grasp.
- The desired state is interpolated between these states. */
-class GripperPositionControl : public systems::LeafSystem<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperPositionControl);
+/* Adds a suction gripper to the given MultibodyPlant and assign
+ `proximity_props` to all the registered collision geometries. Returns the
+ ModelInstanceIndex of the gripper model. */
+ModelInstanceIndex AddSuctionGripper(
+    MultibodyPlant<double>* plant, const ProximityProperties& proximity_props) {
+  const double radius = 0.02;
+  const double length = 0.1;
+  const auto M = SpatialInertia<double>::SolidCapsuleWithMass(
+      0.1, radius, length, Vector3d::UnitZ());
+  ModelInstanceIndex model_instance = plant->AddModelInstance("instance");
+  const auto& body = plant->AddRigidBody("cup_body", model_instance, M);
+  const Capsule capsule{radius, length};
+  IllustrationProperties cup_illustration_props;
+  cup_illustration_props.AddProperty("phong", "diffuse",
+                                     Vector4d(0.9, 0.1, 0.1, 0.8));
+  plant->RegisterVisualGeometry(body, RigidTransformd::Identity(), capsule,
+                                "cup_visual", cup_illustration_props);
+  /* Add a visual hint for the center of the suction force source. */
+  const Sphere sphere{0.0075};
+  IllustrationProperties source_illustration_props;
+  source_illustration_props.AddProperty("phong", "diffuse",
+                                        Vector4d(0.1, 0.9, 0.1, 0.8));
+  plant->RegisterVisualGeometry(body, RigidTransformd(Vector3d(0, 0, -0.07)),
+                                sphere, "source_visual",
+                                source_illustration_props);
+  plant->RegisterCollisionGeometry(body, RigidTransformd::Identity(), capsule,
+                                   "cup_collision", proximity_props);
+  /* Adds an actuated joint between the suction cup body and the world. */
+  const RigidTransformd X_WF(Vector3d(0.04, 0, -0.05));
+  const auto& prismatic_joint = plant->AddJoint<PrismaticJoint>(
+      "translate_z_joint", plant->world_body(), X_WF, body, std::nullopt,
+      Vector3d::UnitZ());
+  plant->GetMutableJointByName<PrismaticJoint>("translate_z_joint")
+      .set_default_translation(0.5);
+  const auto actuator_index =
+      plant->AddJointActuator("prismatic joint actuator", prismatic_joint)
+          .index();
+  plant->get_mutable_joint_actuator(actuator_index)
+      .set_controller_gains({1e4, 1});
 
-  /* Constructs a GripperPositionControl system with the given parameters.
-   @param[in] open_width   The width between fingers in the open state. (meters)
-   @param[in] closed_width The width between fingers in the closed state.
-                           (meters)
-   @param[in] height       The height of the gripper in the lifted state.
-                           (meters) */
-  GripperPositionControl(double open_width, double closed_width, double height)
-      : initial_state_(0, -open_width / 2),
-        closed_state_(0, -closed_width / 2),
-        lifted_state_(height, -closed_width / 2),
-        open_state_(height, -open_width / 2) {
-    this->DeclareVectorOutputPort("gripper force", BasicVector<double>(2),
-                                  &GripperPositionControl::SetAppliedForce);
-    this->DeclareVectorInputPort("gripper state", BasicVector<double>(6));
-  }
+  return model_instance;
+}
 
- private:
-  void SetAppliedForce(const Context<double>& context,
-                       BasicVector<double>* output) const {
-    const VectorXd gripper_state =
-        EvalVectorInput(context, GetInputPort("gripper state").get_index())
-            ->get_value();
-    /* There are 6 dofs in the state, corresponding to
-     q_translate_joint, q_left_finger, q_right_finger,
-     v_translate_joint, v_left_finger, v_right_finger. */
-    /* The positions of the translate joint and the left finger. */
-    const Vector2d measured_positions = gripper_state.head(2);
-    /* The velocities of the translate joint and the left finger. */
-    const Vector2d measured_velocities = gripper_state.segment<2>(3);
-    const Vector2d desired_velocities(0, 0);
-    Vector2d desired_positions;
-    const double t = context.get_time();
-    if (t < fingers_closed_time_) {
-      const double end_time = fingers_closed_time_;
-      const double theta = t / end_time;
-      desired_positions =
-          theta * closed_state_ + (1.0 - theta) * initial_state_;
-    } else if (t < gripper_lifted_time_) {
-      const double end_time = gripper_lifted_time_ - fingers_closed_time_;
-      const double theta = (t - fingers_closed_time_) / end_time;
-      desired_positions = theta * lifted_state_ + (1.0 - theta) * closed_state_;
-    } else if (t < hold_time_) {
-      desired_positions = lifted_state_;
-    } else if (t < fingers_open_time_) {
-      const double end_time = fingers_open_time_ - hold_time_;
-      const double theta = (t - hold_time_) / end_time;
-      desired_positions = theta * open_state_ + (1.0 - theta) * lifted_state_;
-    } else {
-      desired_positions = open_state_;
-    }
-    const Vector2d force = kp_ * (desired_positions - measured_positions) +
-                           kd_ * (desired_velocities - measured_velocities);
-    output->get_mutable_value() << force;
-  }
+/* Adds a parallel gripper to the given MultibodyPlant and assign
+ `proximity_props` to all the registered collision geometries. Returns the
+ ModelInstanceIndex of the gripper model. */
+ModelInstanceIndex AddParallelGripper(
+    MultibodyPlant<double>* plant, const ProximityProperties& proximity_props) {
+  // TODO(xuchenhan-tri): Consider using a schunk gripper from the manipulation
+  // station instead.
+  Parser parser(plant);
+  ModelInstanceIndex model_instance = parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable_torus/simple_gripper.sdf")
+                                          [0];
+  /* Add collision geometries. */
+  const RigidTransformd X_BG =
+      RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
+  const RigidBody<double>& left_finger = plant->GetBodyByName("left_finger");
+  const RigidBody<double>& right_finger = plant->GetBodyByName("right_finger");
+  /* The size of the fingers is set to match the visual geometries in
+   simple_gripper.sdf. */
+  Capsule capsule(0.01, 0.08);
+  plant->RegisterCollisionGeometry(left_finger, X_BG, capsule,
+                                   "left_finger_collision", proximity_props);
+  plant->RegisterCollisionGeometry(right_finger, X_BG, capsule,
+                                   "right_finger_collision", proximity_props);
+  /* Get joints so that we can set initial conditions. */
+  PrismaticJoint<double>& left_slider =
+      plant->GetMutableJointByName<PrismaticJoint>("left_slider");
+  PrismaticJoint<double>& right_slider =
+      plant->GetMutableJointByName<PrismaticJoint>("right_slider");
+  /* Initialize the gripper in an "open" position. */
+  const double kInitialWidth = 0.085;
+  left_slider.set_default_translation(-kInitialWidth / 2.0);
+  right_slider.set_default_translation(kInitialWidth / 2.0);
 
-  /* The time at which the fingers reach the desired closed state. */
-  const double fingers_closed_time_{1.5};
-  /* The time at which the gripper reaches the desired "lifted" state. */
-  const double gripper_lifted_time_{3.0};
-  const double hold_time_{5.5};
-  /* The time at which the fingers reach the desired open state. */
-  const double fingers_open_time_{7.0};
-  Vector2d initial_state_;
-  Vector2d closed_state_;
-  Vector2d lifted_state_;
-  Vector2d open_state_;
-  const double kp_{2000};
-  const double kd_{60.0};
-};
+  return model_instance;
+}
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_time_step;
-  /* Deformable simulation only works with SAP solver. */
-  plant_config.discrete_contact_solver = "sap";
+  /* Deformable simulation only works with SAP. */
+  plant_config.discrete_contact_approximation = "sap";
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
@@ -153,13 +165,14 @@ int do_main() {
    deformable bodies.
    1. A valid Coulomb friction coefficient, and
    2. A resolution hint. (Rigid bodies need to be tessellated so that collision
-   queries can be performed against deformable geometries.) */
+   queries can be performed against deformable geometries.) The value dictates
+   how fine the mesh used to represent the rigid collision geometry is. */
   ProximityProperties rigid_proximity_props;
   /* Set the friction coefficient close to that of rubber against rubber. */
   const CoulombFriction<double> surface_friction(1.15, 1.15);
   AddContactMaterial({}, {}, surface_friction, &rigid_proximity_props);
   rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
-                                    geometry::internal::kRezHint, 1.0);
+                                    geometry::internal::kRezHint, 0.01);
   /* Set up a ground. */
   Box ground{4, 4, 4};
   const RigidTransformd X_WG(Eigen::Vector3d{0, 0, -2});
@@ -171,24 +184,12 @@ int do_main() {
   plant.RegisterVisualGeometry(plant.world_body(), X_WG, ground,
                                "ground_visual", std::move(illustration_props));
 
-  // TODO(xuchenhan-tri): Consider using a schunk gripper from the manipulation
-  // station instead.
-  /* Set up a simple gripper. */
-  Parser parser(&plant);
-  parser.AddModelsFromUrl(
-      "package://drake/examples/multibody/deformable_torus/simple_gripper.sdf");
-  /* Add collision geometries. */
-  const RigidTransformd X_BG = RigidTransformd::Identity();
-  const Body<double>& left_finger = plant.GetBodyByName("left_finger");
-  const Body<double>& right_finger = plant.GetBodyByName("right_finger");
-  /* The size of the fingers is set to match the visual geometries in
-   simple_gripper.sdf. */
-  plant.RegisterCollisionGeometry(left_finger, X_BG, Box(0.007, 0.081, 0.028),
-                                  "left_finger_collision",
-                                  rigid_proximity_props);
-  plant.RegisterCollisionGeometry(right_finger, X_BG, Box(0.007, 0.081, 0.028),
-                                  "left_finger_collision",
-                                  rigid_proximity_props);
+  /* Add a parallel gripper or a suction gripper depending on the runtime flag.
+   */
+  const bool use_suction = FLAGS_gripper == "suction";
+  ModelInstanceIndex gripper_instance =
+      use_suction ? AddSuctionGripper(&plant, rigid_proximity_props)
+                  : AddParallelGripper(&plant, rigid_proximity_props);
 
   /* Set up a deformable torus. */
   auto owned_deformable_model =
@@ -229,20 +230,19 @@ int do_main() {
   const double unused_resolution_hint = 1.0;
   owned_deformable_model->RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
+
+  /* Add an external suction force if using a suction gripper. */
+  const PointSourceForceField* suction_force_ptr{nullptr};
+  if (use_suction) {
+    auto suction_force = std::make_unique<PointSourceForceField>(
+        plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.07), 0.1);
+    suction_force_ptr = suction_force.get();
+    owned_deformable_model->AddExternalForce(std::move(suction_force));
+  }
+
   const DeformableModel<double>* deformable_model =
       owned_deformable_model.get();
   plant.AddPhysicalModel(std::move(owned_deformable_model));
-
-  /* Get joints so that we can set constraints and initial conditions. */
-  PrismaticJoint<double>& left_slider =
-      plant.GetMutableJointByName<PrismaticJoint>("left_slider");
-  PrismaticJoint<double>& right_slider =
-      plant.GetMutableJointByName<PrismaticJoint>("right_slider");
-  /* Constrain the left and the right fingers such that qₗ = -qᵣ. */
-  plant.AddCouplerConstraint(left_slider, right_slider, -1.0);
-  /* Viscous damping for the finger joints, in N⋅s/m. */
-  left_slider.set_default_damping(50.0);
-  right_slider.set_default_damping(50.0);
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
@@ -255,28 +255,41 @@ int do_main() {
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Add a visualizer that emits LCM messages for visualization. */
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerParams params;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
+                                           params);
 
-  /* Set the width between the fingers for open and closed states as well as the
-   height to which the gripper lifts the deformable torus. */
-  const double open_width = kL * 1.5;
-  const double closed_width = kL * 0.4;
-  const double lifted_height = 0.18;
-
-  const auto& control = *builder.AddSystem<GripperPositionControl>(
-      open_width, closed_width, lifted_height);
-  builder.Connect(plant.get_state_output_port(), control.get_input_port());
-  builder.Connect(control.get_output_port(), plant.get_actuation_input_port());
+  /* Add a controller appropriate for the type of gripper. */
+  if (use_suction) {
+    const double kInitialHeight = 0.5;
+    const double kStartSuctionHeight =
+        0.15;  // The height at which to turn on suction.
+    const double kApproachTime = 3.0;      // Time to start the action
+    const double kStartSuctionTime = 4.0;  // Time to turn on suction
+    const double kRetrieveTime = 6.0;      // Time to retrieve the gripper
+    const double kDropTime = 9.0;          // Time to turn off suction
+    const auto& suction = *builder.AddSystem<SuctionCupController>(
+        kInitialHeight, kStartSuctionHeight, kApproachTime, kStartSuctionTime,
+        kRetrieveTime, kDropTime);
+    builder.Connect(suction.maximum_force_density_port(),
+                    suction_force_ptr->maximum_force_density_input_port());
+    builder.Connect(suction.desired_state_output_port(),
+                    plant.get_desired_state_input_port(gripper_instance));
+  } else {
+    /* Set the width between the fingers for open and closed states as well as
+     the height to which the gripper lifts the deformable torus. */
+    const double kOpenWidth = kL * 1.5;
+    const double kClosedWidth = kL * 0.4;
+    const double kLiftedHeight = 0.18;
+    const auto& control = *builder.AddSystem<ParallelGripperController>(
+        kOpenWidth, kClosedWidth, kLiftedHeight);
+    builder.Connect(control.get_output_port(),
+                    plant.get_desired_state_input_port(gripper_instance));
+  }
 
   auto diagram = builder.Build();
   std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-
-  /* Set initial conditions for the gripper. */
-  auto& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-  left_slider.set_translation(&plant_context, -open_width / 2.0);
-  right_slider.set_translation(&plant_context, open_width / 2.0);
 
   /* Build the simulator and run! */
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
@@ -294,8 +307,8 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "This is a demo used to showcase deformable body simulations in Drake. "
-      "A simple parallel gripper grasps a deformable torus on the ground, "
-      "lifts it up, and then drops it back on the ground. "
+      "A parallel (or suction) gripper grasps a deformable torus on the "
+      "ground, lifts it up, and then drops it back on the ground. "
       "Launch meldis before running this example. "
       "Refer to README for instructions on meldis as well as optional flags.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);

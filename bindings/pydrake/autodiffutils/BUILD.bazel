@@ -1,79 +1,71 @@
 load("//tools/install:install.bzl", "install")
 load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_unittest",
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
-package(default_visibility = [
-    "//bindings:__subpackages__",
-])
+package(default_visibility = ["//visibility:private"])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_pybind_library(
-    name = "autodiffutils",
-    cc_deps = [
+# N.B. The `pydrake.autodiffutils` module is part of the root module dependency
+# cycle. Refer to bindings/pydrake/common/module_cycle.md for details.
+
+drake_cc_library(
+    name = "autodiffutils_py",
+    srcs = [
+        "autodiffutils_py_everything.cc",
+    ],
+    hdrs = [
+        "autodiffutils_py.h",
+    ],
+    declare_installed_headers = False,
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
+    ],
+    deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:math_operators_pybind",
-    ],
-    cc_so_name = "__init__",
-    cc_srcs = [
-        "autodiffutils_py.h",
-        "autodiffutils_py.cc",
-        "autodiffutils_py_everything.cc",
-    ],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        "//bindings/pydrake:module_py",
-        "//bindings/pydrake/common:deprecation_py",
-    ],
-    py_srcs = [
-        "_autodiffutils_extra.py",
+        "//bindings/pydrake:pydrake_pybind",
+        "@pybind11",
     ],
 )
 
-# Test ODR (One Definition Rule).
-drake_pybind_library(
-    name = "autodiffutils_test_util_py",
-    testonly = True,
-    add_install = False,
-    cc_deps = [
-        "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
+drake_py_library(
+    name = "autodiffutils_extra",
+    srcs = ["_autodiffutils_extra.py"],
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
     ],
-    cc_so_name = "test/autodiffutils_test_util",
-    cc_srcs = ["test/autodiffutils_test_util_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_srcs = ["test/__init__.py"],
-    visibility = ["//visibility:private"],
 )
 
 install(
     name = "install",
-    targets = [":autodiffutils"],
+    targets = [":autodiffutils_extra"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs([":autodiffutils"]),
+    visibility = ["//bindings/pydrake:__pkg__"],
 )
 
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
-        ":autodiffutils",
-        ":autodiffutils_test_util_py",
+        "//bindings/pydrake/common/test_utilities:algebra_test_util_py",
+        "//bindings/pydrake/common/test_utilities:autodiffutils_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/math",
-        "//bindings/pydrake/math:algebra_test_util_py",
     ],
 )
 

@@ -583,6 +583,11 @@ GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
   //  tau_c = time_step * E * gamma_c.sum()
   // where E is the vector of all ones.
   VectorXd tau_expected = VectorXd::Zero(problem.num_velocities());
+  // tau_partial_expected only accumulates generalized forces for constraints
+  // with indexes in start <= i <= end.
+  const int start = 1;
+  const int end = 2;
+  VectorXd tau_partial_expected = VectorXd::Zero(problem.num_velocities());
   int offset = 0;
   for (int i = 0; i < problem.num_constraints(); ++i) {
     const auto& constraint = problem.get_constraint(i);
@@ -594,12 +599,25 @@ GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
           .segment(problem.velocities_start(clique),
                    problem.num_velocities(clique))
           .array() += gamma_c.sum();
+      if (start <= i && i <= end) {
+        tau_partial_expected
+            .segment(problem.velocities_start(clique),
+                     problem.num_velocities(clique))
+            .array() += gamma_c.sum();
+      }
     }
     offset += ne;
   }
   tau_expected /= problem.time_step();
+  tau_partial_expected /= problem.time_step();
 
   EXPECT_TRUE(CompareMatrices(tau, tau_expected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+
+  // Verify computation of generalized forces for only a set of the constraints.
+  problem.CalcConstraintGeneralizedForces(gamma, start, end, &tau);
+  EXPECT_TRUE(CompareMatrices(tau, tau_partial_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 

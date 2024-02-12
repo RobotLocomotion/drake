@@ -220,7 +220,7 @@ class HydroelasticModelTests : public ::testing::Test {
     const auto& F_BBo_W_array =
         MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
                                                             plant_context);
-    *F_BBo_W = F_BBo_W_array[body_->node_index()];
+    *F_BBo_W = F_BBo_W_array[body_->mobod_index()];
     *p_WB_W = plant_->GetFreeBodyPose(plant_context, *body_).translation();
   }
 
@@ -259,7 +259,7 @@ TEST_F(HydroelasticModelTests, ContactForce) {
     const auto& F_BBo_W_array =
         MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
                                                             *plant_context_);
-    const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
+    const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
     return F_BBo_W.translational()[2];  // Normal force.
   };
 
@@ -305,7 +305,7 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
   const auto& F_BBo_W_array =
       MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
                                                           *plant_context_);
-  const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
+  const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
   // Contact force by hydroelastics.
   const Vector3<double> fhydro_BBo_W = F_BBo_W.translational();
 
@@ -571,8 +571,8 @@ class ContactModelTest : public ::testing::Test {
   // MultibodyPlant::EvalSpatialContactForcesContinuous() from contact results.
   // EvalSpatialContactForcesContinuous() is an internal private method of
   // MultibodyPlant and, as many other multibody methods, sorts the results in
-  // the returned array of spatial forces by BodyNodeIndex. Therefore, the
-  // expected results being generated must also be sorted by BodyNodeIndex.
+  // the returned array of spatial forces by MobodIndex. Therefore, the
+  // expected results being generated must also be sorted by MobodIndex.
   std::vector<SpatialForce<double>> SpatialForceFromContactResults(
       const ContactResults<double>& contacts) {
     std::vector<SpatialForce<double>> F_BBo_W_array(
@@ -596,9 +596,9 @@ class ContactModelTest : public ::testing::Test {
       // N.B. Since we are using this method to test the internal (private)
       // MultibodyPlant::EvalSpatialContactForcesContinuous(), we must use
       // internal API to generate a forces vector sorted in the same way, by
-      // internal::BodyNodeIndex.
-      F_BBo_W_array[bodyB.node_index()] += F_Bc_W.Shift(p_CBo_W);
-      F_BBo_W_array[bodyA.node_index()] -= F_Bc_W.Shift(p_CAo_W);
+      // internal::MobodIndex.
+      F_BBo_W_array[bodyB.mobod_index()] += F_Bc_W.Shift(p_CBo_W);
+      F_BBo_W_array[bodyA.mobod_index()] -= F_Bc_W.Shift(p_CAo_W);
     }
 
     for (int i = 0; i < contacts.num_hydroelastic_contacts(); ++i) {
@@ -608,10 +608,10 @@ class ContactModelTest : public ::testing::Test {
 
       const GeometryId A_id = surface.id_M();
       const FrameId fA_id = inspector.GetFrameId(A_id);
-      const Body<double>& body_A = *plant_->GetBodyFromFrameId(fA_id);
+      const RigidBody<double>& body_A = *plant_->GetBodyFromFrameId(fA_id);
       const GeometryId B_id = surface.id_N();
       const FrameId fB_id = inspector.GetFrameId(B_id);
-      const Body<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
+      const RigidBody<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
 
       const Vector3d& p_WC = surface.centroid();
       const Vector3d& p_WAo =
@@ -624,8 +624,8 @@ class ContactModelTest : public ::testing::Test {
       // The force applied to body A at a fixed point coincident with the
       // centroid point C.
       const SpatialForce<double>& F_Ac_W = contact_info.F_Ac_W();
-      F_BBo_W_array[body_A.node_index()] += F_Ac_W.Shift(p_CAo_W);
-      F_BBo_W_array[body_B.node_index()] -= F_Ac_W.Shift(p_CBo_W);
+      F_BBo_W_array[body_A.mobod_index()] += F_Ac_W.Shift(p_CAo_W);
+      F_BBo_W_array[body_B.mobod_index()] -= F_Ac_W.Shift(p_CBo_W);
     }
 
     return F_BBo_W_array;

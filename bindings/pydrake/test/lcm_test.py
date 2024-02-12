@@ -1,7 +1,6 @@
 import copy
 import unittest
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeLcmParams, Subscriber
 
 from drake import lcmt_quaternion

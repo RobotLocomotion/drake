@@ -48,7 +48,6 @@ def conex_cc_library(
         "drake_vendor/conex/" + x
         for x in srcs or []
     ]
-    edit_include = None
     strip_include_prefix = "drake_vendor"
 
     # Compile the static library.
@@ -58,7 +57,6 @@ def conex_cc_library(
         srcs_vendored = srcs_vendored,
         hdrs = hdrs,
         hdrs_vendored = hdrs_vendored,
-        edit_include = edit_include,
         strip_include_prefix = strip_include_prefix,
         copts = copts,
         deps = deps,

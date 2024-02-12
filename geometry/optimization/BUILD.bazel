@@ -24,9 +24,24 @@ drake_cc_package_library(
         ":cspace_free_polytope_base",
         ":cspace_free_structs",
         ":cspace_separating_plane",
+        ":geodesic_convexity",
         ":graph_of_convex_sets",
         ":iris",
         ":iris_internal",
+    ],
+)
+
+drake_cc_library(
+    name = "geodesic_convexity",
+    srcs = ["geodesic_convexity.cc"],
+    hdrs = ["geodesic_convexity.h"],
+    interface_deps = [
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+    deps = [
+        "//geometry/optimization:convex_set",
+        "//solvers:solve",
     ],
 )
 
@@ -68,6 +83,7 @@ drake_cc_library(
     deps = [
         "//geometry:read_obj",
         "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
         "//solvers:get_program_type",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
@@ -157,6 +173,7 @@ drake_cc_library(
     name = "cspace_free_structs",
     hdrs = ["cspace_free_structs.h"],
     deps = [
+        "//common:parallelism",
         "//common/symbolic:rational_function",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
@@ -229,6 +246,9 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 
@@ -297,9 +317,15 @@ drake_cc_googletest(
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,
-    # This test launches 2 threads to test both serial and parallel code paths
-    # in CspaceFreePolytope.
-    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    tags = mosek_test_tags() + [
+        # This test launches 2 threads to test both serial and parallel code
+        # paths in CspaceFreePolytope.
+        "cpu:2",
+        # The memcheck build was disabled by accident:
+        #  https://github.com/RobotLocomotion/drake/pull/18621
+        # TODO(hongkai-dai) Figure out whether we can re-enable this.
+        "no_memcheck",
+    ],
     use_default_main = False,
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
@@ -337,9 +363,20 @@ drake_cc_googletest(
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,
-    # This test launches 2 threads to test both serial and parallel code paths
-    # in CspaceFreePolytope.
-    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    tags = mosek_test_tags() + [
+        # This test launches 2 threads to test both serial and parallel code
+        # paths in CspaceFreePolytope.
+        "cpu:2",
+        # This test experiences random segfaults in the "LSan Everything" build
+        # when both Mosek and Gurobi are used at the same time. Since we can't
+        # debug closed-source software, we have no choice but to ignore those
+        # errors.
+        "no_lsan",
+        # The memcheck build was disabled by accident:
+        #  https://github.com/RobotLocomotion/drake/pull/18621
+        # TODO(hongkai-dai) Figure out whether we can re-enable this.
+        "no_memcheck",
+    ],
     use_default_main = False,
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
@@ -390,6 +427,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geodesic_convexity_test",
+    deps = [
+        ":convex_set",
+        ":geodesic_convexity",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "graph_of_convex_sets_test",
     timeout = "moderate",
     shard_count = 8,
@@ -399,6 +445,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
         "//solvers:clp_solver",
         "//solvers:csdp_solver",
         "//solvers:gurobi_solver",
@@ -459,6 +506,7 @@ drake_cc_googletest(
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )

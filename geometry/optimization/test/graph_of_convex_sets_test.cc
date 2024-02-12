@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -169,6 +170,8 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   Edge* e1 = g.AddEdge(v1, v2);
   g.AddEdge(v1, v3);
   g.AddEdge(v3, v1);
+  EXPECT_EQ(v1->incoming_edges().size(), 1);
+  EXPECT_EQ(v1->outgoing_edges().size(), 2);
 
   EXPECT_EQ(g.Vertices().size(), 3);
   EXPECT_EQ(g.Edges().size(), 3);
@@ -178,12 +181,14 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e1);
+  EXPECT_EQ(v1->incoming_edges().size(), 0);
 
   g.RemoveVertex(v2);
   auto vertices = g.Vertices();
   EXPECT_EQ(vertices.size(), 1);
   EXPECT_EQ(vertices.at(0), v1);
   EXPECT_EQ(g.Edges().size(), 0);
+  EXPECT_EQ(v1->outgoing_edges().size(), 0);
 }
 
 /*
@@ -586,10 +591,10 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 2e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              2e-5);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -613,10 +618,10 @@ TEST_F(ThreePoints, QuadraticCost3) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 5e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              1e-6);
+              2e-4);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
   CheckConvexRestriction(result);
@@ -1566,10 +1571,14 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   for (size_t ii = 0; ii < edges.size(); ++ii) {
     if (ii < 6) {
       // Some solvers do not balance the two paths as closely as other solvers.
+      // I am not sure why these solvers perform badly on this problem.
       const double tol =
           (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
-          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
-              ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) ? 1e-2
+          : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
+              ? 1e-3  // We tried to tighten the optimality/feasibility
+                      // tolerance of Clarabel but the optimal solution still
+                      // match with the balanced solution very precisely.
               : 1e-5;
       EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
     } else if (ii < 10) {
@@ -1900,15 +1909,20 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   }
 
   // Test that solving with the known shortest path returns the same results.
-  auto active_edges_result = spp.SolveConvexRestriction(
-      spp.GetSolutionPath(*source, *target, result), options);
+  std::vector<const Edge*> path = spp.GetSolutionPath(*source, *target, result);
+  auto active_edges_result = spp.SolveConvexRestriction(path, options);
   ASSERT_TRUE(active_edges_result.is_success());
   // The optimal costs should match.
   EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
               3e-5);
-  for (const auto* v : spp.Vertices()) {
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                active_edges_result.GetSolution(v->x()), 2e-3));
+  // The vertex solutions should match on the shortest path.
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(source->x()),
+                              active_edges_result.GetSolution(source->x()),
+                              2e-3));
+  for (const auto* e : path) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(e->xv()),
+                                active_edges_result.GetSolution(e->xv()),
+                                2e-3));
   }
 
   // Test that forcing an edge not on the shortest path to be active yields a
@@ -2155,158 +2169,6 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-GTEST_TEST(GraphOfConvexSetsTest, DeprecatedAddEdge) {
-  GraphOfConvexSets g;
-  Point pu(Vector3d(1.0, 2.0, 3.0));
-  Point pv(Vector2d(4., 5.));
-  Vertex* u = g.AddVertex(pu, "u");
-  Vertex* v = g.AddVertex(pv, "v");
-  Edge* e = g.AddEdge(u->id(), v->id(), "e");
-
-  EXPECT_EQ(e->u().name(), u->name());
-  EXPECT_EQ(e->v().name(), v->name());
-
-  EXPECT_EQ(Variables(e->xu()), Variables(u->x()));
-  EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
-
-  auto edges = g.Edges();
-  EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(edges.at(0), e);
-
-  const GraphOfConvexSets* const_g = &g;
-  const auto const_edges = const_g->Edges();
-  EXPECT_EQ(const_edges.size(), 1);
-  EXPECT_EQ(const_edges.at(0), e);
-}
-
-GTEST_TEST(GraphOfConvexSetsTest, DeprecatedRemoveEdge) {
-  GraphOfConvexSets g;
-  Point pu(Vector3d(1.0, 2.0, 3.0));
-  Point pv(Vector2d(4., 5.));
-  Vertex* u = g.AddVertex(pu, "u");
-  Vertex* v = g.AddVertex(pv, "v");
-  Edge* e1 = g.AddEdge(u, v, "e1");
-  Edge* e2 = g.AddEdge(v, u, "e2");
-
-  EXPECT_EQ(g.Edges().size(), 2);
-
-  EXPECT_EQ(u->incoming_edges().size(), 1);
-  EXPECT_EQ(u->incoming_edges()[0], e2);
-  EXPECT_EQ(u->outgoing_edges().size(), 1);
-  EXPECT_EQ(u->outgoing_edges()[0], e1);
-  EXPECT_EQ(v->incoming_edges().size(), 1);
-  EXPECT_EQ(v->incoming_edges()[0], e1);
-  EXPECT_EQ(v->outgoing_edges().size(), 1);
-  EXPECT_EQ(v->outgoing_edges()[0], e2);
-
-  g.RemoveEdge(e1->id());
-  auto edges = g.Edges();
-  EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(edges.at(0), e2);
-  EXPECT_EQ(u->incoming_edges().size(), 1);
-  EXPECT_EQ(u->incoming_edges()[0], e2);
-  EXPECT_EQ(u->outgoing_edges().size(), 0);
-  EXPECT_EQ(v->incoming_edges().size(), 0);
-  EXPECT_EQ(v->outgoing_edges().size(), 1);
-  EXPECT_EQ(v->outgoing_edges()[0], e2);
-
-  g.RemoveEdge(e2);
-  EXPECT_EQ(g.Edges().size(), 0);
-  EXPECT_EQ(u->incoming_edges().size(), 0);
-  EXPECT_EQ(u->outgoing_edges().size(), 0);
-  EXPECT_EQ(v->incoming_edges().size(), 0);
-  EXPECT_EQ(v->outgoing_edges().size(), 0);
-}
-
-GTEST_TEST(GraphOfConvexSetsTest, DeprecatedRemoveVertex) {
-  GraphOfConvexSets g;
-  Vertex* v1 = g.AddVertex(Point(Vector2d(3., 5.)));
-  Vertex* v2 = g.AddVertex(Point(Vector2d(-2., 4.)));
-  Vertex* v3 = g.AddVertex(Point(Vector2d(5., -2.3)));
-  Edge* e1 = g.AddEdge(v1, v2);
-  g.AddEdge(v1, v3);
-  g.AddEdge(v3, v1);
-
-  EXPECT_EQ(g.Vertices().size(), 3);
-  EXPECT_EQ(g.Edges().size(), 3);
-
-  g.RemoveVertex(v3->id());
-  EXPECT_EQ(g.Vertices().size(), 2);
-  auto edges = g.Edges();
-  EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(edges.at(0), e1);
-
-  g.RemoveVertex(v2);
-  auto vertices = g.Vertices();
-  EXPECT_EQ(vertices.size(), 1);
-  EXPECT_EQ(vertices.at(0), v1);
-  EXPECT_EQ(g.Edges().size(), 0);
-}
-
-TEST_F(ThreePoints, DeprecatedLinearCost1) {
-  e_on_->AddCost(1.0);
-  e_off_->AddCost(1.0);
-  source_->AddCost(1.0);
-  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options_);
-  ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
-
-  EXPECT_TRUE(
-      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
-  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
-                              0 * p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
-  CheckConvexRestriction(result);
-
-  // Alternative signatures.
-  auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
-  ASSERT_TRUE(result2.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result2), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result2), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result2), 0.0, 1e-6);
-
-  options_.solver_options = SolverOptions();
-  auto result4 = g_.SolveShortestPath(*source_, *target_, options_);
-  ASSERT_TRUE(result4.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result4), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result4), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result4), 0.0, 1e-6);
-
-  EXPECT_TRUE(
-      CompareMatrices(source_->GetSolution(result4), p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
-  EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
-
-  if (solvers::ClpSolver::is_available()) {
-    solvers::ClpSolver clp;
-    options_.solver = &clp;
-    auto result3 = g_.SolveShortestPath(*source_, *target_, options_);
-    ASSERT_TRUE(result3.is_success());
-    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
-    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
-    EXPECT_NEAR(source_->GetSolutionCost(result3), 1.0, 1e-6);
-    EXPECT_NEAR(target_->GetSolutionCost(result3), 0.0, 1e-6);
-    EXPECT_NEAR(sink_->GetSolutionCost(result3), 0.0, 1e-6);
-  }
-}
-
-#pragma GCC diagnostic pop
 
 }  // namespace optimization
 }  // namespace geometry

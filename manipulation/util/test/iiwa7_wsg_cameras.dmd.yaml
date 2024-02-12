@@ -1,0 +1,26 @@
+# This is meant to test attaching extra models welded to an arm
+# for `make_arm_controller_model_test`.
+directives:
+- add_directives:
+    file: package://drake/manipulation/util/test/iiwa7_wsg.dmd.yaml
+
+- add_model:
+    name: fake_camera_1
+    file: package://drake/manipulation/util/test/fake_camera.sdf
+- add_weld:
+    parent: iiwa7::iiwa_link_4
+    child: fake_camera_1::__model__
+
+- add_model:
+    name: fake_camera_2
+    file: package://drake/manipulation/util/test/fake_camera.sdf
+- add_weld:
+    parent: iiwa7::iiwa_link_6
+    child: fake_camera_2::__model__
+
+- add_model:
+    name: fake_camera_3
+    file: package://drake/manipulation/util/test/fake_camera.sdf
+- add_weld:
+    parent: iiwa7::iiwa_link_7
+    child: fake_camera_3::__model__

@@ -1,3 +1,4 @@
+load("@python//:version.bzl", "PYTHON_VERSION")
 load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:pybind.bzl",
@@ -7,10 +8,6 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_unittest",
-)
-load(
-    "@drake_detected_os//:os.bzl",
-    "UBUNTU_RELEASE",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
@@ -29,7 +26,6 @@ drake_py_library(
         "_drake_gym_env.py",
     ],
     deps = [
-        "//bindings/pydrake/common",
         "//bindings/pydrake/systems",
         "@gymnasium_py",
     ],
@@ -52,7 +48,11 @@ drake_py_library(
 # to prevent this from being a circular dependency.
 drake_py_unittest(
     name = "drake_gym_test",
-    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
+    # DrakeGym is only supported for Python >= 3.10.
+    tags = ["manual"] if PYTHON_VERSION in [
+        "3.8",
+        "3.9",
+    ] else [],
     deps = [
         ":gym",
         ":mock_torch_py",

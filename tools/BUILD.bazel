@@ -38,7 +38,6 @@ py_binary(
         "//lcmtypes:lcmtypes_drake_py",
         "//tools/workspace/drake_visualizer:builtin_scripts_py",
         "@drake_visualizer//:drake_visualizer_python_deps",
-        "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ] if _DRAKE_VISUALIZER_ENABLED else [],
 )
 
@@ -85,13 +84,6 @@ config_setting(
     values = {"define": "DRAKE_WERROR=ON"},
 )
 
-# We hope to enable Clarabel by default, but for the moment it is opt-in.
-# Use `--define=WITH_CLARABEL=ON` on the bazel command line to enable it.
-config_setting(
-    name = "with_clarabel",
-    values = {"define": "WITH_CLARABEL=ON"},
-)
-
 config_setting(
     name = "with_gurobi",
     values = {"define": "WITH_GUROBI=ON"},
@@ -115,6 +107,16 @@ config_setting(
 config_setting(
     name = "using_memcheck",
     values = {"define": "USING_MEMCHECK=ON"},
+)
+
+# Clarabel is an open-source solver, and is included in the Drake build by
+# default. The Clarabel solver is irrelevant to some users of
+# MathematicalProgram, so we provide a hidden switch to shut it off for
+# developers who don't actually need it. This is not a supported configuration.
+# Use at your own risk: --define=NO_CLARABEL=ON
+config_setting(
+    name = "no_clarabel",
+    values = {"define": "NO_CLARABEL=ON"},
 )
 
 # CLP is an open-source solver, and is included in the Drake build by

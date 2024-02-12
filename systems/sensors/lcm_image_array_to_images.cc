@@ -16,6 +16,10 @@
 #include "drake/systems/sensors/lcm_image_traits.h"
 #include "drake/systems/sensors/vtk_image_reader_writer.h"
 
+// TODO(jwnimmer-tri) Simplify this code by using "image_io.h" instead of
+// "vtk_image_reader_writer.h", and using a DiagnosticPolicy instead of status
+// bools flying around everywhere.
+
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -135,6 +139,10 @@ LcmImageArrayToImages::LcmImageArrayToImages()
       depth_image_output_port_index_(
           this->DeclareAbstractOutputPort(
                   "depth_image", &LcmImageArrayToImages::CalcDepthImage)
+              .get_index()),
+      label_image_output_port_index_(
+          this->DeclareAbstractOutputPort(
+                  "label_image", &LcmImageArrayToImages::CalcLabelImage)
               .get_index()) {
   // TODO(sammy-tri) Calculating our output ports can be kinda expensive.  We
   // should cache the images.
@@ -228,6 +236,33 @@ void LcmImageArrayToImages::CalcDepthImage(const Context<double>& context,
       *depth_image = ImageDepth32F();
     }
   }
+}
+
+void LcmImageArrayToImages::CalcLabelImage(const Context<double>& context,
+                                           ImageLabel16I* label_image) const {
+  const auto& images =
+      image_array_t_input_port().Eval<lcmt_image_array>(context);
+
+  // Look through the image array and just grab the first label image.
+  const lcmt_image* lcm_image = nullptr;
+  for (int i = 0; i < images.num_images; i++) {
+    if (images.images[i].pixel_format == lcmt_image::PIXEL_FORMAT_LABEL) {
+      lcm_image = &images.images[i];
+      break;
+    }
+  }
+  if (lcm_image == nullptr) {
+    *label_image = {};
+    return;
+  }
+  if (lcm_image->channel_type != lcmt_image::CHANNEL_TYPE_INT16) {
+    drake::log()->error("Unsupported label image channel type: {}",
+                        lcm_image->channel_type);
+    *label_image = {};
+    return;
+  }
+
+  UnpackLcmImage(lcm_image, label_image);
 }
 
 }  // namespace sensors

@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -103,24 +103,24 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   const int num_bodies = model.num_bodies();
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
 
-    internal::BodyNodeIndex node_index = body.node_index();
+    internal::MobodIndex mobod_index = body.mobod_index();
 
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RotationMatrix<T> R_WB = pc.get_R_WB(node_index);
+    const math::RotationMatrix<T> R_WB = pc.get_R_WB(mobod_index);
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
     const Vector3<T> f_Bcm_W = mass * gravity_vector();
     const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
-    F_Bo_W_array[node_index] += F_Bo_W;
+    F_Bo_W_array[mobod_index] += F_Bo_W;
   }
 }
 
@@ -135,7 +135,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
@@ -144,7 +144,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
@@ -168,7 +168,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+    const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
     if (!is_enabled(body.model_instance())) continue;
@@ -177,12 +177,12 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
     const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
     const Vector3<T>& v_WBcm = V_WBcm.translational();
 

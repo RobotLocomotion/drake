@@ -4,8 +4,6 @@
 
 directives:
 
-# N.B. The namespacing features are only available for RBT.
-
 # No namespace.
 - add_directives:
     file: package://process_model_directives_test/add_scoped_sub.dmd.yaml
@@ -14,9 +12,6 @@ directives:
     X_PF:
       base_frame: simple_model::sub_added_frame
       translation: [5, 10, 15]
-# N.B. If this were added after the namespaced instances,
-# `simple_model_test_frame` would cause a failure because it appears in multiple
-# model instances.
 - add_frame:
     name: simple_model_test_frame
     X_PF:

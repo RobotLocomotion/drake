@@ -4,7 +4,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples import PendulumPlant
 from pydrake.multibody.tree import MultibodyForces
 from pydrake.multibody.plant import MultibodyPlant
@@ -148,9 +147,6 @@ class TestControllers(unittest.TestCase):
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
                               OutputPort)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(controller.get_output_port_force(),
-                                  OutputPort)
         self.assertFalse(controller.is_pure_gravity_compensation())
 
         controller = InverseDynamics(
@@ -160,9 +156,6 @@ class TestControllers(unittest.TestCase):
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
                               OutputPort)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(controller.get_output_port_force(),
-                                  OutputPort)
         self.assertTrue(controller.is_pure_gravity_compensation())
 
     def test_inverse_dynamics_controller(self):
@@ -232,8 +225,7 @@ class TestControllers(unittest.TestCase):
 
         # Set the plant's context.
         plant_context = plant.CreateDefaultContext()
-        x_plant = plant.GetMutablePositionsAndVelocities(plant_context)
-        x_plant[:] = x
+        plant.SetPositionsAndVelocities(plant_context, x)
 
         # Compute the expected value of the generalized forces using
         # inverse dynamics.

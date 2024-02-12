@@ -1,7 +1,6 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 #include <algorithm>
-#include <memory>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -16,17 +15,11 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
-#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
 #include "drake/multibody/plant/test_utilities/rigid_body_on_compliant_ground.h"
-#include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
@@ -91,8 +84,10 @@ GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   MultibodyPlant<double> plant(0.01);
   auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
   plant.AddPhysicalModel(std::move(deformable_model));
-  // N.B. Currently the manager only supports SAP.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  // N.B. Deformables are only supported with the SAP solver.
+  // Thus for testing we choose one arbitrary contact approximation that uses
+  // the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   plant.Finalize();
   auto contact_manager = std::make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* contact_manager_ptr =
@@ -181,7 +176,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     for (int i = 0; i < static_cast<int>(pairs.size()); ++i) {
       const DiscreteContactPair<double>& point_pair = pairs[i];
 
-      if (i == 0) {
+      if (i < num_point_pairs) {
         // Unit tests for point contact only.
         // Here we use our knowledge that we always place point contact pairs
         // followed by hydroelastic contact pairs.
@@ -204,6 +199,19 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
         const double pz_WC = -k2 / (k1 + k2) * penetration_distance_ + pz_WS1 +
                              sphere1_params.radius;
         EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
+
+        // Check the optional parameters are set correctly for point contact.
+        // The index into `point_pair_penetrations` should match the index into
+        // `pairs`.
+        EXPECT_TRUE(point_pair.point_pair_index.has_value());
+        EXPECT_EQ(point_pair.point_pair_index.value(), i);
+        EXPECT_FALSE(point_pair.surface_index.has_value());
+        EXPECT_FALSE(point_pair.face_index.has_value());
+      } else {
+        // Check the optional parameters are set correctly for hydro.
+        EXPECT_FALSE(point_pair.point_pair_index.has_value());
+        EXPECT_TRUE(point_pair.surface_index.has_value());
+        EXPECT_TRUE(point_pair.face_index.has_value());
       }
 
       // Unit tests for both point and hydroelastic discrete pairs.

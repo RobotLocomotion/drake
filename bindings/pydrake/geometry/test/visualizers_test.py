@@ -5,6 +5,7 @@ import unittest
 import urllib.request
 
 import numpy as np
+import umsgpack
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
@@ -174,9 +175,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetCameraTarget(target_in_world=[1, 2, 3])
         meshcat.SetCameraPose(camera_in_world=[3, 4, 5],
                               target_in_world=[1, 1, 1])
-        meshcat.AddButton(name="button", keycode="KeyB")
-        self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
-        meshcat.DeleteButton(name="button")
+        meshcat.AddButton(name="alice", keycode="KeyB")
+        self.assertEqual(meshcat.GetButtonClicks(name="alice"), 0)
+        meshcat._InjectWebsocketMessage(message=umsgpack.packb({
+            "type": "button",
+            "name": "alice",
+        }))
+        self.assertEqual(meshcat.GetButtonClicks(name="alice"), 1)
+        meshcat.DeleteButton(name="alice")
         meshcat.AddSlider(name="slider",
                           min=0,
                           max=1,
@@ -250,6 +256,22 @@ class TestGeometryVisualizers(unittest.TestCase):
         packed = meshcat._GetPackedProperty(path="/Background",
                                             property="visible")
         self.assertGreater(len(packed), 0)
+
+        # Camera tracking.
+        # The pose is None because no meshcat session has broadcast its pose.
+        self.assertIsNone(meshcat.GetTrackedCameraPose())
+
+    def test_meshcat_404(self):
+        meshcat = mut.Meshcat()
+
+        good_url = meshcat.web_url()
+        with urllib.request.urlopen(good_url) as response:
+            self.assertTrue(response.read(1))
+
+        bad_url = f"{good_url}/no_such_file"
+        with self.assertRaisesRegex(Exception, "HTTP.*404"):
+            with urllib.request.urlopen(bad_url) as response:
+                response.read(1)
 
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)

@@ -2,13 +2,20 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 
@@ -23,13 +30,22 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
+using geometry::optimization::Hyperrectangle;
+using geometry::optimization::Intersection;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
+using multibody::MultibodyPlant;
+using multibody::PlanarJoint;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
 using solvers::MathematicalProgram;
 
 bool GurobiOrMosekSolverAvailable() {
@@ -482,6 +498,64 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidVelocityBounds) {
                               "where both subgraphs have zero order.");
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
+  /* The velocity of a curve is not defined for a subgraph of order 0.*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& regions1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1);
+
+  auto& regions2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1);
+
+  auto& regions1_to_regions2 = gcs.AddEdges(regions1, regions2);
+
+  // Zero order path continuity should throw an error, since its support by
+  // default.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddPathContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+
+  // Negative continuity should be rejected as well.
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1.AddPathContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(-1),
+      "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddPathContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+
+  // Adding global continuity constraints should consider the order of the
+  // subgraphs and edges between subgraphs. Thus very large continuity orders
+  // shouldn't be rejected.
+  DRAKE_EXPECT_NO_THROW(gcs.AddPathContinuityConstraints(100));
+
+  // Since the order of region1 is 1, velocity continuity should be support.
+  DRAKE_EXPECT_NO_THROW(regions1.AddPathContinuityConstraints(1));
+  // But acceleration continuity would require the region to be of order 2.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint of order greater than the set "
+      "order.");
+
+  // Similarly the edges between subgraphs allow for velocity but no
+  // acceleration continuity.
+  DRAKE_EXPECT_NO_THROW(regions1_to_regions2.AddPathContinuityConstraints(1));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint to a subgraph edge where both "
+      "subgraphs order are not greater than or equal to the requested "
+      "continuity order.");
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
   /* Adds four points to the graph without any edges. */
   const int kDimension = 2;
@@ -700,6 +774,80 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+}
+
+TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
+  const int kDimension = 2;
+  const double kSpeed = 1.0;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start(0.2, 0.2), goal(4.8, 4.8);
+  auto& regions = gcs.AddRegions(regions_, 6);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0.0, 0.0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0.0, 0.0);
+
+  gcs.AddEdges(source, regions);
+  gcs.AddEdges(regions, target);
+
+  gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
+  gcs.AddVelocityBounds(Vector2d(-kSpeed, -kSpeed), Vector2d(kSpeed, kSpeed));
+
+  // Add velocity and acceleration continuity on r(s).
+  gcs.AddPathContinuityConstraints(1);
+  gcs.AddPathContinuityConstraints(2);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 2.5e3);
+
+  if (!GurobiOrMosekSolverAvailable()) {
+    return;
+  }
+
+  // Define solver options.
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 5;
+
+  auto [traj, result] = gcs.SolvePath(source, target, options);
+
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  auto normalized_traj = GcsTrajectoryOptimization::NormalizeSegmentTimes(traj);
+  EXPECT_TRUE(CompareMatrices(
+      normalized_traj.value(normalized_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(normalized_traj.value(normalized_traj.end_time()),
+                              goal, 1e-6));
+  EXPECT_EQ(normalized_traj.get_number_of_segments(),
+            traj.get_number_of_segments());
+  EXPECT_EQ(normalized_traj.start_time(), traj.start_time());
+  // Since each segment will be one second long, we expect the number of
+  // segments to match the duration of the normalized trajectory.
+  EXPECT_EQ(normalized_traj.get_number_of_segments(),
+            normalized_traj.end_time() - normalized_traj.start_time());
+
+  // Check for velocity and acceleration continuity.
+  for (int i = 0; i < normalized_traj.get_number_of_segments() - 1; ++i) {
+    auto normalized_segment_vel = normalized_traj.segment(i).MakeDerivative();
+    auto normalized_next_segment_vel =
+        normalized_traj.segment(i + 1).MakeDerivative();
+    EXPECT_TRUE(CompareMatrices(
+        normalized_segment_vel->value(normalized_segment_vel->end_time()),
+        normalized_next_segment_vel->value(
+            normalized_next_segment_vel->start_time()),
+        1e-6));
+
+    auto normalized_segment_acc = normalized_traj.segment(i).MakeDerivative(2);
+    auto normalized_next_segment_acc =
+        normalized_traj.segment(i + 1).MakeDerivative(2);
+    EXPECT_TRUE(CompareMatrices(
+        normalized_segment_acc->value(normalized_segment_acc->end_time()),
+        normalized_next_segment_acc->value(
+            normalized_next_segment_acc->start_time()),
+        1e-6));
+  }
 }
 
 TEST_F(SimpleEnv2D, DurationDelay) {
@@ -942,6 +1090,392 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, EdgesFromWrappedJoints) {
+  // With wrapping continous joints
+  Vector3d point_1(0.5, -12 * M_PI + 0.1, 12 * M_PI - 0.1);
+  Vector3d point_2(0.5, 12 * M_PI - 0.1, 0.0);
+  HPolyhedron box = HPolyhedron::MakeUnitBox(3);
+  const auto regions = MakeConvexSets(Point(point_1), Point(point_2), box);
+  // Let's make 4 scenarios
+  const std::vector<int> continuous_revolute_joints_1 = {};
+  const std::vector<int> continuous_revolute_joints_2 = {1};
+  const std::vector<int> continuous_revolute_joints_3 = {0, 2};
+  const std::vector<int> continuous_revolute_joints_4 = {2, 1};
+  // scenario 1: no wrapping, no edges
+  auto gcs_1 = GcsTrajectoryOptimization(3, continuous_revolute_joints_1);
+  gcs_1.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_1.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 2: wrapping on joint 1, point_2 <--> box
+  auto gcs_2 = GcsTrajectoryOptimization(3, continuous_revolute_joints_2);
+  gcs_2.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_2.graph_of_convex_sets().Edges().size(), 2);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      0);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_2.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      1);
+  // scenario 3: wrapping on joint 0 and 2, no edges
+  auto gcs_3 = GcsTrajectoryOptimization(3, continuous_revolute_joints_3);
+  gcs_3.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_3.graph_of_convex_sets().Edges().size(), 0);
+  // scenario 4: wrapping on joint 1 and 2, point_1 <--> box and point_2 <-->
+  // box
+  auto gcs_4 = GcsTrajectoryOptimization(3, continuous_revolute_joints_4);
+  gcs_4.AddRegions(regions, 1);
+  EXPECT_EQ(gcs_4.graph_of_convex_sets().Edges().size(), 4);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(0)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(1)->outgoing_edges().size(),
+      1);
+  EXPECT_EQ(
+      gcs_4.graph_of_convex_sets().Vertices().at(2)->outgoing_edges().size(),
+      2);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
+  /*
+             0, 2π
+    6 (rad) *********    ◄──┐
+         G *         ***    │
+       ***             ***  Short path
+      **                 ** (with wraparound)
+      **                 **
+      *                   *
+      **                 **
+      **                 S  1 (rad)
+       ***             ***
+         ***         ***
+     ▲      *********
+     └── Long path (no wraparound)
+  */
+  const double tol = 1e-7;
+
+  Eigen::Matrix<double, 1, 2> points1, points2, points3;
+  points1 << 0, 2.4;
+  VPolytope v1(points1);
+  points2 << 2.39, 4.78;
+  VPolytope v2(points2);
+  points3 << 4.78, 7.17;
+  VPolytope v3(points3);
+
+  Vector1d start(1.0), goal(6.0);
+  DRAKE_DEMAND(v1.PointInSet(start, tol));
+  DRAKE_DEMAND(v3.PointInSet(goal, tol));
+
+  const double expected_cost_wraparound = 2.0 * M_PI - 6.0 + 1.0;
+  const double expected_cost_no_wraparound = 6.0 - 1.0;
+  DRAKE_DEMAND(expected_cost_wraparound < expected_cost_no_wraparound);
+
+  std::vector<int> continuous_revolute_joints = {0};
+
+  // Check multiple permutations to make sure the ordering of which set is
+  // "wrapped around" does not affect the algorithm. Sets v1 and v3 overlap with
+  // a wraparound edge, so flipping their order is sufficient for checking this
+  // behavior.
+  std::vector<ConvexSets> permutations = {MakeConvexSets(v1, v2, v3),
+                                          MakeConvexSets(v3, v2, v1)};
+  for (const auto& convexsets : permutations) {
+    GcsTrajectoryOptimization gcs1(1, continuous_revolute_joints);
+    auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
+
+    auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
+    auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+    gcs1.AddEdges(source1, regions1);
+    gcs1.AddEdges(regions1, target1);
+
+    // 3 sets fully connected implies 3 bidirectional edges implies 6 edges
+    // The start and goal are each connected to one set, so 8 total.
+    EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 8);
+
+    regions1.AddPathLengthCost(1);
+
+    auto [traj1, result1] = gcs1.SolvePath(source1, target1);
+    ASSERT_TRUE(result1.is_success());
+    EXPECT_NEAR(result1.get_optimal_cost(), expected_cost_wraparound, tol);
+    EXPECT_EQ(traj1.get_number_of_segments(), 2);
+    EXPECT_TRUE(CompareMatrices(traj1.value(traj1.start_time()), start, 1e-6));
+    EXPECT_TRUE(CompareMatrices(traj1.value(traj1.end_time()), goal, 1e-6));
+
+    // Now check that the wraparound is supported when adding edges between
+    // subgraphs.
+    Vector1d start_alternate(start[0] - 4.0 * M_PI);
+    Vector1d goal_alternate(goal[0] + 6.0 * M_PI);
+    auto& source1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(start_alternate)), 0);
+    auto& target1_alternate =
+        gcs1.AddRegions(MakeConvexSets(Point(goal_alternate)), 0);
+
+    gcs1.AddEdges(source1_alternate, regions1);
+    gcs1.AddEdges(regions1, target1_alternate);
+
+    // source1_alternate and target1_alternate should each be connected to one
+    // set in regions1, so there should now be 10 edges.
+    EXPECT_EQ(gcs1.graph_of_convex_sets().Edges().size(), 10);
+
+    auto [traj1_alternate, result1_alternate] =
+        gcs1.SolvePath(source1, target1);
+    ASSERT_TRUE(result1_alternate.is_success());
+    EXPECT_NEAR(result1_alternate.get_optimal_cost(), expected_cost_wraparound,
+                tol);
+    EXPECT_EQ(traj1_alternate.get_number_of_segments(), 2);
+  }
+
+  // Now no wraparound
+  GcsTrajectoryOptimization gcs2(1);
+  auto& regions2 = gcs2.AddRegions(MakeConvexSets(v1, v2, v3), 1, 0.01, 1, "");
+
+  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs2.AddEdges(source2, regions2);
+  gcs2.AddEdges(regions2, target2);
+
+  // 3 sets connected in a chain implies 2 bidirectional edges implies 4 edges
+  // The start and goal are each connected to one set, so 6 total.
+  EXPECT_EQ(gcs2.graph_of_convex_sets().Edges().size(), 6);
+
+  regions2.AddPathLengthCost(1);
+
+  auto [traj2, result2] = gcs2.SolvePath(source2, target2);
+  ASSERT_TRUE(result2.is_success());
+  EXPECT_NEAR(result2.get_optimal_cost(), expected_cost_no_wraparound, tol);
+  EXPECT_EQ(traj2.get_number_of_segments(), 3);
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj2.value(traj2.end_time()), goal, 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
+  if (!GurobiOrMosekSolverAvailable()) {
+    // These test cases are too large for free solvers such as CSDP.
+    return;
+  }
+  const double tol = 1e-7;
+
+  ConvexSets sets;
+  Eigen::Matrix<double, 2, 4> points;
+  // clang-format off
+  points << 0, 0,   2.4, 2.4,
+            0, 2.4, 0,   2.4;
+  // clang-format on
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      Eigen::MatrixXd new_points = points;
+      new_points = new_points.colwise() + i * Eigen::Vector2d{2.39, 0};
+      new_points = new_points.colwise() + j * Eigen::Vector2d{0, 2.39};
+      sets.emplace_back(copyable_unique_ptr(VPolytope(new_points)));
+    }
+  }
+
+  Vector2d start(1.0, 1.0), goal(6.0, 6.0);
+  DRAKE_DEMAND(sets[0]->PointInSet(start, tol));
+  DRAKE_DEMAND(sets[8]->PointInSet(goal, tol));
+
+  const double dist_long_way = 5.0;
+  const double dist_shortcut = 1.0 + (2.0 * M_PI - 6.0);
+  const double expected_cost_both_wraparound = sqrt(2) * dist_shortcut;
+  const double expected_cost_one_wraparound =
+      sqrt((dist_long_way * dist_long_way) + (dist_shortcut * dist_shortcut));
+  const double expected_cost_no_wraparound = sqrt(2) * dist_long_way;
+  DRAKE_DEMAND(expected_cost_both_wraparound < expected_cost_one_wraparound);
+  DRAKE_DEMAND(expected_cost_one_wraparound < expected_cost_no_wraparound);
+
+  std::vector<int> continuous_revolute_joints;
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 100;
+
+  struct TestConfig {
+    std::string name;
+    std::vector<int> continuous_joints;
+    double expected_cost{};
+    int edge_count{};
+    Eigen::Vector2d start_offset_works;
+    Eigen::Vector2d start_offset_fails;
+  };
+
+  const std::vector<TestConfig> configs{
+      {.name = "No wraparound",
+       .expected_cost = expected_cost_no_wraparound,
+       // 9 sets connected in a grid implies 12 bidirectional edges implies 24
+       // edges Edges crossing the corners gives us 8 more bidirectional edges
+       // (16 edges) The start and goal are each connected to one set, so 42
+       // total.
+       .edge_count = 42,
+       .start_offset_works = {0.0, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 2.0 * M_PI}},
+      {.name = "One wraparound",
+       .continuous_joints = {0},
+       .expected_cost = expected_cost_one_wraparound,
+       // One wraparound adds 3 new edges wrapping around along the rows, and
+       // also 4 new edges crossing the rows, so 14 new directional edges.
+       .edge_count = 56,
+       .start_offset_works = {-2.0 * M_PI, 0.0},
+       .start_offset_fails = {-2.0 * M_PI, 4.0 * M_PI}},
+      {.name = "Two wraparound",
+       .continuous_joints = {0, 1},
+       .expected_cost = expected_cost_both_wraparound,
+       // Another wraparound adds another 3 new edges wrapping around along the
+       // columns, and also 4 new edges crossing the columns, and finally 2 more
+       // edges connecting the opposite corners (e.g. top-left to bottom-right),
+       // so 18 new directional edges.
+       .edge_count = 74,
+       .start_offset_works = {-2.0 * M_PI, 4.0 * M_PI},
+       .start_offset_fails = {0.0, 0.0}}};
+  // For two wraparound, none fail, so we use a conditional
+  // check in the test body to skip this case.
+  for (const TestConfig& config : configs) {
+    SCOPED_TRACE(config.name);
+    GcsTrajectoryOptimization gcs(2, config.continuous_joints);
+    auto& regions = gcs.AddRegions(sets, 1, 0.01, 1, "");
+
+    auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
+    auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+    gcs.AddEdges(source, regions);
+    gcs.AddEdges(regions, target);
+
+    EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), config.edge_count);
+
+    regions.AddPathLengthCost(1);
+
+    auto [traj, result] = gcs.SolvePath(source, target, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), config.expected_cost, tol);
+    EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+    EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+    auto& source2 = gcs.AddRegions(
+        MakeConvexSets(Point(start + config.start_offset_works)), 0);
+    gcs.AddEdges(source2, regions);
+
+    auto [traj2, result2] = gcs.SolvePath(source2, target, options);
+    EXPECT_TRUE(result2.is_success());
+    EXPECT_NEAR(result2.get_optimal_cost(), config.expected_cost, tol);
+
+    if (config.continuous_joints.size() != 2) {
+      // When both dimensions are continuous revolute, any start offset will
+      // work, so we want to skip it.
+      auto& source3 = gcs.AddRegions(
+          MakeConvexSets(Point(start + config.start_offset_fails)), 0);
+      gcs.AddEdges(source3, regions);
+
+      auto [traj3, result3] = gcs.SolvePath(source3, target, options);
+      EXPECT_FALSE(result3.is_success());
+    }
+  }
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest,
+           WraparoundWithInvalidConvexityRadius) {
+  // 1D example
+  Eigen::Matrix<double, 1, 2> points;
+  points << 0, 4;
+  const VPolytope v(points);
+  std::vector<int> continuous_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), 1),
+                              ".*doesn't respect the convexity radius.*");
+  const std::vector<std::pair<int, int>> edges;
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddRegions(MakeConvexSets(v), edges, 1),
+                              ".*doesn't respect the convexity radius.*");
+
+  // 2D example
+  Eigen::Matrix<double, 2, 4> points_new;
+  // clang-format off
+  points_new << 0, 0, 2, 2,
+                0, 4, 0, 4;
+  // clang-format on
+  const VPolytope w(points_new);
+  std::vector<int> continuous_revolute_joints1 = {0};
+  std::vector<int> continuous_revolute_joints2 = {1};
+  std::vector<int> continuous_revolute_joints3 = {0, 1};
+  GcsTrajectoryOptimization gcs0(2);
+  GcsTrajectoryOptimization gcs1(2, continuous_revolute_joints1);
+  GcsTrajectoryOptimization gcs2(2, continuous_revolute_joints2);
+  GcsTrajectoryOptimization gcs3(2, continuous_revolute_joints3);
+  DRAKE_EXPECT_NO_THROW(gcs0.AddRegions(MakeConvexSets(w), 1));
+  DRAKE_EXPECT_NO_THROW(gcs1.AddRegions(MakeConvexSets(w), 1));
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs2.AddRegions(MakeConvexSets(w), 1),
+                              ".*doesn't respect the convexity radius.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs3.AddRegions(MakeConvexSets(w), 1),
+                              ".*doesn't respect the convexity radius.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
+  Eigen::Matrix<double, 1, 2> points;
+  points << 0, 2;
+  const VPolytope v(points);
+  std::vector<int> continuous_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  EXPECT_EQ(gcs.continuous_revolute_joints().size(),
+            continuous_revolute_joints.size());
+  EXPECT_EQ(gcs.continuous_revolute_joints()[0], continuous_revolute_joints[0]);
+
+  continuous_revolute_joints.emplace_back(0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*continuous_revolute_joints must not contain duplicate entries.*");
+
+  continuous_revolute_joints = {-1};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*Each joint index in continuous_revolute_joints must lie in the "
+      "interval.*");
+
+  continuous_revolute_joints = {2};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GcsTrajectoryOptimization(1, continuous_revolute_joints),
+      ".*Each joint index in continuous_revolute_joints must lie in the "
+      "interval.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& first_body =
+      plant.AddRigidBody("first_body", SpatialInertia<double>());
+  const RigidBody<double>& second_body =
+      plant.AddRigidBody("second_body", SpatialInertia<double>());
+  const RigidBody<double>& third_body =
+      plant.AddRigidBody("third_body", SpatialInertia<double>());
+  const RigidBody<double>& fourth_body =
+      plant.AddRigidBody("fourth_body", SpatialInertia<double>());
+
+  // Add a planar joint without limits
+  plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
+                              {}, Eigen::Matrix<double, 3, 1>::Zero());
+
+  // Add a planar joint with limits
+  std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
+      "second_joint", first_body.body_frame(), second_body.body_frame(),
+      Eigen::Matrix<double, 3, 1>::Zero()));
+  second_joint_ptr->set_position_limits(Eigen::Vector3d{-1.0, -1.0, -1.0},
+                                        Eigen::Vector3d{1.0, 1.0, 1.0});
+  plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
+
+  // Add a revolute joint without limits
+  plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
+
+  // Add a revolute joint with limits
+  plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
+                                -1.0, 1.0);
+
+  plant.Finalize();
+
+  const std::vector<int> continuous_joint_indices =
+      trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
+  ASSERT_EQ(continuous_joint_indices.size(), 2);
+  EXPECT_EQ(continuous_joint_indices[0], 2);
+  EXPECT_EQ(continuous_joint_indices[1], 6);
 }
 
 }  // namespace

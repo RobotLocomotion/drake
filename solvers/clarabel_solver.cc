@@ -7,9 +7,12 @@
 #include <Clarabel>
 #include <Eigen/Eigen>
 
+#include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
+#include "drake/solvers/scs_clarabel_common.h"
+#include "drake/tools/workspace/clarabel_cpp_internal/serialize.h"
 
 namespace drake {
 namespace solvers {
@@ -145,16 +148,166 @@ void SetSolverDetails(
   solver_details->status = SolverStatusToString(clarabel_solution.status);
 }
 
-clarabel::DefaultSettings<double> SetClarabelSettings(
-    const SolverOptions& solver_options) {
-  clarabel::DefaultSettings<double> settings =
+class SettingsConverter {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SettingsConverter);
+
+  // When `use_nerfed_default_tolerances` is true, we use looser tolerance
+  // defaults to help reduce the possiblity of Clarabel crashing the entire
+  // process due to https://github.com/oxfordcontrol/Clarabel.rs/issues/66.
+  // We should remove this nerf after Clarabel is fixed.
+  SettingsConverter(const SolverOptions& solver_options,
+                    bool use_nerfed_default_tolerances) {
+    // N.B. We must adjust our default values before starting to process the
+    // user's requested `solver_options`.
+    if (use_nerfed_default_tolerances) {
+      drake::log()->debug(
+          "ClarabelSolver is using loosened default tolerances due to the "
+          "presence of SDP and Exponential Cone Constraints. This is done to "
+          "prevent numerical issues from potentially crashing your program "
+          "due to https://github.com/oxfordcontrol/Clarabel.rs/issues/66. "
+          "If you need to solve your program to high precision, consider "
+          "manually setting SolverOptions for 'tol_gap_abs', 'tol_gap_rel', "
+          "and 'tol_feas'. Values set in SolverOptions take prececence over "
+          "the defaults");
+      settings_.tol_gap_abs *= 100.0;
+      settings_.tol_gap_rel *= 100.0;
+      settings_.tol_feas *= 100.0;
+    }
+
+    // Propagate Drake's common options into `settings_`.
+    settings_.verbose = solver_options.get_print_to_console();
+    // TODO(jwnimmer-tri) Handle get_print_file_name().
+
+    // Copy the Clarabel-specific `solver_options` to pending maps.
+    pending_options_double_ =
+        solver_options.GetOptionsDouble(ClarabelSolver::id());
+    pending_options_int_ = solver_options.GetOptionsInt(ClarabelSolver::id());
+    pending_options_str_ = solver_options.GetOptionsStr(ClarabelSolver::id());
+
+    // Move options from `pending_..._` to `settings_`.
+    Serialize(this, settings_);
+
+    // Identify any unsupported names (i.e., any leftovers in `pending_..._`).
+    std::vector<std::string> unknown_names;
+    for (const auto& [name, _] : pending_options_double_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_int_) {
+      unknown_names.push_back(name);
+    }
+    for (const auto& [name, _] : pending_options_str_) {
+      unknown_names.push_back(name);
+    }
+    if (unknown_names.size() > 0) {
+      throw std::logic_error(fmt::format(
+          "ClarabelSolver: unrecognized solver options {}. Please check "
+          "https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/ "
+          "for the supported solver options.",
+          fmt::join(unknown_names, ", ")));
+    }
+  }
+
+  const clarabel::DefaultSettings<double>& settings() const {
+    return settings_;
+  }
+
+  void Visit(const NameValue<double>& x) {
+    this->SetFromDoubleMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<bool>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value == 0 || option_value == 1);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<uint32_t>& x) {
+    auto it = pending_options_int_.find(x.name());
+    if (it != pending_options_int_.end()) {
+      const int option_value = it->second;
+      DRAKE_THROW_UNLESS(option_value >= 0);
+    }
+    this->SetFromIntMap(x.name(), x.value());
+  }
+  void Visit(const NameValue<clarabel::ClarabelDirectSolveMethods>& x) {
+    DRAKE_THROW_UNLESS(x.name() == std::string{"direct_solve_method"});
+    // TODO(jwnimmer-tri) Add support for this option.
+    // For now it is unsupported and will throw (as an unknown name, below).
+  }
+
+ private:
+  void SetFromDoubleMap(const char* name, double* clarabel_value) {
+    auto it = pending_options_double_.find(name);
+    if (it != pending_options_double_.end()) {
+      *clarabel_value = it->second;
+      pending_options_double_.erase(it);
+    }
+  }
+  template <typename T>
+  void SetFromIntMap(const char* name, T* clarabel_value) {
+    auto it = pending_options_int_.find(name);
+    if (it != pending_options_int_.end()) {
+      *clarabel_value = it->second;
+      pending_options_int_.erase(it);
+    }
+  }
+
+  std::unordered_map<std::string, double> pending_options_double_;
+  std::unordered_map<std::string, int> pending_options_int_;
+  std::unordered_map<std::string, std::string> pending_options_str_;
+
+  clarabel::DefaultSettings<double> settings_ =
       clarabel::DefaultSettingsBuilder<double>::default_settings().build();
-  // Clarabel defaults to print to console. But that would create too much noise
-  // on the console. So we overwrite the default value with
-  // solver_options.get_print_to_console().
-  settings.verbose = solver_options.get_print_to_console();
-  // TODO(hongkai.dai): set more options.
-  return settings;
+};
+
+// See ParseBoundingBoxConstraints for the meaning of bbcon_dual_indices.
+void SetBoundingBoxDualSolution(
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const Eigen::VectorXd>& dual,
+    const std::vector<std::vector<std::pair<int, int>>>& bbcon_dual_indices,
+    MathematicalProgramResult* result) {
+  for (int i = 0; i < ssize(prog.bounding_box_constraints()); ++i) {
+    Eigen::VectorXd bbcon_dual = Eigen::VectorXd::Zero(
+        prog.bounding_box_constraints()[i].variables().rows());
+    for (int j = 0; j < prog.bounding_box_constraints()[i].variables().rows();
+         ++j) {
+      if (prog.bounding_box_constraints()[i].evaluator()->lower_bound()(j) ==
+          prog.bounding_box_constraints()[i].evaluator()->upper_bound()(j)) {
+        // This is an equality constraint.
+        // Notice that we have a negative sign in front of dual.
+        // This is because in Clarabel, for a problem with the linear equality
+        // constraint
+        // min cᵀx
+        // s.t A*x=b
+        // Clarabel formulates the dual problem as
+        // max -bᵀy
+        // s.t Aᵀy = -c
+        // Note that there is a negation sign before b and c in the Clarabel
+        // dual problem, which is different from the standard formulation (no
+        // negation sign). Hence the dual variable for the linear equality
+        // constraint is the negation of the shadow price.
+        bbcon_dual[j] = -dual(bbcon_dual_indices[i][j].second);
+      } else {
+        if (bbcon_dual_indices[i][j].first != -1) {
+          // lower bound is not infinity.
+          // The shadow price for the lower bound is positive. The Clarabel dual
+          // for the positive cone is also positive, so we add the Clarabel
+          // dual.
+          bbcon_dual[j] += dual(bbcon_dual_indices[i][j].first);
+        }
+        if (bbcon_dual_indices[i][j].second != -1) {
+          // upper bound is not infinity.
+          // The shadow price for the upper bound is negative. The Clarabel dual
+          // for the positive cone is positive, so we subtract the Clarabel
+          // dual.
+          bbcon_dual[j] -= dual(bbcon_dual_indices[i][j].second);
+        }
+      }
+    }
+    result->set_dual_solution(prog.bounding_box_constraints()[i], bbcon_dual);
+  }
 }
 
 }  // namespace
@@ -284,7 +437,13 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
   }
 
-  // TODO(hongkai.dai): Add PSD constraint.
+  std::vector<int> psd_cone_length;
+  internal::ParsePositiveSemidefiniteConstraints(
+      prog, /* upper triangular = */ true, &A_triplets, &b, &A_row_count,
+      &psd_cone_length);
+  for (const int length : psd_cone_length) {
+    cones.push_back(clarabel::PSDTriangleConeT<double>(length));
+  }
 
   internal::ParseExponentialConeConstraints(prog, &A_triplets, &b,
                                             &A_row_count);
@@ -299,8 +458,16 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   const Eigen::Map<Eigen::VectorXd> b_vec{b.data(), ssize(b)};
 
-  clarabel::DefaultSettings<double> settings =
-      SetClarabelSettings(merged_options);
+  // When the program mixes PSD cones with either Exponential or Power cones, we
+  // must loosen the default tolerance to help reduce the possiblity of crashing
+  // the entire process. Since we never add power cones (nor generialized power
+  // cones), the only case we need to guard is PSD mixed with Exponential.
+  const bool use_nerfed_default_tolerances =
+      psd_cone_length.size() && prog.exponential_cone_constraints().size();
+
+  const SettingsConverter settings_converter(merged_options,
+                                             use_nerfed_default_tolerances);
+  clarabel::DefaultSettings<double> settings = settings_converter.settings();
 
   clarabel::DefaultSolver<double> solver(P, q_vec, A, b_vec, cones, settings);
 
@@ -316,6 +483,12 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
 
   result->set_x_val(
       Eigen::Map<Eigen::VectorXd>(solution.x.data(), prog.num_vars()));
+
+  SetBoundingBoxDualSolution(prog, solution.z, bbcon_dual_indices, result);
+  internal::SetDualSolution(prog, solution.z, linear_constraint_dual_indices,
+                            linear_eq_y_start_indices,
+                            lorentz_cone_y_start_indices,
+                            rotated_lorentz_cone_y_start_indices, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
     solution_result = SolutionResult::kSolutionFound;

@@ -11,7 +11,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
@@ -29,15 +28,15 @@ namespace optimization {
  This class tries to find large convex polytopes in the tangential-configuration
  space, such that all configurations in the convex polytopes is collision free.
  By tangential-configuration space, we mean the revolute joint angle θ is
- replaced by t = tan(θ/2).
+ replaced by t = tan(θ/2). We refer to the algorithm as C-IRIS.
  For more details, refer to the paper
 
- Certified Polyhedral Decomposition of Collisoin-Free Configuration Space
+ Certified Polyhedral Decomposition of Collision-Free Configuration Space
  by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
 
  A conference version is published at
 
- Finding and Optimizing Certified, Colision-Free Regions in Configuration Space
+ Finding and Optimizing Certified, Collision-Free Regions in Configuration Space
  for Robot Manipulators
  by Alexandre Amice*, Hongkai Dai*, Peter Werner, Annan Zhang and Russ Tedrake.
  */
@@ -181,7 +180,7 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   };
 
   struct FindSeparationCertificateGivenPolytopeOptions final
-      : FindSeparationCertificateOptions {
+      : public FindSeparationCertificateOptions {
     ~FindSeparationCertificateGivenPolytopeOptions() override = default;
     // If a row in C*s<=d is redundant (this row is implied by other rows in
     // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian

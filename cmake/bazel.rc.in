@@ -39,11 +39,14 @@ build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
 build:Release --compilation_mode=opt
 build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-g
 
-# Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations for solvers.
+# Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations.
 build @BAZEL_CONFIG@
 
 # Respect user.bazelrc (when present).
 try-import @PROJECT_SOURCE_DIR@/user.bazelrc
+
+# Use build-specific bazel options (if present).
+try-import @PROJECT_BINARY_DIR@/drake.bazelrc
 
 # TODO(jwnimmer-tri) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also, and
 # specifically make sure the user's -std=c++NN is respected.

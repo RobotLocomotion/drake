@@ -1,6 +1,5 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/monostate_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -188,7 +187,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("Run", &Class::Run, py::arg("diagram"),
             py::arg("timeout") = py::none(),
-            py::arg("stop_button_keycode") = "Escape", cls_doc.Run.doc)
+            py::arg("stop_button_keycode") = "Escape",
+            // This is a long-running function that sleeps; for both reasons, we
+            // must release the GIL.
+            py::call_guard<py::gil_scoped_release>(), cls_doc.Run.doc)
         .def("SetPositions", &Class::SetPositions, py::arg("q"),
             cls_doc.SetPositions.doc);
   }

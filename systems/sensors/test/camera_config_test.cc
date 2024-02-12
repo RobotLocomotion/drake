@@ -357,7 +357,7 @@ void DepthIsValid(const DepthRenderCamera& camera, const CameraConfig& config) {
 GTEST_TEST(CameraConfigTest, MakeCameras) {
   // These values are *supposed* to be different from the default values except
   // for X_PB, fps, rgb, depth, and do_compress. None of those contribute
-  // to
+  // to the test result.
   CameraConfig config{.width = 320,
                       .height = 240,
                       .focal = CameraConfig::FocalLength{470.0, 480.0},
@@ -375,6 +375,7 @@ GTEST_TEST(CameraConfigTest, MakeCameras) {
                       .fps = 17,
                       .rgb = false,
                       .depth = true,
+                      .label = true,
                       .show_rgb = true};
 
   // Check that all the values have propagated.
@@ -463,10 +464,9 @@ GTEST_TEST(CameraConfigTest, Validation) {
       SaveYamlString(CameraConfig{.focal = CameraConfig::FovDegrees{}}),
       ".*must define at least x or y.*");
 
-  // However, if rgb = depth = false, then the configuration is by definition
-  // valid, even with otherwise bad values elsewhere.
-  CameraConfig config_no_render;
-  config_no_render.rgb = config_no_render.depth = false;
+  // However, if rgb = depth = label = false, then the configuration is by
+  // definition valid, even with otherwise bad values elsewhere.
+  CameraConfig config_no_render{.rgb = false, .depth = false, .label = false};
   config_no_render.focal = CameraConfig::FovDegrees{};
   EXPECT_NO_THROW(config_no_render.ValidateOrThrow());
   EXPECT_NO_THROW(SaveYamlString(config_no_render));

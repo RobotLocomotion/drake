@@ -11,9 +11,34 @@ class csc_matrix:
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csc_matrix.html
     """
 
-    def __init__(self, arg1, shape):
-        (self.data, self.indices, self.indptr) = arg1
-        self.shape = shape
+    def __init__(self, arg1, shape=None):
+        """The scipy.csc_matrix constructor supports five possible overloads.
+        For this stub, we only support these two:
+          csc_array((data, indices, indptr), shape=(M, N))
+          csc_array(dense)
+        """
+        if shape is not None:
+            (self.data, self.indices, self.indptr) = arg1
+            self.shape = shape
+        else:
+            dense = arg1
+            rows, cols = dense.shape
+            self.shape = (rows, cols)
+            self.data = []
+            self.indices = []
+            self.indptr = [0]
+            for c in range(cols):
+                for r in range(rows):
+                    value = dense[r, c]
+                    if not value:
+                        continue
+                    self.indices.append(r)
+                    self.data.append(value)
+                self.indptr.append(len(self.indices))
+
+        self.data = np.asarray(self.data)
+        self.indices = np.asarray(self.indices)
+        self.indptr = np.asarray(self.indptr)
 
         # To sanity-check our arguments, convert the data to triplets.
         self._triplets = []

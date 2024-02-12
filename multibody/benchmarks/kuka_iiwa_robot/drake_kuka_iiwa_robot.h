@@ -91,13 +91,13 @@ class DrakeKukaIIwaRobot {
     linkN_ = &tree().world_body();
 
     // Get this robot's seven links.
-    linkA_ = &tree().GetBodyByName("iiwa_link_1");
-    linkB_ = &tree().GetBodyByName("iiwa_link_2");
-    linkC_ = &tree().GetBodyByName("iiwa_link_3");
-    linkD_ = &tree().GetBodyByName("iiwa_link_4");
-    linkE_ = &tree().GetBodyByName("iiwa_link_5");
-    linkF_ = &tree().GetBodyByName("iiwa_link_6");
-    linkG_ = &tree().GetBodyByName("iiwa_link_7");
+    linkA_ = &tree().GetRigidBodyByName("iiwa_link_1");
+    linkB_ = &tree().GetRigidBodyByName("iiwa_link_2");
+    linkC_ = &tree().GetRigidBodyByName("iiwa_link_3");
+    linkD_ = &tree().GetRigidBodyByName("iiwa_link_4");
+    linkE_ = &tree().GetRigidBodyByName("iiwa_link_5");
+    linkF_ = &tree().GetRigidBodyByName("iiwa_link_6");
+    linkG_ = &tree().GetRigidBodyByName("iiwa_link_7");
 
     // Get this robot's seven joints.
     NA_joint_ =
@@ -148,18 +148,18 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
-    const math::RigidTransform<T>& X_NG = pc.get_X_WB(linkG_->node_index());
+    const math::RigidTransform<T>& X_NG = pc.get_X_WB(linkG_->mobod_index());
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
-    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->node_index());
+    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->mobod_index());
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
     std::vector<SpatialAcceleration<T>> A_WB(tree().num_bodies());
     // TODO(eric.cousineau): For this model, the end effector's BodyIndex
-    // matches its BodyNodeIndex, thus we're not really checking the difference
+    // matches its MobodIndex, thus we're not really checking the difference
     // between MultibodyPlant and MultibodyTree's ordering.
-    DRAKE_DEMAND(int{linkG_->index()} == int{linkG_->node_index()});
+    DRAKE_DEMAND(int{linkG_->index()} == int{linkG_->mobod_index()});
     plant().CalcSpatialAccelerationsFromVdot(*context_, qDDt, &A_WB);
     const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->index()];
 
@@ -231,13 +231,13 @@ class DrakeKukaIIwaRobot {
 
     // Put joint reaction forces into return struct.
     KukaRobotJointReactionForces<T> reaction_forces;
-    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->node_index()];
-    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->node_index()];
-    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->node_index()];
-    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->node_index()];
-    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->node_index()];
-    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->node_index()];
-    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->node_index()];
+    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->mobod_index()];
+    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->mobod_index()];
+    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->mobod_index()];
+    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->mobod_index()];
+    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->mobod_index()];
+    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->mobod_index()];
+    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->mobod_index()];
     return reaction_forces;
   }
 
@@ -274,16 +274,16 @@ class DrakeKukaIIwaRobot {
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
   std::unique_ptr<MultibodyPlant<T>> plant_;
-  const Body<T>* linkN_{nullptr};
+  const RigidBody<T>* linkN_{nullptr};
 
   // Rigid bodies (robot links).
-  const Body<T>* linkA_{nullptr};
-  const Body<T>* linkB_{nullptr};
-  const Body<T>* linkC_{nullptr};
-  const Body<T>* linkD_{nullptr};
-  const Body<T>* linkE_{nullptr};
-  const Body<T>* linkF_{nullptr};
-  const Body<T>* linkG_{nullptr};
+  const RigidBody<T>* linkA_{nullptr};
+  const RigidBody<T>* linkB_{nullptr};
+  const RigidBody<T>* linkC_{nullptr};
+  const RigidBody<T>* linkD_{nullptr};
+  const RigidBody<T>* linkE_{nullptr};
+  const RigidBody<T>* linkF_{nullptr};
+  const RigidBody<T>* linkG_{nullptr};
 
   // Joints.
   const RevoluteJoint<T>* NA_joint_{nullptr};

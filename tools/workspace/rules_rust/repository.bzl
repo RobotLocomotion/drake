@@ -11,12 +11,10 @@ def rules_rust_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_rust",  # License: Apache-2.0
-        upgrade_advice = """
-        An upgrade to @rules_rust also requires re-pinning the toolchain.
-        Run `drake/tools/workspace/rust_toolchain/upgrade.sh`.
-        """,
-        commit = "0.28.0",
-        sha256 = "e2f32fad3539bd57527901981ef6fb200d71030c30994bdf48faa6f56683f2d0",  # noqa
-        patches = extra_patches,
+        commit = "0.38.0",
+        sha256 = "5873326d431bdd5fc0a3e0be3d060580ea0ea477c62bd64e299be1b0b7eeacf4",  # noqa
+        patches = (extra_patches or []) + [
+            ":patches/license_filegroup.patch",
+        ],
         mirrors = mirrors,
     )

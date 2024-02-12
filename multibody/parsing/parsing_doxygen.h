@@ -166,6 +166,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_child
 - @ref tag_drake_collision_filter_group
 - @ref tag_drake_compliant_hydroelastic
+- @ref tag_drake_controller_gains
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
 - @ref tag_drake_diffuse_map
@@ -178,6 +179,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_linear_bushing_rpy
 - @ref tag_drake_member
 - @ref tag_drake_mesh_resolution_hint
+- @ref tag_drake_mimic
 - @ref tag_drake_mu_dynamic
 - @ref tag_drake_mu_static
 - @ref tag_drake_parent
@@ -236,7 +238,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint().
 @subsection tag_drake_ball_constraint_body_A drake:ball_constraint_body_A
 
 - SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_A`
-- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@value`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@name`
 - Syntax: String.
 
 @subsection tag_drake_ball_constraint_body_A_semantics Semantics
@@ -251,7 +253,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 @subsection tag_drake_ball_constraint_body_B drake:ball_constraint_body_B
 
 - SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_B`
-- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@value`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@name`
 - Syntax: String.
 
 @subsection tag_drake_ball_constraint_body_B_semantics Semantics
@@ -458,6 +460,24 @@ to be compliant, as opposed to rigid, in hydroelastic contact models.
 
 @see @ref tag_drake_proximity_properties, @ref creating_hydro_reps
 
+@subsection tag_drake_controller_gains drake:controller_gains
+
+- SDFormat path: `//model/joint/drake:controller_gains`
+- URDF path: `/robot/joint/actuator/drake:controller_gains`
+- Syntax: Two attributes `p` (proportional gain) containing a positive floating
+          point value and `d` (derivative gain) containing a non-negative
+          floating point value.
+
+@subsection tag_drake_controller_gains_semantics Semantics
+
+If present, this element provides proportional and derivative gains for a low
+level PD controller for the drake::multibody::JointActuator associated with the
+drake::multibody::Joint the element is defined under. It is stored in a
+drake::multibody::PdControllerGains object in the
+drake::multibody::JointActuator class. Both attributes `p` and `d` are required.
+
+@see @ref mbp_actuation, @ref pd_controlled_joint_actuator
+
 @subsection tag_drake_damping drake:damping
 
 - SDFormat path: `//model/drake:joint/drake:damping`
@@ -658,6 +678,21 @@ values will select longer edge lengths and a coarser mesh.
 
 @see @ref tag_drake_proximity_properties, @ref hug_properties
 
+@subsection tag_drake_mimic drake:mimic
+
+- SDFormat path: `//model/joint/drake:mimic`
+- URDF path: unsupported
+- Syntax: Attributes `joint` (string), `multiplier` (double) and `offset` (double)
+
+@subsubsection tag_drake_mimic_semantics Semantics
+
+This tag has equivalent semantics to those of the native URDF <mimic> tag. If
+`q0` is the position of the `<joint>` and `q1` the position of the joint
+specified by the `joint` attribute, the two joints are constrained to enforce
+the relation: `q0 = multiplier * q1 + offset`. The units of `multiplier` and
+`offset` depend on the type of joints specified. This tag only supports single
+degree of freedom joints that exist in the same model instance.
+
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mu_dynamic`
@@ -685,9 +720,9 @@ The provided (dimensionless) value sets the static friction parameter for
 CoulombFriction. Refer to @ref stribeck_approximation for details on the
 friction model.
 
-@warning This value is ignored when modeling the multibody system with discrete
-dynamics, refer to MultibodyPlant's constructor documentation for details, in
-particular the parameter `time_step`.
+@warning Both `mu_dynamic` and `mu_static` are used by MultibodyPlant when the plant 
+`time_step=0`, but only `mu_dynamic` is used when `time_step>0`. Refer to 
+MultibodyPlant's constructor documentation for details.
 
 @see @ref tag_drake_proximity_properties, drake::multibody::CoulombFriction,
 @ref stribeck_approximation
@@ -717,7 +752,7 @@ If present, this element provides a stiffness value (units of N/m) for point
 contact calculations for this specific geometry. It is stored in a
 ProximityProperties object under `(material, point_contact_stiffness)`.
 
-@see @ref accessing_contact_properties, @ref mbp_penalty_method,
+@see @ref accessing_contact_properties, @ref mbp_compliant_point_contact,
 drake::geometry::ProximityProperties
 
 @subsection tag_drake_proximity_properties drake:proximity_properties

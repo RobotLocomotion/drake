@@ -1,0 +1,94 @@
+# This scenario file with multiple sim cameras is mainly for manual LCM image
+# visualization testing. Run the scenario with the hardware_sim example by:
+
+# bazel run //examples/hardware_sim:demo_py -- \
+#     --scenario_file /PATH/TO/DRAKE/bindings/pydrake/visualization/test/multicam_scenario.yaml \
+#     --scenario_name Multicam
+Multicam:
+  directives:
+  - add_model:
+      name: amazon_table
+      file: package://drake/examples/manipulation_station/models/amazon_table_simplified.sdf
+  - add_weld:
+      parent: world
+      child: amazon_table::amazon_table
+  - add_model:
+      name: iiwa
+      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+      default_joint_positions:
+        iiwa_joint_1: [-0.2]
+        iiwa_joint_2: [0.79]
+        iiwa_joint_3: [0.32]
+        iiwa_joint_4: [-1.76]
+        iiwa_joint_5: [-0.36]
+        iiwa_joint_6: [0.64]
+        iiwa_joint_7: [-0.73]
+  - add_frame:
+      name: iiwa_on_world
+      X_PF:
+        base_frame: world
+        translation: [0, -0.7, 0.1]
+        rotation: !Rpy { deg: [0, 0, 90] }
+  - add_weld:
+      parent: iiwa_on_world
+      child: iiwa::base
+  - add_model:
+      name: wsg
+      file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+      default_joint_positions:
+        left_finger_sliding_joint: [-0.02]
+        right_finger_sliding_joint: [0.02]
+  - add_frame:
+      name: wsg_on_iiwa
+      X_PF:
+        base_frame: iiwa_link_7
+        translation: [0, 0, 0.114]
+        rotation: !Rpy { deg: [90, 0, 90] }
+  - add_weld:
+      parent: wsg_on_iiwa
+      child: wsg::body
+  lcm_buses:
+    driver_traffic:
+      # Use a non-default LCM url to communicate with the robot.
+      lcm_url: udpm://239.241.129.92:20185?ttl=0
+  # Configure three cameras with different poses and parameters for testing.
+  cameras:
+    camera_0:
+      name: vtk_camera
+      renderer_name: vtk
+      renderer_class: !RenderEngineVtkParams {}
+      width: 640
+      height: 480
+      depth: True
+      label: True
+      fps: 10.0
+      X_PB:
+        translation: [1.5, 0.8, 1.25]
+        rotation: !Rpy { deg: [-120, 5, 125] }
+    camera_1:
+      name: gl_camera_front
+      renderer_name: gl
+      renderer_class: !RenderEngineGlParams {}
+      width: 1000
+      height: 1000
+      depth: True
+      fps: 5.0
+      X_PB:
+        translation: [0, 1.5, 0.5]
+        rotation: !Rpy { deg: [90, 180, 0] }
+    camera_2:
+      name: vtk_camera_top
+      renderer_name: vtk
+      width: 480
+      height: 320
+      label: True
+      fps: 15.0
+      X_PB:
+        translation: [0, -0.7, 2.0]
+        rotation: !Rpy { deg: [180, 0, 0] }
+  model_drivers:
+    iiwa: !IiwaDriver
+      hand_model_name: wsg
+      lcm_bus: driver_traffic
+    wsg: !SchunkWsgDriver
+      lcm_bus: driver_traffic

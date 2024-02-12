@@ -9,12 +9,11 @@ import numpy as np
 
 import pydrake.symbolic as sym
 import pydrake.common
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.math as drake_math
-from pydrake.math.test.algebra_test_util import (
+from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
+import pydrake.math as drake_math
 from pydrake.common.containers import EqualToDict
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
@@ -1209,6 +1208,9 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(basis2.size, 20)
         self.assertEqual(basis3.size, 20)
         self.assertEqual(basis4.size, 20)
+        basis5 = sym.MonomialBasis(
+            vars_degree={sym.Variables([x]): 2, sym.Variables([y]): 1})
+        self.assertEqual(basis5.size, 6)  # x²y, x², xy, x, y, 1
 
     def test_even_degree_monomial_basis(self):
         vars = sym.Variables([x, y])

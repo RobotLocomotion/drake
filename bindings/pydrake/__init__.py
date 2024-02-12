@@ -35,34 +35,6 @@ try:
 except ImportError:
     pass
 
-# We specifically load `common` prior to loading any other pydrake modules,
-# in order to a) get assertion configuration done as early as possible, and b)
-# detect whether we are able to load the shared libraries.
-try:
-    from . import common
-except ImportError as e:
-    if ('cannot open shared object file' in (e.msg or '')
-            and '/pydrake/' in (e.path or '')):
-        message = f'''
-Drake failed to load a required library. This could indicate an installation
-problem, or that your system is missing required distro-provided packages.
-Please refer to the installation instructions to ensure that all required
-dependencies are installed.
-'''
-        # For wheel builds, we have a file with additional advice.
-        wheel_doc = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'INSTALLATION')
-        if os.path.exists(wheel_doc):
-            with open(wheel_doc) as f:
-                message += f.read()
-        message += '''
-For more information, please see https://drake.mit.edu/installation.html
-'''
-        print(message)
-    raise
-
-__all__ = ['common', 'getDrakePath']
-
 
 def getDrakePath():
     # Compatibility alias.
@@ -180,3 +152,34 @@ def _check_for_rtld_global_usages():
 if _check_for_rtld_global_usages():
     warnings.warn(
         _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3)
+
+
+# We specifically load `common` prior to loading any other pydrake modules,
+# in order to a) get assertion configuration done as early as possible, and b)
+# detect whether we are able to load the shared libraries. But importantly,
+# we need to do this *after* defining the pure Python helper functions, above,
+# since they are called while loading `pydrake.common` and things it loads.
+try:
+    from . import common
+except ImportError as e:
+    if ('cannot open shared object file' in (e.msg or '')
+            and '/pydrake/' in (e.path or '')):
+        message = f'''
+Drake failed to load a required library. This could indicate an installation
+problem, or that your system is missing required distro-provided packages.
+Please refer to the installation instructions to ensure that all required
+dependencies are installed.
+'''
+        # For wheel builds, we have a file with additional advice.
+        wheel_doc = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), 'INSTALLATION')
+        if os.path.exists(wheel_doc):
+            with open(wheel_doc) as f:
+                message += f.read()
+        message += '''
+For more information, please see https://drake.mit.edu/installation.html
+'''
+        print(message)
+    raise
+
+__all__ = ['common', 'getDrakePath']

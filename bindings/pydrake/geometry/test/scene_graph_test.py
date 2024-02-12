@@ -107,7 +107,12 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertTrue(global_frame in inspector.GetAllFrameIds())
         self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
         self.assertEqual(inspector.num_geometries(), 3)
-        self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
+        self.assertEqual(
+            len(inspector.GetAllGeometryIds()),
+            3)
+        self.assertEqual(
+            len(inspector.GetAllGeometryIds(role=mut.Role.kProximity)),
+            2)
 
         # Test both GeometrySet API as well as SceneGraphInspector's
         # GeometrySet API.

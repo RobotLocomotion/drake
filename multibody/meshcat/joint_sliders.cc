@@ -9,15 +9,10 @@
 #include <fmt/format.h>
 
 #include "drake/common/autodiff_overloads.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_graphviz.h"
-
-namespace {
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}  // namespace
 
 namespace drake {
 namespace multibody {
@@ -112,14 +107,14 @@ std::map<int, std::string> GetPositionNames(
 VectorXd Broadcast(
     const char* diagnostic_name, double default_value, int num_positions,
     std::variant<std::monostate, double, VectorXd> value) {
-  return std::visit(overloaded{
-    [num_positions, default_value](std::monostate) -> VectorXd {
+  return visit_overloaded<VectorXd>(overloaded{
+    [num_positions, default_value](std::monostate) {
       return VectorXd::Constant(num_positions, default_value);
     },
-    [num_positions](double arg) -> VectorXd {
+    [num_positions](double arg) {
       return VectorXd::Constant(num_positions, arg);
     },
-    [num_positions, diagnostic_name](VectorXd&& arg) -> VectorXd {
+    [num_positions, diagnostic_name](VectorXd&& arg) {
       if (arg.size() != num_positions) {
         throw std::logic_error(fmt::format(
             "Expected {} of size {}, but got size {} instead",

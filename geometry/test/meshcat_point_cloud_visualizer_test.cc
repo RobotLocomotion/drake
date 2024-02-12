@@ -33,14 +33,16 @@ class MeshcatPointCloudVisualizerTest : public ::testing::Test {
       40, 50, 60;
     // clang-format on
 
-    auto cloud_system = builder.template AddSystem<
-      systems::ConstantValueSource>(Value<perception::PointCloud>(cloud));
+    auto cloud_system =
+        builder.template AddSystem<systems::ConstantValueSource>(
+            Value<perception::PointCloud>(cloud));
     builder.Connect(cloud_system->get_output_port(),
                     visualizer_->cloud_input_port());
 
     if (connect_pose) {
-      auto pose_system = builder.template AddSystem<
-        systems::ConstantValueSource>(Value<math::RigidTransformd>());
+      auto pose_system =
+          builder.template AddSystem<systems::ConstantValueSource>(
+              Value<math::RigidTransformd>());
       builder.Connect(pose_system->get_output_port(),
                       visualizer_->pose_input_port());
     }
@@ -54,7 +56,6 @@ class MeshcatPointCloudVisualizerTest : public ::testing::Test {
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   std::unique_ptr<systems::Context<double>> context_{};
 };
-
 
 TEST_F(MeshcatPointCloudVisualizerTest, Publish) {
   SetUpDiagram();
@@ -78,7 +79,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, NoPose) {
 }
 
 TEST_F(MeshcatPointCloudVisualizerTest, PublishPeriod) {
-  const double kPeriod = 1/12.0;
+  const double kPeriod = 1 / 12.0;
   SetUpDiagram(true, kPeriod);
 
   auto periodic_events_map = visualizer_->MapPeriodicEventsByTiming();

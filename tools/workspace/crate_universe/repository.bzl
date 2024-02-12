@@ -1,3 +1,4 @@
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
@@ -47,6 +48,8 @@ def _create_http_archive_impl(repo_ctx):
         stripPrefix = strip_prefix,
         type = type,
     )
+    if repo_ctx.attr.patches:
+        patch(repo_ctx)
     repo_ctx.symlink(repo_ctx.attr.build_file, "BUILD.bazel")
     generate_repository_metadata(
         repo_ctx,
@@ -64,6 +67,9 @@ crate_http_archive = repository_rule(
         "mirrors": attr.string_list_dict(
             mandatory = True,
         ),
+        "patches": attr.label_list(),
+        "patch_tool": attr.string(default = "patch"),
+        "patch_args": attr.string_list(default = ["-p0"]),
         "sha256": attr.string(
             mandatory = True,
         ),
@@ -80,6 +86,12 @@ crate_http_archive = repository_rule(
 )
 
 def crate_universe_repositories(*, mirrors, excludes = []):
+    # This dependency is part of a "cohort" defined in
+    # drake/tools/workspace/new_release.py.  When practical, all members of
+    # this cohort should be updated at the same time.
+    #
+    # Metadata for this repository is additionally defined in
+    # drake/tools/workspace/metadata.py.
     for kwargs in ARCHIVES:
         if kwargs["name"] not in excludes:
             crate_http_archive(

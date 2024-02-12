@@ -138,14 +138,16 @@ are used:
 - ``/opt/drake-dependencies``:
   Contains installations of various dependencies needed to build Drake.
 
-- ``/opt/vtk``:
-  Contains the VTK installation used to build Drake.
-
-- ``/opt/drake``:
+- ``/opt/drake-dist``:
   Contains the Drake installation used to build the wheel.
 
 - ``/opt/drake-wheel-test``:
   Contains a Python virtual environment used to test the wheel.
+
+In addition, the wheel creation script requires that the Drake installation is
+located at ``/opt/drake``. Since multiple builds may be present, a temporary
+symlink is created at this path to the actual, Python-version-specific
+installation while building the wheel. Therefore, this path must be available.
 
 After performing wheel-specific provisioning using ``brew``, the builder
 invokes ``macos/build-wheel.sh``, optionally (and if the build succeeded)

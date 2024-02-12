@@ -13,6 +13,13 @@ package(default_visibility = ["//visibility:public"])
 # licenses([
 #     "TODO",  # Apache-2.0
 # ])
+filegroup(
+    name = "license_glob",
+    srcs = glob(
+        ["LICENSE*"],
+        allow_empty = False,
+    ),
+)
 
 rust_library(
     name = "clarabel",
@@ -28,12 +35,19 @@ rust_library(
             "WORKSPACE.bazel",
         ],
     ),
+    crate_features = [
+        "blas",
+        "lapack",
+        "sdp",
+    ],
     crate_root = "src/lib.rs",
     edition = "2021",
     proc_macro_deps = [
         "@crate__enum_dispatch-0.3.12//:enum_dispatch",
     ],
-    rustc_flags = ["--cap-lints=allow"],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
     tags = [
         "cargo-bazel",
         "crate-name=clarabel",
@@ -49,6 +63,8 @@ rust_library(
         "@rules_rust//rust/platform:aarch64-linux-android": [],
         "@rules_rust//rust/platform:aarch64-pc-windows-msvc": [],
         "@rules_rust//rust/platform:aarch64-unknown-linux-gnu": [],
+        "@rules_rust//rust/platform:aarch64-unknown-nixos-gnu": [],
+        "@rules_rust//rust/platform:aarch64-unknown-nto-qnx710": [],
         "@rules_rust//rust/platform:arm-unknown-linux-gnueabi": [],
         "@rules_rust//rust/platform:armv7-linux-androideabi": [],
         "@rules_rust//rust/platform:armv7-unknown-linux-gnueabi": [],
@@ -72,17 +88,20 @@ rust_library(
         "@rules_rust//rust/platform:x86_64-pc-windows-msvc": [],
         "@rules_rust//rust/platform:x86_64-unknown-freebsd": [],
         "@rules_rust//rust/platform:x86_64-unknown-linux-gnu": [],
+        "@rules_rust//rust/platform:x86_64-unknown-nixos-gnu": [],
         "@rules_rust//rust/platform:x86_64-unknown-none": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     version = "0.6.0",
     deps = [
         "@crate__amd-0.2.2//:amd",
+        "@crate__blas-0.22.0//:blas",
         "@crate__cfg-if-1.0.0//:cfg_if",
         "@crate__derive_builder-0.11.2//:derive_builder",
         "@crate__itertools-0.11.0//:itertools",
+        "@crate__lapack-0.19.0//:lapack",
         "@crate__lazy_static-1.4.0//:lazy_static",
-        "@crate__num-traits-0.2.16//:num_traits",
-        "@crate__thiserror-1.0.48//:thiserror",
+        "@crate__num-traits-0.2.17//:num_traits",
+        "@crate__thiserror-1.0.56//:thiserror",
     ],
 )

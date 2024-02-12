@@ -51,7 +51,7 @@ void CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
   // and set q's values to match this system's generalized coordinate values.
   VectorX<AutoDiffXd> q(num_positions);
   math::InitializeAutoDiff(q_double, &q);
-  plant.GetMutablePositions(context) = q;
+  plant.SetPositions(context, q);
 
   // Reserve space and then for each point Ei, calculate Ei's position from
   // Wo (World origin), expressed in world W.
@@ -103,7 +103,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
       frame_W, &Jq_v_WEi_W);
 
   // Create shortcuts to end-effector link frame E and world frame W.
-  const Body<AutoDiffXd>& end_effector_autodiff =
+  const RigidBody<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
   const Frame<AutoDiffXd>& frame_E_autodiff =
       end_effector_autodiff.body_frame();
@@ -185,7 +185,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   plant_autodiff_->SetVelocities(context_autodiff_.get(), v_autodiff);
 
   // Compute V_WEp.
-  const Body<AutoDiffXd>& end_effector_link_autodiff =
+  const RigidBody<AutoDiffXd>& end_effector_link_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
   const RotationMatrix<AutoDiffXd>& R_WE_autodiff =
       plant_autodiff_
@@ -245,7 +245,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 
   // For subsequent auto-differentiation calculations, create shortcuts to
   // end-effector link frame E and world frame W.
-  const Body<AutoDiffXd>& end_effector_autodiff =
+  const RigidBody<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
   const Frame<AutoDiffXd>& frame_E_autodiff =
       end_effector_autodiff.body_frame();
@@ -287,7 +287,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
       frame_W, &Jq_v_WEi_W);
 
   // Create shortcuts to end-effector link frame E and world frame W.
-  const Body<AutoDiffXd>& end_effector_autodiff =
+  const RigidBody<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
   const Frame<AutoDiffXd>& frame_E_autodiff =
       end_effector_autodiff.body_frame();
@@ -508,8 +508,8 @@ TEST_F(TwoDOFPlanarPendulumTest,
   const RigidBody<double>& body_A = rigid_bodyA();
   const RigidBody<double>& body_B = rigid_bodyB();
 
-  // Verify Body::CalcCenterOfMassTranslationalVelocityInWorld() with by-hand
-  // results for translational velocities measured in the world frame W:
+  // Verify RigidBody::CalcCenterOfMassTranslationalVelocityInWorld() with
+  // by-hand results for translational velocities measured in the world frame W:
   // Acm's translational velocity: v_WAcm_W = 0.5 L wAz_ Wy.
   // Bcm's translational velocity: v_WBcm_W = (0.5 L wBz_ + 1.5 L wAz_) Wy.
   const Vector3d v_WAcm_W_expected(0, 0.5 * link_length_ * wAz_, 0);
@@ -769,8 +769,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(num_states);
   x_autodiff << q_autodiff, v_autodiff;
-  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
-      x_autodiff;
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+                                             x_autodiff);
 
   // Point Ep is affixed/welded to the end-effector E.
   const Vector3<double> p_EEp(0.1, -0.05, 0.02);
@@ -842,8 +842,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(plant_->num_multibody_states());
   x_autodiff << q_autodiff, v_autodiff;
-  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
-      x_autodiff;
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+                                             x_autodiff);
 
   // Points Ei (i = 0, 1) are affixed/welded to the end-effector E.
   // Designate Ei's positions from origin Eo, expressed in frame E.

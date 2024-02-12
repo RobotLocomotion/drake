@@ -210,6 +210,7 @@ drake_cc_library(
     hdrs = ["monte_carlo.h"],
     deps = [
         ":simulator",
+        "//common:parallelism",
         "//systems/framework",
     ],
 )
@@ -219,9 +220,11 @@ drake_cc_library(
     srcs = ["region_of_attraction.cc"],
     hdrs = ["region_of_attraction.h"],
     deps = [
+        "//common:name_value",
         "//math:continuous_lyapunov_equation",
         "//math:matrix_util",
         "//math:quadratic_form",
+        "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework",
@@ -649,6 +652,7 @@ drake_cc_googletest(
     name = "region_of_attraction_test",
     deps = [
         ":region_of_attraction",
+        "//solvers:csdp_solver",
         "//solvers:mosek_solver",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_vector_source",

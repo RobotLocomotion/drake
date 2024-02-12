@@ -192,9 +192,8 @@ SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
 
 template <typename T>
 std::vector<SignedDistanceToPoint<T>>
-QueryObject<T>::ComputeSignedDistanceToPoint(
-    const Vector3<T>& p_WQ,
-    const double threshold) const {
+QueryObject<T>::ComputeSignedDistanceToPoint(const Vector3<T>& p_WQ,
+                                             const double threshold) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();

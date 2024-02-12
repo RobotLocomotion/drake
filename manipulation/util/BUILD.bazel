@@ -203,10 +203,22 @@ drake_cc_googletest(
     ],
 )
 
+filegroup(
+    name = "panda_arm_and_hand_test_model",
+    testonly = 1,
+    srcs = [
+        ":test/panda_arm_and_hand.dmd.yaml",
+        "//manipulation/models/franka_description:models",
+    ],
+    visibility = ["//multibody/parsing:__pkg__"],
+)
+
 drake_cc_googletest(
     name = "make_arm_controller_model_test",
     data = [
+        ":test/fake_camera.sdf",
         ":test/iiwa7_wsg.dmd.yaml",
+        ":test/iiwa7_wsg_cameras.dmd.yaml",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],

@@ -1991,7 +1991,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
@@ -2003,7 +2003,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2025,7 +2025,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2047,7 +2047,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
@@ -2588,6 +2588,35 @@ class MathematicalProgram {
         e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()), true);
     return AddPositiveSemidefiniteConstraint(M);
   }
+
+  /**
+   * Adds a constraint that the principal submatrix of a symmetric matrix
+   * composed of the indices in minor_indices is positive semidefinite.
+   *
+   * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
+   * @pre All values in  `minor_indices` lie in the range [0,
+   * symmetric_matrix_var.rows() - 1].
+   * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
+   * @see AddPositiveSemidefiniteConstraint.
+   */
+  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+      const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
+      const std::set<int>& minor_indices);
+
+  /**
+   * Adds a constraint the that the principal submatrix of a symmetric matrix of
+   * expressions composed of the indices in minor_indices is positive
+   * semidefinite.
+   *
+   * @pre The passed @p symmetric_matrix_var is a symmetric matrix.
+   * @pre All values in  `minor_indices` lie in the range [0,
+   * symmetric_matrix_var.rows() - 1].
+   * @param e Imposes constraint "e is positive semidefinite".
+   * @see AddPositiveSemidefiniteConstraint.
+   */
+  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
+      const std::set<int>& minor_indices);
 
   /**
    * Adds a linear matrix inequality constraint to the program.

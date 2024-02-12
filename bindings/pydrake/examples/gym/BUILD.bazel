@@ -1,3 +1,4 @@
+load("@python//:version.bzl", "PYTHON_VERSION")
 load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:pybind.bzl",
@@ -8,10 +9,6 @@ load(
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
-)
-load(
-    "@drake_detected_os//:os.bzl",
-    "UBUNTU_RELEASE",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
@@ -36,7 +33,6 @@ drake_py_library(
     srcs = ["named_view_helpers.py"],
     deps = [
         ":module_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/multibody",
     ],
 )
@@ -58,7 +54,6 @@ drake_py_library(
     deps = [
         ":module_py",
         ":named_view_helpers_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/gym",
         "//bindings/pydrake/multibody",
@@ -103,7 +98,11 @@ drake_py_test(
     srcs = ["train_cart_pole.py"],
     args = ["--test"],
     main = "train_cart_pole.py",
-    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
+    # DrakeGym is only supported for Python >= 3.10.
+    tags = ["manual"] if PYTHON_VERSION in [
+        "3.8",
+        "3.9",
+    ] else [],
     deps = [
         ":cart_pole_binaries",
         "@gymnasium_py",
@@ -116,7 +115,11 @@ drake_py_test(
     srcs = ["play_cart_pole.py"],
     args = ["--test"],
     main = "play_cart_pole.py",
-    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
+    # DrakeGym is only supported for Python >= 3.10.
+    tags = ["manual"] if PYTHON_VERSION in [
+        "3.8",
+        "3.9",
+    ] else [],
     deps = [
         ":cart_pole_binaries",
         "@gymnasium_py",

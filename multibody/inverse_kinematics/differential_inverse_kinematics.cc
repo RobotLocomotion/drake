@@ -261,14 +261,25 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Vector6<double>& V_WE_desired,
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
-  const math::RigidTransform<double> X_WE =
-      plant.CalcRelativeTransform(context, plant.world_frame(), frame_E);
-  MatrixX<double> J_WE(6, plant.num_velocities());
   const Frame<double>& frame_W = plant.world_frame();
+  return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_W,
+                                          frame_E, parameters);
+}
+
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const Vector6<double>& V_AE_desired,
+    const Frame<double>& frame_A,
+    const Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  const math::RigidTransform<double> X_AE =
+      plant.CalcRelativeTransform(context, frame_A, frame_E);
+  MatrixX<double> J_AE(6, plant.num_velocities());
   plant.CalcJacobianSpatialVelocity(context,
                                     JacobianWrtVariable::kV,
                                     frame_E, Vector3<double>::Zero(),
-                                    frame_W, frame_W, &J_WE);
+                                    frame_A, frame_A, &J_AE);
 
   std::optional<Eigen::SparseMatrix<double>> N = std::nullopt;
   std::optional<Eigen::SparseMatrix<double>> Nplus = std::nullopt;
@@ -279,8 +290,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     Nplus = plant.MakeQDotToVelocityMap(context);
   }
   return internal::DoDifferentialInverseKinematics(
-      plant.GetPositions(context), plant.GetVelocities(context), X_WE, J_WE,
-      SpatialVelocity<double>(V_WE_desired), parameters, N, Nplus);
+      plant.GetPositions(context), plant.GetVelocities(context), X_AE, J_AE,
+      SpatialVelocity<double>(V_AE_desired), parameters, N, Nplus);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -289,21 +300,33 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const math::RigidTransform<double>& X_WE_desired,
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
-  const math::RigidTransform<double> X_WE =
-      plant.EvalBodyPoseInWorld(context, frame_E.body()) *
-      frame_E.CalcPoseInBodyFrame(context);
-  Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
+  const Frame<double>& frame_W = plant.world_frame();
+  return DoDifferentialInverseKinematics(plant, context, X_WE_desired,
+                                         frame_W, frame_E, parameters);
+}
+
+
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const math::RigidTransform<double>& X_AE_desired,
+    const Frame<double>& frame_A,
+    const Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  const math::RigidTransform<double> X_AE =
+      plant.CalcRelativeTransform(context, frame_A, frame_E);
+  Vector6<double> V_AE_desired =
+      ComputePoseDiffInCommonFrame(X_AE, X_AE_desired) /
       parameters.get_time_step();
   // Saturate the velocity command at the limits:
-  if (V_WE_desired.head<3>().norm() >
+  if (V_AE_desired.head<3>().norm() >
       parameters.get_end_effector_angular_speed_limit()) {
-    V_WE_desired.head<3>().normalize();
-    V_WE_desired.head<3>() *= parameters.get_end_effector_angular_speed_limit();
+    V_AE_desired.head<3>().normalize();
+    V_AE_desired.head<3>() *= parameters.get_end_effector_angular_speed_limit();
   }
   if (parameters.get_end_effector_translational_velocity_limits()) {
-    V_WE_desired.tail<3>() =
-        V_WE_desired.tail<3>()
+    V_AE_desired.tail<3>() =
+        V_AE_desired.tail<3>()
             .cwiseMax(
                 parameters.get_end_effector_translational_velocity_limits()
                     ->first)
@@ -311,8 +334,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                 parameters.get_end_effector_translational_velocity_limits()
                     ->second);
   }
-  return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
-                                         parameters);
+  return DoDifferentialInverseKinematics(plant, context, V_AE_desired, frame_A,
+                                         frame_E, parameters);
 }
 
 }  // namespace multibody

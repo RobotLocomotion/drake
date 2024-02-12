@@ -1,3 +1,6 @@
+# Don't use bzlmod yet.
+common --enable_bzlmod=false
+
 # Default to an optimized build.
 build -c opt
 
@@ -78,13 +81,3 @@ build:everything --define=WITH_MOSEK=ON
 build:snopt --define=WITH_SNOPT=ON
 build:packaging --define=WITH_SNOPT=ON
 build:everything --define=WITH_SNOPT=ON
-
-# TODO(jwnimmer-tri) We hope to enable Clarabel by default, but for the moment
-# it is opt-in.
-build:everything --define=WITH_CLARABEL=ON
-build:asan_everything --define=WITH_CLARABEL=ON
-build:kcov_everything --define=WITH_CLARABEL=ON
-build:lsan_everything --define=WITH_CLARABEL=ON
-build:memcheck_everything --define=WITH_CLARABEL=ON
-build:tsan_everything --define=WITH_CLARABEL=ON
-build:ubsan_everything --define=WITH_CLARABEL=ON

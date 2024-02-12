@@ -24,10 +24,6 @@ class HeaderDependencyTest(unittest.TestCase):
         re_thirds = [
             re.compile(r'^(Eigen|unsupported/Eigen)/.*$'),
             re.compile(r'^(fmt|spdlog)/.*$'),
-
-            # TODO(jwnimmer-tri) On 2023-11-01 upon completion of deprecation
-            # removal, also remove this item from this list.
-            re.compile(r'^optitrack/.*$'),
         ]
 
         # The full list of matchers to measure filename validity.

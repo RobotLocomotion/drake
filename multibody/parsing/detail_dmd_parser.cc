@@ -39,6 +39,7 @@ void AddWeld(
         // See warning in ModelInstanceInfo about these members.
         info.parent_frame_name = parent_frame.name();
         info.child_frame_name = child_frame.name();
+        info.X_PC = X_PC;
       }
     }
     DRAKE_THROW_UNLESS(found);
@@ -57,12 +58,8 @@ void ParseModelDirectivesImpl(
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [plant = plant, &model_namespace](
                               const std::string& name) -> const Frame<double>& {
-    // TODO(eric.cousineau): Simplify logic?
-    if (name == "world") {
-      return plant->world_frame();
-    }
     return GetScopedFrameByName(
-        *plant, ScopedName::Join(model_namespace, name).to_string());
+        *plant, DmdScopedNameJoin(model_namespace, name).to_string());
   };
 
   for (auto& directive : directives.directives) {
@@ -152,15 +149,17 @@ void ParseModelDirectivesImpl(
       if (!plant->geometry_source_is_registered()) {
         continue;
       }
+      auto& group = *directive.add_collision_filter_group;
 
       // Find the model instance index that corresponds to model_namespace, if
       // the name is non-empty.
       std::optional<ModelInstanceIndex> model_instance;
       if (!model_namespace.empty()) {
         model_instance = plant->GetModelInstanceByName(model_namespace);
+      } else if (group.model_namespace.has_value()) {
+        model_instance = plant->GetModelInstanceByName(*group.model_namespace);
       }
 
-      auto& group = *directive.add_collision_filter_group;
       drake::log()->debug("  add_collision_filter_group: {}", group.name);
       std::set<std::string> member_set(group.members.begin(),
                                        group.members.end());
@@ -195,6 +194,12 @@ void ParseModelDirectivesImpl(
 }
 
 }  // namespace
+
+ScopedName DmdScopedNameJoin(const std::string& namespace_name,
+                             const std::string& element_name) {
+  if (element_name == "world") return ScopedName("", element_name);
+  return ScopedName::Join(namespace_name, element_name);
+}
 
 ModelDirectives LoadModelDirectives(const DataSource& data_source) {
   // Even though the 'defaults' we use to start parsing here are empty, by

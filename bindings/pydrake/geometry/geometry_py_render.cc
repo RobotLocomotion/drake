@@ -210,7 +210,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
-    py::class_<Class, PyRenderEngine>(m, "RenderEngine")
+    py::class_<Class, PyRenderEngine> cls(m, "RenderEngine");
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Clone",
             static_cast<::std::unique_ptr<Class> (Class::*)() const>(
@@ -261,18 +262,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             static_cast<RenderLabel (Class::*)(PerceptionProperties const&)
                     const>(&PyRenderEngine::GetRenderLabelOrThrow),
             py::arg("properties"), cls_doc.GetRenderLabelOrThrow.doc)
-        .def_static("LabelFromColor",
-            static_cast<RenderLabel (*)(ColorI const&)>(
-                &PyRenderEngine::LabelFromColor),
-            py::arg("color"), cls_doc.LabelFromColor.doc)
-        .def_static("GetColorIFromLabel",
-            static_cast<ColorI (*)(RenderLabel const&)>(
-                &PyRenderEngine::GetColorIFromLabel),
-            py::arg("label"), cls_doc.GetColorIFromLabel.doc)
-        .def_static("GetColorDFromLabel",
-            static_cast<ColorD (*)(RenderLabel const&)>(
-                &PyRenderEngine::GetColorDFromLabel),
-            py::arg("label"), cls_doc.GetColorDFromLabel.doc)
         .def("SetDefaultLightPosition",
             static_cast<void (Class::*)(Vector3d const&)>(
                 &PyRenderEngine::SetDefaultLightPosition),
@@ -295,6 +284,27 @@ void DoScalarIndependentDefinitions(py::module m) {
                 &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kLabel16I>>),
             py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
             cls_doc.ThrowIfInvalid.doc);
+    // Note that we do not bind MakeRgbFromLabel nor MakeLabelFromRgb, because
+    // crossing the C++ <=> Python boundary one pixel at a time would be
+    // extraordinarily inefficient.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // To be removed on 2024-05-01.
+    cls  // BR
+        .def_static("LabelFromColor",
+            static_cast<RenderLabel (*)(ColorI const&)>(
+                &PyRenderEngine::LabelFromColor),
+            py::arg("color"))
+        .def_static("GetColorIFromLabel",
+            static_cast<ColorI (*)(RenderLabel const&)>(
+                &PyRenderEngine::GetColorIFromLabel),
+            py::arg("label"))
+        .def_static("GetColorDFromLabel",
+            static_cast<ColorD (*)(RenderLabel const&)>(
+                &PyRenderEngine::GetColorDFromLabel),
+            py::arg("label"));
+#pragma GCC diagnostic pop
   }
 
   {
@@ -390,16 +400,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
-    // Shim in the vestigial (deprecated) attribute; it's not part of Serialize.
-    // Remove this on 2023-12-01.
-    cls.def_property("default_label",
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](const Class& self) { return self.default_label; }),
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](Class& self, const RenderLabel& value) {
-              self.default_label = value;
-            }),
-        cls_doc.default_label.doc);
   }
 
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
@@ -414,16 +414,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
-    // Shim in the vestigial (deprecated) attribute; it's not part of Serialize.
-    // Remove this on 2023-12-01.
-    cls.def_property("default_label",
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](const Class& self) { return self.default_label; }),
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](Class& self, const RenderLabel& value) {
-              self.default_label = value;
-            }),
-        cls_doc.default_label.doc);
   }
 
   m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
@@ -439,16 +429,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
-    // Shim in the vestigial (deprecated) attribute; it's not part of Serialize.
-    // Remove this on 2023-12-01.
-    cls.def_property("default_label",
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](const Class& self) { return self.default_label; }),
-        WrapDeprecated(cls_doc.default_label.doc,
-            [](Class& self, const RenderLabel& value) {
-              self.default_label = value;
-            }),
-        cls_doc.default_label.doc);
   }
 
   m.def("MakeRenderEngineGltfClient", &MakeRenderEngineGltfClient,

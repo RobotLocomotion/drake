@@ -1,6 +1,7 @@
 #pragma once
 
-/** @file Provides utilities for writing images to disk.
+/** @file
+ Provides utilities for writing images to disk.
 
  This file provides two sets of utilities: stand alone methods that can be
  invoked in any context and a System that can be connected into a diagram to
@@ -33,6 +34,8 @@ namespace sensors {
  have done so.  */
 //@{
 
+// TODO(jwnimmer-tri) Deprecate these in favor of the full-fledged ImageIo.
+
 /** Writes the color (8-bit, RGBA) image data to disk.  */
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path);
 
@@ -55,8 +58,9 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
 
 //@}
 
-/** A system for periodically writing images to the file system. The system does
- not have a fixed set of input ports; the system can have an arbitrary number of
+/** A system for periodically writing images to the file system. The system also
+ provides direct image writing via a forced publish event. The system does not
+ have a fixed set of input ports; the system can have an arbitrary number of
  image input ports. Each input port is independently configured with respect to:
 
    - publish frequency,
@@ -89,7 +93,15 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
  that function's documentation for elaboration on how to configure image output.
  It is important to note, that every declared image input port _must_ be
  connected; otherwise, attempting to write an image from that port, will cause
- an error in the system.  */
+ an error in the system.
+
+ If the user intends to write images directly instead of periodically, e.g.,
+ when running this system outside of Simulator::AdvanceTo, a call to
+ `ForcedPublish(system_context)` will write all images from each input port
+ simultaneously to disk. Note that one can invoke a forced publish on this
+ system using the same context multiple times, resulting in multiple
+ write operations, with each operation overwriting the same file(s).
+ */
 class ImageWriter : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriter)
@@ -135,10 +147,11 @@ class ImageWriter : public LeafSystem<double> {
                        invocation of Publish(), represented as a 64-bit integer.
      - `time_msec`   - The time (in milliseconds) stored in the context at the
                        invocation of Publish(), represented as an integer.
-     - `count`       - The number of images that have been written from this
-                       port (the first image would get zero, the Nᵗʰ would get
-                       N - 1). This value increments _every_ time an image gets
-                       written.
+     - `count`       - The number of write operations that have occurred from
+                       this port since system creation or the last invocation of
+                       ResetAllImageCounts() (the first write operation would
+                       get zero, the Nᵗʰ would get N - 1). This value increments
+                       _every_ time a write operation occurs.
 
    File names can then be specified as shown in the following examples (assuming
    the port was declared as a color image port, with a name of "my_port", a
@@ -213,6 +226,9 @@ class ImageWriter : public LeafSystem<double> {
                                                  double publish_period,
                                                  double start_time);
 
+  // Resets the saved image count for all declared input ports to zero.
+  void ResetAllImageCounts() const;
+
  private:
 #ifndef DRAKE_DOXYGEN_CXX
   // Friend for facilitating unit testing.
@@ -222,6 +238,9 @@ class ImageWriter : public LeafSystem<double> {
   // Does the work of writing image indexed by `index` to the disk.
   template <PixelType kPixelType>
   void WriteImage(const Context<double>& context, int index) const;
+
+  // Writes an image for each configured input port.
+  EventStatus WriteAllImages(const Context<double>& context) const;
 
   // Creates a file name from the given format string and time.
   std::string MakeFileName(const std::string& format, PixelType pixel_type,

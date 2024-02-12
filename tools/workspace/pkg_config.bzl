@@ -52,20 +52,6 @@ def setup_pkg_config_repository(repository_ctx):
 
     os_result = determine_os(repository_ctx)
 
-    if os_result.is_macos or os_result.is_macos_wheel:
-        # Find the desired homebrew search path, if any.
-        homebrew_prefix = os_result.homebrew_prefix
-        homebrew_subdir = getattr(
-            repository_ctx.attr,
-            "homebrew_subdir",
-            "",
-        )
-        if homebrew_prefix and homebrew_subdir:
-            pkg_config_paths.insert(0, "{}/{}".format(
-                homebrew_prefix,
-                homebrew_subdir,
-            ))
-
     if os_result.is_manylinux or os_result.is_macos_wheel:
         pkg_config_paths.insert(0, "/opt/drake-dependencies/share/pkgconfig")
         pkg_config_paths.insert(0, "/opt/drake-dependencies/lib/pkgconfig")
@@ -73,6 +59,26 @@ def setup_pkg_config_repository(repository_ctx):
     # Check if we can find the required *.pc file of any version.
     result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
     if result.error != None:
+        defer_error_os_names = getattr(
+            repository_ctx.attr,
+            "defer_error_os_names",
+            [],
+        )
+        if repository_ctx.os.name in defer_error_os_names:
+            repository_ctx.file(
+                "BUILD.bazel",
+                """
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+cc_library(
+    name = {name},
+    srcs = ["pkg_config_failed.cc"],
+    visibility = ["//visibility:public"],
+)
+                """.format(
+                    name = repr(repository_ctx.name),
+                ),
+            )
+            return struct(value = True, error = None)
         return result
 
     # If we have a minimum version, enforce that.
@@ -324,8 +330,8 @@ _do_pkg_config_repository = repository_rule(
         "extra_deps": attr.string_list(),
         "build_epilog": attr.string(),
         "pkg_config_paths": attr.string_list(),
-        "homebrew_subdir": attr.string(),
         "extra_deprecation": attr.string(),
+        "defer_error_os_names": attr.string_list(),
     },
     local = True,
     configure = True,
@@ -382,13 +388,13 @@ def pkg_config_repository(**kwargs):
         pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
                           that we ignore the environment variable
                           PKG_CONFIG_PATH set by the user.
-        homebrew_subdir: (Optional) If running on macOS, then this path under
-                         the homebrew prefix will also be searched. For
-                         example, homebrew_subdir = "opt/libpng/lib/pkgconfig"
-                         would search "/usr/local/opt/libpng/lib/pkgconfig" or
-                         "/opt/homebrew/opt/libpng/lib/pkgconfig".
         extra_deprecation: (Optional) Add a deprecation message to the library
                            BUILD target.
+        defer_error_os_names: (Optional) On these operating systems (as named
+                              by repository_ctx.os.name), failure to find the
+                              *.pc file will yield a link-time error, not a
+                              fetch-time error. This is useful for externals
+                              that are guarded by select() statements.
     """
     if "deprecation" in kwargs:
         fail("When calling pkg_config_repository, don't use deprecation=str " +

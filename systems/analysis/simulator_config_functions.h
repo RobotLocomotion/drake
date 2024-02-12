@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config.h"

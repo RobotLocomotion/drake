@@ -7,7 +7,6 @@
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
-#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -84,7 +83,7 @@ InverseKinematics::InverseKinematics(
 
   // Add the unit quaternion constraints.
   for (BodyIndex i{0}; i < plant.num_bodies(); ++i) {
-    const Body<double>& body = plant.get_body(i);
+    const RigidBody<double>& body = plant.get_body(i);
     if (body.has_quaternion_dofs()) {
       const int start = body.floating_positions_start();
       constexpr int size = 4;
@@ -96,10 +95,14 @@ InverseKinematics::InverseKinematics(
             current_positions.segment<size>(start).normalized();
         lb.segment<size>(start) = quat;
         ub.segment<size>(start) = quat;
+        prog_->SetInitialGuess(q_.segment<size>(start), quat);
       } else {
         prog_->AddConstraint(solvers::Binding<solvers::Constraint>(
             std::make_shared<UnitQuaternionConstraint>(),
             q_.segment<size>(start)));
+        // Set a non-zero initial guess to help avoid singularities.
+        prog_->SetInitialGuess(q_.segment<size>(start),
+                              Eigen::Vector4d{1, 0, 0, 0});
       }
     }
   }
@@ -191,19 +194,6 @@ solvers::Binding<solvers::Cost> InverseKinematics::AddAngleBetweenVectorsCost(
       &plant_, frameA, na_A, frameB, nb_B, c, get_mutable_context());
   return prog_->AddCost(cost, q_);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-solvers::Binding<solvers::Constraint>
-InverseKinematics::AddMinimumDistanceConstraint(
-    double minimum_distance, double influence_distance_offset) {
-  auto constraint =
-      std::shared_ptr<MinimumDistanceConstraint>(new MinimumDistanceConstraint(
-          &plant_, minimum_distance, get_mutable_context(), {},
-          influence_distance_offset));
-  return prog_->AddConstraint(constraint, q_);
-}
-#pragma GCC diagnostic pop
 
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddMinimumDistanceLowerBoundConstraint(

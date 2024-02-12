@@ -12,11 +12,6 @@
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
-#include "drake/geometry/proximity/volume_to_surface_mesh.h"
-#include "drake/geometry/shape_specification.h"
-#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -275,9 +270,9 @@ TEST_F(FieldIntersectionLowLevelTest, IsPlaneNormalAlongPressureGradient) {
       nhat_M_against_gradient, first_tetrahedron_in_field0, field0_M_));
 }
 
-class FieldIntersectionHighLevelTest : public ::testing::Test {
+class VolumeIntersectorTest : public ::testing::Test {
  public:
-  FieldIntersectionHighLevelTest()
+  VolumeIntersectorTest()
       : box_mesh0_M_(MakeBoxVolumeMeshWithMa<double>(box_)),
         box_field0_M_(MakeBoxPressureField<double>(box_, &box_mesh0_M_,
                                                    kBoxElasitcModulus_)),
@@ -311,17 +306,15 @@ class FieldIntersectionHighLevelTest : public ::testing::Test {
   const Bvh<Obb, VolumeMesh<double>> octahedron_bvh1_N_;
 };
 
-TEST_F(FieldIntersectionHighLevelTest, IntersectFields) {
+TEST_F(VolumeIntersectorTest, IntersectFields) {
   const RigidTransformd X_MN = RigidTransformd(0.03 * Vector3d::UnitX());
-  std::vector<Vector3d> grad_e0_Ms;
-  std::vector<Vector3d> grad_e1_Ms;
   {
     SCOPED_TRACE("Use TriMeshBuilder.");
     std::unique_ptr<TriangleSurfaceMesh<double>> surface_01_M;
     std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_MN_M;
-    IntersectFields<TriangleSurfaceMesh<double>, TriMeshBuilder<double>>(
+    VolumeIntersector<TriMeshBuilder<double>, Obb>().IntersectFields(
         box_field0_M_, box_bvh0_M_, octahedron_field1_N_, octahedron_bvh1_N_,
-        X_MN, &surface_01_M, &e_MN_M, &grad_e0_Ms, &grad_e1_Ms);
+        X_MN, &surface_01_M, &e_MN_M);
 
     EXPECT_NE(surface_01_M.get(), nullptr);
   }
@@ -329,9 +322,9 @@ TEST_F(FieldIntersectionHighLevelTest, IntersectFields) {
     SCOPED_TRACE("Use PolyMeshBuilder.");
     std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
     std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
-    IntersectFields<PolygonSurfaceMesh<double>, PolyMeshBuilder<double>>(
+    VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
         box_field0_M_, box_bvh0_M_, octahedron_field1_N_, octahedron_bvh1_N_,
-        X_MN, &surface_01_M, &e_MN_M, &grad_e0_Ms, &grad_e1_Ms);
+        X_MN, &surface_01_M, &e_MN_M);
 
     EXPECT_NE(surface_01_M.get(), nullptr);
 
@@ -351,41 +344,22 @@ TEST_F(FieldIntersectionHighLevelTest, IntersectFields) {
     const double kPressureTolerance = kRelativeTolerance * kExpectPressure;
     EXPECT_NEAR(e_MN_M->EvaluateAtVertex(0), kExpectPressure,
                 kPressureTolerance);
-
-    // The hydroelastic modulus is in the order of 100 kPa, and the size of
-    // the geometries are in the order of centimeters. Therefore, the
-    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
-    // = 1e7 Pa/m.
-    const double kExpectGradientOrderOfMagnitude = 1e7;
-    const double kGradientTolerance =
-        kRelativeTolerance * kExpectGradientOrderOfMagnitude;
-    const Vector3d expect_grad_e0_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(-1 / 3.0, 0, 0);
-    EXPECT_TRUE(CompareMatrices(grad_e0_Ms.at(0), expect_grad_e0_M,
-                                kGradientTolerance));
-    const Vector3d expect_grad_e1_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(1 / 3.0, -1 / 3.0, -1 / 3.0);
-    EXPECT_TRUE(CompareMatrices(grad_e1_Ms.at(0), expect_grad_e1_M,
-                                kGradientTolerance));
   }
 }
 
 // Smoke tests that AutoDiffXd can build. No checking on the values of
 // derivatives.
-TEST_F(FieldIntersectionHighLevelTest, FieldIntersectionAutoDiffXd) {
+TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
   const math::RigidTransform<AutoDiffXd> X_MN(0.03 *
                                               Vector3<AutoDiffXd>::UnitX());
-  std::vector<Vector3<AutoDiffXd>> grad_e0_Ms;
-  std::vector<Vector3<AutoDiffXd>> grad_e1_Ms;
   {
     SCOPED_TRACE("Use TriMeshBuilder.");
     std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>> surface_01_M;
     std::unique_ptr<TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>
         e_MN_M;
-    IntersectFields<TriangleSurfaceMesh<AutoDiffXd>,
-                    TriMeshBuilder<AutoDiffXd>>(
+    VolumeIntersector<TriMeshBuilder<AutoDiffXd>, Obb>().IntersectFields(
         box_field0_M_, box_bvh0_M_, octahedron_field1_N_, octahedron_bvh1_N_,
-        X_MN, &surface_01_M, &e_MN_M, &grad_e0_Ms, &grad_e1_Ms);
+        X_MN, &surface_01_M, &e_MN_M);
 
     EXPECT_NE(surface_01_M.get(), nullptr);
   }
@@ -394,10 +368,9 @@ TEST_F(FieldIntersectionHighLevelTest, FieldIntersectionAutoDiffXd) {
     std::unique_ptr<PolygonSurfaceMesh<AutoDiffXd>> surface_01_M;
     std::unique_ptr<PolygonSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>
         e_MN_M;
-    IntersectFields<PolygonSurfaceMesh<AutoDiffXd>,
-                    PolyMeshBuilder<AutoDiffXd>>(
+    VolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>().IntersectFields(
         box_field0_M_, box_bvh0_M_, octahedron_field1_N_, octahedron_bvh1_N_,
-        X_MN, &surface_01_M, &e_MN_M, &grad_e0_Ms, &grad_e1_Ms);
+        X_MN, &surface_01_M, &e_MN_M);
 
     EXPECT_NE(surface_01_M.get(), nullptr);
   }
@@ -405,55 +378,68 @@ TEST_F(FieldIntersectionHighLevelTest, FieldIntersectionAutoDiffXd) {
 
 // Special case of no intersection. Request PolygonSurfaceMesh<double> as the
 // representative template argument.
-TEST_F(FieldIntersectionHighLevelTest, FieldIntersectionNoIntersection) {
+TEST_F(VolumeIntersectorTest, IntersectFieldsNoIntersection) {
   // 1 meter apart is well separated.
   const RigidTransformd X_MN(Vector3d::UnitX());
-  std::vector<Vector3d> grad_e0_Ms;
-  std::vector<Vector3d> grad_e1_Ms;
   std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
   std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
-  IntersectFields<PolygonSurfaceMesh<double>, PolyMeshBuilder<double>>(
+  VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
       box_field0_M_, box_bvh0_M_, octahedron_field1_N_, octahedron_bvh1_N_,
-      X_MN, &surface_01_M, &e_MN_M, &grad_e0_Ms, &grad_e1_Ms);
+      X_MN, &surface_01_M, &e_MN_M);
 
   EXPECT_EQ(surface_01_M.get(), nullptr);
   EXPECT_EQ(e_MN_M.get(), nullptr);
-  EXPECT_EQ(grad_e0_Ms.size(), 0);
-  EXPECT_EQ(grad_e1_Ms.size(), 0);
 }
 
-TEST_F(FieldIntersectionHighLevelTest, IntersectCompliantVolumes) {
+TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
   GeometryId first_id = GeometryId::get_new_id();
   GeometryId second_id = GeometryId::get_new_id();
   const RigidTransformd X_WM = RigidTransformd::Identity();
   const RigidTransformd X_WN(0.03 * Vector3d::UnitX());
   {
     SCOPED_TRACE("Triangle contact surface.");
-    std::unique_ptr<ContactSurface<double>> contact_patch_W =
-        IntersectCompliantVolumes<TriangleSurfaceMesh<double>,
-                                  TriMeshBuilder<double>>(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
-            octahedron_field1_N_, octahedron_bvh1_N_, X_WN);
+    std::unique_ptr<ContactSurface<double>> contact_patch_W;
+    HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
+        .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
+                                   second_id, octahedron_field1_N_,
+                                   octahedron_bvh1_N_, X_WN, &contact_patch_W);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kTriangle);
   }
   {
     SCOPED_TRACE("Polygon contact surface.");
-    std::unique_ptr<ContactSurface<double>> contact_patch_W =
-        IntersectCompliantVolumes<PolygonSurfaceMesh<double>,
-                                  PolyMeshBuilder<double>>(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
-            octahedron_field1_N_, octahedron_bvh1_N_, X_WN);
+    std::unique_ptr<ContactSurface<double>> contact_patch_W;
+    HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
+        .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
+                                   second_id, octahedron_field1_N_,
+                                   octahedron_bvh1_N_, X_WN, &contact_patch_W);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
+
+    // The hydroelastic modulus is in the order of 100 kPa, and the size of
+    // the geometries are in the order of centimeters. Therefore, the
+    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
+    // = 1e7 Pa/m.
+    const double kExpectGradientOrderOfMagnitude = 1e7;
+    const double kRelativeTolerance = 1e-13;
+    const double kGradientTolerance =
+        kRelativeTolerance * kExpectGradientOrderOfMagnitude;
+    const Vector3d expect_grad_e0_M =
+        kExpectGradientOrderOfMagnitude * Vector3d(-1 / 3.0, 0, 0);
+    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_M_W(0),
+                                expect_grad_e0_M, kGradientTolerance));
+    const Vector3d expect_grad_e1_M =
+        kExpectGradientOrderOfMagnitude * Vector3d(1 / 3.0, -1 / 3.0, -1 / 3.0);
+    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_N_W(0),
+                                expect_grad_e1_M, kGradientTolerance));
   }
 }
 
 // Smoke tests that AutoDiffXd can build. No checking on the values of
 // derivatives.
-TEST_F(FieldIntersectionHighLevelTest, IntersectCompliantVolumesAutoDiffXd) {
+TEST_F(VolumeIntersectorTest, IntersectCompliantVolumesAutoDiffXd) {
   GeometryId first_id = GeometryId::get_new_id();
   GeometryId second_id = GeometryId::get_new_id();
   const math::RigidTransform<AutoDiffXd> X_WM =
@@ -462,22 +448,22 @@ TEST_F(FieldIntersectionHighLevelTest, IntersectCompliantVolumesAutoDiffXd) {
                                               Vector3<AutoDiffXd>::UnitX());
   {
     SCOPED_TRACE("Triangle contact surface.");
-    std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W =
-        IntersectCompliantVolumes<TriangleSurfaceMesh<AutoDiffXd>,
-                                  TriMeshBuilder<AutoDiffXd>>(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
-            octahedron_field1_N_, octahedron_bvh1_N_, X_WN);
+    std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W;
+    HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>>()
+        .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
+                                   second_id, octahedron_field1_N_,
+                                   octahedron_bvh1_N_, X_WN, &contact_patch_W);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kTriangle);
   }
   {
     SCOPED_TRACE("Polygon contact surface.");
-    std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W =
-        IntersectCompliantVolumes<PolygonSurfaceMesh<AutoDiffXd>,
-                                  PolyMeshBuilder<AutoDiffXd>>(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
-            octahedron_field1_N_, octahedron_bvh1_N_, X_WN);
+    std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W;
+    HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>>()
+        .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
+                                   second_id, octahedron_field1_N_,
+                                   octahedron_bvh1_N_, X_WN, &contact_patch_W);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
@@ -486,24 +472,22 @@ TEST_F(FieldIntersectionHighLevelTest, IntersectCompliantVolumesAutoDiffXd) {
 
 // Special case: no intersection. Request PolygonSurfaceMesh<double> as a
 // representative.
-TEST_F(FieldIntersectionHighLevelTest,
-       IntersectCompliantVolumesNoIntersection) {
+TEST_F(VolumeIntersectorTest, IntersectCompliantVolumesNoIntersection) {
   GeometryId first_id = GeometryId::get_new_id();
   GeometryId second_id = GeometryId::get_new_id();
   const RigidTransformd X_WM = RigidTransformd::Identity();
   // 1 meter makes them well separated.
   const RigidTransformd X_WN(Vector3d::UnitX());
 
-  std::unique_ptr<ContactSurface<double>> contact_patch_W =
-      IntersectCompliantVolumes<PolygonSurfaceMesh<double>,
-                                PolyMeshBuilder<double>>(
-          first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
-          octahedron_field1_N_, octahedron_bvh1_N_, X_WN);
+  std::unique_ptr<ContactSurface<double>> contact_patch_W;
+  HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
+      .IntersectCompliantVolumes(first_id, box_field0_M_, box_bvh0_M_, X_WM,
+                                 second_id, octahedron_field1_N_,
+                                 octahedron_bvh1_N_, X_WN, &contact_patch_W);
   EXPECT_EQ(contact_patch_W.get(), nullptr);
 }
 
-TEST_F(FieldIntersectionHighLevelTest,
-       ComputeContactSurfaceFromCompliantVolumes) {
+TEST_F(VolumeIntersectorTest, ComputeContactSurfaceFromCompliantVolumes) {
   GeometryId first_id = GeometryId::get_new_id();
   GeometryId second_id = GeometryId::get_new_id();
   const RigidTransformd X_WM = RigidTransformd::Identity();
@@ -534,7 +518,7 @@ TEST_F(FieldIntersectionHighLevelTest,
 
 // Smoke tests that AutoDiffXd can build. No checking on the values of
 // derivatives.
-TEST_F(FieldIntersectionHighLevelTest,
+TEST_F(VolumeIntersectorTest,
        ComputeContactSurfaceFromCompliantVolumesAutoDiffXd) {
   GeometryId first_id = GeometryId::get_new_id();
   GeometryId second_id = GeometryId::get_new_id();

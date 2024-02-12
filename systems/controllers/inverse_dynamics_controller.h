@@ -6,7 +6,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -43,7 +42,7 @@ namespace controllers {
  *
  * @note As an alternative to adding a separate controller system to your
  * diagram, you can model gravity compensation with PD controllers using
- * MultibodyPlant APIs. Refer to MultibodyPlat::set_gravity_enabled() as an
+ * MultibodyPlant APIs. Refer to MultibodyPlant::set_gravity_enabled() as an
  * alternative to modeling gravity compensation. To model PD controlled
  * actuators, refer to @ref mbp_actuation "Actuation".
  *

@@ -11,7 +11,8 @@ def nlopt_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/remove_luksan.patch",
-            ":patches/vendoring.patch",
+            ":patches/stogo.patch",
+            ":patches/vendor.patch",
         ],
         mirrors = mirrors,
     )

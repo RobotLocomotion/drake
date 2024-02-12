@@ -19,6 +19,14 @@ licenses([
 
 package(default_visibility = ["//visibility:public"])
 
+# Provide an opt-out that avoids installing Java LCM libraries (e.g., we don't
+# need Java when we're building a Python wheel). The java targets will still be
+# defined, they just won't be part of //:install.
+config_setting(
+    name = "lcm_install_java_is_off",
+    values = {"define": "LCM_INSTALL_JAVA=OFF"},
+)
+
 config_setting(
     name = "linux",
     values = {"cpu": "k8"},
@@ -310,15 +318,19 @@ install(
     ],
     targets = [
         ":lcm-gen",
-        ":lcm-java",
         ":lcm-logger",
         ":lcm-logplayer",
-        ":lcm-logplayer-gui",
-        ":lcm-logplayer-gui-launcher",
-        ":lcm-spy",
-        ":lcm-spy-launcher",
         ":libdrake_lcm.so",
-    ],
+    ] + select({
+        ":lcm_install_java_is_off": [],
+        "//conditions:default": [
+            ":lcm-java",
+            ":lcm-logplayer-gui",
+            ":lcm-logplayer-gui-launcher",
+            ":lcm-spy",
+            ":lcm-spy-launcher",
+        ],
+    }),
     py_strip_prefix = ["lcm-python"],
     hdrs = LCM_PUBLIC_HEADERS,
     hdr_dest = "include/" + CMAKE_PACKAGE,

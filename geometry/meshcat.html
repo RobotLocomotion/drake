@@ -109,11 +109,31 @@
     requestAnimationFrame( animate );
     // Set background to match the legacy ``drake_visualizer`` application of
     // days past.
-    viewer.set_property(['Background'], "top_color", [.95, .95, 1.0])
-    viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
+    viewer.set_property(['Background', '<object>'], "top_color",
+                        [.95, .95, 1.0])
+    viewer.set_property(['Background', '<object>'], "bottom_color",
+                        [.32, .32, .35])
     // Set the initial view looking up the y-axis.
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
+
+    // With meshcat's upgrade of three.js, the default lighting conditions are
+    // no longer appropriate. Meshcat has boosted them slightly to account for
+    // a hidden change in three.js's lighting math, but it's not enough. The
+    // ambient and directional lights don't decay with distance, but point and
+    // spotlight do. The default lighting is now dominated by the non-decaying
+    // light sources. So, we're going to significantly bump the decaying sources
+    // to give them illuminating power and increase image contrast. These values
+    // don't live in upstream meshcat because in some of meshcat's test/*.html
+    // files, these defaults look horrible..
+    viewer.set_property(["Lights", "SpotLight", "<object>"], "intensity", 30);
+    viewer.set_property(["Lights", "PointLightNegativeX", "<object>"],
+                        "intensity", 25);
+    viewer.set_property(["Lights", "PointLightPositiveX", "<object>"],
+                        "intensity", 25);
+    viewer.set_property(["Lights", "AmbientLight", "<object>"], "intensity",
+                        0.3);
+    viewer.set_property(["Lights", "FillLight", "<object>"], "intensity", 0.5);
 
     <!-- CONNECTION BLOCK BEGIN -->
     // The lifespan of the server may be much shorter than this visualizer
@@ -162,12 +182,59 @@
       status_dom.textContent = "No connection to server. Attempting to reconnect...";
     }
 
+    const tracked_camera = urlParams.get('tracked_camera');
+    if (tracked_camera) {
+      viewer.set_render_callback(
+        `(function() {
+            var prior_message = new Uint8Array();
+            return function() {
+              if (this.connection.readyState == 1 /* OPEN */) {
+                var new_message = msgpack.encode({
+                  'type': 'camera_pose',
+                  'camera_pose': this.camera.matrixWorld.elements,
+                  // Changing projection matrices *can* lead to is_perspective()
+                  // returning some null-like value; we treat it as not
+                  // perspective.
+                  'is_perspective': this.is_perspective() == null ?
+                                        false : this.is_perspective()
+                });
+                // Only transmit the message when it changes.
+                if (!(new_message.length === prior_message.length &&
+                      new_message.every((x, i) => x === prior_message[i]))) {
+                  this.connection.send(new_message);
+                  prior_message = new_message;
+                }
+              }
+            }
+         })()`);
+    }
+
     url = location.toString();
     url = url.replace("http://", "ws://")
     url = url.replace("https://", "wss://")
     url = url.replace("/index.html", "/")
     url = url.replace("/meshcat.html", "/")
     make_connection(url, reconnect_ms);
+
+    // Per our meshcat.h docs, using XR when offline is not supported. Adding
+    // offline support might be possible by moving the 'webxr' and 'controller'
+    // handling outside of the CONNECTION BLOCK comment region and adding
+    // meshcat_manual_test coverage.
+
+    const webxrMode = urlParams.get('webxr');
+    if (webxrMode) {
+        viewer.handle_command({
+          type: "enable_webxr",
+          mode: webxrMode
+        });
+    }
+
+    const controllerMode = urlParams.get('controller');
+    if (controllerMode === "on") {
+      viewer.handle_command({
+        type: "visualize_vr_controller"
+      });
+    }
     <!-- CONNECTION BLOCK END -->
 
   </script>

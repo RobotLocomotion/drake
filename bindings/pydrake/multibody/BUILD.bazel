@@ -72,7 +72,6 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     deps = [
         ":module_py",
-        "//bindings/pydrake/common:jupyter_py",
         "//bindings/pydrake/systems:framework_py",
     ],
 )
@@ -90,9 +89,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common:cpp_template_py",
-        "//bindings/pydrake/common:value_py",
-        "//bindings/pydrake/math",
     ],
     py_srcs = ["_math_extra.py"],
 )
@@ -116,7 +112,6 @@ drake_pybind_library(
     py_deps = [
         ":math_py",
         ":module_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/systems:framework_py",
     ],
     py_srcs = [
@@ -146,7 +141,6 @@ drake_pybind_library(
         ":module_py",
         ":tree_py",
         "//bindings/pydrake/geometry",
-        "//bindings/pydrake/common:cpp_template_py",
     ],
     py_srcs = [
         "_plant_extra.py",
@@ -164,7 +158,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common:schema_py",
     ],
 )
 
@@ -174,7 +167,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
     ],
@@ -251,7 +243,6 @@ drake_py_library(
     deps = [
         ":tree_py",
         "//bindings/pydrake/geometry",
-        "//bindings/pydrake/math",
     ],
 )
 
@@ -276,7 +267,6 @@ drake_py_library(
     deps = [
         ":parsing_py",
         ":plant_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
     ],
 )
@@ -487,7 +477,6 @@ drake_py_unittest(
         ":benchmarks_py",
         ":inverse_kinematics_py",
         ":parsing_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/planning",
     ],
 )
@@ -543,7 +532,6 @@ drake_py_unittest(
         ":mesh_model_maker_py",
         ":parsing_py",
         ":plant_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/systems:framework_py",
     ],
 )
@@ -564,7 +552,6 @@ drake_py_unittest(
         ":inertia_fixer_py",
         ":parsing_py",
         ":plant_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/geometry",
     ],

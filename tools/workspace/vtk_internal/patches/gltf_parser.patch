@@ -1,0 +1,155 @@
+This corrects a few defects in VTK's glTF parsing.
+
+The first defects share a common origin: VTK assumes that if *any* texture is
+present, it must be the base color texture. If this texture is missing, then
+other textures confuse VTK, leading to spurious warnings (multiple sets of UVs
+defined) and otherwise cause the textures to get ignored.
+
+We address this with two independent changes:
+
+  - Change the logic that the glTF parser uses to determine if a mesh primitive
+    has been defined with multiple sets of uv coordinates.
+  - Make the inclusion of metallic, normal, emmissive, and ambient occlusion
+    maps *no longer* dependent on the presence of a base color map.
+
+Furthermore, those warnings use the vtkWarningWithObjectMacro in a way which
+forces the messages to be written directly to the console. We change the
+calls so that it gets registered with an objects event listener so that Drake
+can choose to capture the warnings and present as it sees fit.
+
+These changes *should* be upstreamed to VTK.
+
+--- IO/Geometry/vtkGLTFDocumentLoader.h
++++ IO/Geometry/vtkGLTFDocumentLoader.h
+@@ -265,7 +265,7 @@ public:
+   struct TextureInfo
+   {
+     int Index = -1;
+-    int TexCoord;
++    int TexCoord = -1;
+   };
+ 
+   /**
+
+--- IO/Import/vtkGLTFImporter.cxx
++++ IO/Import/vtkGLTFImporter.cxx
+@@ -43,6 +43,7 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <set>
+ #include <stack>
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+@@ -80,7 +81,8 @@ vtkSmartPointer<vtkCamera> GLTFCameraToVTKCamera(const vtkGLTFDocumentLoader::Ca
+ //------------------------------------------------------------------------------
+ vtkSmartPointer<vtkTexture> CreateVTKTextureFromGLTFTexture(
+   std::shared_ptr<vtkGLTFDocumentLoader::Model> model, int textureIndex,
+-  std::map<int, vtkSmartPointer<vtkTexture>>& existingTextures)
++  std::map<int, vtkSmartPointer<vtkTexture>>& existingTextures,
++  vtkGLTFImporter* parent)
+ {
+ 
+   if (existingTextures.count(textureIndex))
+@@ -160,14 +162,23 @@ vtkSmartPointer<vtkTexture> CreateVTKTextureFromGLTFTexture(
+ }
+ 
+ //------------------------------------------------------------------------------
+-bool MaterialHasMultipleUVs(const vtkGLTFDocumentLoader::Material& material)
++bool MaterialHasMultipleUVs(const vtkGLTFDocumentLoader::Material& material,
++                            vtkGLTFImporter* parent)
+ {
+-  int firstUV = material.PbrMetallicRoughness.BaseColorTexture.TexCoord;
+-  return (material.EmissiveTexture.Index >= 0 && material.EmissiveTexture.TexCoord != firstUV) ||
+-    (material.NormalTexture.Index >= 0 && material.NormalTexture.TexCoord != firstUV) ||
+-    (material.OcclusionTexture.Index >= 0 && material.OcclusionTexture.TexCoord != firstUV) ||
+-    (material.PbrMetallicRoughness.MetallicRoughnessTexture.Index >= 0 &&
+-      material.PbrMetallicRoughness.MetallicRoughnessTexture.TexCoord != firstUV);
++  std::set<int> uv_sets;
++  for (const vtkGLTFDocumentLoader::TextureInfo& info :
++    { material.PbrMetallicRoughness.BaseColorTexture, material.EmissiveTexture,
++      material.NormalTexture, material.OcclusionTexture,
++      material.PbrMetallicRoughness.MetallicRoughnessTexture })
++  {
++    if (info.Index >= 0) uv_sets.insert(info.TexCoord);
++  }
++  if (uv_sets.count(-1) > 0) {
++    vtkErrorWithObjectMacro(parent,
++                            "A material defined a texture index without "
++                            "defining a texture coordinate set.");
++  }
++  return uv_sets.size() > 1;
+ }
+ 
+ //------------------------------------------------------------------------------
+@@ -188,15 +199,16 @@ bool PrimitiveNeedsTangents(const std::shared_ptr<vtkGLTFDocumentLoader::Model>
+ //------------------------------------------------------------------------------
+ void ApplyGLTFMaterialToVTKActor(std::shared_ptr<vtkGLTFDocumentLoader::Model> model,
+   vtkGLTFDocumentLoader::Primitive& primitive, vtkSmartPointer<vtkActor> actor,
+-  std::map<int, vtkSmartPointer<vtkTexture>>& existingTextures)
++  std::map<int, vtkSmartPointer<vtkTexture>>& existingTextures,
++  vtkGLTFImporter* parent)
+ {
+   vtkGLTFDocumentLoader::Material& material = model->Materials[primitive.Material];
+ 
+-  bool hasMultipleUVs = MaterialHasMultipleUVs(material);
++  bool hasMultipleUVs = MaterialHasMultipleUVs(material, parent);
+   if (hasMultipleUVs)
+   {
+     vtkWarningWithObjectMacro(
+-      nullptr, "Using multiple texture coordinates for the same model is not supported.");
++      parent, "Using multiple texture coordinates for the same model is not supported.");
+   }
+   auto property = actor->GetProperty();
+   property->SetInterpolationToPBR();
+@@ -233,9 +245,10 @@ void ApplyGLTFMaterialToVTKActor(std::shared_ptr<vtkGLTFDocumentLoader::Model> m
+   {
+     // set albedo texture
+     vtkSmartPointer<vtkTexture> baseColorTex;
+-    baseColorTex = CreateVTKTextureFromGLTFTexture(model, texIndex, existingTextures);
++    baseColorTex = CreateVTKTextureFromGLTFTexture(model, texIndex, existingTextures, parent);
+     baseColorTex->UseSRGBColorSpaceOn();
+     property->SetBaseColorTexture(baseColorTex);
++  }
+ 
+     // merge ambient occlusion and metallic/roughness, then set material texture
+     int pbrTexIndex = material.PbrMetallicRoughness.MetallicRoughnessTexture.Index;
+@@ -291,7 +304,7 @@ void ApplyGLTFMaterialToVTKActor(std::shared_ptr<vtkGLTFDocumentLoader::Model> m
+         {
+           pbrImage.ImageData->GetPointData()->GetScalars()->FillComponent(0, 255);
+         }
+-        auto materialTex = CreateVTKTextureFromGLTFTexture(model, pbrTexIndex, existingTextures);
++        auto materialTex = CreateVTKTextureFromGLTFTexture(model, pbrTexIndex, existingTextures, parent);
+         property->SetORMTexture(materialTex);
+       }
+     }
+@@ -300,7 +313,7 @@ void ApplyGLTFMaterialToVTKActor(std::shared_ptr<vtkGLTFDocumentLoader::Model> m
+     int emissiveTexIndex = material.EmissiveTexture.Index;
+     if (emissiveTexIndex >= 0 && emissiveTexIndex < static_cast<int>(model->Textures.size()))
+     {
+-      auto emissiveTex = CreateVTKTextureFromGLTFTexture(model, emissiveTexIndex, existingTextures);
++      auto emissiveTex = CreateVTKTextureFromGLTFTexture(model, emissiveTexIndex, existingTextures, parent);
+       emissiveTex->UseSRGBColorSpaceOn();
+       property->SetEmissiveTexture(emissiveTex);
+     }
+@@ -309,10 +322,9 @@ void ApplyGLTFMaterialToVTKActor(std::shared_ptr<vtkGLTFDocumentLoader::Model> m
+     if (normalMapIndex >= 0 && normalMapIndex < static_cast<int>(model->Textures.size()))
+     {
+       actor->GetProperty()->SetNormalScale(material.NormalTextureScale);
+-      auto normalTex = CreateVTKTextureFromGLTFTexture(model, normalMapIndex, existingTextures);
++      auto normalTex = CreateVTKTextureFromGLTFTexture(model, normalMapIndex, existingTextures, parent);
+       property->SetNormalTexture(normalTex);
+     }
+-  }
+ 
+   // extension KHR_materials_unlit
+   actor->GetProperty()->SetLighting(!material.Unlit);
+@@ -496,7 +508,7 @@ void vtkGLTFImporter::ImportActors(vtkRenderer* renderer)
+         if (primitive.Material >= 0 &&
+           primitive.Material < static_cast<int>(model->Materials.size()))
+         {
+-          ApplyGLTFMaterialToVTKActor(model, primitive, actor, this->Textures);
++          ApplyGLTFMaterialToVTKActor(model, primitive, actor, this->Textures, this);
+         }
+         renderer->AddActor(actor);
+ 

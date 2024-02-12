@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <string>
 
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
 
@@ -75,17 +78,24 @@ class SpatialInertiaCalculator final : public ShapeReifier {
 
   template <typename MeshType>
   void ImplementMesh(const MeshType& mesh) {
-    // TODO(russt): Support .vtk files.
-    if (mesh.extension() != ".obj") {
+    const auto& extension = mesh.extension();
+    std::unique_ptr<geometry::TriangleSurfaceMesh<double>> surface_mesh;
+    if (extension == ".obj") {
+      surface_mesh = std::make_unique<geometry::TriangleSurfaceMesh<double>>(
+          geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(),
+                                                 mesh.scale()));
+    } else if (extension == ".vtk") {
+      surface_mesh = std::make_unique<geometry::TriangleSurfaceMesh<double>>(
+          geometry::ConvertVolumeToSurfaceMesh(
+              geometry::internal::MakeVolumeMeshFromVtk<double>(mesh)));
+    } else {
       throw std::runtime_error(fmt::format(
-          "CalcMassProperties currently only supports .obj files for mesh "
-          "geometries but was given '{}'.",
+          "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
+          " .vtk files for mesh geometries but was given '{}'.",
           mesh.filename()));
     }
-    const geometry::TriangleSurfaceMesh<double> surface_mesh =
-        geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
 
-    spatial_inertia_ = CalcSpatialInertia(surface_mesh, density_);
+    spatial_inertia_ = CalcSpatialInertia(*surface_mesh, density_);
   }
 
   double density_{};

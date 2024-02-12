@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 
-# This script builds a wheel on macOS. It can be run directly, but using the
-# //tools/wheel:builder Bazel action adds functionality. Running this script
-# directly also requires an already-provisioned host.
-#
-# Beware that this requires write permission to /opt and will nuke various
-# things therein. (Shouldn't affect ARM Homebrew, though.)
+# Internal script to build a macOS Drake wheel. This encapsulates most of the
+# functionality that is handled by the Dockerfile when building Linux wheels.
 
 set -eu -o pipefail
 
@@ -19,96 +15,98 @@ readonly git_root="$(
     realpath ./$(git rev-parse --show-cdup)
 )"
 
-build_deps=1
-if [[ "$1" == "--no-deps" ]]; then
-    build_deps=
-    shift 1
-fi
-
-if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <drake-version>" >&2
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 <drake-version> <python-version>" >&2
     exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# Clean up from old builds and prepare build environment.
-# -----------------------------------------------------------------------------
+readonly python_version="$2"
+readonly python="python$python_version"
 
-rm -rf "/opt/drake-wheel-build/wheel"
-rm -rf "/opt/drake"
-
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-
-# Merge image/known_hosts into the user's known_hosts. Primarily, this ensures
-# that GitHub's SSH fingerprint is known.
-while read host proto fingerprint; do
-    grep -qE '^github.com' ~/.ssh/known_hosts && continue
-    echo "$host $proto $fingerprint" >> ~/.ssh/known_hosts
-done < "$resource_root/image/known_hosts"
-
-chmod 600 ~/.ssh/known_hosts
-
-# gfortran hard-codes the path to the SDK with which it was built, which may
-# not match the SDK actually on the machine. This can result in the error
-# "ld: library not found for -lm", and can be fixed/overridden by setting
-# SDKROOT to the appropriate path.
-export SDKROOT="$(xcrun --show-sdk-path)"
+readonly python_prefix="$(brew --prefix python@$python_version)"
+readonly python_executable="$python_prefix/bin/$python"
 
 # -----------------------------------------------------------------------------
-# Build Drake's dependencies.
+# Clean up from old builds.
 # -----------------------------------------------------------------------------
 
-if [[ -n "$build_deps" ]]; then
-    rm -rf /opt/drake-dependencies
+rm -rf "/opt/drake-wheel-build/$python"
+rm -rf "/opt/drake-dist/$python"
 
-    rm -rf "/opt/drake-wheel-build/dependencies"
-    mkdir -p "/opt/drake-wheel-build/dependencies"
-
-    cp -R \
-        "$resource_root/image/dependencies" \
-        "/opt/drake-wheel-build/dependencies/src"
-
-    "$resource_root/image/build-dependencies.sh"
+if [ -e "/opt/drake" ]; then
+    echo "Unable to proceed: /opt/drake exists" \
+         "(left over from a failed build?)" >&2
+    exit 1
 fi
-
-# -----------------------------------------------------------------------------
-# Build and "install" Drake.
-# -----------------------------------------------------------------------------
-
-cd "$git_root"
-
-export SNOPT_PATH=git
-
-# TODO(jwnimmer-tri) To make it easier to build a macOS wheel for a different
-# Python, we should to switch to using CMake for this step so that we can use
-# use the canonical `-DPython_EXECUTABLE`.
-
-declare -a bazel_args=(
-    --repo_env=DRAKE_OS=macos_wheel
-    --define=NO_DRAKE_VISUALIZER=ON
-    --define=WITH_MOSEK=ON
-    --define=WITH_SNOPT=ON
-    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
-    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
-)
-
-bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath
-bazel build "${bazel_args[@]}" //tools/wheel:change_lpath
-
-bazel run "${bazel_args[@]}" //:install -- /opt/drake
 
 # -----------------------------------------------------------------------------
 # Set up a Python virtual environment with the latest setuptools.
 # -----------------------------------------------------------------------------
 
-rm -rf  "/opt/drake-wheel-build/python"
+# TODO(matthew.woehlke) If/when we fix the Drake build to get its (PyPI)
+# dependencies some other way, note that, as of writing, building the actual
+# wheel has additional dependencies; this logic may need to lower rather than
+# being deleted outright. See (and consider partly reverting) the commit that
+# added this comment.
+
+readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
 
 # NOTE: Xcode ships python3, make sure to use the one from brew.
-$(brew --prefix python@3.11)/bin/python3.11 \
-    -m venv "/opt/drake-wheel-build/python"
+"$python_executable" -m venv "$pyvenv_root"
 
-. "/opt/drake-wheel-build/python/bin/activate"
+# We also need pythonX.Y-config, which isn't created as of writing (see also
+# https://github.com/pypa/virtualenv/issues/169). Don't fail if it already
+# exists, though, e.g. if the bug has been fixed.
+ln -s "$python_prefix/bin/$python-config" \
+      "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
+
+. "$pyvenv_root/bin/activate"
+
+pip install -r "$git_root/setup/mac/binary_distribution/requirements.txt"
+pip install -r "$git_root/setup/mac/source_distribution/requirements.txt"
+
+# -----------------------------------------------------------------------------
+# Build and "install" Drake.
+# -----------------------------------------------------------------------------
+
+readonly build_root="/opt/drake-wheel-build/$python/drake-build"
+
+mkdir -p "$build_root"
+cd "$build_root"
+
+# Add wheel-specific bazel options.
+cat > "$build_root/drake.bazelrc" << EOF
+build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
+build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
+build --repo_env=DRAKE_OS=macos_wheel
+build --repo_env=SNOPT_PATH=git
+build --config=packaging
+build --define=LCM_INSTALL_JAVA=OFF
+# See tools/wheel/wheel_builder/macos.py for more on this env variable.
+build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
+EOF
+
+# Install Drake.
+cmake "$git_root" \
+    -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
+    -DPython_EXECUTABLE="$pyvenv_root/bin/$python"
+make install
+
+# Build wheel tools.
+cd "$build_root/drake_build_cwd"
+
+bazel build //tools/wheel:strip_rpath
+bazel build //tools/wheel:change_lpath
+
+ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
+
+# Ensure that the user (or build script) will be able to delete the build tree
+# later.
+find "$build_root" -type d -print0 | xargs -0 chmod u+w
+
+# -----------------------------------------------------------------------------
+# Install tools to build the wheel.
+# -----------------------------------------------------------------------------
 
 pip install --upgrade \
     delocate \
@@ -116,18 +114,21 @@ pip install --upgrade \
     wheel
 
 ln -s \
-    "$git_root/bazel-bin/tools/wheel/strip_rpath" \
-    "/opt/drake-wheel-build/python/bin/strip_rpath"
+    "$build_root/bazel-bin/tools/wheel/strip_rpath" \
+    "$pyvenv_root/bin/strip_rpath"
 
 ln -s \
-    "$git_root/bazel-bin/tools/wheel/change_lpath" \
-    "/opt/drake-wheel-build/python/bin/change_lpath"
+    "$build_root/bazel-bin/tools/wheel/change_lpath" \
+    "$pyvenv_root/bin/change_lpath"
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
-mkdir -p "/opt/drake-wheel-build/wheel"
+mkdir -p "/opt/drake-wheel-build/$python/wheel"
+
+ln -s "/opt/drake-dist/$python" \
+      "/opt/drake"
 
 cp \
     "$resource_root/image/setup.py" \
@@ -136,3 +137,5 @@ cp \
 export DRAKE_VERSION="$1"
 
 "$resource_root/image/build-wheel.sh"
+
+rm "/opt/drake"

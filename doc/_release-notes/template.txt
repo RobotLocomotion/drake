@@ -1,6 +1,6 @@
 <!-- This document is the template used by tools/release_engineering/relnotes. -->
 ---
-title: Drake {version}
+title: Drake v{version}
 date: 2099-12-31
 released: YYYY-MM-DD
 ---
@@ -9,14 +9,14 @@ released: YYYY-MM-DD
 
 * TBD
 
-# Breaking changes since {prior_version}
+# Breaking changes since v{prior_version}
 
 * TBD
 
 Refer to our [Drake Stability Guidelines](/stable.html) for our policy
 on API changes.
 
-# Changes since {prior_version}
+# Changes since v{prior_version}
 
 ## Dynamical Systems
 
@@ -118,8 +118,8 @@ Fixes
 # Notes
 
 
-This release provides [pre-compiled binaries](https://github.com/RobotLocomotion/drake/releases/tag/{version}) named
-``drake-YYYYMMDD-{{focal|jammy|mac|mac-arm64}}.tar.gz``. See [Stable Releases](/from_binary.html#stable-releases) for instructions on how to use them.
+This release provides [pre-compiled binaries](https://github.com/RobotLocomotion/drake/releases/tag/v{version}) named
+``drake-{version}-{{focal|jammy|mac|mac-arm64}}.tar.gz``. See [Stable Releases](/from_binary.html#stable-releases) for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html). Thanks to

@@ -16,18 +16,23 @@ void CheckDistanceAndTimeDerivative(
     const Eigen::Vector3d& v_WS, const Eigen::Vector3d& omega_WS,
     double distance_expected, double distance_time_derivative_expected,
     systems::Context<double>* plant_context) {
-  Eigen::Matrix<double, 26, 1> q_v;
+  EXPECT_EQ(plant.num_positions(), 14);
+  EXPECT_EQ(plant.num_velocities(), 12);
+  Eigen::Matrix<double, 14, 1> q;
+  Eigen::Matrix<double, 12, 1> v;
   const auto& sphere_body = plant.get_frame(sphere_frame_index).body();
   const auto& box_body = plant.get_frame(box_frame_index).body();
-  q_v.segment<4>(box_body.floating_positions_start()) = quat_WB;
-  q_v.segment<3>(box_body.floating_positions_start() + 4) = p_WB;
-  q_v.segment<4>(sphere_body.floating_positions_start()) = quat_WS;
-  q_v.segment<3>(sphere_body.floating_positions_start() + 4) = p_WS;
-  q_v.segment<3>(box_body.floating_velocities_start()) = omega_WB;
-  q_v.segment<3>(box_body.floating_velocities_start() + 3) = v_WB;
-  q_v.segment<3>(sphere_body.floating_velocities_start()) = omega_WS;
-  q_v.segment<3>(sphere_body.floating_velocities_start() + 3) = v_WS;
-  plant.SetPositionsAndVelocities(plant_context, q_v);
+  q.segment<4>(box_body.floating_positions_start()) = quat_WB;
+  q.segment<3>(box_body.floating_positions_start() + 4) = p_WB;
+  q.segment<4>(sphere_body.floating_positions_start()) = quat_WS;
+  q.segment<3>(sphere_body.floating_positions_start() + 4) = p_WS;
+  v.segment<3>(box_body.floating_velocities_start_in_v()) = omega_WB;
+  v.segment<3>(box_body.floating_velocities_start_in_v() + 3) = v_WB;
+  v.segment<3>(sphere_body.floating_velocities_start_in_v()) = omega_WS;
+  v.segment<3>(sphere_body.floating_velocities_start_in_v() + 3) = v_WS;
+
+  plant.SetPositions(plant_context, q);
+  plant.SetVelocities(plant_context, v);
   const SignedDistanceWithTimeDerivative result =
       CalcDistanceAndTimeDerivative(plant, box_sphere_pair, *plant_context);
   EXPECT_NEAR(result.distance, distance_expected, 1e-12);

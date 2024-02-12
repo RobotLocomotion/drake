@@ -4,10 +4,19 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-# Used by :python_env.bzl.
 config_setting(
     name = "linux",
-    values = {"cpu": "k8"},
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+py_binary(
+    name = "rewrite_osx_ar_hidden",
+    srcs = ["rewrite_osx_ar_hidden.py"],
 )
 
 exports_files([

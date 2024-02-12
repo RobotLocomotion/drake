@@ -61,7 +61,6 @@ using geometry::Sphere;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RotationMatrixd;
-using multibody::Body;
 using multibody::BodyIndex;
 using multibody::CoulombFriction;
 using multibody::default_model_instance;
@@ -135,7 +134,7 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   }
 
   optional<GeometryId> DoAddCollisionShapeToBody(
-      const std::string&, const Body<double>&, const Shape&,
+      const std::string&, const RigidBody<double>&, const Shape&,
       const RigidTransform<double>&) override {
     return added_shape_id_;
   }
@@ -1531,8 +1530,6 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
       dist, 0.1, nullptr /* default interpolator */, false /* welded */);
 
   const auto& plant = dut.plant();
-  auto context = plant.CreateDefaultContext();
-
   // Body "b0" should be floating (7 dof) and "b1" should be linked to "b0" by
   // a single revolute joint.
   ASSERT_EQ(dut.plant().num_positions(), 8);
@@ -1556,11 +1553,13 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
 
   // Given a pose of the free body and the angle theta between bodies b0 and b1,
   // returns the plant's q.
-  auto get_q = [&plant, &context](const RigidTransformd& X_B0, double theta) {
-    const Body<double>& body0 = plant.GetBodyByName("b0");
-    plant.SetFreeBodyPose(context.get(), body0, X_B0);
-    plant.GetMutablePositions(context.get())[7] = theta;
-    return plant.GetPositions(*context);
+  auto get_q = [&plant](const RigidTransformd& X_B0, double theta) {
+    const RigidBody<double>& body0 = plant.GetBodyByName("b0");
+    auto plant_context = plant.CreateDefaultContext();
+    plant.SetFreeBodyPose(plant_context.get(), body0, X_B0);
+    VectorXd positions = plant.GetPositions(*plant_context);
+    positions[7] = theta;
+    return positions;
   };
 
   const VectorXd q_init = get_q(X_WB0_init, j12_init);

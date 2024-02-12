@@ -62,13 +62,13 @@ extern const char* const kPointStiffness;  ///< Point stiffness property
  */
 //@{
 
-extern const char* const kHydroGroup;       ///< Hydroelastic group name.
-extern const char* const kElastic;          ///< Hydroelastic modulus property
-                                            ///< name.
-extern const char* const kRezHint;          ///< Resolution hint property name.
-extern const char* const kComplianceType;   ///< Compliance type property name.
-extern const char* const kSlabThickness;    ///< Slab thickness property name
-                                            ///< (for half spaces).
+extern const char* const kHydroGroup;      ///< Hydroelastic group name.
+extern const char* const kElastic;         ///< Hydroelastic modulus property
+                                           ///< name.
+extern const char* const kRezHint;         ///< Resolution hint property name.
+extern const char* const kComplianceType;  ///< Compliance type property name.
+extern const char* const kSlabThickness;   ///< Slab thickness property name
+                                           ///< (for half spaces).
 
 //@}
 

@@ -129,13 +129,6 @@ TEST_F(RenderEngineGltfClientTest, Constructor) {
   EXPECT_EQ(engine.get_params().cleanup, false);
 }
 
-// Confirms that the deprecated option doesn't crash anything.
-TEST_F(RenderEngineGltfClientTest, ConstructorDeprecation) {
-  Params test_params(params_);
-  test_params.default_label = render::RenderLabel::kUnspecified;
-  const RenderEngineGltfClient engine{test_params};
-}
-
 TEST_F(RenderEngineGltfClientTest, Clone) {
   const RenderEngineGltfClient engine{params_};
   const std::unique_ptr<RenderEngine> clone = engine.Clone();
@@ -149,87 +142,6 @@ TEST_F(RenderEngineGltfClientTest, Clone) {
   /* Cloning creates a new temporary directory, the underlying RenderClient is
    not cloned and as such a new temporary directory is created. */
   EXPECT_NE(engine.temp_directory(), clone_engine->temp_directory());
-}
-
-// TODO(svenevs): remove when VTK is updated, see implementation for details.
-TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
-  RenderEngineGltfClient engine{params_};
-  const Vector3d translation{0.8, 0.0, 0.5};
-  const RigidTransformd X_WB(RollPitchYawd{-M_PI * 0.7, 0, M_PI / 2},
-                             translation);
-
-  // First, use the RenderEngineVtk::UpdateViewpoint and gather matrices.
-  engine.RenderEngineVtk::UpdateViewpoint(X_WB);
-  const Matrix4d vtk_color_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kColor);
-  const Matrix4d vtk_depth_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kDepth);
-  const Matrix4d vtk_label_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kLabel);
-
-  // Use the RenderEngineGltfClient::UpdateViewpoint and gather new matrices.
-  engine.UpdateViewpoint(X_WB);
-  const Matrix4d gltf_color_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kColor);
-  const Matrix4d gltf_depth_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kDepth);
-  const Matrix4d gltf_label_mat =
-      engine.CameraModelViewTransformMatrix(ImageType::kLabel);
-
-  /* A ModelView transform can be inverted directly by inverting the rotation
-   via transpose, and using this inverted rotation to rotate the negated
-   translation.  We do not need to be concerned about non-uniform scaling on the
-   diagonal or the bottom row. */
-  auto maybe_transform_inverse = [](const Eigen::Matrix4d& mat) {
-    Matrix4d inverse{mat};
-#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
-    return inverse;  // The bug (vtk#8883) was fixed in 9.1.0.
-#else
-    // Invert the rotation via transpose.
-    inverse.topLeftCorner<3, 3>().transposeInPlace();
-    // Rotate the inverted translation.
-    const Vector3d t = inverse.topRightCorner<3, 1>();
-    const Vector3d t_inv = inverse.topLeftCorner<3, 3>() * (-t);
-    inverse.topRightCorner<3, 1>() = t_inv;
-    return inverse;
-#endif
-  };
-  auto compare = [&](const Matrix4d& vtk, const Matrix4d& gltf) {
-    constexpr double tolerance = 1e-9;
-
-    /* We expect that the MVT from RenderEngineVtk and RenderEngineGltfClient
-     the inverse of one another.  The RenderEngineGltfClient::UpdateViewpoint
-     method engineers a hacked matrix to result in the effect of
-     RenderEngineVtk::UpdateViewpoint modifying the underlying vtkCamera to
-     produce the inverted matrix.  This is because the vtkGLTFExporter was
-     incorrectly exporting the vtkCamera's ModelViewTransformMatrix, which
-     transforms objects in the world into the view of the camera.  The inverse
-     of this matrix is what was supposed to be exported, since the "nodes" array
-     in glTF is for world coordinate transforms. */
-    // Compare the rotations.
-    const Matrix4d vtk_inv = maybe_transform_inverse(vtk);
-    const Matrix3d R_vtk_inv = vtk_inv.topLeftCorner<3, 3>();
-    const Matrix3d R_gltf = gltf.topLeftCorner<3, 3>();
-    EXPECT_TRUE(R_vtk_inv.isApprox(R_gltf, tolerance)) << fmt::format(
-        "Rotation matrices not similar enough:\n"
-        "R_vtk_inv:\n{}\nR_gltf:\n{}\n",
-        fmt_eigen(R_vtk_inv), fmt_eigen(R_gltf));
-
-    // Compare the translations.
-    const Vector3d t_vtk_inv = vtk_inv.topRightCorner<3, 1>();
-    const Vector3d t_gltf = gltf.topRightCorner<3, 1>();
-    EXPECT_TRUE(t_vtk_inv.isApprox(t_gltf, tolerance)) << fmt::format(
-        "Translation vectors not similar enough:\n"
-        "t_vtk_inv:\n{}\nt_gltf:\n{}\n",
-        fmt_eigen(t_vtk_inv), fmt_eigen(t_gltf));
-
-    // For posterity, compare the homogeneous row.
-    const Vector4d gltf_homogeneous = gltf.bottomRightCorner<1, 4>();
-    EXPECT_EQ(gltf_homogeneous, Vector4d(0, 0, 0, 1));
-  };
-  compare(vtk_color_mat, gltf_color_mat);
-  compare(vtk_depth_mat, gltf_depth_mat);
-  compare(vtk_label_mat, gltf_label_mat);
 }
 
 class FakeServer : public HttpService {

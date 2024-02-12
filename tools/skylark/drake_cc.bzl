@@ -5,6 +5,7 @@ load(
     "incorporate_allow_network",
     "incorporate_num_threads",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
@@ -892,4 +893,106 @@ def drake_cc_googletest(
         tags = new_tags,
         deps = deps,
         **kwargs
+    )
+
+def drake_cc_library_linux_only(
+        name,
+        srcs = [],
+        interface_deps = None,
+        deps = [],
+        linkopts = [],
+        tags = [],
+        visibility = ["//visibility:private"],
+        **kwargs):
+    """Declares a platform-specific drake_cc_library.
+
+    When building on non-Linux, the interface_deps and deps and linkopts are
+    nulled out. Note that we do NOT null out srcs; using a select() on srcs
+    would cause the linter to skip them, even on Linux builds.
+
+    The tags will be forced to have "manual" set so that the library compile is
+    skipped on macOS.
+
+    Because this library is not cross-platform, the visibility defaults to
+    private and internal is forced to True (so that, e.g., the headers are
+    excluded from the installation).
+    """
+    new_tags = tags or []
+    if "manual" not in new_tags:
+        new_tags.append("manual")
+    drake_cc_library(
+        name = name,
+        srcs = srcs,
+        interface_deps = None if interface_deps == None else select({
+            "@drake//tools/skylark:linux": interface_deps,
+            "//conditions:default": [],
+        }),
+        deps = select({
+            "@drake//tools/skylark:linux": deps,
+            "//conditions:default": [],
+        }),
+        linkopts = select({
+            "@drake//tools/skylark:linux": linkopts,
+            "//conditions:default": [],
+        }),
+        tags = new_tags,
+        visibility = visibility,
+        internal = True,
+        **kwargs
+    )
+
+def drake_cc_googletest_linux_only(
+        name,
+        data = [],
+        deps = [],
+        linkopts = [],
+        tags = [],
+        visibility = ["//visibility:private"]):
+    """Declares a platform-specific drake_cc_googletest. When not building on
+    Linux, the deps and linkopts are nulled out.
+
+    Because this test is not cross-platform, the visibility defaults to
+    private.
+    """
+
+    # We need add the source file to an intermediate cc_library so that our
+    # linters will find it. The library will not be compiled on non-Linux.
+    srcs = ["test/{}.cc".format(name)]
+    drake_cc_library(
+        name = "_{}_compile".format(name),
+        srcs = srcs,
+        testonly = True,
+        tags = ["manual"],
+        deps = select({
+            "@drake//tools/skylark:linux": deps + [
+                "@gtest//:without_main",
+            ],
+            "//conditions:default": [],
+        }),
+        linkopts = select({
+            "@drake//tools/skylark:linux": linkopts,
+            "//conditions:default": [],
+        }),
+        alwayslink = True,
+        visibility = ["//visibility:private"],
+    )
+
+    # Now link the unit test (but on non-Linux, skip over the actual code).
+    # We need to use a dummy header file to disable the default 'srcs = ...'
+    # inference from drake_cc_googletest.
+    generate_file(
+        name = "_{}_empty.h".format(name),
+        content = "",
+        visibility = ["//visibility:private"],
+    )
+    drake_cc_googletest(
+        name = name,
+        srcs = ["_{}_empty.h".format(name)],
+        tags = tags + ["nolint"],
+        data = data,
+        deps = select({
+            "@drake//tools/skylark:linux": [":_{}_compile".format(name)],
+            "//conditions:default": [],
+        }),
+        visibility = visibility,
     )

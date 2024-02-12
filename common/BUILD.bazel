@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":name_value",
         ":network_policy",
         ":nice_type_name",
+        ":overloaded",
         ":parallelism",
         ":pointer_cast",
         ":polynomial",
@@ -52,6 +53,7 @@ drake_cc_package_library(
         ":reset_on_copy",
         ":scope_exit",
         ":scoped_singleton",
+        ":sha256",
         ":sorted_pair",
         ":temp_directory",
         ":timer",
@@ -397,6 +399,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "overloaded",
+    hdrs = ["overloaded.h"],
+)
+
+drake_cc_library(
     name = "parallelism",
     srcs = ["parallelism.cc"],
     hdrs = ["parallelism.h"],
@@ -438,6 +445,18 @@ drake_cc_library(
 drake_cc_library(
     name = "reset_on_copy",
     hdrs = ["reset_on_copy.h"],
+)
+
+drake_cc_library(
+    name = "sha256",
+    srcs = ["sha256.cc"],
+    hdrs = ["sha256.h"],
+    interface_deps = [
+        ":essential",
+    ],
+    deps = [
+        "@picosha2_internal//:picosha2",
+    ],
 )
 
 drake_cc_library(
@@ -676,6 +695,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sha256_test",
+    deps = [
+        ":sha256",
+        ":temp_directory",
+    ],
+)
+
+drake_cc_googletest(
     name = "pointer_cast_test",
     deps = [
         ":pointer_cast",
@@ -892,6 +919,7 @@ drake_cc_googletest(
         ":drake_path",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1018,6 +1046,13 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "overloaded_test",
+    deps = [
+        "//common:overloaded",
     ],
 )
 

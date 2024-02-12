@@ -28,9 +28,9 @@ template <typename T>
 const RevoluteJoint<T>&
 KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const std::string& joint_name,
-    const Body<T>& A,
+    const RigidBody<T>& A,
     const Vector3<double>& q123A, const Vector3<double>& xyzA,
-    const Body<T>& B, const Vector3<double>& revolute_unit_vector,
+    const RigidBody<T>& B, const Vector3<double>& revolute_unit_vector,
     multibody::internal::MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
   const math::RollPitchYaw<double> rpy(q123A);
@@ -92,7 +92,7 @@ KukaIiwaModelBuilder<T>::Build() const {
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
   const Joint<T>* joint{nullptr};
-  const Body<T>& linkN = model->world_body();
+  const RigidBody<T>& linkN = model->world_body();
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1",
       linkN, joint_1_rpy_, joint_1_xyz_,

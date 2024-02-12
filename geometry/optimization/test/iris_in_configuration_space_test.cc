@@ -326,6 +326,113 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
   EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.9)));
 }
 
+/* Test if the starting ellipse is far away from the seed point, and the seed
+point exits the polytope before the computations are over, then an error will be
+thrown. */
+GTEST_TEST(IrisInConfigurationSpaceTest, BadEllipseAndSample) {
+  IrisOptions options;
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(0, 0), Vector2d(1, 1)));
+  options.configuration_obstacles = obstacles;
+  const Vector2d sample{-0.5, 0.5};
+  const Vector2d ellipse_center{0.8, -0.2};  // ellipse includes collision
+  Hyperellipsoid starting_ellipse =
+      Hyperellipsoid::MakeHypersphere(0.1, ellipse_center);
+  options.starting_ellipse = starting_ellipse;
+  options.require_sample_point_is_contained = true;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisFromUrdf(boxes_in_2d_urdf, sample, options),
+      ".*starting_ellipse not contain the seed point.*");
+}
+
+/* Same as boxes_in_2d_urdf, but without the first two collision geos.
+The point is to have faster iris computations in the following test.
+*/
+const char boxes_in_2d_urdf_no_collisions[] = R"""(
+<robot name="boxes">
+  <link name="movable">
+    <collision name="center">
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <link name="for_joint"/>
+  <joint name="x" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="for_joint"/>
+  </joint>
+  <joint name="y" type="prismatic">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1" upper="1"/>
+    <parent link="for_joint"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)""";
+/* Make termination function such that the region will contain q1, q2.
+This is meant to generate Iris regions from edges.
+*/
+GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const Vector2d sample{0, 0};  // center of the bounding box.
+  std::function<bool(const HPolyhedron&)> always_false =
+      [&](const HPolyhedron&) {
+        return false;
+      };
+  IrisOptions options;
+  options.iteration_limit = 100;
+  options.termination_threshold = -1;
+  options.configuration_obstacles = obstacles;
+  options.random_seed = 0;
+  HPolyhedron without_termination =
+      IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  options.termination_func = always_false;
+  HPolyhedron with_always_false =
+      IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  // Region with always false termination function should be the same as region
+  // without the termination function
+  EXPECT_TRUE(with_always_false.ContainedIn(without_termination, 1e-6));
+  EXPECT_TRUE(without_termination.ContainedIn(with_always_false, 1e-6));
+  // now we add a termination function that will make the region contain q1, q2
+  const Vector2d q1{0.15, -0.45};
+  const Vector2d q2{-0.05, 0.75};
+  for (const auto& obstacle : obstacles) {
+    EXPECT_FALSE(obstacle->PointInSet(q1));
+    EXPECT_FALSE(obstacle->PointInSet(q2));
+  }
+  SetEdgeContainmentTerminationCondition(&options, q1, q2, 1e-3);
+  // Test that the termination function works with constraints as well
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(2, "q");
+  prog.AddConstraint(q[0], -1, 0.16);
+  options.prog_with_additional_constraints = &prog;
+  HPolyhedron region_with_termination =
+      IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options);
+  EXPECT_TRUE(region_with_termination.PointInSet(q1));
+  EXPECT_TRUE(region_with_termination.PointInSet(q2));
+  // failure case when the provided edge is in collision
+  const Vector2d q3{-0.85, 0.75};
+  SetEdgeContainmentTerminationCondition(&options, q1, q3, 1e-3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options),
+      ".*the termination function returned false on the computation of the "
+      "initial region.*");
+  // failure case when the provided edge is out of the domain
+  const Vector2d q4{-0.85, 1.75};
+  SetEdgeContainmentTerminationCondition(&options, q1, q4, 1e-3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisFromUrdf(boxes_in_2d_urdf_no_collisions, sample, options),
+      ".*Please check the implementation of your termination_func.");
+}
+
 /* Box obstacles in one corner.
 ┌───────┬─────┐
 │       │     │
@@ -364,6 +471,41 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
   // last row of A is a scaling of [100, 1].
   EXPECT_NEAR(region_w_ellipse.A()(4, 0), 100 * region_w_ellipse.A()(4, 1),
               1e-6);
+}
+
+GTEST_TEST(IrisInConfigurationSpaceTest, BoundingRegion) {
+  const Vector2d sample{0.0, 0.0};
+  IrisOptions options;
+  options.iteration_limit = 1;
+  options.num_collision_infeasible_samples = 0;
+  ConvexSets obstacles;
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(0.2, 0.2), Vector2d(1, 1)));
+  options.configuration_obstacles = obstacles;
+  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // Add a bounding region that halves the plant's joint limits.
+  options.bounding_region =
+      HPolyhedron::MakeBox(Vector2d(-1, -0.5), Vector2d(1, 0.5));
+  HPolyhedron region_w_bounding =
+      IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // `region` should have only one additional half space beyond the initial
+  // polytope. `region_w_bounding` should have a further four half spaces since
+  // its initial polytope will have been intersected with
+  // `options.bounding_region`.
+  EXPECT_EQ(region.b().size(), 5);
+  EXPECT_EQ(region_w_bounding.b().size(), 9);
+
+  // The point (-1.5, -0.5) is within the plant's joint limits but outside the
+  // bounding region. It should be contained in region but not in
+  // region_w_bounding.
+  EXPECT_TRUE(region.PointInSet(Vector2d(-1.5, -0.5)));
+  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(-1.5, -0.5)));
+
+  // A point closer to the origin should be in both regions.
+  EXPECT_TRUE(region.PointInSet(Vector2d(-0.5, -0.25)));
+  EXPECT_TRUE(region_w_bounding.PointInSet(Vector2d(-0.5, -0.25)));
 }
 
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
@@ -803,6 +945,16 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
   EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  // Add an upper bound constraint on q
+  const double q_ub = M_PI / 8;
+  DRAKE_ASSERT(q_ub < qmax);  // otherwise test will be pointless
+  prog.AddConstraint(sin(q[0]), -1.0 / sqrt(2.0), sin(q_ub));
+  // Calc the upper bounded region
+  HPolyhedron region_ub = IrisFromUrdf(boxes_urdf, sample, options);
+  const double kMargin = options.configuration_space_margin;
+  EXPECT_TRUE(region_ub.PointInSet(Vector1d{q_ub - kTol - kMargin}));
+  EXPECT_FALSE(region_ub.PointInSet(Vector1d{q_ub + kTol - kMargin}));
 }
 
 // This double pendulum doesn't have any collision geometry, but we'll add

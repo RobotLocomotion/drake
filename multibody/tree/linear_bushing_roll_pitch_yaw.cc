@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -135,8 +135,8 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
 
   // Apply a torque to link L0 and apply the force −𝐟 to L0ₒ.
   // Apply a torque to link L1 and apply the force +𝐟 to L1ₒ.
-  F_BodyOrigin_W_array[link0().node_index()] += F_L0_W;
-  F_BodyOrigin_W_array[link1().node_index()] += F_L1_W;
+  F_BodyOrigin_W_array[link0().mobod_index()] += F_L0_W;
+  F_BodyOrigin_W_array[link1().mobod_index()] += F_L1_W;
 }
 
 template <typename T>

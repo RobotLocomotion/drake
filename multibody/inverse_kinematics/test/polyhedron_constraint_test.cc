@@ -24,7 +24,7 @@ TEST_F(TwoFreeBodiesConstraintTest, PolyhedronConstraint) {
   Eigen::Matrix<double, 14, 1> q;
   q << QuaternionToVectorWxyz(body1_quaternion), body1_position,
       QuaternionToVectorWxyz(body2_quaternion), body2_position;
-  plant_->GetMutablePositions(plant_context_) = q;
+  plant_->SetPositions(plant_context_, q);
 
   // Set the gradient of q to arbitrary value.
   Eigen::MatrixXd q_grad(14, 2);

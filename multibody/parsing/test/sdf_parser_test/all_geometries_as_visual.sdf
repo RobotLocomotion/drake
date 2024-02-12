@@ -5,9 +5,9 @@
          contains one visual tag for each supported geometry type. We're
          confirming that each geometry declaration produces a corresponding
          Drake Shape. The *names* of each visual element match the string
-         that is produced by `ShapeName` (see shape_specification.h). This is
-         to facilitate testing and altering the names will cause the test to
-         fail.
+         that is produced by `Shape::type_name()` (see shape_specification.h).
+         This is to facilitate testing and altering the names will cause the
+         test to fail.
          Values in <inertial> are not important for this test model since
          it's only to test the parsing of visuals and collisions into a
          MultibodyPlant.

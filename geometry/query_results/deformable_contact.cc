@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/common/ssize.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -143,6 +145,31 @@ void DeformableContact<T>::Participate(
   DRAKE_THROW_UNLESS(IsRegistered(id));
   auto it = contact_participations_.find(id);
   it->second.Participate(vertices);
+}
+
+template <typename T>
+void DeformableContact<T>::AddDeformableDeformableContactSurface(
+    GeometryId id0, GeometryId id1,
+    const std::unordered_set<int>& participating_vertices0,
+    const std::unordered_set<int>& participating_vertices1,
+    PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> signed_distances,
+    std::vector<Vector4<int>> contact_vertex_indices0,
+    std::vector<Vector4<int>> contact_vertex_indices1,
+    std::vector<Vector4<T>> barycentric_coordinates0,
+    std::vector<Vector4<T>> barycentric_coordinates1) {
+  DRAKE_THROW_UNLESS(IsRegistered(id0));
+  DRAKE_THROW_UNLESS(IsRegistered(id1));
+  DRAKE_DEMAND(ssize(signed_distances) == contact_mesh_W.num_faces());
+  DRAKE_DEMAND(ssize(contact_vertex_indices0) == contact_mesh_W.num_faces());
+  DRAKE_DEMAND(ssize(contact_vertex_indices1) == contact_mesh_W.num_faces());
+  DRAKE_DEMAND(ssize(barycentric_coordinates0) == contact_mesh_W.num_faces());
+  DRAKE_DEMAND(ssize(barycentric_coordinates1) == contact_mesh_W.num_faces());
+  contact_participations_.at(id0).Participate(participating_vertices0);
+  contact_participations_.at(id1).Participate(participating_vertices1);
+  contact_surfaces_.emplace_back(
+      id0, id1, std::move(contact_mesh_W), std::move(signed_distances),
+      std::move(contact_vertex_indices0), std::move(barycentric_coordinates0),
+      std::move(contact_vertex_indices1), std::move(barycentric_coordinates1));
 }
 
 template class DeformableContactSurface<double>;

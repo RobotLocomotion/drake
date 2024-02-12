@@ -29,7 +29,7 @@ Otherwise, if any set in the cartesian product is empty, the whole product
 is empty.
 
 @ingroup geometry_optimization */
-class CartesianProduct final : public ConvexSet {
+class CartesianProduct final : public ConvexSet, private ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 

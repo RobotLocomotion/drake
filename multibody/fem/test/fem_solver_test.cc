@@ -70,8 +70,10 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
   const std::unordered_set<int> nonparticipating_vertices = {0, 1};
-  const int num_iterations =
-      this->solver_.AdvanceOneTimeStep(*state0, nonparticipating_vertices);
+  const systems::LeafContext<double> dummy_context;
+  const FemPlantData<double> dummy_data{dummy_context, {}};
+  const int num_iterations = this->solver_.AdvanceOneTimeStep(
+      *state0, dummy_data, nonparticipating_vertices);
   EXPECT_EQ(num_iterations, 1);
 
   /* Compute the expected result from AdvanceOneTimeStep(). */
@@ -82,7 +84,7 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
                                  tangent_matrix0.get());
   const MatrixXd A0 = tangent_matrix0->MakeDenseMatrix();
   VectorX<double> b0(this->model_.num_dofs());
-  this->model_.CalcResidual(*state0, &b0);
+  this->model_.CalcResidual(*state0, dummy_data, &b0);
   /* The solver is not considered as "converged" with the initial state. */
   EXPECT_FALSE(this->solver_.solver_converged(b0.norm(), b0.norm()));
   Eigen::LLT<MatrixXd> llt;
@@ -123,11 +125,14 @@ TYPED_TEST_P(FemSolverTest, Nonconvergence) {
     builder.Build();
     std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
     const std::unordered_set<int> nonparticipating_vertices = {0, 1};
+    const systems::LeafContext<double> dummy_context;
+    const FemPlantData<double> dummy_data{dummy_context, {}};
     /* We set up the model so that nonlinear solves takes exactly one iteration
      to converge. */
     this->set_max_newton_iterations(0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        this->solver_.AdvanceOneTimeStep(*state0, nonparticipating_vertices),
+        this->solver_.AdvanceOneTimeStep(*state0, dummy_data,
+                                         nonparticipating_vertices),
         ".*failed.*");
   }
 }

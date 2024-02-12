@@ -6,7 +6,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
-import pydrake.common._module_py._testing as mut_testing
+import pydrake.common._testing as mut_testing
 
 
 class TestCommon(unittest.TestCase):
@@ -80,7 +80,7 @@ class TestCommon(unittest.TestCase):
         mut.RandomDistribution.kExponential
 
     def test_logging(self):
-        self.assertTrue(mut._module_py._HAVE_SPDLOG)
+        self.assertTrue(mut._HAVE_SPDLOG)
         self.assertIsInstance(
             mut._set_log_level(level="unchanged"), str)
 

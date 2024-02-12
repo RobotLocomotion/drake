@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -45,7 +46,8 @@ class Geometries final : public ShapeReifier {
   /* Returns true if a rigid (non-deformable) geometry representation with the
    given `id` exists. */
   bool is_rigid(GeometryId id) const {
-    return rigid_geometries_.count(id) != 0;
+    return rigid_geometries_.count(id) != 0 ||
+           rigid_geometries_pending_.count(id) != 0;
   }
 
   /* Returns true if a deformable geometry representation with the given `id`
@@ -101,8 +103,9 @@ class Geometries final : public ShapeReifier {
       GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG);
 
   /* For each registered deformable geometry, computes the contact data of it
-   with respect to all registered rigid geometries. Assumes the vertex positions
-   and poses of all registered deformable and rigid geometries are up to date.
+   with respect to all registered rigid geometries and all other deformable
+   geometries. Assumes the vertex positions and poses of all registered
+   deformable and rigid geometries are up to date.
   */
   DeformableContact<double> ComputeDeformableContact(
       const CollisionFilter& collision_filter) const;
@@ -132,11 +135,22 @@ class Geometries final : public ShapeReifier {
   template <typename ShapeType>
   void AddRigidGeometry(const ShapeType& shape, const ReifyData& data);
 
+  /* Moves rigid_geometries_pending_ into rigid_geometries_. */
+  void FlushPendingRigidGeometry();
+
   // The representations of all deformable geometries.
   std::unordered_map<GeometryId, DeformableGeometry> deformable_geometries_;
 
-  // The representations of all rigid geometries.
+  // The representations of all rigid geometries. For performance, we store them
+  // in 'pending' until a deformable geometry appears.
+  std::unordered_map<GeometryId, GeometryInstance> rigid_geometries_pending_;
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
+
+  // This is always true in practice (there is no setter). Only certain unit
+  // tests' obscene need to access our private member fields using friendship
+  // will ever set it to false, so that they don't need to worry about the two
+  // different rigid geometry maps.
+  bool enable_rigid_geometries_pending_{true};
 };
 
 }  // namespace deformable

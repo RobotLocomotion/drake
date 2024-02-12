@@ -1,0 +1,28 @@
+// A sample LCM message definition for unit testing.
+
+package papa;
+
+struct mike {
+  // Fixed-size arrays.
+  double delta[3];
+  float foxtrot[4][5];
+
+  // Sub-struct (non-array), using unqualified (no package) name.
+  lima alpha;
+
+  // Variable-length string.
+  string sierra;
+
+  // Variable-sized arrays.
+  int32_t rows;
+  int32_t cols;
+  byte bravo[rows];
+  int8_t india8[rows][cols];
+  int16_t india16[7][cols];
+  int32_t india32[rows][11];
+
+  // Arrays of sub-structs, using package-qualified name.
+  papa.lima xray[2];
+  papa.lima yankee[rows];
+  papa.lima zulu[rows][2];
+}

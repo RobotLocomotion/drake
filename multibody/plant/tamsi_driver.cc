@@ -94,7 +94,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
   plant().CalcMassMatrix(context, &M0);
 
   // Workspace for inverse dynamics:
-  // Bodies' accelerations, ordered by BodyNodeIndex.
+  // Bodies' accelerations, ordered by MobodIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(plant().num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
@@ -314,8 +314,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
   for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
     const PointPairContactInfo<T>& pair =
         contact_results.point_pair_contact_info(i);
-    const Body<T>& bodyA = plant().get_body(pair.bodyA_index());
-    const Body<T>& bodyB = plant().get_body(pair.bodyB_index());
+    const RigidBody<T>& bodyA = plant().get_body(pair.bodyA_index());
+    const RigidBody<T>& bodyB = plant().get_body(pair.bodyB_index());
     const Vector3<T>& f_Bc_W = pair.contact_force();
     const Vector3<T>& p_WC = pair.contact_point();
     const SpatialForce<T> F_Bc_W(Vector3<T>::Zero(), f_Bc_W);
@@ -332,8 +332,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const Vector3<T> p_CB_W = p_WB - p_WC;
     const SpatialForce<T> F_Bo_W = F_Bc_W.Shift(p_CB_W);
 
-    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
-    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+    spatial_contact_forces->at(bodyA.mobod_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.mobod_index()) += F_Bo_W;
   }
 
   // Add contribution from hydroelastic contact.
@@ -345,8 +345,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const GeometryId geometryN_id = info.contact_surface().id_N();
     const BodyIndex bodyA_index = manager().FindBodyByGeometryId(geometryM_id);
     const BodyIndex bodyB_index = manager().FindBodyByGeometryId(geometryN_id);
-    const Body<T>& bodyA = plant().get_body(bodyA_index);
-    const Body<T>& bodyB = plant().get_body(bodyB_index);
+    const RigidBody<T>& bodyA = plant().get_body(bodyA_index);
+    const RigidBody<T>& bodyB = plant().get_body(bodyB_index);
 
     // Spatial contact force at the centroid of the contact surface.
     const SpatialForce<T>& F_Ac_W = info.F_Ac_W();
@@ -364,8 +364,8 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const Vector3<T> p_CB_W = p_WB - p_WC;
     const SpatialForce<T> F_Bo_W = -F_Ac_W.Shift(p_CB_W);
 
-    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
-    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+    spatial_contact_forces->at(bodyA.mobod_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.mobod_index()) += F_Bo_W;
   }
 }
 

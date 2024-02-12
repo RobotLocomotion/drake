@@ -1,10 +1,14 @@
 """
-Finds local system Python headers and libraries using python-config and
-makes them available to be used as a C/C++ dependency. On macOS, Python
-libraries should not typically be directly linked, so the :python target passes
-the "-undefined dynamic_lookup" linker flag, however in the rare cases that
-this would cause an undefined symbol error, a :python_direct_link target is
-provided. On Linux, these targets are identical.
+Finds local system Python headers and libraries using python-config and makes
+them available to be used as a C/C++ dependency.
+
+There are two available targets:
+
+(1) "@foo//:python" for the typical case where we are creating loadable dynamic
+libraries to be used as Python modules.
+
+(2) "@foo//:python_direct_link" for the unusual case of linking the CPython
+interpreter as a library into an executable with a C++ main() function.
 
 Example:
     WORKSPACE:
@@ -29,105 +33,71 @@ Arguments:
         available for use in this string.
 """
 
-load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
-load("//tools/workspace:os.bzl", "determine_os")
-
-# The supported Python versions should match those listed in both the root
-# CMakeLists.txt and doc/_pages/from_source.md, except for the "manylinux"
-# matrix which should match tools/wheel/build-wheels list of targets=().
-_VERSION_SUPPORT_MATRIX = {
-    # NOTE: when changing native OS python versions, make sure to update
-    # CMakeLists.txt python versions.
-    "ubuntu:20.04": ["3.8"],
-    "ubuntu:22.04": ["3.10"],
-    "macos": ["3.11"],
-    # NOTE: when updating supported wheel python versions:
-    # - Wheel URLs in tools/release_engineering/download_release_candidate.py
-    #   (`cpXY-cpXY` components).
-    # - Tables on from_source.md and installation.md (python version number).
-    "macos_wheel": ["3.11"],
-    "manylinux": ["3.8", "3.9", "3.10", "3.11", "3.12"],
-}
+load(
+    "//tools/workspace:execute.bzl",
+    "execute_or_fail",
+    "homebrew_prefix",
+    "which",
+)
 
 def repository_python_info(repository_ctx):
-    # Given the operating system, determine:
-    # - `python` - binary path
-    # - `python_config` - configuration binary path
-    # - `site_packages_relpath` - relative to base of FHS
-    # - `version` - '{major}.{minor}`
-    # - `version_major` - major version
-    # - `os` - results from `determine_os(...)`
-    os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-    os_key = os_result.target
-    if os_result.is_ubuntu:
-        os_key += ":" + os_result.ubuntu_release
-    versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
+    """Determines the following information:
+    - `python` - binary path
+    - `python_config` - configuration binary path
+    - `version` - '{major}.{minor}'
+    - `version_major` - major version (as a string)
+    - `site_packages_relpath` - relative to base of FHS
+    and returns those details in a struct().
+    """
 
-    if os_result.is_macos or os_result.is_macos_wheel:
+    # - `python`
+    # - `python_config`
+    if repository_ctx.os.name == "mac os x":
         python = repository_ctx.attr.macos_interpreter_path
         if "{homebrew_prefix}" in python:
-            python = python.format(homebrew_prefix = os_result.homebrew_prefix)
+            python = python.format(
+                homebrew_prefix = homebrew_prefix(repository_ctx),
+            )
     else:
         python = repository_ctx.attr.linux_interpreter_path
+    python_config = "{}-config".format(python)
 
-    version = execute_or_fail(
-        repository_ctx,
-        [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
-                       ".format(v.major, v.minor))"],
-    ).stdout.strip()
+    # - `version`
+    # - `version_major`
+    # - `site_packages_relpath`
+    version = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
+        "from sys import version_info as v",
+        "print('{}.{}'.format(v.major, v.minor))",
+    ])]).stdout.strip()
     version_major, _ = version.split(".")
+    site_packages_relpath = "lib/python{}/site-packages".format(version)
 
-    # Perform sanity checks on supplied Python binary.
-    implementation = execute_or_fail(
-        repository_ctx,
-        [
-            python,
-            "-c",
-            "import platform as m; print(m.python_implementation())",
-        ],
-    ).stdout.strip()
+    # Validate the `python` and `python_config` binaries.
+    implementation = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
+        "import platform",
+        "print(platform.python_implementation())",
+    ])]).stdout.strip()
     if implementation != "CPython":
         fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
               "supported.").format(python, implementation))
-
-    # Development Note: This should generally be the correct configuration. If
-    # you are hacking with `virtualenv` (which is officially unsupported),
-    # ensure that you manually symlink the matching `*-config` binary in your
-    # `virtualenv` installation.
-    python_config = "{}-config".format(python)
-
-    # Check if config binary exists.
     if which(repository_ctx, python_config) == None:
-        fail((
-            "Cannot find corresponding config executable: {}\n" +
-            "  From interpreter: {}"
-        ).format(python_config, python))
+        # Developer note: If you are using a `virtualenv` (which is officially
+        # unsupported), ensure that you manually symlink the `python3-config`
+        # binary in your `virtualenv` installation.
+        fail(("Cannot find corresponding config executable: {}\n" +
+              "  From interpreter: {}").format(python_config, python))
 
-    # Warn if we do not the correct platform support.
-    if version not in versions_supported:
-        print((
-            "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n  " +
-            "From interpreter: {}\n\n"
-        ).format(version, os_key, versions_supported, python))
-
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
     return struct(
         python = python,
         python_config = python_config,
-        site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version_major,
-        os = os_result,
+        site_packages_relpath = site_packages_relpath,
     )
 
 def _impl(repository_ctx):
     # Repository implementation.
-    py_info = repository_python_info(
-        repository_ctx,
-    )
+    py_info = repository_python_info(repository_ctx)
 
     # Collect includes.
     cflags = execute_or_fail(
@@ -149,48 +119,45 @@ def _impl(repository_ctx):
         [py_info.python_config, "--extension-suffix"],
     ).stdout.strip()
 
+    # Prepare the include paths.
     includes = []
-
     for cflag in cflags:
         if cflag.startswith("-I"):
             source = repository_ctx.path(cflag[2:])
             destination = base.get_child(str(source).replace("/", "_"))
             include = str(destination)[root_len:]
-
             if include not in includes:
                 repository_ctx.symlink(source, destination)
                 includes += [include]
 
-    # Collect linker paths.
+    # Collect Python's requested linker options, split on whitespace.
     linkopts = execute_or_fail(
         repository_ctx,
         [py_info.python_config, "--ldflags"],
     ).stdout.strip().split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
+    # Undo whitespace splits for options with a positional argument, e.g., we
+    # want ["-framework CoreFoundation"] not ["-framework", "CoreFoundation"].
     for i in reversed(range(len(linkopts))):
-        link_prefix = "-L"
-        if linkopts[i].startswith(link_prefix):
-            linkopts.insert(i, "-Wl,-rpath," + linkopts[i][len(link_prefix):])
         if not linkopts[i].startswith("-"):
             linkopts[i - 1] += " " + linkopts.pop(i)
 
-    linkopts_direct_link = list(linkopts)
-
-    # python3.10-config --libs is missing the python3.10 library.
-    has_direct_link = False
-    libpy = "python" + py_info.version
+    # Duplicate ["-Lfoo"] into ["-Wl,-rpath,foo", "-Lfoo"].
     for i in reversed(range(len(linkopts))):
-        if linkopts[i].startswith("-l") and linkopts[i].find(libpy) != -1:
-            has_direct_link = True
-            if py_info.os.is_macos:
-                linkopts.pop(i)
+        link_prefix = "-L"
+        if linkopts[i].startswith(link_prefix):
+            path = linkopts[i][len(link_prefix):]
+            linkopts.insert(i, "-Wl,-rpath," + path)
 
-    if py_info.os.is_macos:
-        linkopts = ["-undefined dynamic_lookup"] + linkopts
-
-    if not has_direct_link:
-        linkopts_direct_link = ["-l" + libpy] + linkopts_direct_link
+    # Now specialize the the linker options based on whether we're linking a
+    # loadable module or an embedded interpreter. (For details, refer to the
+    # docs for option (1) vs (2) atop this file.)
+    linkopts_embedded = list(linkopts)
+    linkopts_embedded.insert(0, "-lpython" + py_info.version)
+    linkopts_module = list(linkopts)
+    if repository_ctx.os.name == "mac os x":
+        linkopts_module.insert(0, "-undefined dynamic_lookup")
 
     skylark_content = """
 # DO NOT EDIT: generated by python_repository()
@@ -234,24 +201,28 @@ headers = glob(
 cc_library(
     name = "python_headers",
     hdrs = headers,
-    includes = {},
+    includes = {includes},
     visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "python",
-    linkopts = {},
+    linkopts = {linkopts_module},
     visibility = ["//visibility:public"],
     deps = [":python_headers"],
 )
 
 cc_library(
     name = "python_direct_link",
-    linkopts = {},
+    linkopts = {linkopts_embedded},
     visibility = ["//visibility:public"],
     deps = [":python_headers"],
 )
-""".format(includes, linkopts, linkopts_direct_link)
+""".format(
+        includes = includes,
+        linkopts_module = linkopts_module,
+        linkopts_embedded = linkopts_embedded,
+    )
 
     repository_ctx.file(
         "BUILD.bazel",

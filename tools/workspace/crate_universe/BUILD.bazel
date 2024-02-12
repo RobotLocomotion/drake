@@ -1,5 +1,7 @@
+load("//tools/install:install.bzl", "install")
+load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@rules_rust//crate_universe:defs.bzl", "crates_vendor")
+load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_vendor")
 
 exports_files(glob(["lock/**"]))
 
@@ -7,6 +9,13 @@ exports_files(glob(["lock/**"]))
 # dependencies. See README.md for instructions on how to run `upgrade.sh`.
 crates_vendor(
     name = "crate",
+    annotations = {
+        "clarabel": [crate.annotation(
+            patches = [
+                "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",  # noqa
+            ],
+        )],
+    },
     cargo_lockfile = ":lock/Cargo.toml.lock",
     manifests = [
         "@clarabel_cpp_internal//:rust_wrapper/Cargo.toml",
@@ -14,6 +23,32 @@ crates_vendor(
     mode = "remote",
     tags = ["manual"],
     vendor_path = "lock/details",
+)
+
+# Install the license files for all crates.
+ARCHIVE_NAMES = [archive["name"] for archive in ARCHIVES]
+
+[
+    install(
+        name = "install_{}".format(name),
+        docs = [
+            "@{}//:license_glob".format(name),
+        ],
+        doc_dest = "share/doc/{}".format(name),
+        allowed_externals = [
+            "@{}//:license_glob".format(name),
+        ],
+    )
+    for name in ARCHIVE_NAMES
+]
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+    deps = [
+        "install_{}".format(name)
+        for name in ARCHIVE_NAMES
+    ],
 )
 
 add_lint_tests()

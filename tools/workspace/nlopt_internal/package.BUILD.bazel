@@ -47,10 +47,10 @@ cc_library(
     linkstatic = True,
 )
 
-# The _SRCS_UTIL and _HDRS_UTIL cover the subset of NLOPT_SOURCES (from the
-# upstream CMakeLists.txt) that live in the "util" folder. These files are
+# The _SRCS_UTIL... and _HDRS_UTIL... cover the subset of NLOPT_SOURCES (from
+# the upstream CMakeLists.txt) that live in the "util" folder. These files are
 # compiled as C code (not C++).
-_SRCS_UTIL = [
+_SRCS_UTIL_CABI = [
     "src/util/mt19937ar.c",
     "src/util/qsort_r.c",
     "src/util/redblack.c",
@@ -61,7 +61,7 @@ _SRCS_UTIL = [
     "src/util/timer.c",
 ]
 
-_HDRS_UTIL = [
+_HDRS_UTIL_CABI = [
     "src/util/redblack.h",
     "src/util/nlopt-util.h",
     # Sadly, there is a dependency cycle from "nlopt.h" <=> "nlopt-util.h",
@@ -71,8 +71,8 @@ _HDRS_UTIL = [
 
 cc_library(
     name = "util",
-    srcs = _SRCS_UTIL,
-    hdrs = _HDRS_UTIL,
+    srcs = _SRCS_UTIL_CABI,
+    hdrs = _HDRS_UTIL_CABI,
     copts = ["-w", "-fvisibility=hidden"],
     includes = ["src/api", "src/util"],
     linkstatic = True,
@@ -81,10 +81,10 @@ cc_library(
     ],
 )
 
-# The _SRCS_ALGS_C and _HDRS_ALGS_C cover the subset of NLOPT_SOURCES (from the
-# upstream CMakeLists.txt) that live in the "algs" folder, with the exception
-# of "src/algs/luksan/**" because it is licensed under LGPL-2.1+.
-_SRCS_ALGS_C = [
+# The _SRCS_ALGS_... and _HDRS_ALGS_... cover the subset of NLOPT_SOURCES
+# (from the upstream CMakeLists.txt) that live in the "algs" folder, with the
+# exception of "src/algs/luksan/**" because it is licensed under LGPL-2.1+.
+_SRCS_ALGS_CABI = [
     "src/algs/auglag/auglag.c",
     "src/algs/bobyqa/bobyqa.c",
     "src/algs/cdirect/cdirect.c",
@@ -108,7 +108,7 @@ _SRCS_ALGS_C = [
     "src/algs/slsqp/slsqp.c",
 ]
 
-_HDRS_ALGS_C = [
+_HDRS_ALGS_CABI = [
     "src/algs/auglag/auglag.h",
     "src/algs/bobyqa/bobyqa.h",
     "src/algs/cdirect/cdirect.h",
@@ -126,9 +126,9 @@ _HDRS_ALGS_C = [
 ]
 
 cc_library(
-    name = "algs_c",
-    srcs = _SRCS_ALGS_C,
-    hdrs = _HDRS_ALGS_C,
+    name = "algs",
+    srcs = _SRCS_ALGS_CABI,
+    hdrs = _HDRS_ALGS_CABI,
     copts = ["-w", "-fvisibility=hidden"],
     includes = [
         "src/algs/auglag",
@@ -152,31 +152,40 @@ cc_library(
     ],
 )
 
-# The _SRCS_STOGO and _HDRS_STOGO cover the NLOPT_CXX sources from the upstream
-# CMakeLists.txt.
-_SRCS_STOGO = [
+# The _SRCS_STOGO... and _HDRS_STOGO... cover the NLOPT_CXX sources from the
+# upstream CMakeLists.txt.
+_SRCS_STOGO_CPPABI = [
     "src/algs/stogo/global.cc",
-    "src/algs/stogo/global.h",
     "src/algs/stogo/linalg.cc",
-    "src/algs/stogo/linalg.h",
     "src/algs/stogo/local.cc",
-    "src/algs/stogo/local.h",
-    "src/algs/stogo/stogo.cc",
-    "src/algs/stogo/stogo_config.h",
     "src/algs/stogo/tools.cc",
+]
+
+_HDRS_STOGO_CPPABI = [
+    "src/algs/stogo/global.h",
+    "src/algs/stogo/linalg.h",
+    "src/algs/stogo/local.h",
+    "src/algs/stogo/stogo_config.h",
     "src/algs/stogo/tools.h",
 ]
 
-_HDRS_STOGO = [
+_SRCS_STOGO_CABI = [
+    # Even though this is C++ code, it is still CABI because everything it
+    # defines is declared inside `extern "C" { ... }` in its header file
+    # (other than an class in the anonymous namespace).
+    "src/algs/stogo/stogo.cc",
+]
+
+_HDRS_STOGO_CABI = [
     "src/algs/stogo/stogo.h",
 ]
 
 cc_library_vendored(
-    name = "stogo",
-    srcs = _SRCS_STOGO,
-    srcs_vendored = ["drake_" + x for x in _SRCS_STOGO],
-    hdrs = _HDRS_STOGO,
-    hdrs_vendored = ["drake_" + x for x in _HDRS_STOGO],
+    name = "stogo_cppabi",
+    srcs = _SRCS_STOGO_CPPABI,
+    srcs_vendored = ["drake_" + x for x in _SRCS_STOGO_CPPABI],
+    hdrs = _HDRS_STOGO_CPPABI,
+    hdrs_vendored = ["drake_" + x for x in _HDRS_STOGO_CPPABI],
     copts = ["-w"],
     includes = ["drake_src/algs/stogo"],
     linkstatic = True,
@@ -185,33 +194,64 @@ cc_library_vendored(
     ],
 )
 
-# The _SRCS_AGS and _HDRS_AGS cover the NLOPT_CXX11 sources from the upstream
-# CMakeLists.txt.
-_SRCS_AGS = [
-    "src/algs/ags/ags.cc",
-    "src/algs/ags/data_types.hpp",
+cc_library(
+    name = "stogo",
+    srcs = _SRCS_STOGO_CABI,
+    hdrs = _HDRS_STOGO_CABI,
+    copts = ["-w", "-fvisibility=hidden"],
+    includes = ["src/algs/stogo"],
+    linkstatic = True,
+    deps = [
+        ":stogo_cppabi",
+        ":util",
+    ],
+)
+
+# The _SRCS_AGS... and _HDRS_AGS... cover the NLOPT_CXX11 sources from
+# the upstream CMakeLists.txt.
+_SRCS_AGS_CPPABI = [
     "src/algs/ags/evolvent.cc",
-    "src/algs/ags/evolvent.hpp",
     "src/algs/ags/local_optimizer.cc",
-    "src/algs/ags/local_optimizer.hpp",
     "src/algs/ags/solver.cc",
+]
+
+_HDRS_AGS_CPPABI = [
+    "src/algs/ags/data_types.hpp",
+    "src/algs/ags/evolvent.hpp",
+    "src/algs/ags/local_optimizer.hpp",
     "src/algs/ags/solver.hpp",
 ]
 
-_HDRS_AGS = [
+_SRCS_AGS_CABI = [
+    # Even though this is C++ code, it is still CABI because everything it
+    # defines is declared inside `extern "C" { ... }` in its header file.
+    "src/algs/ags/ags.cc",
+]
+
+_HDRS_AGS_CABI = [
     "src/algs/ags/ags.h",
 ]
 
 cc_library_vendored(
-    name = "ags",
-    srcs = _SRCS_AGS,
-    srcs_vendored = ["drake_" + x for x in _SRCS_AGS],
-    hdrs = _HDRS_AGS,
-    hdrs_vendored = ["drake_" + x for x in _HDRS_AGS],
+    name = "ags_cppabi",
+    srcs = _SRCS_AGS_CPPABI,
+    srcs_vendored = ["drake_" + x for x in _SRCS_AGS_CPPABI],
+    hdrs = _HDRS_AGS_CPPABI,
+    hdrs_vendored = ["drake_" + x for x in _HDRS_AGS_CPPABI],
     copts = ["-w"],
     includes = ["drake_src/algs/ags"],
     linkstatic = True,
+)
+
+cc_library(
+    name = "ags",
+    srcs = _SRCS_AGS_CABI,
+    hdrs = _HDRS_AGS_CABI,
+    copts = ["-w", "-fvisibility=hidden"],
+    includes = ["src/algs/ags"],
+    linkstatic = True,
     deps = [
+        ":ags_cppabi",
         ":util",
     ],
 )
@@ -240,15 +280,31 @@ cc_library(
     linkstatic = True,
     deps = [
         ":ags",
-        ":algs_c",
+        ":algs",
         ":config",
         ":stogo",
         ":util",
     ],
 )
 
-_ALL_SRCS = _SRCS_UTIL + _SRCS_ALGS_C + _SRCS_STOGO + _SRCS_AGS + _SRCS_API
-_ALL_HDRS = _HDRS_UTIL + _HDRS_ALGS_C + _HDRS_STOGO + _HDRS_AGS + _HDRS_API
+_ALL_SRCS = (
+    _SRCS_UTIL_CABI +
+    _SRCS_ALGS_CABI +
+    _SRCS_STOGO_CABI +
+    _SRCS_STOGO_CPPABI +
+    _SRCS_AGS_CABI +
+    _SRCS_AGS_CPPABI +
+    _SRCS_API
+)
+_ALL_HDRS = (
+    _HDRS_UTIL_CABI +
+    _HDRS_ALGS_CABI +
+    _HDRS_STOGO_CABI +
+    _HDRS_STOGO_CPPABI +
+    _HDRS_AGS_CABI +
+    _HDRS_AGS_CPPABI +
+    _HDRS_API
+)
 
 # Fail-fast in case upstream adds/removes files as part of an upgrade.
 check_lists_consistency(

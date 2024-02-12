@@ -31,47 +31,47 @@ class ArticulatedBodyForceCache {
   // store the force bias terms for a model with the given `topology`.
   explicit ArticulatedBodyForceCache(
       const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.num_bodies()) {
+      num_mobods_(topology.num_mobods()) {
     Allocate();
   }
 
-  // The articulated body inertia residual force `Zplus_PB_W` for this body
-  // projected across its inboard mobilizer to frame P.
-  const SpatialForce<T>& get_Zplus_PB_W(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Zplus_PB_W_[body_node_index];
+  // The articulated body inertia residual force `Zplus_PB_W` for this mobilized
+  // body projected across its inboard mobilizer to frame P.
+  const SpatialForce<T>& get_Zplus_PB_W(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return Zplus_PB_W_[mobod_index];
   }
 
   // Mutable version of get_Zplus_PB_W().
-  SpatialForce<T>& get_mutable_Zplus_PB_W(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Zplus_PB_W_[body_node_index];
+  SpatialForce<T>& get_mutable_Zplus_PB_W(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return Zplus_PB_W_[mobod_index];
   }
 
   // The articulated body inertia innovations generalized force `e_B` for this
-  // body's mobilizer.
-  const VectorUpTo6<T>& get_e_B(BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return e_B_[body_node_index];
+  // mobilized body's mobilizer.
+  const VectorUpTo6<T>& get_e_B(MobodIndex mobod_index) const {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return e_B_[mobod_index];
   }
 
   // Mutable version of get_e_B().
-  VectorUpTo6<T>& get_mutable_e_B(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return e_B_[body_node_index];
+  VectorUpTo6<T>& get_mutable_e_B(MobodIndex mobod_index) {
+    DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
+    return e_B_[mobod_index];
   }
 
  private:
   // Allocates resources for this articulated body cache.
   void Allocate() {
-    Zplus_PB_W_.resize(num_nodes_);
-    e_B_.resize(num_nodes_);
+    Zplus_PB_W_.resize(num_mobods_);
+    e_B_.resize(num_mobods_);
   }
 
-  // Number of body nodes in the corresponding MultibodyTree.
-  int num_nodes_{0};
+  // Number of mobilized bodies in the corresponding MultibodyTree.
+  int num_mobods_{0};
 
-  // Pools indexed by BodyNodeIndex.
+  // Pools indexed by MobodIndex.
   std::vector<SpatialForce<T>> Zplus_PB_W_;
   std::vector<VectorUpTo6<T>> e_B_;
 };

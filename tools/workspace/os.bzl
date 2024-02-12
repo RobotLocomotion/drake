@@ -175,7 +175,7 @@ def _determine_macos(repository_ctx):
 
     # Match supported macOS release(s).
     (macos_release,) = sw_vers.stdout.strip().split(".")[:1]
-    if macos_release not in ["12", "13"]:
+    if macos_release not in ["12", "13", "14"]:
         print("WARNING: unsupported macOS '%s'" % macos_release)
 
     # Check which arch we should be using.
@@ -195,6 +195,8 @@ def _determine_macos(repository_ctx):
 
 def determine_os(repository_ctx):
     """
+    DO NOT USE THIS IN NEW CODE. We are working to remove this from Drake.
+
     A repository_rule helper function that determines which of the supported
     build environments (OS versions or wheel environments) we should target.
 
@@ -251,44 +253,18 @@ def os_specific_alias(repository_ctx, mapping):
 
     Argument:
         repository_ctx: The context passed to the repository_rule calling this.
-        mapping: dict(str, list(str)) where the keys match the OS, and the list
-            of values are of the form name=actual as in alias(name, actual).
-
-    The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 20.04" or "macOS 11"
-    - Any release, via "Ubuntu default" or "macOS default"
-    - Anything else, via "default"
+        mapping: dict(str, list(str)) where the keys match the OS (which must
+            be either "linux" or "osx", and the list of values are of the form
+            name=actual as in alias(name, actual).
     """
 
-    os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
+    key = repository_ctx.os.name
+    if key == "mac os x":
+        key = "osx"
 
-    # Find the best match in the mapping dict for our OS.
-    keys = []
-    if os_result.ubuntu_release:
-        keys = [
-            "Ubuntu " + os_result.ubuntu_release,
-            "Ubuntu default",
-            "default",
-        ]
-    elif os_result.macos_release:
-        keys = [
-            "macOS " + os_result.macos_release,
-            "macOS default",
-            "default",
-        ]
-    elif os_result.is_manylinux:
-        keys = [
-            "manylinux",
-        ]
-    found_items = None
-    for key in keys:
-        if key in mapping:
-            found_items = mapping[key]
-            break
-    if not found_items:
-        fail("Unsupported os_result " + repr(os_result))
+    if key not in mapping:
+        fail("Unsupported os.name " + key)
+    items = mapping[key]
 
     # Emit the list of aliases.
     file_content = """\
@@ -297,7 +273,7 @@ def os_specific_alias(repository_ctx, mapping):
 package(default_visibility = ["//visibility:public"])
 """
 
-    for item in found_items:
+    for item in items:
         name, actual = item.split("=")
         file_content += 'alias(name = "{}", actual = "{}")\n'.format(
             name,
@@ -327,6 +303,7 @@ def _os_impl(repo_ctx):
         fail(os_result.error)
 
     constants = """
+print("The @drake_detected_os repository is deprecated and will be removed on 2024-03-01")  # noqa
 TARGET = {target}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}

@@ -70,6 +70,7 @@ CameraConfig MakeConfig() {
                       .output_delay = 0.002,
                       .rgb = false,
                       .depth = true,
+                      .label = true,
                       .show_rgb = true,
                       .do_compress = false,
                       .lcm_bus = "test_lcm_bus"};
@@ -107,13 +108,13 @@ class CameraConfigFunctionsTest : public ::testing::Test {
   FrameId body_frame_id_;
 };
 
-/* If the CameraConfig has neither .rgb nor .depth set to true, no systems
- should be instantiated. */
+/* If the CameraConfig has none of the image types, i.e., rgb, depth, and label,
+ set to true, no systems should be instantiated. */
 TEST_F(CameraConfigFunctionsTest, EarlyExit) {
   CameraConfig config;
   // Regardless of what the default config is, we'll guarantee that we're not
-  // requesting rgb or depth publication.
-  config.rgb = config.depth = false;
+  // requesting rgb, depth, or label publication.
+  config.rgb = config.depth = config.label = false;
   const int system_count = static_cast<int>(builder_.GetSystems().size());
   ApplyCameraConfig(config, &builder_);
   // We haven't added anything to the builder.
@@ -124,7 +125,7 @@ TEST_F(CameraConfigFunctionsTest, EarlyExit) {
  image. This test puts a guard on that property. */
 GTEST_TEST(CameraConfigFunctionsTestAux, DefaultConfigRenders) {
   const CameraConfig config;
-  EXPECT_TRUE(config.rgb || config.depth);
+  EXPECT_TRUE(config.rgb || config.depth || config.label);
 }
 
 /* If base frame is not defined for X_PB, the sensor must be posed relative to
@@ -361,7 +362,7 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
 // configuration. This excludes the following parameters:
 //  - renderer_name (tested above)
 //  - X_PB.base_frame (tested above)
-//  - rgb and depth (tested above)
+//  - rgb, depth, and label (tested above)
 //  - background (short of rendering, there's no easy way to observe this. But
 //    it will be immediately obvious to users who specify this value if it
 //    doesn't propagate.)
@@ -373,7 +374,7 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   CameraConfig config = MakeConfig();
   // We just need one image type so that we get a sensor; confirm that our
   // "not default" config file has at least one image enabled.
-  ASSERT_EQ(config.depth || config.rgb, true);
+  ASSERT_EQ(config.depth || config.rgb || config.label, true);
   // We want a non-async camera.
   config.output_delay = 0.0;
 
@@ -481,13 +482,15 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgb) {
   config.lcm_bus = "default";
   config.rgb = true;
   config.depth = false;
+  config.label = false;
 
   ApplyCameraConfig(config, &builder_);
 
-  // Rgb and depth ports.
+  // Check image ports.
   const auto& images =
       builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
           "image_to_lcm_test_camera");
+  EXPECT_THROW(images.GetInputPort("label"), std::exception);
   EXPECT_THROW(images.GetInputPort("depth"), std::exception);
   EXPECT_NO_THROW(images.GetInputPort("rgb"));
 }
@@ -498,23 +501,45 @@ TEST_F(CameraConfigFunctionsTest, PublishingDepth) {
   config.lcm_bus = "default";
   config.rgb = false;
   config.depth = true;
+  config.label = false;
 
   ApplyCameraConfig(config, &builder_);
 
-  // Rgb and depth ports.
+  // Check image ports.
   const auto& images =
       builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
           "image_to_lcm_test_camera");
+  EXPECT_THROW(images.GetInputPort("label"), std::exception);
   EXPECT_NO_THROW(images.GetInputPort("depth"));
   EXPECT_THROW(images.GetInputPort("rgb"), std::exception);
 }
 
-// Confirms that if both rgb and depth are specified, both are published.
-TEST_F(CameraConfigFunctionsTest, PublishingRgbAndDepth) {
+// Confirms that if only label is specified, only label is published.
+TEST_F(CameraConfigFunctionsTest, PublishingLabel) {
+  CameraConfig config = MakeConfig();
+  config.lcm_bus = "default";
+  config.rgb = false;
+  config.depth = false;
+  config.label = true;
+
+  ApplyCameraConfig(config, &builder_);
+
+  // Check image ports.
+  const auto& images =
+      builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
+          "image_to_lcm_test_camera");
+  EXPECT_NO_THROW(images.GetInputPort("label"));
+  EXPECT_THROW(images.GetInputPort("depth"), std::exception);
+  EXPECT_THROW(images.GetInputPort("rgb"), std::exception);
+}
+
+// Confirms that if all the image types are specified, all are published.
+TEST_F(CameraConfigFunctionsTest, PublishingRgbDepthAndLabel) {
   CameraConfig config = MakeConfig();
   config.lcm_bus = "default";
   config.rgb = true;
   config.depth = true;
+  config.label = true;
 
   ApplyCameraConfig(config, &builder_);
 
@@ -522,6 +547,7 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgbAndDepth) {
   const auto& images =
       builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
           "image_to_lcm_test_camera");
+  EXPECT_NO_THROW(images.GetInputPort("label"));
   EXPECT_NO_THROW(images.GetInputPort("depth"));
   EXPECT_NO_THROW(images.GetInputPort("rgb"));
 }
@@ -542,6 +568,32 @@ TEST_F(CameraConfigFunctionsTest, BadLcmBus) {
   config.lcm_bus = "special_request";
   DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(config, &builder_),
                               ".*non-default.*special_request.*");
+}
+
+// The user can opt-out of LCM, in which case only the camera system is added.
+// LcmBuses object from the argument list.
+TEST_F(CameraConfigFunctionsTest, NullLcmBus) {
+  LcmBuses lcm_buses;
+  DrakeLcm default_lcm(LcmBuses::kLcmUrlMemqNull);
+  lcm_buses.Add("default", &default_lcm);
+
+  // Add the camera (only).
+  const CameraConfig config;
+  ApplyCameraConfig(config, &builder_, &lcm_buses);
+
+  // Check that no LCM-related objects are created.
+  for (const auto* system : builder_.GetSystems()) {
+    const std::string& name = system->get_name();
+    // Allow the MbP basics.
+    if (name == "plant" || name == "scene_graph") {
+      continue;
+    }
+    // Allow the camera itself.
+    if (name == "rgbd_sensor_preview_camera") {
+      continue;
+    }
+    GTEST_FAIL() << name << " should not exist in the diagram";
+  }
 }
 
 // Confirms that the render engine implementation follows the requested type

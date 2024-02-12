@@ -12,12 +12,15 @@ cd /opt/drake-wheel-build/drake-build
 export BAZELISK_HOME=/var/cache/bazel/bazelisk
 
 # Add wheel-specific bazel options.
-cat > /etc/bazel.bazelrc << EOF
+cat > /opt/drake-wheel-build/drake-build/drake.bazelrc << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_OS=manylinux
 build --repo_env=SNOPT_PATH=git
 build --config=packaging
+build --define=LCM_INSTALL_JAVA=OFF
+# Our wheel Eigen is new enough to undo the Focal-specific removal of Clarabel.
+build --define=NO_CLARABEL=OFF
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.

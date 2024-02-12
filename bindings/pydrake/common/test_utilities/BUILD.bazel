@@ -7,6 +7,10 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+)
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
@@ -22,8 +26,34 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake/common:module_py",
+        "//bindings/pydrake/common",
     ],
+)
+
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = True,
+    srcs = ["algebra_test_util.py"],
+    visibility = [
+        "//bindings/pydrake/autodiffutils:__pkg__",
+        "//bindings/pydrake/symbolic:__pkg__",
+    ],
+    deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "autodiffutils_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_so_name = "autodiffutils_test_util",
+    cc_srcs = ["autodiffutils_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_py_library(
@@ -54,8 +84,6 @@ drake_py_library(
     deps = [
         ":module_py",
         "//bindings/pydrake:polynomial_py",
-        "//bindings/pydrake/autodiffutils",
-        "//bindings/pydrake/symbolic",
     ],
 )
 
@@ -66,7 +94,6 @@ drake_py_library(
     deps = [
         ":module_py",
         ":numpy_compare_py",
-        "//bindings/pydrake/symbolic",
     ],
 )
 
@@ -95,6 +122,11 @@ drake_py_library(
     imports = ["scipy_stub"],
 )
 
+drake_py_unittest(
+    name = "scipy_stub_test",
+    deps = [":scipy_stub_py"],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
@@ -104,6 +136,8 @@ drake_py_library(
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
+        # N.B. Do not add algebra_test_util_py here; it should be scoped to
+        # only very specific tests that need it.
         # N.B. Do not add scipy_stub_py here; it inserts scipy as a top-level
         # module. Developers should only do that with intent, not as a bonus
         # dependency from a conveience roll-up module.

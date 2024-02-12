@@ -35,6 +35,14 @@ struct ContactConfiguration {
   // Signed distance. Positive if bodies do not overlap and negative otherwise.
   T phi;
 
+  // Normal velocity, defined as the rate of change of phi. Therefore vn > 0
+  // implies bodies are moving away from each other.
+  T vn;
+
+  // Elastic force (does not include dissipation) value in the contact
+  // configuration. For point contact this will be stiffness times phi.
+  T fe;
+
   // Orientation of contact frame C in the world frame W.
   // Rz_WC = R_WC.col(2) corresponds to the normal from object A into object B.
   math::RotationMatrix<T> R_WC;

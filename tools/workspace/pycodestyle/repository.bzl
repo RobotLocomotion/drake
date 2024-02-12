@@ -6,8 +6,8 @@ def pycodestyle_repository(
     github_archive(
         name = name,
         repository = "PyCQA/pycodestyle",
-        commit = "2.11.0",
-        sha256 = "757a3dba55dce2ae8b01fe7b46c20cd1e4c0fe794fe6119bce66b942f35e2db0",  # noqa
+        commit = "2.11.1",
+        sha256 = "a01fdd890c6472eebc32e8baf21e29173c35776e765c64cc83ccd09b99dc5399",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

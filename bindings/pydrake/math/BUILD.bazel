@@ -1,5 +1,9 @@
 load("//tools/install:install.bzl", "install")
 load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
@@ -7,23 +11,37 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
+    "EXTRA_PYBIND_COPTS",
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
-package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
-])
+package(default_visibility = ["//visibility:private"])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_pybind_library(
-    name = "math",
-    cc_deps = [
+# N.B. The `pydrake.math` module is part of the root module dependency cycle.
+# Refer to bindings/pydrake/common/module_cycle.md for details.
+
+drake_cc_library(
+    name = "math_py",
+    srcs = [
+        "math_py_matmul.cc",
+        "math_py_operators.cc",
+        # TODO(jwnimmer-tri) Split the monolith into pieces.
+        "math_py_monolith.cc",
+    ],
+    hdrs = [
+        "math_py.h",
+    ],
+    copts = EXTRA_PYBIND_COPTS,
+    declare_installed_headers = False,
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
+    ],
+    deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:math_operators_pybind",
@@ -34,28 +52,21 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
     ],
-    cc_so_name = "__init__",
-    cc_srcs = [
-        "math_py.h",
-        "math_py.cc",
-        # TODO(jwnimmer-tri) Split the monolith into pieces.
-        "math_py_monolith.cc",
+)
+
+drake_py_library(
+    name = "math_extra",
+    srcs = ["_math_extra.py"],
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
     ],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        "//bindings/pydrake/autodiffutils",
-        "//bindings/pydrake/symbolic",
-        "//bindings/pydrake/common:eigen_geometry_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-    py_srcs = ["_math_extra.py"],
 )
 
 install(
     name = "install",
-    targets = [":math"],
+    targets = [":math_extra"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs([":math"]),
+    visibility = ["//bindings/pydrake:__pkg__"],
 )
 
 drake_py_binary(
@@ -64,14 +75,14 @@ drake_py_binary(
     add_test_rule = True,
     isolate = True,
     deps = [
-        ":math",
+        "//bindings/pydrake:module_py",
     ],
 )
 
 drake_py_unittest(
     name = "math_test",
     deps = [
-        ":math",
+        "//bindings/pydrake:module_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
@@ -79,34 +90,16 @@ drake_py_unittest(
 drake_py_unittest(
     name = "math_overloads_test",
     deps = [
-        ":math",
-        "//bindings/pydrake/autodiffutils",
-        "//bindings/pydrake/symbolic",
+        "//bindings/pydrake:module_py",
     ],
 )
 
 drake_py_unittest(
     name = "math_overloads_matrix_test",
     deps = [
-        ":math",
+        "//bindings/pydrake:module_py",
         "//bindings/pydrake/common/test_utilities:meta_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_library(
-    name = "algebra_test_util_py",
-    testonly = 1,
-    srcs = [
-        "test/__init__.py",
-        "test/algebra_test_util.py",
-    ],
-    visibility = [
-        "//bindings/pydrake/autodiffutils:__pkg__",
-        "//bindings/pydrake/symbolic:__pkg__",
-    ],
-    deps = [
-        ":math",
     ],
 )
 

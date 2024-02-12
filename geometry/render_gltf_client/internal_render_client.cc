@@ -1,6 +1,7 @@
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,19 +10,13 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <picosha2.h>
 
-// To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkImageData.h>    // vtkCommonDataModel
-#include <vtkImageExport.h>  // vtkIOImage
-#include <vtkNew.h>          // vtkCommonCore
-#include <vtkPNGReader.h>    // vtkIOImage
-#include <vtkTIFFReader.h>   // vtkIOImage
-
+#include "drake/common/find_resource.h"
+#include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
-#include "drake/systems/sensors/vtk_image_reader_writer.h"
+#include "drake/systems/sensors/image_io.h"
 
 namespace drake {
 namespace geometry {
@@ -36,12 +31,13 @@ using render::ClippingRange;
 using render::DepthRange;
 using render::RenderCameraCore;
 using systems::sensors::CameraInfo;
+using systems::sensors::ImageAny;
 using systems::sensors::ImageDepth16U;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageFileFormat;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
-using systems::sensors::internal::MakeReader;
 
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
@@ -91,56 +87,20 @@ void AddField<RenderImageType>(DataFieldsMap* data_map,
   }
 }
 
-void ReadImageFile(ImageFileFormat format, const std::string& path,
-                   vtkImageExport* image_exporter) {
-  // Load the image file from disk if possible.
-  auto reader = MakeReader(format, path);
-  if (!reader->CanReadFile(path.c_str())) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as {}.", path, format));
-  }
-  image_exporter->SetInputConnection(reader->GetOutputPort());
-  image_exporter->ImageLowerLeftOff();
-  reader->Update();  // Loads the image.
-}
-
-/* Verifies the loaded image has the correct dimensions.  This includes
- verifying that the image is 2D (depth=1).
-
- @param expected_width
-   The expected width of the loaded image.
- @param expected_height
-   The expected height of the loaded image.
- @param image_exporter
-   The already-loaded vtk image exporter.
- @param path
-   The filename of the path that image_exporter has data from.  Used to populate
-   the exception message.
- @throws std::exception
-   If the expected_width or expected_height are not the same as image_exporter,
-   or if a 3D image was provided (depth > 1).
- */
-void VerifyImportedImageDimensions(int expected_width, int expected_height,
-                                   vtkImageExport* image_exporter,
-                                   const std::string& path) {
-  const int* extent = image_exporter->GetDataExtent();
-  const int image_width = extent[1] - extent[0] + 1;
-  const int image_height = extent[3] - extent[2] + 1;
-  if (image_width != expected_width || image_height != expected_height) {
+/* Throws an error when the loaded image doesn't have the correct dimensions. */
+template <typename Image>
+void VerifyImageSize(const std::string& image_path, Image* image,
+                     int expected_width, int expected_height) {
+  DRAKE_DEMAND(image != nullptr);
+  const int actual_width = image->width();
+  const int actual_height = image->height();
+  if (actual_width != expected_width || actual_height != expected_height) {
     throw std::runtime_error(fmt::format(
         "RenderClient: expected to import (width={},height={}) from the file "
         "'{}', but got (width={},height={}).",
-        expected_width, expected_height, path, image_width, image_height));
+        expected_width, expected_height, image_path, actual_width,
+        actual_height));
   }
-  /* This function should only be getting called for loading two dimensional
-   images; VTK supports 3D images so we additionally check that the depth
-   dimension is 1.  A TIFF image, for example, can have multiple layers. */
-  const int image_depth = extent[5] - extent[4] + 1;
-
-  /* no cover: no tests ever use a 3D image, but the check is important to keep
-   in order to guarantee the loops in LoadColorImage, as well as calls to
-   image_exporter->Export are safe. */
-  DRAKE_THROW_UNLESS(image_depth == 1);
 }
 
 }  // namespace
@@ -219,11 +179,8 @@ std::string RenderClient::RenderOnServer(
       const std::string& data_path = response.data_path.value();
       const std::uintmax_t bin_size = fs::file_size(data_path);
       if (bin_size > 0 && bin_size < 8192) {
-        std::ifstream bin_in(data_path, std::ios::binary);
-        if (bin_in.is_open()) {
-          std::stringstream buff;
-          buff << bin_in.rdbuf();
-          server_message = buff.str();
+        if (std::optional<std::string> data = ReadFile(data_path)) {
+          server_message = std::move(*data);
         }
       }
     }
@@ -255,24 +212,17 @@ std::string RenderClient::RenderOnServer(
    from e.g., "XYZ.curl" to the correct image file extension for better
    housekeeping in the temp_directory.
 
-   If the server did not return one of the supported formats, error out now.
-
-   NOTE: Do not rely on or trust the server to (correctly) report a valid mime
-   type for the sent image.  VTK image readers' `CanReadFile` methods check
-   if the file *content* can actually be loaded (regardless of extension).
-
-   TODO(jwnimmer-tri) Add image_reader_writer.h helper function(s) to subsume
-   this manual file type detection. */
-  vtkNew<vtkPNGReader> png_reader;
-  if (png_reader->CanReadFile(bin_out_path.c_str())) {
-    return RenameHttpServiceResponse(bin_out_path, scene_path, ".png");
+   If the server did not return one of the supported formats, error out now. */
+  const std::optional<ImageIo::Metadata> header =
+      ImageIo{}.LoadMetadata(bin_out_path);
+  if (header.has_value()) {
+    if (header->format == ImageFileFormat::kPng) {
+      return RenameHttpServiceResponse(bin_out_path, scene_path, ".png");
+    }
+    if (header->format == ImageFileFormat::kTiff) {
+      return RenameHttpServiceResponse(bin_out_path, scene_path, ".tiff");
+    }
   }
-
-  vtkNew<vtkTIFFReader> tiff_reader;
-  if (tiff_reader->CanReadFile(bin_out_path.c_str())) {
-    return RenameHttpServiceResponse(bin_out_path, scene_path, ".tiff");
-  }
-
   throw std::runtime_error(fmt::format(
       "RenderClient: while trying to render the scene '{}' with a sha256 hash "
       "of '{}', the file returned by the server saved in '{}' is not "
@@ -286,9 +236,7 @@ std::string RenderClient::ComputeSha256(const std::string& path) {
     throw std::runtime_error(
         fmt::format("RenderClient: cannot open file '{}'.", path));
   }
-  std::vector<unsigned char> hash(picosha2::k_digest_size);
-  picosha2::hash256(f_in, hash.begin(), hash.end());
-  return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
+  return Sha256::Checksum(&f_in).to_string();
 }
 
 std::string RenderClient::RenameHttpServiceResponse(
@@ -313,111 +261,31 @@ std::string RenderClient::RenameHttpServiceResponse(
 void RenderClient::LoadColorImage(const std::string& path,
                                   ImageRgba8U* color_image_out) {
   DRAKE_DEMAND(color_image_out != nullptr);
-
-  vtkNew<vtkImageExport> image_exporter;
-  ReadImageFile(ImageFileFormat::kPng, path, image_exporter);
-  const int width = color_image_out->width();
-  const int height = color_image_out->height();
-  VerifyImportedImageDimensions(width, height, image_exporter, path);
-
-  // For color images, we support loading either RGB (3 channels) or RGBA (4).
-  vtkImageData* image_data = image_exporter->GetInput();
-  DRAKE_DEMAND(image_data != nullptr);
-  const int channels = image_data->GetNumberOfScalarComponents();
-  if (channels != 3 && channels != 4) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' has {} channel(s), but "
-        "either 3 (RGB) or 4 (RGBA) are required for color images.",
-        path, channels));
-  }
-
-  // Make sure we have a standard PNG image with uint8_t data per channel.
-  /* no cover: this case is improbable and therefore not worth explicitly
-   testing. If this assumption proves to be wrong in the future, we can revisit
-   the decision. */
-  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_UNSIGNED_CHAR);
-
-  /* Copy the image to the drake buffer.  VTK's image coordinate corners (how
-   the data is stored in memory) are transposed.  Using separate loops depending
-   on the number of channels is a slight optimization, drake's buffers are RGBA
-   so check once and do different loops rather than check in every iteration of
-   the loop. */
-  using data_t = typename ImageRgba8U::T;
-  data_t* out_data = color_image_out->at(0, 0);
-  data_t* in_data = static_cast<data_t*>(image_data->GetScalarPointer(0, 0, 0));
-  constexpr int kNumChannels = ImageRgba8U::kNumChannels;
-  static_assert(  // The logic below is not valid if this ever changes.
-      kNumChannels == 4, "Expected ImageRgba8U::kNumChannels to be 4.");
-  if (channels == kNumChannels) {
-    // Same number of channels, do a direct transpose copy.
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-        const int out_index = (x + y * width) * kNumChannels;
-        const int in_index = (x + (height - y - 1) * width) * kNumChannels;
-        out_data[out_index + 0] = in_data[in_index + 0];  // Red channel.
-        out_data[out_index + 1] = in_data[in_index + 1];  // Blue channel.
-        out_data[out_index + 2] = in_data[in_index + 2];  // Green channel.
-        out_data[out_index + 3] = in_data[in_index + 3];  // Alpha channel.
-      }
-    }
-  } else {
-    // Output is RGBA, input is RGB -- transpose copy with alpha pad.
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-        const int out_index = (x + y * width) * kNumChannels;
-        const int in_index = (x + (height - y - 1) * width) * 3;
-        out_data[out_index + 0] = in_data[in_index + 0];  // Red channel.
-        out_data[out_index + 1] = in_data[in_index + 1];  // Blue channel.
-        out_data[out_index + 2] = in_data[in_index + 2];  // Green channel.
-        out_data[out_index + 3] = 255u;                   // Alpha channel.
-      }
-    }
-  }
+  const int expected_width = color_image_out->width();
+  const int expected_height = color_image_out->height();
+  ImageIo{}.Load(path, ImageFileFormat::kPng, color_image_out);
+  VerifyImageSize(path, color_image_out, expected_width, expected_height);
 }
 
 void RenderClient::LoadDepthImage(const std::string& path,
                                   ImageDepth32F* depth_image_out) {
   DRAKE_DEMAND(depth_image_out != nullptr);
-
-  // Load different image types based on the file extension.  Note that even if
-  // a 16-bit TIFF image was sent, VTK will load it as 32-bit float data.
-  vtkNew<vtkImageExport> image_exporter;
-  const std::string ext{fs::path{path}.extension()};
-  if (ext == ".png") {
-    ReadImageFile(ImageFileFormat::kPng, path, image_exporter);
-  } else if (ext == ".tiff") {
-    ReadImageFile(ImageFileFormat::kTiff, path, image_exporter);
-  } else {
-    throw std::runtime_error("RenderClient: unsupported file extension");
-  }
-
-  const int width = depth_image_out->width();
-  const int height = depth_image_out->height();
-  VerifyImportedImageDimensions(width, height, image_exporter, path);
-
-  // For depth images, we support loading single channel 16-bit/32-bit float
-  // TIFF or 16-bit unsigned integer TIFF/PNG images.
-  vtkImageData* image_data = image_exporter->GetInput();
-  DRAKE_DEMAND(image_data != nullptr);
-  const int channels = image_data->GetNumberOfScalarComponents();
-  if (channels != 1) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded image from '{}' has {} channels, but only 1 is "
-        "allowed for depth images.",
-        path, channels));
-  }
-
-  /* Copy the VTK data into our image. */
-  if (image_data->GetScalarType() == VTK_TYPE_FLOAT32) {
-    image_exporter->Export(depth_image_out->at(0, 0));
-  } else if (image_data->GetScalarType() == VTK_TYPE_UINT16) {
-    ImageDepth16U u16(width, height);
-    image_exporter->Export(u16.at(0, 0));
-    ConvertDepth16UTo32F(u16, depth_image_out);
-  } else {
-    /* no cover */
-    throw std::runtime_error("RenderClient: unsupported channel type");
-  }
+  const int expected_width = depth_image_out->width();
+  const int expected_height = depth_image_out->height();
+  ImageAny image_any = ImageIo{}.Load(path);
+  std::visit(
+      [depth_image_out]<typename SomeImage>(SomeImage& image) {
+        if constexpr (std::is_same_v<SomeImage, ImageDepth16U>) {
+          ConvertDepth16UTo32F(image, depth_image_out);
+        } else if constexpr (std::is_same_v<SomeImage, ImageDepth32F>) {
+          *depth_image_out = std::move(image);
+        } else {
+          throw std::runtime_error(
+              "RenderClient: unsupported depth pixel type");
+        }
+      },
+      image_any);
+  VerifyImageSize(path, depth_image_out, expected_width, expected_height);
 }
 
 void RenderClient::SetHttpService(std::unique_ptr<HttpService> service) {

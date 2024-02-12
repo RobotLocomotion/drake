@@ -6,20 +6,27 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/test_utilities.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using internal::CheckAddPointInSetConstraints;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using math::RotationMatrixd;
 using std::sqrt;
 
 GTEST_TEST(AffineBallTest, DefaultCtor) {
@@ -204,6 +211,17 @@ GTEST_TEST(AffineBallTest, NotAxisAligned) {
   EXPECT_TRUE(ab1.PointInSet(
       center + Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
 
+  // Negate the second column of B1: the resulting affine_ball
+  // should be the same as the first one.
+  Eigen::Matrix2d B1_negated = B1;
+  B1_negated.col(1) *= -1;
+  AffineBall ab1_negated(B1_negated, center);
+  // The determinant of B1_negated is is the negation of the determinant of B1.
+  EXPECT_NEAR(ab1_negated.B().determinant(), -ab1.B().determinant(), kTol);
+  // However the volume is the same because we use the absolute value of the
+  // determinant.
+  EXPECT_NEAR(ab1_negated.CalcVolume(), ab1.CalcVolume(), kTol);
+
   // Same as B1, but one of the axes is dropped. This makes it just a line
   // segment from (1-2/sqrt(2), 1-2/sqrt(2)) to (1+2/sqrt(2), 1+2/sqrt(2)).
   Eigen::Matrix2d B2;
@@ -275,13 +293,178 @@ GTEST_TEST(AffineBallTest, LowerDimensionalEllipsoids) {
   EXPECT_EQ(as7.AffineDimension(), 2);
 }
 
-GTEST_TEST(HyperellipsoidTest, FromHyperellipsoid) {
+GTEST_TEST(AffineBallTest, FromHyperellipsoid) {
   Hyperellipsoid E1(MatrixXd::Identity(3, 3), Vector3d::Zero());
   EXPECT_TRUE(E1.IsBounded());
   EXPECT_NO_THROW(AffineBall{E1});
   Hyperellipsoid E2(MatrixXd::Identity(2, 3), Vector3d::Zero());
   EXPECT_FALSE(E2.IsBounded());
   EXPECT_THROW(AffineBall{E2}, std::exception);
+}
+
+GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidPreconditions) {
+  Eigen::MatrixXd zero_rows = Eigen::MatrixXd::Zero(0, 2);
+  Eigen::MatrixXd zero_cols = Eigen::MatrixXd::Zero(2, 0);
+  Eigen::MatrixXd nan_entry(1, 1);
+  nan_entry << std::numeric_limits<double>::quiet_NaN();
+  Eigen::MatrixXd inf_entry(1, 1);
+  inf_entry << std::numeric_limits<double>::infinity();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_rows),
+      ".*points.*rows.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_cols),
+      ".*points.*cols.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(nan_entry),
+      ".*points.*hasNaN.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(inf_entry),
+      ".*points.*allFinite.*");
+}
+
+GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidFullDimensional) {
+  // Axis-aligned example
+  Eigen::Matrix3Xd p_FA(3, 6);
+  // clang-format off
+  p_FA << 1, 0, 0, -1,  0,  0,
+          0, 2, 0,  0, -2,  0,
+          0, 0, 3,  0,  0, -3;
+  // clang-format on
+  AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
+
+  double tol, eps;
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    tol = 1e-8;
+    eps = 1e-6;
+  } else if (solvers::GurobiSolver::is_available() &&
+             solvers::GurobiSolver::is_enabled()) {
+    tol = 1e-4;
+    eps = 1e-3;
+  } else {
+    tol = 1e-5;
+    eps = 1e-4;
+  }
+
+  Vector3d center_expected = Vector3d::Zero();
+  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, tol));
+
+  for (int i = 0; i < p_FA.cols(); ++i) {
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
+    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), tol));
+  }
+
+  // Non-axis-aligned example
+  const Vector3d translation(0.5, 0.87, 0.1);
+  const RigidTransformd X_GF{RollPitchYawd(0.1, 0.2, 3), translation};
+  Eigen::Matrix3Xd p_GA = X_GF * p_FA;
+
+  AffineBall E_G = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_GA);
+
+  for (int i = 0; i < p_FA.cols(); ++i) {
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
+    Eigen::Vector3d point_outside =
+        p_FA.col(i) + (p_FA.col(i) - translation) * (1. + eps);
+    EXPECT_FALSE(E_F.PointInSet(point_outside, tol));
+  }
+}
+
+GTEST_TEST(AffineBallTest,
+           MinimumVolumeCircumscribedEllipsoidLowerDimensional) {
+  // Axis-aligned example
+  Eigen::Matrix3Xd p_FA(3, 4);
+  // clang-format off
+  p_FA << 1, 0, -1,  0,
+          0, 2,  0, -2,
+          0, 0,  0,  0;
+  // clang-format on
+  AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
+
+  double tol, eps;
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    tol = 1e-8;
+    eps = 1e-6;
+  } else {
+    tol = 1e-5;
+    eps = 1e-4;
+  }
+
+  Vector3d center_expected = Vector3d::Zero();
+  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, tol));
+
+  for (int i = 0; i < p_FA.cols(); ++i) {
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
+    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), tol));
+  }
+  EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, eps}));
+  EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, -eps}));
+
+  // Non-axis-aligned example
+  MatrixXd points(5, 2);
+  // clang-format off
+  points << 0.1, -0.1,
+            0.2, -0.2,
+            0.3, -0.3,
+            0.4, -0.4,
+            0.5, -0.5;
+  // clang-format on
+  VectorXd center(5);
+  center << 0.123, 0.435, 2.3, -0.2, 0.75;
+  points.colwise() += center;
+
+  AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
+  EXPECT_TRUE(CompareMatrices(E.center(), center, tol));
+
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(E.PointInSet(points.col(i), tol));
+    Eigen::VectorXd point_outside =
+        points.col(i) + (points.col(i) - center) * (1. + eps);
+    EXPECT_FALSE(E.PointInSet(point_outside, tol));
+  }
+}
+
+GTEST_TEST(AffineBallTest, MakeAffineBallFromLineSegment) {
+  const Vector3d x_1 = Vector3d{0.0, 0.0, 0.0};
+  const Vector3d x_2 = Vector3d{0.0, 0.0, 4.0};
+  const double segment_length = (x_1 - x_2).norm();
+  // Throws if called on a single point.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MakeAffineBallFromLineSegment(x_1, x_1), ".*same point.*");
+  AffineBall a_0 = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, 0);
+  EXPECT_TRUE(CompareMatrices(a_0.center(), (x_1 + x_2) / 2.0));
+  // This affine ball has affine dimension one.
+  EXPECT_TRUE(a_0.PointInSet(x_1));
+  EXPECT_TRUE(a_0.PointInSet(x_2));
+  // It does include center, but not a bit outside in y direction.
+  const double varepsilon = 1e-2;
+  EXPECT_TRUE(a_0.PointInSet(a_0.center()));
+  EXPECT_FALSE(a_0.PointInSet(a_0.center() + Vector3d{0.0, varepsilon, 0.0}));
+  EXPECT_NEAR(a_0.CalcVolume(), 0.0, 1e-6);
+  // Now give it some epsilon.
+  const double epsilon = 0.1;
+  AffineBall a_1 = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
+  EXPECT_EQ(AffineSubspace(a_1.B(), a_1.center()).AffineDimension(), 3);
+  // Check that the affine transformation matrix divided by hyperellipsoid
+  // axis length vectors is a rotation matrix.
+  const auto scale_back_vector =
+      Eigen::Vector3d{2 / (x_1 - x_2).norm(), 1 / epsilon, 1 / epsilon};
+  const auto rotation_matrix = a_1.B() * scale_back_vector.asDiagonal();
+  EXPECT_TRUE(CompareMatrices(rotation_matrix * rotation_matrix.transpose(),
+                              Eigen::Matrix3d::Identity(), 1e-6));
+  // It must contain both center and a bit off-center in x-y-z directions.
+  EXPECT_TRUE(a_1.PointInSet(a_1.center()));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{varepsilon, 0, 0}, 1e-9));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, varepsilon, 0}, 1e-9));
+  EXPECT_TRUE(a_1.PointInSet(a_1.center() + Vector3d{0, 0, varepsilon}, 1e-9));
+  // let's check the volume of the affine ball, should be 4/3*pi*r_1*r_2*r_3,
+  // where r_1 = 2.5 (half the distance between x_1 and x_2), r_2 and r_3 are
+  // epsilon.
+  EXPECT_NEAR(a_1.CalcVolume(),
+              4.0 / 3 * M_PI * segment_length / 2.0 * std::pow(epsilon, 2),
+              1e-6);
 }
 
 }  // namespace optimization

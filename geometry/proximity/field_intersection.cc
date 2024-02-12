@@ -5,15 +5,10 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
-#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
-#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -86,6 +81,13 @@ std::vector<Vector3<T>> IntersectTetrahedra(
 
   // We use two alternating buffers to reduce heap allocations.
   std::vector<Vector3<T>> polygon_buffer[2];
+  // Each contact polygon has at most 8 vertices because it is the
+  // intersection of the pressure-equilibrium plane and the two tetrahedra.
+  // The plane intersects a tetrahedron into a convex polygon with at most four
+  // vertices. That convex polygon intersects a tetrahedron into at most four
+  // more vertices.
+  polygon_buffer[0].reserve(8);
+  polygon_buffer[1].reserve(8);
 
   // Intersects the equilibrium plane with the tetrahedron element0.
   std::vector<Vector3<T>>* polygon_M = &(polygon_buffer[0]);
@@ -146,24 +148,21 @@ bool IsPlaneNormalAlongPressureGradient(
   return cos_theta > kCosAlpha;
 }
 
-template <class MeshType, class MeshBuilder, typename T, class FieldType>
-void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
-                     const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-                     const VolumeMeshFieldLinear<double, double>& field1_N,
-                     const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-                     const math::RigidTransform<T>& X_MN,
-                     std::unique_ptr<MeshType>* surface_01_M,
-                     std::unique_ptr<FieldType>* e_01_M,
-                     std::vector<Vector3<T>>* grad_e0_Ms,
-                     std::vector<Vector3<T>>* grad_e1_Ms) {
+template <class MeshBuilder, class BvType>
+void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
+    const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<BvType, VolumeMesh<double>>& bvh0_M,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<BvType, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<T>& X_MN,
+    std::unique_ptr<MeshType>* surface_01_M,
+    std::unique_ptr<FieldType>* e_01_M) {
   DRAKE_DEMAND(surface_01_M != nullptr);
   DRAKE_DEMAND(e_01_M != nullptr);
-  DRAKE_DEMAND(grad_e0_Ms != nullptr);
-  DRAKE_DEMAND(grad_e1_Ms != nullptr);
   surface_01_M->reset();
   e_01_M->reset();
-  grad_e0_Ms->clear();
-  grad_e1_Ms->clear();
+  tet0_of_contact_polygon_.clear();
+  tet1_of_contact_polygon_.clear();
 
   std::vector<std::pair<int, int>> candidate_tetrahedra;
   auto callback = [&candidate_tetrahedra](int tet0,
@@ -173,224 +172,160 @@ void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
   };
   bvh0_M.Collide(bvh1_N, convert_to_double(X_MN), callback);
 
-  MeshBuilder builder;
-  std::vector<SurfaceTriangle> surface_faces;
-  std::vector<Vector3<T>> surface_vertices_M;
-  std::vector<T> surface_field_values;
-  // Here the contact polygon is represented as a list of vertex indices.
-  std::vector<int> contact_polygon;
-  // Each contact polygon has at most 8 vertices because it is the
-  // intersection of the pressure-equilibrium plane and the two tetrahedra.
-  // The plane intersects a tetrahedron into a convex polygon with at most four
-  // vertices. That convex polygon intersects a tetrahedron into at most four
-  // more vertices.
-  contact_polygon.reserve(8);
+  MeshBuilder builder_M;
   const math::RotationMatrix<T> R_NM = X_MN.rotation().inverse();
   for (const auto& [tet0, tet1] : candidate_tetrahedra) {
-    // Initialize the plane with a non-zero-length normal vector
-    // and an arbitrary point.
-    Plane<T> equilibrium_plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
-    if (!CalcEquilibriumPlane(tet0, field0_M, tet1, field1_N, X_MN,
-                              &equilibrium_plane_M)) {
-      continue;
-    }
-    Vector3<T> polygon_nhat_M = equilibrium_plane_M.normal();
-    if (!IsPlaneNormalAlongPressureGradient(polygon_nhat_M, tet0, field0_M)) {
-      continue;
-    }
-    Vector3<T> reverse_polygon_nhat_N = R_NM * (-polygon_nhat_M);
-    if (!IsPlaneNormalAlongPressureGradient(reverse_polygon_nhat_N, tet1,
-                                            field1_N)) {
-      continue;
-    }
-    const std::vector<Vector3<T>>& polygon_vertices_M =
-        IntersectTetrahedra(tet0, field0_M.mesh(), tet1, field1_N.mesh(), X_MN,
-                            equilibrium_plane_M);
-
-    if (polygon_vertices_M.size() < 3) continue;
-
-    // Add the vertices to the builder (with corresponding pressure values)
-    // and construct index-based polygon representation.
-    std::vector<int> polygon_vertex_indices;
-    polygon_vertex_indices.reserve(polygon_vertices_M.size());
-    for (const auto& p_MV : polygon_vertices_M) {
-      polygon_vertex_indices.push_back(
-          builder.AddVertex(p_MV, field0_M.EvaluateCartesian(tet0, p_MV)));
-    }
-
-    const Vector3<T>& grad_field0_M = field0_M.EvaluateGradient(tet0);
-    const int num_new_faces = builder.AddPolygon(polygon_vertex_indices,
-                                                 polygon_nhat_M, grad_field0_M);
-
-    const Vector3<T>& grad_field1_N = field1_N.EvaluateGradient(tet1);
-    const Vector3<T>& grad_field1_M = X_MN.rotation() * grad_field1_N;
-    for (int i = 0; i < num_new_faces; ++i) {
-      grad_e0_Ms->push_back(grad_field0_M);
-      grad_e1_Ms->push_back(grad_field1_M);
-    }
+    CalcContactPolygon(field0_M, field1_N, X_MN, R_NM, tet0, tet1, &builder_M);
   }
 
-  if (builder.num_faces() == 0) return;
+  if (builder_M.num_faces() == 0) return;
 
-  std::tie(*surface_01_M, *e_01_M) = builder.MakeMeshAndField();
+  std::tie(*surface_01_M, *e_01_M) = builder_M.MakeMeshAndField();
 }
 
-template <class MeshType, class MeshBuilder, typename T, class FieldType>
-std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<T>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<T>& X_WG) {
-  const math::RigidTransform<T> X_FG = X_WF.InvertAndCompose(X_WG);
+template <class MeshBuilder, class BvType>
+void VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
+    const VolumeMeshFieldLinear<double, double>& field0_M,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const math::RigidTransform<T>& X_MN, const math::RotationMatrix<T>& R_NM,
+    const int tet0, const int tet1, MeshBuilder* builder_M) {
+  // Initialize the plane with a non-zero-length normal vector
+  // and an arbitrary point.
+  Plane<T> equilibrium_plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
+  if (!CalcEquilibriumPlane(tet0, field0_M, tet1, field1_N, X_MN,
+                            &equilibrium_plane_M)) {
+    return;
+  }
+  // The normal points in the direction of increasing field_0 and decreasing
+  // field_1.
+  Vector3<T> polygon_nhat_M = equilibrium_plane_M.normal();
+  if (!IsPlaneNormalAlongPressureGradient(polygon_nhat_M, tet0, field0_M)) {
+    return;
+  }
+  Vector3<T> reverse_polygon_nhat_N = R_NM * (-polygon_nhat_M);
+  if (!IsPlaneNormalAlongPressureGradient(reverse_polygon_nhat_N, tet1,
+                                          field1_N)) {
+    return;
+  }
+  const std::vector<Vector3<T>> polygon_vertices_M = IntersectTetrahedra(
+      tet0, field0_M.mesh(), tet1, field1_N.mesh(), X_MN, equilibrium_plane_M);
 
-  // The computation will be in Frame F and then transformed to the world frame.
-  std::unique_ptr<MeshType> surface01_F;
-  std::unique_ptr<FieldType> field01_F;
-  std::vector<Vector3<T>> grad_field0_Fs;
-  std::vector<Vector3<T>> grad_field1_Fs;
-  IntersectFields<MeshType, MeshBuilder>(field0_F, bvh0_F, field1_G, bvh1_G,
-                                         X_FG, &surface01_F, &field01_F,
-                                         &grad_field0_Fs, &grad_field1_Fs);
+  if (polygon_vertices_M.size() < 3) return;
 
-  if (surface01_F == nullptr) return nullptr;
+  // Add the vertices to the builder_M (with corresponding pressure values)
+  // and construct index-based polygon representation.
+  std::vector<int> polygon_vertex_indices;
+  polygon_vertex_indices.reserve(polygon_vertices_M.size());
+  for (const auto& p_MV : polygon_vertices_M) {
+    polygon_vertex_indices.push_back(
+        builder_M->AddVertex(p_MV, field0_M.EvaluateCartesian(tet0, p_MV)));
+  }
+  // TODO(DamrongGuoy): Right now we pass the gradient of the volumetric
+  //  field for the gradient tangent to the polygon. Consider passing only
+  //  the tangential component without the normal component.
+  const int num_new_faces = builder_M->AddPolygon(
+      polygon_vertex_indices, polygon_nhat_M, field0_M.EvaluateGradient(tet0));
+
+  // PolyMeshBuilder makes one new polygonal face. TriMeshBuilder makes multiple
+  // new triangular faces.
+  for (int i = 0; i < num_new_faces; ++i) {
+    tet0_of_contact_polygon_.push_back(tet0);
+    tet1_of_contact_polygon_.push_back(tet1);
+  }
+}
+
+template <class MeshBuilder>
+void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
+    const math::RigidTransform<T>& X_WM, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<T>& X_WN,
+    std::unique_ptr<ContactSurface<T>>* contact_surface_W) {
+  const math::RigidTransform<T> X_MN = X_WM.InvertAndCompose(X_WN);
+
+  // The computation will be in Frame M and then transformed to the world frame.
+  std::unique_ptr<typename MeshBuilder::MeshType> surface01_M;
+  std::unique_ptr<typename MeshBuilder::FieldType> field01_M;
+  VolumeIntersector<MeshBuilder, Obb> volume_intersector;
+  volume_intersector.IntersectFields(field0_M, bvh0_M, field1_N, bvh1_N, X_MN,
+                                     &surface01_M, &field01_M);
+
+  if (surface01_M == nullptr) return;
+
+  const int num_contact_polygons = surface01_M->num_elements();
 
   // TODO(DamrongGuoy): Compute the mesh and field with the quantities
   //  expressed in World frame by construction so that we can delete these
   //  transforming methods.
-  surface01_F->TransformVertices(X_WF);
-  field01_F->Transform(X_WF);
+
+  // N.B. After this transformation, surface01_M and field01_M are expressed
+  // in World frame. We will violate the frame notations briefly.
+  surface01_M->TransformVertices(X_WM);
+  field01_M->Transform(X_WM);
+
   auto grad_field0_W = std::make_unique<std::vector<Vector3<T>>>();
-  grad_field0_W->reserve(grad_field0_Fs.size());
-  for (const Vector3<T>& grad_field0_F : grad_field0_Fs) {
-    grad_field0_W->emplace_back(X_WF.rotation() * grad_field0_F);
+  grad_field0_W->reserve(num_contact_polygons);
+  for (int i = 0; i < num_contact_polygons; ++i) {
+    const Vector3<T>& grad_field0_M =
+        field0_M.EvaluateGradient(volume_intersector.tet0_of_polygon(i));
+    grad_field0_W->emplace_back(X_WM.rotation() * grad_field0_M);
   }
   auto grad_field1_W = std::make_unique<std::vector<Vector3<T>>>();
-  grad_field1_W->reserve(grad_field1_Fs.size());
-  for (const Vector3<T>& grad_field1_F : grad_field1_Fs) {
-    grad_field1_W->emplace_back(X_WF.rotation() * grad_field1_F);
+  grad_field1_W->reserve(num_contact_polygons);
+  for (int i = 0; i < num_contact_polygons; ++i) {
+    const Vector3<T>& grad_field1_N =
+        field1_N.EvaluateGradient(volume_intersector.tet1_of_polygon(i));
+    grad_field1_W->emplace_back(X_WN.rotation() * grad_field1_N);
   }
 
-  // The contact surface is documented as having the normals pointing *out* of
-  // the second geometry and *into* the first geometry. This code creates a
-  // surface mesh with normals pointing out of field1's geometry into field0's
-  // geometry, so we make sure the ids are ordered so that the field1 is
-  // the second id.
-  return std::make_unique<ContactSurface<T>>(
-      id0, id1, std::move(surface01_F), std::move(field01_F),
+  // ContactSurface(id_first, id_second, mesh_W,...) requires that the face
+  // normals in `mesh_W` are:
+  //     - *out of* the second geometry and
+  //     - *into* the first geometry.
+  // This is the same convention that IntersectFields() create a mesh
+  // with normals in the direction of
+  //     - increasing pressure field0 (going *into* the first geometry) and
+  //     - decreasing pressure field1 (going *out* of the second geometry),
+  // so we create ContactSurface with the ids in the order of (id0, id1).
+  *contact_surface_W = std::make_unique<ContactSurface<T>>(
+      id0, id1, std::move(surface01_M), std::move(field01_M),
       std::move(grad_field0_W), std::move(grad_field1_W));
 }
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<T>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<T>& X_WG,
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
+    const math::RigidTransform<T>& X_WM, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<T>& X_WN,
     HydroelasticContactRepresentation representation) {
+  std::unique_ptr<ContactSurface<T>> contact_surface_W;
   if (representation == HydroelasticContactRepresentation::kTriangle) {
-    return IntersectCompliantVolumes<TriangleSurfaceMesh<T>, TriMeshBuilder<T>>(
-        id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG);
+    HydroelasticVolumeIntersector<TriMeshBuilder<T>>()
+        .IntersectCompliantVolumes(id0, field0_M, bvh0_M, X_WM, id1, field1_N,
+                                   bvh1_N, X_WN, &contact_surface_W);
   } else {
-    return IntersectCompliantVolumes<PolygonSurfaceMesh<T>, PolyMeshBuilder<T>>(
-        id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG);
+    HydroelasticVolumeIntersector<PolyMeshBuilder<T>>()
+        .IntersectCompliantVolumes(id0, field0_M, bvh0_M, X_WM, id1, field1_N,
+                                   bvh1_N, X_WN, &contact_surface_W);
   }
+  return contact_surface_W;
 }
 
 //----------------------------------------------------------
 // Template instantiations
 //----------------------------------------------------------
-
-// Triangle, double
-template void
-IntersectFields<TriangleSurfaceMesh<double>, TriMeshBuilder<double>>(
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-    const math::RigidTransform<double>& X_MN,
-    std::unique_ptr<TriangleSurfaceMesh<double>>* surface_01_M,
-    std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>>* e_01_M,
-    std::vector<Vector3<double>>* grad_e0_Ms,
-    std::vector<Vector3<double>>* grad_e1_Ms);
-// Polygon, double
-template void
-IntersectFields<PolygonSurfaceMesh<double>, PolyMeshBuilder<double>>(
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-    const math::RigidTransform<double>& X_MN,
-    std::unique_ptr<PolygonSurfaceMesh<double>>* surface_01_M,
-    std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>* e_01_M,
-    std::vector<Vector3<double>>* grad_e0_Ms,
-    std::vector<Vector3<double>>* grad_e1_Ms);
-// Triangle, AutoDiffXd
-template void
-IntersectFields<TriangleSurfaceMesh<AutoDiffXd>, TriMeshBuilder<AutoDiffXd>>(
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-    const math::RigidTransform<AutoDiffXd>& X_MN,
-    std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>>* surface_01_M,
-    std::unique_ptr<TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>*
-        e_01_M,
-    std::vector<Vector3<AutoDiffXd>>* grad_e0_Ms,
-    std::vector<Vector3<AutoDiffXd>>* grad_e1_Ms);
-// Polygon, AutoDiffXd
-template void
-IntersectFields<PolygonSurfaceMesh<AutoDiffXd>, PolyMeshBuilder<AutoDiffXd>>(
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-    const math::RigidTransform<AutoDiffXd>& X_MN,
-    std::unique_ptr<PolygonSurfaceMesh<AutoDiffXd>>* surface_01_M,
-    std::unique_ptr<PolygonSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>*
-        e_01_M,
-    std::vector<Vector3<AutoDiffXd>>* grad_e0_Ms,
-    std::vector<Vector3<AutoDiffXd>>* grad_e1_Ms);
-
-// Triangle, double
-template std::unique_ptr<ContactSurface<double>>
-IntersectCompliantVolumes<TriangleSurfaceMesh<double>, TriMeshBuilder<double>>(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<double>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<double>& X_WG);
-// Polygon, double
-template std::unique_ptr<ContactSurface<double>>
-IntersectCompliantVolumes<PolygonSurfaceMesh<double>, PolyMeshBuilder<double>>(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<double>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<double>& X_WG);
-// Triangle, AutoDiffXd
-template std::unique_ptr<ContactSurface<AutoDiffXd>> IntersectCompliantVolumes<
-    TriangleSurfaceMesh<AutoDiffXd>, TriMeshBuilder<AutoDiffXd>>(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<AutoDiffXd>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<AutoDiffXd>& X_WG);
-// Polygon, AutoDiffXd
-template std::unique_ptr<ContactSurface<AutoDiffXd>> IntersectCompliantVolumes<
-    PolygonSurfaceMesh<AutoDiffXd>, PolyMeshBuilder<AutoDiffXd>>(
-    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<AutoDiffXd>& X_WF, GeometryId id1,
-    const VolumeMeshFieldLinear<double, double>& field1_G,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-    const math::RigidTransform<AutoDiffXd>& X_WG);
+// These instantiations are for Hydroelastics.
+template class HydroelasticVolumeIntersector<PolyMeshBuilder<double>>;
+template class HydroelasticVolumeIntersector<TriMeshBuilder<double>>;
+template class HydroelasticVolumeIntersector<PolyMeshBuilder<AutoDiffXd>>;
+template class HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>>;
+// This instantiation is for Deformables.
+template class VolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcEquilibriumPlane<T>, &IntersectTetrahedra<T>,

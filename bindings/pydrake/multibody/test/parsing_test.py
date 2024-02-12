@@ -7,7 +7,9 @@ from pydrake.multibody.parsing import (
     AddModel,
     AddModelInstance,
     AddWeld,
+    FlattenModelDirectives,
     GetScopedFrameByName,
+    GetScopedFrameByNameMaybe,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ModelDirective,
@@ -24,7 +26,6 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
@@ -110,37 +111,6 @@ class TestParsing(unittest.TestCase):
             result = dut(parser, file_name=file_name)
             self.assertIsInstance(result, list)
             self.assertIsInstance(result[0], ModelInstanceIndex)
-
-    def test_parser_file_deprecated(self):
-        sdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        urdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
-        for dut, file_name, model_name, result_dim in (
-                (Parser.AddModelFromFile, sdf_file, None, int),
-                (Parser.AddModelFromFile, sdf_file, "", int),
-                (Parser.AddModelFromFile, sdf_file, "a", int),
-                (Parser.AddModelFromFile, urdf_file, None, int),
-                (Parser.AddModelFromFile, urdf_file, "", int),
-                (Parser.AddModelFromFile, urdf_file, "a", int),
-                (Parser.AddAllModelsFromFile, sdf_file, None, list),
-                (Parser.AddAllModelsFromFile, urdf_file, None, list),
-                ):
-            plant = MultibodyPlant(time_step=0.01)
-            parser = Parser(plant=plant)
-
-            with catch_drake_warnings(expected_count=1):
-                if model_name is None:
-                    result = dut(parser, file_name=file_name)
-                else:
-                    result = dut(parser, file_name=file_name,
-                                 model_name=model_name)
-            if result_dim is int:
-                self.assertIsInstance(result, ModelInstanceIndex)
-            else:
-                assert result_dim is list
-                self.assertIsInstance(result, list)
-                self.assertIsInstance(result[0], ModelInstanceIndex)
 
     def test_parser_string(self):
         """Checks parsing from a string (not file_name)."""
@@ -242,6 +212,7 @@ class TestParsing(unittest.TestCase):
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
         GetScopedFrameByName(plant, "world")
+        GetScopedFrameByNameMaybe(plant, "world")
 
     def _make_plant_parser_directives(self):
         """Returns a tuple (plant, parser, directives) for later testing."""
@@ -263,6 +234,15 @@ directives:
     file: base.sdf
 """
         LoadModelDirectivesFromString(model_directives=str)
+
+    def test_flatten_model_directives(self):
+        (plant, parser, directives) = self._make_plant_parser_directives()
+        added_models = ProcessModelDirectives(
+            directives=directives, parser=parser)
+        flat_directives = FlattenModelDirectives(
+            directives=directives, package_map=parser.package_map()
+        )
+        self.assertGreater(len(flat_directives.directives), 0)
 
     def test_process_model_directives(self):
         """Check the Process... overload using a Parser."""

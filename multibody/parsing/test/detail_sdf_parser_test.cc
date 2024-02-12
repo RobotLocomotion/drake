@@ -62,6 +62,12 @@ using CollisionPair = SortedPair<std::string>;
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
+// Fixture to add test coverage for the SDF parser. Some features such as mimic
+// joints and ball constraints are only supported in discrete mode when using
+// the SAP solver. For testing such features, we set a model approximation that
+// uses the SAP solver. More specifically, we call
+// set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
+// MultibodyPlant used for testing before parsing.
 class SdfParserTest : public test::DiagnosticPolicyTestBase{
  public:
   SdfParserTest() {
@@ -278,9 +284,9 @@ TEST_F(SdfParserTest, ModelInstanceTest) {
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot1));
   EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot2));
 
-  const Body<double>& acrobot1_link1 =
+  const RigidBody<double>& acrobot1_link1 =
       plant_.GetBodyByName("Link1", acrobot1);
-  const Body<double>& acrobot2_link1 =
+  const RigidBody<double>& acrobot2_link1 =
       plant_.GetBodyByName("Link1", acrobot2);
   EXPECT_NE(acrobot1_link1.index(), acrobot2_link1.index());
   EXPECT_EQ(acrobot1_link1.model_instance(), acrobot1);
@@ -988,6 +994,283 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
       ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
       " frame name 'nesQQQted::b' in <drake:child> within model instance"
       " 'good'.* does not exist.*"));
+}
+
+TEST_F(SdfParserTest, MimicSuccessfulParsing) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");;
+  // Revolute joint with mimic
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AC"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AB"));
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AC");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AB");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(spec.gear_ratio, 1);
+  EXPECT_EQ(spec.offset, 0.5);
+}
+
+TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <drake:mimic joint='joint_AC' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");;
+  // Revolute joint with mimic
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AB"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AC"));
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AB");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AC");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(spec.gear_ratio, 1);
+  EXPECT_EQ(spec.offset, 0.5);
+}
+
+TEST_F(SdfParserTest, MimicNoSap) {
+  plant_.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(
+          ".*Mimic elements are currently only supported by MultibodyPlant "
+          "with a discrete time step and using DiscreteContactSolver::kSap."));
+}
+
+TEST_F(SdfParserTest, MimicNoJoint) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'joint' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicBadJoint) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='nonexistent' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element specifies joint "
+                   "'nonexistent' which does not exist."));
+}
+
+TEST_F(SdfParserTest, MimicSameJoint) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AB' drake:mimic element specifies joint "
+                   "'joint_AB'. Joints cannot mimic themselves."));
+}
+
+TEST_F(SdfParserTest, MimicNoMultiplier) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'multiplier' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicNoOffset) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'offset' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicOnlyOneDOFJoint) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='fixed'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='fixed'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*Drake only supports the drake:mimic element for "
+                           "single-dof joints.*"));
 }
 
 // Verify error when no model is found.
@@ -1826,21 +2109,21 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
 }
 
 // Reports if the frame with the given id has a geometry with the given role
-// whose name is the same as what ShapeName(ShapeType{}) would produce.
+// whose name is the same as what ShapeType{}.type_name() would produce.
 template <typename ShapeType>
 ::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
                                          geometry::Role role,
                                          const SceneGraph<double>& scene_graph,
                                          const ShapeType& shape) {
   const auto& inspector = scene_graph.model_inspector();
-  const std::string name = geometry::ShapeName(shape).name();
+  const std::string name{shape.type_name()};
   try {
     // Note: MBP prepends the model index to the geometry name; in this case
     // that model instance  name is "test_robot".
     const geometry::GeometryId geometry_id =
         inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
-    const std::string shape_type =
-        geometry::ShapeName(inspector.GetShape(geometry_id)).name();
+    const std::string_view shape_type =
+        inspector.GetShape(geometry_id).type_name();
     if (shape_type != name) {
       return ::testing::AssertionFailure()
         << "Geometry with role " << role << " has wrong shape type."
@@ -1917,7 +2200,7 @@ TEST_F(SdfParserTest, BallConstraint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   // Test successful parsing.
   ParseTestString(R"""(
@@ -1959,7 +2242,7 @@ TEST_F(SdfParserTest, BallConstraintMissingBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -1985,7 +2268,7 @@ TEST_F(SdfParserTest, BallConstraintMissingPoint) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2011,7 +2294,7 @@ TEST_F(SdfParserTest, BallConstraintNonExistentBody) {
 
   // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
   // Add coverage for other solvers and continuous mode when available.
-  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
 
   ParseTestString(R"""(
     <world name='World'>
@@ -2236,6 +2519,58 @@ TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
 
     EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
     EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+}
+
+TEST_F(SdfParserTest, ControllerGainsParsing) {
+  AddSceneGraph();
+  // Common SDF string with format options for the custom tag.
+  constexpr const char* test_string = R"""(
+    <model name='ControllerGainsModel_{1}'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        {0}
+      </joint>
+    </model>)""";
+
+  // Test successful parsing of both attributes.
+  {
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains p='10000.0' d='100.0' />",
+        "specify_both"));
+
+    const ModelInstanceIndex model =
+        plant_.GetModelInstanceByName("ControllerGainsModel_specify_both");
+    const JointActuator<double>& actuator =
+        plant_.GetJointActuatorByName("revolute_AB", model);
+
+    EXPECT_EQ(actuator.get_controller_gains().p, 10000.0);
+    EXPECT_EQ(actuator.get_controller_gains().d, 100.0);
+  }
+  // Test missing 'p' attribute.
+  {
+    const std::string expected_message =
+        ".*Unable to find the 'p' attribute.*";
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains d='100.0' />", "missing_p"));
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(expected_message));
+  }
+  // Test missing 'd' attribute.
+  {
+    const std::string expected_message =
+        ".*Unable to find the 'd' attribute.*";
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains p='10000.0'/>", "missing_d"));
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(expected_message));
   }
 }
 
@@ -3107,9 +3442,9 @@ TEST_F(SdfParserTest, WorldJoint) {
   EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
   EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
 
-  const Body<double>& parent_link =
+  const RigidBody<double>& parent_link =
       plant_.GetBodyByName("L_P", parent_instance);
-  const Body<double>& child_link =
+  const RigidBody<double>& child_link =
       plant_.GetBodyByName("L_C", child_instance);
   EXPECT_NE(parent_link.index(), child_link.index());
   EXPECT_EQ(parent_link.model_instance(), parent_instance);

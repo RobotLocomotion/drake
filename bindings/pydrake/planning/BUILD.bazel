@@ -36,13 +36,13 @@ drake_pybind_library(
         "planning_py.cc",
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
+        "planning_py_graph_algorithms.cc",
         "planning_py_robot_diagram.cc",
         "planning_py_trajectory_optimization.cc",
         "planning_py_visibility_graph.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
@@ -75,6 +75,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "collision_checker_trace_test",
+    data = [
+        "//multibody:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+    ],
+    num_threads = 2,
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
     name = "robot_diagram_test",
     data = [
         "//manipulation/models/iiwa_description:models",
@@ -90,6 +102,15 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/examples",
+    ],
+)
+
+drake_py_unittest(
+    name = "graph_algorithms_test",
+    deps = [
+        ":planning",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
 

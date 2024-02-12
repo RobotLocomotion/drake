@@ -1,27 +1,44 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_test")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
-drake_cc_test(
-    name = "clarabel_example_lp",
-    srcs = select({
-        "//tools:with_clarabel": [
-            "test/clarabel_example_lp.cc",
-        ],
-        "//conditions:default": [
-            "test/noop.cc",
-        ],
-    }),
-    deps = select({
-        "//tools:with_clarabel": [
-            "@clarabel_cpp_internal//:clarabel_cpp",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "test/clarabel_example_lp.cc",
-        "test/noop.cc",
+drake_cc_library(
+    name = "serialize",
+    hdrs = [":serialize.h"],
+    internal = True,
+    visibility = ["//solvers:__pkg__"],
+    deps = [
+        "//common:name_value",
     ],
 )
+
+drake_py_binary(
+    name = "gen_serialize",
+    srcs = ["gen_serialize.py"],
+    data = [
+        "@clarabel_cpp_internal//:include/cpp/DefaultSettings.h",
+    ],
+    tags = ["manual"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+genrule(
+    name = "gen_serialize_h",
+    outs = ["gen_serialize.h"],
+    cmd = "$(execpath :gen_serialize) --output=$@",
+    tags = ["manual"],
+    tools = [":gen_serialize"],
+)
+
+drake_py_unittest(
+    name = "lint_test",
+    data = [
+        ":gen_serialize.h",
+        ":serialize.h",
+    ],
+    tags = ["lint"],
+)
+
+add_lint_tests()

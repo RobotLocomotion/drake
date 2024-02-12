@@ -4,6 +4,7 @@
 import functools
 import operator
 import typing
+import sys
 
 
 def logical_and(*formulas):
@@ -30,10 +31,10 @@ _symbolic_sympy_defer = None
 
 
 def to_sympy(
-    x: typing.Union[float, bool, Variable, Expression, Formula],
+    x: typing.Union[float, int, bool, Variable, Expression, Formula],
     *,
     memo: typing.Dict = None
-) -> typing.Union[float, bool, "sympy.Expr"]:
+) -> typing.Union[float, int, bool, "sympy.Expr"]:
     """Converts a pydrake object to the corresponding SymPy Expr.
 
     Certain expressions are not supported and will raise NotImplementedError.
@@ -63,10 +64,10 @@ def to_sympy(
 
 
 def from_sympy(
-    x: typing.Union[float, bool, "sympy.Expr"],
+    x: typing.Union[float, int, bool, "sympy.Expr"],
     *,
     memo: typing.Dict = None
-) -> typing.Union[float, bool, Variable, Expression, Formula]:
+) -> typing.Union[float, int, bool, Variable, Expression, Formula]:
     """Converts a SymPy Expr to the corresponding pydrake object.
 
     Certain expressions are not supported and will raise NotImplementedError.
@@ -92,3 +93,10 @@ def from_sympy(
     if memo is None:
         memo = dict()
     return _symbolic_sympy_defer._from_sympy(x, memo=memo)
+
+
+# We must be able to do `from pydrake.symbolic import _symbolic_sympy` so we
+# need `pydrake.symbolic` to be a Python package, not merely a module. (See
+# https://docs.python.org/3/tutorial/modules.html for details.) The way to
+# designate something as a package is to define its `__path__` attribute.
+__path__ = [sys.modules["pydrake"].__path__[0] + "/symbolic"]

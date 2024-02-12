@@ -45,6 +45,9 @@ class FemSolver {
    matrix of the model at the next time step.
    @param[in] prev_state
      The state of the FEM model evaluated at the previous time step.
+   @param[in] plant_data
+     Data from the MultibodyPlant that owns the FemModel associated with this
+     FemSolver at construction.
    @param[in] nonparticipating_vertices
      The vertices of the FEM model that participate in constraint computation,
      used to compute the Schur complement of the tangent matrix of the FEM
@@ -53,10 +56,12 @@ class FemSolver {
    solver converges or -1 if the solver fails to converge.
    @pre All entries in `nonparticipating_vertices` are in
    [0, prev_state.num_nodes()).
+   @note External forces are always evaluated explicitly at the previous time
+   step regardless of the time integration scheme used.
    @throws std::exception if the input `prev_state` is incompatible with the FEM
    model solved by this solver. */
   int AdvanceOneTimeStep(
-      const FemState<T>& prev_state,
+      const FemState<T>& prev_state, const FemPlantData<T>& plant_data,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* Returns the state of the FEM model after last invocation of
@@ -157,10 +162,14 @@ class FemSolver {
    @param[in] nonparticipating_vertices
      The vertices of the FEM model that participate in the constraint
      computation, used to compute the Schur complement of the tangent matrix.
+   @param[in] plant_data
+     Data from the MultibodyPlant that owns the FemModel associated with this
+     FemSolver at construction.
    @pre the FEM model is nonlinear.
    @returns the number of iterations it takes for the solver to converge or -1
    if the solver fails to converge. */
   int SolveNonlinearModel(
+      const FemPlantData<T>& plant_data,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* For a linear FEM model, solves for the equilibrium FEM state z such that
@@ -168,12 +177,16 @@ class FemSolver {
    complement of the tangent matrix of the FEM model at that state z. The
    results are written to the member variable
    `next_state_and_schur_complement_`.
+   @param[in] plant_data
+     Data from the MultibodyPlant that owns the FemModel associated with this
+     FemSolver at construction.
    @param[in] nonparticipating_vertices
      The vertices of the FEM model that participate in constraint computation,
      used to compute the Schur complement of the tangent matrix.
    @returns 0 if the `input` state is already at equilibrium, 1 otherwise.
    @pre the FEM model is linear. */
   int SolveLinearModel(
+      const FemPlantData<T>& plant_data,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* The FEM model being solved by `this` solver. */

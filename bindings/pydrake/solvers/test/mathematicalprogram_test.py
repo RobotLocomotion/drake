@@ -138,7 +138,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(result.get_x_val(), x_expected))
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionFound)
-        self.assertEqual(result.get_optimal_cost(), 3.0)
+        self.assertAlmostEqual(result.get_optimal_cost(), 3.0, places=7)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
         self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
@@ -538,11 +538,18 @@ class TestMathematicalProgram(unittest.TestCase):
         S = prog.NewSymmetricContinuousVariables(3, "S")
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
+        minor_indices = {0, 2}
         self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
         self.assertEqual(
             prog.positive_semidefinite_constraints()[0].evaluator().
             matrix_rows(), 3)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S, minor_indices)
+        self.assertEqual(len(prog.positive_semidefinite_constraints()), 2)
+        self.assertEqual(
+            prog.positive_semidefinite_constraints()[1].evaluator().
+            matrix_rows(), 2)
         prog.AddPositiveSemidefiniteConstraint(S+S)
+        prog.AddPrincipalSubmatrixIsPsdConstraint(S+S, minor_indices)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S+S)
@@ -802,32 +809,35 @@ class TestMathematicalProgram(unittest.TestCase):
         lb = [0., 0.]
         ub = [1., 1.]
 
-        A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1, 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 2))
-
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
-        prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
-                                 vars=x)
-        c1 = prog.AddLinearConstraint(A=A_sparse,
-                                      lb=np.zeros(2),
-                                      ub=np.ones(2),
-                                      vars=x)
+
+        A_dense = np.eye(2)
+        dense1 = prog.AddLinearConstraint(
+            A=A_dense, lb=np.zeros(2), ub=np.ones(2), vars=x)
+        # Ensure that the dense version of the binding has been called.
+        self.assertTrue(dense1.evaluator().is_dense_A_constructed())
+
+        A_sparse = scipy.sparse.csc_matrix(A_dense)
+        sparse1 = prog.AddLinearConstraint(
+            A=A_sparse, lb=np.zeros(2), ub=np.ones(2), vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c1.evaluator().is_dense_A_constructed())
+        self.assertFalse(sparse1.evaluator().is_dense_A_constructed())
         prog.AddLinearConstraint(a=[1, 1], lb=0, ub=0, vars=x)
         prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
         prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
         prog.AddLinearConstraint(f=(x[0] == 0))
 
-        prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
-                                         vars=x)
-        c2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
-                                              vars=x)
+        dense2 = prog.AddLinearEqualityConstraint(
+            Aeq=A_dense, beq=np.zeros(2), vars=x)
+        # Ensure that the dense version of the binding has been called.
+        self.assertTrue(dense2.evaluator().is_dense_A_constructed())
+
+        sparse2 = prog.AddLinearEqualityConstraint(
+            Aeq=A_sparse, beq=np.zeros(2), vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c2.evaluator().is_dense_A_constructed())
+        self.assertFalse(sparse2.evaluator().is_dense_A_constructed())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)

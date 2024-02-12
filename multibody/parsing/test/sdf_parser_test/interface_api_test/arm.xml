@@ -1,4 +1,5 @@
 <mujoco model="arm">
+  <compiler eulerseq="XYZ"/>
   <worldbody>
     <body name="L1">
       <geom type="sphere" size="0.4"/>

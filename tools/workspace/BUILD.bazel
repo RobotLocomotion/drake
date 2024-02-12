@@ -43,6 +43,7 @@ drake_py_binary(
     srcs = ["vendor_cxx.py"],
     visibility = [
         # These should all be of the form "@foo_internal//:__subpackages__".
+        "@clarabel_cpp_internal//:__subpackages__",
         "@clp_internal//:__subpackages__",
         "@coinutils_internal//:__subpackages__",
         "@conex_internal//:__subpackages__",
@@ -118,10 +119,16 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "conex_internal",
     "drake_visualizer",
     "gflags",
-    "optitrack_driver",
+    "libjpeg_turbo_internal",
 ]] + select({
     "//conditions:default": ["@csdp_internal//:install"],
     "//tools:no_csdp": [],
+}) + select({
+    "//conditions:default": [
+        "//tools/workspace/crate_universe:install",
+        "@clarabel_cpp_internal//:install",
+    ],
+    "//tools:no_clarabel": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],

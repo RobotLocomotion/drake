@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
@@ -156,29 +157,20 @@ GTEST_TEST(ThreadSafetyTest, OpenGlContext) {
   ASSERT_EQ(num_errors, 0);
 }
 
-/* Helper for variant resolution. */
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-// explicit deduction guide (not needed as of C++20)
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
 /* Adds the given `shape` as an *anchored* geometry to the given `engine` at the
  given position `p_WS` with the given `diffuse` definition. */
 void AddShape(const Shape& shape, const Vector3d& p_WS,
               std::variant<Rgba, std::string> diffuse, RenderEngine* engine) {
   PerceptionProperties material;
   material.AddProperty("label", "id", render::RenderLabel::kDontCare);
-  std::visit(overloaded{[&material](const Rgba& rgba) {
-                          material.AddProperty("phong", "diffuse", rgba);
-                        },
-                        [&material](const std::string& diffuse_map) {
-                          material.AddProperty("phong", "diffuse_map",
-                                               diffuse_map);
-                        }},
-             diffuse);
+  visit_overloaded<void>(  // BR
+      overloaded{[&material](const Rgba& rgba) {
+                   material.AddProperty("phong", "diffuse", rgba);
+                 },
+                 [&material](const std::string& diffuse_map) {
+                   material.AddProperty("phong", "diffuse_map", diffuse_map);
+                 }},
+      diffuse);
   engine->RegisterVisual(GeometryId::get_new_id(), shape, material,
                          math::RigidTransformd(p_WS), false /* needs update */);
 }

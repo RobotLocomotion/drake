@@ -1,74 +1,85 @@
 load("//tools/install:install.bzl", "install")
 load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_unittest",
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
+    "EXTRA_PYBIND_COPTS",
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
-    "//bindings:__subpackages__",
+    "//bindings/pydrake:__pkg__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_pybind_library(
-    name = "symbolic",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:math_operators_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:eigen_pybind",
-    ],
-    cc_so_name = "__init__",
-    cc_srcs = [
-        "symbolic_py.h",
-        "symbolic_py.cc",
+# N.B. The `pydrake.symbolic` module is part of the root module dependency
+# cycle. Refer to bindings/pydrake/common/module_cycle.md for details.
+
+drake_cc_library(
+    name = "symbolic_py",
+    srcs = [
         "symbolic_py_unapply.h",
         "symbolic_py_unapply.cc",
         # TODO(jwnimmer-tri) Split the monolith into pieces.
         "symbolic_py_monolith.cc",
     ],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        "//bindings/pydrake:module_py",
-        "//bindings/pydrake/common:compatibility_py",
+    hdrs = [
+        "symbolic_py.h",
     ],
-    py_srcs = [
+    copts = EXTRA_PYBIND_COPTS,
+    declare_installed_headers = False,
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
+    ],
+    deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:math_operators_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+        "@pybind11",
+    ],
+)
+
+drake_py_library(
+    name = "symbolic_extra",
+    srcs = [
         "_symbolic_extra.py",
         "_symbolic_sympy.py",
+    ],
+    visibility = [
+        "//bindings/pydrake/common:__pkg__",
     ],
 )
 
 install(
     name = "install",
-    targets = [":symbolic"],
+    targets = [":symbolic_extra"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs([":symbolic"]),
 )
 
 drake_py_unittest(
     name = "symbolic_test",
     deps = [
-        ":symbolic",
-        "//bindings/pydrake/common:containers_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/math:algebra_test_util_py",
+        "//bindings/pydrake/common/test_utilities:algebra_test_util_py",
     ],
 )
 
 drake_py_unittest(
     name = "sympy_test",
     deps = [
-        ":symbolic",
+        "//bindings/pydrake:module_py",
         # We'll run the unit test against the latest (pinned) version of SymPy,
         # even if the host system has a different version installed already.
         "@mpmath_py_internal//:mpmath_py",

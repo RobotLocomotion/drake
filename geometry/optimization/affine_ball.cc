@@ -2,7 +2,9 @@
 
 #include <vector>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -15,6 +17,8 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
+using std::sqrt;
+using symbolic::Expression;
 using symbolic::Variable;
 
 AffineBall::AffineBall() : AffineBall(MatrixXd(0, 0), VectorXd(0)) {}
@@ -57,8 +61,37 @@ double volume_of_unit_sphere(int dim) {
 
 }  // namespace
 
+AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol) {
+  DRAKE_THROW_UNLESS(!points.hasNaN());
+  DRAKE_THROW_UNLESS(points.allFinite());
+  DRAKE_THROW_UNLESS(points.rows() >= 1);
+  DRAKE_THROW_UNLESS(points.cols() >= 1);
+  const int dim = points.rows();
+
+  AffineSubspace ah(VPolytope(points), rank_tol);
+  const int rank = ah.AffineDimension();
+  Eigen::MatrixXd points_local = ah.ToLocalCoordinates(points);
+
+  // Compute circumscribed ellipsoid in local coordinates
+  const Hyperellipsoid hyperellipsoid_local =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points_local,
+                                                          rank_tol);
+  const AffineBall affineball_local(hyperellipsoid_local);
+
+  // Lift the ellipsoid {Bu+center| |u|₂ ≤ 1} to the original coordinate system
+  // i.e. the set {ABu + (Ac+t) | |u|₂ ≤ 1}
+  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(dim, dim);
+  A_full.leftCols(rank) = ah.basis() * affineball_local.B();
+  Eigen::VectorXd center_full =
+      ah.ToGlobalCoordinates(affineball_local.center());
+
+  return AffineBall(A_full, center_full);
+}
+
 double AffineBall::DoCalcVolume() const {
-  return volume_of_unit_sphere(ambient_dimension()) * B_.determinant();
+  return volume_of_unit_sphere(ambient_dimension()) *
+         std::abs(B_.determinant());
 }
 
 AffineBall AffineBall::MakeAxisAligned(
@@ -79,6 +112,51 @@ AffineBall AffineBall::MakeHypersphere(
 AffineBall AffineBall::MakeUnitBall(int dim) {
   DRAKE_THROW_UNLESS(dim >= 0);
   return AffineBall(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
+}
+
+AffineBall AffineBall::MakeAffineBallFromLineSegment(
+    const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon) {
+  DRAKE_THROW_UNLESS(x_1.size() == x_2.size());
+  DRAKE_THROW_UNLESS(epsilon >= 0.0);
+  const double length = (x_1 - x_2).norm();
+  const double kTolerance = 1e-9;
+  if (length < kTolerance) {
+    throw std::runtime_error(fmt::format(
+        "AffineBall:MakeAffineBallFromLineSegment: x_1 and x_2 are the same "
+        "point (distance: {} < tolerance: {}).",
+        length, kTolerance));
+  }
+  const int dim = x_1.size();
+  const Eigen::VectorXd center = (x_1 + x_2) / 2.0;
+  const Eigen::VectorXd r_0 = (x_1 - x_2) / length;
+  // Construct r_1, ..., r_{dim-1} such that r_0, ..., r_{dim-1} are orthonormal
+  // and r_0 is parallel to x_1 - x_2.
+  // This is similar to the Gram-Schmidt process
+  // (see https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process)
+  // with the small modification that we construct an orthonormal basis
+  // from u_0, e_0, e_1, ..., e_{dim-1}, where e_i is the i-th standard basis
+  // vector, and know that the result will have one less vector than the input.
+  Eigen::MatrixXd I = Eigen::MatrixXd::Identity(dim, dim);
+  Eigen::MatrixXd R = Eigen::MatrixXd::Zero(dim, dim);
+  R.col(0) = r_0;
+  int k = 0;
+  int i = 1;
+  while (k < dim) {
+    Eigen::VectorXd v = I.col(k);
+    for (int j = 0; j < i; ++j) {
+      v -= R.col(j)(k) * R.col(j);
+    }
+    if (v.norm() > 1e-9) {
+      R.col(i) = v.normalized();
+      ++i;
+    }
+    ++k;
+  }
+  DRAKE_DEMAND(i == dim);
+  Eigen::MatrixXd scale_matrix = epsilon * Eigen::MatrixXd::Identity(dim, dim);
+  scale_matrix(0, 0) = length / 2.0;
+  return AffineBall(R * scale_matrix, center);
 }
 
 std::unique_ptr<ConvexSet> AffineBall::DoClone() const {
