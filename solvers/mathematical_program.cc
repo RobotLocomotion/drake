@@ -1146,6 +1146,30 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return AddConstraint(constraint, symmetric_matrix_var);
 }
 
+Binding<LinearMatrixInequalityConstraint> AddPositiveSemidefiniteConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+  DRAKE_THROW_UNLESS(e.rows() == e.cols());
+  DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
+  Eigen::MatrixXd A;
+  Eigen::VectorXd b;
+  VectorXDecisionVariable variables;
+  symbolic::DecomposeAffineExpressions(
+      Eigen::Map<const VectorX<symbolic::Expression>>(
+          MatrixX<symbolic::Expression>(e.triangularView<Eigen::Lower>()).data(),
+          (e.rows() * (e.rows() + 1)) / 2),
+      &A, &b, &variables);
+  // A*variables + b represents the lower triangular part of the matrix which we
+  // want to make Psd. At this point, we write this as a standard form Lmi.
+   vector<Eigen::Ref<const Eigen::MatrixXd>> F;
+   F.reserve(A.rows() +1);
+   F.push_back(math::ToSymmetricMatrixFromLowerTriangularColumns(b));
+   for(int i = 0; i < A.cols(); ++i){
+     F.push_back(math::ToSymmetricMatrixFromLowerTriangularColumns(A.col(i)));
+   }
+   auto constraint = make_shared<LinearMatrixInequalityConstraint>(F);
+   return AddConstraint(constraint, variables);
+}
+
 Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
@@ -1156,7 +1180,7 @@ MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
       math::ExtractPrincipalSubmatrix(symmetric_matrix_var, minor_indices));
 }
 
-Binding<PositiveSemidefiniteConstraint>
+Binding<LinearMatrixInequalityConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
     const std::set<int>& minor_indices) {
