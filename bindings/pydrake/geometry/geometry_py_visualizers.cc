@@ -174,8 +174,17 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.MeshcatParams;
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
-    cls  // BR
-        .def(ParamInit<Class>());
+    // MeshcatParams::PropertyTuple
+    {
+      using Nested = MeshcatParams::PropertyTuple;
+      constexpr auto& nested_doc = doc.MeshcatParams.PropertyTuple;
+      py::class_<Nested> nested(cls, "PropertyTuple", nested_doc.doc);
+      nested.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&nested, nested_doc);
+      DefReprUsingSerialize(&nested);
+      DefCopyAndDeepCopy(&nested);
+    }
+    cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
