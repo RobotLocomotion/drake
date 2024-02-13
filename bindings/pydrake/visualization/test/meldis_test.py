@@ -17,6 +17,7 @@ import hashlib
 import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -33,6 +34,7 @@ from drake import (
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
+    MeshcatParams,
     Role,
 )
 from pydrake.lcm import (
@@ -626,9 +628,35 @@ class TestMeldis(unittest.TestCase):
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
 
+    def test_args_precedence(self):
+        """Checks that the "kwargs wins" part of our API contract is met.
+        """
+        # When bad MeshcatParams are used Meldis rejects them, but good kwargs
+        # can override them and win (no errors).
+        bad_host = MeshcatParams(host="8.8.8.8")
+        bad_port = MeshcatParams(port=1)
+        with self.assertRaises(BaseException):
+            mut.Meldis(meshcat_params=bad_host)
+        with self.assertRaises(BaseException):
+            mut.Meldis(meshcat_params=bad_port)
+        mut.Meldis(meshcat_params=bad_host, meshcat_host="localhost")
+        mut.Meldis(meshcat_params=bad_port, meshcat_port=0)
+
     def test_command_line_browser_names(self):
         """Sanity checks our webbrowser names logic. The objective is to return
         some kind of a list, without crashing.
         """
         names = pydrake.visualization.meldis._available_browsers()
         self.assertIsInstance(names, list)
+
+    def test_command_meshcat_params(self):
+        """Confirm that the params plumbing works by feeding in bad params and
+        seeing a validation error be spit out.
+        """
+        main = pydrake.visualization.meldis._main
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "meshcat_params.yaml"
+            path.write_text("{ port: 1 }", encoding="utf-8")
+            args = [f"--meshcat-params={path}"]
+            with self.assertRaisesRegex(BaseException, "port.*>.*1024"):
+                main(args=args)
