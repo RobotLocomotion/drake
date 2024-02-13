@@ -139,7 +139,7 @@ std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
                 gltf_filename.string(), e.what());
     return assets;
   }
-  // In glTF, a data:// URI can only appear in two places:
+  // In glTF 2.0, URIs can only appear in two places:
   //  "images": [ { "uri": "some.png" } ]
   //  "buffers": [ { "uri": "some.bin", "byteLength": 1024 } ]
   bool edited = false;

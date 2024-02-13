@@ -49,7 +49,7 @@ GTEST_TEST(MeshcatInternalTest, UuidGenerator) {
 GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
   // Load a glTF that has exactly one *bundled* asset.
   const std::string gltf_filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/cube.gltf");
+      FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf");
   std::string gltf_contents = ReadFileOrThrow(gltf_filename);
   const size_t orig_size = gltf_contents.size();
 
