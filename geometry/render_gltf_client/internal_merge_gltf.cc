@@ -6,9 +6,11 @@
 #include <string>
 #include <utility>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -199,6 +201,33 @@ void MergeExtrasAndExtensions(json* j1, json&& j2, ContainerType container_type,
   MergeBlobs(j1, std::move(j2), "extensions", container_type, j2_path, record);
 }
 
+// If `item_inout` has a field named `uri` and it is not a `data:` URI, replaces
+// the field's value with a base64-encoded `data:` URI.
+//
+// In glTF 2.0, URIs can only appear in two places:
+//  "images": [ { "uri": "some.png" } ]
+//  "buffers": [ { "uri": "some.bin", "byteLength": 1024 } ]
+//
+// When merging a glTF, we expect that our images- and buffers-handling logic
+// must call this function as a subroutine.
+void MaybeEmbedDataUri(nlohmann::json* item_inout,
+                       const std::filesystem::path& base_path) {
+  DRAKE_DEMAND(item_inout != nullptr);
+  nlohmann::json& item = *item_inout;
+  if (!item.contains("uri")) {
+    return;
+  }
+  const std::string_view uri = item["uri"].template get<std::string_view>();
+  if (uri.substr(0, 5) == "data:") {
+    return;
+  }
+  const std::string content = ReadFileOrThrow(base_path / uri);
+  item["uri"] =
+      fmt::format("data:application/octet-stream;base64,{}",
+                  common_robotics_utilities::base64_helpers::Encode(
+                      std::vector<uint8_t>(content.begin(), content.end())));
+}
+
 }  // namespace
 
 MergeRecord::MergeRecord(std::filesystem::path initial_path) {
@@ -381,12 +410,13 @@ void MergeBufferViews(json* j1, json&& j2) {
   }
 }
 
-void MergeBuffers(json* j1, json&& j2) {
+void MergeBuffers(json* j1, json&& j2,
+                  const std::filesystem::path& j2_base_path) {
   if (j2.contains("buffers")) {
     json& buffers = (*j1)["buffers"];
-    for (auto& bv : j2["buffers"]) {
-      // Buffers can simply be copied over.
-      buffers.push_back(std::move(bv));
+    for (auto& buffer : j2["buffers"]) {
+      MaybeEmbedDataUri(&buffer, j2_base_path);
+      buffers.push_back(std::move(buffer));
     }
   }
 }
@@ -405,13 +435,15 @@ void MergeTextures(json* j1, json&& j2) {
   }
 }
 
-void MergeImages(json* j1, json&& j2) {
+void MergeImages(json* j1, json&& j2,
+                 const std::filesystem::path& j2_base_path) {
   if (j2.contains("images")) {
     json& images = (*j1)["images"];
     // Offsets to update used indices.
     const int buf_offset = ArraySize(*j1, "bufferViews");
     for (auto& image : j2["images"]) {
       MaybeOffsetNamedIndex(&image, "bufferView", buf_offset);
+      MaybeEmbedDataUri(&image, j2_base_path);
       images.push_back(std::move(image));
     }
   }
@@ -436,6 +468,7 @@ void MergeGltf(json* j1, json&& j2, const std::filesystem::path& j2_path,
   json& asset1 = (*j1)["asset"];
   json& asset2 = j2["asset"];
   DRAKE_DEMAND(!(asset1.is_null() || asset2.is_null()));
+  const std::filesystem::path j2_directory = j2_path.parent_path();
 
   asset1["generator"] = "Drake glTF merger";
   // TODO(SeanCurtis-TRI): We're not doing anything to the copyright. Should we?
@@ -457,10 +490,10 @@ void MergeGltf(json* j1, json&& j2, const std::filesystem::path& j2_path,
   MergeCameras(j1, std::move(j2));
   MergeAccessors(j1, std::move(j2));
   MergeTextures(j1, std::move(j2));
-  MergeImages(j1, std::move(j2));
+  MergeImages(j1, std::move(j2), j2_directory);
   MergeSamplers(j1, std::move(j2));
   MergeBufferViews(j1, std::move(j2));
-  MergeBuffers(j1, std::move(j2));
+  MergeBuffers(j1, std::move(j2), j2_directory);
   MergeExtensionsUsed(j1, std::move(j2));
   MergeExtensionsRequired(j1, std::move(j2));
 
