@@ -107,19 +107,19 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
-  /** Returns an inner approximation of `this`, aiming to use fewer 
+  /** Returns an inner approximation of `this`, aiming to use fewer
   faces.  Proceeds by incrementally translating faces inward and removing other
   faces that become redundant upon doing so.
-  @param min_v_ratio is a lower bound for the ratio of the volume of the 
+  @param min_v_ratio is a lower bound for the ratio of the volume of the
   returned inbody and the volume of `this`.
-  @param do_affine_transformation specifies whether to call 
-  OptimizeAffineTransformationInCircumbody(), to take an affine transformation 
-  of the inner approximation to maximize its volume.  The affine transformation 
-  is reverted if the resulting inner approximation violates conditions related  
+  @param do_affine_transformation specifies whether to call
+  OptimizeAffineTransformationInCircumbody(), to take an affine transformation
+  of the inner approximation to maximize its volume.  The affine transformation
+  is reverted if the resulting inner approximation violates conditions related
   to `points_to_contain` or `intersecting_polytopes`.
-  @param max_iterations is the maximum number of times to loop through all 
+  @param max_iterations is the maximum number of times to loop through all
   faces.
-  @param points_to_contain is an optional matrix whose columns are points that 
+  @param points_to_contain is an optional matrix whose columns are points that
   must be contained in the returned inbody.
   @param intersecting_polytopes is an optional list of HPolyhedrons that must
   intersect with the returned inbody.
@@ -142,25 +142,24 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   @pre All elements of `intersecting_polytopes` intersect with `this`.
   */
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
-    double min_v_ratio = 0.1, bool do_affine_transformation = true, 
-    int max_iterations = 10, 
-    const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
-    const std::vector<drake::geometry::optimization::HPolyhedron>& 
-    intersecting_polytopes = std::vector<HPolyhedron>(), 
-    bool keep_whole_intersection = false, 
-    double intersection_pad = 1e-4, 
-    int random_seed = 0) const;
+      double min_v_ratio = 0.1, bool do_affine_transformation = true,
+      int max_iterations = 10,
+      const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+      const std::vector<drake::geometry::optimization::HPolyhedron>&
+          intersecting_polytopes = std::vector<HPolyhedron>(),
+      bool keep_whole_intersection = false, double intersection_pad = 1e-4,
+      int random_seed = 0) const;
 
-  /** 
-  Solves a semi-definite program to compute the maximum-volume affine 
+  /**
+  Solves a semi-definite program to compute the maximum-volume affine
   transformation of `this`, subject to being a subset of `circumbody`,
-  and subject to the transformation matrix being positive 
+  and subject to the transformation matrix being positive
   semi-definite.  The latter condition is necessary for convexity of the
   program.
   @param circumbody is an HPolyhedron that must contain the returned inbody.
   @throws std::exception if the solver fails to solve the problem.*/
-  [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(const 
-      HPolyhedron& circumbody) const;
+  [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(
+      const HPolyhedron& circumbody) const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and

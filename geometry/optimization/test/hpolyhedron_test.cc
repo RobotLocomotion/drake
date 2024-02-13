@@ -1220,30 +1220,29 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
   EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
 }
 
-GTEST_TEST(HPolyhedronTest, 
-    SimplifyByIncrementalFaceTranslation) {
+GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation) {
   const int kNumFaces = 20;
   const int kDimension = 2;
   const double kConstraintTol = 1e-6;
   // Containment constraint needs higher tolerance after affine transformation.
   const double kAffineTransformationConstraintTol = 1e-4;
-  
+
   // Test simplification of `circumbody`.
   // Create a polygon in 2D with `kNumFaces` faces from unit circle tangents.
   MatrixXd A(kNumFaces, kDimension);
   for (int row = 0; row < kNumFaces; ++row) {
-    A.row(row) << std::cos(2 * M_PI * row / kNumFaces), 
+    A.row(row) << std::cos(2 * M_PI * row / kNumFaces),
         std::sin(2 * M_PI * row / kNumFaces);
   }
   const VectorXd b = VectorXd::Ones(kNumFaces);
   const HPolyhedron circumbody = HPolyhedron(A, b);
-  const VPolytope circumbody_V(circumbody); // For volume calculations.
+  const VPolytope circumbody_V(circumbody);  // For volume calculations.
   const double min_v_ratio = 0.1;
-  const HPolyhedron inbody1 = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_v_ratio, false);
+  const HPolyhedron inbody1 =
+      circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio, false);
   EXPECT_TRUE(inbody1.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody1).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(VPolytope(inbody1).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody1.b().rows() <= circumbody.b().rows());
 
   // Test simplification of `circumbody` subject to keeping whole intersection
@@ -1255,42 +1254,42 @@ GTEST_TEST(HPolyhedronTest,
            0.8, 2, 2;
   // clang-format on
   const HPolyhedron intersecting_polytope = HPolyhedron(VPolytope(verts));
-  const std::vector<HPolyhedron> intersecting_polytopes = 
-      {intersecting_polytope};
+  const std::vector<HPolyhedron> intersecting_polytopes = {
+      intersecting_polytope};
   const HPolyhedron inbody2 = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_v_ratio, false, 10, Eigen::MatrixXd(), intersecting_polytopes, true, 
+      min_v_ratio, false, 10, Eigen::MatrixXd(), intersecting_polytopes, true,
       0);
   EXPECT_TRUE(inbody2.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody2).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(VPolytope(inbody2).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody2.b().rows() <= circumbody.b().rows());
   // Also check if intersection is still contained.
-  EXPECT_TRUE((circumbody.Intersection(intersecting_polytope).ContainedIn(
-      inbody2, kConstraintTol)));
+  EXPECT_TRUE((circumbody.Intersection(intersecting_polytope)
+                   .ContainedIn(inbody2, kConstraintTol)));
 
   // Test that non-zero `intersection_pad` does not break anything from the last
   // test.
   const double intersection_pad = 0.1;
   const HPolyhedron inbody3 = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_v_ratio, false, 10, Eigen::MatrixXd(), intersecting_polytopes, true, 
+      min_v_ratio, false, 10, Eigen::MatrixXd(), intersecting_polytopes, true,
       intersection_pad);
   EXPECT_TRUE(inbody3.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody3).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(VPolytope(inbody3).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody3.b().rows() <= circumbody.b().rows());
   // Also check if intersection is still contained.
-  EXPECT_TRUE((circumbody.Intersection(intersecting_polytope).ContainedIn(
-      inbody3, kConstraintTol)));
+  EXPECT_TRUE((circumbody.Intersection(intersecting_polytope)
+                   .ContainedIn(inbody3, kConstraintTol)));
 
   // Test with affine transformation.
   const HPolyhedron inbody4 = circumbody.SimplifyByIncrementalFaceTranslation(
       min_v_ratio, true, 10, Eigen::MatrixXd(), intersecting_polytopes, false);
-  EXPECT_TRUE(inbody4.ContainedIn(circumbody, 
-      kAffineTransformationConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody4).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(
+      inbody4.ContainedIn(circumbody, kAffineTransformationConstraintTol));
+  EXPECT_TRUE(VPolytope(inbody4).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody4.b().rows() <= circumbody.b().rows());
-  // We only expect to maintain part of the intersection, not to contain the 
+  // We only expect to maintain part of the intersection, not to contain the
   // whole original intersection.
   EXPECT_TRUE(inbody4.IntersectsWith(intersecting_polytope));
 
@@ -1303,8 +1302,8 @@ GTEST_TEST(HPolyhedronTest,
   const HPolyhedron inbody5 = circumbody.SimplifyByIncrementalFaceTranslation(
       min_v_ratio, false, 10, points);
   EXPECT_TRUE(inbody5.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody5).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(VPolytope(inbody5).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody5.b().rows() <= circumbody.b().rows());
   for (int i_point = 0; i_point < points.cols(); ++i_point) {
     EXPECT_TRUE(inbody5.PointInSet(points.col(i_point), kConstraintTol));
@@ -1314,10 +1313,10 @@ GTEST_TEST(HPolyhedronTest,
   // whole intersection.
   const HPolyhedron inbody6 = circumbody.SimplifyByIncrementalFaceTranslation(
       min_v_ratio, true, 10, points, intersecting_polytopes, false);
-  EXPECT_TRUE(inbody6.ContainedIn(circumbody, 
-      kAffineTransformationConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody6).CalcVolume() / circumbody_V.CalcVolume()
-      >= min_v_ratio);
+  EXPECT_TRUE(
+      inbody6.ContainedIn(circumbody, kAffineTransformationConstraintTol));
+  EXPECT_TRUE(VPolytope(inbody6).CalcVolume() / circumbody_V.CalcVolume() >=
+              min_v_ratio);
   EXPECT_TRUE(inbody6.b().rows() <= circumbody.b().rows());
   EXPECT_TRUE(inbody6.IntersectsWith(intersecting_polytope));
   for (int i_point = 0; i_point < points.cols(); ++i_point) {
@@ -1334,7 +1333,7 @@ GTEST_TEST(HPolyhedronTest, OptimizeAffineTransformationInCircumbody) {
   // not contained in circumbody.
   MatrixXd circumbody_A(kNumFaces, kDimension);
   for (int row = 0; row < kNumFaces; ++row) {
-    circumbody_A.row(row) << std::cos(2 * M_PI * row / kNumFaces), 
+    circumbody_A.row(row) << std::cos(2 * M_PI * row / kNumFaces),
         std::sin(2 * M_PI * row / kNumFaces);
   }
   const VectorXd circumbody_b = VectorXd::Ones(kNumFaces);
@@ -1347,13 +1346,13 @@ GTEST_TEST(HPolyhedronTest, OptimizeAffineTransformationInCircumbody) {
   // clang-format on
   HPolyhedron initial_polytope = HPolyhedron(VPolytope(initial_polytope_verts));
 
-  HPolyhedron inbody = 
+  HPolyhedron inbody =
       initial_polytope.OptimizeAffineTransformationInCircumbody(circumbody);
 
   // Check containment, and that volume increased.
   EXPECT_TRUE(inbody.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_TRUE(VPolytope(inbody).CalcVolume() > 
-      VPolytope(initial_polytope).CalcVolume());
+  EXPECT_TRUE(VPolytope(inbody).CalcVolume() >
+              VPolytope(initial_polytope).CalcVolume());
 }
 }  // namespace optimization
 }  // namespace geometry
