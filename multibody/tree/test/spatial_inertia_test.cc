@@ -1405,18 +1405,81 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
 }
 
 GTEST_TEST(SpatialInertia, ThrowIfInertiaPropertiesSignalHugeObject) {
-  // Consider a box B with dimensions 300, 400, 1200 (space-diagonal of 1300).
-  const double a = 150, b = 200, c = 600;  // ½-lengths of sides.
-  const double mass = 1.0;
-  const SpatialInertia<double> M_BBcm_B =
-      SpatialInertia<double>::SolidBoxWithMass(mass, 2*a, 2*b, 2*c);
+  // An object is regarded as preposterously large if its spatial inertia has a
+  // a minimum bounding box with a space-diagonal that is too large.
+  constexpr double default_allowable_dimension = 300;  // 300 meters.
 
-  // Ensure an exception is thrown if spatial inertia corresponds to a minimum
-  // bounding box that is larger than allowable.
-  const double largest_allowable_dimension = 1300 / std::sqrt(3);
+  // Create a massless rod B with 1.0 kg particles at its distal ends.
+  const double mass = 1.0;
+  double a = 0.5 * default_allowable_dimension, b = 0, c = 0;  // a is ½-length.
+  SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
+
+  // Ensure no exception is thrown if the space-diagonal of B's spatial inertia
+  // minimum bounding box is less than or equal to the default allowable.
+  DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable());
+
+  // Ensure no exception is thrown if the space-diagonal of B's spatial inertia
+  // minimum bounding box is less than or equal to an allowable length, whereas
+  // ensure an exception is thrown if its is greater than the allowable length.
+  DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+      1.01 * default_allowable_dimension));
   DRAKE_EXPECT_THROWS_MESSAGE(
-    M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(),
+    M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+        0.99 * default_allowable_dimension),
     "[^]* minimum bounding box space-diagonal is [^]*");
+
+  // Create a massless rectangle B with 1.0 kg particles at its 4 vertices.
+  a = 150, b = 200, c = 0;  // rectangle sides' ½-lengths in meters.
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, b, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, -b, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, b, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, 0));
+
+  // Ensure no exception is thrown if the space-diagonal of B's spatial inertia
+  // minimum bounding box is less than or equal to an allowable length, whereas
+  // ensure an exception is thrown if its is greater than the allowable length.
+  double largest_allowable_dimension = (2 * Vector3d(a, b, 0)).norm();  // 500 m
+  DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+      1.01 * largest_allowable_dimension));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+        0.99 * default_allowable_dimension),
+    "[^]* minimum bounding box space-diagonal is [^]*");
+
+  // Create a massless box B with 1.0 kg particles at its 8 vertices.
+  a = 150, b = 200, c = 600;  // box sides' ½-lengths in meters.
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, b, c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, b, -c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, -b, c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, -b, -c));
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(-a, b, c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, b, -c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, c));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, -c));
+
+  // Ensure no exception is thrown if the space-diagonal of B's spatial inertia
+  // minimum bounding box is less than or equal to an allowable length, whereas
+  // ensure an exception is thrown if its is greater than the allowable length.
+  largest_allowable_dimension = (2 * Vector3d(a, b, c)).norm();  // 1300 m
+  DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+      1.01 * largest_allowable_dimension));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
+        0.99 * default_allowable_dimension),
+    "[^]* minimum bounding box space-diagonal is [^]*");
+
+  // Create a solid box B with dimensions 30, 40, 60 (space-diagonal = 130).
+  a = 15, b = 20, c = 30;  // box sides' ½-lengths in meters.
+  M_BBcm_B = SpatialInertia<double>::SolidBoxWithMass(mass, 2*a, 2*b, 2*c);
+
+  // Ensure no exception is thrown if the space-diagonal of B's spatial inertia
+  // minimum bounding box is less than or equal to an allowable length, whereas
+  // ensure an exception is thrown if its is greater than the allowable length.
+  // Note: The sqrt(3) in the denominator arises from the inertia_shape_factor
+  // for a solid box. See @ref spatial_inertia_equivalent_shapes for details.
+  largest_allowable_dimension = (2 * Vector3d(a, b, c)).norm() / std::sqrt(3);
   DRAKE_EXPECT_NO_THROW(M_BBcm_B.ThrowIfMaxDimensionLargerThanAllowable(
           1.01 * largest_allowable_dimension));
   DRAKE_EXPECT_THROWS_MESSAGE(
