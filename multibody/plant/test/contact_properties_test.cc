@@ -222,12 +222,25 @@ TEST_F(ContactPropertiesTest, GetCoulombFriction) {
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedPointContactStiffness) {
+  // Test the signature that fetches the stiffness values from the geometries.
   EXPECT_EQ(
       GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_d()),
       kKA * kKC / (kKA + kKC));
   EXPECT_EQ(
       GetCombinedPointContactStiffness(g_A_, g_B_, kKDefault, inspector_d()),
       kKA * kKDefault / (kKA + kKDefault));
+
+  // Test the signature that performs the underlying computation.
+  EXPECT_EQ(GetCombinedPointContactStiffness(kKA, kKC),
+            kKA * kKC / (kKA + kKC));
+
+  // Test the case where one geometry is infinitely stiff.
+  EXPECT_EQ(GetCombinedPointContactStiffness(
+                kKDefault, std::numeric_limits<double>::infinity()),
+            kKDefault);
+  EXPECT_EQ(GetCombinedPointContactStiffness(
+                std::numeric_limits<double>::infinity(), kKDefault),
+            kKDefault);
 
   EXPECT_EQ(
       GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_d()),
