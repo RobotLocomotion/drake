@@ -229,6 +229,14 @@ TEST_F(ContactPropertiesTest, GetCombinedPointContactStiffness) {
       GetCombinedPointContactStiffness(g_A_, g_B_, kKDefault, inspector_d()),
       kKA * kKDefault / (kKA + kKDefault));
 
+  // Test the case where one geometry is infinitely stiff.
+  EXPECT_EQ(GetCombinedPointContactStiffness(
+                kKDefault, std::numeric_limits<double>::infinity()),
+            kKDefault);
+  EXPECT_EQ(GetCombinedPointContactStiffness(
+                std::numeric_limits<double>::infinity(), kKDefault),
+            kKDefault);
+
   EXPECT_EQ(
       GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_d()),
       GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_ad()));

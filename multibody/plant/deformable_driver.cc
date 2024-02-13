@@ -267,6 +267,10 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
         EvalConstraintParticipation(context, index_A);
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, id_A);
+    const VectorX<T>& deformable_participating_v0 =
+        EvalParticipatingVelocities(context);
+    const Eigen::VectorBlock<const VectorX<T>> rigid_v0 =
+        manager_->plant().GetVelocities(context);
 
     /* Retrieve the boundary condition information of body A to determine
      which columns for the jacobian need to be zero out later. */
@@ -316,6 +320,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const Vector4<T>& b = surface.barycentric_coordinates_A()[i];
       std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
       triplets.reserve(4);
+      Vector3<T> v_Ac_W = Vector3<T>::Zero();
       for (int v = 0; v < 4; ++v) {
         const bool vertex_under_bc = num_bcs[participating_vertices(v)] > 0;
         /* Map indexes to the permuted domain. */
@@ -328,6 +333,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
            barycentric weights. */
           triplets.emplace_back(0, participating_vertices(v),
                                 -b(v) * R_CW.matrix());
+          v_Ac_W += b(v) * deformable_participating_v0.template segment<3>(
+                               3 * participating_vertices(v));
         }
         negative_Jv_v_WAc_C.SetFromTriplets(triplets);
         /* If the vertex is under bc, the corresponding jacobain block is zero
@@ -339,12 +346,14 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       /* Calculate the jacobian block for the rigid body B if it's not static.
        */
       const Vector3<T>& p_WC = surface.contact_points_W()[i];
+      Vector3<T> v_Bc_W = Vector3<T>::Zero();
       if (tree_index_B.is_valid()) {
         const RigidBody<T>& rigid_body = manager_->plant().get_body(index_B);
         const Frame<T>& frame_W = manager_->plant().world_frame();
         manager_->internal_tree().CalcJacobianTranslationalVelocity(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             p_WC, frame_W, frame_W, &Jv_v_WBc_W);
+        v_Bc_W = Jv_v_WBc_W * rigid_v0;
         Matrix3X<T> J =
             R_CW.matrix() *
             Jv_v_WBc_W.middleCols(
@@ -367,19 +376,46 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const Vector3<T>& p_WB = X_WB.translation();
       const Vector3<T> p_BC_W = p_WC - p_WB;
 
-      /* While our discrete solvers might model constraints as compliant, an
-      infinite stiffness indicates to use the stiffest approximation possible
-      without sacrificing numerical conditioning. SAP will use the "near rigid"
-      regime approximation in this case. */
-      const T k = std::numeric_limits<double>::infinity();
+      /* We set a large stiffness for the deformable body to approximate rigid
+       contact. We choose a large constant C with units of [Pa/m] and then scale
+       the constant C by the area of the contact polygon to compute an effective
+       stiffness k that has units of [N/m]. We choose the value of C from the
+       following approximation: Consider a unit cube with side length L in
+       equilibrium on the ground under gravity. The contact force is equal to
+       k * ϕ where ϕ is the penetration distance. The contact force balances
+       gravity and we have
+
+         kϕ  = CL²ϕ = gρL³,
+
+       which gives ϕ = gρL / C.
+       We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
+       g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
+       density of water, a reasonably small penetration. */
+      const T kA = surface.contact_mesh_W().area(i) * 1e8;
+      const T default_rigid_k = std::numeric_limits<T>::infinity();
+      const T kB =
+          GetPointContactStiffness(surface.id_B(), default_rigid_k, inspector);
+      /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
+       according to the rule: 1/k = 1/k₁ + 1/k₂. */
+      const T k = GetCombinedPointContactStiffness(kA, kB);
+      /* Hunt & Crossley dissipation. Ignored, for instance, by the Sap model of
+       contact approximation. See multibody::DiscreteContactApproximation for
+       details about these contact models. */
+      const T d = GetCombinedHuntCrossleyDissipation(
+          surface.id_A(), surface.id_B(), kA, kB, 0.0 /* Default value */,
+          inspector);
 
       // TODO(xuchenhan-tri): Currently deformable bodies don't have names. When
       // they do get names upon registration (in DeformableModel), update its
       // body name here.
       const std::string body_A_name(
           fmt::format("deformable body with geometry id {}", id_A));
-      /* We use dt as the default dissipation constant so that the contact is in
-       near-rigid regime and the compliance is only used as stabilization. */
+
+      /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
+       contact approximation. See multibody::DiscreteContactApproximation for
+       details about these contact models. We use dt as the default dissipation
+       constant so that the contact is in near-rigid regime and the compliance
+       is only used as stabilization. */
       const T tau = GetCombinedDissipationTimeConstant(
           id_A, id_B, manager_->plant().time_step(), body_A_name, body_B.name(),
           inspector);
@@ -388,11 +424,10 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T& phi0 = surface.signed_distances()[i];
-      // TODO(xuchenhan-tri): Give these fields meaningful values. They are
-      // needed in Lagged and Similar models.
-      const T fn0 = NAN;
-      const T vn0 = NAN;
-      const T d = NAN;
+      const T fn0 = -k * phi0;
+      /* The normal (scalar) component of the contact velocity in the contact
+       frame. */
+      const T v_AcBc_Cz = nhat_W.dot(v_Bc_W - v_Ac_W);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),
           .id_A = id_A,
@@ -405,7 +440,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .p_BqC_W = p_BC_W,
           .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
-          .vn0 = vn0,
+          .vn0 = v_AcBc_Cz,
           .fn0 = fn0,
           .stiffness = k,
           .damping = d,

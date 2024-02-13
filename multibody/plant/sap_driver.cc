@@ -224,15 +224,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T damping = pair.damping;
     const T friction = pair.friction_coefficient;
     const auto& jacobian_blocks = pair.jacobian;
-
-    // Stiffness equal to infinity is used to indicate a rigid contact. Since
-    // SAP is inherently compliant, we must use the "near rigid regime"
-    // approximation, with near rigid parameter equal to 1.0.
-    // TODO(amcastrot-tri): This is mostly for deformables, consider exposing
-    // this parameter.
-    const double beta = (stiffness == std::numeric_limits<double>::infinity())
-                            ? 1.0
-                            : near_rigid_threshold_;
+    const double beta = near_rigid_threshold_;
 
     auto make_sap_parameters = [&]() {
       return typename SapFrictionConeConstraint<T>::Parameters{
