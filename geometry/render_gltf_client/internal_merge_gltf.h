@@ -25,6 +25,11 @@ nlohmann::json GltfMatrixFromEigenMatrix(const Matrix4<double>& matrix);
  @param matrix_json  A list of 16 number values. */
 Matrix4<double> EigenMatrixFromGltfMatrix(const nlohmann::json& matrix_json);
 
+/* If `item_inout` has a field named `uri` and it is not a `data://` URI,
+replaces the field's value with a base64-encoded `data://` URI. */
+void MaybeEmbedDataUri(nlohmann::json* item_inout,
+                       const std::filesystem::path& base_path);
+
 /* Note: glTF interrelates elements of arrays by having one element refer
  to another by the other's index into the array. For all of these merging
  functions, when the array elements have such indices, the merged index values
@@ -105,14 +110,20 @@ void MergeAccessors(nlohmann::json* j1, nlohmann::json&& j2);
 /* Merges the "bufferViews" array from j2 into j1. */
 void MergeBufferViews(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "buffers" array from j2 into j1. */
-void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "buffers" array from j2 into j1. As part of that process,
+converts any `uri`s with relative files into embedded `data://`. The
+`j2_directory` is the base path for resolving relative filenames against. */
+void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2,
+                  const std::filesystem::path& j2_directory);
 
 /* Merges the "textures" array from j2 into j1. */
 void MergeTextures(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "images" array from j2 into j1. */
-void MergeImages(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "images" array from j2 into j1. As part of that process,
+converts any `uri`s with relative files into embedded `data://`. The
+`j2_directory` is the base path for resolving relative filenames against. */
+void MergeImages(nlohmann::json* j1, nlohmann::json&& j2,
+                 const std::filesystem::path& j2_directory);
 
 /* Merges the "samplers" array from j2 into j1. */
 void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);

@@ -329,7 +329,7 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube.gltf"),
+      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
            0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
   meshcat.SetObject(
