@@ -129,10 +129,21 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
+genrule(
+    name = "box_checkered",
+    srcs = ["test/meshes/box.obj"],
+    outs = ["test/meshes/box_checkered.obj"],
+    cmd = "sed 's/box.obj.mtl/checker.mtl/' $< > $@",
+    visibility = ["//visibility:private"],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = [":box_no_mtl"] + glob([
+    srcs = [
+        ":box_checkered",
+        ":box_no_mtl",
+    ] + glob([
         "test/meshes/*",
         "test/box.sdf",
         "test/*.png",
