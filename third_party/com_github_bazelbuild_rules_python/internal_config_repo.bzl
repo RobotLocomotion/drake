@@ -18,8 +18,6 @@ such as globals available to Bazel versions, or propagating user environment
 settings for rules to later use.
 """
 
-BZLMOD_ENABLED = False
-
 _ENABLE_PYSTAR_ENVVAR_NAME = "RULES_PYTHON_ENABLE_PYSTAR"
 _ENABLE_PYSTAR_DEFAULT = "0"
 
@@ -58,18 +56,20 @@ bzl_library(
 """
 
 def _internal_config_repo_impl(rctx):
-    enable_pystar = _bool_from_environ(rctx, _ENABLE_PYSTAR_ENVVAR_NAME, _ENABLE_PYSTAR_DEFAULT)
+    pystar_requested = _bool_from_environ(rctx, _ENABLE_PYSTAR_ENVVAR_NAME, _ENABLE_PYSTAR_DEFAULT)
+
+    # Bazel 7+ (dev and later) has native.starlark_doc_extract, and thus the
+    # py_internal global, which are necessary for the pystar implementation.
+    if pystar_requested and hasattr(native, "starlark_doc_extract"):
+        enable_pystar = pystar_requested
+    else:
+        enable_pystar = False
+
     rctx.file("rules_python_config.bzl", _CONFIG_TEMPLATE.format(
         enable_pystar = enable_pystar,
     ))
 
-    if enable_pystar or (
-        # Bazel 7+ (dev and later) has native.starlark_doc_extract, and thus the py_internal global
-        hasattr(native, "starlark_doc_extract") and
-        # The logic to allow the symbol doesn't work properly under bzlmod,
-        # even if the symbol is otherwise functional.
-        not BZLMOD_ENABLED
-    ):
+    if enable_pystar:
         shim_content = _PY_INTERNAL_SHIM
         py_internal_dep = '"@rules_python//tools/build_defs/python/private:py_internal_renamed_bzl"'
     else:
