@@ -80,7 +80,7 @@ int do_main() {
   // The color and shininess properties come from PBR materials.
   meshcat->SetObject(
       "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube.gltf"),
+      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
            0.25));
   const Vector3d gltf_pose{++x, 0, 0};
   meshcat->SetTransform("gltf", RigidTransformd(gltf_pose));

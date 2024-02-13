@@ -105,14 +105,20 @@ void MergeAccessors(nlohmann::json* j1, nlohmann::json&& j2);
 /* Merges the "bufferViews" array from j2 into j1. */
 void MergeBufferViews(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "buffers" array from j2 into j1. */
-void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "buffers" array from j2 into j1. As part of that process, converts
+any `uri`s with relative files into embedded `data:`. The `j2_directory` is the
+base path for resolving relative filenames against. */
+void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2,
+                  const std::filesystem::path& j2_directory);
 
 /* Merges the "textures" array from j2 into j1. */
 void MergeTextures(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "images" array from j2 into j1. */
-void MergeImages(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "images" array from j2 into j1. As part of that process, converts
+any `uri`s with relative files into embedded `data:`. The `j2_directory` is the
+base path for resolving relative filenames against. */
+void MergeImages(nlohmann::json* j1, nlohmann::json&& j2,
+                 const std::filesystem::path& j2_directory);
 
 /* Merges the "samplers" array from j2 into j1. */
 void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);
