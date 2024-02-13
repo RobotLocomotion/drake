@@ -35,7 +35,6 @@ def read_repository_metadata(repositories=None):
             name = line[1:].split("/")[0]
             repositories.add(name)
 
-        # These are starlark deps, so don't show up in the query.
         # The bazel query only finds build-time dependencies.  Drake also
         # requires some load-time dependencies such as starlark libraries,
         # compilers, etc.  Here, we add by hand those we want to be archived
