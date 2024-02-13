@@ -1,0 +1,9 @@
+fonts-dejavu-core
+fonts-dejavu-extra
+graphviz
+jekyll
+node-uglify
+python3-docutils
+python3-sphinx
+python3-sphinx-rtd-theme
+ruby
