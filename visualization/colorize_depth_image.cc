@@ -70,7 +70,7 @@ void ColorizeDepthImage<T>::Calc(const ImageDepth32F& input,
       const float pixel = input.at(u, v)[0];
       if (is_valid(pixel)) {
         const double normalized_depth = (pixel - *min_pixel) * depth_scale;
-        const uint8_t byte = static_cast<uint8_t>(normalized_depth * 255);
+        const uint8_t byte = 255 - static_cast<uint8_t>(normalized_depth * 255);
         for (int ch = 0; ch < 3; ++ch) {
           output->at(u, v)[ch] = byte;
         }
