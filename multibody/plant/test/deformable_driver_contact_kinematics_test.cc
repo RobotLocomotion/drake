@@ -232,12 +232,14 @@ class DeformableDriverContactKinematicsTest
         ASSERT_EQ(v1.size(), J1.cols());
         EXPECT_TRUE(
             CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, 1e-14));
+        EXPECT_NEAR(contact_pair.vn0, expected_v_DpRp_C(2), 1e-14);
       } else {
         ASSERT_EQ(contact_pair.jacobian.size(), 1);
         const Matrix3X<double> J0 =
             contact_pair.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
         EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
+        EXPECT_NEAR(contact_pair.vn0, expected_v_DpRp_C(2), 1e-14);
       }
 
       // Object A is always the deformable body and B is the rigid body.

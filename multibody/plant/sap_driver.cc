@@ -230,9 +230,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     // approximation, with near rigid parameter equal to 1.0.
     // TODO(amcastrot-tri): This is mostly for deformables, consider exposing
     // this parameter.
-    const double beta = (stiffness == std::numeric_limits<double>::infinity())
-                            ? 1.0
-                            : near_rigid_threshold_;
+    const double beta = near_rigid_threshold_;
 
     auto make_sap_parameters = [&]() {
       return typename SapFrictionConeConstraint<T>::Parameters{
