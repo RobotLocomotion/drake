@@ -31,6 +31,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+constexpr double kTolerance = 1e-14;
+
 /* Registers a deformable octrahedron with the given `name` and pose in the
  world to the given `model`.
  The octahedron looks like this in its geometry frame, F.
@@ -231,13 +233,15 @@ class DeformableDriverContactKinematicsTest
         v1 << w_WR, v_WR;
         ASSERT_EQ(v1.size(), J1.cols());
         EXPECT_TRUE(
-            CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, 1e-14));
+            CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, kTolerance));
+        EXPECT_NEAR(contact_pair.vn0, expected_v_DpRp_C(2), kTolerance);
       } else {
         ASSERT_EQ(contact_pair.jacobian.size(), 1);
         const Matrix3X<double> J0 =
             contact_pair.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
-        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
+        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, kTolerance));
+        EXPECT_NEAR(contact_pair.vn0, expected_v_DpRp_C(2), kTolerance);
       }
 
       // Object A is always the deformable body and B is the rigid body.
@@ -286,13 +290,13 @@ class DeformableDriverContactKinematicsTest
       Vector6<double> v1;
       v1 << w_WR, v_WR;
       ASSERT_EQ(v1.size(), J1.cols());
-      EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc, 1e-14));
+      EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc, kTolerance));
     } else {
       ASSERT_EQ(constraint_kinematic.J.num_cliques(), 1);
       const Matrix3X<double> J0 =
           constraint_kinematic.J.clique_jacobian(0).MakeDenseMatrix();
       ASSERT_EQ(v0.size(), J0.cols());
-      EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc, 1e-14));
+      EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc, kTolerance));
     }
 
     ASSERT_EQ(constraint_kinematic.p_PQs_W.size(), 3);
