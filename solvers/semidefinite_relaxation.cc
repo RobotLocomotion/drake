@@ -43,6 +43,21 @@ void ValidateProgramIsSupported(const MathematicalProgram& prog) {
   }
 }
 
+bool CheckProgramRequireSemidefiniteRelaxation(
+    const MathematicalProgram& prog) {
+  for (const auto& cost : prog.quadratic_costs()) {
+    if (!cost.evaluator()->is_convex()) {
+      return true;
+    }
+  }
+  for (const auto& constraint : prog.quadratic_constraints()) {
+    if (!constraint.evaluator()->is_convex()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Constructs the semidefinite relaxation of the program prog and adds it to
 // relaxation. We assume that the program attributes of prog are already
 // validated and that relaxation already contains all the variables and
@@ -281,19 +296,43 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
   std::map<symbolic::Variables, symbolic::Variables> groups_to_superset;
   std::map<symbolic::Variables, MatrixXDecisionVariable>
       supersets_to_psd_variables;
+
+  solvers::MathematicalProgram ungrouped_variables_container_program{};
+
   for (const auto& group : variable_groups) {
     groups_to_container_programs.try_emplace(group);
     groups_to_superset.emplace(group, group);
   }
   for (const auto& constraint : prog.GetAllConstraints()) {
+    bool constraint_added = false;
+    const Variables constraint_variables{constraint.variables()};
     for (const auto& group : variable_groups) {
-      const Variables constraint_variables{constraint.variables()};
       if (group.IsSubsetOf(constraint_variables)) {
+        groups_to_container_programs.at(group).AddDecisionVariables(constraint_variables);
         groups_to_container_programs.at(group).AddConstraint(constraint);
         groups_to_superset.at(group).insert(constraint_variables);
+        constraint_added = true;
       }
     }
+    if (!constraint_added) {
+      ungrouped_variables_container_program.AddDecisionVariables(constraint_variables);
+      ungrouped_variables_container_program.AddConstraint(constraint);
+    }
   }
+  for (const auto& quadratic_cost : prog.quadratic_costs()) {
+    ungrouped_variables_container_program.AddCost(quadratic_cost);
+  }
+
+  if (CheckProgramRequireSemidefiniteRelaxation(
+          ungrouped_variables_container_program)) {
+    throw std::runtime_error(
+        "There is a non-convex cost or constraint in the program whose "
+        "variables do not overlap with any variable groups. Therefore, these "
+        "costs or constraints would not be converted to convex semidefinite "
+        "constraints and so the returned program would not be convex. Consider "
+        "further specifying the variable groups.")
+  }
+
   for (const auto& [group, container_program] : groups_to_container_programs) {
     supersets_to_psd_variables.emplace(
         groups_to_superset.at(group),
