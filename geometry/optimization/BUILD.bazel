@@ -444,6 +444,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:clp_solver",

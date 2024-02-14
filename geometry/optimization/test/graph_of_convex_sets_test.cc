@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/point.h"
@@ -66,6 +67,33 @@ bool MixedIntegerSolverAvailable() {
           solvers::GurobiSolver::is_enabled());
 }
 }  // namespace
+
+GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = false;
+  options.max_rounded_paths = false;
+  options.preprocessing = true;
+  options.max_rounding_trials = 5;
+  options.flow_tolerance = 0.01;
+  options.rounding_seed = 5;
+  solvers::MosekSolver mosek_solver;
+  options.solver = &mosek_solver;
+  options.solver_options = solvers::SolverOptions();
+  options.rounding_solver_options = solvers::SolverOptions();
+  const std::string serialized = yaml::SaveYamlString(options);
+  const auto deserialized =
+      yaml::LoadYamlString<GraphOfConvexSetsOptions>(serialized);
+  EXPECT_EQ(deserialized.convex_relaxation, options.convex_relaxation);
+  EXPECT_EQ(deserialized.preprocessing, options.preprocessing);
+  EXPECT_EQ(deserialized.max_rounded_paths, options.max_rounded_paths);
+  EXPECT_EQ(deserialized.max_rounding_trials, options.max_rounding_trials);
+  EXPECT_EQ(deserialized.flow_tolerance, options.flow_tolerance);
+  EXPECT_EQ(deserialized.rounding_seed, options.rounding_seed);
+  // The non-built-in types are not serialized.
+  EXPECT_EQ(deserialized.solver, nullptr);
+  EXPECT_EQ(deserialized.solver_options, solvers::SolverOptions());
+  EXPECT_FALSE(deserialized.rounding_solver_options.has_value());
+}
 
 GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   GraphOfConvexSets g;
