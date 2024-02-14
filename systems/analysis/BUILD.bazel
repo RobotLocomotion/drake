@@ -18,6 +18,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":antiderivative_function",
+        ":batch_eval",
         ":bogacki_shampine3_integrator",
         ":dense_output",
         ":explicit_euler_integrator",
@@ -390,6 +391,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "batch_eval",
+    srcs = [
+        "batch_eval.cc",
+    ],
+    hdrs = [
+        "batch_eval.h",
+    ],
+    interface_deps = [
+        "//common:essential",
+        "//common:parallelism",
+        "//systems/framework:system",
+    ],
+    deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
     name = "simulator_print_stats",
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
@@ -540,6 +559,19 @@ drake_py_unittest(
     ],
     deps = [
         "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_cc_googletest(
+    name = "batch_eval_test",
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in MonteCarloSimulation.
+    tags = ["cpu:2"],
+    deps = [
+        ":batch_eval",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:linear_system",
+        "//systems/primitives:symbolic_vector_system",
     ],
 )
 
