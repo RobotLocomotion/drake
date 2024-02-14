@@ -1,6 +1,7 @@
 #include "drake/solvers/semidefinite_relaxation.h"
 
 #include <initializer_list>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <utility>
@@ -10,7 +11,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
-
 namespace drake {
 namespace solvers {
 
@@ -45,8 +45,9 @@ void ValidateProgramIsSupported(const MathematicalProgram& prog) {
 
 // Constructs the semidefinite relaxation of the program prog and adds it to
 // relaxation. We assume that the program attributes of prog are already
-// validated. Returns the X matrix of the semidefinite relaxation.
-MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
+// validated and that relaxation already contains all the variables and
+// constraints of prog. Returns the X matrix of the semidefinite relaxation.
+MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
     const MathematicalProgram& prog, MathematicalProgram* relaxation) {
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
@@ -63,8 +64,8 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
   Variable one("one");
   X(prog.num_vars(), prog.num_vars()) = one;
   relaxation->AddDecisionVariables(Vector1<Variable>(one));
-  relaxation->AddBoundingBoxConstraint(1, 1,
-                                       X(prog.num_vars(), prog.num_vars()));
+  relaxation->AddLinearEqualityConstraint(X(prog.num_vars(), prog.num_vars()),
+                                          1);
   // X ≽ 0.
   relaxation->AddPositiveSemidefiniteConstraint(X);
 
@@ -93,13 +94,13 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
     return {a, y};
   };
 
-  // Linear costs => Linear costs.
-  for (const auto& binding : prog.linear_costs()) {
-    relaxation->AddCost(binding);
-  }
-  // Quadratic costs.
+  // Remove the quadratic cost in relaxation and replace it with the linear cost
+  // on the semidefinite variables i.e.
   // 0.5 y'Qy + b'y + c => 0.5 tr(QY) + b'y + c
   for (const auto& binding : prog.quadratic_costs()) {
+    // TODO(Alexandre.Amice) Consider only doing this if the quadratic cost is
+    // not convex.
+    relaxation->RemoveCost(binding);
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
     std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
@@ -109,18 +110,6 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
     a << quadratic_terms.first, binding.evaluator()->b();
     vars << quadratic_terms.second, binding.variables();
     relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
-  }
-
-  // Bounding Box constraints
-  // lb ≤ y ≤ ub => lb ≤ y ≤ ub
-  for (const auto& binding : prog.bounding_box_constraints()) {
-    relaxation->AddConstraint(binding);
-  }
-
-  // Linear constraints
-  // lb ≤ Ay ≤ ub => lb ≤ Ay ≤ ub
-  for (const auto& binding : prog.linear_constraints()) {
-    relaxation->AddConstraint(binding);
   }
 
   {  // Now assemble one big Ay <= b matrix from all bounding box constraints
@@ -225,8 +214,7 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
   }
 
   // Linear equality constraints.
-  // Ay = b => (Ay-b)xᵀ = Ayxᵀ - bxᵀ = 0.
-  // Note that this contains Ay=b since x contains 1.
+  // Ay = b => (Ay-b)yᵀ = Ayyᵀ - byᵀ = 0.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const int N = binding.variables().size();
     const std::vector<int> indices =
@@ -238,7 +226,8 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
     // TODO(Alexandre.Amice) make this only access the sparse matrix.
     Ab.leftCols(N) = binding.evaluator()->GetDenseA();
     Ab.col(N) = -binding.evaluator()->lower_bound();
-    for (int j = 0; j < static_cast<int>(x.size()); ++j) {
+    // We don't need to do the last column of X.
+    for (int j = 0; j < static_cast<int>(x.size()) - 1; ++j) {
       for (int i = 0; i < N; ++i) {
         vars[i] = X(indices[i], j);
       }
@@ -251,6 +240,9 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
   // Quadratic constraints.
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
+    // TODO(Alexandre.Amice) Consider only doing this if the quadratic cost is
+    // not convex.
+    relaxation->RemoveConstraint(binding);
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
     std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
@@ -272,15 +264,18 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog) {
   ValidateProgramIsSupported(prog);
-  auto relaxation = std::make_unique<MathematicalProgram>();
-  DoMakeSemidefiniteRelaxation(prog, relaxation.get());
+  auto relaxation = prog.Clone();
+  DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(prog,
+                                                         relaxation.get());
+  std::cout << *relaxation << std::endl;
+
   return relaxation;
 }
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
     std::vector<symbolic::Variables> variable_groups) {
-  auto relaxation = std::make_unique<MathematicalProgram>();
+  auto relaxation = prog.Clone();
   std::map<symbolic::Variables, solvers::MathematicalProgram>
       groups_to_container_programs;
   std::map<symbolic::Variables, symbolic::Variables> groups_to_superset;
@@ -291,25 +286,19 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     groups_to_superset.emplace(group, group);
   }
   for (const auto& constraint : prog.GetAllConstraints()) {
-    bool constraint_used = false;
     for (const auto& group : variable_groups) {
       const Variables constraint_variables{constraint.variables()};
       if (group.IsSubsetOf(constraint_variables)) {
         groups_to_container_programs.at(group).AddConstraint(constraint);
         groups_to_superset.at(group).insert(constraint_variables);
-        constraint_used = true;
       }
-    }
-    if (!constraint_used) {
-      // This constraint is not included in the semidefinite relaxation of any
-      // variable groups.
-      relaxation->AddConstraint(constraint);
     }
   }
   for (const auto& [group, container_program] : groups_to_container_programs) {
     supersets_to_psd_variables.emplace(
         groups_to_superset.at(group),
-        DoMakeSemidefiniteRelaxation(container_program, relaxation.get()));
+        DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
+            container_program, relaxation.get()));
   }
 
   // Now constrain the semidefinite variables to agree where they overlap.
