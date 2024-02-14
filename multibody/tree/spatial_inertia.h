@@ -645,16 +645,29 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Throw an exception if `this` spatial inertia has an associated minimum
-  /// bounding box size that is larger than allowable.
+  /// Throw an exception if the minimum bounding box associated with `this`
+  /// spatial inertia has a space-diagonal that is larger than allowable.
   /// @param[in] largest_allowable_dimension the largest allowable dimension
   /// associated with `this` spatial inertia in any direction. The default value
-  /// was chosen based on the Bagger 293 (≈ 224 m long) bucket-wheel excavator
-  /// which is the world's largest and heaviest land vehicle.  It dwarfs the
-  /// world's largest humanoid robot (Mononofu ≈ 8.5 m tall, and the USA space
-  /// shuttle (≈ 37 m long) even with its 15 m Canada robot arm.
-  void ThrowIfMaxDimensionLargerThanAllowable(
-      double largest_allowable_dimension = 300) const;
+  /// was chosen based on the world's largest aircraft carrier (length ≈ 337 m,
+  /// width ≈ 78 m, height ≈ 76 m, so space-diagonal ≈ 355 m) and the Bagger 293
+  /// bucket-wheel excavator (≈ 224 m long) which is the world's largest and
+  /// heaviest land vehicle. These dwarf the world's largest humanoid robot
+  /// (Mononofu ≈ 8.5 m tall) and the USA space shuttle (≈ 37 m long) even with
+  /// its 15 m Canada robot arm.
+  /// Since this method relies on the numeric (not symbolic) data, we make the
+  /// function a no-op for non-numeric types.
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+      ThrowIfMaxDimensionLargerThanAllowable(
+      double largest_allowable_dimension = 355) const;
+
+  // SFINAE for non-numeric types. See documentation in the implementation for
+  // numeric types.
+  template <typename T1 = T>
+  typename std::enable_if_t<!scalar_predicate<T1>::is_bool, void>
+      ThrowIfMaxDimensionLargerThanAllowable(
+      double largest_allowable_dimension = 355) const {}
   ///@}
 
   /// Copy to a full 6x6 matrix representation.
@@ -856,6 +869,8 @@ class SpatialInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
+    ThrowIfMaxDimensionLargerThanAllowable();
+
     if (!IsPhysicallyValid())
       ThrowNotPhysicallyValid();
   }

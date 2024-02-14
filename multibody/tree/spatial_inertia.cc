@@ -356,11 +356,23 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   }
   throw std::runtime_error(error_message);
 }
-
 template <typename T>
-void SpatialInertia<T>::ThrowIfMaxDimensionLargerThanAllowable(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+    SpatialInertia<T>::ThrowIfMaxDimensionLargerThanAllowable(
     double largest_allowable_dimension) const {
   DRAKE_ASSERT(largest_allowable_dimension >= 0);
+
+  // Ensure mass, center of mass, and inertia properties are finite.
+  const T& mass = get_mass();
+  const Vector3<T>& p_PScm_E = get_com();
+  const UnitInertia<T>& G_SP_E = get_unit_inertia();
+  using std::isfinite;
+  if (!isfinite(mass) ||
+      !p_PScm_E.array().allFinite() ||
+      !G_SP_E.get_moments().array().allFinite() ||
+      !G_SP_E.get_products().array().allFinite() ) return;
+
   // For a minimum bounding box with ½-lengths a, b, c, the box's largest
   // dimension is its diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
   auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
