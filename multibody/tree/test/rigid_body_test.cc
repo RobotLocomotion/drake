@@ -242,6 +242,22 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
       M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
 }
 
+GTEST_TEST(SpatialInertia, ThrowIfInertiaPropertiesSignalHugeObject) {
+  // Create a 400 meter massless rod B with 1.0 kg particles at its distal ends.
+  const double mass = 1.0;
+  const double a = 200;  // a is ½-length.
+  SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
+
+  // Ensure MultibodyTree::AddRigidBody() throws an exception if a rigid body is
+  // unreasonably large for robotics as measured by the space-diagonal of the
+  // minimum bounding-box associated with the body's spatial inertia.
+  internal::MultibodyTree<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(model.AddRigidBody("bodyB", M_BBcm_B),
+      "[^]* minimum bounding box space-diagonal is [^]*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
