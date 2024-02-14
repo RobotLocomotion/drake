@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
+#include "drake/systems/analysis/batch_eval.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
@@ -96,9 +97,29 @@ PYBIND11_MODULE(analysis, m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  auto bind_scalar_types = [m](auto dummy) {
+  auto bind_scalar_types = [&m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
+
+    m.def("BatchEvalUniquePeriodicDiscreteUpdate",
+        &BatchEvalUniquePeriodicDiscreteUpdate<T>, py::arg("system"),
+        py::arg("context"), py::arg("times"), py::arg("states"),
+        py::arg("inputs"), py::arg("num_time_steps") = 1,
+        py::arg("input_port_index") =
+            InputPortSelection::kUseFirstInputIfItExists,
+        py::arg("parallelize") = Parallelism::Max(),
+        py::call_guard<py::gil_scoped_release>(),
+        doc.BatchEvalUniquePeriodicDiscreteUpdate.doc);
+
+    m.def("BatchEvalTimeDerivatives", &BatchEvalTimeDerivatives<T>,
+        py::arg("system"), py::arg("context"), py::arg("times"),
+        py::arg("states"), py::arg("inputs"),
+        py::arg("input_port_index") =
+            InputPortSelection::kUseFirstInputIfItExists,
+        py::arg("parallelize") = Parallelism::Max(),
+        py::call_guard<py::gil_scoped_release>(),
+        doc.BatchEvalTimeDerivatives.doc);
+
     {
       using Class = IntegratorBase<T>;
       constexpr auto& cls_doc = doc.IntegratorBase;
