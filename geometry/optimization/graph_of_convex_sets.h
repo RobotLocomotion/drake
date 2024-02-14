@@ -71,6 +71,19 @@ struct GraphOfConvexSetsOptions {
   running the relaxed problem and looser (i.e., higher) tolerances for final
   solves during rounding. */
   std::optional<solvers::SolverOptions> rounding_solver_options{std::nullopt};
+
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
+  This only serializes options that are YAML built-in types.  */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(convex_relaxation));
+    a->Visit(DRAKE_NVP(max_rounded_paths));
+    a->Visit(DRAKE_NVP(preprocessing));
+    a->Visit(DRAKE_NVP(max_rounding_trials));
+    a->Visit(DRAKE_NVP(flow_tolerance));
+    a->Visit(DRAKE_NVP(rounding_seed));
+  }
 };
 
 /**
