@@ -86,13 +86,41 @@ class TestGeometryVisualizers(unittest.TestCase):
         load_subscriber.clear()
         draw_subscriber.clear()
 
-    def test_meshcat(self):
-        port = 7051
+    def test_meshcat_params(self):
+        prop_a = mut.MeshcatParams.PropertyTuple(
+            path="a",
+            property="p1",
+            value=[1.0, 2.0],
+        )
+        prop_b = mut.MeshcatParams.PropertyTuple(
+            path="b",
+            property="p2",
+            value="hello",
+        )
+        prop_c = mut.MeshcatParams.PropertyTuple(
+            path="c",
+            property="p3",
+            value=True,
+        )
+        prop_d = mut.MeshcatParams.PropertyTuple(
+            path="d",
+            property="p4",
+            value=22.2,
+        )
         params = mut.MeshcatParams(
             host="*",
-            port=port,
+            port=7777,
             web_url_pattern="http://host:{port}",
+            initial_properties=[prop_a, prop_b, prop_c, prop_d],
             show_stats_plot=False)
+        self.assertIn("port=7777", repr(params))
+        self.assertIn("path='a'", repr(prop_a))
+        copy.copy(prop_a)
+        copy.copy(params)
+
+    def test_meshcat(self):
+        port = 7051
+        params = mut.MeshcatParams(port=port)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
         self.assertIn("host", repr(params))
@@ -260,6 +288,18 @@ class TestGeometryVisualizers(unittest.TestCase):
         # Camera tracking.
         # The pose is None because no meshcat session has broadcast its pose.
         self.assertIsNone(meshcat.GetTrackedCameraPose())
+
+    def test_meshcat_404(self):
+        meshcat = mut.Meshcat()
+
+        good_url = meshcat.web_url()
+        with urllib.request.urlopen(good_url) as response:
+            self.assertTrue(response.read(1))
+
+        bad_url = f"{good_url}/no_such_file"
+        with self.assertRaisesRegex(Exception, "HTTP.*404"):
+            with urllib.request.urlopen(bad_url) as response:
+                response.read(1)
 
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)

@@ -97,11 +97,11 @@ GTEST_TEST(InternalGeometryTest, SetShape) {
   // Set it to a couple of arbitrary shapes to confirm the change registers.
   const Sphere s(1.5);
   geometry.SetShape(s);
-  EXPECT_EQ(ShapeName(s).name(), ShapeName(geometry.shape()).name());
+  EXPECT_EQ(s.type_name(), geometry.shape().type_name());
 
   const Box b(1, 2, 3);
   geometry.SetShape(b);
-  EXPECT_EQ(ShapeName(b).name(), ShapeName(geometry.shape()).name());
+  EXPECT_EQ(b.type_name(), geometry.shape().type_name());
 }
 
 GTEST_TEST(InternalGeometryTest, SetPose) {

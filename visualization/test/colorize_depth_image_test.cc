@@ -53,7 +53,7 @@ ImageRgba8U MakeExpected() {
         result.at(u, v)[0] = 51;
       } else {
         for (int ch = 0; ch < 3; ++ch) {
-          result.at(u, v)[ch] = v * 255;
+          result.at(u, v)[ch] = (v == 0) ? 255 : 0;
         }
       }
       result.at(u, v)[3] = 255;

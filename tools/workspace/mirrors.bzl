@@ -16,11 +16,6 @@
 # PyPI, etc.) to CloudFront backed by an S3 bucket.
 #
 DEFAULT_MIRRORS = {
-    "buildifier": [
-        "https://drake-mirror.csail.mit.edu/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
-        "https://github.com/bazelbuild/buildtools/releases/download/{version}/{filename}",  # noqa
-    ],
     "crate_universe": [
         # This pattern instructs us to allow the crates.io URL.
         "{default_url}",
@@ -43,6 +38,11 @@ DEFAULT_MIRRORS = {
         # For Drake's mirrors, we use a single pattern no matter the commit.
         "https://drake-mirror.csail.mit.edu/github/{repository}/{commit}.tar.gz",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/{repository}/{commit}.tar.gz",  # noqa
+    ],
+    "github_release_attachments": [
+        "https://github.com/{repository}/releases/download/{commit}/{filename}",  # noqa
+        "https://drake-mirror.csail.mit.edu/github/{repository}/{commit}/{filename}",  # noqa
+        "https://s3.amazonaws.com/drake-mirror/github/{repository}/{commit}/{filename}",  # noqa
     ],
     "maven": [
         "https://jcenter.bintray.com/{fulljar}",

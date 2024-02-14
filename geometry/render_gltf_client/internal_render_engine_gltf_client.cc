@@ -15,7 +15,6 @@
 #include <vtkMatrix4x4.h>      // vtkCommonMath
 #include <vtkVersionMacros.h>  // vtkCommonCore
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -290,7 +289,7 @@ void SetRootPoses(nlohmann::json* gltf,
 
 /* Changes all material definitions to be an emissive flat color. This removes
  all references to textures. */
-void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
+void ChangeToLabelMaterials(nlohmann::json* gltf, const Rgba& color) {
   if (gltf->contains("materials")) {
     auto& materials = (*gltf)["materials"];
     for (auto& mat : materials) {
@@ -299,9 +298,9 @@ void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
       mat.erase("normalTexture");
       mat.erase("occlusionTexture");
       mat.erase("emissiveTexture");
-      mat["emissiveFactor"] = {color.r, color.g, color.b};
+      mat["emissiveFactor"] = {color.r(), color.g(), color.b()};
       auto& pbr = mat["pbrMetallicRoughness"];
-      pbr["baseColorFactor"] = {color.r, color.g, color.b, 1.0};
+      pbr["baseColorFactor"] = {color.r(), color.g(), color.b(), 1.0};
       pbr.erase("baseColorTexture");
       pbr.erase("metallicFactor");
       pbr.erase("roughnessFactor");
@@ -325,65 +324,6 @@ RenderEngineGltfClient::RenderEngineGltfClient(
 std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
       new RenderEngineGltfClient(*this));
-}
-
-void RenderEngineGltfClient::UpdateViewpoint(
-    const math::RigidTransformd& X_WC) {
-#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
-  RenderEngineVtk::UpdateViewpoint(X_WC);
-#else
-  /* The vtkGLTFExporter populates the camera matrix in "nodes" incorrectly in
-   VTK 9.1.0.  It should be providing the inverted modelview transformation
-   matrix since the "nodes" array is to contain global transformations.  See:
-
-   https://gitlab.kitware.com/vtk/vtk/-/merge_requests/8883
-
-   When VTK is updated, RenderEngineGltfClient::UpdateViewpoint can be deleted
-   as RenderEngineVtk::UpdateViewpoint will correctly update the transforms on
-   the cameras.
-
-   Build the alternate transform, which consists of both an inversion of the
-   input transformation as well as a coordinate system inversion.  For the
-   coordinate inversion, we must account for:
-
-   1. VTK and drake have inverted Y axis directions.
-   2. The camera Z axis needs to be pointing in the opposite direction.
-
-   RenderEngineVtk::UpdateViewpoint will result in the vtkCamera instance's
-   SetPosition, SetFocalPoint, and SetViewUp methods being called, followed by
-   applying the transform from drake.  See implementation of vtkCamera in VTK,
-   the Set{Position,FocalPoint,ViewUp} methods result in the camera internally
-   recomputing its basis -- users do not have the ability to directly control
-   the modelview transform.  So we engineer a drake transform to pass back to
-   RenderEngineVtk::UpdateViewpoint that will result in the final vtkCamera
-   having an inverted modelview transformation than what would be needed to
-   render so that the vtkGLTFExporter will export the "correct" matrix.
-
-   When performing this coordinate-system "hand-change", we seek to invert both
-   the y and z axes.  The way to do this would be to use the identity matrix
-   with the axes being changed scaled by -1 (the "hand change") and both pre and
-   post multiply the matrix being changed:
-
-   | 1  0  0  0 |   | a  b  c  d |   | 1  0  0  0 |   |  a -b -c  d |
-   | 0 -1  0  0 | * | e  f  g  h | * | 0 -1  0  0 | = | -e  f  g -h |
-   | 0  0 -1  0 |   | i  j  k  l |   | 0  0 -1  0 |   | -i  j  k -l |
-   | 0  0  0  1 |   | m  n  o  p |   | 0  0  0  1 |   |  m -n -o  p |
-
-   which we can build directly, noting that the last row | m -n -o p | will be
-   | 0 0 0 1 | (homogeneous row) and can therefore be skipped.
-
-   NOTE: Use the inverse of RigidTransformd, which will transpose the rotation
-   and negate the translation rather than doing a full matrix inverse. */
-  Eigen::Matrix4d hacked_matrix{X_WC.inverse().GetAsMatrix4()};
-  hacked_matrix(0, 1) *= -1.0;  // -b
-  hacked_matrix(0, 2) *= -1.0;  // -c
-  hacked_matrix(1, 0) *= -1.0;  // -e
-  hacked_matrix(1, 3) *= -1.0;  // -h
-  hacked_matrix(2, 0) *= -1.0;  // -i
-  hacked_matrix(2, 3) *= -1.0;  // -l
-  math::RigidTransformd X_WC_hacked{hacked_matrix};
-  RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
-#endif
 }
 
 void RenderEngineGltfClient::DoRenderColorImage(
@@ -510,16 +450,15 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   // By convention (see render_gltf_client_doxygen.h), server-only artifacts are
   // colored white to indicate the "don't care" semantic.
   // Convert from RGB to Label.
-  const ColorI kDontCare{255, 255, 255};
-  ColorI color;
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
-      color.r = colored_label_image.at(x, y)[0];
-      color.g = colored_label_image.at(x, y)[1];
-      color.b = colored_label_image.at(x, y)[2];
-      label_image_out->at(x, y)[0] = color == kDontCare
-                                         ? render::RenderLabel::kDontCare
-                                         : RenderEngine::LabelFromColor(color);
+      const uint8_t r = colored_label_image.at(x, y)[0];
+      const uint8_t g = colored_label_image.at(x, y)[1];
+      const uint8_t b = colored_label_image.at(x, y)[2];
+      label_image_out->at(x, y)[0] =
+          (r == 255 && g == 255 && b == 255)
+              ? render::RenderLabel::kDontCare
+              : RenderEngine::MakeLabelFromRgb(r, g, b);
     }
   }
 
@@ -550,7 +489,7 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
   for (const auto& [id, record] : gltfs_) {
     nlohmann::json temp = record.contents;
     if (image_type == render_vtk::internal::kLabel) {
-      const ColorD color = RenderEngine::GetColorDFromLabel(record.label);
+      const Rgba color = RenderEngine::MakeRgbFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
     MergeGltf(&gltf, std::move(temp), record.path.string(), &merge_record);

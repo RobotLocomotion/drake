@@ -9,6 +9,7 @@ from pydrake.multibody.parsing import (
     AddWeld,
     FlattenModelDirectives,
     GetScopedFrameByName,
+    GetScopedFrameByNameMaybe,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ModelDirective,
@@ -25,7 +26,6 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
@@ -212,6 +212,7 @@ class TestParsing(unittest.TestCase):
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
         GetScopedFrameByName(plant, "world")
+        GetScopedFrameByNameMaybe(plant, "world")
 
     def _make_plant_parser_directives(self):
         """Returns a tuple (plant, parser, directives) for later testing."""

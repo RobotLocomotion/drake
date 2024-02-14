@@ -31,7 +31,7 @@ and vertices_.cols() are zero, we treat this as no points in {0}, which is
 empty.
 
 @ingroup geometry_optimization */
-class VPolytope final : public ConvexSet {
+class VPolytope final : public ConvexSet, private ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
 

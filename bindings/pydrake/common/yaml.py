@@ -375,9 +375,12 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             refined_yaml_value = yaml_value
             refined_value_schema = generic_args[0]
         # Self-call, but now with an updated value and type.
-        if not isinstance(getter(), refined_value_schema):
+        refined_value_schema_origin = typing.get_origin(refined_value_schema)
+        if refined_value_schema_origin is None:
+            refined_value_schema_origin = refined_value_schema
+        if not isinstance(getter(), refined_value_schema_origin):
             setter(_create_from_schema(
-                schema=refined_value_schema,
+                schema=refined_value_schema_origin,
                 forthcoming_value=yaml_value))
         _merge_yaml_dict_item_into_target(
             options=options, name=name, yaml_value=refined_yaml_value,
@@ -451,7 +454,7 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict,
             target=target, value_schema=sub_schema)
 
 
-def yaml_load_typed(*, schema,
+def yaml_load_typed(*, schema=None,
                     data=None,
                     filename=None,
                     child_name=None,
@@ -469,7 +472,9 @@ def yaml_load_typed(*, schema,
         schema: The type to load as. This either must be a ``dataclass``, a C++
             class bound using pybind11 and ``DefAttributesUsingSerialize``, or
             a ``Mapping[str, ...]`` where the mapping's value type is one of
-            those two categories.
+            those two categories. If a non-None ``defaults`` is provided, then
+            ``schema`` can be ``None`` and will use ``type(defaults)`` in that
+            case.
         data: The string of YAML data to be loaded. Exactly one of either
             ``data`` or ``filename`` must be provided.
         filename: The filename of YAML data to be loaded. Exactly one of either
@@ -494,6 +499,14 @@ def yaml_load_typed(*, schema,
            schema can have default values that are left intact unless the YAML
            data provides a value *for that specific key*.
     """
+
+    # Infer the schema when possible.
+    if schema is None:
+        if defaults is None:
+            raise ValueError(
+                "At least one of schema= and defaults= must be provided")
+        schema = type(defaults)
+
     # Choose the allow/retain setting in case none were provided.
     options = _LoadYamlOptions(
         allow_yaml_with_no_schema=allow_yaml_with_no_schema,

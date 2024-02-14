@@ -33,7 +33,28 @@ manually.
 Limits have been added to the xacro files, and then manually merged into the
 hand-edited files.
 
-### Velocity and Effort Limits
+### Velocity and Effort Limits for IIWA 7
+
+Velocity and effort limits were derived from the third table at page 1 of the
+followking KUKA brochure:
+
+* "KUKA LBR iiwa technical data. (URL:
+<https://www.reeco.co.uk/wp-content/uploads/2020/05/KUKA-LBR-iiwa-technical-data.pdf>
+, Accessed on 2024-02-09)
+
+For the record, the velocity and effort limits:
+
+|Axis data  |Max. Torque|Max. Velocity|
+|-----------|----------:|------------:|
+|Axis 1 (A1)|176 Nm     |98 deg/s     |
+|Axis 2 (A2)|176 Nm     |98 deg/s     |
+|Axis 3 (A3)|110 Nm     |100 deg/s    |
+|Axis 4 (A4)|110 Nm     |130 deg/s    |
+|Axis 5 (A5)|110 Nm     |140 deg/s    |
+|Axis 6 (A6)|40 Nm      |180 deg/s    |
+|Axis 7 (A7)|40 Nm      |180 deg/s    |
+
+### Velocity and Effort Limits for IIWA 14
 
 Velocity and effort limits were derived from the third table at page 30 of the
 followking KUKA brochure:
@@ -54,7 +75,33 @@ For the record, the velocity and effort limits:
 |Axis 6 (A6)|40 Nm      |135 deg/s    |
 |Axis 7 (A7)|40 Nm      |135 deg/s    |
 
-### Acceleration Limits
+### Acceleration Limits for iiwa 7
+
+Acceleration limits were derived from the iiwa 14 acceleration limits. In particular,
+effort limits were taken to be proportional to the spatial mass matrix times the
+acceleration limits (manipulator equations). The iiwa 7 acceleration limits were then
+calculated using the following formula:
+
+acc_limits_iiwa7 = acc_limits_iiwa14 * (mass_matrix_inverse_iiwa7 @ effort_limits_iiwa7)
+/ (mass_matrix_inverse_iiwa14 @ effort_limits_iiwa14)
+
+Note that the actual acceleration limits are configuration and movement direction, i.e.,
+sign(q_ddot), dependent. The provided limits assume zero torques due to gravity and
+might thus underestimate or overestimate the actual limits.
+
+For the record, the rounded acceleration limits:
+
+|Axis data  | rad/s^2 |
+|-----------|--------:|
+|Axis 1 (A1)|8.65     |
+|Axis 2 (A2)|5.44     |
+|Axis 3 (A3)|5.69     |
+|Axis 4 (A4)|11.01    |
+|Axis 5 (A5)|11.78    |
+|Axis 6 (A6)|13.76    |
+|Axis 7 (A7)|13.17    |
+
+### Acceleration Limits for IIWA 14
 
 Acceleration limits were derived from experimental results listed in Table 4
 (page 50) of the following Master's thesis:

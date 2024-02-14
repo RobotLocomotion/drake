@@ -1,0 +1,9 @@
+The cube{1,2,3}.gltf files are all exactly the same model, stored differently.
+
+cube1.gltf: embedded single file
+
+cube2.gltf: one external buffer file (cube2.bin) that contains the concatenated
+  geometry data and texture data.
+
+cube2.gltf: multiple external files (cube3.bin for geometry, cube3_divot.png and
+  cube3_normal.png for texture).

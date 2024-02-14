@@ -107,14 +107,14 @@ std::map<int, std::string> GetPositionNames(
 VectorXd Broadcast(
     const char* diagnostic_name, double default_value, int num_positions,
     std::variant<std::monostate, double, VectorXd> value) {
-  return std::visit(overloaded{
-    [num_positions, default_value](std::monostate) -> VectorXd {
+  return visit_overloaded<VectorXd>(overloaded{
+    [num_positions, default_value](std::monostate) {
       return VectorXd::Constant(num_positions, default_value);
     },
-    [num_positions](double arg) -> VectorXd {
+    [num_positions](double arg) {
       return VectorXd::Constant(num_positions, arg);
     },
-    [num_positions, diagnostic_name](VectorXd&& arg) -> VectorXd {
+    [num_positions, diagnostic_name](VectorXd&& arg) {
       if (arg.size() != num_positions) {
         throw std::logic_error(fmt::format(
             "Expected {} of size {}, but got size {} instead",

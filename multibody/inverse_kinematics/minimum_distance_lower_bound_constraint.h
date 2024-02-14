@@ -44,10 +44,15 @@ class MinimumDistanceLowerBoundConstraint final : public solvers::Constraint {
   distance between any candidate pair of geometries.
   @param penalty_function The penalty function formulation.
   @default QuadraticallySmoothedHinge
-  @plant_context The context of `plant`. The context is obtained as a subsystem
-  context from the diagram context, where the diagram (that contains both the
-  MultibodyPlant and SceneGraph) creates the diagram context. `plant_context`
-  cannot be a nullptr. `plant_context` must outlive this constraint.
+  @param plant_context The context of `plant`. The context should be obtained as
+  a subsystem context from the diagram context, where the diagram (that contains
+  both the MultibodyPlant and SceneGraph) creates the diagram context.
+  `plant_context` cannot be a nullptr. `plant_context` must outlive this
+  constraint. An example code of getting the plant context is
+  @code{cc}
+  auto diagram_context = diagram.CreateDefaultContext();
+  auto plant_context = plant.GetMyMutableContextFromRoot(diagram_context.get());
+  @endcode
   @param influence_distance_offset The difference (in meters) between the
   influence distance, d_influence, and the minimum distance, lb (see class
   documentation), namely influence_distance = bound +

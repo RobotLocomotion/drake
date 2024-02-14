@@ -95,6 +95,10 @@ class GeometriesTester {
                                                  GeometryId id) {
     return geometries.rigid_geometries_.at(id);
   }
+
+  static void disable_rigid_geometry_deferral(Geometries* geometries) {
+    geometries->enable_rigid_geometries_pending_ = false;
+  }
 };
 
 }  // namespace deformable
@@ -4469,6 +4473,13 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
 class ProximityEngineDeformableContactTest : public testing::Test {
  protected:
   static constexpr double kSphereRadius = 1.0;
+
+  ProximityEngineDeformableContactTest() {
+    const internal::deformable::Geometries& geometries =
+        deformable_contact_geometries();
+    internal::deformable::GeometriesTester::disable_rigid_geometry_deferral(
+        const_cast<internal::deformable::Geometries*>(&geometries));
+  }
 
   ProximityProperties MakeProximityPropsWithRezHint(double resolution_hint) {
     ProximityProperties props;

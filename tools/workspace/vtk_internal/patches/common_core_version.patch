@@ -1,13 +1,16 @@
 [vtk] Adjust VTK_VERSION macros for simplicity
 
-Consolidate the version specification to a 3-tuple of individual numbers;
-with Bazel, we can't rely on upstream's CMakeLists code to concatenate them.
+In our Bazel rules we scrape vtk/CMake/vtkVersion.cmake for what it
+contains (VTK_MAJOR_VERSION, VTK_MINOR_VERSION, VTK_BUILD_VERSION),
+but that doesn't give us values for VTK_VERSION_FULL (nominally
+scraped from git) nor VTK_EPOCH_VERSION (some upstream CI voodoo).
+We need to patch those substitutions using what we do have access to.
 
 This change is Drake-specific, so we do not plan to upstream it.
 
 --- Common/Core/vtkVersionFull.h.in
 +++ Common/Core/vtkVersionFull.h.in
-@@ -17,6 +17,6 @@
+@@ -5,6 +5,6 @@
  
  /* This is in its own header to reduce build dependencies */
  
@@ -16,14 +19,15 @@ This change is Drake-specific, so we do not plan to upstream it.
  
  #endif
 
---- Common/Core/vtkVersionMacros.h.in
-+++ Common/Core/vtkVersionMacros.h.in
-@@ -20,7 +20,7 @@
+
+--- Common/Core/vtkVersionQuick.h.in
++++ Common/Core/vtkVersionQuick.h.in
+@@ -7,7 +7,7 @@
+ 
  #define VTK_MAJOR_VERSION @VTK_MAJOR_VERSION@
  #define VTK_MINOR_VERSION @VTK_MINOR_VERSION@
- #define VTK_BUILD_VERSION @VTK_BUILD_VERSION@
--#define VTK_VERSION "@VTK_VERSION@"
-+#define VTK_VERSION "@VTK_MAJOR_VERSION@.@VTK_MINOR_VERSION@.@VTK_BUILD_VERSION@"
+-#define VTK_EPOCH_VERSION @VTK_EPOCH_VERSION@
++#define VTK_EPOCH_VERSION @VTK_BUILD_VERSION@
  
- #define VTK_SOURCE_VERSION "vtk version " VTK_VERSION
- 
+ #define VTK_VERSION_CHECK(major, minor, build)                                                     \
+   (10000000000ULL * major + 100000000ULL * minor + build)

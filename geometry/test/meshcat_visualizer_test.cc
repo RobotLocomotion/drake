@@ -8,7 +8,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/meshcat_types.h"
+#include "drake/geometry/meshcat_types_internal.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -67,8 +67,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
 
   void CheckVisible(const std::string& path, bool visibility) {
     ASSERT_TRUE(meshcat_->HasPath(path));
-    const std::string property =
-        meshcat_->GetPackedProperty(path, "visible");
+    const std::string property = meshcat_->GetPackedProperty(path, "visible");
     ASSERT_GT(property.size(), 0);
     msgpack::object_handle oh =
         msgpack::unpack(property.data(), property.size());
@@ -146,8 +145,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
   }
 
   params.role = Role::kUnassigned;
-  DRAKE_EXPECT_THROWS_MESSAGE(SetUpDiagram(params),
-                              ".*Role::kUnassigned.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(SetUpDiagram(params), ".*Role::kUnassigned.*");
 }
 
 // Tests that adding multiple MeshcatVisualizers using the same role to a
@@ -201,7 +199,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   SetUpDiagram(params);
   // Scribble a transform onto the scene tree beneath the visualizer prefix.
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
-                        math::RigidTransformd());
+                         math::RigidTransformd());
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
 
   {  // Send an initialization event.
@@ -218,7 +216,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   params.delete_on_initialization_event = false;
   SetUpDiagram(params);
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
-                        math::RigidTransformd());
+                         math::RigidTransformd());
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
@@ -243,8 +241,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Delete) {
 // "position".
 bool has_iiwa_frame(const MeshcatAnimation& animation, int frame) {
   return animation
-      .get_key_frame<std::vector<double>>(
-          0, "visualizer/iiwa14/iiwa_link_1", "position")
+      .get_key_frame<std::vector<double>>(0, "visualizer/iiwa14/iiwa_link_1",
+                                          "position")
       .has_value();
 }
 
@@ -321,6 +319,36 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   EXPECT_NE(
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
       X_7_message);
+}
+
+// Confirm that the default frame rates match the publish period of the
+// visualizer. Otherwise the rounding to an animation frame done in
+// MeshcatAnimation can lead to odd visualization artifacts, like the first
+// visualized frame not being the initial state. (Technically, it's OK to have
+// the visualizer's publish period be any integer multiple of the meshcat
+// recording's keyframe period; for expediency, we just test for exact
+// equality.)
+TEST_F(MeshcatVisualizerWithIiwaTest, RecordingFrameRate) {
+  MeshcatVisualizerParams params;
+  SetUpDiagram(params);
+
+  // StartRecording via the MeshcatVisualizer API.
+  visualizer_->StartRecording();
+  MeshcatAnimation* animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(1.0 / animation->frames_per_second(), params.publish_period);
+  visualizer_->DeleteRecording();
+
+  // Set the animation to a different frame rate before our final test, for good
+  // measure.
+  meshcat_->StartRecording(12.3);
+  animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(animation->frames_per_second(), 12.3);
+  visualizer_->DeleteRecording();
+
+  // StartRecording via the Meshcat API.
+  meshcat_->StartRecording();
+  animation = &meshcat_->get_mutable_recording();
+  EXPECT_EQ(1.0 / animation->frames_per_second(), params.publish_period);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {

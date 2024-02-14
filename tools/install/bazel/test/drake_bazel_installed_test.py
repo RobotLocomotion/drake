@@ -27,12 +27,12 @@ def main():
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
-    rules_python_commit = "0.25.0"
+    rules_python_commit = "0.29.0"
     rules_python_urls = [
         f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz",  # noqa
         f"https://drake-mirror.csail.mit.edu/github/bazelbuild/rules_python/{rules_python_commit}.tar.gz",  # noqa
     ]
-    rules_python_sha256 = "5868e73107a8e85d8f323806e60cad7283f34b32163ea6ff1020cf27abef6036"  # noqa
+    rules_python_sha256 = "d71d2c67e0bce986e1c5a7731b4693226867c45bfe0b7c5e0067228a536fc580"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
@@ -53,6 +53,13 @@ http_archive(
     sha256 = "{rules_python_sha256}",
     strip_prefix = "rules_python-{rules_python_commit}",
     urls = {rules_python_urls!r},
+)
+load(
+    "@rules_python//python/private:internal_config_repo.bzl",
+    "internal_config_repo",
+)
+internal_config_repo(
+    name = "rules_python_internal",
 )
 
 new_local_repository(

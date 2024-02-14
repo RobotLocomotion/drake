@@ -28,6 +28,7 @@ namespace {
 // https://docs.python.org/3/c-api/exceptions.html#c.PyErr_CheckSignals
 // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-properly-handle-ctrl-c-in-long-running-functions
 void ThrowIfPythonHasPendingSignals() {
+  py::gil_scoped_acquire guard;
   if (PyErr_CheckSignals() != 0) {
     throw py::error_already_set();
   }
@@ -240,6 +241,9 @@ PYBIND11_MODULE(analysis, m) {
               return self->AdvanceTo(boundary_time);
             },
             py::arg("boundary_time"), py::arg("interruptible") = true,
+            // This is a long-running function that might sleep; for both
+            // reasons, we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
             // Amend the docstring with the additional parameter.
             []() {
               std::string new_doc = doc.Simulator.AdvanceTo.doc;
@@ -391,16 +395,17 @@ Parameter ``interruptible``:
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
-    // Note: parallel simulation must be disabled in the binding via
-    // num_parallel_executions=kNoConcurrency, since parallel execution of
-    // Python systems in multiple threads is not supported.
+    // Note: This hard-codes `parallelism` to be off, since parallel execution
+    // of Python systems on multiple threads was thought to be unsupported. It's
+    // possible that with `py::call_guard<py::gil_scoped_release>` it would
+    // actually be fine, so we could revisit that decision at some point.
     m.def("MonteCarloSimulation",
         WrapCallbacks([](const SimulatorFactory make_simulator,
                           const ScalarSystemFunction& output, double final_time,
                           int num_samples, RandomGenerator* generator)
                           -> std::vector<RandomSimulationResult> {
           return MonteCarloSimulation(make_simulator, output, final_time,
-              num_samples, generator, kNoConcurrency);
+              num_samples, generator, /* parallelism = */ Parallelism::None());
         }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),

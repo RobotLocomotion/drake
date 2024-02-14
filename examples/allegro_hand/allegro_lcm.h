@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file This file contains classes dealing with sending/receiving
-/// LCM messages related to the allegro hand.
+/// @file
+/// This file contains classes dealing with sending/receiving LCM messages
+/// related to the allegro hand.
 
 #include <memory>
 #include <utility>

@@ -1417,17 +1417,21 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                             double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-    UnrestrictedUpdateEvent<double> event(
-        TriggerType::kPeriodic);
-    event.AddToComposite(event_info);
-  }
-
-  void DoCalcUnrestrictedUpdate(
-      const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>* state) const override {
-    if (unrestricted_update_callback_ != nullptr)
-      unrestricted_update_callback_(context, state);
+    if (unrestricted_update_callback_ != nullptr) {
+      UnrestrictedUpdateEvent<double> event(
+          TriggerType::kPeriodic,
+          [callback = unrestricted_update_callback_](
+              const System<double>&, const Context<double>& event_context,
+              const UnrestrictedUpdateEvent<double>&,
+              State<double>* event_state) {
+            callback(event_context, event_state);
+            return EventStatus::Succeeded();
+          });
+      event.AddToComposite(event_info);
+    } else {
+      UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic);
+      event.AddToComposite(event_info);
+    }
   }
 
   void DoCalcTimeDerivatives(

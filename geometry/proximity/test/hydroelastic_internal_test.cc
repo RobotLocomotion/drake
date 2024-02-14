@@ -796,7 +796,7 @@ void TestPropertyErrors(
     const char* property_name, const char* compliance,
     function<void(const ShapeType&, const ProximityProperties&)> maker,
     std::optional<ValueType> bad_value, const ProximityProperties& props) {
-  ShapeName shape_name(shape_spec);
+  const std::string_view shape_name = shape_spec.type_name();
 
   // Error case: missing property value.
   {
@@ -1232,9 +1232,8 @@ TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
-  if (ShapeName(shape_spec).name() != "HalfSpace" &&
-      ShapeName(shape_spec).name() != "Box" &&
-      ShapeName(shape_spec).name() != "Convex") {
+  if (shape_spec.type_name() != "HalfSpace" &&
+      shape_spec.type_name() != "Box" && shape_spec.type_name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
@@ -1265,7 +1264,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   // Half space only!
-  if (ShapeName(shape_spec).name() == "HalfSpace") {
+  if (shape_spec.type_name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kSlabThickness, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {

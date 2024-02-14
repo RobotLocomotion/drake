@@ -5,7 +5,6 @@ load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
-    "generate_abi_namespace",
     "generate_common_core_sources",
     "generate_rendering_opengl2_sources",
     "vtk_cc_module",
@@ -28,25 +27,9 @@ cc_library(
 # Generate some source files on the fly, using Bazel re-implementations of
 # various CMake scripts.
 
-generate_abi_namespace()
-
 generate_common_core_sources()
 
 generate_rendering_opengl2_sources()
-
-# Help solve a circular dependency between CommonCore <=> CommonDataModel.
-# This library inter-operates with both the VTK::CommonCore in settings.bzl
-# and the repository patch file patches/common_core_vs_data_model_cycle.patch.
-
-cc_library(
-    name = "VTK__CommonDataModel_vtkDataObject",
-    hdrs = [
-        "Common/DataModel/vtkCommonDataModelModule.h",
-        "Common/DataModel/vtkDataObject.h",
-    ],
-    strip_include_prefix = "Common/DataModel",
-    linkstatic = True,
-)
 
 # Add a cc_library rule for all modules in settings.bzl that are marked with
 # non-default visibility, and also add private cc_library rules for all of
@@ -61,8 +44,10 @@ install(
     docs = [
         "Copyright.txt",
         "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
+        "ThirdParty/fast_float/vtkfast_float/LICENSE-MIT",
         "ThirdParty/glew/vtkglew/LICENSE.txt",
         "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
+        "ThirdParty/token/vtktoken/license.md",
         "ThirdParty/utf8/vtkutf8/LICENSE",
     ],
     visibility = ["//visibility:public"],

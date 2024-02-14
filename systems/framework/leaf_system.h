@@ -14,7 +14,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
@@ -485,27 +484,6 @@ class LeafSystem : public System<T> {
     event_copy->set_event_data(periodic_data);
     event_copy->AddToComposite(TriggerType::kPeriodic, &periodic_events_);
   }
-
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoPublish is no longer allowed. "
-      "Use DeclarePeriodicPublishEvent() instead.")
-  void DeclarePeriodicPublishNoHandler(double period_sec,
-                                       double offset_sec = 0);
-
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoCalcDiscreteVariableUpdates is no longer allowed. "
-      "Use DeclarePeriodicDiscreteUpdateEvent() instead.")
-  void DeclarePeriodicDiscreteUpdateNoHandler(double period_sec,
-                                              double offset_sec = 0);
-
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoCalcUnrestrictedUpdate is no longer allowed. "
-      "Use DeclarePeriodicUnrestrictedUpdateEvent() instead.")
-  void DeclarePeriodicUnrestrictedUpdateNoHandler(double period_sec,
-                                                  double offset_sec = 0);
   //@}
 
   // =========================================================================
@@ -1783,116 +1761,6 @@ class LeafSystem : public System<T> {
       SystemConstraintBounds bounds,
       std::string description);
 
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoPublish is no longer allowed")
-  /** Derived-class event dispatcher for all simultaneous publish events
-  in @p events. Override this in your derived LeafSystem only if you require
-  behavior other than the default dispatch behavior (not common).
-  The default behavior is to traverse events in the arbitrary order they
-  appear in @p events, and for each event that has a callback function,
-  to invoke the callback with @p context and that event.
-
-  Do not override this just to handle an event -- instead declare the event
-  and a handler callback for it using one of the `Declare...PublishEvent()`
-  methods.
-
-  This method is called only from the virtual DispatchPublishHandler, which
-  is only called from the public non-virtual Publish(), which will have
-  already error-checked @p context so you may assume that it is valid.
-
-  @note There is no provision for returning EventStatus from DoPublish() as
-  there is if you use the default dispatcher. Instead, your DoPublish() will be
-  assumed to return EventStatus::Succeeded() regardless of what happened.
-
-  @param[in] context Const current context.
-  @param[in] events All the publish events that need handling. */
-  virtual void DoPublish(
-      const Context<T>& context,
-      const std::vector<const PublishEvent<T>*>& events) const;
-
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoCalcDiscreteVariableUpdates is no longer allowed")
-  /** Derived-class event dispatcher for all simultaneous discrete update
-  events. Override this in your derived LeafSystem only if you require
-  behavior other than the default dispatch behavior (not common).
-  The default behavior is to traverse events in the arbitrary order they
-  appear in @p events, and for each event that has a callback function,
-  to invoke the callback with @p context, that event, and @p discrete_state.
-  Note that the same (possibly modified) @p discrete_state is passed to
-  subsequent callbacks.
-
-  Do not override this just to handle an event -- instead declare the event
-  and a handler callback for it using one of the
-  `Declare...DiscreteUpdateEvent()` methods.
-
-  This method is called only from the virtual
-  DispatchDiscreteVariableUpdateHandler(), which is only called from
-  the public non-virtual CalcDiscreteVariableUpdate(), which will already
-  have error-checked the parameters so you don't have to. In particular,
-  implementations may assume that @p context is valid; that
-  @p discrete_state is non-null, and that the referenced object has the
-  same constituent structure as was produced by AllocateDiscreteVariables().
-
-  @note There is no provision for returning EventStatus from
-  DoCalcDiscreteVariableUpdates() as there is if you use the default
-  dispatcher. Instead, your DoCalcDiscreteVariableUpdates() will be assumed to
-  return EventStatus::Succeeded() regardless of what happened.
-
-  @param[in] context The "before" state.
-  @param[in] events All the discrete update events that need handling.
-  @param[in,out] discrete_state The current state of the system on input;
-  the desired state of the system on return. */
-  virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>& events,
-      DiscreteValues<T>* discrete_state) const;
-
-  // TODO(sherm1) Shouldn't require preloading of the output state; better to
-  //              note just the changes since usually only a small subset will
-  //              be changed by this method.
-
-  DRAKE_DEPRECATED(
-      "2024-02-01",
-      "Overriding DoCalcUnrestrictedUpdate is no longer allowed")
-  /** Derived-class event dispatcher for all simultaneous unrestricted update
-  events. Override this in your derived LeafSystem only if you require
-  behavior other than the default dispatch behavior (not common).
-  The default behavior is to traverse events in the arbitrary order they
-  appear in @p events, and for each event that has a callback function,
-  to invoke the callback with @p context, that event, and @p state.
-  Note that the same (possibly modified) @p state is passed to subsequent
-  callbacks.
-
-  Do not override this just to handle an event -- instead declare the event
-  and a handler callback for it using one of the
-  `Declare...UnrestrictedUpdateEvent()` methods.
-
-  This method is called only from the virtual
-  DispatchUnrestrictedUpdateHandler(), which is only called from the
-  non-virtual public CalcUnrestrictedUpdate(), which will already have
-  error-checked the parameters so you don't have to. In particular,
-  implementations may assume that the @p context is valid; that @p state
-  is non-null, and that the referenced object has the same constituent
-  structure as the state in @p context.
-
-  @note There is no provision for returning EventStatus from
-  DoCalcUnrestrictedUpdate() as there is if you use the default dispatcher.
-  Instead, your DoCalcUnrestrictedUpdate() will be assumed to return
-  EventStatus::Succeeded() regardless of what happened.
-
-  @param[in]     context The "before" state that is to be used to calculate
-                         the returned state update.
-  @param[in]     events All the unrestricted update events that need
-                        handling.
-  @param[in,out] state   The current state of the system on input; the
-                         desired state of the system on return. */
-  virtual void DoCalcUnrestrictedUpdate(
-      const Context<T>& context,
-      const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
-      State<T>* state) const;
-
  private:
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
@@ -1914,7 +1782,6 @@ class LeafSystem : public System<T> {
       std::optional<PeriodicEventData>* timing,
       EventCollection<DiscreteUpdateEvent<T>>* events) const final;
 
-  // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
@@ -1922,7 +1789,6 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final;
 
-  // Calls DoCalcDiscreteVariableUpdates (deprecated 2024-02-01).
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
@@ -1938,7 +1804,6 @@ class LeafSystem : public System<T> {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const final;
 
-  // Calls DoCalcUnrestrictedUpdate (deprecated 2024-02-01).
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.

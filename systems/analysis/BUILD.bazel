@@ -210,6 +210,7 @@ drake_cc_library(
     hdrs = ["monte_carlo.h"],
     deps = [
         ":simulator",
+        "//common:parallelism",
         "//systems/framework",
     ],
 )

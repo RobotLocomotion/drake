@@ -7,6 +7,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_properties.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/render/render_material.h"
 #include "drake/geometry/rgba.h"
 
@@ -90,6 +91,25 @@ struct RenderMesh {
 std::vector<RenderMesh> LoadRenderMeshesFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
     const Rgba& default_diffuse,
+    const drake::internal::DiagnosticPolicy& policy = {});
+
+/* Constructs a render mesh from a triangle surface mesh.
+
+ The normal of a vertex v is computed using area-weighted normals of the
+ triangles containing vertex v. In particular, for a watertight mesh, this will
+ result in a smoothed geometry. On the other hand, if the mesh consists of
+ triangles with duplicated and collocated vertices, this will result in a
+ faceted geometry.
+
+ UvState will be set to UvState::kNone and all uv coordinates are set to zero.
+ The material of the resulting render mesh is created using the protocol in
+ MakeMeshFallbackMaterial() with the given `properties` and `default_diffuse`.
+
+ The returned RenderMesh has the same number of positions, vertex normals, and
+ uv coordinates as `mesh.num_vertices()`. */
+RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
+    const TriangleSurfaceMesh<double>& mesh,
+    const GeometryProperties& properties, const Rgba& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 }  // namespace internal

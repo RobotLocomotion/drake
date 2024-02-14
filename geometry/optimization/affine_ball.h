@@ -97,6 +97,17 @@ class AffineBall final : public ConvexSet {
   static AffineBall MinimumVolumeCircumscribedEllipsoid(
       const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
 
+  /** Constructs an affine ball such that its main diameter is the line segment
+  from @p x_1 to @p x_2, and the length of all other diameters are 2 * @p
+  epsilon.
+  @pre x_1.size() == x_2.size().
+  @pre epsilon >= 0.
+  @throws std::runtime_error if ‖x_1 - x_2‖₂ is less than 1e-9. */
+  static AffineBall MakeAffineBallFromLineSegment(
+      const Eigen::Ref<const Eigen::VectorXd>& x_1,
+      const Eigen::Ref<const Eigen::VectorXd>& x_2,
+      const double epsilon = 1e-3);
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>

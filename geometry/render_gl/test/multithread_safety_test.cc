@@ -163,14 +163,14 @@ void AddShape(const Shape& shape, const Vector3d& p_WS,
               std::variant<Rgba, std::string> diffuse, RenderEngine* engine) {
   PerceptionProperties material;
   material.AddProperty("label", "id", render::RenderLabel::kDontCare);
-  std::visit(overloaded{[&material](const Rgba& rgba) {
-                          material.AddProperty("phong", "diffuse", rgba);
-                        },
-                        [&material](const std::string& diffuse_map) {
-                          material.AddProperty("phong", "diffuse_map",
-                                               diffuse_map);
-                        }},
-             diffuse);
+  visit_overloaded<void>(  // BR
+      overloaded{[&material](const Rgba& rgba) {
+                   material.AddProperty("phong", "diffuse", rgba);
+                 },
+                 [&material](const std::string& diffuse_map) {
+                   material.AddProperty("phong", "diffuse_map", diffuse_map);
+                 }},
+      diffuse);
   engine->RegisterVisual(GeometryId::get_new_id(), shape, material,
                          math::RigidTransformd(p_WS), false /* needs update */);
 }

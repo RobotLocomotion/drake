@@ -1,6 +1,5 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
-#include <limits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -8,7 +7,6 @@
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {
@@ -109,11 +107,8 @@ RationalForwardKinematics::RationalForwardKinematics(
     one_plus_s_angles_squared_(i) = symbolic::Polynomial(
         {{monomial_one, 1}, {symbolic::Monomial(s_angles_[i], 2), 1}});
   }
-  s_angle_variables_ =
-      symbolic::Variables(Eigen::Map<const VectorX<symbolic::Variable>>(
-          s_angles_.data(), s_angles_.size()));
-  s_variables_ = symbolic::Variables(
-      Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size()));
+  s_angle_variables_ = symbolic::Variables(EigenMapView(s_angles_));
+  s_variables_ = symbolic::Variables(EigenMapView(s_));
 }
 
 RationalForwardKinematics::Pose<symbolic::Polynomial>

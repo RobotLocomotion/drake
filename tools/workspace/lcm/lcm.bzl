@@ -142,6 +142,7 @@ def lcm_cc_library(
         deprecation = None,
         aggregate_hdr = None,
         aggregate_hdr_strip_prefix = ["**/include/"],
+        _use_new_lcm_gen = False,
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -177,15 +178,33 @@ def lcm_cc_library(
             helper_tags.append(sticky_tag)
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".hpp")
-    _lcm_library_gen(
-        name = name + "_lcm_library_gen",
-        language = "cc",
-        lcm_srcs = lcm_srcs,
-        lcm_package = lcm_package,
-        outs = outs,
-        deprecation = deprecation,
-        tags = helper_tags,
-    )
+    if _use_new_lcm_gen:
+        # The _use_new_lcm_gen flag is private, for the exclusive use of
+        # Drake's drake_lcm_cc_library wrapper. It's an instruction to use
+        # Drake's customized lcm_gen tool, instead LCM's upstream lcm-gen.
+        tool = "@drake//tools/lcm_gen"
+        native.genrule(
+            name = name + "_lcm_library_gen",
+            srcs = lcm_srcs,
+            outs = outs,
+            tools = [tool],
+            cmd = " ".join([
+                "$(execpath {})".format(tool),
+                "$(SRCS)",
+                "--outdir=$(RULEDIR)/$$(dirname {})".format(outs[0]),
+            ]),
+            tags = helper_tags,
+        )
+    else:
+        _lcm_library_gen(
+            name = name + "_lcm_library_gen",
+            language = "cc",
+            lcm_srcs = lcm_srcs,
+            lcm_package = lcm_package,
+            outs = outs,
+            deprecation = deprecation,
+            tags = helper_tags,
+        )
 
     if aggregate_hdr:
         outs += _lcm_aggregate_hdr(
@@ -200,8 +219,9 @@ def lcm_cc_library(
         )
 
     deps = kwargs.pop("deps", [])
-    if "@lcm//:lcm_coretypes" not in deps:
-        deps = deps + ["@lcm//:lcm_coretypes"]
+    if not _use_new_lcm_gen:
+        if "@lcm//:lcm_coretypes" not in deps:
+            deps = deps + ["@lcm//:lcm_coretypes"]
 
     includes = kwargs.pop("includes", [])
     if "." not in includes:

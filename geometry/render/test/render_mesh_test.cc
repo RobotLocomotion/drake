@@ -861,6 +861,117 @@ TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
   }
 }
 
+GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, SingleTriangle) {
+  std::vector<Vector3d> vertices;
+  vertices.emplace_back(0, 0, 0);
+  vertices.emplace_back(1, 0, 0);
+  vertices.emplace_back(0, 1, 0);
+  std::vector<SurfaceTriangle> triangles;
+  triangles.emplace_back(0, 1, 2);
+  const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
+  const PerceptionProperties empty_props;
+  const Rgba default_diffuse(0.1, 0.2, 0.3, 0.4);
+
+  RenderMesh render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
+      tri_mesh, empty_props, default_diffuse);
+
+  // Check geometry.
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> expected_positions(
+      3, 3);
+  // clang-format off
+  expected_positions << 0.0, 0.0, 0.0,
+                        1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0;
+  // clang-format on
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> expected_normals(3,
+                                                                             3);
+  // All vertex normals inherit face normal of the only face.
+  // clang-format off
+  expected_normals << 0.0, 0.0, 1.0,
+                      0.0, 0.0, 1.0,
+                      0.0, 0.0, 1.0;
+  // clang-format on
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> expected_uvs(3, 2);
+  // All uvs are set to (0,0).
+  // clang-format off
+  expected_uvs << 0.0, 0.0,
+                  0.0, 0.0,
+                  0.0, 0.0;
+  // clang-format on
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor>
+      expected_indices(1, 3);
+  expected_indices << 0, 1, 2;
+  EXPECT_EQ(render_mesh.positions, expected_positions);
+  EXPECT_EQ(render_mesh.normals, expected_normals);
+  EXPECT_EQ(render_mesh.uvs, expected_uvs);
+  EXPECT_EQ(render_mesh.indices, expected_indices);
+
+  EXPECT_EQ(render_mesh.uv_state, UvState::kNone);
+
+  // Check material
+  EXPECT_EQ(render_mesh.material.diffuse, default_diffuse);
+  EXPECT_EQ(render_mesh.material.diffuse_map, std::filesystem::path{});
+  EXPECT_FALSE(render_mesh.material.from_mesh_file);
+
+  // Make render mesh with diffuse properties set.
+  PerceptionProperties props_with_diffuse;
+  Rgba expected_diffuse(0.1, 0.1, 0.7, 0.9);
+  props_with_diffuse.AddProperty("phong", "diffuse", expected_diffuse);
+  render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
+      tri_mesh, props_with_diffuse, default_diffuse);
+  EXPECT_EQ(render_mesh.material.diffuse, expected_diffuse);
+  EXPECT_EQ(render_mesh.material.diffuse_map, std::filesystem::path{});
+  EXPECT_FALSE(render_mesh.material.from_mesh_file);
+}
+
+// Tests that the vertex normals are indeed computed using area weighted average
+// of face normals.
+GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, AreaWeightedNormals) {
+  /* Make a triangle surface mesh that's the surface of a single tet.
+                  +Fz   -Fx
+                   |   /
+                   v3 /
+                   | /
+                   |/
+   -Fy-----------v0+------v2---+ Fy
+                  /| Fo
+                 / |
+               v1  |
+               /   |
+             +Fx   |
+                  -Fz
+  */
+  std::vector<Vector3d> vertices;
+  vertices.emplace_back(0, 0, 0);
+  vertices.emplace_back(1, 0, 0);
+  vertices.emplace_back(0, 1, 0);
+  vertices.emplace_back(0, 0, 1);
+  std::vector<SurfaceTriangle> triangles;
+  triangles.emplace_back(0, 2, 1);  // Area 0.5, normal (0, 0, -1)
+  triangles.emplace_back(0, 1, 3);  // Area 0.5, normal (0, -1, 0)
+  triangles.emplace_back(0, 3, 2);  // Area 0.5, normal (-1, 0, 0)
+  triangles.emplace_back(1, 2,
+                         3);  // Area sqrt(3)/2, normal (1, 1, 1)/sqrt(3)
+  const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
+  const PerceptionProperties empty_props;
+  Rgba default_diffuse(0.1, 0.2, 0.3, 0.4);
+  const RenderMesh render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
+      tri_mesh, empty_props, default_diffuse);
+
+  // Compare the computed normals with the pen-and-paper result. Note that this
+  // tetrahedron has been selected so that the weighted normal for v0 points in
+  // the (-1, -1, -1) direction, and v2, v3, and v4 have weighted normals that
+  // point in the x, y, and z directions, respectively.
+  EXPECT_TRUE(CompareMatrices(render_mesh.normals.row(0).transpose(),
+                              Vector3d(-1.0, -1.0, -1.0).normalized()));
+  EXPECT_TRUE(CompareMatrices(render_mesh.normals.row(1).transpose(),
+                              Vector3d::UnitX()));
+  EXPECT_TRUE(CompareMatrices(render_mesh.normals.row(2).transpose(),
+                              Vector3d::UnitY()));
+  EXPECT_TRUE(CompareMatrices(render_mesh.normals.row(3).transpose(),
+                              Vector3d::UnitZ()));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

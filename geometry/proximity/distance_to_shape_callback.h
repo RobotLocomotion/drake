@@ -14,8 +14,9 @@
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
 
-/** @file Provides the structures and logic to support signed distance queries
- between shapes.  */
+/** @file
+ Provides the structures and logic to support signed distance queries between
+ shapes.  */
 
 namespace drake {
 namespace geometry {

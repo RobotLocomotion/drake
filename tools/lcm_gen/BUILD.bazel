@@ -1,0 +1,160 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# The library target for this tool.
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools:module_py"],
+)
+
+# The command-line target for this tool.
+drake_py_binary(
+    name = "lcm_gen",
+    srcs = ["__init__.py"],
+    tags = [
+        # The "module_py" handles the linting for "__init__.py"; we suppress
+        # it here to avoid duplicate linter complaints.
+        "nolint",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [":module_py"],
+)
+
+drake_py_unittest(
+    name = "lcm_gen_test",
+    data = [
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
+        "test/lima.lcm",
+        "test/mike.lcm",
+        "test/november.lcm",
+    ],
+    deps = [
+        ":module_py",
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+# We'll run the upstream reference implementation of lcm-gen, for comparison.
+# When doing that, we'll use the LCM package name "romeo" to distinguish the
+# upstream reference output from our tool's output, which is in package "papa".
+# That way, we can safely include both in the same test program for comparison.
+# This rule generates the package-renamed `*.lcm` source files.
+genrule(
+    name = "gen_romeo_lcm_sources",
+    testonly = True,
+    srcs = [
+        "test/lima.lcm",
+        "test/mike.lcm",
+        "test/november.lcm",
+    ],
+    outs = [
+        "test/romeo/lima.lcm",
+        "test/romeo/mike.lcm",
+        "test/romeo/november.lcm",
+    ],
+    cmd = " && ".join([
+        " ".join([
+            # Replace 'papa' with 'romeo'.
+            "sed -e 's#papa#romeo#g;'",
+            "$(execpath test/{}.lcm)".format(name),
+            " > ",
+            "$(RULEDIR)/test/romeo/{}.lcm".format(name),
+        ])
+        for name in [
+            "lima",
+            "mike",
+            "november",
+        ]
+    ]),
+)
+
+# Run the upstream reference implementation of lcm-gen.
+genrule(
+    name = "gen_romeo_hpp",
+    testonly = True,
+    srcs = [
+        ":test/romeo/lima.lcm",
+        ":test/romeo/mike.lcm",
+        ":test/romeo/november.lcm",
+    ],
+    outs = [
+        "test/romeo/lima.hpp",
+        "test/romeo/mike.hpp",
+        "test/romeo/november.hpp",
+    ],
+    cmd = " ".join([
+        "$(execpath @lcm//:lcm-gen)",
+        "--cpp",
+        "--cpp-std=c++11",
+        "--use-quotes-for-includes",
+        "--cpp-hpath=$(RULEDIR)/test",
+        "$(execpath :test/romeo/lima.lcm)",
+        "$(execpath :test/romeo/mike.lcm)",
+        "$(execpath :test/romeo/november.lcm)",
+    ]),
+    tools = [
+        "@lcm//:lcm-gen",
+    ],
+)
+
+# Compile the reference implementation's C++ output (i.e., headers).
+cc_library(
+    name = "romeo",
+    testonly = True,
+    hdrs = [
+        ":test/romeo/lima.hpp",
+        ":test/romeo/mike.hpp",
+        ":test/romeo/november.hpp",
+    ],
+    includes = ["test"],
+    tags = ["nolint"],
+    deps = [
+        "@lcm",
+    ],
+)
+
+# Compile our tools' generated headers. Here we use the _goal_ header files
+# instead of _auto-generated_ header files so we can separate the questions of
+# "does the tool generate the expected headers" (via the lcm_gen_test) vs "do
+# the headers encode/decode correctly" (via the functional_test).
+cc_library(
+    name = "papa",
+    testonly = True,
+    hdrs = [
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
+    ],
+    include_prefix = "papa",
+    strip_include_prefix = "test/goal",
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "functional_test",
+    deps = [
+        ":papa",
+        ":romeo",
+        "//lcm:lcm_messages",
+    ],
+)
+
+# TODO(jwnimmer-tri) Add a unit test that checks our claims about an upstream
+# lcm_gen message being able to depend on our lcm_gen message as a nested
+# sub-struct. At the moment we have no test coverage of the legacy API's
+# nesting support (_encodeNoHash, _decodeNoHash, _computeHash).
+
+add_lint_tests()

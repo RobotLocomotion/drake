@@ -1,7 +1,6 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 #include <algorithm>
-#include <memory>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -16,17 +15,11 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
-#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
 #include "drake/multibody/plant/test_utilities/rigid_body_on_compliant_ground.h"
-#include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;

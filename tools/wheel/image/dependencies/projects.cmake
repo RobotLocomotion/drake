@@ -14,17 +14,9 @@ set(zlib_dlname "zlib-${zlib_version}.zip")
 list(APPEND ALL_PROJECTS zlib)
 
 # eigen
-if(APPLE)
-    # This version mimics homebrew.
-    set(eigen_version 3.4.0)
-    set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
-    set(eigen_md5 "4c527a9171d71a72a9d4186e65bea559")
-else()
-    # This version mimics Ubuntu 20.04 (Focal).
-    set(eigen_version 3.3.7)
-    set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
-    set(eigen_md5 "9e30f67e8531477de4117506fe44669b")
-endif()
+set(eigen_version 3.4.0)
+set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
+set(eigen_md5 "4c527a9171d71a72a9d4186e65bea559")
 set(eigen_dlname "eigen-${eigen_version}.tar.gz")
 list(APPEND ALL_PROJECTS eigen)
 
@@ -47,9 +39,9 @@ if(APPLE)
 
     # This must match the version in tools/workspace/ipopt_internal_fromsource.
     # The matching is automatically enforced by a linter script.
-    set(ipopt_version 3.14.13)
+    set(ipopt_version 3.14.14)
     set(ipopt_url "https://github.com/coin-or/Ipopt/archive/refs/tags/releases/${ipopt_version}.tar.gz")
-    set(ipopt_md5 "536872bc6b3f2c655f308bee8abd78c4")
+    set(ipopt_md5 "75c288ff392e95db0ac6b296b2b3b367")
     set(ipopt_dlname "ipopt-${ipopt_version}.tar.gz")
     list(APPEND ALL_PROJECTS ipopt)
 endif()

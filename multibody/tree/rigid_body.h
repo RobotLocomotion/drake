@@ -288,8 +288,9 @@ class RigidBody : public MultibodyElement<T> {
   /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
   /// @note A floating body is not necessarily modeled with a quaternion
-  /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
-  /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
+  /// mobilizer, see has_quaternion_dofs(). Alternative options include a
+  /// roll-pitch-yaw (rpy) parametrization of rotations, see
+  /// RpyFloatingMobilizer.
   /// @throws std::exception if called pre-finalize,
   /// @see MultibodyPlant::Finalize()
   bool is_floating() const {
@@ -323,25 +324,6 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     DRAKE_DEMAND(is_floating());
     return topology_.floating_positions_start;
-  }
-
-  /// (Advanced, Deprecated) For floating bodies (see is_floating()) this
-  /// method returns the index of this %RigidBody's first generalized velocity
-  /// in the _full state vector_ for a MultibodyPlant model, under the dubious
-  /// assumption that the state consists of [q v] concatenated.
-  /// Velocities for this body are then contiguous starting at this index.
-  /// @throws std::exception if called pre-finalize
-  /// @pre this is a floating body
-  /// @see floating_velocities_start_in_v()
-  DRAKE_DEPRECATED("2024-02-01",
-                   "Convert to floating_velocities_start_in_v(). In a state "
-                   "with [q v] concatenated, offset by num_positions() to "
-                   "get to the start of v.")
-  int floating_velocities_start() const {
-    ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
-    return this->get_parent_tree().num_positions() +
-        topology_.floating_velocities_start_in_v;
   }
 
   /// (Advanced) For floating bodies (see is_floating()) this method returns the

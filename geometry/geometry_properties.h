@@ -334,9 +334,8 @@ class GeometryProperties {
                              const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
     if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
-      const Rgba color =
-          GetValueOrThrow<Rgba>("GetProperty", group_name, name, abstract,
-                                typeid(Eigen::Vector4d));
+      const Rgba color = GetValueOrThrow<Rgba>(
+          "GetProperty", group_name, name, abstract, typeid(Eigen::Vector4d));
       return ToVector4d(color);
     } else {
       return GetValueOrThrow<ValueType>("GetProperty", group_name, name,
@@ -388,9 +387,9 @@ class GeometryProperties {
       return default_value;
     } else {
       if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
-        const Rgba color = GetValueOrThrow<Rgba>(
-            "GetPropertyOrDefault", group_name, name, *abstract,
-            typeid(Eigen::Vector4d));
+        const Rgba color =
+            GetValueOrThrow<Rgba>("GetPropertyOrDefault", group_name, name,
+                                  *abstract, typeid(Eigen::Vector4d));
         return ToVector4d(color);
       } else {
         // This incurs the cost of copying a stored value.
@@ -486,9 +485,7 @@ class GeometryProperties {
 
   // TODO(eric.cousineau): Deprecate this, saying: "Use Rgba instead of
   // Vector4d to define diffuse color."
-  static Eigen::Vector4d ToVector4d(const Rgba& color) {
-    return color.rgba();
-  }
+  static Eigen::Vector4d ToVector4d(const Rgba& color) { return color.rgba(); }
 
   // TODO(eric.cousineau): Deprecate this, saying: "Use Rgba instead of
   // Vector4d to define diffuse color."
@@ -502,7 +499,6 @@ class GeometryProperties {
 
 }  // namespace geometry
 }  // namespace drake
-
 
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {

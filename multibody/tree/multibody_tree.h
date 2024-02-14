@@ -17,7 +17,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
@@ -25,6 +24,7 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
+#include "drake/multibody/tree/element_collection.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -490,18 +490,18 @@ class MultibodyTree {
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
   // See MultibodyPlant method.
-  int num_frames() const { return ssize(frames_); }
+  int num_frames() const { return frames_.num_elements(); }
 
   // Returns the number of bodies in the MultibodyPlant including the world
   // body. Therefore the minimum number of bodies is one.
-  int num_bodies() const { return ssize(owned_rigid_bodies_); }
+  int num_bodies() const { return rigid_bodies_.num_elements(); }
 
   // Returns the number of joints added with AddJoint() to the %MultibodyTree.
-  int num_joints() const { return ssize(owned_joints_); }
+  int num_joints() const { return joints_.num_elements(); }
 
   // Returns the number of actuators in the model.
   // @see AddJointActuator().
-  int num_actuators() const { return ssize(owned_actuators_); }
+  int num_actuators() const { return actuators_.num_elements(); }
 
   // See MultibodyPlant method.
   int num_mobilizers() const { return ssize(owned_mobilizers_); }
@@ -510,7 +510,7 @@ class MultibodyTree {
   int num_force_elements() const { return ssize(owned_force_elements_); }
 
   // Returns the number of model instances in the MultibodyTree.
-  int num_model_instances() const { return ssize(instance_name_to_index_); }
+  int num_model_instances() const { return model_instances_.num_elements(); }
 
   // Returns the number of generalized positions of the model.
   int num_positions() const {
@@ -521,7 +521,7 @@ class MultibodyTree {
   // Returns the number of generalized positions in a specific model instance.
   int num_positions(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return model_instances_.at(model_instance)->num_positions();
+    return model_instances_.get_element(model_instance).num_positions();
   }
 
   // Returns the number of generalized velocities of the model.
@@ -533,7 +533,7 @@ class MultibodyTree {
   // Returns the number of generalized velocities in a specific model instance.
   int num_velocities(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return model_instances_.at(model_instance)->num_velocities();
+    return model_instances_.get_element(model_instance).num_velocities();
   }
 
   // Returns the total size of the state vector in the model.
@@ -545,8 +545,8 @@ class MultibodyTree {
   // Returns the total size of the state vector in a specific model instance.
   int num_states(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return model_instances_.at(model_instance)->num_positions() +
-        model_instances_.at(model_instance)->num_velocities();
+    const auto& model = model_instances_.get_element(model_instance);
+    return model.num_positions() + model.num_velocities();
   }
 
   // See MultibodyPlant method.
@@ -557,13 +557,13 @@ class MultibodyTree {
   // See MultibodyPlant method.
   int num_actuators(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return model_instances_.at(model_instance)->num_actuators();
+    return model_instances_.get_element(model_instance).num_actuators();
   }
 
   // See MultibodyPlant method.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return model_instances_.at(model_instance)->num_actuated_dofs();
+    return model_instances_.get_element(model_instance).num_actuated_dofs();
   }
 
   // Returns the height of the tree data structure of `this` %MultibodyTree.
@@ -587,55 +587,47 @@ class MultibodyTree {
 
   // Returns a constant reference to the *world* frame.
   const RigidBodyFrame<T>& world_frame() const {
-    return owned_rigid_bodies_[world_index()]->body_frame();
+    return rigid_bodies_.get_element_unchecked(world_index()).body_frame();
   }
 
   // See MultibodyPlant method.
   const RigidBody<T>& get_body(BodyIndex body_index) const {
-    DRAKE_THROW_UNLESS(body_index < num_bodies());
-    return *owned_rigid_bodies_[body_index];
+    return rigid_bodies_.get_element(body_index);
   }
 
   RigidBody<T>& get_mutable_body(BodyIndex body_index) {
-    DRAKE_THROW_UNLESS(body_index < num_bodies());
-    return *owned_rigid_bodies_[body_index];
+    return rigid_bodies_.get_mutable_element(body_index);
   }
 
   // See MultibodyPlant method.
   const Joint<T>& get_joint(JointIndex joint_index) const {
-    DRAKE_THROW_UNLESS(joint_index < num_joints());
-    return *owned_joints_[joint_index];
+    return joints_.get_element(joint_index);
   }
 
   // See MultibodyPlant method.
   Joint<T>& get_mutable_joint(JointIndex joint_index) {
-    DRAKE_THROW_UNLESS(joint_index < num_joints());
-    return *owned_joints_[joint_index];
+    return joints_.get_mutable_element(joint_index);
   }
 
   // See MultibodyPlant method.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
-    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
-    return *owned_actuators_[actuator_index];
+    return actuators_.get_element(actuator_index);
   }
 
   // See MultibodyPlant method.
   JointActuator<T>& get_mutable_joint_actuator(
       JointActuatorIndex actuator_index) {
-    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
-    return *owned_actuators_[actuator_index];
+    return actuators_.get_mutable_element(actuator_index);
   }
 
   // See MultibodyPlant method.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
-    DRAKE_THROW_UNLESS(frame_index < num_frames());
-    return *frames_[frame_index];
+    return frames_.get_element(frame_index);
   }
 
   Frame<T>& get_mutable_frame(FrameIndex frame_index) {
-    DRAKE_THROW_UNLESS(frame_index < num_frames());
-    return *frames_[frame_index];
+    return frames_.get_mutable_element(frame_index);
   }
 
   // See MultibodyPlant method.
@@ -798,20 +790,6 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
-
-    // Backwards compatibility for automatically-added floating joints whose
-    // names went from "$world_bodyname" to "bodyname". Does not attempt to
-    // support cases (rare, maybe nonexistent) where a conflict caused the new
-    // name to be prefixed by underscores. Remove this on or after 2024-02-01.
-    if (name.substr(0, 7) == "$world_") {
-      name.remove_prefix(7);
-      drake::log()->warn(
-          "GetJointByName($world_{}): Floating joint names are no longer "
-          "prefixed by '$world_'. Looking for joint {} instead. "
-          "Support for the '$world_' prefix is deprecated and will "
-          "be removed on or after 2024-02-01.", name, name);
-    }
-
     const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
     const JointType<T>* const typed_joint =
         dynamic_cast<const JointType<T>*>(&joint);
@@ -1169,44 +1147,6 @@ class MultibodyTree {
 
   // @name Methods to compute multibody Jacobians.
   // @{
-
-  // See MultibodyPlant method.
-  VectorX<T> CalcBiasForJacobianTranslationalVelocity(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
-    const int num_points = p_FP_list.cols();
-    DRAKE_THROW_UNLESS(num_points > 0 && p_FP_list.rows() == 3);
-
-    const Matrix3X<T> asBias_AFp_E = CalcBiasTranslationalAcceleration(
-        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
-
-    // This deprecated method needs to return a VectorX<T>.
-    VectorX<T> asBias_AFp_E_as_VectorX(3 * num_points);
-    for (int i = 0;  i < num_points; ++i) {
-      const Vector3<T> acceleration_bias_i = asBias_AFp_E.col(i);
-      for (int j = 0; j < 3;  ++j)
-        asBias_AFp_E_as_VectorX(3*i + j) = acceleration_bias_i(j);
-    }
-
-    return asBias_AFp_E_as_VectorX;
-  }
-
-  // See MultibodyPlant method.
-  Vector6<T> CalcBiasForJacobianSpatialVelocity(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
-    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
-        context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
-    return Abias_WFp.get_coeffs();
-  }
 
   // See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(
@@ -2209,11 +2149,20 @@ class MultibodyTree {
     }
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
 
-    tree_clone->frames_.resize(num_frames());
+    // Fill the `frame_` collection with nulls. We'll be cloning the frames out
+    // of order, so we can't just append them to the end like we do with the
+    // other kinds of elements.
+    tree_clone->frames_.ResizeToMatch(frames_);
+
     // Skipping the world body at body_index = 0.
     for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
       const RigidBody<T>& body = get_body(body_index);
       tree_clone->CloneBodyAndAdd(body);
+    }
+
+    // Skip the world (0) and default (1) instances.
+    for (ModelInstanceIndex index(2); index < num_model_instances(); ++index) {
+      tree_clone->AddModelInstance(model_instances_.get_element(index).name());
     }
 
     // TODO(sherm1) Remove these unfortunate hacks needed to duplicate the
@@ -2233,8 +2182,12 @@ class MultibodyTree {
     // they were added to the original tree. Since the Frame API enforces the
     // creation of the parent frame first, this traversal guarantees that parent
     // body frames are created before their child frames.
-    for (const auto& frame : owned_frames_) {
-      tree_clone->CloneFrameAndAdd(*frame);
+    for (const Frame<T>* frame : frames_.elements()) {
+      // If the frame was a RigidBodyFrame then it will already have been set
+      // in `frames_`. We should only clone frames that don't exist yet.
+      if (!tree_clone->frames_.has_element(frame->index())) {
+        tree_clone->CloneFrameAndAdd(*frame);
+      }
     }
 
     for (const auto& mobilizer : owned_mobilizers_) {
@@ -2260,11 +2213,11 @@ class MultibodyTree {
     // RigidBody, Mobilizer, ForceElement and Constraint, they are cloned last
     // so that the clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
-    for (const auto& joint : owned_joints_) {
+    for (const Joint<T>* joint : joints_.elements()) {
       tree_clone->CloneJointAndAdd(*joint);
     }
 
-    for (const auto& actuator : owned_actuators_) {
+    for (const JointActuator<T>* actuator : actuators_.elements()) {
       tree_clone->CloneActuatorAndAdd(*actuator);
     }
 
@@ -2276,12 +2229,6 @@ class MultibodyTree {
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
-    tree_clone->body_name_to_index_ = this->body_name_to_index_;
-    tree_clone->frame_name_to_index_ = this->frame_name_to_index_;
-    tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
-    tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
-    tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
-    tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
     tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
     tree_clone->discrete_state_index_ = this->discrete_state_index_;
 
@@ -2871,7 +2818,7 @@ class MultibodyTree {
 
   void CreateBodyNode(MobodIndex mobod_index);
 
-  void CreateModelInstances();
+  void FinalizeModelInstances();
 
   // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
@@ -2880,8 +2827,8 @@ class MultibodyTree {
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
   // CloneToScalar(), it is guaranteed that the cloned body in this variant's
-  // `owned_rigid_bodies_` will occupy the same position as its corresponding
-  // body in the source variant `body`.
+  // `rigid_bodies_` will occupy the same position as its corresponding
+  // RigidBody in the source variant `body`.
   template <typename FromScalar>
   RigidBody<T>* CloneBodyAndAdd(const RigidBody<FromScalar>& body);
 
@@ -2914,10 +2861,10 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    FrameIndex frame_index = frame.index();
-    DRAKE_DEMAND(frame_index < num_frames());
+    const FrameIndex frame_index = frame.index();
+    const Frame<T>& my_frame = frames_.get_element(frame_index);
     const FrameType<T>* frame_variant =
-        dynamic_cast<const FrameType<T>*>(frames_[frame_index]);
+        dynamic_cast<const FrameType<T>*>(&my_frame);
     DRAKE_DEMAND(frame_variant != nullptr);
     return *frame_variant;
   }
@@ -2931,10 +2878,10 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    BodyIndex body_index = body.index();
-    DRAKE_DEMAND(body_index < num_bodies());
+    const BodyIndex body_index = body.index();
+    const RigidBody<T>& my_body = rigid_bodies_.get_element(body_index);
     const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(owned_rigid_bodies_[body_index].get());
+        dynamic_cast<const BodyType<T>*>(&my_body);
     DRAKE_DEMAND(body_variant != nullptr);
     return *body_variant;
   }
@@ -2984,23 +2931,12 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    JointIndex joint_index = joint.index();
-    DRAKE_DEMAND(joint_index < num_joints());
+    const JointIndex joint_index = joint.index();
+    const Joint<T>& my_joint = joints_.get_element(joint_index);
     const JointType<T>* joint_variant =
-        dynamic_cast<const JointType<T>*>(owned_joints_[joint_index].get());
+        dynamic_cast<const JointType<T>*>(&my_joint);
     DRAKE_DEMAND(joint_variant != nullptr);
     return *joint_variant;
-  }
-
-  // When using a StringViewMapKey as the key type in an unordered map, the
-  // instance *stored* in the map must own its string. This interface validates
-  // that invariant and should be the sole mechanism by which entries are
-  // *added* to the map.
-  template <typename ElementIndex, class MapType>
-  static void SetElementIndex(StringViewMapKey key, ElementIndex index,
-                              MapType* name_to_index) {
-    DRAKE_DEMAND(key.storage().has_value());
-    name_to_index->emplace(std::move(key), index);
   }
 
   // Registers a joint in the graph.
@@ -3036,55 +2972,21 @@ class MultibodyTree {
   internal::MultibodyGraph multibody_graph_;
 
   const RigidBody<T>* world_rigid_body_{nullptr};
-  std::vector<std::unique_ptr<RigidBody<T>>> owned_rigid_bodies_;
-  std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
+
+  // When we need to look up elements by name, we'll use an ElementCollection.
+  // Otherwise, we'll just use a plain vector.
+  ElementCollection<T, RigidBody, BodyIndex> rigid_bodies_;
+  ElementCollection<T, Frame, FrameIndex> frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
-  std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
+  ElementCollection<T, JointActuator, JointActuatorIndex> actuators_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
-  std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
-
-  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
-
-  // List of all frames in the system ordered by their FrameIndex. This vector
-  // contains a pointer to all frames in owned_frames_ as well as a pointer to
-  // each RigidBodyFrame, which are owned by their corresponding RigidBody.
-  std::vector<Frame<T>*> frames_;
+  ElementCollection<T, internal::ModelInstance, ModelInstanceIndex>
+      model_instances_;
+  ElementCollection<T, Joint, JointIndex> joints_;
 
   // The gravity field force element.
   UniformGravityFieldElement<T>* gravity_field_{nullptr};
-
-  // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
-  // since they are not templated on <T>.
-
-  // In order for the keys in the following maps to have correct semantics,
-  // indices should only be set in these maps via invocations to
-  // SetElementIndex. Never call emplace or insert directly, just to be safe.
-
-  // The xxx_name_to_index_ structures are multimaps because
-  // bodies/joints/actuators/etc may appear with the same name in different
-  // model instances.  The index values are still unique across the entire
-  // %MultibodyTree.
-
-  // Map used to find body indexes by their body name.
-  std::unordered_multimap<StringViewMapKey, BodyIndex> body_name_to_index_;
-
-  // Map used to find frame indexes by their frame name.
-  std::unordered_multimap<StringViewMapKey, FrameIndex> frame_name_to_index_;
-
-  // Map used to find joint indexes by their joint name.
-  std::unordered_multimap<StringViewMapKey, JointIndex> joint_name_to_index_;
-
-  // Map used to find actuator indexes by their actuator name.
-  std::unordered_multimap<StringViewMapKey, JointActuatorIndex>
-      actuator_name_to_index_;
-
-  // Map used to find a model instance index by its model instance name.
-  std::unordered_map<StringViewMapKey, ModelInstanceIndex>
-      instance_name_to_index_;
-
-  // Map used to find a model instance name by its model instance index.
-  std::unordered_map<ModelInstanceIndex, std::string> instance_index_to_name_;
 
   // BodyNode (mobilized body) indexes ordered by level (a.k.a depth). Therefore
   // for the i-th level body_node_levels_[i] contains the list of all body node

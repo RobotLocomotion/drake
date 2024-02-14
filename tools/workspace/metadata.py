@@ -35,7 +35,13 @@ def read_repository_metadata(repositories=None):
             name = line[1:].split("/")[0]
             repositories.add(name)
 
-        # These are starlark deps, so don't show up in the query.
+        # The bazel query only finds build-time dependencies.  Drake also
+        # requires some load-time dependencies such as starlark libraries,
+        # compilers, etc.  Here, we add by hand those we want to be archived
+        # and upgraded.
+        #
+        # NOTE: At this time, we are skipping the rust_toolchain repositories;
+        # see TODO in tools/workspace/rust_toolchain/repository.bzl.
         repositories.add("bazel_skylib")
 
     # Make sure all of the repository_rule results are up-to-date.
@@ -51,5 +57,20 @@ def read_repository_metadata(repositories=None):
                 result[data["name"]] = data
         except IOError:
             pass
+
+    # Add 'magic' metadata for repositories that don't/can't generate it the
+    # usual way.
+    result["crate_universe"] = {
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.sh",
+        # Downloads are associated with individual "crate__..." repositories.
+        "downloads": {},
+    }
+    result["rust_toolchain"] = {
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.py",
+        # Downloads are associated with individual "rust_..." repositories.
+        "downloads": {},
+    }
 
     return result

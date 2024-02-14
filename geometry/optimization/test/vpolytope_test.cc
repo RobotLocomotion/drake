@@ -561,6 +561,22 @@ GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronQHullProblems) {
   EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 2, 0), vpolyTol));
   EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, -1), vpolyTol));
   EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, 2), vpolyTol));
+
+  // 1D ambient dimension.
+  Eigen::Matrix<double, 2, 1> A4;
+  A4 << 1, -1;
+  Eigen::Vector2d b4;
+  b4 << 1, 0;
+  HPolyhedron hpoly4(A4, b4);
+  EXPECT_NO_THROW(VPolytope{hpoly4});
+  const VPolytope vpoly4(hpoly4);
+  EXPECT_TRUE(vpoly4.PointInSet(Vector1d(1), vpolyTol));
+  EXPECT_TRUE(vpoly4.PointInSet(Vector1d(0), vpolyTol));
+  // Ensure points just outside the boundary are not in the set. Note that we
+  // use 2 * vpolyTol, since a point that is only vpolyTol outside of the set
+  // could be considered to be in the set due to the numerical tolerance.
+  EXPECT_FALSE(vpoly4.PointInSet(Vector1d(1 + 2 * vpolyTol), vpolyTol));
+  EXPECT_FALSE(vpoly4.PointInSet(Vector1d(0 - 2 * vpolyTol), vpolyTol));
 }
 
 GTEST_TEST(VPolytopeTest, CloneTest) {

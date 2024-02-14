@@ -153,8 +153,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_TRUE(is_default(default_object));
 
 #define EXPECT_DEFAULT_ERROR(expression) \
-  DRAKE_EXPECT_THROWS_MESSAGE(expression, \
-      "Attempting to perform query on invalid QueryObject.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(           \
+      expression, "Attempting to perform query on invalid QueryObject.+");
 
   EXPECT_DEFAULT_ERROR(ThrowIfNotCallable(default_object));
 
@@ -221,8 +221,9 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
   FrameId frame_id =
       scene_graph_.RegisterFrame(source_id, GeometryFrame("frame"));
   GeometryId geometry_id = scene_graph_.RegisterGeometry(
-      source_id, frame_id, make_unique<GeometryInstance>(
-                               identity, make_unique<Sphere>(1.0), "sphere"));
+      source_id, frame_id,
+      make_unique<GeometryInstance>(identity, make_unique<Sphere>(1.0),
+                                    "sphere"));
   unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
   unique_ptr<QueryObject<double>> query_object =
       MakeQueryObject(context.get(), &scene_graph_);

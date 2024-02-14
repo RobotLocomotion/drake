@@ -384,7 +384,7 @@ std::optional<std::string> ParseGeometryName(
   if (ParseStringAttribute(node, "name", &result)) {
     explicitly_named = true;
   } else {
-    result = geometry::ShapeName(shape).name();
+    result = shape.type_name();
   }
 
   // Check if we need to salt it.

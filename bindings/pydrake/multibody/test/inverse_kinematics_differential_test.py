@@ -6,7 +6,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
@@ -98,13 +97,40 @@ class TestPlanner(unittest.TestCase):
 
         context = plant.CreateDefaultContext()
         frame = plant.GetFrameByName("Link2")
+
+        world_frame = plant.world_frame()
+
         parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
 
-        mut.DoDifferentialInverseKinematics(plant, context,
-                                            np.zeros(6), frame, parameters)
+        mut.DoDifferentialInverseKinematics(
+            robot=plant,
+            context=context,
+            V_WE_desired=np.zeros(6),
+            frame_E=frame,
+            parameters=parameters)
 
-        mut.DoDifferentialInverseKinematics(plant, context, RigidTransform(),
-                                            frame, parameters)
+        mut.DoDifferentialInverseKinematics(
+            robot=plant,
+            context=context,
+            X_WE_desired=RigidTransform(),
+            frame_E=frame,
+            parameters=parameters)
+
+        mut.DoDifferentialInverseKinematics(
+            robot=plant,
+            context=context,
+            V_AE_desired=np.zeros(6),
+            frame_A=world_frame,
+            frame_E=frame,
+            parameters=parameters)
+
+        mut.DoDifferentialInverseKinematics(
+            robot=plant,
+            context=context,
+            X_AE_desired=RigidTransform(),
+            frame_A=world_frame,
+            frame_E=frame,
+            parameters=parameters)
 
     def test_diff_ik_integrator(self):
         file_name = FindResourceOrThrow(

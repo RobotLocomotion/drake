@@ -283,13 +283,11 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_message.body1_name = "Id_" + to_string(surface.id_M());
       surface_message.body2_name = "Id_" + to_string(surface.id_N());
 
-      std::copy(surface.centroid().data(), surface.centroid().data() + 3,
-                surface_message.centroid_W);
-      const std::array<double, 3> fake_force{1e-2, 0, 0};
-      std::copy(fake_force.begin(), fake_force.end(),
-                surface_message.force_C_W);
-      const std::array<double, 3> moment{0, 0, 0};
-      std::copy(moment.begin(), moment.end(), surface_message.moment_C_W);
+      EigenMapView(surface_message.centroid_W) = surface.centroid();
+      const Vector3d fake_force{1e-2, 0, 0};
+      EigenMapView(surface_message.force_C_W) = fake_force;
+      const Vector3d moment{0, 0, 0};
+      EigenMapView(surface_message.moment_C_W) = moment;
 
       const int num_vertices = surface.num_vertices();
       surface_message.num_vertices = num_vertices;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>
@@ -124,5 +125,13 @@ std::string FindResourceOrThrow(const std::string& resource_path);
 /// The intended use of this variable is to seek resources from an installed
 /// copy of Drake, in case other methods have failed.
 extern const char* const kDrakeResourceRootEnvironmentVariableName;
+
+/// Returns the content of the file at the given path, or nullopt if it cannot
+/// be read. Note that the path is a filesystem path, not a `resource_path`.
+std::optional<std::string> ReadFile(const std::filesystem::path& path);
+
+/// Returns the content of the file at the given path, or throws if it cannot
+/// be read. Note that the path is a filesystem path, not a `resource_path`.
+std::string ReadFileOrThrow(const std::filesystem::path& path);
 
 }  // namespace drake

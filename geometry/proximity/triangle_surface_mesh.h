@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
@@ -56,12 +55,6 @@ class SurfaceTriangle {
   // The vertices of this triangle.
   std::array<int, 3> vertex_;
 };
-
-namespace internal {
-// Forward declaration for friend declaration.
-template <typename>
-class MeshDeformer;
-}  // namespace internal
 
 // Forward declaration of TriangleSurfaceMeshTester<T> for friend access.
 template <typename T>
@@ -139,8 +132,8 @@ class TriangleSurfaceMesh {
      many times the centroid would be accessed. So, for now, we'll compute on
      the fly until we know that the query cost dominates. */
     const auto& tri = triangles_[t];
-    return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +
-            vertices_[tri.vertex(2)]) /
+    return (vertices_M_[tri.vertex(0)] + vertices_M_[tri.vertex(1)] +
+            vertices_M_[tri.vertex(2)]) /
            3;
   }
 
@@ -148,7 +141,7 @@ class TriangleSurfaceMesh {
   const std::vector<SurfaceTriangle>& triangles() const { return triangles_; }
 
   /** Returns the vertices. */
-  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_M_; }
 
   /**
    Returns the vertex identified by a given index.
@@ -157,12 +150,12 @@ class TriangleSurfaceMesh {
    */
   const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
-    return vertices_[v];
+    return vertices_M_[v];
   }
 
   /** Returns the number of vertices in the mesh.
    */
-  int num_vertices() const { return vertices_.size(); }
+  int num_vertices() const { return vertices_M_.size(); }
 
   /** Returns the number of triangles in the mesh. For %TriangleSurfaceMesh, an
    element is a triangle. Returns the same number as num_triangles() and enables
@@ -180,13 +173,13 @@ class TriangleSurfaceMesh {
   TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& triangles,
                       std::vector<Vector3<T>>&& vertices)
       : triangles_(std::move(triangles)),
-        vertices_(std::move(vertices)),
+        vertices_M_(std::move(vertices)),
         area_(triangles_.size()),  // Pre-allocate here, not yet calculated.
         face_normals_(triangles_.size()) {  // Pre-allocate, not yet calculated.
     if (triangles_.empty()) {
       throw std::logic_error("A mesh must contain at least one triangle");
     }
-    CalcAreasNormalsAndCentroid();
+    ComputePositionDependentQuantities();
   }
 
   // TODO(SeanCurtis-TRI) This shouldn't be called "TransformVertices"; the name
@@ -197,7 +190,7 @@ class TriangleSurfaceMesh {
    initial frame M to the new frame N.
    */
   void TransformVertices(const math::RigidTransform<T>& X_NM) {
-    for (auto& v : vertices_) {
+    for (auto& v : vertices_M_) {
       v = X_NM * v;
     }
     for (auto& n : face_normals_) {
@@ -426,13 +419,21 @@ class TriangleSurfaceMesh {
     return gradu_M;
   }
 
- private:
-  // Client attorney class that provides a means to modify vertex positions.
-  friend class internal::MeshDeformer<TriangleSurfaceMesh<T>>;
+  /** Updates the position of all vertices in the mesh. Each sequential triple
+   in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a position
+   vector associated with the iᵗʰ vertex. The position values are interpreted to
+   be measured and expressed in the same frame as the mesh to be deformed.
 
+   @param p_MVs  Vertex positions for the mesh's N vertices flattened into a
+                 vector (where each position vector is measured and expressed in
+                 the mesh's original frame).
+   @throws std::exception if p_MVs.size() != 3 * num_vertices() */
+  void SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs);
+
+ private:
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
-  void CalcAreasNormalsAndCentroid();
+  void ComputePositionDependentQuantities();
 
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the triangle `t`. The gradient
@@ -442,8 +443,9 @@ class TriangleSurfaceMesh {
 
   // The triangles that comprise the surface.
   std::vector<SurfaceTriangle> triangles_;
-  // The vertices that are shared among the triangles.
-  std::vector<Vector3<T>> vertices_;
+  // The vertices that are shared among the triangles, measured and expressed in
+  // the mesh's frame M.
+  std::vector<Vector3<T>> vertices_M_;
 
   // Computed in initialization.
 
@@ -462,15 +464,15 @@ class TriangleSurfaceMesh {
 };
 
 template <class T>
-void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
+void TriangleSurfaceMesh<T>::ComputePositionDependentQuantities() {
   total_area_ = 0;
   p_MSc_.setZero();
 
   for (int f = 0; f < num_triangles(); ++f) {
     const SurfaceTriangle& face = triangles_[f];
-    const Vector3<T>& r_MA = vertices_[face.vertex(0)];
-    const Vector3<T>& r_MB = vertices_[face.vertex(1)];
-    const Vector3<T>& r_MC = vertices_[face.vertex(2)];
+    const Vector3<T>& r_MA = vertices_M_[face.vertex(0)];
+    const Vector3<T>& r_MB = vertices_M_[face.vertex(1)];
+    const Vector3<T>& r_MC = vertices_M_[face.vertex(2)];
     const auto r_UV_M = r_MB - r_MA;
     const auto r_UW_M = r_MC - r_MA;
 
@@ -503,9 +505,9 @@ Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
   // indexed by `t`. A and B are the other two vertices of the triangle.
   // Positions of the vertices are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[triangles_[t].vertex(i)];
-  const Vector3<T>& p_MA = vertices_[triangles_[t].vertex((i + 1) % 3)];
-  const Vector3<T>& p_MB = vertices_[triangles_[t].vertex((i + 2) % 3)];
+  const Vector3<T>& p_MV = vertices_M_[triangles_[t].vertex(i)];
+  const Vector3<T>& p_MA = vertices_M_[triangles_[t].vertex((i + 1) % 3)];
+  const Vector3<T>& p_MB = vertices_M_[triangles_[t].vertex((i + 2) % 3)];
 
   // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
   //  vector in TriangleSurfaceMeshFieldLinear since this calculation is not

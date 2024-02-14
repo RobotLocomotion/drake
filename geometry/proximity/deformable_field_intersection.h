@@ -37,10 +37,10 @@ namespace internal {
  @pre deformable_contact != nullptr.  */
 void AddDeformableDeformableContactSurface(
     const VolumeMeshFieldLinear<double, double>& deformable0_sdf_W,
-    const DeformableVolumeMesh<double>& deformable0_mesh_W,
+    const DeformableVolumeMeshWithBvh<double>& deformable0_mesh_W,
     GeometryId deformable0_id,
     const VolumeMeshFieldLinear<double, double>& deformable1_sdf_W,
-    const DeformableVolumeMesh<double>& deformable1_mesh_W,
+    const DeformableVolumeMeshWithBvh<double>& deformable1_mesh_W,
     GeometryId deformable1_id, DeformableContact<double>* deformable_contact);
 
 }  // namespace internal

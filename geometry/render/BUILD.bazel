@@ -13,12 +13,22 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
+        ":color_deprecated",
         ":light_parameter",
         ":render_camera",
         ":render_engine",
         ":render_label",
         ":render_material",
         ":render_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "color_deprecated",
+    hdrs = ["color_deprecated.h"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
     ],
 )
 
@@ -53,6 +63,7 @@ drake_cc_library(
     deps = [
         ":render_camera",
         ":render_label",
+        ":render_mesh",
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
@@ -101,6 +112,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_properties",
         "//geometry:rgba",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
     deps = [
         "@tinyobjloader_internal//:tinyobjloader",
@@ -117,10 +129,21 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
+genrule(
+    name = "box_checkered",
+    srcs = ["test/meshes/box.obj"],
+    outs = ["test/meshes/box_checkered.obj"],
+    cmd = "sed 's/box.obj.mtl/checker.mtl/' $< > $@",
+    visibility = ["//visibility:private"],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = [":box_no_mtl"] + glob([
+    srcs = [
+        ":box_checkered",
+        ":box_no_mtl",
+    ] + glob([
         "test/meshes/*",
         "test/box.sdf",
         "test/*.png",

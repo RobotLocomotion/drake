@@ -12,45 +12,45 @@ ARCHIVES = [
         downloads = json.encode(
             [
                 {
-                    "sha256": "0c9b1a24f08f7b7eeb411a4a62e2d8f4dbc07af7b26f93306b1c3b5d7abc0a3a",
+                    "sha256": "c16ba325a1c491d9963b0095cbae85e1a7d51e1bcf10426891e297a190ddb236",
                     "stripPrefix": "rustc-1.75.0-aarch64-apple-darwin/rustc",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustc-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rustc-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "0f1f20e1a1e3a7c44658a82b5defa8b38fac8c9b4e25051a73350ec36a3472c3",
+                    "sha256": "5a862003b2873632a5154d6ea3174ddcf5b39de8792c1970f3f8f65c23f0108b",
                     "stripPrefix": "clippy-1.75.0-aarch64-apple-darwin/clippy-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/clippy-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/clippy-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "16eac1143417207620654606f09e575bbdb66014bbd571e89182a4e4f630a3a1",
+                    "sha256": "86320d22c192b7a531daed941bbc11d8c7d01b6490cb4b85e7aa7ff92b5baf65",
                     "stripPrefix": "cargo-1.75.0-aarch64-apple-darwin/cargo",
                     "url": [
-                        "https://static.rust-lang.org/dist/cargo-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/cargo-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "a003f243ed50cbbd5f8add4838cd479e139b560e7a74669fdfbbaa2776b31492",
+                    "sha256": "27627c5606145a3a6cf2d12a75e8f3ee4b8be08dc5485d7c5a0e7c7c6245bfb9",
                     "stripPrefix": "rustfmt-1.75.0-aarch64-apple-darwin/rustfmt-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "400a442a891b8a6ce89a9ac242651b4f032d1a8419cb23874f747f54a4cc9069",
+                    "sha256": "b9001b9a746cb88cdbf011f8622df81905131aa6ba55fb6bbe1eacc895da488c",
                     "stripPrefix": "llvm-tools-1.75.0-aarch64-apple-darwin/llvm-tools-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "8eedd403d05829369e3dd84c6815f69fb7e5495d3ee3bf2b4b2f04d8591fe639",
+                    "sha256": "25e9849c4bd0032599e31a1358c7d175cfded3807593f6f1b5d9742db4941355",
                     "stripPrefix": "rust-std-1.75.0-aarch64-apple-darwin/rust-std-aarch64-apple-darwin",
                     "url": [
-                        "https://static.rust-lang.org/dist/rust-std-1.75.0-aarch64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rust-std-1.75.0-aarch64-apple-darwin.tar.xz",
                     ],
                 },
             ],
@@ -67,45 +67,45 @@ ARCHIVES = [
         downloads = json.encode(
             [
                 {
-                    "sha256": "ed2c9bbae4bda6d89c091a7b32c60655358ec1ade58677eaaa0e5e16ec4fb163",
+                    "sha256": "5c2f0c923933682611bc683c4abe7558682b4a9e3b716e28ee24d8def0a888f1",
                     "stripPrefix": "rustc-1.75.0-x86_64-apple-darwin/rustc",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustc-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rustc-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "9bd6ca5d265765837627191f16a70baac4c133de0ee74f0cd0706a2e7e09dd1d",
+                    "sha256": "5f7b7116430f7816b08121e84daacb0e9e0bca35470fc858a3b731149b97dddd",
                     "stripPrefix": "clippy-1.75.0-x86_64-apple-darwin/clippy-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/clippy-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/clippy-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "c54a64ce2e7b6d143e10d3ebd18ab8d41783558b1d9706fded1d75a2826a3463",
+                    "sha256": "08c594b582141bfb3113b4325f567abe1cae5d5e075b0b2b56553f8bc59486b5",
                     "stripPrefix": "cargo-1.75.0-x86_64-apple-darwin/cargo",
                     "url": [
-                        "https://static.rust-lang.org/dist/cargo-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/cargo-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "2078ea59e09b57e02cde3f54ef015145d7c358c771e555cb2e27d104bf4b462b",
+                    "sha256": "5604910e80182ded082403485953ab88c5b2eb9e0d2c7d3e860ed96dca32d2f2",
                     "stripPrefix": "rustfmt-1.75.0-x86_64-apple-darwin/rustfmt-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "da86f3871300123eddca5e833bbcd6a84d17379e56e7eca5a96bb3e10d57c0ae",
+                    "sha256": "eed6cb1ee9bc1a7324fee6b5c3104f828844ad0529cf43cc6c5db5af1d7ca06f",
                     "stripPrefix": "llvm-tools-1.75.0-x86_64-apple-darwin/llvm-tools-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "65098155333de2e446df61cdaf12a0c441358b7973f3cb1ba95fd11bda890406",
+                    "sha256": "a1b2fee1b1b04b15a40ce9dd1e395502f157949a07e9edba7a015b03b35b77b2",
                     "stripPrefix": "rust-std-1.75.0-x86_64-apple-darwin/rust-std-x86_64-apple-darwin",
                     "url": [
-                        "https://static.rust-lang.org/dist/rust-std-1.75.0-x86_64-apple-darwin.tar.gz",
+                        "https://static.rust-lang.org/dist/rust-std-1.75.0-x86_64-apple-darwin.tar.xz",
                     ],
                 },
             ],
@@ -122,45 +122,45 @@ ARCHIVES = [
         downloads = json.encode(
             [
                 {
-                    "sha256": "b7da2133a86e15a03e49307c0e91b0ab39c6ec8d0735a1c609499713f7e31571",
+                    "sha256": "b1d7bb8b0420b71585cf9c4eb5fd1e986fd83edc2d393510b54a9b20272386a3",
                     "stripPrefix": "rustc-1.75.0-aarch64-unknown-linux-gnu/rustc",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustc-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rustc-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "6c17c7f615da9426ea85468ef7a4c0f13416f96aaf5603854c099c42c42dccbb",
+                    "sha256": "de0335751e3992e1ac3425e890669c8ebd51c89de9126ada93ba8dc0045a8b84",
                     "stripPrefix": "clippy-1.75.0-aarch64-unknown-linux-gnu/clippy-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/clippy-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/clippy-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "8734060ba397ce0306e6b70253551eb63af6982c19326fd734f60ca35814ad9b",
+                    "sha256": "cf367bccbc97ba86b4cf8a0141c9c270523e38f865dc7220b3cfdd79b67200ed",
                     "stripPrefix": "cargo-1.75.0-aarch64-unknown-linux-gnu/cargo",
                     "url": [
-                        "https://static.rust-lang.org/dist/cargo-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/cargo-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "a5ad8ae8c975300c35ae1e367c9487401c8b92ef41a218258270dae75e4be885",
+                    "sha256": "5869ca3203e6f3ade284385eed00f07847b287188da8693e7948ddfd05974d8b",
                     "stripPrefix": "rustfmt-1.75.0-aarch64-unknown-linux-gnu/rustfmt-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "d4ed2d82c815857397c201491355f6c2a90aad586ceee55421425002ca4345cf",
+                    "sha256": "4941b158c0bca9a7e58df47909d146d71e34d192b5cfc553bca855333d5a74d3",
                     "stripPrefix": "llvm-tools-1.75.0-aarch64-unknown-linux-gnu/llvm-tools-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "74960aa36e66541b3e9a8f78aa5df9c5c5a0e93207c0bb42a4fa141bccfbfd14",
+                    "sha256": "2ea0dc380ac1fced245bafadafd0da50167a4a416b6011e3d73ba3e657a71d15",
                     "stripPrefix": "rust-std-1.75.0-aarch64-unknown-linux-gnu/rust-std-aarch64-unknown-linux-gnu",
                     "url": [
-                        "https://static.rust-lang.org/dist/rust-std-1.75.0-aarch64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rust-std-1.75.0-aarch64-unknown-linux-gnu.tar.xz",
                     ],
                 },
             ],
@@ -177,45 +177,45 @@ ARCHIVES = [
         downloads = json.encode(
             [
                 {
-                    "sha256": "9684bc337f41110821fc94498e0596f76a061fae4667b195579b03fd141ad538",
+                    "sha256": "2824ba4045acdddfa436da4f0bb72807b64a089aa2e7c9a66ca1a3a571114ce7",
                     "stripPrefix": "rustc-1.75.0-x86_64-unknown-linux-gnu/rustc",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustc-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rustc-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "e02b66c86cc55ba4f9c1bcbd75c06dc4387445629d182b67bc5b54431bbd538d",
+                    "sha256": "860fc6dc0df2d7e27886c57af38a86020ea1fe4878b9386b9f762f86b59776ca",
                     "stripPrefix": "clippy-1.75.0-x86_64-unknown-linux-gnu/clippy-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/clippy-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/clippy-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "ccd5f13a3101efadf09b1bbbebe8f099d97e99e1d4f0a29a37814a0dae429ede",
+                    "sha256": "6ac164e7da969a1d524f747f22792e9aa08bc7446f058314445a4f3c1d31a6bd",
                     "stripPrefix": "cargo-1.75.0-x86_64-unknown-linux-gnu/cargo",
                     "url": [
-                        "https://static.rust-lang.org/dist/cargo-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/cargo-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "ee077bf5ead714e7cd2b94babc6673b7d91e485f7c1583441a8d8f701d4b5c6e",
+                    "sha256": "1799f103dfaa19b8cf4781500773c709c627c00d203aecd1b56d75d8e624e4d5",
                     "stripPrefix": "rustfmt-1.75.0-x86_64-unknown-linux-gnu/rustfmt-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rustfmt-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "3efa2c600c2b5a6493975c4bf6d8d52fb7ddba3c131dbf84363da4e049ce9ed7",
+                    "sha256": "e429421b2d081c668ffcfbf8cc673739371adfff1b4234d92130ccc088ba82c2",
                     "stripPrefix": "llvm-tools-1.75.0-x86_64-unknown-linux-gnu/llvm-tools-preview",
                     "url": [
-                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/llvm-tools-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
                 {
-                    "sha256": "b7a43ed4bc9a9205b3ee2ece2a38232c8da5f1f14e7ed84fbefd492f9d474579",
+                    "sha256": "136b132199f7bbda2aa0bbff6d1e6ae7d5fca2994a2f2a432a5e99de224b6314",
                     "stripPrefix": "rust-std-1.75.0-x86_64-unknown-linux-gnu/rust-std-x86_64-unknown-linux-gnu",
                     "url": [
-                        "https://static.rust-lang.org/dist/rust-std-1.75.0-x86_64-unknown-linux-gnu.tar.gz",
+                        "https://static.rust-lang.org/dist/rust-std-1.75.0-x86_64-unknown-linux-gnu.tar.xz",
                     ],
                 },
             ],

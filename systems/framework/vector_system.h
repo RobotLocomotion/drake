@@ -281,13 +281,6 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
-  DRAKE_DEPRECATED("2024-02-01",
-      "Use DeclarePeriodicDiscreteUpdate() instead.")
-  void DeclarePeriodicDiscreteUpdateNoHandler(double period_sec,
-                                              double offset_sec = 0.0) {
-    this->DeclarePeriodicDiscreteUpdate(period_sec, offset_sec);
-  }
-
   /// Declares a discrete update rate. You must override
   /// DoCalcVectorDiscreteVariableUpdates() to handle the update.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
@@ -295,12 +288,9 @@ class VectorSystem : public LeafSystem<T> {
         period_sec, offset_sec, &VectorSystem<T>::CalcDiscreteUpdate);
   }
 
-  /// Provides a convenience method for %VectorSystem subclasses.  This
-  /// method performs the same logical operation as
-  /// System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
-  /// represent the input, discrete state, and discrete updates.  Subclasses
-  /// should override this method, and not the base class method (which is
-  /// `final`).
+  /// Provides a convenience method for %VectorSystem subclasses. This
+  /// method serves as the callback for DeclarePeriodicDiscreteUpdate(),
+  /// immediately above.
   ///
   /// The @p state will be either empty or the discrete state, depending on
   /// whether discrete state was declared at context-creation time.

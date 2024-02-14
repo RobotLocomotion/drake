@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "drake/common/symbolic/expression.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/iris_internal.h"
@@ -52,6 +53,12 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
+  if (options.termination_func && options.termination_func(P)) {
+    throw std::runtime_error(
+        "Iris: The options.termination_func() returned true for the initial "
+        "region (defined by the domain argument).  Please check the "
+        "implementation of your termination_func.");
+  }
 
   if (options.bounding_region) {
     DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
@@ -109,6 +116,13 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
             .any()) {
       break;
     }
+
+    if (options.termination_func &&
+        options.termination_func(
+            HPolyhedron(A.topRows(num_constraints), b.head(num_constraints)))) {
+      break;
+    }
+
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
 
     iteration++;
@@ -214,9 +228,8 @@ class IrisConvexSetMaker final : public ShapeReifier {
 ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
                              std::optional<FrameId> reference_frame) {
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const GeometrySet all_ids(inspector.GetAllGeometryIds());
-  const std::unordered_set<GeometryId> geom_ids =
-      inspector.GetGeometryIds(all_ids, Role::kProximity);
+  const std::vector<GeometryId> geom_ids =
+      inspector.GetAllGeometryIds(Role::kProximity);
   ConvexSets sets(geom_ids.size());
 
   IrisConvexSetMaker maker(query_object, reference_frame);
@@ -438,6 +451,19 @@ struct GeometryPairWithDistance {
   }
 };
 
+bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
+                    const std::string& error_msg, const std::string& info_msg,
+                    const bool is_initial_region) {
+  if (options.termination_func && options.termination_func(P)) {
+    if (is_initial_region) {
+      throw std::runtime_error(error_msg);
+    }
+    log()->info(info_msg);
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
@@ -487,8 +513,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   IrisConvexSetMaker maker(query_object, inspector.world_frame_id());
   std::unordered_map<GeometryId, copyable_unique_ptr<ConvexSet>> sets{};
   std::unordered_map<GeometryId, const multibody::Frame<double>*> frames{};
-  const std::unordered_set<GeometryId> geom_ids = inspector.GetGeometryIds(
-      GeometrySet(inspector.GetAllGeometryIds()), Role::kProximity);
+  const std::vector<GeometryId> geom_ids =
+      inspector.GetAllGeometryIds(Role::kProximity);
   copyable_unique_ptr<ConvexSet> temp_set;
   for (GeometryId geom_id : geom_ids) {
     // Make all sets in the local geometry frame.
@@ -598,6 +624,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     b.head(num_initial_constraints));
   }
 
+  if (options.termination_func && options.termination_func(P)) {
+    throw std::runtime_error(
+        "IrisInConfigurationSpace: The options.termination_func() returned "
+        "true for the initial region (defined by the linear constraints in "
+        "prog_with_additional_constraints and bounding_region arguments).  "
+        "Please check the implementation of your termination_func.");
+  }
+
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
 
   double best_volume = E.Volume();
@@ -616,10 +650,24 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   Vector3d point_to_draw = Vector3d::Zero();
   int num_points_drawn = 0;
 
+  const std::string seed_point_error_msg =
+      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
+      "the seed point exited the initial region. Does the provided "
+      "options.starting_ellipse not contain the seed point?";
+  const std::string seed_point_msg =
+      "IrisInConfigurationSpace: terminating iterations because the seed point "
+      "is no longer in the region.";
+  const std::string termination_error_msg =
+      "IrisInConfigurationSpace: the termination function returned false on "
+      "the computation of the initial region. Are the provided "
+      "options.starting_ellipse and options.termination_func compatible?";
+  const std::string termination_msg =
+      "IrisInConfigurationSpace: terminating iterations because "
+      "options.termination_func returned false.";
+
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
-    bool seed_point_requirement = true;
     HPolyhedron P_candidate = P;
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
@@ -644,21 +692,30 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           const VectorXd point = closest_points.col(scaling[i].second);
           AddTangentToPolytope(E, point, 0.0, &A, &b, &num_constraints);
           if (options.require_sample_point_is_contained) {
-            seed_point_requirement =
+            const bool seed_point_requirement =
                 A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
-            if (!seed_point_requirement) break;
+            if (!seed_point_requirement) {
+              if (iteration == 0) {
+                throw std::runtime_error(seed_point_error_msg);
+              }
+              log()->info(seed_point_msg);
+              return P;
+            }
+          }
+          if (CheckTerminate(options,
+                             HPolyhedron(A.topRows(num_constraints),
+                                         b.head(num_constraints)),
+                             termination_error_msg, termination_msg,
+                             iteration == 0)) {
+            return P;
           }
         }
       }
-
-      if (!seed_point_requirement) break;
 
       P_candidate =
           HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
       MakeGuessFeasible(P_candidate, &guess);
     }
-
-    if (!seed_point_requirement) break;
 
     // Use the fast nonlinear optimizer until it fails
     // num_collision_infeasible_samples consecutive times.
@@ -720,9 +777,19 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
               HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
           MakeGuessFeasible(P_candidate, &guess);
           if (options.require_sample_point_is_contained) {
-            seed_point_requirement =
+            const bool seed_point_requirement =
                 A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
-            if (!seed_point_requirement) break;
+            if (!seed_point_requirement) {
+              if (iteration == 0) {
+                throw std::runtime_error(seed_point_error_msg);
+              }
+              log()->info(seed_point_msg);
+              return P;
+            }
+          }
+          if (CheckTerminate(options, P_candidate, termination_error_msg,
+                             termination_msg, iteration == 0)) {
+            return P;
           }
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
@@ -764,10 +831,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             inspector.GetName(pair_w_distance.geomB),
             counter_example_searches_for_this_pair);
       }
-      if (!seed_point_requirement) break;
     }
-
-    if (!seed_point_requirement) break;
 
     if (options.prog_with_additional_constraints) {
       counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
@@ -798,9 +862,20 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                           b.head(num_constraints));
                 MakeGuessFeasible(P_candidate, &guess);
                 if (options.require_sample_point_is_contained) {
-                  seed_point_requirement = A.row(num_constraints - 1) * seed <=
-                                           b(num_constraints - 1);
-                  if (!seed_point_requirement) break;
+                  const bool seed_point_requirement =
+                      A.row(num_constraints - 1) * seed <=
+                      b(num_constraints - 1);
+                  if (!seed_point_requirement) {
+                    if (iteration == 0) {
+                      throw std::runtime_error(seed_point_error_msg);
+                    }
+                    log()->info(seed_point_msg);
+                    return P;
+                  }
+                }
+                if (CheckTerminate(options, P_candidate, termination_error_msg,
+                                   termination_msg, iteration == 0)) {
+                  return P;
                 }
                 counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
                                                      b.head(num_constraints));
@@ -811,16 +886,17 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             }
           }
         }
-        if (!seed_point_requirement) break;
       }
     }
-
-    if (!seed_point_requirement) break;
 
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
 
     iteration++;
     if (iteration >= options.iteration_limit) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the iteration limit "
+          "{} has been reached.",
+          options.iteration_limit);
       break;
     }
 
@@ -828,14 +904,34 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const double volume = E.Volume();
     const double delta_volume = volume - best_volume;
     if (delta_volume <= options.termination_threshold) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "volume change {} is below the threshold {}.",
+          delta_volume, options.termination_threshold);
       break;
-    }
-    if (delta_volume / best_volume <= options.relative_termination_threshold) {
+    } else if (delta_volume / best_volume <=
+               options.relative_termination_threshold) {
+      log()->info(
+          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "relative volume change {} is below the threshold {}.",
+          delta_volume / best_volume, options.relative_termination_threshold);
       break;
     }
     best_volume = volume;
   }
   return P;
+}
+
+void SetEdgeContainmentTerminationCondition(
+    IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon,
+    const double tol) {
+  const auto ab = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
+  const auto hyperellipsoid = Hyperellipsoid(ab);
+  options->starting_ellipse = hyperellipsoid;
+  options->termination_func = [=](const HPolyhedron& polytope) {
+    return !polytope.PointInSet(x_1, tol) || !polytope.PointInSet(x_2, tol);
+  };
 }
 
 }  // namespace optimization

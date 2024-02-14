@@ -1,0 +1,14 @@
+[vtk] Use custom namespace for vtkfast_float
+
+This situation is unique to Drake, so we won't to upstream this patch.
+
+--- ThirdParty/fast_float/vtkfast_float/vtkfast_float/vtkfast_float_mangle.h
++++ ThirdParty/fast_float/vtkfast_float/vtkfast_float/vtkfast_float_mangle.h
+@@ -1,6 +1,6 @@
+ #ifndef vtkfast_float_MANGLE_H
+ #define vtkfast_float_MANGLE_H
+ 
+-#define fast_float vtkfast_float
++#define fast_float drake_vendor_vtkfast_float
+ 
+ #endif

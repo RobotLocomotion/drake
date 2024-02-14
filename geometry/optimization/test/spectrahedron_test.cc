@@ -330,7 +330,7 @@ GTEST_TEST(SpectrahedronTest, UnboundedTest) {
   Spectrahedron spect(prog);
   EXPECT_FALSE(spect.IsBounded());
 
-  // Construct an unbounded but constrainted SDP, and check that IsBounded
+  // Construct an unbounded but constrained SDP, and check that IsBounded
   // notices.
   prog.AddLinearConstraint(X1(0, 0) >= 0);
   Spectrahedron spect2(prog);

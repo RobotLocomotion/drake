@@ -530,8 +530,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(Vector3<double>{1, 1, 0}),
                               "MeshcatCone parameters .+ should all be > 0.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5),
-                              "Sphere radius should be >= 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), "Sphere radius should be >= 0.+");
   DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 }
 
@@ -547,9 +546,9 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Convex.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Cylinder(1, 2), nullptr),
                               "This class (.+) does not support Cylinder.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Ellipsoid(1, 1, 1),
-                              nullptr),
-                              "This class (.+) does not support Ellipsoid.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      this->ImplementGeometry(Ellipsoid(1, 1, 1), nullptr),
+      "This class (.+) does not support Ellipsoid.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(HalfSpace(), nullptr),
                               "This class (.+) does not support HalfSpace.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("foo", 1), nullptr),
@@ -590,6 +589,55 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
   EXPECT_NO_THROW(this->ImplementGeometry(Sphere(0.5), nullptr));
 }
 
+GTEST_TEST(ShapeTest, TypeNameAndToString) {
+  const Box box(1.5, 2.5, 3.5);
+  const Capsule capsule(1.25, 2.5);
+  const Convex convex("/some/file", 1.5);
+  const Cylinder cylinder(1.25, 2.5);
+  const Ellipsoid ellipsoid(1.25, 2.5, 0.5);
+  const HalfSpace half_space;
+  const Mesh mesh("/some/file", 1.5);
+  const MeshcatCone cone(1.5, 0.25, 0.5);
+  const Sphere sphere(1.25);
+
+  EXPECT_EQ(box.type_name(), "Box");
+  EXPECT_EQ(capsule.type_name(), "Capsule");
+  EXPECT_EQ(convex.type_name(), "Convex");
+  EXPECT_EQ(cylinder.type_name(), "Cylinder");
+  EXPECT_EQ(ellipsoid.type_name(), "Ellipsoid");
+  EXPECT_EQ(half_space.type_name(), "HalfSpace");
+  EXPECT_EQ(mesh.type_name(), "Mesh");
+  EXPECT_EQ(cone.type_name(), "MeshcatCone");
+  EXPECT_EQ(sphere.type_name(), "Sphere");
+
+  EXPECT_EQ(box.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
+  EXPECT_EQ(capsule.to_string(), "Capsule(radius=1.25, length=2.5)");
+  EXPECT_EQ(convex.to_string(), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(cylinder.to_string(), "Cylinder(radius=1.25, length=2.5)");
+  EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
+  EXPECT_EQ(half_space.to_string(), "HalfSpace()");
+  EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
+  EXPECT_EQ(sphere.to_string(), "Sphere(radius=1.25)");
+
+  EXPECT_EQ(fmt::to_string(box), "Box(width=1.5, depth=2.5, height=3.5)");
+  EXPECT_EQ(fmt::to_string(capsule), "Capsule(radius=1.25, length=2.5)");
+  EXPECT_EQ(fmt::to_string(convex), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(cylinder), "Cylinder(radius=1.25, length=2.5)");
+  EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
+  EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
+  EXPECT_EQ(fmt::to_string(mesh), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
+  EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");
+
+  const Shape& base = box;
+  EXPECT_EQ(base.type_name(), "Box");
+  EXPECT_EQ(base.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
+  EXPECT_EQ(fmt::to_string(base), "Box(width=1.5, depth=2.5, height=3.5)");
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(ShapeName, SimpleReification) {
   ShapeName name;
 
@@ -622,7 +670,6 @@ GTEST_TEST(ShapeName, SimpleReification) {
   Sphere(0.5).Reify(&name);
   EXPECT_EQ(name.name(), "Sphere");
 }
-
 GTEST_TEST(ShapeName, ReifyOnConstruction) {
   EXPECT_EQ(ShapeName(Box(1, 2, 3)).name(), "Box");
   EXPECT_EQ(ShapeName(Capsule(1, 2)).name(), "Capsule");
@@ -633,7 +680,6 @@ GTEST_TEST(ShapeName, ReifyOnConstruction) {
   EXPECT_EQ(ShapeName(Mesh("filepath", 1.0)).name(), "Mesh");
   EXPECT_EQ(ShapeName(Sphere(0.5)).name(), "Sphere");
 }
-
 GTEST_TEST(ShapeName, Streaming) {
   ShapeName name(Sphere(0.5));
   std::stringstream ss;
@@ -641,6 +687,7 @@ GTEST_TEST(ShapeName, Streaming) {
   EXPECT_EQ(name.name(), "Sphere");
   EXPECT_EQ(ss.str(), name.name());
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Box(1, 2, 3)), 6.0, 1e-14);

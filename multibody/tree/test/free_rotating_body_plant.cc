@@ -54,7 +54,7 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
 
   const internal::Mobilizer<T>& mobilizer = joint_->GetMobilizerInUse();
   const auto* xyz_mobilizer =
-      dynamic_cast<const internal::SpaceXYZMobilizer<T>*>(&mobilizer);
+      dynamic_cast<const internal::RpyBallMobilizer<T>*>(&mobilizer);
   DRAKE_DEMAND(xyz_mobilizer != nullptr);
 
   xyz_mobilizer->set_angular_velocity(

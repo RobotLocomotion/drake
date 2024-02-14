@@ -38,6 +38,7 @@ def _vtk_cc_module_impl(
         cmake_defines = [],
         cmake_undefines = [],
         defines_extra = [],
+        strip_include_prefix_extra = "",
         copts_extra = [],
         linkopts_extra = [],
         deps_extra = [],
@@ -133,8 +134,6 @@ def _vtk_cc_module_impl(
     copts = ["-w"] + copts_extra
     linkopts = linkopts_extra
     deps = []
-    if "ThirdParty" not in subdir:
-        deps.append(":vtkABINamespace")
     deps = deps + gen_hdrs_lib
     deps = deps + module_deps_public
     deps = deps + module_deps_private
@@ -172,7 +171,7 @@ def _vtk_cc_module_impl(
         name = module_name,
         srcs = srcs,
         hdrs = hdrs,
-        strip_include_prefix = subdir,
+        strip_include_prefix = subdir + strip_include_prefix_extra,
         defines = defines_extra,
         copts = copts,
         linkopts = linkopts,
@@ -238,6 +237,8 @@ def vtk_cc_module(
         cmake_undefines: When generating a header file, sets these definitions
             to be undefined. See cmake_configure_file() for details.
         defines_extra: Adds `defines = []` to the cc_library.
+        strip_include_prefix_extra: Appends the given string after the default
+            strip_include_prefix (i.e., the subdir name).
         copts_extra: Adds `copts = []` to the cc_library.
         linkopts_extra: Adds `linkopts = []` to the cc_library.
         deps_extra: Adds `deps = []` to the cc_library.
@@ -311,7 +312,6 @@ def compile_all_modules():
         for name in MODULE_SETTINGS
         if name not in names
     ]
-    unused_settings.remove("ABI")  # Not a real module.
     modules_no_settings = [
         name
         for name in names
@@ -321,24 +321,6 @@ def compile_all_modules():
         print("settings.bzl has unused modules: " + str(unused_settings))
     if _VERBOSE and modules_no_settings:
         print("settings.bzl does not customize: " + str(modules_no_settings))
-
-def generate_abi_namespace():
-    """Generates vtkABINamespace.h, mimicking the Common/Core/CMakeLists.txt.
-    """
-    cmake_configure_files(
-        name = "_vtkABINamespace_genrule",
-        srcs = ["CMake/vtkABINamespace.h.in"],
-        outs = ["CMake/vtkABINamespace.h"],
-        defines = MODULE_SETTINGS["ABI"]["cmake_defines"],
-        strict = True,
-    )
-    cc_library(
-        name = "vtkABINamespace",
-        hdrs = ["CMake/vtkABINamespace.h"],
-        strip_include_prefix = "CMake",
-        linkstatic = True,
-        visibility = ["//visibility:public"],
-    )
 
 def generate_common_core_array_dispatch_array_list():
     """Mimics the vtkCreateArrayDispatchArrayList.cmake logic.
@@ -352,6 +334,7 @@ def generate_common_core_array_dispatch_array_list():
 #pragma once
 #include "vtkTypeList.h"
 #include "vtkAOSDataArrayTemplate.h"
+#include "vtkStructuredPointArray.h"
 namespace vtkArrayDispatch {
 VTK_ABI_NAMESPACE_BEGIN
 typedef vtkTypeList::Unique<
@@ -372,6 +355,17 @@ typedef vtkTypeList::Unique<
     vtkAOSDataArrayTemplate<vtkIdType>
   >
 >::Result Arrays;
+typedef vtkTypeList::Unique<
+  vtkTypeList::Create<
+    vtkStructuredPointArray<double>
+  >
+>::Result ReadOnlyArrays;
+typedef vtkTypeList::Unique<
+  vtkTypeList::Append<
+    Arrays,
+    ReadOnlyArrays
+  >::Result
+>::Result AllArrays;
 VTK_ABI_NAMESPACE_END
 }
 """
@@ -507,7 +501,19 @@ def generate_common_core_array_instantiations():
         "double",
     ):
         for stem in (
+            "vtkAffineArrayInstantiate",
+            "vtkAffineImplicitBackendInstantiate",
+            "vtkCompositeArrayInstantiate",
+            "vtkCompositeImplicitBackendInstantiate",
+            "vtkConstantArrayInstantiate",
+            "vtkConstantImplicitBackendInstantiate",
+            "vtkIndexedArrayInstantiate",
+            "vtkIndexedImplicitBackendInstantiate",
             "vtkSOADataArrayTemplateInstantiate",
+            "vtkStdFunctionArrayInstantiate",
+            "vtkStructuredPointBackendInstantiate",
+            "vtkStructuredPointArrayInstantiate",
+            "vtkTypedDataArrayInstantiate",
             "vtkGenericDataArrayValueRangeInstantiate",
         ):
             if "Generic" in stem and "long" not in ctype:

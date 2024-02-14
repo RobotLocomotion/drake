@@ -34,7 +34,6 @@ using geometry::GeometryId;
 using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
-using geometry::ShapeName;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -293,19 +292,16 @@ TEST_F(MujocoParserTest, GeometryTypes) {
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
   auto CheckShape = [&inspector](const std::string& geometry_name,
-                                 const std::string& shape_name) {
+                                 std::string_view shape_type) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_type);
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kPerception, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_type);
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kIllustration, geometry_name);
-    EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
-              shape_name);
+    EXPECT_EQ(inspector.GetShape(geom_id).type_name(), shape_type);
   };
 
   // TODO(russt): Check the sizes of the shapes.  (It seems that none of our

@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/geometry/optimization/convex_set.h"
 #include "drake/planning/trajectory_optimization/direct_collocation.h"
 #include "drake/planning/trajectory_optimization/direct_transcription.h"
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
