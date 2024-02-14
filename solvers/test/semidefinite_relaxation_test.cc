@@ -42,7 +42,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, NoCostsNorConstraints) {
   // X ≽ 0.
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
   // X(-1,-1) = 1.
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
+
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 2);
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, UnsupportedCost) {
@@ -73,7 +75,8 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearCost) {
 
   EXPECT_EQ(relaxation->num_vars(), 6);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 2);
   EXPECT_EQ(relaxation->linear_costs().size(), 1);
 
   const Vector2d y_test(1.3, 0.24);
@@ -97,7 +100,8 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticCost) {
 
   EXPECT_EQ(relaxation->num_vars(), 6);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 2);
   EXPECT_EQ(relaxation->linear_costs().size(), 1);
 
   SetRelaxationInitialGuess(yd, relaxation.get());
@@ -122,18 +126,22 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, BoundingBoxConstraint) {
 
   auto relaxation = MakeSemidefiniteRelaxation(prog);
 
-  // First bounding box constraint is X(-1,-1) = 1, and we add one
-  // constraint, so we expect there to be two bounding box constraints
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 2);
+  // We have 1 bounding box constraint.
+  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
+  // We have 1 linear constraint due to the product of the bounding box
+  // constraints.
+  EXPECT_EQ(relaxation->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 4);
 
-  auto bbox_evaluator = relaxation->bounding_box_constraints()[1].evaluator();
+  auto bbox_evaluator = relaxation->bounding_box_constraints()[0].evaluator();
 
   EXPECT_TRUE(CompareMatrices(lb, bbox_evaluator->lower_bound()));
   EXPECT_TRUE(CompareMatrices(ub, bbox_evaluator->upper_bound()));
 
   const int N_CONSTRAINTS = 3;
   VectorXd b(N_CONSTRAINTS);
-  b << -lb[0], -lb[1], ub[1];  // all of the finite lower/upper bounds.
+  b << -lb[0], -lb[1], ub[1];  // all the finite lower/upper bounds.
 
   MatrixXd A(N_CONSTRAINTS, 2);
   // Rows of A:
@@ -180,8 +188,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
 
   EXPECT_EQ(relaxation->num_vars(), 6);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
   EXPECT_EQ(relaxation->linear_constraints().size(), 3);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 5);
 
   const Vector2d y_test(1.3, 0.24);
   SetRelaxationInitialGuess(y_test, relaxation.get());
@@ -234,27 +243,36 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearEqualityConstraint) {
 
   EXPECT_EQ(relaxation->num_vars(), 6);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
-  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 3);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 4);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 5);
 
   const Vector2d y_test(1.3, 0.24);
   SetRelaxationInitialGuess(y_test, relaxation.get());
 
-  for (int i = 0; i < 2; ++i) {
+  // First constraint is (Ay-b)=0.
+  MatrixXd expected = A * y_test - b;
+  VectorXd value =
+      relaxation->EvalBindingAtInitialGuess(
+          relaxation->linear_equality_constraints()[0]) -
+      relaxation->linear_equality_constraints()[0].evaluator()->lower_bound();
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  // The second constraint is X(-1,-1) = 1.
+  expected = Eigen::VectorXd::Ones(1);
+  value = relaxation->EvalBindingAtInitialGuess(
+      relaxation->linear_equality_constraints()[1]);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  for (int i = 2; i < 4; ++i) {
     // Linear constraints are (Ay - b)*y_i = 0.
-    MatrixXd expected = (A * y_test - b) * y_test[i];
-    VectorXd value = relaxation->EvalBindingAtInitialGuess(
+    expected = (A * y_test - b) * y_test[i-2];
+    value = relaxation->EvalBindingAtInitialGuess(
         relaxation->linear_equality_constraints()[i]);
     EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   }
-  // Last constraint is (Ay-b)=0.
-  MatrixXd expected = A * y_test - b;
-  VectorXd value = relaxation->EvalBindingAtInitialGuess(
-      relaxation->linear_equality_constraints()[2]);
-  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 
-GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint) {
+GTEST_TEST(MakeSemidefiniteRelaxationTest, NonConvexQuadraticConstraint) {
   MathematicalProgram prog;
   const auto y = prog.NewContinuousVariables<2>("y");
   Matrix2d Q;
@@ -266,8 +284,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint) {
 
   EXPECT_EQ(relaxation->num_vars(), 6);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
   EXPECT_EQ(relaxation->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 3);
 
   const Vector2d y_test(1.3, 0.24);
   SetRelaxationInitialGuess(y_test, relaxation.get());
@@ -283,6 +302,8 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint) {
             ub);
 }
 
+
+
 // This test checks that repeated variables in a quadratic constraint are
 // handled correctly.
 GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
@@ -294,8 +315,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
 
   EXPECT_EQ(relaxation->num_vars(), 3);
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
   EXPECT_EQ(relaxation->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 3);
 
   const Vector1d y_test(1.3);
   SetRelaxationInitialGuess(y_test, relaxation.get());
