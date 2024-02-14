@@ -35,8 +35,20 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
 /** Constructs a new MathematicalProgram which represents the semidefinite
  * programming convex relaxation of the (likely nonconvex) program `prog`.
  *
+ * For each group in @p variable groups , this method will jointly relax into a
+ * semidefinite program all the costs and constraints whose variables intersect
+ * with the group. Each of these semidefinite relaxations are aggregated into a
+ * single program, and their semidefinite variables are made to agree where they
+ * overlap.
+ *
+ * Costs and constraints whose variables do not overlap with any of the groups
+ * are not relaxed and are simply added to the aggregated program. If these
+ * costs and constraints are non-convex, then this method will throw.
+ *
  * @param prog
  * @param variable_groups
+ * @throw Runtime error if there is a non-convex cost or constraint whose
+ * variables do not intersect with any of the variable groups.
  * @return
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(

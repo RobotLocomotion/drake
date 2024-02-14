@@ -265,7 +265,7 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearEqualityConstraint) {
 
   for (int i = 2; i < 4; ++i) {
     // Linear constraints are (Ay - b)*y_i = 0.
-    expected = (A * y_test - b) * y_test[i-2];
+    expected = (A * y_test - b) * y_test[i - 2];
     value = relaxation->EvalBindingAtInitialGuess(
         relaxation->linear_equality_constraints()[i]);
     EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
@@ -301,8 +301,6 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, NonConvexQuadraticConstraint) {
   EXPECT_EQ(relaxation->linear_constraints()[0].evaluator()->upper_bound()[0],
             ub);
 }
-
-
 
 // This test checks that repeated variables in a quadratic constraint are
 // handled correctly.
