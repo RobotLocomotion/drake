@@ -2,16 +2,18 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// Struct used to store the contact configuration between two objects A and B.
-// The configuration is given by a contact point C, its position relative to
-// objects A and B, and the contact frame, also denoted with C, defined by its
-// orientation in the world frame W.
+// Struct used to store the contact configuration between two objects A and B
+// that the contact constraints of SAP (SapHuntCrossleyConstraint and
+// SapFrictionConeConstraint) require. The configuration is given by a contact
+// point C, its position relative to objects A and B, and the contact frame,
+// also denoted with C, defined by its orientation in the world frame W.
 template <typename T>
 struct ContactConfiguration {
   // Index to a physical object A.
@@ -47,6 +49,20 @@ struct ContactConfiguration {
   // Rz_WC = R_WC.col(2) corresponds to the normal from object A into object B.
   math::RotationMatrix<T> R_WC;
 };
+
+// Extracts a ContactConfiguration from the given DiscreteContactPair.
+template <typename T>
+ContactConfiguration<T> MakeContactConfiguration(
+    const multibody::internal::DiscreteContactPair<T>& input) {
+  return ContactConfiguration<T>{.objectA = input.object_A,
+                                 .p_ApC_W = input.p_ApC_W,
+                                 .objectB = input.object_B,
+                                 .p_BqC_W = input.p_BqC_W,
+                                 .phi = input.phi0,
+                                 .vn = input.vn0,
+                                 .fe = input.fn0,
+                                 .R_WC = input.R_WC};
+}
 
 }  // namespace internal
 }  // namespace contact_solvers
