@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/solvers/mathematical_program.h"
 
@@ -30,6 +31,17 @@ namespace solvers {
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog);
+
+/** Constructs a new MathematicalProgram which represents the semidefinite
+ * programming convex relaxation of the (likely nonconvex) program `prog`.
+ *
+ * @param prog
+ * @param variable_groups
+ * @return
+ */
+std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
+    const MathematicalProgram& prog,
+    std::vector<symbolic::Variables> variable_groups);
 
 }  // namespace solvers
 }  // namespace drake

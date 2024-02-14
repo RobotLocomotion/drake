@@ -20,15 +20,13 @@ using Eigen::Triplet;
 using Eigen::VectorXd;
 using symbolic::Expression;
 using symbolic::Variable;
+using symbolic::Variables;
 
 namespace {
 
 const double kInf = std::numeric_limits<double>::infinity();
 
-}  // namespace
-
-std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog) {
+void ValidateProgramIsSupported(const MathematicalProgram& prog) {
   std::string unsupported_message{};
   const ProgramAttributes supported_attributes(
       std::initializer_list<ProgramAttribute>{
@@ -43,9 +41,13 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         "MakeSemidefiniteRelaxation() does not (yet) support this program: {}.",
         unsupported_message));
   }
+}
 
-  auto relaxation = std::make_unique<MathematicalProgram>();
-
+// Constructs the semidefinite relaxation of the program prog and adds it to
+// relaxation. We assume that the program attributes of prog are already
+// validated. Returns the X matrix of the semidefinite relaxation.
+MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
+    const MathematicalProgram& prog, MathematicalProgram* relaxation) {
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
   // variables).
@@ -262,6 +264,80 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
                                     binding.evaluator()->upper_bound(), vars);
   }
 
+  return X;
+}
+
+}  // namespace
+
+std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
+    const MathematicalProgram& prog) {
+  ValidateProgramIsSupported(prog);
+  auto relaxation = std::make_unique<MathematicalProgram>();
+  DoMakeSemidefiniteRelaxation(prog, relaxation.get());
+  return relaxation;
+}
+
+std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
+    const MathematicalProgram& prog,
+    std::vector<symbolic::Variables> variable_groups) {
+  auto relaxation = std::make_unique<MathematicalProgram>();
+  std::map<symbolic::Variables, solvers::MathematicalProgram>
+      groups_to_container_programs;
+  std::map<symbolic::Variables, symbolic::Variables> groups_to_superset;
+  std::map<symbolic::Variables, MatrixXDecisionVariable>
+      supersets_to_psd_variables;
+  for (const auto& group : variable_groups) {
+    groups_to_container_programs.try_emplace(group);
+    groups_to_superset.emplace(group, group);
+  }
+  for (const auto& constraint : prog.GetAllConstraints()) {
+    bool constraint_used = false;
+    for (const auto& group : variable_groups) {
+      const Variables constraint_variables{constraint.variables()};
+      if (group.IsSubsetOf(constraint_variables)) {
+        groups_to_container_programs.at(group).AddConstraint(constraint);
+        groups_to_superset.at(group).insert(constraint_variables);
+        constraint_used = true;
+      }
+    }
+    if (!constraint_used) {
+      // This constraint is not included in the semidefinite relaxation of any
+      // variable groups.
+      relaxation->AddConstraint(constraint);
+    }
+  }
+  for (const auto& [group, container_program] : groups_to_container_programs) {
+    supersets_to_psd_variables.emplace(
+        groups_to_superset.at(group),
+        DoMakeSemidefiniteRelaxation(container_program, relaxation.get()));
+  }
+
+  // Now constrain the semidefinite variables to agree where they overlap.
+  for (auto it = supersets_to_psd_variables.begin();
+       it != supersets_to_psd_variables.end(); it++) {
+    for (auto it2 = std::next(it); it2 != supersets_to_psd_variables.end();
+         it2++) {
+      const Variables common_variables(intersect(it->first, it2->first));
+      if (!common_variables.empty()) {
+        auto GetSubmatrixOfVariables =
+            [&common_variables](const MatrixXDecisionVariable& X) {
+              std::set<int> submatrix_indices;
+              for (const auto& v : common_variables) {
+                for (int i = 0; i < X.rows() - 1; ++i) {
+                  if (X(i, X.cols() - 1).equal_to(v)) {
+                    submatrix_indices.insert(i);
+                    break;
+                  }
+                }
+              }
+              return math::ExtractPrincipalSubmatrix(X, submatrix_indices);
+            };
+        relaxation->AddLinearEqualityConstraint(
+            GetSubmatrixOfVariables(it->second) ==
+            GetSubmatrixOfVariables(it2->second));
+      }
+    }
+  }
   return relaxation;
 }
 
