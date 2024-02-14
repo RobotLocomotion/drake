@@ -123,6 +123,8 @@ TEST_P(YamlNodeParamaterizedTest, JsonSchemaTag) {
   EXPECT_EQ(dut.GetTag(), Node::kTagInt);
   dut.SetTag(JsonSchemaTag::kFloat);
   EXPECT_EQ(dut.GetTag(), Node::kTagFloat);
+  dut.SetTag(JsonSchemaTag::kStr);
+  EXPECT_EQ(dut.GetTag(), Node::kTagStr);
 }
 
 // Check mark getting and setting.

@@ -534,6 +534,30 @@ TEST_P(YamlReadArchiveTest, Variant) {
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});
 }
 
+TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
+  const auto test = [](const std::string& doc,
+                       const PrimitiveVariant& expected) {
+    const auto& x = AcceptNoThrow<PrimitiveVariantStruct>(Load(doc));
+    EXPECT_EQ(x.value, expected) << doc;
+  };
+
+  test("doc:\n  value: [1.0, 2.0]", std::vector<double>{1.0, 2.0});
+  test("doc:\n  value: !!bool true", true);
+  test("doc:\n  value: !!bool 'true'", true);
+  test("doc:\n  value: !!int 10", 10);
+  test("doc:\n  value: !!int '10'", 10);
+  test("doc:\n  value: !!float 1.0", 1.0);
+  test("doc:\n  value: !!float '1.0'", 1.0);
+  test("doc:\n  value: !!str foo", std::string("foo"));
+  test("doc:\n  value: !!str 'foo'", std::string("foo"));
+
+  // It might be sensible for this case to pass, but for now we'll require that
+  // non-0'th variant indices always use a tag even where it could be inferred.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<PrimitiveVariantStruct>(Load("doc:\n  value: 1.0")),
+      ".*vector.*double.*");
+}
+
 // When loading a variant, the default value should remain intact in cases where
 // the type tag is unchanged.
 TEST_P(YamlReadArchiveTest, VariantNestedDefaults) {
