@@ -265,15 +265,15 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
         .def("FindRedundant", &HPolyhedron::FindRedundant,
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
-        .def("SimplifyByIncrementalFaceTranslation", 
+        .def("SimplifyByIncrementalFaceTranslation",
             &HPolyhedron::SimplifyByIncrementalFaceTranslation,
             py::arg("min_v_ratio") = 0.1, py::arg("do_affine_transform") = true,
-            py::arg("max_iterations") = 10, 
+            py::arg("max_iterations") = 10,
             py::arg("points_to_contain") = Eigen::MatrixXd(),
             py::arg("intersecting_polytopes") = std::vector<HPolyhedron>(),
             py::arg("keep_whole_intersection") = false,
             py::arg("intersection_pad") = 1e-4, py::arg("random_seed") = 0)
-        .def ("OptimizeAffineTransformationInCircumbody", 
+        .def("OptimizeAffineTransformationInCircumbody",
             &HPolyhedron::OptimizeAffineTransformationInCircumbody,
             py::arg("circumbody"))
         .def("MaximumVolumeInscribedEllipsoid",
@@ -431,8 +431,13 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
         .def("x", &Point::x, cls_doc.x.doc)
         .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc)
-        .def(py::pickle([](const Point& self) { return self.x(); },
-            [](Eigen::VectorXd arg) { return Point(arg); }));
+        .def(py::pickle(
+            [](const Point& self) {
+              return self.x();
+            },
+            [](Eigen::VectorXd arg) {
+              return Point(arg);
+            }));
   }
 
   // Spectrahedron
@@ -467,8 +472,13 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.MakeUnitBox.doc)
         .def("WriteObj", &VPolytope::WriteObj, py::arg("filename"),
             cls_doc.WriteObj.doc)
-        .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
-            [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
+        .def(py::pickle(
+            [](const VPolytope& self) {
+              return self.vertices();
+            },
+            [](Eigen::MatrixXd arg) {
+              return VPolytope(arg);
+            }));
   }
 
   {
@@ -695,7 +705,9 @@ void DefineGeometryOptimization(py::module m) {
         .def(
             "x",
             [](const GraphOfConvexSets::Vertex& self)
-                -> const VectorX<symbolic::Variable> { return self.x(); },
+                -> const VectorX<symbolic::Variable> {
+              return self.x();
+            },
             vertex_doc.x.doc)
         .def("set", &GraphOfConvexSets::Vertex::set, py_rvp::reference_internal,
             vertex_doc.set.doc)
@@ -749,12 +761,16 @@ void DefineGeometryOptimization(py::module m) {
         .def(
             "xu",
             [](const GraphOfConvexSets::Edge& self)
-                -> const VectorX<symbolic::Variable> { return self.xu(); },
+                -> const VectorX<symbolic::Variable> {
+              return self.xu();
+            },
             edge_doc.xu.doc)
         .def(
             "xv",
             [](const GraphOfConvexSets::Edge& self)
-                -> const VectorX<symbolic::Variable> { return self.xv(); },
+                -> const VectorX<symbolic::Variable> {
+              return self.xv();
+            },
             edge_doc.xv.doc)
         .def("AddCost",
             py::overload_cast<const symbolic::Expression&>(
@@ -879,7 +895,10 @@ void DefineGeometryOptimization(py::module m) {
         m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
         .value("kAffine", SeparatingPlaneOrder::kAffine,
             doc.SeparatingPlaneOrder.kAffine.doc);
-    type_visit([m](auto dummy) { DoSeparatingPlaneDeclaration(m, dummy); },
+    type_visit(
+        [m](auto dummy) {
+          DoSeparatingPlaneDeclaration(m, dummy);
+        },
         type_pack<double, symbolic::Variable>());
   }
   {
