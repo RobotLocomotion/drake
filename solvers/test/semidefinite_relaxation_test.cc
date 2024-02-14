@@ -328,6 +328,31 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
             1.0);
 }
 
+ class MakeSemidefiniteRelaxationVariableGroupTest: public ::testing::Test {
+ protected:
+  void SetUp() override {
+    x_ = prog_.NewIndeterminates<3>();
+    y_ = prog_.NewIndeterminates<2>();
+    partition_group_.emplace_back(x_);
+    partition_group_.emplace_back(y_);
+//    overlap_group_.emplace_back(
+//        {x_(1), y_(0)}, {x_(2), y_(0)}
+//        );
+  }
+
+  MathematicalProgram prog_;
+  VectorIndeterminate<3> x_;
+  VectorIndeterminate<2> y_;
+
+  // A grouping of the variables that partitions the variables of the program.
+  std::vector<symbolic::Variables> partition_group_;
+  // A grouping of the variables which overlaps.
+  std::vector<symbolic::Variables> overlap_group_;
+
+
+};
+
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
