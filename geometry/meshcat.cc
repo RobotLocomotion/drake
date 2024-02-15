@@ -2471,8 +2471,63 @@ void Meshcat::SetTriangleColorMesh(
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
     const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
     double wireframe_line_width, SideOfFaceToRender side) {
+  if (recording_ == true) {
+    throw std::runtime_error(
+        "Calling SetTriangleColorMesh() during recording is not allowed."
+        "Call SetTriangleColorMeshWithTime() instead.");
+  }
+
   impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
                               wireframe_line_width, side);
+}
+
+void Meshcat::SetTriangleColorMeshWithTime(
+    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& colors, double time_in_recording,
+    bool wireframe, double wireframe_line_width, SideOfFaceToRender side) {
+  if (!animation_) {
+    throw std::runtime_error(
+        "You must create a recording (via StartRecording) before calling "
+        "SetTriangleColorMeshWithTime");
+  }
+  if (recording_ == false) {
+    throw std::runtime_error(
+        "You must not stop recording (via StopRecording) before calling "
+        "SetTriangleColorMeshWithTime");
+  }
+  if (last_frame_.contains(std::string(path)) &&
+      last_frame_[std::string(path)] > animation_->frame(time_in_recording)) {
+    throw std::runtime_error(
+        "SetTriangleColorMeshWithTime that corresponds to an earlier "
+        "frame than the last frame.");
+  }
+
+  if (last_frame_.contains(std::string(path))) {
+    const std::string path_animation_last_frame =
+        fmt::format("{}/<animation>/{}", path, last_frame_[std::string(path)]);
+    SetProperty(path_animation_last_frame, "visible", false, time_in_recording);
+  } else {
+    // This is the first frame. Make sure the unanimated object is visible
+    // only from the start time to `time_in_recording`. It is possible that
+    // there was no unanimated object, which is ok because we can set property
+    // without the object.
+    SetProperty(fmt::format("{}/<object>", path), "visible", true,
+                animation_->start_time());
+    SetProperty(fmt::format("{}/<object>", path), "visible", false,
+                time_in_recording);
+  }
+
+  const int frame = animation_->frame(time_in_recording);
+  const std::string path_animation_frame =
+      fmt::format("{}/<animation>/{}", path, frame);
+
+  SetProperty(path_animation_frame, "visible", false, animation_->start_time());
+  SetProperty(path_animation_frame, "visible", true, time_in_recording);
+  impl().SetTriangleColorMesh(path_animation_frame, vertices, faces, colors,
+                              wireframe, wireframe_line_width, side);
+
+  last_frame_[std::string(path)] = frame;
 }
 
 void Meshcat::PlotSurface(std::string_view path,
@@ -2698,6 +2753,11 @@ void Meshcat::StartRecording(double frames_per_second,
   animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
   recording_ = true;
   set_visualizations_while_recording_ = set_visualizations_while_recording;
+  last_frame_.clear();
+}
+
+void Meshcat::StopRecording() {
+  recording_ = false;
 }
 
 void Meshcat::PublishRecording() {
