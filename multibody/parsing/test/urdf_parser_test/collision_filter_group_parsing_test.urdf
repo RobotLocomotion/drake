@@ -45,6 +45,34 @@ Defines a URDF model with collision filter groups.
       </geometry>
     </collision>
   </link>
+  <link name="link7">
+    <collision name="link7_sphere">
+      <geometry>
+        <sphere radius="0.40"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="link8">
+    <collision name="link8_sphere">
+      <geometry>
+        <sphere radius="0.40"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="link9">
+    <collision name="link9_sphere">
+      <geometry>
+        <sphere radius="0.40"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="link10">
+    <collision name="link10_sphere">
+      <geometry>
+        <sphere radius="0.40"/>
+      </geometry>
+    </collision>
+  </link>
   <drake:collision_filter_group name="group_link14">
     <drake:member link="link1"/>
     <drake:member link="link4"/>
@@ -69,5 +97,18 @@ Defines a URDF model with collision filter groups.
     <drake:ignored_collision_filter_group name="group_link56"/>
     <drake:ignored_collision_filter_group name="group_link3"/>
     <drake:ignored_collision_filter_group name="group_link2"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="group_link78">
+    <drake:member link="link7"/>
+    <drake:member link="link8"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="group_link910">
+    <drake:member link="link9"/>
+    <drake:member link="link10"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="group_of_groups">
+    <drake:member_group name="group_link78"/>
+    <drake:member_group name="group_link910"/>
+    <drake:ignored_collision_filter_group name="group_of_groups"/>
   </drake:collision_filter_group>
 </robot>
