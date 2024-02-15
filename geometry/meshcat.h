@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Core>
@@ -303,6 +304,38 @@ class Meshcat {
                             bool wireframe = false,
                             double wireframe_line_width = 1.0,
                             SideOfFaceToRender side = kDoubleSide);
+
+  /** Sets the animated triangular mesh with per-vertex coloring at
+   `path` in the scene tree at `time_in_recording`.
+
+  Calling this function with `path`="/foo" will create the path
+  "/foo/<animation>/frame#", where `frame#` is the frame index converted from
+  `time_in_recording`.
+
+  @experimental
+
+  @note For a `path`="/foo", we only support the usage like this:
+  @code
+  meshcat.StartRecording();
+  meshcat.SetTriangleColorMeshWithTime("/foo",..., time1);
+  meshcat.SetTriangleColorMeshWithTime("/foo",..., time2);
+  meshcat.SetTriangleColorMeshWithTime("/foo",..., time3);
+  meshcat.StopRecording();
+  meshcat.PublishRecording();
+  @endcode
+  Only SetTriangleColorMeshWithTime(), as opposed to SetTriangleColorMesh(),
+  is allowed during recording.
+
+  @throws std::exception if meshcat does not have a recording.
+  @throws std::exception if meshcat already stopped recording.
+  @throws std::exception if `time_in_recording` corresponds to an earlier
+   frame than the last frame.  */
+  void SetTriangleColorMeshWithTime(
+      std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+      const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+      const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+      double time_in_recording, bool wireframe = false,
+      double wireframe_line_width = 1.0, SideOfFaceToRender side = kDoubleSide);
 
   // TODO(russt): Add support for per vertex colors / colormaps.
   /** Sets the "object" at `path` to be a triangle surface mesh representing a
@@ -841,7 +874,7 @@ class Meshcat {
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
   not add frames to the animation. */
-  void StopRecording() { recording_ = false; }
+  void StopRecording();
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
@@ -937,6 +970,7 @@ class Meshcat {
   frame in the animation. */
   bool recording_{false};
   bool set_visualizations_while_recording_{true};
+  std::unordered_map<std::string, int> last_frame_{};
 };
 
 }  // namespace geometry

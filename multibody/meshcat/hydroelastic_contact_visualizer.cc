@@ -51,6 +51,7 @@ void HydroelasticContactVisualizer::Update(
     const std::string path =
         fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
 
+    // path is like "drake/contact_forces/hydroelastic/bowl+bell_pepper"
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.
@@ -149,14 +150,13 @@ void HydroelasticContactVisualizer::Update(
         }
       }
 
-      // TODO(russt): Support animations of the mesh, too.
-
       // TODO(#17682): Applying color map values as *vertex colors* produces
       // terrible visual artifacts. See the referenced issue for discussion.
-      meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
-                                     item.faces, colors, false);
+      meshcat_->SetTriangleColorMeshWithTime(path + "/contact_surface",
+                                             item.p_WV, item.faces, colors,
+                                             time, false);
       meshcat_->SetTransform(path + "/contact_surface",
-                             RigidTransformd(-item.centroid_W));
+                             RigidTransformd(-item.centroid_W), time);
     }
   }
 
@@ -169,6 +169,7 @@ void HydroelasticContactVisualizer::Update(
   }
 }
 
+// path is like "drake/contact_forces/hydroelastic/bowl+bell_pepper"
 HydroelasticContactVisualizer::VisibilityStatus&
 HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
   auto iter = path_visibility_status_.find(path);
@@ -178,7 +179,7 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
 
   // Start with it being invisible, to prevent flickering at the origin.
   iter = path_visibility_status_.insert({path, {false, false}}).first;
-  meshcat_->SetProperty(path, "visible", false, 0);
+  meshcat_->SetProperty(path, "visible", false, /*time_in_recording*/ 0);
 
   // Add the geometry to meshcat.
   // Set radius 1.0 so that it can be scaled later by the force/moment norm in
