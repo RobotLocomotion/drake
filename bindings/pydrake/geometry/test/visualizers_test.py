@@ -173,6 +173,15 @@ class TestGeometryVisualizers(unittest.TestCase):
             wireframe=False,
             wireframe_line_width=2.0,
             side=meshcat.SideOfFaceToRender.kDoubleSide)
+        meshcat.SetTriangleColorMesh(
+            path="/test/triangle_mesh",
+            vertices=np.array([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]]).T,
+            faces=np.array([[0, 1, 2], [3, 0, 2]]).T,
+            colors=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]).T,
+            time_in_recording=0.1,
+            wireframe=False,
+            wireframe_line_width=2.0,
+            side=meshcat.SideOfFaceToRender.kDoubleSide)
         # Plot the six-hump camel
         xs = np.linspace(-2.2, 2.2, 51)
         ys = np.linspace(-1.2, 1.2, 51)

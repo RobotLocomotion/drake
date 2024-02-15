@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Core>
@@ -295,12 +296,56 @@ class Meshcat {
                    the faces.
   @param wireframe_line_width is the width in pixels.  Due to limitations in
                               WebGL implementations, the line width may be 1
-                              regardless of the set value. */
+                              regardless of the set value.
+  @pydrake_mkdoc_identifier{no_recording}  */
   void SetTriangleColorMesh(std::string_view path,
                             const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                             const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
                             const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
                             bool wireframe = false,
+                            double wireframe_line_width = 1.0,
+                            SideOfFaceToRender side = kDoubleSide);
+
+  /** Sets the "object" at `path` in the scene tree at `time_in_recording`
+  to a triangular mesh with per-vertex coloring.
+
+  @experimental
+
+  This is an experimental API that extends `SetTriangleColorMesh` to
+  support recording of an animation.
+
+  @param time_in_recording the time at which the triangular mesh is recorded,
+   if Meshcat is currently recording (see StartRecording()). If Meshcat is
+   not currently recording, then this value is ignored.
+
+  See the stable API of `SetTriangleColorMesh` for the meaning of other
+  parameters.
+
+  During recording, calling this function with `path`="/foo" will create
+  the path "/foo/<animation>/frame#", where `frame#` is the frame index
+  converted from `time_in_recording`.  If there is no recording,
+  the `time_in_recording` is ignored, and the path "/foo/<object>" is created.
+
+  @note For a `path`="/foo", we recommend the usage like this:
+  @code
+  meshcat.StartRecording();
+  meshcat.SetTriangleColorMesh("/foo", vertices1, faces1, colors1, time1);
+  meshcat.SetTriangleColorMesh("/foo", vertices2, faces2, colors2, time2);
+  meshcat.SetTriangleColorMesh("/foo", vertices3, faces3, colors3, time3);
+  ...
+  meshcat.StopRecording();
+  meshcat.PublishRecording();
+  @endcode
+
+  @throws std::exception if `time_in_recording` corresponds to an earlier
+  frame than the last frame.
+
+  @pydrake_mkdoc_identifier{for_recording}  */
+  void SetTriangleColorMesh(std::string_view path,
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                            double time_in_recording, bool wireframe = false,
                             double wireframe_line_width = 1.0,
                             SideOfFaceToRender side = kDoubleSide);
 
@@ -841,7 +886,7 @@ class Meshcat {
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
   not add frames to the animation. */
-  void StopRecording() { recording_ = false; }
+  void StopRecording();
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
@@ -937,6 +982,7 @@ class Meshcat {
   frame in the animation. */
   bool recording_{false};
   bool set_visualizations_while_recording_{true};
+  std::unordered_map<std::string, int> last_frame_{};
 };
 
 }  // namespace geometry

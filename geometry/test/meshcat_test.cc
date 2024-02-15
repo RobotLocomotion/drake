@@ -461,6 +461,69 @@ GTEST_TEST(MeshcatTest, SetTriangleMesh) {
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
 }
 
+GTEST_TEST(MeshcatTest, SetTriangleColorMeshForRecording) {
+  Meshcat meshcat;
+
+  // clang-format off
+  Eigen::Matrix3Xd vertices(3, 4);
+  vertices << 0, 0.5, 0.5, 0,
+              0, 0,   0.5, 0.5,
+              0, 0,   0,   0.5;
+  Eigen::Matrix3Xi faces(3, 2);
+  faces << 0, 2,
+           1, 3,
+           2, 0;
+  Eigen::Matrix3Xd colors(3, 4);
+  colors << 1, 0, 0, 1,
+            0, 1, 0, 1,
+            0, 0, 1, 0;
+  // clang-format on
+
+  // No recording yet.
+  const double time1 = 1.0;
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time1);
+
+  meshcat.StartRecording();
+  const MeshcatAnimation& animation = meshcat.get_mutable_recording();
+
+  const double time2 = 2.0;
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time2);
+
+  const double time3 = 3.0;
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time3);
+
+  const int frame0 = animation.frame(animation.start_time());
+  const int frame1 = animation.frame(time1);
+  const int frame2 = animation.frame(time2);
+  const int frame3 = animation.frame(time3);
+
+  const std::string path1 = fmt::format("foo/<animation>/{}", frame1);
+  // path1 was not recorded because we called SetTriangleColorMesh(time)
+  // before StartRecording().
+  EXPECT_FALSE(
+      animation.get_key_frame<bool>(frame1, path1, "visible").has_value());
+
+  const std::string path2 = fmt::format("foo/<animation>/{}", frame2);
+  // path2 is invisible at the start of recording. It is visible at time2
+  // and becomes invisible at time3.
+  EXPECT_FALSE(
+      animation.get_key_frame<bool>(frame0, path2, "visible").value_or(true));
+  EXPECT_TRUE(
+      animation.get_key_frame<bool>(frame2, path2, "visible").value_or(false));
+  EXPECT_FALSE(
+      animation.get_key_frame<bool>(frame3, path2, "visible").value_or(true));
+
+  const std::string path3 = fmt::format("foo/<animation>/{}", frame3);
+  // path3 is invisible at the start of recording. It has no "visible" property
+  // at frame2 and becomes visible at frame3.
+  EXPECT_FALSE(
+      animation.get_key_frame<bool>(frame0, path3, "visible").value_or(true));
+  EXPECT_FALSE(
+      animation.get_key_frame<bool>(frame2, path3, "visible").has_value());
+  EXPECT_TRUE(
+      animation.get_key_frame<bool>(frame3, path3, "visible").value_or(false));
+}
+
 GTEST_TEST(MeshcatTest, SetTransform) {
   Meshcat meshcat;
   EXPECT_FALSE(meshcat.HasPath("frame"));
