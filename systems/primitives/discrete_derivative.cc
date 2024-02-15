@@ -50,6 +50,7 @@ void DiscreteDerivative<T>::set_input_history(
     const Eigen::Ref<const drake::VectorX<T>>& u_n_minus_1) const {
   DRAKE_DEMAND(u_n.size() == n_);
   DRAKE_DEMAND(u_n_minus_1.size() == n_);
+  this->ValidateCreatedForThisSystem(state);
 
   state->get_mutable_discrete_state(0).SetFromVector(u_n);
   state->get_mutable_discrete_state(1).SetFromVector(u_n_minus_1);
@@ -133,6 +134,7 @@ template <typename T>
 void StateInterpolatorWithDiscreteDerivative<T>::set_initial_state(
     systems::State<T>* state, const Eigen::Ref<const VectorX<T>>& position,
     const Eigen::Ref<const VectorX<T>>& velocity) const {
+  this->ValidateCreatedForThisSystem(state);
   // The derivative block implements y(t) = (u[n]-u[n-1])/h, so we want
   // u[n] = position, u[n-1] = u[n] - h*velocity
   derivative_->set_input_history(

@@ -24,6 +24,7 @@ Integrator<T>::~Integrator() = default;
 template <typename T>
 void Integrator<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+  this->ValidateContext(context);
   VectorBase<T>& state_vector = context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_DEMAND(value.rows() == state_vector.size() && value.cols() == 1);
