@@ -92,10 +92,10 @@ else()
 
   # The supported releases should match those listed in both
   # doc/_pages/from_source.md and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal|jammy)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal|jammy|noble)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 20.04 (Focal) or Ubuntu 22.04 (Jammy)."
+      "Ubuntu 20.04 (Focal) or Ubuntu 22.04 (Jammy) or Ubuntu 24.04 (Noble)."
     )
   endif()
 
@@ -225,7 +225,9 @@ set(CMAKE_CXX_STANDARD 17)
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.11)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL focal)
+  if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
+    set(SUPPORTED_PYTHON_VERSION 3.11)
+  elseif(UNIX_DISTRIBUTION_CODENAME STREQUAL focal)
     set(SUPPORTED_PYTHON_VERSION 3.8)
   else()  # UNIX_DISTRIBUTION_CODENAME := jammy
     set(SUPPORTED_PYTHON_VERSION 3.10)

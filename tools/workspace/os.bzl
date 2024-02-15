@@ -128,7 +128,7 @@ def _determine_linux(repository_ctx):
 
         # Match supported Ubuntu release(s). These should match those listed in
         # both doc/_pages/from_source.md and the root CMakeLists.txt.
-        if ubuntu_release in ["20.04", "22.04"]:
+        if ubuntu_release in ["20.04", "22.04", "24.04"]:
             return _make_result(
                 ubuntu_release = ubuntu_release,
                 is_wheel = is_manylinux,
