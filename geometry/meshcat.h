@@ -182,6 +182,9 @@ class Meshcat {
   void SetObject(std::string_view path, const Shape& shape,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
+  void SetObject(std::string_view path, const Shape& shape, double time,
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
   // TODO(russt): SetObject with texture map.
 
   /** Sets the "object" at a given `path` in the scene tree to be
