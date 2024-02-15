@@ -100,6 +100,7 @@ RandomSource<T>::RandomSource(const RandomSource<U>& other)
 
 template <typename T>
 Seed RandomSource<T>::get_seed(const Context<double>& context) const {
+  this->ValidateContext(context);
   const auto& source = context.template get_abstract_state<SampleGenerator>(0);
   return source.seed();
 }

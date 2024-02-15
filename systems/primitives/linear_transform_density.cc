@@ -64,6 +64,7 @@ void LinearTransformDensity<T>::CalcOutputDensity(
 template <typename T>
 Eigen::Map<const MatrixX<T>> LinearTransformDensity<T>::GetA(
     const Context<T>& context) const {
+  this->ValidateContext(context);
   const VectorX<T>& A_flat = this->get_input_port_A().Eval(context);
   return Eigen::Map<const MatrixX<T>>(A_flat.data(), output_size_, input_size_);
 }

@@ -83,6 +83,7 @@ class ZeroOrderHold final : public LeafSystem<T> {
   /// into the state. This emulates an update event and is mostly useful for
   /// testing.
   void LatchInputPortToState(Context<T>* context) const {
+    this->ValidateContext(context);
     if (is_abstract()) {
       LatchInputAbstractValueToState(*context, &context->get_mutable_state());
     } else {
