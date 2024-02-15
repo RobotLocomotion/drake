@@ -577,6 +577,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "meshcat_time_test",
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        ":meshcat",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:maybe_pause_for_user",
+        "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_googletest(
     name = "meshcat_file_storage_internal_test",
     tags = ["cpu:2"],
     deps = [

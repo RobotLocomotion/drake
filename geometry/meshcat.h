@@ -4,6 +4,8 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <Eigen/Core>
@@ -180,6 +182,39 @@ class Meshcat {
   @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
+  /** Overload of SetObject to set an animated 3D object to appear in the
+  current animation at `time_in_recording`.
+
+  Calling `SetObject("/foo", shape, time_in_recording)` will create the path
+  "/foo/<animation>/frame#", where `frame#` is the frame index converted from
+  `time_in_recording`.
+
+  @experimental
+
+  @note For a `path`="/foo", we only support the usage like this:
+  @code
+  meshcat.SetObject("/foo", shape);  // (Optional) unanimated object
+  meshcat.StartRecording();
+  meshcat.SetObject("/foo", shape1, time1);  // animated object
+  meshcat.SetObject("/foo", shape2, time2);  // animated object
+  meshcat.SetObject("/foo", shape3, time3);  // animated object
+  meshcat.StopRecording();
+  meshcat.PublishRecording();
+  @endcode
+  Before `StartRecording()`, set the unanimated object with
+  `SetObject("/foo", shape)`. After `StartRecording()`, set the animated
+  object SetObject("/foo", shape, time). After `StopRecording()`,
+  set neither the unanimated nor the animated object with `path`="/foo".
+
+  @throws std::exception if meshcat does not have a recording.
+  @throws std::exception if meshcat already stopped recording.
+  @throws std::exception if `time_in_recording` corresponds to an earlier
+   frame than the last frame.
+  */
+  void SetObject(std::string_view path, const Shape& shape,
+                 double time_in_recording,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
   // TODO(russt): SetObject with texture map.
@@ -841,7 +876,7 @@ class Meshcat {
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
   not add frames to the animation. */
-  void StopRecording() { recording_ = false; }
+  void StopRecording();
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
@@ -937,6 +972,7 @@ class Meshcat {
   frame in the animation. */
   bool recording_{false};
   bool set_visualizations_while_recording_{true};
+  std::unordered_map<std::string, int> last_frame_{};
 };
 
 }  // namespace geometry
