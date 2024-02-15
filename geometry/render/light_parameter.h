@@ -115,7 +115,7 @@ struct LightParameter {
    in the camera's view direction. This field only applies to spotlight and
    directional lights.
 
-   @pre the vector has length 1. */
+   @pre the vector has sufficient precision to be meaningfully normalized. */
   Eigen::Vector3d direction{0, 0, 1};
 
   /** For a spotlight, it is the measure of the angle (in degrees) between the

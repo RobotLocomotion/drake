@@ -177,6 +177,7 @@ def vtk_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/common_core_version.patch",
+            ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
             ":patches/io_image_formats.patch",
             ":patches/io_legacy_data_reader_uninit.patch",

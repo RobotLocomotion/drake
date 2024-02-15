@@ -1920,14 +1920,16 @@ TEST_F(RenderEngineGlTest, SingleLight) {
 
   // The baseline configuration implicitly tests white light, intensity = 1,
   // no attenuation (1, 0, 0), and transformation from camera to world frame of
-  // both position and direction of the light.
+  // both position and direction of the light. Note, light direction is
+  // *intentionally* specified with non-unit vectors to confirm that the
+  // render engine takes responsibility for normalizing.
   const std::vector<Config> configs{
       {.light = {.color = Rgba(1, 1, 1),
                  .attenuation_values = {1, 0, 0},
                  .position = {0, 0, 0},
                  .frame = "camera",
                  .intensity = 1.0,
-                 .direction = {0, 0, 1},
+                 .direction = {0, 0, 0.5},
                  // If you show the window for spotlight images, the spotlight
                  // circle will exactly fit from image top to bottom.
                  .cone_angle = 22.5},
@@ -1938,7 +1940,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
                  .position = {0, 0, dist},
                  .frame = "world",
                  .intensity = 1.0,
-                 .direction = {0, 0, -1},
+                 .direction = {0, 0, -2},
                  .cone_angle = 22.5},
        .expected_color = kTerrainColor,
        // Should be identical to the baseline image.
@@ -1948,7 +1950,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
                  .position = {0, 0, dist},
                  .frame = "camera",
                  .intensity = 1.0,
-                 .direction = {0, 0, -1},
+                 .direction = {0, 0, -0.01},
                  .cone_angle = 22.5},
        .expected_color = Rgba(0, 0, 0),
        // The lights are positioned badly to illuminate anything.
