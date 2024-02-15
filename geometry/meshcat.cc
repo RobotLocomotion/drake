@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <future>
+#include <limits>
 #include <map>
 #include <optional>
 #include <regex>
@@ -2429,7 +2430,57 @@ void Meshcat::Flush() const {
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
+  if (last_frame_.contains(std::string(path))) {
+    SetProperty(fmt::format("{}/<animation>/{}", path,
+                            last_frame_[std::string(path)]),
+                "visible", false);
+  }
   impl().SetObject(path, shape, rgba);
+}
+
+void Meshcat::SetObject(std::string_view path, const Shape& shape,
+                        double time_in_recording, const Rgba& rgba) {
+  if (!animation_) {
+    throw std::runtime_error(
+        "You must create a recording (via StartRecording) before calling "
+        "SetObject with time");
+  }
+  if (recording_ == false) {
+    throw std::runtime_error(
+        "You must not stop recording (via StopRecording) before calling "
+        "SetObject with time");
+  }
+  if (last_frame_.contains(std::string(path)) &&
+      last_frame_[std::string(path)] > animation_->frame(time_in_recording)) {
+    throw std::runtime_error(
+        "SetObject with time_in_recording that corresponds to an earlier "
+        "frame than the last frame.");
+  }
+
+  if (last_frame_.contains(std::string(path))) {
+    SetProperty(
+        fmt::format("{}/<animation>/{}", path, last_frame_[std::string(path)]),
+        "visible", false, time_in_recording);
+  } else {
+    // This is the first frame. Make sure the unanimated object is visible
+    // only from the start time to the specified time. It is possible that
+    // there was no unanimated object, but we can still set property without
+    // the object.
+    SetProperty(fmt::format("{}/<object>", path), "visible", true,
+                animation_->start_time());
+    SetProperty(fmt::format("{}/<object>", path), "visible", false,
+                time_in_recording);
+  }
+
+  const int frame = animation_->frame(time_in_recording);
+  const std::string path_animation_frame =
+      fmt::format("{}/<animation>/{}", path, frame);
+
+  SetProperty(path_animation_frame, "visible", false, animation_->start_time());
+  impl().SetObject(path_animation_frame, shape, rgba);
+  SetProperty(path_animation_frame, "visible", true, time_in_recording);
+
+  last_frame_[std::string(path)] = frame;
 }
 
 void Meshcat::SetObject(std::string_view path,
@@ -2698,6 +2749,11 @@ void Meshcat::StartRecording(double frames_per_second,
   animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
   recording_ = true;
   set_visualizations_while_recording_ = set_visualizations_while_recording;
+  last_frame_.clear();
+}
+
+void Meshcat::StopRecording() {
+  recording_ = false;
 }
 
 void Meshcat::PublishRecording() {
