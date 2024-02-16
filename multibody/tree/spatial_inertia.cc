@@ -4,6 +4,7 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/math/unit_vector.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -356,36 +357,41 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   }
   throw std::runtime_error(error_message);
 }
+
 template <typename T>
-template <typename T1>
-typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
-    SpatialInertia<T>::ThrowIfMaxDimensionLargerThanAllowable(
-    double largest_allowable_dimension) const {
-  DRAKE_ASSERT(largest_allowable_dimension >= 0);
-
-  // Ensure mass, center of mass, and inertia properties are finite.
-  const T& mass = get_mass();
-  const Vector3<T>& p_PScm_E = get_com();
-  const UnitInertia<T>& G_SP_E = get_unit_inertia();
-  using std::isfinite;
-  if (!isfinite(mass) ||
-      !p_PScm_E.array().allFinite() ||
-      !G_SP_E.get_moments().array().allFinite() ||
-      !G_SP_E.get_products().array().allFinite() ) return;
-
-  // For a minimum bounding box with ½-lengths a, b, c, the box's largest
-  // dimension is its diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
-  auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
-  const double max_length = (2.0 * abc).norm();
-  if (max_length > largest_allowable_dimension) {
-    std::string error_message = fmt::format("Spatial inertia fails"
-      " SpatialInertia::ThrowIfMaxDimensionLargerThanAllowable()."
-      "\nSpatial inertia's minimum bounding box space-diagonal is {}."
-      "\nThe maximum allowable dimension is {}.\n",
-      max_length, largest_allowable_dimension);
-    error_message += fmt::format("{}", *this);
-    WriteExtraCentralInertiaProperties(&error_message);
-    throw std::runtime_error(error_message);
+void SpatialInertia<T>::ThrowIfAssociatedBodyIsTooLarge(
+          const char* function_name, const std::string& body_name) const {
+  // This function relies on real finite numerical data, so only test when
+  // mass, center of mass, and inertia properties are real and finite.
+  if constexpr (scalar_predicate<T>::is_bool) {
+    const T& mass = get_mass();
+    const Vector3<T>& p_PScm_E = get_com();
+    const UnitInertia<T>& G_SP_E = get_unit_inertia();
+    using std::isfinite;
+    if (isfinite(mass) && p_PScm_E.array().allFinite() &&
+        G_SP_E.get_moments().array().allFinite() &&
+        G_SP_E.get_products().array().allFinite()) {
+      // For a minimum bounding box with ½-lengths a, b, c, the box's largest
+      // dimension is its space-diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
+      auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+      const double max_allowable_dimension =
+          SpatialInertia<T>::MaximumAllowableDimension();
+      const double max_length = (2.0 * abc).norm();
+      if (max_length > max_allowable_dimension) {
+        std::string error_message = fmt::format(
+            "Function {}() did not add rigid body {} because it is too large."
+            "\nThis body's spatial inertia has a minimum bounding box whose "
+            "space-diagonal is {} meters."
+            "\nThe maximum allowable space-diagonal is {} meters.\n",
+            function_name, body_name, max_length, max_allowable_dimension);
+        error_message += fmt::format("{}", *this);
+        WriteExtraCentralInertiaProperties(&error_message);
+        throw std::runtime_error(error_message);
+      }
+    }
+  } else {
+    unused(function_name);
+    unused(body_name);
   }
 }
 
