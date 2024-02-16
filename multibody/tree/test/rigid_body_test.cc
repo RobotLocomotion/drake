@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 
@@ -242,20 +243,39 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
       M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
 }
 
-GTEST_TEST(SpatialInertia, ThrowIfInertiaPropertiesSignalHugeObject) {
-  // Create a 400 meter massless rod B with 1.0 kg particles at its distal ends.
-  const double mass = 1.0;
-  const double a = 200;  // a is ½-length.
+GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
+  // Create a massless rod B of length 2*a with 1.0 kg particles at its ends.
+  double mass = 1.0;
+  double a = 0.5000001 * SpatialInertia<double>::MaximumAllowableDimension();
   SpatialInertia<double> M_BBcm_B =
       SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
 
-  // Ensure MultibodyTree::AddRigidBody() throws an exception if a rigid body is
-  // unreasonably large for robotics as measured by the space-diagonal of the
-  // minimum bounding-box associated with the body's spatial inertia.
+  // Ensure an exception is thrown if a body is regarded as unreasonably large
+  // for robotics as measured by the space-diagonal of the minimum bounding-box
+  // associated with the body's spatial inertia.
   internal::MultibodyTree<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(model.AddRigidBody("bodyA", M_BBcm_B),
+      "[^]* has a minimum bounding box whose space-diagonal [^]*");
+
+  // Repeat the previous test, except use a slightly smaller rod length so
+  // no exception is thrown. This helps bracket the maximum allowable dimension.
+  a = 0.4999999 * SpatialInertia<double>::MaximumAllowableDimension();
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
+  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
+  DRAKE_EXPECT_NO_THROW(model.AddRigidBody("bodyA", M_BBcm_B));
+
+  // Create a test more like a naive URDF file, e.g., copy/paste 400 g*cm^2 from
+  // a CAD/CAE tool is vastly different than 400 kg*m^2 (10⁷ larger)! The values
+  // used here create a minimum bounding box with a 400 meter space-diagonal.
+  mass = 0.001;  // 1 gram. Assuming the user converted this correctly.
+  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+  const double Ixx = 20, Iyy = 30, Izz = 30;
+  const RotationalInertia<double> I_BBcm_B(Ixx, Iyy, Izz);
+  M_BBcm_B = SpatialInertia<double>::MakeFromCentralInertia(
+      mass, p_BoBcm_B, I_BBcm_B);
   DRAKE_EXPECT_THROWS_MESSAGE(model.AddRigidBody("bodyB", M_BBcm_B),
-      "[^]* minimum bounding box space-diagonal is [^]*");
+      "[^]* has a minimum bounding box whose space-diagonal [^]*");
 }
 
 }  // namespace

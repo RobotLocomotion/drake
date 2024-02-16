@@ -105,7 +105,7 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
 
   // Throw an exception if the minimum bounding box associated with M_BBo_B has
   // a unreasonably long space-diagonal (for a robotic system).
-  M_BBo_B.ThrowIfMaxDimensionLargerThanAllowable();
+  M_BBo_B.ThrowIfAssociatedBodyIsTooLarge(__func__, name);
 
   const RigidBody<T>& body = this->AddRigidBodyImpl(
       std::make_unique<RigidBody<T>>(name, model_instance, M_BBo_B));

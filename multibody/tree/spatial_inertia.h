@@ -645,29 +645,29 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
+  /// Return the internally-defined maximum allowable dimension for the
+  /// space-diagonal of a spatial inertia's minimum bounding box.
+  /// @note The largest allowable dimension was chosen based on the world's
+  /// largest aircraft carrier (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m)
+  /// whose space-diagonal ≈ 355 m and the Bagger 293 bucket-wheel excavator
+  /// which is the world's largest land vehicle (≈ 224 m long). Both of these
+  /// dwarf the world's largest humanoid robot (Mononofu ≈ 8.5 m tall) and the
+  /// USA space shuttle (≈ 37 m long) even with its 15 m Canada robot arm.
+  static double MaximumAllowableDimension() {
+    return 355;  // 355 meters.
+  }
+
   /// Throw an exception if the minimum bounding box associated with `this`
   /// spatial inertia has a space-diagonal that is larger than allowable.
-  /// @param[in] largest_allowable_dimension the largest allowable dimension
-  /// associated with `this` spatial inertia in any direction. The default value
-  /// was chosen based on the world's largest aircraft carrier (length ≈ 337 m,
-  /// width ≈ 78 m, height ≈ 76 m, so space-diagonal ≈ 355 m) and the Bagger 293
-  /// bucket-wheel excavator (≈ 224 m long) which is the world's largest and
-  /// heaviest land vehicle. These dwarf the world's largest humanoid robot
-  /// (Mononofu ≈ 8.5 m tall) and the USA space shuttle (≈ 37 m long) even with
-  /// its 15 m Canada robot arm.
-  /// Since this method relies on the numeric (not symbolic) data, we make the
-  /// function a no-op for non-numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
-      ThrowIfMaxDimensionLargerThanAllowable(
-      double largest_allowable_dimension = 355) const;
-
-  // SFINAE for non-numeric types. See documentation in the implementation for
-  // numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<!scalar_predicate<T1>::is_bool, void>
-      ThrowIfMaxDimensionLargerThanAllowable(
-      double largest_allowable_dimension = 355) const {}
+  /// @param[in] function_name name of the function that is to appear in the
+  /// exception message (if an exception is thrown).
+  /// @param[in] body_name name of the body that is to appear in the
+  /// exception message (if an exception is thrown).
+  /// @see MaximumAllowableDimension() for the maximum allowable dimension.
+  /// @note Since this function relies on numeric (not symbolic) data, this
+  /// function is effectively a no-op for non-numeric types.
+  void ThrowIfAssociatedBodyIsTooLarge(
+      const char* function_name, const std::string& body_name) const;
   ///@}
 
   /// Copy to a full 6x6 matrix representation.
@@ -869,8 +869,6 @@ class SpatialInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
-    ThrowIfMaxDimensionLargerThanAllowable();
-
     if (!IsPhysicallyValid())
       ThrowNotPhysicallyValid();
   }
