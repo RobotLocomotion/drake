@@ -361,8 +361,8 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 template <typename T>
 void SpatialInertia<T>::ThrowIfAssociatedBodyIsTooLarge(
           const char* function_name, const std::string& body_name) const {
-  // This function relies on real finite numerical data, so only test when
-  // mass, center of mass, and inertia properties are real and finite.
+  // Since this function relies on real finite numerical data, it only tests
+  // when mass, center of mass, and inertia properties are real and finite.
   if constexpr (scalar_predicate<T>::is_bool) {
     const T& mass = get_mass();
     const Vector3<T>& p_PScm_E = get_com();
@@ -374,9 +374,9 @@ void SpatialInertia<T>::ThrowIfAssociatedBodyIsTooLarge(
       // For a minimum bounding box with ½-lengths a, b, c, the box's largest
       // dimension is its space-diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
       auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+      const double max_length = (2.0 * abc).norm();
       const double max_allowable_dimension =
           SpatialInertia<T>::MaximumAllowableDimension();
-      const double max_length = (2.0 * abc).norm();
       if (max_length > max_allowable_dimension) {
         std::string error_message = fmt::format(
             "Function {}() did not add rigid body {} because it is too large."

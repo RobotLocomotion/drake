@@ -1410,8 +1410,8 @@ GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
   // minimum bounding box's space-diagonal = 360 m is longer than allowable.
   const double mass = 1.0;
   double a = 180, b = 0, c = 0;  // rod's ½-length is 180 meters.
-  SpatialInertia<double> M_BBcm_B =
-      SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
+  SpatialInertia<double> M_BBcm_B;
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
 
   const char* function_name = "ThrowIfSpatialInertiaSignalsHugeObject";
@@ -1464,8 +1464,7 @@ GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
     M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name));
 
   // Ensure an exception is thrown for a solid box that is large enough so its
-  // minimum bounding box's space-diagonal exceed 355 m, which is the maximum
-  // allowable dimension used by ThrowIfAssociatedBodyIsTooLarge().
+  // minimum bounding box's space-diagonal exceeds the maximum allowable.
   // Compute a scaling factor for the previous solid box to throw an exception.
   // The equation that governs the scaling factor is derived below, with the
   // sqrt(3) described at @ref spatial_inertia_equivalent_shapes.

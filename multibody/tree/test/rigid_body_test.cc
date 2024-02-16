@@ -247,8 +247,8 @@ GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
   // Create a massless rod B of length 2*a with 1.0 kg particles at its ends.
   double mass = 1.0;
   double a = 0.5000001 * SpatialInertia<double>::MaximumAllowableDimension();
-  SpatialInertia<double> M_BBcm_B =
-      SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
+  SpatialInertia<double> M_BBcm_B;
+  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
 
   // Ensure an exception is thrown if a body is regarded as unreasonably large
@@ -265,10 +265,10 @@ GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
   DRAKE_EXPECT_NO_THROW(model.AddRigidBody("bodyA", M_BBcm_B));
 
-  // Create a test more like a naive URDF file, e.g., copy/paste 400 g*cm^2 from
-  // a CAD/CAE tool is vastly different than 400 kg*m^2 (10⁷ larger)! The values
+  // Create a test more like a naive URDF file, e.g., copy/paste 30 g*cm^2 from
+  // a CAD/CAE tool is vastly different than 30 kg*m^2 (10⁷ larger)! The values
   // used here create a minimum bounding box with a 400 meter space-diagonal.
-  mass = 0.001;  // 1 gram. Assuming the user converted this correctly.
+  mass = 0.001;  // 1 gram. This value assumes a correct conversion to kg.
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   const double Ixx = 20, Iyy = 30, Izz = 30;
   const RotationalInertia<double> I_BBcm_B(Ixx, Iyy, Izz);
