@@ -651,8 +651,9 @@ class SpatialInertia {
   /// largest aircraft carrier (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m)
   /// whose space-diagonal ≈ 355 m and the Bagger 293 bucket-wheel excavator
   /// which is the world's largest land vehicle (≈ 224 m long). Both of these
-  /// dwarf the world's largest humanoid robot (Mononofu ≈ 8.5 m tall) and the
-  /// USA space shuttle (≈ 37 m long) even with its 15 m Canada robot arm.
+  /// dwarf the largest human object in space (International Space Station is
+  /// 109 m long and 75 m wide), the USA space shuttle (≈ 37 m long) even with a
+  /// 15.2 m Canadarm, and the largest humanoid robot (Mononofu ≈ 8.5 m tall),
   static double MaximumAllowableDimension() {
     return 355;  // 355 meters.
   }
