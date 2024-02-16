@@ -29,7 +29,6 @@
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-release please
-@drake-jenkins-bot linux-jammy-unprovisioned-gcc-wheel-experimental-release please
 @drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-bazel-experimental-release please
 @drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-bazel-experimental-packaging please
 @drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-bazel-experimental-release please
