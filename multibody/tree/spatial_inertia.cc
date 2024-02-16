@@ -3,8 +3,8 @@
 #include <string>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/math/unit_vector.h"
 #include "drake/common/unused.h"
+#include "drake/math/unit_vector.h"
 
 namespace drake {
 namespace multibody {
