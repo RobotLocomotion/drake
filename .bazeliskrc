@@ -1,6 +1,3 @@
 # Keep this version number in sync with the Ubuntu deb installed by
 # drake/setup/ubuntu/source_distribution/install_bazel.sh.
-#
-# These files should also be updated:
-# drake/tools/workspace/drake_visualizer/image/provision.sh
 USE_BAZEL_VERSION=6.4.0

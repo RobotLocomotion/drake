@@ -53,7 +53,7 @@ if ! curl --fail --head --location --output /dev/null \
   exit 8
 fi
 
-platforms=( focal jammy )
+platforms=( jammy noble )
 
 readonly gpg_key="$(
   curl --fail https://drake-apt.csail.mit.edu/drake.asc | \

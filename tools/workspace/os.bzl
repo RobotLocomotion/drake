@@ -128,7 +128,7 @@ def _determine_linux(repository_ctx):
 
         # Match supported Ubuntu release(s). These should match those listed in
         # both doc/_pages/from_source.md and the root CMakeLists.txt.
-        if ubuntu_release in ["20.04", "22.04", "24.04"]:
+        if ubuntu_release in ["22.04", "24.04"]:
             return _make_result(
                 ubuntu_release = ubuntu_release,
                 is_wheel = is_manylinux,
@@ -229,7 +229,7 @@ def determine_os(repository_ctx):
         - is_ubuntu: True iff targeting an Ubuntu non-wheel build
         - is_manylinux: True iff targeting a Linux wheel build
 
-        - ubuntu_release: str like "20.04" or "22.04" (set any time the build
+        - ubuntu_release: str like "22.04" (set any time the build
             platform is Ubuntu, even for builds targeting "manylinux")
         - macos_release: str like "11" or "12" (set any time the build platform
             is macOS, even for builds targeting "macos_wheel")

@@ -44,9 +44,9 @@ When reporting an issue, please consider providing the following information
   rebuilding from source)
 * Language you are using (C++ or [Python](/python_bindings.html))
     * If using C++:
-      * C++ compiler (e.g., GCC 9.3.0, Clang 6.0.0)
+      * C++ compiler (e.g., GCC 11.4, Clang 14.0)
     * If using Python:
-      * Python version (e.g., Python 3.8)
+      * Python version (e.g., Python 3.10)
       * Python distribution (e.g., Ubuntu apt, macOS homebrew)
 * If building from source:
     * Build system (Bazel or CMake)
