@@ -10,12 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
-// TODO(jwnimmer-tri) We can drop this compat macro once we drop support for
-// Ubuntu 20.04 Focal.
-#if (__GLIBC__ == 2) && (__GLIBC_MINOR__ < 33)
-#define mallinfo2 mallinfo
-#endif
-
 namespace {
 
 using benchmark::MemoryManager;

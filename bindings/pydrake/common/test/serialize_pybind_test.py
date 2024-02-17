@@ -99,14 +99,9 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_map, {'new_key': 70})
         self.assertEqual(dut.some_variant, 80.0)
 
-        try:
-            # Use the PEP-585 types if supported (Python >= 3.9).
-            expected_vector_type = list[float]
-            expected_dict_type = dict[str, float]
-        except TypeError:
-            # Otherwise, use the Python 3.8 types.
-            expected_vector_type = typing.List[float]
-            expected_dict_type = typing.Dict[str, float]
+        # Use the PEP-585 types if supported (Python >= 3.9).
+        expected_vector_type = list[float]
+        expected_dict_type = dict[str, float]
 
         # Check all field types.
         fields = getattr(MyData2, "__fields__")
