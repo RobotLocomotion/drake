@@ -418,7 +418,7 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   MultibodyPlant<double>& plant_ref = pair;
   EXPECT_EQ(&plant_ref, plant);
 
-  // Check support for C++17's structured binding.
+  // Check support for C++ structured binding.
   auto [first_element, second_element] =
       AddMultibodyPlantSceneGraph(&builder, 0.0);
   // Verify the expected types.

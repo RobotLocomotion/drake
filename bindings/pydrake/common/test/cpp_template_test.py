@@ -93,11 +93,7 @@ class TestCppTemplate(unittest.TestCase):
 
         with self.assertRaises(TypeError) as cm:
             assert_pickle(self, template)
-        if sys.version_info[:2] >= (3, 8):
-            pickle_error = "cannot pickle 'module' object"
-        else:
-            pickle_error = "can't pickle module objects"
-        self.assertIn(pickle_error, str(cm.exception))
+        self.assertIn("cannot pickle 'module' object", str(cm.exception))
 
     def test_base_negative(self):
 

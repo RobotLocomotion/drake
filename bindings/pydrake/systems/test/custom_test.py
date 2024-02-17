@@ -83,13 +83,7 @@ class CustomAdder(LeafSystem):
         # N.B. We cannot use `header_lines.append(...)` here; the property
         # getter returns a _copy_ of the lines, not a _reference_.
         params.header_lines += ["hello=world"]
-        if sys.version_info[:2] >= (3, 9):
-            params.options |= {"split": "I/O"}
-        else:
-            # TODO(jwnimmer-tri) Kill this spelling when we drop Ubuntu 20.04.
-            options = params.options
-            options.update({"split": "I/O"})
-            params.options = options
+        params.options |= {"split": "I/O"}
         return super().DoGetGraphvizFragment(params)
 
 
