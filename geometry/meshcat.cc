@@ -53,14 +53,6 @@ using internal::FileStorage;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
-// TODO(jwnimmer-tri) Use the C++ built-in ends_with when we drop C++17.
-bool EndsWith(std::string_view str, std::string_view suffix) {
-  if (str.size() < suffix.size()) {
-    return false;
-  }
-  return str.substr(str.size() - suffix.size()) == suffix;
-}
-
 template <typename Mapping>
 [[noreturn]] void ThrowThingNotFound(std::string_view thing,
                                      std::string_view name, Mapping thing_map) {
@@ -426,7 +418,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     }
 
     // Set the scale.
-    visit_overloaded<void>(
+    std::visit<void>(
         overloaded{[](std::monostate) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
@@ -2078,7 +2070,7 @@ class Meshcat::Impl {
             internal::GetMeshcatStaticResource(url_path)) {
       if (content->substr(0, 15) == "<!DOCTYPE html>") {
         response->writeHeader("Content-Type", "text/html; charset=utf-8");
-      } else if (EndsWith(url_path, ".js")) {
+      } else if (url_path.ends_with(".js")) {
         response->writeHeader("Content-Type", "text/javascript; charset=utf-8");
       }
       response->end(*content);

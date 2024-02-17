@@ -75,7 +75,7 @@ import pydrake.visualization.meldis
 #
 # TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
 # updated to 2.5.2 or later.
-if sys.version_info[:2] >= (3, 10) and not hasattr(umsgpack, 'Hashable'):
+if not hasattr(umsgpack, 'Hashable'):
     import collections
     setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
 
