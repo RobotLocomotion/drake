@@ -2,10 +2,6 @@ load("//tools/skylark:py.bzl", "py_library")
 load("//tools/install:check_licenses.bzl", "check_licenses")
 load("//tools/install:install.bzl", "install")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
-load(
-    "@drake_visualizer//:defs.bzl",
-    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_library(
@@ -117,7 +113,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
     "conex_internal",
-    "drake_visualizer",
     "gflags",
     "libjpeg_turbo_internal",
 ]] + select({
@@ -164,11 +159,7 @@ check_licenses(
         "@commons_io//:install",
         "@net_sf_jchart2d//:install",
         "@org_apache_xmlgraphics_commons//:install",
-    ] + ([
-        # When disabled, this installs only a stub program under Drake's
-        # license; no other LICENSE file is relevant.
-        "//tools/workspace/drake_visualizer:install",
-    ] if not _DRAKE_VISUALIZER_ENABLED else []),
+    ],
 )
 
 add_lint_tests()

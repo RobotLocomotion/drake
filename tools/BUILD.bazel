@@ -5,10 +5,6 @@ load(
     "//tools/skylark:drake_runfiles_binary.bzl",
     "drake_runfiles_binary",
 )
-load(
-    "@drake_visualizer//:defs.bzl",
-    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,33 +13,6 @@ py_library(
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
     deps = ["//:module_py"],
-)
-
-_VISUALIZER_MAIN = "{}:drake_visualizer_{}.py".format(
-    "//tools/workspace/drake_visualizer",
-    "bazel" if _DRAKE_VISUALIZER_ENABLED else "disabled",
-)
-
-py_binary(
-    name = "drake_visualizer_py",
-    srcs = [_VISUALIZER_MAIN],
-    data = [
-        "//examples:models",
-        "@drake_visualizer",
-    ] if _DRAKE_VISUALIZER_ENABLED else [],
-    main = _VISUALIZER_MAIN,
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        "//lcmtypes:lcmtypes_drake_py",
-        "//tools/workspace/drake_visualizer:builtin_scripts_py",
-        "@drake_visualizer//:drake_visualizer_python_deps",
-    ] if _DRAKE_VISUALIZER_ENABLED else [],
-)
-
-drake_runfiles_binary(
-    name = "drake_visualizer",
-    target = ":drake_visualizer_py",
 )
 
 alias(
