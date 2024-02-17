@@ -9,8 +9,8 @@ def _impl(ctx):
         "manipulation/models/iiwa_description/iiwa_stack.LICENSE.txt",
         "setup/Brewfile",
         "setup/install_prereqs",
-        "setup/packages-focal.txt",
         "setup/packages-jammy.txt",
+        "setup/packages-noble.txt",
         "setup/requirements.txt",
         # These are installed in share/drake and are runfiles for certain
         # targets, but none of those targets are relevant for this use case.
