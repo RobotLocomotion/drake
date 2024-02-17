@@ -22,8 +22,6 @@ namespace geometry {
 namespace optimization {
 
 struct GraphOfConvexSetsOptions {
-  GraphOfConvexSetsOptions() = default;
-
   /** Flag to solve the relaxed version of the problem.  As discussed in the
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
@@ -56,6 +54,8 @@ struct GraphOfConvexSetsOptions {
   max_rounded_paths is less than or equal to zero, this option is ignored. */
   int rounding_seed{0};
 
+  // TODO(#20969) The following option should be removed.
+
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
   solver cannot handle the type of optimization problem generated, the calling
@@ -83,6 +83,9 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
+    // N.B. We skip the DRAKE_NVP(solver), because it cannot be serialized.
+    // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(rounding_solver_options).
   }
 };
 
