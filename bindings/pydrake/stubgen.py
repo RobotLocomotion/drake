@@ -10,16 +10,6 @@ from pathlib import Path
 
 from mypy import stubgen
 
-# This script still needs to support Ubuntu 20.04 ("Focal"). As a result,
-# we must not import any RL dependencies that require a bleeding edge numpy.
-# Luckily, we don't need typestubs for this pure-python module, anyway.
-for _skip in [
-        "pydrake.examples.gym.play_cart_pole",
-        "pydrake.examples.gym.train_cart_pole",
-        "pydrake.gym",
-]:
-    sys.modules[_skip] = sys.modules["tempfile"]
-
 
 def _pydrake_modules():
     """Returns the list[str] of all pydrake module names."""

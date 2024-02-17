@@ -82,7 +82,7 @@ load("@drake//:.os.bzl", OS_NAME = "NAME")
 cc_test(
     name = "text_logging_test",
     srcs = ["text_logging_test.cc"],
-    copts = ["--std=c++17"],
+    copts = ["--std=c++20"],
     # TODO(jwnimmer-tri) On macOS, we need to pkg-config fmt for this to pass.
     # For the moment, we'll say that :drake_shared_library is Ubuntu-only.
     tags = ["manual"] if OS_NAME == "mac os x" else [],
