@@ -184,12 +184,14 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
 template <typename T>
 const VectorX<T>& MultilayerPerceptron<T>::GetParameters(
     const Context<T>& context) const {
+  this->ValidateContext(context);
   return context.get_numeric_parameter(0).value();
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultilayerPerceptron<T>::GetMutableParameters(
     Context<T>* context) const {
+  this->ValidateContext(context);
   return context->get_mutable_numeric_parameter(0).get_mutable_value();
 }
 
@@ -219,18 +221,21 @@ template <typename T>
 void MultilayerPerceptron<T>::SetParameters(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& params) const {
   DRAKE_DEMAND(params.rows() == num_parameters_);
+  this->ValidateContext(context);
   context->get_mutable_numeric_parameter(0).SetFromVector(params);
 }
 
 template <typename T>
 Eigen::Map<const MatrixX<T>> MultilayerPerceptron<T>::GetWeights(
     const Context<T>& context, int layer) const {
+  this->ValidateContext(context);
   return GetWeights(context.get_numeric_parameter(0).value(), layer);
 }
 
 template <typename T>
 Eigen::Map<const VectorX<T>> MultilayerPerceptron<T>::GetBiases(
     const Context<T>& context, int layer) const {
+  this->ValidateContext(context);
   return GetBiases(context.get_numeric_parameter(0).value(), layer);
 }
 
@@ -241,6 +246,7 @@ void MultilayerPerceptron<T>::SetWeights(
   DRAKE_DEMAND(layer >= 0 && layer < num_weights_);
   DRAKE_DEMAND(W.rows() == layers_[layer + 1]);
   DRAKE_DEMAND(W.cols() == layers_[layer]);
+  this->ValidateContext(context);
   BasicVector<T>& params = context->get_mutable_numeric_parameter(0);
   Eigen::Map<MatrixX<T>>(
       params.get_mutable_value().data() + weight_indices_[layer],
@@ -253,6 +259,7 @@ void MultilayerPerceptron<T>::SetBiases(
     const Eigen::Ref<const VectorX<T>>& b) const {
   DRAKE_DEMAND(layer >= 0 && layer < num_weights_);
   DRAKE_DEMAND(b.rows() == layers_[layer + 1]);
+  this->ValidateContext(context);
   context->get_mutable_numeric_parameter(0).get_mutable_value().segment(
       bias_indices_[layer], layers_[layer + 1]) = b;
 }

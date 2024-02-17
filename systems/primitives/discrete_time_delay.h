@@ -78,6 +78,7 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
   /// block, sliding the delay buffer forward and placing the sampled input at
   /// the end. This emulates an update event and is mostly useful for testing.
   void SaveInputToBuffer(Context<T>* context) const {
+    this->ValidateContext(context);
     if (is_abstract()) {
       SaveInputAbstractValueToBuffer(*context, &context->get_mutable_state());
     } else {
