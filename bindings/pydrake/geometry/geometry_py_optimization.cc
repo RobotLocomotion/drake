@@ -595,7 +595,7 @@ void DefineGeometryOptimization(py::module m) {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
     py::class_<GraphOfConvexSetsOptions> gcs_options(
         m, "GraphOfConvexSetsOptions", cls_doc.doc);
-    gcs_options.def(py::init<>(), cls_doc.doc)
+    gcs_options.def(py::init<>())
         .def_readwrite("convex_relaxation",
             &GraphOfConvexSetsOptions::convex_relaxation,
             cls_doc.convex_relaxation.doc)
