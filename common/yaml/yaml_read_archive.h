@@ -331,7 +331,7 @@ class YamlReadArchive final {
   // Checks if the given yaml type `tag` matches the C++ type `T`.
   template <typename T>
   static bool IsTagMatch(std::string_view tag) {
-    // Check againt the JSON schema tags.
+    // Check against the JSON schema tags.
     if constexpr (std::is_same_v<T, bool>) {
       return tag == internal::Node::kTagBool;
     } else if constexpr (std::is_integral_v<T>) {
