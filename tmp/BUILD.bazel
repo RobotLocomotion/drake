@@ -1,6 +1,7 @@
 load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -32,3 +33,22 @@ drake_py_binary(
     deps = ["//bindings/pydrake"],
 )
 
+drake_cc_binary(
+    name = "box_drop",
+    srcs = ["box_drop.cc"],
+    data = ["//manipulation/models/ycb:models"],
+    deps = [
+        "//geometry:meshcat",
+        "//geometry:scene_graph",
+        "//multibody/meshcat:contact_visualizer",
+        "//multibody/parsing:parser",
+        "//multibody/plant:contact_results",
+        "//multibody/plant:plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+        "//systems/framework:context",
+        "//visualization:visualization_config",
+        "//visualization:visualization_config_functions",
+    ],
+)

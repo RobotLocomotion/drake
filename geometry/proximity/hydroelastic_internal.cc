@@ -101,18 +101,26 @@ void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
 
 template <typename ShapeType>
 void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
-  switch (data.type) {
-    case HydroelasticType::kRigid: {
-      auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
-      if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
-    } break;
-    case HydroelasticType::kSoft: {
-      auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
-      if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
-    } break;
-    case HydroelasticType::kUndefined:
-      // No action required.
-      break;
+  try {
+    switch (data.type) {
+      case HydroelasticType::kRigid: {
+        auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
+        if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
+      } break;
+      case HydroelasticType::kSoft: {
+        auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
+        if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
+      } break;
+      case HydroelasticType::kVanished:
+        // XXX ???
+        supported_geometries_[data.id] = HydroelasticType::kVanished;
+        break;
+      case HydroelasticType::kUndefined:
+        // No action required.
+        break;
+    }
+  } catch (const std::exception&) {
+    supported_geometries_[data.id] = HydroelasticType::kVanished;
   }
 }
 

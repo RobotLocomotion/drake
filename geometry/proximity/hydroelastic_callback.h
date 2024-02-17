@@ -194,6 +194,12 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
     return CalcContactSurfaceResult::kUnsupported;
   }
 
+  // One or two objects have vanished.
+  if (type_A == HydroelasticType::kVanished ||
+      type_B == HydroelasticType::kVanished) {
+    return CalcContactSurfaceResult::kCalculated;
+  }
+
   // Rigid-rigid contact is not supported in hydroelastic contact model.
   // Callers might optionally fall back to point contact model.
   if (type_A == HydroelasticType::kRigid &&
