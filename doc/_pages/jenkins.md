@@ -54,7 +54,7 @@ where ``<job-name>`` is the name of an
 For example:
 
 * ``@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-release please.``
-* ``@drake-jenkins-bot linux-focal-clang-bazel-experimental-valgrind-memcheck please``
+* ``@drake-jenkins-bot linux-jammy-clang-bazel-experimental-valgrind-memcheck please``
 
 A list of Jenkins bot commands that cover the full set of continuous, nightly
 and weekly production jobs are available for
@@ -111,7 +111,7 @@ When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
 
-* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-release please``
+* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-release please.``
 
 After this has passed, go through normal review. Once normal review is done,
@@ -126,7 +126,6 @@ To schedule an "experimental" build of a [binary package](/from_binary.html)
 or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
-* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-packaging please``
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
 * ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-bazel-experimental-packaging please``
 * ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-packaging please``

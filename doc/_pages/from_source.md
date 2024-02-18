@@ -14,7 +14,6 @@ officially supports:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 6.4   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 6.4   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
 | macOS Monterey (12)                | x86_64       | 3.11       | 6.4   | 3.25  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 | macOS Ventura (13)                 | arm64        | 3.11       | 6.4   | 3.26  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
@@ -24,7 +23,7 @@ officially supports:
 notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
-Ubuntu or macOS than what are listed, or with Ubuntu 22.04 running on arm64, or
+Ubuntu or macOS than what are listed, or with Ubuntu running on arm64, or
 with other versions of Python or Java. However, these are not supported so if it
 doesn't work for you then please file a pull request with the fix, not a bug
 report.
@@ -147,13 +146,6 @@ cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
 ```
 
 You will also need to have your ``PYTHONPATH`` configured correctly.
-
-*Ubuntu 20.04 (Focal):*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
-```
 
 *Ubuntu 22.04 (Jammy):*
 

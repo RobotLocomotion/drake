@@ -8,9 +8,9 @@ libglx0
 libgomp1
 libjchart2d-java
 liblapack3
-libmumps-seq-5.4
+libmumps-seq-5.6
 libopengl0
-libpython3.10
+libpython3.11
 libspdlog-dev
 libx11-6
 ocl-icd-libopencl1

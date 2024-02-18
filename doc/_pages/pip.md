@@ -44,7 +44,6 @@ Create a virtual environment, install Drake, and activate the environment:
 
 ```bash
 python3 -m venv env
-env/bin/pip install --upgrade pip
 env/bin/pip install drake
 source env/bin/activate
 ````
@@ -53,7 +52,7 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Wheel packages for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and macOS are
+Wheel packages for Ubuntu 22.04 (Jammy) and macOS are
 published nightly at a [PEP 503](https://peps.python.org/pep-0503/) index url
 [https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 
@@ -67,7 +66,6 @@ desired date:
 
 ```bash
 python3 -m venv env
-env/bin/pip install --upgrade pip
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
     'drake==0.0.YYYYMMDD'
@@ -79,7 +77,6 @@ instead of `==0.0.YYYYMMDD` as shown below:
 
 ```bash
 python3 -m venv env
-env/bin/pip install --upgrade pip
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
     'drake<0.1'

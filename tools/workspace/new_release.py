@@ -89,11 +89,9 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
-    "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
     "qhull_internal": r"^(2)",
-    "ros_xacro_internal": r"^(\d+\.\d+\.)",
     "sdformat_internal": "",
 }
 

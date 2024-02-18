@@ -6,17 +6,13 @@ def intel_realsense_ros_internal_repository(
     github_archive(
         name = name,
         repository = "IntelRealSense/realsense-ros",
-        # N.B. Even though 2.3.x series is not the highest-numbered release, we
-        # are using it here because it aligns with the ROS Noetic version
-        # released for Ubuntu 20.04.  See:
-        # https://index.ros.org/p/realsense2_camera/github-IntelRealSense-realsense-ros/#noetic
-        # https://github.com/IntelRealSense/realsense-ros/releases
-        commit = "2.3.2",
-        sha256 = "18c0f90eeea2b64889388e2e441221931e220d1fea06fe6eff8d70442c456459",  # noqa
+        commit = "4.54.1",
+        sha256 = "98f6d760d698c0b6752679665fc8a59f29a2e75e593049f207daaf49a0f44793",  # noqa
         build_file = ":package.BUILD.bazel",
         patch_cmds = [
             "cp LICENSE realsense2_description/",
             "sed -i.orig -e 's|$(find realsense2_description)/urdf/||' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i.orig -e 's|file://$(find realsense2_description)/meshes/|../meshes/|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg use_mesh)|true|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg add_plug)|false|' realsense2_description/urdf/*.xacro",  # noqa

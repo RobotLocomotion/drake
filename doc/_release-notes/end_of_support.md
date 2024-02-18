@@ -9,6 +9,9 @@ If you need to use these, you can use an old release of Drake.
 
 # Ubuntu packages
 
+* Ubuntu 20.04 (Focal)
+  * The last version with support for Ubuntu 20.04 was
+    [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).
 * Ubuntu 18.04 (Bionic)
   * The last version with support for Ubuntu 18.04 was
     [v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0).
@@ -41,9 +44,14 @@ If you need to use these, you can use an old release of Drake.
   * On macOS, the last version with support for Python 3.10 wheels was
     [v1.12.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.12.0).
 * Python 3.9 (Wheel)
-  * On Linux, Drake still supports Python 3.9 wheels.
+  * On Linux, the last version with support for Python 3.9 wheels was
+    [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).
   * On macOS, the last version with support for Python 3.9 wheels was
     [v1.5.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.5.0).
+* Python 3.8 (Wheel)
+  * On Linux, the last version with support for Python 3.8 wheels was
+    [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).
+  * On macOS, Drake never supported Python 3.8 wheels.
 * Python 3.7 (Wheel)
   * On Linux, the last version with support for Python 3.7 wheels was
     [v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0).
