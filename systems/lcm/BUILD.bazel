@@ -131,6 +131,7 @@ drake_cc_library(
     srcs = ["lcm_buses.cc"],
     hdrs = ["lcm_buses.h"],
     deps = [
+        "//common:string_container",
         "//lcm:interface",
     ],
 )

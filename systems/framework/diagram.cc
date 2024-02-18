@@ -3,6 +3,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <unordered_set>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -1722,7 +1723,7 @@ bool Diagram<T>::PortsAreValid() const {
 
 template <typename T>
 bool Diagram<T>::NamesAreUniqueAndNonEmpty() const {
-  std::set<std::string> names;
+  std::unordered_set<std::string> names;
   for (const auto& system : registered_systems_) {
     const std::string& name = system->get_name();
     if (name.empty()) {
