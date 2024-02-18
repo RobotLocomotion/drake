@@ -22,8 +22,6 @@ namespace geometry {
 namespace optimization {
 
 struct GraphOfConvexSetsOptions {
-  GraphOfConvexSetsOptions() = default;
-
   /** Flag to solve the relaxed version of the problem.  As discussed in the
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
@@ -56,6 +54,8 @@ struct GraphOfConvexSetsOptions {
   max_rounded_paths is less than or equal to zero, this option is ignored. */
   int rounding_seed{0};
 
+  // TODO(#20969) The following option should be removed.
+
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
   solver cannot handle the type of optimization problem generated, the calling
@@ -71,6 +71,22 @@ struct GraphOfConvexSetsOptions {
   running the relaxed problem and looser (i.e., higher) tolerances for final
   solves during rounding. */
   std::optional<solvers::SolverOptions> rounding_solver_options{std::nullopt};
+
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
+  This only serializes options that are YAML built-in types.  */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(convex_relaxation));
+    a->Visit(DRAKE_NVP(max_rounded_paths));
+    a->Visit(DRAKE_NVP(preprocessing));
+    a->Visit(DRAKE_NVP(max_rounding_trials));
+    a->Visit(DRAKE_NVP(flow_tolerance));
+    a->Visit(DRAKE_NVP(rounding_seed));
+    // N.B. We skip the DRAKE_NVP(solver), because it cannot be serialized.
+    // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(rounding_solver_options).
+  }
 };
 
 /**
