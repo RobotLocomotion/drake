@@ -16,38 +16,35 @@ namespace controllers {
  * Solves inverse dynamics with no consideration for joint actuator force
  * limits.
  *
- * Computes the generalized force `τ_id` that needs to be applied so that the
- * multibody system undergoes a desired acceleration `vd_d`. That is, `τ_id`
- * is the result of an inverse dynamics computation according to:
+ * Computes the actuation input `τ_id` that needs to be applied so that the
+ * multibody system undergoes a desired acceleration `vd_d`. That is, `τ_id` is
+ * the result of an inverse dynamics computation according to:
  * <pre>
- *   τ_id = M(q)vd_d + C(q, v)v - τ_g(q) - τ_app
+ *   τ_id = B⁻¹[M(q)vd_d + C(q, v)v - τ_g(q) - τ_app]
  * </pre>
  * where `M(q)` is the mass matrix, `C(q, v)v` is the bias term containing
- * Coriolis and gyroscopic effects, `τ_g(q)` is the vector of generalized
- * forces due to gravity and `τ_app` contains applied forces from force
- * elements added to the multibody model (this can include damping, springs,
- * etc. See MultibodyPlant::CalcForceElementsContribution()).
+ * Coriolis and gyroscopic effects, `B` is the actuator matrix, `τ_g(q)` is the
+ * vector of generalized forces due to gravity, and `τ_app` contains applied
+ * forces from force elements added to the multibody model (this can include
+ * damping, springs, etc. See MultibodyPlant::CalcForceElementsContribution()).
+ *
+ * Note: We assume that the plant is fully actuated (so B is square and
+ * invertible).
  *
  * The system also provides a pure gravity compensation mode via an option in
  * the constructor. In this case, the output is simply
  * <pre>
- *  τ_id = -τ_g(q).
+ *  τ_id = B⁻¹[-τ_g(q)].
  * </pre>
- *
- * @note As an alternative to adding a controller to your diagram, gravity
- * compensation can be modeled by disabling gravity for a given model instance,
- * see MultibodyPlant::set_gravity_enabled().
  *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute generalized forces. Use this
  * class directly if desired acceleration is computed differently.
  *
  * @system
- * name: InverseDynamics
- * input_ports:
+ * name: InverseDynamics input_ports:
  * - estimated_state
- * - <span style="color:gray">desired_acceleration</span>
- * output_ports:
+ * - <span style="color:gray">desired_acceleration</span> output_ports:
  * - generalized_force
  * @endsystem
  *
@@ -181,6 +178,7 @@ class InverseDynamics final : public LeafSystem<T> {
 
   const int q_dim_;
   const int v_dim_;
+  MatrixX<T> B_inv_;
 
   // Note: unused in gravity compensation mode.
   CacheIndex external_forces_cache_index_;

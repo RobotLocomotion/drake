@@ -29,6 +29,23 @@ InverseDynamics<T>::InverseDynamics(
     plant_->ValidateContext(*plant_context);
   }
 
+  // We assume that the plant is fully actuated (so B is square and invertible),
+  // but we cannot assume that the order of the actuators matches the order of
+  // the generalized forces.
+  DRAKE_DEMAND(plant_->num_actuated_dofs() == plant_->num_velocities());
+  // Construct B⁻¹ manually, since we know it's a permutation matrix (and
+  // therefore B⁻¹ = Bᵀ), and we want to support all scalar types.
+  B_inv_ = MatrixX<T>::Zero(v_dim_, v_dim_);
+  for (multibody::JointActuatorIndex actuator_index(0);
+       actuator_index < plant_->num_actuators(); ++actuator_index) {
+    const multibody::JointActuator<T>& actuator =
+        plant_->get_joint_actuator(actuator_index);
+    // This method assumes actuators on single dof joints. Assert this
+    // condition.
+    DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
+    B_inv_(int{actuator.index()}, actuator.joint().velocity_start()) = 1;
+  }
+
   estimated_state_ =
       this->DeclareInputPort("estimated_state", kVectorValued, q_dim_ + v_dim_)
           .get_index();
@@ -158,7 +175,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
 
   if (this->is_pure_gravity_compensation()) {
     output->get_mutable_value() =
-        -plant_->CalcGravityGeneralizedForces(plant_context);
+        B_inv_ * (-plant_->CalcGravityGeneralizedForces(plant_context));
   } else {
     const auto& external_forces =
         this->get_cache_entry(external_forces_cache_index_)
@@ -169,6 +186,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
         get_input_port_desired_acceleration().Eval(context);
 
     output->get_mutable_value() =
+        B_inv_ *
         plant_->CalcInverseDynamics(plant_context, desired_vd, external_forces);
   }
 }

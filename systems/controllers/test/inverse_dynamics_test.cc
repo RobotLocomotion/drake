@@ -155,6 +155,48 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   CheckTorque(q, v, vd_d);
 }
 
+// Tests the case when the actuators are ordered differently than the
+// generalized forces (so B is not the identity matrix).
+TEST_F(InverseDynamicsTest, ActuatorOrder) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="upper_arm" pos="0 0 2">
+      <joint name="shoulder" type="hinge" axis="0 1 0"/>
+      <geom name="upper_arm" fromto="0 0 0 0 0 1" size="0.05" type="capsule" mass="1"/>
+      <body name="lower_arm" pos="0 0 1">
+        <joint name="elbow" type="hinge" axis="0 1 0"/>
+        <geom name="lower_arm" fromto="0 0 0 0 0 1" size="0.049" type="capsule" mass="1"/>
+      </body>
+    </body>
+  </worldbody>
+   <actuator>
+    <!-- intentionally list these in reverse order -->
+    <motor name="elbow" joint="elbow"/>
+    <motor name="shoulder" joint="shoulder"/>
+  </actuator>
+</mujoco>
+)""";
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
+  multibody::Parser(mbp.get()).AddModelsFromString(xml, ".xml");
+  mbp->Finalize();
+  EXPECT_EQ(mbp->num_positions(), 2);
+  EXPECT_EQ(mbp->num_velocities(), 2);
+  EXPECT_EQ(mbp->num_actuators(), 2);
+  EXPECT_FALSE(mbp->MakeActuationMatrix().isIdentity());
+  Init(std::move(mbp),
+       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
+
+  Eigen::Vector2d q{0.1, 0.2};
+  Eigen::Vector2d v{0.3, 0.4};
+  Eigen::Vector2d vd_d{0.5, 0.6};
+
+  // Check that gravity is modeled.
+  EXPECT_TRUE(GravityModeled(q));
+
+  CheckTorque(q, v, vd_d);
+}
+
 // Tests that inverse dynamics returns the expected torque for a given state and
 // desired acceleration for the iiwa arm with a custom context.
 TEST_F(InverseDynamicsTest, InverseDynamicsWithCustomContextTest) {
