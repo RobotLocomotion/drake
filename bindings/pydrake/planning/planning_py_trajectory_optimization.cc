@@ -458,6 +458,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.SolvePath.doc)
         .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
             py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc)
+        .def("EstimateComplexity", &Class::EstimateComplexity,
+            cls_doc.EstimateComplexity.doc)
         .def_static("NormalizeSegmentTimes", &Class::NormalizeSegmentTimes,
             py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
   }

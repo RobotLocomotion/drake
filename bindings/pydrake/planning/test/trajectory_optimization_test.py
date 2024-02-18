@@ -302,6 +302,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(normalized_traj_start, start, atol=1e-6)
         np.testing.assert_allclose(normalized_traj_end, end, atol=1e-6)
 
+        self.assertIsInstance(gcs.EstimateComplexity(), float)
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
