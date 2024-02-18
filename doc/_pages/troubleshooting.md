@@ -146,15 +146,24 @@ See the notes on [System Compatibility][m_system_compat] for further discussion.
 
 ## No candidate version for this platform {#pip-no-candidate}
 
-When installing Drake from PyPI on older platforms such as Ubuntu Focal,
-you may receive the error "no candidate version for this platform".
-This is caused by older versions of `pip` which do not recognize the
-`manylinux` platform used by Drake.
-This is remedied by installing a newer version of `pip`.
+<!-- Even though this is only relevant to past versions of Drake that are no
+ longer supported, we'll keep this text around to help users of those older
+ versions. -->
 
-Use of a Python virtual environment may be required
-in order to get a newer version of `pip`;
-see the instructions for [installing from pip](/pip.html#stable-releases).
+When installing Drake from PyPI on older platforms such as Ubuntu Focal, you may
+receive the error "no candidate version for this platform". This is caused by
+older versions of `pip` which do not recognize the `manylinux` platform used by
+Drake. This is remedied by installing a newer version of `pip`.
+
+Use of a Python virtual environment may be required in order to get a newer
+version of `pip`, e.g.:
+
+```bash
+python3 -m venv env
+env/bin/pip install --upgrade pip
+env/bin/pip install drake
+source env/bin/activate
+```
 
 # Build problems
 

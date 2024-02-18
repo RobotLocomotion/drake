@@ -16,8 +16,8 @@ officially supports:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ |
 |------------------------------------|--------------|------------|-----------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽³⁾    | March 2024      |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
+| Ubuntu 24.04 LTS (Noble Numbat)    | TBD ⁽⁵⁾      | TBD ⁽⁵⁾    | March 2028      |
 | macOS Monterey (12)                | x86_64       | 3.11       | October 2023    |
 | macOS Ventura (13)                 | arm64        | 3.11       | October 2024    |
 | macOS Sonoma (14)                  | arm64        | 3.11       | October 2025    |
@@ -41,13 +41,16 @@ may experience compatibility hiccups; when asking for help, be sure to mention
 that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
-channels. Additionally, on Ubuntu when installing via ``pip`` Python versions
-3.8 through 3.12 (inclusive) are supported.
+channels. Additionally, when installing via ``pip``
+on Ubuntu Python versions 3.10 through 3.12 (inclusive) are supported and
+on macOS Python versions 3.11 through 3.12 (inclusive) are supported.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
 
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
+
+⁽⁵⁾ We aim to support Ubuntu 24.04 within two months of its release.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
@@ -55,7 +58,6 @@ compiler as our releases:
 
 | Operating System                   | C/C++ Compiler           | Std   |
 |------------------------------------|--------------------------|-------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9                    | C++17 |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
 | macOS Monterey (12)                | Apple LLVM 14 (Xcode 14) | C++20 |
 | macOS Ventura (13)                 | Apple LLVM 14 (Xcode 14) | C++20 |
