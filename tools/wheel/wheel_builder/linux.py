@@ -31,32 +31,22 @@ targets = (
     # NOTE: adding or removing a python version?  Please update the artifact
     # tallies in doc/_pages/release_playbook.md (search `Attach binaries`).
     Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        build_platform=Platform('ubuntu', '22.04', 'jammy'),
         test_platform=None,
-        python_version_tuple=(3, 8)),
+        python_version_tuple=(3, 10)),
     Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        build_platform=Platform('ubuntu', '22.04', 'jammy'),
         test_platform=None,
-        python_version_tuple=(3, 9)),
+        python_version_tuple=(3, 11)),
     Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
-        test_platform=Platform('ubuntu', '22.04', 'jammy'),
-        python_version_tuple=(3, 10, 6),
-        python_sha='f795ff87d11d4b0c7c33bc8851b0c28648d8a4583aa2100a98c22b4326b6d3f3'),  # noqa
-    Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
-        test_platform=Platform('ubuntu', '22.04', 'jammy'),
-        python_version_tuple=(3, 11, 1),
-        python_sha='85879192f2cffd56cb16c092905949ebf3e5e394b7f764723529637901dfb58f'),  # noqa
-    Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        build_platform=Platform('ubuntu', '22.04', 'jammy'),
         # TODO(jwnimmer-tri) Switch the test to 24.04 once that's available.
         test_platform=Platform('ubuntu', '23.10', 'mantic'),
         python_version_tuple=(3, 12, 0),
         python_sha='795c34f44df45a0e9b9710c8c71c15c671871524cd412ca14def212e8ccb155d'),  # noqa
 )
 glibc_versions = {
-    'focal': '2_31',
+    'jammy': '2_35',
 }
 
 

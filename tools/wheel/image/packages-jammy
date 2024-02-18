@@ -9,11 +9,11 @@ libltdl-dev
 gcc
 g++
 gfortran
-libgfortran-7-dev
+libgfortran-11-dev
 nasm
 yasm
 # Clang (for mkdoc).
-libclang-12-dev
+libclang-14-dev
 # Other code tools.
 cmake
 git

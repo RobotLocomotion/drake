@@ -19,8 +19,6 @@ build --repo_env=DRAKE_OS=manylinux
 build --repo_env=SNOPT_PATH=git
 build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
-# Our wheel Eigen is new enough to undo the Focal-specific removal of Clarabel.
-build --define=NO_CLARABEL=OFF
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.
