@@ -165,13 +165,16 @@ class MeshModelMaker:
             # density. So, we can compute those quantities for an arbitrary
             # density and then reconfigure the SpatialInertia with the desired
             # mass.
-            M_GGo_G = CalcSpatialInertia(mesh=mesh_G, density=1.0)
+            density = 1.0
+            M_GGo_G = CalcSpatialInertia(mesh=mesh_G, density=density)
+            volume = M_GGo_G.get_mass() / density
             M_GGo_G = SpatialInertia(mass=self.mass,
                                      p_PScm_E=M_GGo_G.get_com(),
                                      G_SP_E=M_GGo_G.get_unit_inertia())
         else:
             M_GGo_G = CalcSpatialInertia(mesh=mesh_G,
                                          density=self.density)
+            volume = M_GGo_G.get_mass() / self.density
 
         p_GoGcm = M_GGo_G.get_com()
         M_GGcm_G = M_GGo_G.Shift(p_GoGcm)
@@ -195,6 +198,24 @@ class MeshModelMaker:
                      f"{p_GoGcm[2]}]")
         _logger.info(f"    p_BoBcm: [{p_BoBcm[0]}, {p_BoBcm[1]}, "
                      f"{p_BoBcm[2]}]")
+
+        # The Empire State building conveniently exemplifies 1e6 cubic meters.
+        # https://en.wikipedia.org/wiki/Empire_State_Building#Interior
+        huge_volume = 1e6
+        if volume > huge_volume:
+            _logger.warning(f"Mesh volume [{volume} m³] exceeds the volume"
+                            f" of the Empire State Building"
+                            f" [{huge_volume} m³]. Consider using the"
+                            f" --scale option.")
+
+        # Medium sand tops out at 0.5 mm diameter, leading to the approximate
+        # volume shown below.
+        # https://en.wikipedia.org/wiki/Grain_size
+        tiny_volume = 6e-11
+        if volume < tiny_volume:
+            _logger.warning(f"Mesh volume [{volume} m³] is smaller than the"
+                            f" volume of a grain of sand [{tiny_volume} m³]."
+                            f" Consider using the --scale option.")
 
         # In SDF files, the inertia tensor is always reported around the center
         # of mass.
