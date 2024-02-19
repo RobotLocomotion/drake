@@ -81,7 +81,7 @@ def add_scene(time_step=1e-3, solver="tamsi", free_body_name="compliant_box"):
     # Finalize the plant after loading the scene.
     plant.set_contact_model(ContactModel.kHydroelastic)
     config = SceneGraphConfig()
-    config.hydroelastication.enabled = True
+    config.default_proximity_properties.compliance_type = "compliant"
     scene_graph.set_config(config)
     plant.Finalize()
 
