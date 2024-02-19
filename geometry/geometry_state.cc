@@ -567,7 +567,6 @@ GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
   const auto& hydro_geometries = geometry_engine_->hydroelastic_geometries();
   switch (hydro_geometries.hydroelastic_type(geometry_id)) {
     case HydroelasticType::kUndefined:
-    case HydroelasticType::kVanished:
       break;
     case HydroelasticType::kRigid: {
       const auto& rigid = hydro_geometries.rigid_geometry(geometry_id);

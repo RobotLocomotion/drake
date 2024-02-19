@@ -32,8 +32,6 @@ constexpr const char* EnumToChars(HydroelasticType enum_value) {
       return "rigid";
     case HydroelasticType::kCompliant:
       return "compliant";
-    case HydroelasticType::kVanished:
-      return "vanished";
   }
   DRAKE_UNREACHABLE();
 }
