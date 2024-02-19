@@ -71,7 +71,7 @@ Element<T>& ElementCollection<T, Element, Index>::AddImpl(
 }
 
 template <typename T, template <typename> class Element, typename Index>
-typename std::unordered_multimap<StringViewMapKey, Index>::const_iterator
+typename string_unordered_multimap<Index>::const_iterator
 ElementCollection<T, Element, Index>::FindNamesIterator(std::string_view name,
                                                         Index index) const {
   auto [lower, upper] = names_map_.equal_range(name);

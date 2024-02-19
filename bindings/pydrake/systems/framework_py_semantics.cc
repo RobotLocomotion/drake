@@ -671,7 +671,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportInput.doc)
       .def("ConnectInput",
-          py::overload_cast<const std::string&, const InputPort<T>&>(
+          py::overload_cast<std::string_view, const InputPort<T>&>(
               &DiagramBuilder<T>::ConnectInput),
           py::arg("diagram_port_name"), py::arg("input"),
           doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_name_input)

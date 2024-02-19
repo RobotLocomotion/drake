@@ -237,8 +237,8 @@ void Node::Add(Node value) {
       data_);
 }
 
-const std::map<std::string, Node>& Node::GetMapping() const {
-  return *visit_overloaded<const std::map<std::string, Node>*>(
+const string_map<Node>& Node::GetMapping() const {
+  return *visit_overloaded<const string_map<Node>*>(
       overloaded{
           [](const MappingData& data) {
             return &data.mapping;

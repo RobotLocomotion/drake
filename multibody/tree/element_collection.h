@@ -2,14 +2,13 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/ssize.h"
-#include "drake/multibody/tree/string_view_map_key.h"
+#include "drake/common/string_unordered_map.h"
 
 namespace drake {
 namespace multibody {
@@ -103,7 +102,7 @@ class ElementCollection final {
   /* Returns a reference to the name lookup dictionary. The result is only
   guaranteed to remain valid until the next call to any non-const member
   function. */
-  const std::unordered_multimap<StringViewMapKey, Index>& names_map() const {
+  const string_unordered_multimap<Index>& names_map() const {
     return names_map_;
   }
 
@@ -156,8 +155,8 @@ class ElementCollection final {
 
   /* Given a (name, index) pair, returns the iterator into `names_map_` that
   matches those values, or else `names_map_.end()` when no match is found. */
-  typename std::unordered_multimap<StringViewMapKey, Index>::const_iterator
-  FindNamesIterator(std::string_view name, Index index) const;
+  typename string_unordered_multimap<Index>::const_iterator FindNamesIterator(
+      std::string_view name, Index index) const;
 
   // The collection of elements, indexed by `Index`. Elements can be null (e.g.,
   // in the case of removed elements). Note that `shared_ptr` here is somewhat
@@ -167,7 +166,7 @@ class ElementCollection final {
 
   // Map used to find element indices by their actuator name. The same name
   // may appear in different model instances (hence the multimap).
-  std::unordered_multimap<StringViewMapKey, Index> names_map_;
+  string_unordered_multimap<Index> names_map_;
 
   // The elements of `elements_by_index_` that have _not_ been removed.
   // N.B. This vector is NOT indexed by `Index`.

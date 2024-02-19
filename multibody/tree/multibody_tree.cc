@@ -203,7 +203,7 @@ const auto& GetElementByIndex(
 
 // Shorthand type name for our name_to_index multimaps.
 template <typename ElementIndex>
-using NameToIndex = std::unordered_multimap<StringViewMapKey, ElementIndex>;
+using NameToIndex = string_unordered_multimap<ElementIndex>;
 
 // In service of error messages, returns a string listing the names of all
 // model instances that contain an element of the given name.
@@ -309,8 +309,7 @@ const auto& GetElementByName(
         names_by_model_instance;
     for (const auto& [element_name, element_index] : name_to_index) {
       const auto& element = GetElementByIndex(tree, element_index);
-      names_by_model_instance[element.model_instance()].push_back(
-          element_name.view());
+      names_by_model_instance[element.model_instance()].push_back(element_name);
     }
     if (names_by_model_instance.empty()) {
       message =
@@ -577,7 +576,7 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
     std::vector<std::string_view> valid_names;
     valid_names.reserve(names.size());
     for (const auto& [valid_name, _] : names) {
-      valid_names.push_back(valid_name.view());
+      valid_names.push_back(valid_name);
     }
     std::sort(valid_names.begin(), valid_names.end());
     throw std::logic_error(fmt::format(

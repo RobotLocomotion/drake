@@ -30,6 +30,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
+        "//common:string_container",
         "//common:unused",
         "//common/symbolic:expression",
     ],
