@@ -99,7 +99,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
                          3.0 * Vector3d::UnitZ())
                             .normalized();
   const math::RotationMatrixd R_WB_test(AngleAxisd(M_PI / 3.0, axis));
-  mobilizer.SetFromRotationMatrix(&context, R_WB_test);
+  mobilizer.SetOrientation(&context, R_WB_test);
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
   const Quaterniond q_WB_test_expected = R_WB_test.ToQuaternion();
@@ -114,8 +114,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
                               q_WB_test2.coeffs(), kEpsilon,
                               MatrixCompareType::relative));
   const Vector3d p_WB_test(1, 2, 3);
-  mobilizer.set_position(&context, p_WB_test);
-  EXPECT_TRUE(CompareMatrices(mobilizer.get_position(context), p_WB_test,
+  mobilizer.set_translation(&context, p_WB_test);
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_translation(context), p_WB_test,
                               kEpsilon, MatrixCompareType::relative));
 
   // Reset state to that initially set by
@@ -130,8 +130,9 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_TRUE(CompareMatrices(mobilizer.get_quaternion(context).coeffs(),
                               Quaterniond::Identity().coeffs(), kEpsilon,
                               MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(mobilizer.get_position(context), Vector3d::Zero(),
-                              kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_translation(context),
+                              Vector3d::Zero(), kEpsilon,
+                              MatrixCompareType::relative));
 
   EXPECT_EQ(context.num_continuous_states(), 13);
 

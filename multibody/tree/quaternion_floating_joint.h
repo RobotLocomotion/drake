@@ -127,28 +127,32 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// frame M in the inboard frame F. Refer to the documentation for this class
   /// for details.
   /// @param[in] context
-  ///   The context of the model this joint belongs to.
-  /// @returns The quaternion representing the orientation of frame M in F.
+  ///   A Context for the MultibodyPlant this joint belongs to.
+  /// @retval q_FM The quaternion representing the orientation of frame M in F.
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const {
     return get_mobilizer().get_quaternion(context);
   }
+
+  // TODO(sherm1) Rename this get_translation()
 
   /// Returns the position `p_FM` of the outboard frame M's origin as measured
   /// and expressed in the inboard frame F. Refer to the documentation for this
   /// class for details.
   /// @param[in] context
-  ///   The context of the model this joint belongs to.
-  /// @returns The position vector of frame M's origin in frame F.
+  ///   A Context for the MultibodyPlant this joint belongs to.
+  /// @retval p_FM The position vector of frame M's origin in frame F.
   Vector3<T> get_position(const systems::Context<T>& context) const {
-    return get_mobilizer().get_position(context);
+    return get_mobilizer().get_translation(context);
   }
+
+  // TODO(sherm1) Rename this GetPose()
 
   /// Returns the pose `X_FM` of the outboard frame M as measured and expressed
   /// in the inboard frame F. Refer to the documentation for this class for
   /// details.
   /// @param[in] context
-  ///   The context of the model this joint belongs to.
-  /// @returns The pose of frame M in frame F.
+  ///   A Context for the MultibodyPlant this joint belongs to.
+  /// @retval X_FM The pose of frame M in frame F.
   math::RigidTransform<T> get_pose(const systems::Context<T>& context) const {
     return math::RigidTransform<T>(get_quaternion(context),
                                    get_position(context));
@@ -157,7 +161,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Retrieves from `context` the angular velocity `w_FM` of the child frame
   /// M in the parent frame F, expressed in F.
   /// @param[in] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @retval w_FM
   ///   A vector in ℝ³ with the angular velocity of the child frame M in the
   ///   parent frame F, expressed in F. Refer to this class's documentation for
@@ -170,7 +174,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// the child frame M's origin as measured and expressed in the parent frame
   /// F.
   /// @param[in] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @retval v_FM
   ///   A vector in ℝ³ with the translational velocity of the origin of child
   ///   frame M in the parent frame F, expressed in F. Refer to this class's
@@ -188,7 +192,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets `context` so that the orientation of frame M in F is given by the
   /// input quaternion `q_FM`.
   /// @param[out] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @param[in] q_FM
   ///   The desired orientation of M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
@@ -198,48 +202,48 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  // Sets `context` so this Joint's orientation is consistent with the given
-  // `R_FM` rotation matrix.
-  // @param[in] context
-  ///   The context of the model this joint belongs to.
-  // @param[in] R_FM
-  //   The rotation matrix relating the orientation of frame F and frame M.
-  // @returns a constant reference to `this` joint.
-  // @note: To create a RotationMatrix R_FM (which is inherently orthonormal)
-  // from a non-orthonormal Matrix3<T> m (e.g., m is approximate data), use
-  // R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).
-  // Alternatively, set this joint's orientation with the two statements:
-  // const Eigen::Quaternion<T> q_FM = RotationMatrix<T>::ToQuaternion( m );
-  // set_quaternion(context, q_FM);
+  // TODO(sherm1) Rename this SetOrientation()
+
+  /// Sets `context` so this Joint's orientation is consistent with the given
+  /// `R_FM` rotation matrix.
+  /// @param[in] context
+  ///   A Context for the MultibodyPlant this joint belongs to.
+  /// @param[in] R_FM
+  ///   The rotation matrix relating the orientation of frame F and frame M.
+  /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    get_mobilizer().SetFromRotationMatrix(context, R_FM);
+    get_mobilizer().SetOrientation(context, R_FM);
     return *this;
   }
+
+  // TODO(sherm1) Rename this set_translation()
 
   /// Sets `context` to store the position `p_FM` of frame M's origin `Mo`
   /// measured and expressed in frame F.
   /// @param[out] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @param[in] p_FM
   ///   The desired position of frame M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
                                                  const Vector3<T>& p_FM) const {
-    get_mobilizer().set_position(context, p_FM);
+    get_mobilizer().set_translation(context, p_FM);
     return *this;
   }
+
+  // TODO(sherm1) Rename this SetPose()
 
   /// Sets `context` to store `X_FM` the pose of frame M measured and expressed
   /// in frame F.
   /// @param[out] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @param[in] X_FM
   ///   The desired pose of frame M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_pose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    get_mobilizer().set_position(context, X_FM.translation());
+    get_mobilizer().set_translation(context, X_FM.translation());
     get_mobilizer().set_quaternion(context, X_FM.rotation().ToQuaternion());
     return *this;
   }
@@ -247,7 +251,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets in `context` the state for `this` joint so that the angular velocity
   /// of the child frame M in the parent frame F is `w_FM`.
   /// @param[out] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @param[in] w_FM
   ///   A vector in ℝ³ with the angular velocity of the child frame M in the
   ///   parent frame F, expressed in F. Refer to this class's documentation for
@@ -262,7 +266,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets in `context` the state for `this` joint so that the translational
   /// velocity of the child frame M's origin in the parent frame F is `v_FM`.
   /// @param[out] context
-  ///   The context of the model this joint belongs to.
+  ///   A Context for the MultibodyPlant this joint belongs to.
   /// @param[in] w_FM
   ///   A vector in ℝ³ with the translational velocity of the child frame M's
   ///   origin in the parent frame F, expressed in F. Refer to this class's
@@ -277,18 +281,25 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @}
 
   /// @name Random distribution setters
+  /// @{
 
-  /// Sets the random distribution that positions of this joint will be randomly
-  /// sampled from. See get_position() for details on the position
-  /// representation.
+  // TODO(sherm1) Rename this set_random_translation_distribution()
+
+  /// Sets the random distribution that translation of this joint will be
+  /// randomly sampled from. If a quaternion distribution has already been
+  /// set with stochastic variables, it will remain so. Otherwise the quaternion
+  /// will be set to this joint's zero configuration. See get_position() for
+  /// details on the position representation.
   void set_random_position_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
-    get_mutable_mobilizer()->set_random_position_distribution(p_FM);
+    get_mutable_mobilizer()->set_random_translation_distribution(p_FM);
   }
 
   /// (Advanced) Sets the random distribution that the orientation of this joint
-  /// will be randomly sampled from. See get_quaternion() for details on the
-  /// orientation representation.
+  /// will be randomly sampled from. If a translation (position) distribution
+  /// has already been set with stochastic variables, it will remain so.
+  /// Otherwise translation will be set to this joint's zero configuration.
+  /// See get_quaternion() for details on the orientation representation.
   /// @note Use caution when setting a quaternion distribution. A naive uniform
   /// sampling of each component will not lead to a uniform sampling of the unit
   /// sphere. See `set_random_quaternion_distribution_to_uniform()` for the most
@@ -319,11 +330,16 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
   }
 
+  // TODO(sherm1) Rename this get_default_translation()
+
   /// Gets the default position `p_FM` for `this` joint.
   /// @returns The default position `p_FM` of `this` joint.
   Vector3<double> get_default_position() const {
     return this->default_positions().template tail<3>();
   }
+
+  // TODO(sherm1) Deprecate this and remove it since the base class
+  //  now provides GetDefaultPose().
 
   /// Gets the default pose `X_FM` for `this` joint.
   /// @returns The default pose `X_FM` of `this` joint.
@@ -351,6 +367,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     this->set_default_positions(default_positions);
   }
 
+  // TODO(sherm1) Rename this set_default_translation()
+
   /// Sets the default position `p_FM` of this joint.
   /// @param[in] p_FM
   ///   The desired default position of the joint.
@@ -359,21 +377,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     default_positions.template tail<3>() = p_FM;
     this->set_default_positions(default_positions);
   }
-
-  /// Sets the default pose `X_FM` of this joint.
-  /// @param[in] X_FM
-  ///   The desired default pose of the joint.
-  void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
-    Vector<double, 7> default_positions;
-    const Quaternion<double> q_FM = X_FM.rotation().ToQuaternion();
-    default_positions[0] = q_FM.w();
-    default_positions[1] = q_FM.x();
-    default_positions[2] = q_FM.y();
-    default_positions[3] = q_FM.z();
-    default_positions.template tail<3>() = X_FM.translation();
-    this->set_default_positions(default_positions);
-  }
-
   /// @}
 
  protected:
@@ -420,6 +423,20 @@ class QuaternionFloatingJoint final : public Joint<T> {
     if (this->has_implementation()) {
       get_mutable_mobilizer()->set_default_position(default_positions);
     }
+  }
+
+  void DoSetDefaultPosePair(const Quaternion<double>& q_FM,
+                            const Vector3<double>& p_FM) final {
+    VectorX<double> q(7);
+    q << q_FM.w(), q_FM.vec(), p_FM;
+    this->set_default_positions(q);
+  }
+
+  std::pair<Eigen::Quaternion<double>, Vector3<double>>
+  DoGetDefaultPosePair() const final {
+    const VectorX<double>& q = this->default_positions();
+    return std::make_pair(Eigen::Quaternion<double>(q[0], q[1], q[2], q[3]),
+                          q.tail<3>());
   }
 
   // Joint<T> overrides:

@@ -1040,7 +1040,7 @@ class MultibodyTree {
       const systems::Context<T>& context, systems::State<T>* state) const;
 
   // See MultibodyPlant::SetFreeBodyRandomPositionDistribution.
-  void SetFreeBodyRandomPositionDistributionOrThrow(
+  void SetFreeBodyRandomTranslationDistributionOrThrow(
       const RigidBody<T>& body,
       const Vector3<symbolic::Expression>& position);
 
