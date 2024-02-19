@@ -2160,6 +2160,24 @@ class TestPlant(unittest.TestCase):
                 loop_body(make_joint, 0.0)
                 loop_body(make_joint, 0.001)
 
+    def test_actuation_matrix(self):
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant_[float](0.0)
+        parser = Parser(plant)
+        iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)
+        plant.WeldFrames(
+            frame_on_parent_F=plant.world_frame(),
+            frame_on_child_M=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+        plant.Finalize()
+
+        B = plant.MakeActuationMatrix()
+        np.testing.assert_array_equal(B, np.eye(7))
+        B_inv = plant.MakeActuationMatrixInverse()
+        np.testing.assert_array_equal(B_inv.todense(), np.eye(7))
+
     def test_deprecated_weld_joint_api(self):
         plant = MultibodyPlant_[float](0.01)
         body1 = plant.AddRigidBody(

@@ -1296,6 +1296,31 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
   return B;
 }
 
+template <typename T>
+Eigen::SparseMatrix<double> MultibodyPlant<T>::MakeActuationMatrixInverse()
+    const {
+  DRAKE_THROW_UNLESS(num_actuated_dofs() == num_velocities());
+  // We leverage here the assumption that B (the actuation matrix) is a
+  // permutation matrix, so B⁻¹ = Bᵀ.
+  std::vector<Eigen::Triplet<double>> triplets;
+  for (JointActuatorIndex actuator_index(0); actuator_index < num_actuators();
+       ++actuator_index) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    // This method assumes actuators on single dof joints. Assert this
+    // condition.
+    DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
+    triplets.push_back(Eigen::Triplet<double>(
+        int{actuator.index()}, actuator.joint().velocity_start(), 1.0));
+  }
+
+  Eigen::SparseMatrix<double> B_inv(num_actuated_dofs(), num_velocities());
+  B_inv.setFromTriplets(triplets.begin(), triplets.end());
+  // Confirm that B was actually a permutation matrix.
+  DRAKE_THROW_UNLESS(B_inv.outerSize() == num_actuated_dofs());
+  DRAKE_THROW_UNLESS(B_inv.innerSize() == num_velocities());
+  return B_inv;
+}
+
 namespace {
 
 void ThrowForDisconnectedGeometryPort(std::string_view explanation) {

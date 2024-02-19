@@ -4397,6 +4397,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// for very large systems.
   MatrixX<T> MakeActuationMatrix() const;
 
+  /// Creates the inverse of the actuation matrix B directly (without requiring
+  /// an explicit inverse calculation). See MakeActuationMatrix().
+  /// @throws std::exception if B is not a square and invertible matrix.
+  Eigen::SparseMatrix<double> MakeActuationMatrixInverse() const;
+
   /// Alternative signature to build an actuation selector matrix `Su` such
   /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
   /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
