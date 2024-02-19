@@ -120,8 +120,8 @@ def _transform_autoconf(*, line, definitions, strict):
     return line, used_vars
 
 
-# Looks like "set(VAR value)".
-_set_var = re.compile(r'^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*$')
+# Looks like "set(VAR value)", maybe with an end-of-line comment.
+_set_var = re.compile(r'^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*(#.*)?$')
 
 
 # From a line of CMakeLists.txt, return a set(...) key-value pair, if found.
@@ -129,7 +129,7 @@ def _extract_definition(line, prior_definitions):
     match = _set_var.match(line)
     if not match:
         return dict()
-    var, value = match.groups()
+    var, value, _ = match.groups()
     try:
         value, _ = _transform_cmake(
             line=value,

@@ -110,7 +110,8 @@ def _impl(repository_ctx):
     else:
         files = [
             # We use the the MOSEK™ copy of libtbb. The version of libtbb
-            # available in Ubuntu is too old.
+            # available in Ubuntu is too old. Anytime we change this, we must
+            # also sync our @onetbb_internal version number to match this.
             "bin/libtbb.so.12",
             "bin/libtbb.so.12.8",
             "bin/libmosek64.so.{}.{}".format(

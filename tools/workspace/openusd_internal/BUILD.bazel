@@ -1,0 +1,33 @@
+load("//tools/workspace:generate_file.bzl", "generate_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# TODO(jwnimmer-tri) To prove that the @openusd_internal build system is
+# working properly, here we perform a smoke test of `usdcat --help`. Once
+# we have enough real unit tests in Drake that call into USD and prove out
+# the build, we should remove this simple smoke test.
+
+alias(
+    name = "usdcat",
+    actual = "@openusd_internal//:usdcat",
+    tags = [
+        # Only compile this binary when the usdcat_help test needs it.
+        "manual",
+    ],
+)
+
+generate_file(
+    name = "empty.sh",
+    # When WITH_USD is off, this serves as a test stub dummy.
+    content = "echo 'WITH_USD is not ON'",
+)
+
+sh_test(
+    name = "usdcat_help",
+    srcs = select({
+        "//tools:with_usd": [":usdcat"],
+        "//conditions:default": ["empty.sh"],
+    }),
+    args = ["--help"],
+)
+
+add_lint_tests()
