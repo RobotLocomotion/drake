@@ -11,6 +11,11 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 
 ## Supported Configurations
 
+<!-- The macOS python version below should match what's listed in both the root
+CMakeLists.txt and tools/workspace/python/repository.bzl. When any Python
+version changes, also be sure to grep the full body of documentation to find
+any other citations to it (e.g., in PYTHONPATH). -->
+
 The following table shows the configurations and platforms that Drake
 officially supports:
 
