@@ -335,9 +335,12 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
     y_ = prog_.NewIndeterminates<2>();
     partition_group_.emplace_back(x_);
     partition_group_.emplace_back(y_);
-//    overlap_group_.emplace_back(
-//        {x_(1), y_(0)}, {x_(2), y_(0)}
-//        );
+    overlap_group_.emplace_back(
+        std::initializer_list<symbolic::Variable>({x_(1), y_(0)})
+        );
+    overlap_group_.emplace_back(
+        std::initializer_list<symbolic::Variable>({x_(0), y_(1)})
+        );
   }
 
   MathematicalProgram prog_;
@@ -348,10 +351,22 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
   std::vector<symbolic::Variables> partition_group_;
   // A grouping of the variables which overlaps.
   std::vector<symbolic::Variables> overlap_group_;
-
-
 };
 
+TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, NoCostNorConstraints) {
+  const auto relaxation_empty = MakeSemidefiniteRelaxation(prog_, std::vector<symbolic::Variables>());
+
+
+
+  // X is 3x3 symmetric.
+  EXPECT_EQ(relaxation->num_vars(), 6);
+  // X ≽ 0.
+  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
+  // X(-1,-1) = 1.
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
+
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 2);
+}
 
 }  // namespace internal
 }  // namespace solvers
