@@ -441,6 +441,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertIsInstance(main2.regions()[0], HPolyhedron)
         self.assertIsInstance(main2.Vertices(), list)
         self.assertIsInstance(main2.Vertices()[0], GraphOfConvexSets.Vertex)
+        self.assertIsInstance(main2.Edges(), list)
+        self.assertIsInstance(main2.Edges()[0], GraphOfConvexSets.Edge)
 
         # Add two start and goal regions.
         start1 = np.array([0.2, 0.2])
@@ -485,12 +487,18 @@ class TestTrajectoryOptimization(unittest.TestCase):
         main1_to_main2_pt = gcs.AddEdges(main1, main2, subspace=subspace_point)
         self.assertIsInstance(main1_to_main2_pt,
                               GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+        self.assertIsInstance(main1_to_main2_pt.Edges(), list)
+        self.assertIsInstance(main1_to_main2_pt.Edges()[0],
+                              GraphOfConvexSets.Edge)
 
         main1_to_main2_region = gcs.AddEdges(main1,
                                              main2,
                                              subspace=subspace_region)
         self.assertIsInstance(main1_to_main2_region,
                               GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+        self.assertIsInstance(main1_to_main2_region.Edges(), list)
+        self.assertIsInstance(main1_to_main2_region.Edges()[0],
+                              GraphOfConvexSets.Edge)
 
         # Add half of the maximum velocity constraint at the subspace point
         # and region.

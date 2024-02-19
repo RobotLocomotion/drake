@@ -93,6 +93,25 @@ class GcsTrajectoryOptimization final {
       return vertices_;
     }
 
+    /** Returns constant reference to a vector of mutable pointers to the
+    edges stored in the subgraph.*/
+    const std::vector<geometry::optimization::GraphOfConvexSets::Edge*>&
+    Edges() {
+      return edges_;
+    }
+
+    /** Returns pointers to the edges stored in the subgraph.
+    @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+    std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> Edges()
+        const {
+      std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> edges;
+      edges.reserve(edges_.size());
+      for (const auto& e : edges_) {
+        edges.push_back(e);
+      }
+      return edges;
+    }
+
     /** Returns pointers to the vertices stored in the subgraph.
     The order of the vertices is the same as the order the regions were added.
     @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
@@ -260,6 +279,25 @@ class GcsTrajectoryOptimization final {
     continuity is enforced by default.
     */
     void AddPathContinuityConstraints(int continuity_order);
+
+    /** Returns constant reference to a vector of mutable pointers to the
+    edges between the subgraphs.*/
+    const std::vector<geometry::optimization::GraphOfConvexSets::Edge*>&
+    Edges() {
+      return edges_;
+    }
+
+    /** Returns pointers to the edges between the subgraphs.
+    @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+    std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> Edges()
+        const {
+      std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> edges;
+      edges.reserve(edges_.size());
+      for (const auto& e : edges_) {
+        edges.push_back(e);
+      }
+      return edges;
+    }
 
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,

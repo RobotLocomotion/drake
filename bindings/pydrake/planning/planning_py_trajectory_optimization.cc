@@ -354,6 +354,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 geometry::optimization::GraphOfConvexSets::Vertex*>&>(
                 &Class::Subgraph::Vertices),
             py_rvp::reference_internal, subgraph_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::Subgraph::Edges),
+            py_rvp::reference_internal, subgraph_doc.Edges.doc)
         .def(
             "regions",
             [](Class::Subgraph* self) {
@@ -390,6 +395,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         doc.GcsTrajectoryOptimization.EdgesBetweenSubgraphs;
     py::class_<Class::EdgesBetweenSubgraphs>(
         gcs_traj_opt, "EdgesBetweenSubgraphs", subgraph_edges_doc.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::EdgesBetweenSubgraphs::Edges),
+            py_rvp::reference_internal, subgraph_edges_doc.Edges.doc)
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc)
