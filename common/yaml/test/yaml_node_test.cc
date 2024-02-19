@@ -117,12 +117,23 @@ TEST_P(YamlNodeParamaterizedTest, JsonSchemaTag) {
   Node dut = MakeEmptyDut();
   dut.SetTag(JsonSchemaTag::kNull);
   EXPECT_EQ(dut.GetTag(), Node::kTagNull);
+  EXPECT_FALSE(dut.IsTagImportant());
   dut.SetTag(JsonSchemaTag::kBool);
   EXPECT_EQ(dut.GetTag(), Node::kTagBool);
+  EXPECT_FALSE(dut.IsTagImportant());
   dut.SetTag(JsonSchemaTag::kInt);
   EXPECT_EQ(dut.GetTag(), Node::kTagInt);
+  EXPECT_FALSE(dut.IsTagImportant());
   dut.SetTag(JsonSchemaTag::kFloat);
   EXPECT_EQ(dut.GetTag(), Node::kTagFloat);
+  EXPECT_FALSE(dut.IsTagImportant());
+  dut.SetTag(JsonSchemaTag::kStr);
+  EXPECT_EQ(dut.GetTag(), Node::kTagStr);
+  EXPECT_FALSE(dut.IsTagImportant());
+  // Make sure `important = true` makes it all the way through.
+  dut.SetTag(JsonSchemaTag::kBool, true);
+  EXPECT_EQ(dut.GetTag(), Node::kTagBool);
+  EXPECT_TRUE(dut.IsTagImportant());
 }
 
 // Check mark getting and setting.

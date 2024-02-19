@@ -79,32 +79,14 @@ GTEST_TEST(YamlJsonTest, WriteVariant) {
   data.value = std::string{"foo"};
   EXPECT_EQ(SaveJsonString(data), R"""({"value":"foo"})""");
 
+  data.value = 0.5;
+  EXPECT_EQ(SaveJsonString(data), R"""({"value":0.5})""");
+
   // It would be plausible here to use the `_tag` convention to annotate
   // variant tags, matching what we do in our yaml.py conventions.
   data.value = DoubleStruct{};
   DRAKE_EXPECT_THROWS_MESSAGE(SaveJsonString(data),
                               ".*SaveJsonString.*mapping.*tag.*");
-}
-
-struct IntVariant {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::variant<int, uint64_t> value{0};
-};
-
-GTEST_TEST(YamlJsonTest, WriteVariantScalar) {
-  IntVariant data;
-
-  data.value.emplace<int>(1);
-  EXPECT_EQ(SaveJsonString(data), R"""({"value":1})""");
-
-  // There is no syntax that could express this in JSON.
-  data.value.emplace<uint64_t>(22);
-  DRAKE_EXPECT_THROWS_MESSAGE(SaveJsonString(data),
-                              ".*SaveJsonString.*scalar.*22.*tag.*");
 }
 
 GTEST_TEST(YamlJsonTest, FileRoundTrip) {

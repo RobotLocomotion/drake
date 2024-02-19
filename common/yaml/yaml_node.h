@@ -57,6 +57,7 @@ enum class NodeType {
 };
 
 /* Denotes one of the "JSON Schema" tags.
+Note that this schema incorporates the "failsafe schema" by reference.
 See https://yaml.org/spec/1.2.2/#json-schema. */
 enum class JsonSchemaTag {
   // https://yaml.org/spec/1.2.2/#null
@@ -67,6 +68,8 @@ enum class JsonSchemaTag {
   kInt,
   // https://yaml.org/spec/1.2.2/#floating-point
   kFloat,
+  // https://yaml.org/spec/1.2.2/#generic-string
+  kStr,
 };
 
 /* Data type that represents a YAML node.  A Node can hold one of three
@@ -136,9 +139,15 @@ class Node final {
   By default (i.e., at construction time), the tag will be empty. */
   std::string_view GetTag() const;
 
+  /* Returns whether or not `important = true` was used during SetTag(). */
+  bool IsTagImportant() const;
+
   /* Sets this node's YAML tag to one of the "JSON Schema" tags.
+  Optionally allows marking the tag as "important", which means that when
+  emitting the YAML document it will always appear in the output, even if
+  it would have been implied by default.
   See https://yaml.org/spec/1.2.2/#json-schema. */
-  void SetTag(JsonSchemaTag);
+  void SetTag(JsonSchemaTag, bool important = false);
 
   /* Sets this node's YAML tag.
   See https://yaml.org/spec/1.2.2/#tags.
@@ -285,10 +294,18 @@ class Node final {
   using Variant = std::variant<ScalarData, SequenceData, MappingData>;
   Variant data_;
 
-  // The YAML tag is not required, but can be set to either a well-known enum or
-  // a bespoke string. The representation here is not canonical -- it's possible
-  // to set a string value that is equivalent to an enum's implied string.
-  std::variant<std::string, JsonSchemaTag> tag_;
+  // When our tag is one of the well-known JSON schema enum values, we also need
+  // to store whether the tag is "important". Refer to SetTag() for details.
+  struct JsonSchemaTagInfo {
+    JsonSchemaTag value{JsonSchemaTag::kNull};
+    bool important{false};
+  };
+
+  // A YAML tag is not required (our default value is the empty string), but can
+  // be set to either a well-known enum or a bespoke string. The representation
+  // here isn't canonical: it's possible to set a string value that's equivalent
+  // to an enum's implied string.
+  std::variant<std::string, JsonSchemaTagInfo> tag_;
 
   std::optional<Mark> mark_;
   std::optional<std::string> filename_;

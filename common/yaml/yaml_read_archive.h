@@ -312,7 +312,7 @@ class YamlReadArchive final {
     // For the first type declared in the variant<> (I == 0), the tag can be
     // absent; otherwise, the tag must match one of the variant's types.
     if (((I == 0) && (tag.empty() || (tag == "?") || (tag == "!"))) ||
-        IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
+        IsTagMatch<T>(tag)) {
       T& typed_storage = storage->index() == I ? std::get<I>(*storage)
                                                : storage->template emplace<I>();
       this->Visit(drake::MakeNameValue(name, &typed_storage));
@@ -328,19 +328,26 @@ class YamlReadArchive final {
         "has unsupported type tag {} while selecting a variant<>", tag));
   }
 
-  // Checks if a NiceTypeName matches the yaml type tag.
-  bool IsTagMatch(std::string_view name, std::string_view tag) const {
-    // Check for the "fail safe schema" YAML types and similar.
-    if (name == "std::string") {
-      return tag == internal::Node::kTagStr;
-    }
-    if (name == "double") {
-      return tag == internal::Node::kTagFloat;
-    }
-    if (name == "int") {
+  // Checks if the given yaml type `tag` matches the C++ type `T`.
+  template <typename T>
+  static bool IsTagMatch(std::string_view tag) {
+    // Check against the JSON schema tags.
+    if constexpr (std::is_same_v<T, bool>) {
+      return tag == internal::Node::kTagBool;
+    } else if constexpr (std::is_integral_v<T>) {
       return tag == internal::Node::kTagInt;
+    } else if constexpr (std::is_floating_point_v<T>) {
+      return tag == internal::Node::kTagFloat;
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return tag == internal::Node::kTagStr;
+    } else {
+      // Not a JSON schema. Check the drake-specific tag.
+      return IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag);
     }
+  }
 
+  // Checks if a NiceTypeName matches the yaml type tag.
+  static bool IsTagMatch(std::string_view name, std::string_view tag) {
     // Check for an "application specific" tag such as "!MyClass", which we
     // will match to our variant item's name such as "my_namespace::MyClass"
     // ignoring the namespace and any template parameters.

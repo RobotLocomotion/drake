@@ -1,14 +1,12 @@
-From b13b20e7ffe8f9744206f57dddf562d342d6d97b Mon Sep 17 00:00:00 2001
-From: Jeremy Nimmer <jeremy.nimmer@tri.global>
-Date: Thu, 9 Jul 2020 11:57:02 -0400
-Subject: [PATCH] yaml: Permit writing variant values beyond the 0'th index (#13631)
+[yaml_cpp] Customize tag emitting for Drake
 
 Upstream yaml-cpp does not support writing out primary tags, so here
-we also patch our vendored copy of yaml-cpp's emitter to write them.
+we patch our vendored copy of yaml-cpp's emitter to write them, so
+that Drake's YamlWriteArchive can support std::variant<> emitting.
 
 --- src/emitfromevents.cpp
 +++ src/emitfromevents.cpp
-@@ -109,8 +109,14 @@ void EmitFromEvents::BeginNode() {
+@@ -109,8 +109,18 @@ void EmitFromEvents::BeginNode() {
  }
  
  void EmitFromEvents::EmitProps(const std::string& tag, anchor_t anchor) {
@@ -16,11 +14,15 @@ we also patch our vendored copy of yaml-cpp's emitter to write them.
 -    m_emitter << VerbatimTag(tag);
 +  if (!tag.empty() && tag != "?" && tag != "!") {
 +    // N.B. The upstream yaml-cpp uses VerbatimTag here, but Drake has patched
-+    // this file to use LocalTag instead.  Upstream support for custom tags
++    // this file to meet our needs instead. Upstream support for custom tags
 +    // during emitting is "pretty bad" (i.e., non-existent); for details see
 +    // https://github.com/jbeder/yaml-cpp/issues/311 and
 +    // https://github.com/jbeder/yaml-cpp/issues/447.
-+    m_emitter << LocalTag(tag);
++    if (tag.substr(0, 2) == "!!") {
++      m_emitter << SecondaryTag(tag.substr(2));
++    } else {
++      m_emitter << LocalTag(tag);
++    }
 +  }
    if (anchor)
      m_emitter << Anchor(ToString(anchor));
