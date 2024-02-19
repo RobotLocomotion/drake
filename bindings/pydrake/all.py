@@ -63,3 +63,7 @@ from .visualization import *
 from .math import *
 # - Ensure symbolic.Polynomial wins (#18353).
 from .symbolic import Polynomial
+
+# Ensure that the command-line modules appear in the pydrake API reference.
+import pydrake.visualization.meldis
+import pydrake.visualization.model_visualizer
