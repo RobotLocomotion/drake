@@ -555,6 +555,17 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 }
 
 template <typename T>
+bool System<T>::IsDifferentialEquationSystem() const {
+  if (num_discrete_state_groups() || num_abstract_states()) { return false; }
+  for (int i = 0; i < num_input_ports(); ++i) {
+    if (get_input_port(i).get_data_type() != PortDataType::kVectorValued) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
          PeriodicEventDataComparator>
 System<T>::MapPeriodicEventsByTiming(const Context<T>* context) const {

@@ -648,6 +648,14 @@ TEST_F(SystemTest, IsDifferenceEquationSystem) {
   EXPECT_EQ(period, 1.23);
 }
 
+// Tests IsDifferentialEquationSystem works for this one System.  Additional
+// test coverage is provided in linear_system_test.cc and diagram_test.cc.
+TEST_F(SystemTest, IsDifferentialEquationSystem) {
+  EXPECT_TRUE(system_.IsDifferentialEquationSystem());
+  system_.AddAbstractInputPort();
+  EXPECT_FALSE(system_.IsDifferentialEquationSystem());
+}
+
 template <typename T>
 using TestTypedVector = MyVector<T, 1>;
 

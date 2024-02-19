@@ -784,7 +784,7 @@ class System : public SystemBase {
   Note that this function _does not_ change the value of the discrete variables
   in the supplied Context. However, you can apply the result to the %Context
   like this: @code
-    const DiscreteValue<T>& updated =
+    const DiscreteValues<T>& updated =
         system.EvalUniquePeriodicDiscreteUpdate(context);
     context.SetDiscreteState(updated);
   @endcode
@@ -836,31 +836,47 @@ class System : public SystemBase {
       const Context<T>& context) const;
 
   /** Returns true iff the state dynamics of this system are governed
-  exclusively by a difference equation on a single discrete state group
-  and with a unique periodic update (having zero offset).  E.g., it is
-  amenable to analysis of the form:
+  exclusively by a difference equation on a single discrete state group and
+  with a unique periodic update (having zero offset).  E.g., it is amenable to
+  analysis of the form:
 
-      x[n+1] = f(x[n], u[n])
+      x[n+1] = f(n, x[n], u[n], w[n]; p)
 
-  Note that we do NOT consider the number of input ports here, because
-  in practice many systems of interest (e.g. MultibodyPlant) have input
-  ports that are safely treated as constant during the analysis.
-  Consider using get_input_port_selection() to choose one.
+  where t is time, x is (discrete) state, u is a vector input, w is random
+  (disturbance) input, and p are parameters. Note that we do NOT consider the
+  number of input ports here, because in practice many systems of interest (e.g.
+  MultibodyPlant) have input ports that are safely treated as constant during
+  the analysis. Consider using get_input_port_selection() to choose one.
 
   @warning In determining whether this system is governed as above, we do not
-  consider unrestricted updates or any update events that have trigger types
+  consider unrestricted updates nor any update events that have trigger types
   other than periodic. See GetUniquePeriodicDiscreteUpdateAttribute() for more
   information.
 
-  @param[out] time_period if non-null, then iff the function
-  returns `true`, then time_period is set to the period data
-  returned from GetUniquePeriodicDiscreteUpdateAttribute().  If the
-  function returns `false` (the system is not a difference equation
-  system), then `time_period` does not receive a value.
+  @param[out] time_period if non-null, then iff the function returns `true`,
+  then time_period is set to the period data returned from
+  GetUniquePeriodicDiscreteUpdateAttribute().  If the function returns `false`
+  (the system is not a difference equation system), then `time_period` does not
+  receive a value.
 
   @see GetUniquePeriodicDiscreteUpdateAttribute()
   @see EvalUniquePeriodicDiscreteUpdate() */
   bool IsDifferenceEquationSystem(double* time_period = nullptr) const;
+
+  /** Returns true iff the state dynamics of this system are governed
+  exclusively by a differential equation. E.g., it is amenable to analysis of
+  the form:
+
+      ẋ = f(t, x(t), u(t), w(t); p),
+
+  where t is time, x is (continuous) state, u is a vector input, w is random
+  (disturbance) input, and p are parameters. This requires that it has no
+  discrete nor abstract states, and no abstract input ports.
+
+  @warning In determining whether this system is governed as above, we do not
+  consider unrestricted updates which could potentially update the state.
+  */
+  bool IsDifferentialEquationSystem() const;
 
   /** Maps all periodic triggered events for a %System, organized by timing.
   Each unique periodic timing attribute (offset and period) is

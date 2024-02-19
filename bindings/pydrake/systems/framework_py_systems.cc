@@ -417,6 +417,9 @@ struct Impl {
 Note: The above is for the C++ documentation. For Python, use
 `is_diff_eq, period = IsDifferenceEquationSystem()`)"")
                 .c_str())
+        .def("IsDifferentialEquationSystem",
+            &System<T>::IsDifferentialEquationSystem,
+            doc.System.IsDifferentialEquationSystem.doc)
         .def("CalcOutput", &System<T>::CalcOutput, py::arg("context"),
             py::arg("outputs"), doc.System.CalcOutput.doc)
         .def("CalcPotentialEnergy", &System<T>::CalcPotentialEnergy,

@@ -300,6 +300,7 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(copy.copy(periodic_data) is not periodic_data)
         is_diff_eq, period = system1.IsDifferenceEquationSystem()
         self.assertTrue(is_diff_eq)
+        self.assertFalse(system1.IsDifferentialEquationSystem())
         self.assertEqual(period, periodic_data.period_sec())
         context = system1.CreateDefaultContext()
         system1.get_input_port(0).FixValue(context, 0.0)
@@ -313,6 +314,7 @@ class TestGeneral(unittest.TestCase):
         self.assertIsNone(periodic_data)
         is_diff_eq, period = system2.IsDifferenceEquationSystem()
         self.assertFalse(is_diff_eq)
+        self.assertTrue(system2.IsDifferentialEquationSystem())
 
     def test_continuous_state_api(self):
         self.assertEqual(ContinuousState().size(), 0)
