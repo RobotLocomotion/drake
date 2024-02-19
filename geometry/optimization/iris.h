@@ -34,6 +34,7 @@ struct IrisOptions {
     a->Visit(DRAKE_NVP(num_collision_infeasible_samples));
     a->Visit(DRAKE_NVP(num_additional_constraint_infeasible_samples));
     a->Visit(DRAKE_NVP(random_seed));
+    a->Visit(DRAKE_NVP(mixing_steps));
   }
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -152,6 +153,11 @@ struct IrisOptions {
   require_sample_point_is_contained is enforced.
   */
   std::function<bool(const HPolyhedron&)> termination_func{};
+
+  /* The `mixing_steps` parameters is passed to HPolyhedron::UniformSample to
+  control the total number of hit-and-run steps taken for each new random
+  sample. */
+  int mixing_steps{10};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
