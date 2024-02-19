@@ -456,6 +456,39 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
                       Vector2d(0, 0), 1e-6));
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, GetEdges) {
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& graph1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  auto& graph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  auto& graph1_to_graph2 = gcs.AddEdges(graph1, graph2);
+
+  // The edges in the subgraphs 1 and 2 and the edges between the subgraphs
+  // should be registered in the underlying graph of convex sets.
+  const auto all_edges = gcs.graph_of_convex_sets().Edges();
+
+  for (const auto& edge : graph1.Edges()) {
+    EXPECT_TRUE(std::find(all_edges.begin(), all_edges.end(), edge) !=
+                all_edges.end());
+  }
+  for (const auto& edge : graph2.Edges()) {
+    EXPECT_TRUE(std::find(all_edges.begin(), all_edges.end(), edge) !=
+                all_edges.end());
+  }
+  for (const auto& edge : graph1_to_graph2.Edges()) {
+    EXPECT_TRUE(std::find(all_edges.begin(), all_edges.end(), edge) !=
+                all_edges.end());
+  }
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidPositions) {
   /* Positions passed into GcsTrajectoryOptimization must be greater than 0.*/
   DRAKE_EXPECT_THROWS_MESSAGE(GcsTrajectoryOptimization(0),
