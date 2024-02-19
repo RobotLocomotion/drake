@@ -109,11 +109,8 @@ class NullableVariantStruct:
 
 
 @dc.dataclass
-class FloatVariantStruct:
-    """TODO(jwnimmer-tri) Add C++ tests for this kind of thing. At the moment,
-    the C++ example_structs.h doesn't have any twin for this type.
-    """
-    value: typing.Union[typing.List[float], float] = nan
+class PrimitiveVariantStruct:
+    value: typing.Union[typing.List[float], bool, int, float, str] = nan
 
 
 @dc.dataclass
@@ -418,13 +415,41 @@ class TestYamlTypedRead(unittest.TestCase,
         This kind of problem cannot occur in the C++ type system, so this test
         case doesn't have any twin inside yaml_read_archive_test.cc.
         """
-        data = "value: !!float 2.0"
-        x = yaml_load_typed(schema=FloatVariantStruct, data=data, **options)
-        self.assertEqual(x.value, 2.0)
-
+        schema = PrimitiveVariantStruct
         data = "value: [1.0, 2.0]"
-        x = yaml_load_typed(schema=FloatVariantStruct, data=data, **options)
+        x = yaml_load_typed(schema=schema, data=data, **options)
         self.assertEqual(x.value, [1.0, 2.0])
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_primitive_variant(self, *, options):
+        schema = PrimitiveVariantStruct
+        data = "value: !!bool true"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, True)
+        data = "value: !!bool 'true'"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, True)
+
+        data = "value: !!int 10"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, 10)
+        data = "value: !!int '10'"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, 10)
+
+        data = "value: !!float 1.0"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, 1.0)
+        data = "value: !!float '1.0'"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, 1.0)
+
+        data = "value: !!str foo"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, "foo")
+        data = "value: !!str 'foo'"
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, "foo")
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_missing(self, *, options):
@@ -811,6 +836,13 @@ class TestYamlTypedWrite(unittest.TestCase):
                 "value: foo\n",
             ),
             (
+                1.0,
+                # TODO(jwnimmer-tri) Ideally we'd avoid the extra single quotes
+                # in this output, but I haven't figured out how to teach pyyaml
+                # to do that yet.
+                "value: !!float '1.0'\n",
+            ),
+            (
                 FloatStruct(1.0),
                 dedent("""\
                 value: !FloatStruct
@@ -826,13 +858,10 @@ class TestYamlTypedWrite(unittest.TestCase):
             ),
         ]
         for value, expected_doc in cases:
-            actual_doc = yaml_dump_typed(VariantStruct(value=value))
-            self.assertEqual(actual_doc, expected_doc)
-
-        # TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our
-        # dumper does not yet support that output syntax.
-        with self.assertRaisesRegex(Exception, "float.*non-zero index"):
-            yaml_dump_typed(VariantStruct(value=1.0))
+            with self.subTest(value=value):
+                variant = VariantStruct(value=value)
+                actual_doc = yaml_dump_typed(variant)
+                self.assertEqual(actual_doc, expected_doc)
 
         # Check when the value in a Union is not one of the allowed types.
         with self.assertRaisesRegex(Exception, "did not match"):
@@ -855,8 +884,46 @@ class TestYamlTypedWrite(unittest.TestCase):
             ),
         ]
         for value, expected_doc in cases:
-            actual_doc = yaml_dump_typed(NullableVariantStruct(value=value))
-            self.assertEqual(actual_doc, expected_doc)
+            with self.subTest(value=value):
+                variant = NullableVariantStruct(value=value)
+                actual_doc = yaml_dump_typed(variant)
+                self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_primitive_variant(self):
+        cases = [
+            (
+                [1.0, 2.0],
+                "value: [1.0, 2.0]\n",
+            ),
+            (
+                True,
+                # TODO(jwnimmer-tri) Ideally we'd avoid the extra single quotes
+                # in this output, but I haven't figured out how to teach pyyaml
+                # to do that yet.
+                "value: !!bool 'true'\n",
+            ),
+            (
+                10,
+                # TODO(jwnimmer-tri) Ditto the above (re: quoting).
+                "value: !!int '10'\n",
+            ),
+            (
+                1.0,
+                # TODO(jwnimmer-tri) Ditto the above (re: quoting).
+                "value: !!float '1.0'\n",
+            ),
+            (
+                "foo",
+                # TODO(jwnimmer-tri) We want `value: !!str foo\n` here, but I
+                # can't figure out how to teach pyyaml to emit that.
+                "value: 'foo'\n",
+            ),
+        ]
+        for value, expected_doc in cases:
+            with self.subTest(value=value):
+                variant = PrimitiveVariantStruct(value=value)
+                actual_doc = yaml_dump_typed(variant)
+                self.assertEqual(actual_doc, expected_doc)
 
     def test_write_numpy_vector(self):
         cases = [

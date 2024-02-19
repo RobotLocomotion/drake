@@ -264,6 +264,18 @@ struct VariantWrappingStruct {
   VariantStruct inner;
 };
 
+using PrimitiveVariant =
+    std::variant<std::vector<double>, bool, int, double, std::string>;
+
+struct PrimitiveVariantStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  PrimitiveVariant value = kNominalDouble;
+};
+
 struct OuterStruct {
   struct InnerStruct {
     template <typename Archive>

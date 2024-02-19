@@ -50,7 +50,7 @@ Node Node::MakeMapping() {
 Node Node::MakeNull() {
   Node result;
   result.data_ = ScalarData{"null"};
-  result.tag_ = JsonSchemaTag::kNull;
+  result.tag_ = JsonSchemaTagInfo{.value = JsonSchemaTag::kNull};
   return result;
 }
 
@@ -135,8 +135,8 @@ std::string_view Node::GetTag() const {
           [](const std::string& tag) {
             return std::string_view{tag};
           },
-          [](JsonSchemaTag tag) {
-            switch (tag) {
+          [](const JsonSchemaTagInfo& info) {
+            switch (info.value) {
               case JsonSchemaTag::kNull:
                 return kTagNull;
               case JsonSchemaTag::kBool:
@@ -145,6 +145,8 @@ std::string_view Node::GetTag() const {
                 return kTagInt;
               case JsonSchemaTag::kFloat:
                 return kTagFloat;
+              case JsonSchemaTag::kStr:
+                return kTagStr;
             }
             DRAKE_UNREACHABLE();
           },
@@ -152,8 +154,21 @@ std::string_view Node::GetTag() const {
       tag_);
 }
 
-void Node::SetTag(JsonSchemaTag tag) {
-  tag_ = tag;
+bool Node::IsTagImportant() const {
+  return visit_overloaded<bool>(  // BR
+      overloaded{
+          [](const std::string&) {
+            return false;
+          },
+          [](const JsonSchemaTagInfo& info) {
+            return info.important;
+          },
+      },
+      tag_);
+}
+
+void Node::SetTag(JsonSchemaTag tag, bool important) {
+  tag_ = JsonSchemaTagInfo{.value = tag, .important = important};
 }
 
 void Node::SetTag(std::string tag) {

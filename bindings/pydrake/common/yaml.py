@@ -112,6 +112,22 @@ _FLOW_STYLE = None
 class _SchemaDumper(yaml.dumper.SafeDumper):
     """Customizes SafeDumper for the purposes of this module."""
 
+    class ExplicitScalar(typing.NamedTuple):
+        """Wrapper type used when dumping a document. When this type is dumped,
+        it will always emit the tag, e.g., `!!int 10`. (By default, tags for
+        scalars are not emitted by pyyaml.)
+        """
+        value: typing.Union[bool, int, float, str]
+
+    def _represent_explicit_scalar(self, explicit_scalar):
+        assert isinstance(explicit_scalar, _SchemaDumper.ExplicitScalar)
+        value = explicit_scalar.value
+        node = self.yaml_representers[type(value)](self, value)
+        # Encourage pyyaml to emit the secondary tag, e.g., `!!int`.
+        # This does not work for strings.
+        node.style = "'"
+        return node
+
     def _represent_dict(self, data):
         """Permits a reverse of _SchemaLoader."""
         if "_tag" in data:
@@ -124,6 +140,9 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
 
 
 _SchemaDumper.add_representer(dict, _SchemaDumper._represent_dict)
+_SchemaDumper.add_representer(
+    _SchemaDumper.ExplicitScalar,
+    _SchemaDumper._represent_explicit_scalar)
 
 
 class _DrakeFlowSchemaDumper(_SchemaDumper):
@@ -596,7 +615,10 @@ def _yaml_dump_typed_item(*, obj, schema):
             raise RuntimeError(f"The {schema} does not allow None as a value")
         match = None
         for i, one_schema in enumerate(generic_args):
-            if isinstance(obj, one_schema):
+            one_schema_origin = typing.get_origin(one_schema)
+            if one_schema_origin is None:
+                one_schema_origin = one_schema
+            if isinstance(obj, one_schema_origin):
                 match = i
                 break
         if match is None:
@@ -606,12 +628,11 @@ def _yaml_dump_typed_item(*, obj, schema):
         result = _yaml_dump_typed_item(obj=obj, schema=union_schema)
         if i != 0:
             if union_schema in _PRIMITIVE_YAML_TYPES:
-                raise NotImplementedError(
-                    f"Cannot dump the variant type {union_schema} with a "
-                    "non-zero index")
-            class_name_with_args = pretty_class_name(union_schema)
-            class_name = class_name_with_args.split("[", 1)[0]
-            result["_tag"] = "!" + class_name
+                result = _SchemaDumper.ExplicitScalar(result)
+            else:
+                class_name_with_args = pretty_class_name(union_schema)
+                class_name = class_name_with_args.split("[", 1)[0]
+                result["_tag"] = "!" + class_name
         return result
 
     # Handle NumPy types.
