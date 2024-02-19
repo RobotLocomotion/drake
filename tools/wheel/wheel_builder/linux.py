@@ -220,7 +220,8 @@ def _build_image(target, identifier, options):
     # Build the image.
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
-        for line in open(os.path.join(resource_root, 'Dockerfile')):
+        dockerfile = os.path.join(resource_root, 'Dockerfile')
+        for line in open(dockerfile, encoding='utf-8'):
             if line.startswith('FROM'):
                 stage = line.strip().split()[-1]
                 tag = _build_stage(target, args, tag_prefix=stage, stage=stage)
