@@ -1,0 +1,87 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load("@drake//tools/workspace/openusd_internal:defs.bzl", "pxr_library")
+
+package(default_visibility = ["//visibility:private"])
+
+cmake_configure_file(
+    name = "config_genrule",
+    src = "pxr/pxr.h.in",
+    out = "pxr/pxr.h",
+    cmakelists = [
+        "cmake/defaults/Version.cmake",
+    ],
+    defines = [
+        # Match the upstream default.
+        "PXR_PREFER_SAFETY_OVER_SPEED",
+        # We don't need Python.
+        "PXR_PYTHON_SUPPORT_ENABLED=0",
+        # Use Drake-specific namespaces.
+        "PXR_USE_NAMESPACES=1",
+        "PXR_EXTERNAL_NAMESPACE=drake_vendor_pxr",
+        "PXR_INTERNAL_NAMESPACE=drake_vendor_pxrInternal",
+        # Re-implement the math from OpenUSD/cmake/Version.cmake.
+        "PXR_VERSION=(@PXR_MAJOR_VERSION@ * 10000 + @PXR_MINOR_VERSION@ * 100 + @PXR_PATCH_VERSION@)",  # noqa
+    ],
+)
+
+cc_library(name = "pxr_h", hdrs = [":pxr/pxr.h"])
+
+pxr_library(name = "ar", subdir = "pxr/usd/ar")
+pxr_library(name = "arch", subdir = "pxr/base/arch")
+pxr_library(name = "gf", subdir = "pxr/base/gf")
+pxr_library(name = "js", subdir = "pxr/base/js")
+pxr_library(name = "kind", subdir = "pxr/usd/kind")
+pxr_library(name = "ndr", subdir = "pxr/usd/ndr")
+pxr_library(name = "pcp", subdir = "pxr/usd/pcp")
+pxr_library(name = "plug", subdir = "pxr/base/plug")
+pxr_library(name = "sdf", subdir = "pxr/usd/sdf")
+pxr_library(name = "sdr", subdir = "pxr/usd/sdr")
+pxr_library(name = "tf", subdir = "pxr/base/tf")
+pxr_library(name = "trace", subdir = "pxr/base/trace")
+pxr_library(name = "usd", subdir = "pxr/usd/usd")
+pxr_library(name = "usdGeom", subdir = "pxr/usd/usdGeom")
+pxr_library(name = "usdShade", subdir = "pxr/usd/usdShade")
+pxr_library(name = "usdUtils", subdir = "pxr/usd/usdUtils")
+pxr_library(name = "vt", subdir = "pxr/base/vt")
+pxr_library(name = "work", subdir = "pxr/base/work")
+
+cc_library(
+    name = "openusd",
+    deps = [
+        ":ar",
+        ":arch",
+        ":gf",
+        ":js",
+        ":kind",
+        ":ndr",
+        ":pcp",
+        ":plug",
+        ":sdf",
+        ":sdr",
+        ":tf",
+        ":trace",
+        ":usd",
+        ":usdGeom",
+        ":usdShade",
+        ":usdUtils",
+        ":vt",
+        ":work",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "usdcat",
+    srcs = ["pxr/usd/bin/usdcat/usdcat.cpp"],
+    copts = ["-w"],
+    deps = [":openusd"],
+    visibility = [
+        "@drake//tools/workspace/openusd_internal:__pkg__",
+    ],
+)
