@@ -49,6 +49,10 @@ HydroelasticType Geometries::hydroelastic_type(GeometryId id) const {
   return HydroelasticType::kUndefined;
 }
 
+bool Geometries::is_vanished(GeometryId id) const {
+  return vanished_geometries_.contains(id);
+}
+
 void Geometries::RemoveGeometry(GeometryId id) {
   supported_geometries_.erase(id);
   soft_geometries_.erase(id);
@@ -111,16 +115,12 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
         auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
         if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
       } break;
-      case HydroelasticType::kVanished:
-        // XXX ???
-        supported_geometries_[data.id] = HydroelasticType::kVanished;
-        break;
       case HydroelasticType::kUndefined:
         // No action required.
         break;
     }
   } catch (const std::exception&) {
-    supported_geometries_[data.id] = HydroelasticType::kVanished;
+    vanished_geometries_.insert(data.id);
   }
 }
 

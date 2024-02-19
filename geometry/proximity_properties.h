@@ -85,7 +85,6 @@ enum class HydroelasticType {
   kUndefined,
   kRigid,
   kCompliant,
-  kVanished,  //< Requested geometry could not be used.
 
   // Legacy alias. TODO(#17147) Remove this alias.
   kSoft = kCompliant,

@@ -191,13 +191,12 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   // One or two objects have no hydroelastic type.
   if (type_A == HydroelasticType::kUndefined ||
       type_B == HydroelasticType::kUndefined) {
+    // One or two objects have vanished.
+    if (data->geometries.is_vanished(encoding_a.id()) ||
+        data->geometries.is_vanished(encoding_b.id())) {
+      return CalcContactSurfaceResult::kCalculated;
+    }
     return CalcContactSurfaceResult::kUnsupported;
-  }
-
-  // One or two objects have vanished.
-  if (type_A == HydroelasticType::kVanished ||
-      type_B == HydroelasticType::kVanished) {
-    return CalcContactSurfaceResult::kCalculated;
   }
 
   // Rigid-rigid contact is not supported in hydroelastic contact model.
