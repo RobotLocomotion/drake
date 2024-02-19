@@ -11,20 +11,11 @@ World's X-Y plane. The center of its top surface is at World origin.
 The compliant ball has radius of 2 cm. By default, it is dropped 4 cm above
 the paddle.
 
-## Run the legacy Drake Visualizer application of days past
+## Run the visualizer
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 ```
-
-In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you
-might want to set these:
-
-* Maximum pressure = 2e6
-* Vector scaling mode = Scaled
-* Global scale of all vectors = 0.03
-
-![drake_viz_hydro_settings](images/drake_visualizer_hydroelastic_settings.jpg)
 
 ## Run the example
 

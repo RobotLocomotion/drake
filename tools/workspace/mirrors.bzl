@@ -23,10 +23,6 @@ DEFAULT_MIRRORS = {
         "https://drake-mirror.csail.mit.edu/crates.io/{archive}",
         "https://s3.amazonaws.com/drake-mirror/crates.io/{archive}",
     ],
-    "director": [
-        "https://drake-packages.csail.mit.edu/director/{archive}",
-        "https://s3.amazonaws.com/drake-packages/director/{archive}",
-    ],
     "doxygen": [
         "https://drake-packages.csail.mit.edu/doxygen/{archive}",
         "https://s3.amazonaws.com/drake-packages/doxygen/{archive}",

@@ -8,16 +8,11 @@ The bell pepper is a non-convex compliant mesh.
 The bowl is a non-convex rigid mesh.
 The table is a compliant box primitive.
 
-## Run the legacy Drake Visualizer application of days past
-```
-bazel run //tools:drake_visualizer &
-```
-Tell Drake Visualizer to draw contact forces according to its magnitude by:
-* `Plugins > Contacts > Configure Hydroelastic Contact Visualization`
-* `Vector scaling mode = Scaled`
-* `Global scale of all vectors = 0.1`
+## Run the visualizer
 
-![drake_viz_hydro_settings](images/drake_visualizer_hydroelastic_settings.jpg)
+```
+bazel run //tools:meldis -- --open-window &
+```
 
 ## Run the example
 ```
@@ -48,8 +43,8 @@ spins and moves around.
 
 ## Inspect the contact surface
 
-After the simulation finishes, in `drake_visualizer`, right-click on the 
-bell pepper and set Properties to have Alpha = 0.5.
+After the simulation finishes, in the visualizer adjust the alpha blending to
+add transparency.
 
 ![inspect_contact_surface](images/contact_surface.jpg)
 
