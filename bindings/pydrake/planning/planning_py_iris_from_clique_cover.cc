@@ -70,8 +70,8 @@ void DefinePlanningIrisFromCliqueCover(py::module m) {
         return sets;
       },
       py::arg("checker"), py::arg("options"), py::arg("generator"),
-      py::call_guard<py::gil_scoped_release>(),
-      py::arg("sets"), doc.IrisInConfigurationSpaceFromCliqueCover.doc);
+      py::call_guard<py::gil_scoped_release>(), py::arg("sets"),
+      doc.IrisInConfigurationSpaceFromCliqueCover.doc);
 }  // DefinePlanningIrisFromCliqueCover
 }  // namespace internal
 }  // namespace pydrake
