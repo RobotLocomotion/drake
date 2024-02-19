@@ -114,7 +114,7 @@ git clone https://github.com/RobotLocomotion/drake.git
 mkdir drake-build
 cd drake-build
 cmake ../drake
-make -j
+make install
 ```
 
 Note that a concurrency limit passed to `make` (e.g., `make -j 2`) has almost no
@@ -122,13 +122,13 @@ effect on the Drake build. You might need to add a bazel configuration dotfile
 to your home directory if your build is running out of memory. See the
 [troubleshooting](/troubleshooting.html#build-oom) page for details.
 
-Be aware that repeatedly running `make` will install the recompiled version of
-Drake *on top of* the prior version. This will lead to disaster unless the set
-of installed filenames is exactly the same (because old files will be hanging
-around polluting your PYTHONPATH). It is safe if you are merely tweaking a
-source code file and repeatedly installing, without any changes to the build
-system. For any kind of larger change (e.g., upgrading to a newer Drake), we
-strongly advise that you delete the prior tree (within the `install`
+Be aware that repeatedly running `make install` will install the recompiled
+version of Drake *on top of* the prior version. This will lead to disaster
+unless the set of installed filenames is exactly the same (because old files
+will be hanging around polluting your PYTHONPATH). It is safe if you are merely
+tweaking a source code file and repeatedly installing, without any changes to
+the build system. For any kind of larger change (e.g., upgrading to a newer
+Drake), we strongly advise that you delete the prior tree (within the `install`
 sub-directory) before running `make`.
 
 Please note the additional CMake options which affect the Python bindings:
@@ -158,5 +158,5 @@ export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/install/lib/python3.11/site-packages:${PYTHONPATH}
 ```
