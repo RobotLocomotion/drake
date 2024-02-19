@@ -251,6 +251,44 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   const double shortest_path_duration =
       shortest_path_traj.end_time() - shortest_path_traj.start_time();
 
+  // Bob is having too much fun on the scooter and doesn't want to get off.
+  // He has a clear discrete path in mind that he firmly believes in, but still
+  // wants to find the shortest path.
+  // We can manually specify the vertices Bob wants to visit and solve the
+  // convex restriction.
+  const auto source_vertices = source.Vertices();
+  const auto scooter_vertices = scooter_regions.Vertices();
+  const auto target_vertices = target.Vertices();
+
+  std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+      active_vertices;
+  std::copy(source_vertices.begin(), source_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(scooter_vertices.begin(), scooter_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(target_vertices.begin(), target_vertices.end(),
+            std::back_inserter(active_vertices));
+
+  auto [detour_traj, detour_result] =
+      gcs.SolveConvexRestriction(active_vertices);
+  EXPECT_TRUE(detour_result.is_success());
+  EXPECT_EQ(detour_traj.rows(), 2);
+  EXPECT_EQ(detour_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(detour_traj.value(detour_traj.start_time()),
+                              start, 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(detour_traj.value(detour_traj.end_time()), goal, 1e-6));
+
+  // The detour should be longer than the shortest path.
+  double detour_path_length = 0.0;
+  for (double t = detour_traj.start_time(); t < detour_traj.end_time();
+       t += dt) {
+    const double t_next = std::min(t + dt, detour_traj.end_time());
+    const double dx = (detour_traj.value(t_next) - detour_traj.value(t)).norm();
+    detour_path_length += dx;
+  }
+  EXPECT_GT(detour_path_length, shortest_path_length);
+
   // Now we want to find the fastest path from S to G.
   // Add minimum time objective with a very high weight to overpower the
   // shortest path objective.
@@ -291,14 +329,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
                     .minCoeff() < 1e-6);
     fastest_path_length += dx;
   }
-  EXPECT_TRUE(fastest_path_length > kLeastExpectedFastestPathLength);
+  EXPECT_GT(fastest_path_length, kLeastExpectedFastestPathLength);
   // We expect the fastest path to be longer than the shortest path.
-  EXPECT_TRUE(fastest_path_length > shortest_path_length);
+  EXPECT_GT(fastest_path_length, shortest_path_length);
 
   // The fastest path should be faster than the shortest path.
   const double fastest_path_duration =
       fastest_path_traj.end_time() - fastest_path_traj.start_time();
-  EXPECT_TRUE(fastest_path_duration < shortest_path_duration);
+  EXPECT_LT(fastest_path_duration, shortest_path_duration);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
@@ -397,8 +435,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   // The total duration should be at least the duck delay and the minimum time
   // it would take to drive the track down at maximum speed.
   // kDuckDelay + 305m /kMaxSpeed.
-  EXPECT_TRUE(traj.end_time() - traj.start_time() >=
-              kDuckDelay + 305 / kMaxSpeed);
+  EXPECT_GE(traj.end_time() - traj.start_time(), kDuckDelay + 305 / kMaxSpeed);
 
   // Let's verify that the Bob didn't run over the ducks!
   double stopped_at_ducks_time = 0;
@@ -581,10 +618,112 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
   auto [traj, result] = gcs.SolvePath(source, target, options);
 
   EXPECT_FALSE(result.is_success());
-  // TODO(wrangelvid) Add a better way to check if composite trajectory is
-  // empty.
-  DRAKE_EXPECT_THROWS_MESSAGE(traj.rows(), ".*no segments.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(traj.cols(), ".*no segments.*");
+  EXPECT_EQ(traj.get_number_of_segments(), 0);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, DisconnectedPathInConvexRestriction) {
+  /* Add two subgraphs to the graph without connecting them.*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start1(0.2, 0.2), start2(0.3, 3.2);
+  Vector2d goal1(4.8, 4.8), goal2(4.9, 2.4);
+
+  auto& source = gcs.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(1, 1)),
+                     HPolyhedron::MakeBox(Vector2d(0.5, 0.5), Vector2d(2, 2))),
+      0);
+
+  auto& target = gcs.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeBox(Vector2d(3, 3), Vector2d(4, 4)),
+                     HPolyhedron::MakeBox(Vector2d(3.5, 3.5), Vector2d(5, 5))),
+      0);
+
+  // Retrieve the vertices of the source and target subgraphs and try to solve
+  // the convex restriction.
+  const auto source_vertices = source.Vertices();
+  const auto target_vertices = target.Vertices();
+
+  std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+      active_vertices;
+  std::copy(source_vertices.begin(), source_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(target_vertices.begin(), target_vertices.end(),
+            std::back_inserter(active_vertices));
+
+  // Since we did not use the AddEdges method to connect the subgraphs, the
+  // vertices from the source and target subgraphs are not connected.
+  // This should result in an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolveConvexRestriction(active_vertices),
+                              ".*is not connected to vertex.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, MultipleEdgesInConvexRestriction) {
+  /* Solving the convex restriction should through an error if there are
+  multiple edges between any two vertices. This can happen if a user tries to
+  connect two subgraphs with different subspace constraints. */
+
+  const int kDimension = 2;
+  const double kMinimumDuration = 1.0;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  // Add a single region (the unit box), and plan a line segment inside that
+  // box. We will then add two points to the graph
+  /*
+  Consider a simple planning problem to find a path from start to goal while
+  either going through point 1 or point 2. We will be using subspaces to
+  enforce the point constraint, resulting in two edges between the unit regions.
+
+           ┌────────┐ Point 1 ┌────────┐
+           │        ├────────►│        │
+  Start───►│  Unit  │         │  Unit  ├───►Goal
+           │ Region │ Point 2 │ Region │
+           │        ├────────►│        │
+           └────────┘         └────────┘
+  */
+
+  Vector2d start(-0.5, -0.5), goal(0.5, 0.5);
+  Point subspace1(Vector2d(0.0, 0.0)), subspace2(Vector2d(0.2, 0.2));
+
+  auto& graph1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1,
+                     kMinimumDuration);
+  auto& graph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1,
+                     kMinimumDuration);
+
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs.AddEdges(source, graph1);
+  gcs.AddEdges(graph1, graph2, &subspace1);
+  gcs.AddEdges(graph1, graph2, &subspace2);
+  gcs.AddEdges(graph2, target);
+
+  // Retrieve the vertices of the subgraphs and try to solve the convex
+  // restriction.
+  const auto source_vertices = source.Vertices();
+  const auto graph1_vertices = graph1.Vertices();
+  const auto graph2_vertices = graph2.Vertices();
+  const auto target_vertices = target.Vertices();
+
+  std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+      active_vertices;
+  std::copy(source_vertices.begin(), source_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(graph1_vertices.begin(), graph1_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(graph2_vertices.begin(), graph2_vertices.end(),
+            std::back_inserter(active_vertices));
+  std::copy(target_vertices.begin(), target_vertices.end(),
+            std::back_inserter(active_vertices));
+
+  // Since the vertex in graph1 and graph2 are connected by multiple edges, we
+  // expect the convex restriction to throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolveConvexRestriction(active_vertices),
+                              ".*through multiple edges.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidSubspace) {
@@ -901,7 +1040,7 @@ TEST_F(SimpleEnv2D, DurationDelay) {
       CompareMatrices(traj.value(traj.end_time() - kGoalDelay), goal, 1e-6));
 
   // The total trajectory duration should be at least kStartDelay + kGoalDelay.
-  EXPECT_TRUE(traj.end_time() - traj.start_time() >= kStartDelay + kGoalDelay);
+  EXPECT_GE(traj.end_time() - traj.start_time(), kStartDelay + kGoalDelay);
 }
 
 TEST_F(SimpleEnv2D, MultiStartGoal) {
