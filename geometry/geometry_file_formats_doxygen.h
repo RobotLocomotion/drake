@@ -44,9 +44,7 @@ namespace geometry {
 
  Drake doesn't care about the capitalization of the geometry file extensions.
 
- Regarding the illustration role. While Drake has historically supported
- `drake_visualizer`, it no longer actively supports it. This documentation will
- focus on how the geometry is supported in
+ This documentation will focus on how the geometry is supported in
  <a href="https://github.com/meshcat-dev/meshcat">meshcat</a>.
 
  @subsection obj_support Wavefront (obj) file

@@ -109,7 +109,7 @@ cc_binary(
         "@//conditions:default": [],
     }),
     linkshared = 1,
-    visibility = ["@drake_visualizer//:__pkg__"],
+    visibility = ["//visibility:private"],
     deps = ["@glib"],
 )
 

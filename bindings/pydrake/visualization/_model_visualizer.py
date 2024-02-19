@@ -45,8 +45,7 @@ from pydrake.visualization._triad import (
 
 class ModelVisualizer:
     """
-    Visualizes models from a file or string buffer in MeshCat, Meldis,
-    or the legacy ``drake_visualizer`` application of days past.
+    Visualizes models from a file or string buffer in MeshCat or Meldis.
 
     To use this class to visualize model(s), create an instance with
     any desired options, add any models, and then call Run()::
@@ -316,7 +315,7 @@ class ModelVisualizer:
             self._reload_button_name = "Reload Model Files"
             self._meshcat.AddButton(self._reload_button_name)
 
-        # Connect to drake_visualizer, meldis, and meshcat.
+        # Connect to meldis and meshcat.
         # Meldis and meshcat provide simultaneous visualization of
         # illustration and proximity geometry.
         ApplyVisualizationConfig(
