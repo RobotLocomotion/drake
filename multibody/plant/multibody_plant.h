@@ -4397,6 +4397,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// for very large systems.
   MatrixX<T> MakeActuationMatrix() const;
 
+  /// Creates the pseudoinverse of the actuation matrix B directly (without
+  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
+  ///
+  /// Notably, when B is full row rank (the system is fully actuated), then the
+  /// pseudoinverse is a true inverse.
+  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
+
   /// Alternative signature to build an actuation selector matrix `Su` such
   /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
   /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
