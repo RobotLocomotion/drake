@@ -137,8 +137,8 @@ install_test(
         _INSTALL_TEST_COMMANDS,
     ],
     tags = [
-        # Running acceptance tests under coverage (kcov) can fail for presently
-        # unknown reasons when it comes to drake_visualizer, so skip them.
+        # Running acceptance tests under coverage (kcov) probably burns more CI
+        # time and flakiness compared to any upside.
         "no_kcov",
         # Running acceptance tests under Valgrind tools is extremely slow and
         # of limited value, so skip them.

@@ -103,12 +103,9 @@ bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control \
 
 **WARNING**: According to issue
 [17681](https://github.com/RobotLocomotion/drake/issues/17681),
-only the legacy `//tools:drake_visualizer` application of days past, not
-MeshCat nor meldis, can draw wireframe of the contact surfaces.
-As a result, you will need `//tools:drake_visualizer` to visualize the 
-difference between the `triangle` option and the default `polygon` option.
-However, `//tools:drake_visualizer` is only available in the older
-Ubuntu Focal, not Jammy.
+neither MeshCat nor Meldis can draw wireframe of the contact surfaces.
+As a result, you cannot currently see the difference between the `triangle`
+option and the default `polygon` option.
 
 ## Other Options
 

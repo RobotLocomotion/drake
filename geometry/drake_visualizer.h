@@ -63,8 +63,7 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
  SceneGraph instance (whose QueryObject-valued output port is connected to this
  system's input port).
 
- The messages are compatible with the legacy `drake_visualizer` application of
- days past, or its modern re-implementation
+ The messages are compatible with
  <a href="/pydrake/pydrake.visualization.meldis.html">Meldis</a>.
 
  @system
