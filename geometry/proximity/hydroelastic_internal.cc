@@ -105,22 +105,24 @@ void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
 
 template <typename ShapeType>
 void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
-  try {
-    switch (data.type) {
-      case HydroelasticType::kRigid: {
-        auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
-        if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
-      } break;
-      case HydroelasticType::kSoft: {
-        auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
-        if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
-      } break;
-      case HydroelasticType::kUndefined:
-        // No action required.
-        break;
-    }
-  } catch (const std::exception&) {
-    vanished_geometries_.insert(data.id);
+  switch (data.type) {
+    case HydroelasticType::kRigid: {
+      auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
+      if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
+    } break;
+    case HydroelasticType::kSoft: {
+      auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
+      if (hydro_geometry) {
+        if (hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
+          vanished_geometries_.insert(data.id);
+        } else {
+          AddGeometry(data.id, std::move(*hydro_geometry));
+        }
+      }
+    } break;
+    case HydroelasticType::kUndefined:
+      // No action required.
+      break;
   }
 }
 

@@ -282,17 +282,25 @@ class VolumeMesh {
    vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
    frame of this mesh M.
 
+   If the return value is std::nullopt, the tetrahedron is degenerate, and no
+   reliable gradient could be computed.
+
    The return type depends on both the mesh's vertex position scalar type `T`
    and the given field's scalar type `FieldValue`.  See
    @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
    */
   template <typename FieldValue>
-  Vector3<promoted_numerical_t<T, FieldValue>> CalcGradientVectorOfLinearField(
+  std::optional<Vector3<promoted_numerical_t<T, FieldValue>>>
+  CalcGradientVectorOfLinearField(
       const std::array<FieldValue, 4>& field_value, int e) const {
     using ReturnType = promoted_numerical_t<T, FieldValue>;
-    Vector3<ReturnType> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
+    auto grad_0 = CalcGradBarycentric(e, 0);
+    if (!grad_0.has_value()) return {};
+    Vector3<ReturnType> gradu_M = field_value[0] * *grad_0;
     for (int i = 1; i < 4; ++i) {
-      gradu_M += field_value[i] * CalcGradBarycentric(e, i);
+      auto grad_i = CalcGradBarycentric(e, i);
+      if (!grad_i.has_value()) return {};
+      gradu_M += field_value[i] * *grad_i;
     }
     return gradu_M;
   }
@@ -319,7 +327,7 @@ class VolumeMesh {
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 4.
-  Vector3<T> CalcGradBarycentric(int e, int i) const;
+  std::optional<Vector3<T>> CalcGradBarycentric(int e, int i) const;
 
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
@@ -331,7 +339,8 @@ class VolumeMesh {
 };
 
 template <typename T>
-Vector3<T> VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
+std::optional<Vector3<T>>
+VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
@@ -413,7 +422,7 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
 
   using std::abs;
   if (abs(signed_volume) <= kEps) {
-    throw std::runtime_error("Bad tetrahedron. Cannot compute gradient.");
+    return {};
   }
   return area_vector_M / signed_volume;
 }
