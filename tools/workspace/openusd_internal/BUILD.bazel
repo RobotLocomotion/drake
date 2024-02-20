@@ -28,6 +28,10 @@ sh_test(
         "//conditions:default": ["empty.sh"],
     }),
     args = ["--help"],
+    tags = [
+        # TODO(jwnimmer-tri) Re-enable this once we fix Boost problems.
+        "manual",
+    ],
 )
 
 add_lint_tests()
