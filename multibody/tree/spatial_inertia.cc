@@ -454,7 +454,7 @@ template <typename T>
 std::pair<Vector3<double>, drake::math::RigidTransform<double>>
 SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
     double inertia_shape_factor) const {
-  // Calculate M_SScm_E by shifting `this` spatial inertia's from P to Scm.
+  // Form M_SScm_E by shifting `this` spatial inertia from about-point P to Scm.
   const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
 
   // Form the principal semi-diameters (half-lengths) and rotation matrix R_EA
@@ -466,8 +466,6 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
 
   // Since R_EA is of type double and X_EA must also be of type double,
   // create a position vector from P to Scm that is of type double.
-  // Get position vector from P (`this` spatial inertia's about point) to
-  // Scm (`this` spatial inertia's center of mass), expressed in frame E.
   const Vector3<T>& p_PScm_E = get_com();
   const double xcm = ExtractDoubleOrThrow(p_PScm_E(0));
   const double ycm = ExtractDoubleOrThrow(p_PScm_E(1));
@@ -491,15 +489,15 @@ template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
     std::string* message) const {
   DRAKE_DEMAND(message != nullptr);
-  // Calculate M_BBcm by shifting `this` from P to Scm. Use G_BBcm (unit inertia
-  // about Bcm) to form I_BBcm (rotational inertia about Bcm) without validity
+  // Form M_BBcm by shifting `this` from about-point P to Scm. Use unit inertia
+  // G_BBcm to form I_BBcm (rotational inertia about Bcm) without validity
   // checks like IsPhysicallyValid() so this function works for error messages.
   const SpatialInertia<T> M_BBcm = ShiftToCenterOfMass();
   const UnitInertia<T>& G_BBcm = M_BBcm.get_unit_inertia();
   const RotationalInertia<T> I_BBcm =
       G_BBcm.MultiplyByScalarSkipValidityCheck(get_mass());
 
-  // If point P is not at Bcm, write B's rotational inertia about Bcm.
+  // If `this` about-point P is not Bcm, write B's rotational inertia about Bcm.
   const Vector3<T>& p_PBcm = get_com();
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
   if (!is_position_zero) {
