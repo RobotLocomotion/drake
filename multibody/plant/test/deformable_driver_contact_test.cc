@@ -398,9 +398,11 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
    rigid body (which then assumes the default value, dt). */
   constexpr double expected_tau = kDissipationTimeScale + kDt;
-  /* The H&C damping is set to be the average of deformable and rigid bodies. */
-  constexpr double expected_d =
-      0.5 * kHcDampingRigid + 0.5 * kHcDampingDeformable;
+  /* The H&C damping is set to be d = k₂/(k₁+k₂)⋅d₁ + k₁/(k₁+k₂)⋅d₂. In this
+   case, the stiffness of the rigid body defaults to infinity so the damping
+   value takes the mathematical limit in that expression, i.e. the damping
+   value of the deformable body. */
+  constexpr double expected_d = kHcDampingDeformable;
 
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
