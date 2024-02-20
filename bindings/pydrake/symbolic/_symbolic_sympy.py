@@ -26,6 +26,15 @@ def _no_change(x):
     return x
 
 
+def _handle_constant(x):
+    """This function is used to cast constant expressions to the appropriate
+    sympy type
+    """
+    if int(x) == x:
+        return sympy.Integer(x)
+    return sympy.Float(x)
+
+
 def _make_sympy_if_then_else(cond: sympy.Expr,
                              expr_then: sympy.Expr,
                              expr_else: sympy.Expr):
@@ -41,7 +50,7 @@ def _make_sympy_if_then_else(cond: sympy.Expr,
 # for that kind of term; this forms the core of `pydrake.symbolic.to_sympy()`.
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
-    ExpressionKind.Constant: _no_change,
+    ExpressionKind.Constant: _handle_constant,
     # Like Drake's NaN, the SymPy NaN also rejects, e.g., comparison operators.
     # That's more like what we want than `math.nan`, which allows comparison.
     ExpressionKind.NaN: lambda _: sympy.nan,

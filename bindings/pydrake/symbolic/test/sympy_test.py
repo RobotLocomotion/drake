@@ -165,3 +165,10 @@ class TestSympy(unittest.TestCase):
 
         # The two evaluations must match.
         self.assertAlmostEqual(drake_value, sympy_value)
+
+    def test_constant_to_sympy(self):
+        converted = mut.to_sympy(Expression(2))
+        self.assertEqual(type(converted), sympy.Integer)
+
+        converted = mut.to_sympy(Expression(2.1))
+        self.assertEqual(type(converted), sympy.Float)
