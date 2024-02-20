@@ -73,14 +73,6 @@ struct IrisFromCliqueCoverOptions {
   int num_points_per_visibility_round{200};
 
   /**
-   * The max clique solver used. If parallelism is set to allow more than 1
-   * thread, then this class **must** be implemented in C++.
-   */
-//  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
-//      max_clique_solver{
-//          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
-
-  /**
    * The rank tolerance used for computing the
    * MinimumVolumeCircumscribedEllipsoid of a clique. See
    * @MinimumVolumeCircumscribedEllipsoid.
@@ -103,7 +95,7 @@ struct IrisFromCliqueCoverOptions {
  * Graphs" In 2024 IEEE Internation Conference on Robotics and Automation.
  * https://arxiv.org/abs/2310.02875
  *
- * @param checker The collision checker containing the plant and it's associated
+ * @param checker The collision checker containing the plant and its associated
  * scene_graph.
  * @param max_clique_solver The max clique solver used. If parallelism is set to
  * allow more than 1 thread, then this class **must** be implemented in C++.
@@ -113,7 +105,7 @@ struct IrisFromCliqueCoverOptions {
  * The cover is written into this vector.
  *
  * Note that this method requires an implementation of a MaxCliqueSolverBase
- * which must be implemented in C++. The only current such solver implemented by
+ * which must be implemented in C++. The only solver of this kind implemented by
  * Drake is MaxCliqueSolverViaMip which requires the availability of a
  * Mixed-Integer Linear Programming solver (e.g. Gurobi and/or Mosek). We
  * recommend enabling those solvers if possible
@@ -122,11 +114,12 @@ struct IrisFromCliqueCoverOptions {
  * MaxCliqueSolverViaMip.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
-    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
-    const std::optional<planning::graph_algorithms::MaxCliqueSolverBase*>&
-        max_clique_solver,
+    const CollisionChecker& checker,
+    const IrisFromCliqueCoverOptions& options,
     RandomGenerator* generator,
-    std::vector<geometry::optimization::HPolyhedron>* sets);
+    std::vector<geometry::optimization::HPolyhedron>* sets,
+    const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =
+        nullptr);
 
 }  // namespace planning
 }  // namespace drake
