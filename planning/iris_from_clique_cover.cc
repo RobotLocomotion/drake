@@ -16,6 +16,7 @@
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/planning/visibility_graph.h"
+#include "drake/solvers/solver_options.h"
 
 namespace drake {
 namespace planning {
@@ -158,8 +159,7 @@ void ComputeGreedyTruncatedCliqueCover(
   computed_cliques->done_filling();
   log()->info(
       "Finished adding cliques. Total of {} clique added. Number of cliques "
-      "left to "
-      "process = {}",
+      "left to process = {}",
       num_cliques, computed_cliques->size());
 }
 
@@ -300,10 +300,20 @@ double ApproximatelyComputeCoverage(
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
   return fraction_covered;
 }
+
+std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase> MakeDefaultMaxCliqueSolver() {
+  SolverOptions options;
+
+
+  return planning::graph_algorithms::MaxCliqueSolverViaMip();
+}
+
 }  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
+    const std::optional<planning::graph_algorithms::MaxCliqueSolverBase*>&
+        max_clique_solver,
     RandomGenerator* generator, std::vector<HPolyhedron>* sets) {
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);
@@ -332,6 +342,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
              options.point_in_set_tol, options.parallelism, generator,
              &last_polytope_sample) < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
+    log()->debug("IrisFromCliqueCover Iteration {}/{}", num_iterations + 1,
+                 options.iteration_limit);
     Eigen::MatrixXd points(domain.ambient_dimension(),
                            num_points_per_visibility_round);
     for (int i = 0; i < points.cols(); ++i) {

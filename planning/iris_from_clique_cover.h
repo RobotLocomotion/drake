@@ -16,15 +16,12 @@
 
 namespace drake {
 namespace planning {
-/**
- * The default configurations for running Iris when building a convex set from a
- * clique. Currently, it is recommended to only run Iris for one iteration when
- * building from a clique so as to avoid discarding the information gained from
- * the clique.
- */
+
 struct IrisFromCliqueCoverOptions {
   /**
-   * The options used on internal calls to Iris.
+   * The options used on internal calls to Iris.  Currently, it is recommended
+   * to only run Iris for one iteration when building from a clique so as to
+   * avoid discarding the information gained from the clique.
    *
    * Note that `IrisOptions` can optionally include a meshcat instance to
    * provide debugging visualization. If this is provided `IrisFromCliqueCover`
@@ -43,7 +40,7 @@ struct IrisFromCliqueCoverOptions {
   double coverage_termination_threshold{0.7};
 
   /**
-   * The maximum number of iterations before the algorithm terminates.
+   * The maximum number of iterations of the algorithm.
    */
   int iteration_limit{100};
 
@@ -79,9 +76,9 @@ struct IrisFromCliqueCoverOptions {
    * The max clique solver used. If parallelism is set to allow more than 1
    * thread, then this class **must** be implemented in C++.
    */
-  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
-      max_clique_solver{
-          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
+//  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
+//      max_clique_solver{
+//          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
 
   /**
    * The rank tolerance used for computing the
@@ -108,8 +105,10 @@ struct IrisFromCliqueCoverOptions {
  *
  * @param checker The collision checker containing the plant and it's associated
  * scene_graph.
- * @param There are points in the algorithm requiring randomness. The generator
- * controls this source of randomness.
+ * @param max_clique_solver The max clique solver used. If parallelism is set to
+ * allow more than 1 thread, then this class **must** be implemented in C++.
+ * @param generator There are points in the algorithm requiring randomness. The
+ * generator controls this source of randomness.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
  *
@@ -124,6 +123,8 @@ struct IrisFromCliqueCoverOptions {
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
+    const std::optional<planning::graph_algorithms::MaxCliqueSolverBase*>&
+        max_clique_solver,
     RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets);
 
