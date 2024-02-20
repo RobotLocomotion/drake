@@ -12,7 +12,7 @@ namespace solvers {
 /// call MathematicalProgramResult::get_solver_details<ClarabelSolver>() to
 /// obtain the details.
 struct ClarabelSolverDetails {
-  /// The solve time inside Clarabel.
+  /// The solve time inside Clarabel in seconds.
   double solve_time{};
   /// Number of iterations in Clarabel.
   int iterations{};
