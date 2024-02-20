@@ -300,20 +300,10 @@ double ApproximatelyComputeCoverage(
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
   return fraction_covered;
 }
-
-std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase> MakeDefaultMaxCliqueSolver() {
-  SolverOptions options;
-
-
-  return planning::graph_algorithms::MaxCliqueSolverViaMip();
-}
-
 }  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
-    const std::optional<planning::graph_algorithms::MaxCliqueSolverBase*>&
-        max_clique_solver,
     RandomGenerator* generator, std::vector<HPolyhedron>* sets) {
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);

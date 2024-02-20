@@ -76,9 +76,9 @@ struct IrisFromCliqueCoverOptions {
    * The max clique solver used. If parallelism is set to allow more than 1
    * thread, then this class **must** be implemented in C++.
    */
-//  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
-//      max_clique_solver{
-//          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
+  std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
+      max_clique_solver{
+          new planning::graph_algorithms::MaxCliqueSolverViaMip()};
 
   /**
    * The rank tolerance used for computing the
@@ -123,8 +123,6 @@ struct IrisFromCliqueCoverOptions {
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
-    const std::optional<planning::graph_algorithms::MaxCliqueSolverBase*>&
-        max_clique_solver,
     RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets);
 
