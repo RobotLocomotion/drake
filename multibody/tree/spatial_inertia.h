@@ -643,7 +643,7 @@ class SpatialInertia {
   /// (lmax ≥ lmed ≥ lmin), orientation, and position of a box whose mass is
   /// concentrated in 8 particles at the box's corners and whose spatial inertia
   /// is equal to `this` spatial inertia. The physical geometry of the actual
-  /// underlying object must be larger than this box as this box is a minimum
+  /// underlying object must be larger than this box, as this box is the minimum
   /// bounding box for the actual geometry.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
@@ -661,11 +661,11 @@ class SpatialInertia {
   /// `this` spatial inertia. This length can help assess whether the physical
   /// object associated with this spatial inertia has a reasonable size.
   /// @note For comparable sizes, the world's largest aircraft carrier has a
-  /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m, the
-  /// world's largest land vehicle (Bagger bucket-wheel excavator) ≈ 224 m long,
-  /// the largest human object in space (International Space Station) which is
-  /// 109 m long and 75 m wide, the USA space shuttle (≈ 37 m long) and 15.2 m
-  /// Canadarm, and the world's largest humanoid robot (Mononofu ≈ 8.5 m tall).
+  /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m), the
+  /// largest land vehicle (Bagger bucket-wheel excavator) is ≈ 224 m long, the
+  /// largest human object in space (International Space Station) is 109 m long
+  /// and 75 m wide, the USA space shuttle is ≈ 37 m long and can carry a 15.2 m
+  /// Canadarm, the world's largest humanoid robot (Mononofu) is ≈ 8.5 m tall.
   T CalcMinimumPhysicalLength() const;
   ///@}
 
@@ -921,7 +921,7 @@ class SpatialInertia {
   // Shifts `this` spatial inertia for a body (or composite body) S from
   // about-point P to about-point Scm (S's center of mass). In other words,
   // shifts `M_SP_E` to `M_SScm_E` (both are expressed-in frame E).
-  // @return A reference to M_SScm_E, `this` spatial inertia that has been
+  // @returns A reference to M_SScm_E, `this` spatial inertia that has been
   // shifted from about-point P to about-point Scm, expressed in frame E.
   // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
   // on return the position vector p_PScm underlying `this` is the zero vector.
@@ -931,7 +931,7 @@ class SpatialInertia {
   // Calculates the spatial inertia that results from shifting `this` spatial
   // inertia for a body (or composite body) S from about-point P to
   // about-point Scm (S's center of mass). In other words, shifts
-  // `M_SSP_E` to `M_SScm_E` (both are expressed-in frame E).
+  // `M_SP_E` to `M_SScm_E` (both are expressed-in frame E).
   // @retval M_SScm_E S's spatial inertia about-point Scm expressed-in frame E.
   // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
   // on return the position vector p_PScm underlying `this` is the zero vector.
