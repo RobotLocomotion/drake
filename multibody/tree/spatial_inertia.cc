@@ -3,7 +3,6 @@
 #include <string>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/unused.h"
 #include "drake/math/unit_vector.h"
 
 namespace drake {
@@ -335,7 +334,8 @@ boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   if (ret_value) {
     // Form a rotational inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
+    const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+    const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
     const RotationalInertia<T> I_SScm_E =
         G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
     ret_value = I_SScm_E.CouldBePhysicallyValid();
@@ -454,22 +454,21 @@ template <typename T>
 std::pair<Vector3<double>, drake::math::RigidTransform<double>>
 SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
     double inertia_shape_factor) const {
-  // Get position vector from P (`this` spatial inertia's about point) to
-  // Scm (`this` spatial inertia's center of mass), expressed in frame E.
-  const Vector3<T>& p_PScm_E = get_com();
-
-  // Shift `this` spatial inertia's unit inertia from P to Scm.
-  const UnitInertia<T>& G_SP_E = get_unit_inertia();
-  const UnitInertia<T> G_SScm_E = G_SP_E.ShiftToCenterOfMass(p_PScm_E);
+  // Calculate M_SScm_E by shifting `this` spatial inertia's from P to Scm.
+  const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
 
   // Form the principal semi-diameters (half-lengths) and rotation matrix R_EA
   // that contains the associated principal axes directions Ax, Ay, Az.
+  const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
   const auto [abc, R_EA] =
       G_SScm_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
           inertia_shape_factor);
 
   // Since R_EA is of type double and X_EA must also be of type double,
   // create a position vector from P to Scm that is of type double.
+  // Get position vector from P (`this` spatial inertia's about point) to
+  // Scm (`this` spatial inertia's center of mass), expressed in frame E.
+  const Vector3<T>& p_PScm_E = get_com();
   const double xcm = ExtractDoubleOrThrow(p_PScm_E(0));
   const double ycm = ExtractDoubleOrThrow(p_PScm_E(1));
   const double zcm = ExtractDoubleOrThrow(p_PScm_E(2));
@@ -492,19 +491,16 @@ template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
     std::string* message) const {
   DRAKE_DEMAND(message != nullptr);
-  const T& mass = get_mass();
-  const Vector3<T>& p_PBcm = get_com();
-
-  // Get G_BP (unit inertia about point P) and use it to calculate G_BBcm (unit
-  // inertia about Bcm).  Use G_BBcm to calculate I_BBcm (rotational inertia
-  // about Bcm) without validity checks such as IsPhysicallyValid().
-  // Hence, this method works for error messages.
-  const UnitInertia<T>& G_BP = get_unit_inertia();
-  const UnitInertia<T> G_BBcm = G_BP.ShiftToCenterOfMass(p_PBcm);
+  // Calculate M_BBcm by shifting `this` from P to Scm. Use G_BBcm (unit inertia
+  // about Bcm) to form I_BBcm (rotational inertia about Bcm) without validity
+  // checks like IsPhysicallyValid() so this function works for error messages.
+  const SpatialInertia<T> M_BBcm = ShiftToCenterOfMass();
+  const UnitInertia<T>& G_BBcm = M_BBcm.get_unit_inertia();
   const RotationalInertia<T> I_BBcm =
-      G_BBcm.MultiplyByScalarSkipValidityCheck(mass);
+      G_BBcm.MultiplyByScalarSkipValidityCheck(get_mass());
 
   // If point P is not at Bcm, write B's rotational inertia about Bcm.
+  const Vector3<T>& p_PBcm = get_com();
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
   if (!is_position_zero) {
     *message += fmt::format(
