@@ -28,7 +28,7 @@ def _no_change(x):
 
 def _handle_constant(x):
     """This function is used to cast constant expressions to the appropriate
-    sympy type
+    sympy type.
     """
     if not math.isinf(x) and not math.isnan(x) and int(x) == x:
         return sympy.Integer(x)
