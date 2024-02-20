@@ -4,6 +4,7 @@
 
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -1382,10 +1383,12 @@ GraphOfConvexSets::GetRandomizedSolutionPath(
         target.name()));
   }
 
-  std::set<EdgeId> unusable_edges;
-  if (*options.preprocessing) {
-    unusable_edges = PreprocessShortestPath(source.id(), target.id(), options);
-  }
+  // std::set<EdgeId> unusable_edges;
+  // if (*options.preprocessing) {
+  //   unusable_edges = PreprocessShortestPath(source.id(), target.id(),
+  //   options);
+  // }
+  //
 
   if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
       result.is_success()) {
@@ -1403,11 +1406,11 @@ GraphOfConvexSets::GetRandomizedSolutionPath(
 
     std::map<EdgeId, double> flows;
     for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
-        flows.emplace(edge_id, 0);
-      } else {
-        flows.emplace(edge_id, result.GetSolution(e->phi()));
-      }
+      // if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+      //   flows.emplace(edge_id, 0);
+      // } else {
+      flows.emplace(edge_id, result.GetSolution(e->phi()));
+      // }
     }
     int num_trials = 0;
     MathematicalProgramResult best_rounded_result;
@@ -1485,6 +1488,7 @@ GraphOfConvexSets::GetRandomizedSolutionPath(
     res.first = paths;
     res.second = results;
 
+    // TODO(bernhardpg): Now this might return paths that were not successful!
     return res;
   } else {
     // TODO(bernhardpg): Fix
