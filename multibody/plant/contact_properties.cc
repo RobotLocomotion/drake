@@ -131,11 +131,27 @@ const CoulombFriction<double>& GetCoulombFriction(
 
 template <typename T>
 T GetCombinedPointContactStiffness(
+    geometry::GeometryId id_A, geometry::GeometryId id_B,
+    double default_value_A, double default_value_B,
+    const geometry::SceneGraphInspector<T>& inspector) {
+  const T k1 = GetPointContactStiffness(id_A, default_value_A, inspector);
+  const T k2 = GetPointContactStiffness(id_B, default_value_B, inspector);
+  const double kInf = std::numeric_limits<double>::infinity();
+  // Demand that at least one is compliant.
+  DRAKE_DEMAND(k1 != kInf || k2 != kInf);
+  DRAKE_DEMAND(k1 >= 0.0);
+  DRAKE_DEMAND(k2 >= 0.0);
+  if (k1 == kInf) return k2;
+  if (k2 == kInf) return k1;
+  return safe_divide(k1 * k2, k1 + k2);
+}
+
+template <typename T>
+T GetCombinedPointContactStiffness(
     geometry::GeometryId id_A, geometry::GeometryId id_B, double default_value,
     const geometry::SceneGraphInspector<T>& inspector) {
-  const T k1 = GetPointContactStiffness(id_A, default_value, inspector);
-  const T k2 = GetPointContactStiffness(id_B, default_value, inspector);
-  return safe_divide(k1 * k2, k1 + k2);
+  return GetCombinedPointContactStiffness(id_A, id_B, default_value,
+                                          default_value, inspector);
 }
 
 template <typename T>
@@ -163,7 +179,12 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     (&GetPointContactStiffness<T>, &GetHydroelasticModulus<T>,
      &GetHuntCrossleyDissipation<T>, &GetCombinedHuntCrossleyDissipation<T>,
      &GetDissipationTimeConstant<T>, &GetCoulombFriction<T>,
-     &GetCombinedPointContactStiffness<T>,
+     static_cast<T (*)(geometry::GeometryId, geometry::GeometryId, double,
+                       const geometry::SceneGraphInspector<T>&)>(
+         &GetCombinedPointContactStiffness<T>),
+     static_cast<T (*)(geometry::GeometryId, geometry::GeometryId, double,
+                       double, const geometry::SceneGraphInspector<T>&)>(
+         &GetCombinedPointContactStiffness<T>),
      &GetCombinedDissipationTimeConstant<T>,
      &GetCombinedDynamicCoulombFriction<T>))
 

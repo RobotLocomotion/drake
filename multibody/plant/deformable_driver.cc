@@ -376,38 +376,44 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const Vector3<T>& p_WB = X_WB.translation();
       const Vector3<T> p_BC_W = p_WC - p_WB;
 
-      /* We set a large stiffness to approximate rigid contact. We choose a
-       large constant C with unit [Pa/m] and then scale the constant C by the
-       area of the contact polygon to compute an effective stiffness k that has
-       unit [N/m]. We choose the value of C from the following approximation:
-       Consider a unit cube with side length l in equilibrium on the ground
-       under gravity. The contact force is equal to k * ϕ where ϕ is the
-       penetration distance. The contact force balances gravity and we have
+      /* We set a large stiffness for the deformable body to approximate rigid
+       contact. We choose a large constant C with units of [Pa/m] and then scale
+       the constant C by the area of the contact polygon to compute an effective
+       stiffness k that has units of [N/m]. We choose the value of C from the
+       following approximation: Consider a unit cube with side length L in
+       equilibrium on the ground under gravity. The contact force is equal to
+       k * ϕ where ϕ is the penetration distance. The contact force balances
+       gravity and we have
 
-         kϕ  = Cl²ϕ = gρl³,
+         kϕ  = CL²ϕ = gρL³,
 
-       which gives ϕ = gρl / C.
-       We choose a large C = 1e8[Pa/m] so that for ρ = 1000[kg/m³] and
-       g = 10[m/s²], we get ϕ = 1e-4 * l, or 0.1mm for a 10cm cube with density
-       of water, a reasonably small penetration. */
-      const T k = surface.contact_mesh_W().area(i) * 1e8;
-      /* Hunt & Crossley dissipation. Used by Lagged and Similar, ignored by
-       Sap. See multibody::DiscreteContactApproximation for details about these
-       contact models. */
-      const T d = GetCombinedHuntCrossleyDissipation(
-          surface.id_A(), surface.id_B(), k, k, 0.0 /* Default value */,
+       which gives ϕ = gρL / C.
+       We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
+       g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
+       density of water, a reasonably small penetration. */
+      const T default_deformable_k = surface.contact_mesh_W().area(i) * 1e8;
+      const T default_rigid_k = std::numeric_limits<T>::infinity();
+      const T k = GetCombinedPointContactStiffness(
+          surface.id_A(), surface.id_B(), default_deformable_k, default_rigid_k,
           inspector);
+      /* Hunt & Crossley dissipation. Ignored, for instance, by the Sap model of
+       contact approximation. See multibody::DiscreteContactApproximation for
+       details about these contact models. */
+      const T d = GetCombinedHuntCrossleyDissipation(
+          surface.id_A(), surface.id_B(), default_deformable_k, default_rigid_k,
+          0.0 /* Default value */, inspector);
 
       // TODO(xuchenhan-tri): Currently deformable bodies don't have names. When
       // they do get names upon registration (in DeformableModel), update its
       // body name here.
       const std::string body_A_name(
           fmt::format("deformable body with geometry id {}", id_A));
-      /* Dissipation time scale.  Used by Sap, ignored by Lagged and Similar.
-       See multibody::DiscreteContactApproximation for details about these
-       contact models. We use dt as the default dissipation constant so that the
-       contact is in near-rigid regime and the compliance is only used as
-       stabilization. */
+
+      /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
+       contact approximation. See multibody::DiscreteContactApproximation for
+       details about these contact models. We use dt as the default dissipation
+       constant so that the contact is in near-rigid regime and the compliance
+       is only used as stabilization. */
       const T tau = GetCombinedDissipationTimeConstant(
           id_A, id_B, manager_->plant().time_step(), body_A_name, body_B.name(),
           inspector);
@@ -417,7 +423,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T& phi0 = surface.signed_distances()[i];
       const T fn0 = -k * phi0;
-      const Vector3<T> v_AcBc_C = R_CW.matrix() * (v_Bc_W - v_Ac_W);
+      /* The normal (scalar) component of the contact velocity in the contact
+       frame. */
+      const T v_AcBc_Cz = nhat_W.dot(v_Bc_W - v_Ac_W);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),
           .id_A = id_A,
@@ -430,7 +438,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .p_BqC_W = p_BC_W,
           .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
-          .vn0 = v_AcBc_C(2),
+          .vn0 = v_AcBc_Cz,
           .fn0 = fn0,
           .stiffness = k,
           .damping = d,

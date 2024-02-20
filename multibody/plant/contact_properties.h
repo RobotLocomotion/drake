@@ -97,11 +97,20 @@ const CoulombFriction<double>& GetCoulombFriction(
  according to the rule:
    k  = k₁⋅k₂/(k₁+k₂)
  In other words, the combined compliance (the inverse of stiffness) is the
- sum of the individual compliances. k₁ and k₂ are set to the given default value
+ sum of the individual compliances. In particular, returns k₁ if k₂ is infinite
+ and returns k₂ if k₁ is infinite. k₁ and k₂ are set to the given default values
  if they are not specified in SceneGraph.
  @pre id_A and id_B are valid GeometryIds in the inspector that have proximity
- properties.
- @pre default_value >= 0. */
+ properties. k₁ and k₂ are not both infinite.
+ @pre default_value_A >= 0 and default_value_B >= 0. */
+template <typename T>
+T GetCombinedPointContactStiffness(
+    geometry::GeometryId id_A, geometry::GeometryId id_B,
+    double default_value_A, double default_value_B,
+    const geometry::SceneGraphInspector<T>& inspector);
+
+/* Alternative signature for GetCombinedPointContactStiffness where the default
+ stiffness for two geometries are the same. */
 template <typename T>
 T GetCombinedPointContactStiffness(
     geometry::GeometryId id_A, geometry::GeometryId id_B, double default_value,
