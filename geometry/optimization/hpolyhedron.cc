@@ -17,6 +17,7 @@
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullFacetList.h>
 
+#include "drake/common/ssize.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
@@ -667,6 +668,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
                             Eigen::VectorXd* face_center_distance,
                             std::vector<bool>* face_moved_in, int* i,
                             const std::vector<int>& i_cull) {
+  DRAKE_DEMAND(ssize(*face_moved_in) >= *i + 1);
   (*face_moved_in)[*i] = true;
   std::vector<int> i_not_cull;
   i_not_cull.reserve(A.rows() - i_cull.size());
@@ -686,7 +688,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   std::vector<bool> face_moved_in_new;
   face_moved_in_new.reserve(i_not_cull.size());
   VectorXd face_center_distance_new(i_not_cull.size());
-  for (int j = 0; j < static_cast<int>(i_not_cull.size()); ++j) {
+  for (int j = 0; j < ssize(i_not_cull); ++j) {
     A_new.row(j) = A.row(i_not_cull[j]);
     b_new(j) = b(i_not_cull[j]);
     face_moved_in_new.push_back((*face_moved_in)[i_not_cull[j]]);
@@ -745,12 +747,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // A multiplier for cost in LP that finds how far a face can be moved inward
   // before losing an intersection.  Maximizes or minimizes dot product between
   // a point and the face normal, depending on `keep_whole_intersection`.
-  int cost_multiplier;
-  if (keep_whole_intersection) {
-    cost_multiplier = -1;
-  } else {
-    cost_multiplier = 1;
-  }
+  const int cost_multiplier = keep_whole_intersection ? -1 : 1;
 
   // If scaled circumbody still intersects with a polytope in
   // `intersecting_polytopes`, then we don't need to worry about losing this
@@ -769,7 +766,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   }
 
   // Initialize inbody as circumbody.
-  HPolyhedron inbody = HPolyhedron(circumbody_A, circumbody_b);
+  HPolyhedron inbody = circumbody;
   std::vector<bool> face_moved_in(inbody.b().rows(), false);
   int iterations = 0;
   bool any_faces_moved = true;
@@ -810,7 +807,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         // based on how far each intersection allows the hyperplane to move.
         for (int intersection_ind = 0;
              intersection_ind <
-             static_cast<int>(reduced_intersecting_polytopes.size());
+             ssize(reduced_intersecting_polytopes);
              ++intersection_ind) {
           const HPolyhedron intersection = inbody.Intersection(
               reduced_intersecting_polytopes[intersection_ind]);
@@ -871,7 +868,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   }
   log()->info("{} faces saved", circumbody.b().size() - inbody.b().size());
 
-  // Volume estimations via inner ellipsoids, as calculating HPoylhedron volume
+  // Volume estimations via inner ellipsoids, as calculating HPolyhedron volume
   // is expensive.
   const double V_circumbody_ellipsoid =
       circumbody.MaximumVolumeInscribedEllipsoid().CalcVolume();
@@ -896,7 +893,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // affine transformation, and revert if not.  There is currently no way to
   // constrain that the affine transformation upholds these constraints.
   for (int inter_ind = 0;
-       inter_ind < static_cast<int>(reduced_intersecting_polytopes.size());
+       inter_ind < ssize(reduced_intersecting_polytopes);
        ++inter_ind) {
     if (do_affine_transformation &&
         !inbody.IntersectsWith(reduced_intersecting_polytopes[inter_ind])) {

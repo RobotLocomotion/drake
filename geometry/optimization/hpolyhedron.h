@@ -155,7 +155,19 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   transformation of `this`, subject to being a subset of `circumbody`,
   and subject to the transformation matrix being positive
   semi-definite.  The latter condition is necessary for convexity of the
-  program.
+  program.  We solve
+  @verbatim
+  max_{T,t,Λ} log det (T)
+        s.t. T ≽ 0
+        Λ ≥ 0
+        Λ * A_1 = A_2 * T
+        Λ * b_1 ≤ b_2 + A_2 * t
+  @endverbatim
+  where A_1 and b_1 are the A and b matrices belonging to `this`, and A_2 and
+  b_2 are the A and b matrices belonging to `circumbody`. Returns the polytope
+  whose A and b matrices are A_1 * T^{-1} and b_1 + A_1 * T^{-1} * t,
+  respectively.
+
   @param circumbody is an HPolyhedron that must contain the returned inbody.
   @throws std::exception if the solver fails to solve the problem.*/
   [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(
