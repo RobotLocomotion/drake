@@ -359,43 +359,6 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
-void SpatialInertia<T>::ThrowIfAssociatedBodyIsTooLarge(
-          const char* function_name, const std::string& body_name) const {
-  // Since this function relies on real finite numerical data, it only tests
-  // when mass, center of mass, and inertia properties are real and finite.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    const T& mass = get_mass();
-    const Vector3<T>& p_PScm_E = get_com();
-    const UnitInertia<T>& G_SP_E = get_unit_inertia();
-    using std::isfinite;
-    if (isfinite(mass) && p_PScm_E.array().allFinite() &&
-        G_SP_E.get_moments().array().allFinite() &&
-        G_SP_E.get_products().array().allFinite()) {
-      // For a minimum bounding box with ½-lengths a, b, c, the box's largest
-      // dimension is its space-diagonal, which is √[(2*a)² + (2*b)² + (2*c)²].
-      auto [abc, X_BA] = CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
-      const double max_length = (2.0 * abc).norm();
-      const double max_allowable_dimension =
-          SpatialInertia<T>::MaximumAllowableDimension();
-      if (max_length > max_allowable_dimension) {
-        std::string error_message = fmt::format(
-            "Function {}() did not add rigid body {} because it is too large."
-            "\nThis body's spatial inertia has a minimum bounding box whose "
-            "space-diagonal is {} meters."
-            "\nThe maximum allowable space-diagonal is {} meters.\n",
-            function_name, body_name, max_length, max_allowable_dimension);
-        error_message += fmt::format("{}", *this);
-        WriteExtraCentralInertiaProperties(&error_message);
-        throw std::runtime_error(error_message);
-      }
-    }
-  } else {
-    unused(function_name);
-    unused(body_name);
-  }
-}
-
-template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::operator+=(
     const SpatialInertia<T>& M_BP_E) {
   const T total_mass = get_mass() + M_BP_E.get_mass();
@@ -428,6 +391,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
     const Vector3<T>& p_ScmP_E) const {
   return SpatialInertia(*this).ShiftFromCenterOfMassInPlace(p_ScmP_E);
+}
+
+template <typename T>
+SpatialInertia<T>& SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
+  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
+  p_PScm_E_ = Vector3<T>::Zero();
+  return *this;  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
 }
 
 template <typename T>
@@ -506,6 +476,16 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   const Vector3<double> p_PAo_E(xcm, ycm, zcm);  // Note: Point Ao is at Scm.
   const drake::math::RigidTransform<double> X_EA(R_EA, p_PAo_E);
   return std::pair(abc, X_EA);
+}
+
+template <typename T>
+T SpatialInertia<T>::CalcMinimumPhysicalLength() const {
+  const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+  const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
+  using std::sqrt;
+  return sqrt(2.0 * G_SScm_E.Trace());
+  // The derivation of the formula underlying this calculation is in
+  // UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape().
 }
 
 template <typename T>

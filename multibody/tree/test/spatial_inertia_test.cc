@@ -1300,7 +1300,7 @@ GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
 GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // Consider a body B whose shape (e.g., a solid or hollow ellipsoid or box) is
   // defined by semi-diameters (half-lengths) a, b, c.
-  const double a = 5.0, b = 4.0, c = 3.0;
+  const double a = 5.0, b = 4.0, c = 3.0;  // To facilitate testing, a > b > c.
   const double density = 2.34;
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   const drake::math::RotationMatrix R_identity =
@@ -1345,6 +1345,11 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
+  // Verify CalcMinimumPhysicalLength() calculates the length of the
+  // space-diagonal of the minimum bounding box.
+  double space_diagonal = M_BBcm_B.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
+
   // Translate the solid box B and ensure half-lengths and principal axes are
   // unchanged, whereas the position vector returned in X_BA has changed.
   const Vector3<double> p_BoBcm_B(1.2, 3.4, 5.6);
@@ -1360,6 +1365,11 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
+
+  // Verify CalcMinimumPhysicalLength() calculates the length of the
+  // space-diagonal of the minimum bounding box.
+  space_diagonal = M_BBo_B.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
 
   // Rotate the solid box B so R_BE is not the identity matrix. Verify ½-lengths
   // are unchanged and principal axes directions Ax Ay Az are parallel to
@@ -1402,47 +1412,59 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_NEAR(std::abs(Ay_B.dot(Ey_B)), 1.0, kTolerance);  // Ay parallel to Ey.
   EXPECT_NEAR(std::abs(Az_B.dot(Ez_B)), 1.0, kTolerance);  // Az parallel to Ez.
   EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
+
+  // Verify CalcMinimumPhysicalLength() calculates the length of the
+  // space-diagonal of the minimum bounding box.
+  space_diagonal = M_BBo_E.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
 }
 
-GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
+GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
   // Create a 360 meter massless rod B with 1.0 kg particles at its distal ends.
-  // Ensure ThrowIfAssociatedBodyIsTooLarge() throws an exception since the
-  // minimum bounding box's space-diagonal = 360 m is longer than allowable.
+  // Ensure CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() actually
+  // produces a minimum bounding box with ½-lengths a = 180 m, b = 0, c = 0.
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   const double mass = 1.0;
   double a = 180, b = 0, c = 0;  // rod's ½-length is 180 meters.
   SpatialInertia<double> M_BBcm_B;
   M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
+  auto [abc, X_BA] =
+      M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  const drake::math::RotationMatrix R_identity =
+      drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
-  const char* function_name = "ThrowIfSpatialInertiaSignalsHugeObject";
-  const std::string body_name("test_body");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name),
-      "[^]* has a minimum bounding box whose space-diagonal [^]*");
+  // Verify CalcMinimumPhysicalLength() returns the length of the space-diagonal
+  // of the minimum bounding line-segment (i.e., rod's length = 2 * a = 360 m).
+  double space_diagonal = M_BBcm_B.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, 2 * a, kTolerance);
 
-  // Ensure a large object (smaller than allowable) does not throw exception.
-  a = 120, b = 0, c = 0;  // rod's ½-length is 120 meters.
-  M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
-  M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
-  DRAKE_EXPECT_NO_THROW(
-      M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name));
-
-  // Create 300 m x 400 m rectangle B with 1.0 kg particles at its 4 vertices.
-  // Ensure an exception is thrown since the minimum bounding box's
-  // space-diagonal = 500 m is longer than allowable.
-  a = 150, b = 200, c = 0;  // rectangle sides' ½-lengths in meters.
+  // Create 400 m x 300 m rectangle B with 1.0 kg particles at its 4 vertices.
+  // Ensure CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() actually
+  // produces a minimum bounding box with ½-lengths a = 200 m, b = 150 m, c = 0.
+  a = 200, b = 150, c = 0;  // rectangle sides' ½-lengths in meters.
   M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, b, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, -b, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, b, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, 0));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name),
-    "[^]* has a minimum bounding box whose space-diagonal [^]*");
+  std::tie(abc, X_BA) =
+      M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
-  // Create 90 m x 120 m x 360 m box with 1.0 kg particles at its 8 vertices.
-  // Ensure an exception is thrown since the minimum bounding box's
-  // space-diagonal = 390 m is longer than allowable.
-  a = 45, b = 60, c = 180;  // box sides' ½-lengths in meters.
+  // Verify CalcMinimumPhysicalLength() returns the length of the face-diagonal
+  // of the minimum bounding rectangle (i.e., √[(2*a)² + (2*b)²] = 500).
+  space_diagonal = M_BBcm_B.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
+
+  // Create 360 m x 120 m x 90 m box with 1.0 kg particles at its 8 vertices.
+  // Ensure CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() actually
+  // produces a minimum bounding box with ½-lengths a = 130 m, b = 60 m, c = 45.
+  a = 180, b = 60, c = 45;  // box sides' ½-lengths in meters.
   M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, b, c));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, b, -c));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(a, -b, c));
@@ -1451,40 +1473,16 @@ GTEST_TEST(SpatialInertia, ThrowIfSpatialInertiaSignalsHugeObject) {
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, b, -c));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, c));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, -c));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name),
-    "[^]* has a minimum bounding box whose space-diagonal [^]*");
+  std::tie(abc, X_BA) =
+      M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
-  // Ensure _no_ exception is thrown for a _solid_ box of previous dimensions.
-  // Note: A massless box with particles on its vertices has a larger minimum
-  // bounding box than a uniform-density box by a factor of sqrt(3).
-  // See @ref spatial_inertia_equivalent_shapes for details.
-  M_BBcm_B = SpatialInertia<double>::SolidBoxWithMass(mass, 2*a, 2*b, 2*c);
-  DRAKE_EXPECT_NO_THROW(
-    M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name));
-
-  // Ensure an exception is thrown for a solid box that is large enough so its
-  // minimum bounding box's space-diagonal exceeds the maximum allowable.
-  // Compute a scaling factor for the previous solid box to throw an exception.
-  // The equation that governs the scaling factor is derived below, with the
-  // sqrt(3) described at @ref spatial_inertia_equivalent_shapes.
-  // √( (2*s*a)² + (2*s*b)² + (2*s*c)² ) = √3 * max_dimension
-  // 2 * s * √( a² + b² + c²) = √3 * max_dimension
-  // 2 * s = √[ 3 / (a² + b² + c²)] * max_dimension
-  const double s2 = std::sqrt(3 / Vector3d(a, b, c).squaredNorm() ) *
-      SpatialInertia<double>::MaximumAllowableDimension();
-  double sf = 1.0001 * s2;  // Scale factor is large enough for an exception.
-  M_BBcm_B = SpatialInertia<double>::SolidBoxWithMass(mass, sf*a, sf*b, sf*c);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name),
-    "[^]* has a minimum bounding box whose space-diagonal [^]*");
-
-  // Repeat the previous test, except use a slightly smaller scaling factor so
-  // no exception is thrown. This helps bracket the maximum allowable dimension.
-  sf = 0.9999 * s2;  // Scale factor is small enough to avoid exception.
-  M_BBcm_B = SpatialInertia<double>::SolidBoxWithMass(mass, sf*a, sf*b, sf*c);
-  DRAKE_EXPECT_NO_THROW(
-    M_BBcm_B.ThrowIfAssociatedBodyIsTooLarge(function_name, body_name));
+  // Verify CalcMinimumPhysicalLength() returns the length of the space-diagonal
+  // of the minimum bounding box (i.e., √[(2*a)² + (2*b)² + (2*c)²] = 390 m).
+  space_diagonal = M_BBcm_B.CalcMinimumPhysicalLength();
+  EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
 }
 
 }  // namespace
