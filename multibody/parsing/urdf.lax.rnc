@@ -34,8 +34,16 @@ grammar {
          DrakeBallConstraint* &
          DrakeJoint* &
          DrakeLinearBushingRpy* &
-         DrakeCollisionFilterGroup*)
+         DrakeCollisionFilterGroup* &
+         Gazebo* &
+         Force*)
    }
+
+   # This appears to be a commonly used bullet extension.
+   Force = element force_element { Anything }
+
+   # Documented extension back door.
+   Gazebo = element gazebo { Anything }
 
    # TODO(#20837): Frame is a legacy Drake extenstion that is not properly
    # namespaced.
@@ -73,7 +81,7 @@ grammar {
    LinkE = element link {
       (Name, DrakeIgnoreTrue, AnyE) |
       (Name, DrakeIgnoreFalse?,
-         # The link@type attribute is seen in the urdf.xsd, but not documented
+         # The link@type attribut is see in the urdf.xsd, but not documented
          # elsewhere.
          Type?,
       (Inertial? & Visual* & Collision* & SelfCollisionChecking*))
@@ -90,6 +98,8 @@ grammar {
    Dynamics = element dynamics {
       attribute damping { text }?,
       attribute friction { text }?,
+      # Paleo-Drake extension; now ignored.
+      attribute coulomb_window { text }?
    }
    Limit = element limit {
       attribute lower { text }?,
@@ -103,6 +113,9 @@ grammar {
       attribute multiplier { text }?,
       attribute offset { text }?
    }
+   # Drake ignores these, so don't police them here.
+   SafetyController = element safety_controller { Anything }
+   Calibration = element calibration { Anything }
 
    Inertial = element inertial {
       # The URDF language reference marks the mass and inertia tags as
@@ -191,5 +204,6 @@ grammar {
 
    # Patterns for things we pass over in silence.
    Anything = ( element * { Anything } | attribute * { text } | text )*
+   AnyA = ( attribute * { Anything } )*
    AnyE = ( element * { Anything } )*
 }
