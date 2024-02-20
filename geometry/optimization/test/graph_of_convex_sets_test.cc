@@ -1164,8 +1164,8 @@ TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
   const float kTol = 1e-6;
   EXPECT_GE(res[0] * res[1] + kTol,
             std::pow(res[2], 2) + std::pow(res[3], 2) + 1.0);
-  EXPECT_TRUE(res[0] >= 0);
-  EXPECT_TRUE(res[1] >= 0);
+  EXPECT_GE(res[0], 0);
+  EXPECT_GE(res[1], 0);
 }
 
 TEST_F(ThreeBoxes, SolveConvexRestriction) {
