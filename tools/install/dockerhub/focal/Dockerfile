@@ -13,12 +13,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/* \
 # Bake model data into the image up-front, instead of fetching on demand.
   && PYTHONPATH=/opt/drake/lib/python3.8/site-packages python3 -c \
-    'from pydrake.all import PackageMap; PackageMap().GetPath("drake_models")' \
-  && mv /opt/drake/bin/drake-visualizer /opt/drake/bin/drake-visualizer.image
-RUN printf '#!/bin/bash\n \
-echo "drake-visualizer is not supported on Docker containers.\n\
-Although not guaranteed to run, the executable is available to try as-is:\n\
-/opt/drake/bin/drake-visualizer.image"' > /opt/drake/bin/drake-visualizer\
-  && chmod a+x /opt/drake/bin/drake-visualizer
+    'from pydrake.all import PackageMap; PackageMap().GetPath("drake_models")'
 ENV PATH="/opt/drake/bin:${PATH}" \
   PYTHONPATH="/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}"
