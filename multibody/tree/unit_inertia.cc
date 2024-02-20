@@ -273,7 +273,8 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
     double inertia_shape_factor) const {
   DRAKE_THROW_UNLESS(inertia_shape_factor > 0 && inertia_shape_factor <= 1);
   // The formulas below are derived for a shape D whose principal unit moments
-  // of inertia Gmin, Gmed, Gmax about Dcm (D's center of mass) have the form:
+  // of inertia Gmin, Gmed, Gmax about Dcm (D's center of mass) have the form
+  // (e.g., where a, b, c are ½ lengths of boxes or semi-axes of ellipsoids),
   // Gmin = inertia_shape_factor * (b² + c²)
   // Gmed = inertia_shape_factor * (a² + c²)
   // Gmax = inertia_shape_factor * (a² + b²)
@@ -303,6 +304,17 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);
   return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
+
+  // Useful observations: lmax² + lmed² + lmin² = coef * (Gmin + Gmed + Gmax)
+  // and Gmin + Gmed + Gmax = Trace(this) is a unit inertia invariant meaning
+  // Trace(this) = Gxx + Gyy + Gzz = Gmin + Gmed + Gmax is invariant to the
+  // expressed-in frame for this unit inertia. Hence if all that is needed is
+  // the square of the length of the bounding-box's space-diagonal, it can be
+  // efficiently computed without Gmin, Gmed, Gmax (no eigenvalue problem) as
+  // space-diagonal² = (2 lmax)² + (2 lmed)² + (2 lmin)²
+  //                 = 4 (lmax² + lmed² + lmin²).
+  //                 = 4 * coef * (Gxx + Gyy + Gzz)
+  //                 = 4 * 0.5 / inertia_shape_factor * Trace(this)
 }
 
 
