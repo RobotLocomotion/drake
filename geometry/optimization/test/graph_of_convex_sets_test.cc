@@ -1141,6 +1141,33 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
   CheckConvexRestriction(result);
 }
 
+TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
+  // x_u[0] * x_u[1] >= x_v[0] ** 2 + x_v[1] ** 2 + 1
+  Eigen::MatrixXd A(5, 4);
+  A.topLeftCorner(4, 4) = Eigen::MatrixXd::Identity(4, 4);
+  A.bottomLeftCorner(1, 4).setZero();
+  Eigen::VectorXd b(5);
+  b << 0.0, 0.0, 0.0, 0.0, 1.0;
+
+  auto constraint =
+      std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
+  e_on_->AddConstraint(
+      solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddConstraint(
+      solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Eigen::VectorXd res(4);
+  res << source_->GetSolution(result), target_->GetSolution(result);
+  const float kTol = 1e-6;
+  EXPECT_GE(res[0] * res[1] + kTol,
+            std::pow(res[2], 2) + std::pow(res[3], 2) + 1.0);
+  EXPECT_TRUE(res[0] >= 0);
+  EXPECT_TRUE(res[1] >= 0);
+}
+
 TEST_F(ThreeBoxes, SolveConvexRestriction) {
   const Vector2d b{.5, .3};
 
