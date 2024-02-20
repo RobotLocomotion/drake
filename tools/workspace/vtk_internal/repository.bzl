@@ -176,6 +176,7 @@ def vtk_internal_repository(
         sha256 = "eb8696d2622a79603055279ead20674772ce351565794cd7ce9c5f6bc1b44426",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/camera_copy.patch",
             ":patches/common_core_version.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",

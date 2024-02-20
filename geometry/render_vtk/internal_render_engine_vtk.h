@@ -8,10 +8,8 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkActor.h>                // vtkRenderingCore
-#include <vtkAutoInit.h>             // vtkCommonCore
 #include <vtkCommand.h>              // vtkCommonCore
 #include <vtkImageExport.h>          // vtkIOImage
-#include <vtkLight.h>                // vtkRenderingCore
 #include <vtkNew.h>                  // vtkCommonCore
 #include <vtkPolyDataAlgorithm.h>    // vtkCommonExecutionModel
 #include <vtkRenderWindow.h>         // vtkRenderingCore
@@ -29,24 +27,10 @@
 #include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
-#ifndef DRAKE_DOXYGEN_CXX
-// This, and the ModuleInitVtkRenderingOpenGL2, provide the basis for enabling
-// VTK's OpenGL2 infrastructure.
-VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
-#endif
-
 namespace drake {
 namespace geometry {
 namespace render_vtk {
 namespace internal {
-
-#ifndef DRAKE_DOXYGEN_CXX
-struct ModuleInitVtkRenderingOpenGL2 {
-  ModuleInitVtkRenderingOpenGL2() {
-    VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
-  }
-};
-#endif
 
 // A callback class for setting uniform variables used in shader programs,
 // namely z_near and z_far, when vtkCommand::UpdateShaderEvent is caught.
@@ -88,8 +72,7 @@ enum ImageType {
 
 /* See documentation of MakeRenderEngineVtk().  */
 class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
-                                        private ShapeReifier,
-                                        private ModuleInitVtkRenderingOpenGL2 {
+                                        private ShapeReifier {
  public:
   /* @name Does not allow copy, move, or assignment  */
   //@{
