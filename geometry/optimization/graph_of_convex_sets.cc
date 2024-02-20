@@ -750,6 +750,14 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
         }
       }
     }
+  } else if (RotatedLorentzConeConstraint* rc =
+                 dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
+    // z = Ax + b => z = Ax + b phi = [b A] [phi; x]
+    MatrixXd A_cone = MatrixXd::Zero(rc->A().rows(), vars.size());
+    A_cone.block(0, 0, rc->A().rows(), 1) = rc->b();
+    A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
+    prog->AddRotatedLorentzConeConstraint(A_cone,
+                                          VectorXd::Zero(rc->A().rows()), vars);
   } else {
     throw std::runtime_error(
         fmt::format("ShortestPathProblem::Edge does not support this "
