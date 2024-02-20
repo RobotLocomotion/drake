@@ -306,7 +306,7 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
 
   // Proof that the space-diagonal of the minimum bounding box can be calculated
-  // directly from a unit inertia, without calculating the minimum bounding
+  // directly from a unit inertia, without calculating the minimum bounding box
   // (which requires a numerical eigenvalue solution).
   // 1. From above: lmax² + lmed² + lmin² = coef * (Gmin + Gmed + Gmax)
   // 2. Gmin + Gmed + Gmax = Trace(this) is a unit inertia invariant meaning
