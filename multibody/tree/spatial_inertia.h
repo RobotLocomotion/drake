@@ -657,15 +657,15 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  // Returns the length of the space-diagonal of the minimum bounding box for
-  // `this` spatial inertia. This length can help assess whether the physical
-  // object associated with this spatial inertia has a reasonable size.
-  // @note For comparable sizes, the world's largest aircraft carrier has a
-  // space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m, the
-  // world's largest land vehicle (Bagger bucket-wheel excavator) ≈ 224 m long,
-  // the largest human object in space (International Space Station) which is
-  // 109 m long and 75 m wide, the USA space shuttle (≈ 37 m long) and 15.2 m
-  // Canadarm, and the world's largest humanoid robot (Mononofu ≈ 8.5 m tall).
+  /// Returns the length of the space-diagonal of the minimum bounding box for
+  /// `this` spatial inertia. This length can help assess whether the physical
+  /// object associated with this spatial inertia has a reasonable size.
+  /// @note For comparable sizes, the world's largest aircraft carrier has a
+  /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m, the
+  /// world's largest land vehicle (Bagger bucket-wheel excavator) ≈ 224 m long,
+  /// the largest human object in space (International Space Station) which is
+  /// 109 m long and 75 m wide, the USA space shuttle (≈ 37 m long) and 15.2 m
+  /// Canadarm, and the world's largest humanoid robot (Mononofu ≈ 8.5 m tall).
   T CalcMinimumPhysicalLength() const;
   ///@}
 
