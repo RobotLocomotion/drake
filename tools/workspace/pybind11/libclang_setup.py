@@ -37,15 +37,8 @@ def add_library_paths(parameters=None):
                 parameters.append('-isysroot')
                 parameters.append(sdkroot)
     elif platform.system() == 'Linux':
-        # By default we expect Clang 14 to be installed, but on Ubuntu 20.04
-        # we'll use Clang 12 (because Clang 14 isn't packaged).
+        # We expect Clang 14 to be installed.
         version = 14
-        completed_process = subprocess.run(['lsb_release', '-sr'],
-                                           stdout=subprocess.PIPE,
-                                           encoding='utf-8')
-        if completed_process.returncode == 0:
-            if completed_process.stdout.strip() == '20.04':
-                version = 12
         arch = platform.machine()
         library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
     if not os.path.exists(library_file):

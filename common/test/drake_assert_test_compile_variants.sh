@@ -28,7 +28,7 @@ if [[ ! -e ./drake ]]; then
 fi
 
 # Confirm that it compiles successfully, whether or not assertions are enabled.
-TESTING_CXXFLAGS="$BAZEL_CC_FLAGS -std=c++17 -I . \
+TESTING_CXXFLAGS="$BAZEL_CC_FLAGS -std=c++20 -I . \
     -c $drake_assert_test_compile_cc \
     -o /dev/null"
 "$BAZEL_CC" $TESTING_CXXFLAGS

@@ -133,7 +133,7 @@ def _impl(repository_ctx):
     else:
         # We do not fail outright here since even though we do not officially
         # support them, Drake may happily compile with new enough versions of
-        # compilers that are compatible with GNU flags such as -std=c++17.
+        # compilers that are compatible with GNU flags such as -std=c++20.
 
         print("WARNING: {} is NOT a supported C/C++ compiler.".format(
             compiler_id,

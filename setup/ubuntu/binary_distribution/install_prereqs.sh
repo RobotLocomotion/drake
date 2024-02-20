@@ -66,8 +66,8 @@ apt-get install ${maybe_yes} --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
-if ! [[ "${codename}" =~ (focal|jammy|noble) ]]; then
-  echo 'ERROR: This script requires Ubuntu 20.04 (Focal) or 22.04 (Jammy) or 24.04 (Noble)' >&2
+if ! [[ "${codename}" =~ (jammy|noble) ]]; then
+  echo 'ERROR: This script requires Ubuntu 22.04 (Jammy) or 24.04 (Noble)' >&2
   exit 2
 fi
 
