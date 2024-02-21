@@ -315,8 +315,8 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::GraphOfConvexSets::Edge& e) const;
 
     GcsTrajectoryOptimization& traj_opt_;
-    const int from_subgraph_order_;
-    const int to_subgraph_order_;
+    const Subgraph& from_subgraph_;
+    const Subgraph& to_subgraph_;
 
     trajectories::BezierCurve<double> ur_trajectory_;
     trajectories::BezierCurve<double> vr_trajectory_;
@@ -413,6 +413,13 @@ class GcsTrajectoryOptimization final {
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
                        int order, double h_min = 0, double h_max = 20,
                        std::string name = "");
+
+  /** Remove a subgraph and all associated edges found in the subgraph and
+  to and from other subgraphs.
+  @pre The subgraph must have been created from a call to AddRegions() on this
+    object.
+  */
+  void RemoveSubgraph(const Subgraph& subgraph);
 
   /** Connects two subgraphs with directed edges.
   @param from_subgraph is the subgraph to connect from. Must have been created
@@ -574,6 +581,12 @@ class GcsTrajectoryOptimization final {
   Here we sum the total number of variable appearances in our costs and
   constraints as a rough approximation of the complexity of the subproblems. */
   double EstimateComplexity() const;
+
+  /** A getter to the subgraphs created by a call to AddRegions() */
+  std::vector<Subgraph*> GetSubgraphs() const;
+
+  /** A getter to the edges created by a call to AddEdge() */
+  std::vector<EdgesBetweenSubgraphs*> GetEdgesBetweenSubgraphs() const;
 
   /** Getter for the underlying GraphOfConvexSets. This is intended primarily
   for inspecting the resulting programs. */
