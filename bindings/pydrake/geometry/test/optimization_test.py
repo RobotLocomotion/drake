@@ -622,6 +622,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.termination_threshold = 0.1
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
+        options.mixing_steps = 20
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         options.bounding_region = mut.HPolyhedron.MakeBox(
             lb=[-6, -6, -6], ub=[6, 6, 6])
