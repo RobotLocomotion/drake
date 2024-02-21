@@ -570,6 +570,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "meshcat_time_test",
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        ":meshcat",
+    ],
+)
+
+drake_cc_googletest(
     name = "meshcat_file_storage_internal_test",
     tags = ["cpu:2"],
     deps = [
