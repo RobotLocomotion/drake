@@ -80,6 +80,22 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   EXPECT_EQ(traj.cols(), 1);
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  // If we would like to find another path for a different goal, we can remove
+  // the target subgraph and add a new one while keeping the remaining graph.
+  gcs.RemoveSubgraph(target);
+  Vector2d new_goal(0.5, -0.5);
+  auto& new_target = gcs.AddRegions(MakeConvexSets(Point(new_goal)), 0);
+  gcs.AddEdges(regions, new_target);
+
+  auto [new_traj, new_result] = gcs.SolvePath(source, new_target);
+  EXPECT_TRUE(new_result.is_success());
+  EXPECT_EQ(new_traj.rows(), 2);
+  EXPECT_EQ(new_traj.cols(), 1);
+  EXPECT_TRUE(
+      CompareMatrices(new_traj.value(new_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(new_traj.value(new_traj.end_time()), new_goal, 1e-6));
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
@@ -337,6 +353,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   const double fastest_path_duration =
       fastest_path_traj.end_time() - fastest_path_traj.start_time();
   EXPECT_LT(fastest_path_duration, shortest_path_duration);
+
+  // Oh oh, it has been raining a lot! The street has been flooded and Bob
+  // can't take the scooter. We can remove the scooter regions from the graph
+  // and solve the path again.
+  gcs.RemoveSubgraph(scooter_regions);
+
+  auto [rain_path_traj, rain_path_result] = gcs.SolvePath(source, target);
+  EXPECT_TRUE(rain_path_result.is_success());
+  EXPECT_EQ(rain_path_traj.rows(), 2);
+  EXPECT_EQ(rain_path_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(rain_path_traj.value(rain_path_traj.start_time()),
+                              start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(rain_path_traj.value(rain_path_traj.end_time()),
+                              goal, 1e-6));
+
+  // Since the scooter regions have been removed, Bob can only walk through the
+  // through the gravel. Thus we expect the number of segments in the trajectory
+  // to be 1 (one for the walking_regions).
+  EXPECT_EQ(rain_path_traj.get_number_of_segments(), 1);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
@@ -454,6 +489,37 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   EXPECT_TRUE(
       CompareMatrices(traj_vel->value(stopped_at_ducks_time + kDuckDelay),
                       Vector2d(0, 0), 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, RemoveSubgraph) {
+  /*Ensure that removing a subgraph actually removes vertices/edges in the gcs*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& graph1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  auto& graph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  gcs.AddEdges(graph1, graph2);
+
+  // We expect four vertices, since there are two regions per subgraph.
+  const int kExpectedVertices = 4;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Vertices().size(), kExpectedVertices);
+  // The regions in the subgraph are connected via two edges and since they
+  // overlap, another four edges are added between the subgraphs.
+  const int kExpectedEdges = 2 * 2 + 4;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), kExpectedEdges);
+
+  // After removing both subgraphs, we expect no vertices or edges in the gcs.
+  gcs.RemoveSubgraph(graph1);
+  gcs.RemoveSubgraph(graph2);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Vertices().size(), 0);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), 0);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidPositions) {

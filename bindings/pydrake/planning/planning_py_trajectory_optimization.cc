@@ -438,6 +438,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py_rvp::reference_internal, py::arg("regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
             py::arg("name") = "", cls_doc.AddRegions.doc_5args)
+        .def("RemoveSubgraph", &Class::RemoveSubgraph, py::arg("subgraph"),
+            cls_doc.RemoveSubgraph.doc)
         .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
             py::arg("from_subgraph"), py::arg("to_subgraph"),
             py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)

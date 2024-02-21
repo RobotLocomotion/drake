@@ -320,6 +320,18 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(restricted_traj_start, start, atol=1e-6)
         np.testing.assert_allclose(restricted_traj_end, end, atol=1e-6)
 
+        # Test that removing all subgraphs, removes all vertices and edges.
+        self.assertEqual(len(gcs.graph_of_convex_sets().Vertices()),
+                         len(source.Vertices())
+                         + len(regions.Vertices())
+                         + len(target.Vertices()))
+        gcs.RemoveSubgraph(source)
+        gcs.RemoveSubgraph(regions)
+        gcs.RemoveSubgraph(target)
+        # We expect the underlying gcs problem to be empty.
+        self.assertFalse(len(gcs.graph_of_convex_sets().Vertices()))
+        self.assertFalse(len(gcs.graph_of_convex_sets().Edges()))
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
