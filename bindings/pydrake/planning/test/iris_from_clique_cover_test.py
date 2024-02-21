@@ -13,7 +13,6 @@ import scipy.sparse as sp
 import scipy
 
 
-
 class TestIrisFromCliqueCover(unittest.TestCase):
     def _make_robot_diagram(self):
         # Code taken from
