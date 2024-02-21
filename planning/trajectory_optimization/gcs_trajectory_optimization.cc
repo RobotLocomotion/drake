@@ -466,8 +466,8 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt)
     : traj_opt_(*traj_opt),
-      from_subgraph_order_(from_subgraph.order()),
-      to_subgraph_order_(to_subgraph.order()) {
+      from_subgraph_(from_subgraph),
+      to_subgraph_(to_subgraph) {
   // Formulate edge costs and constraints.
   if (subspace != nullptr) {
     if (subspace->ambient_dimension() != num_positions()) {
@@ -481,9 +481,9 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   ur_trajectory_ = BezierCurve<double>(
-      0, 1, MatrixXd::Zero(num_positions(), from_subgraph_order_ + 1));
+      0, 1, MatrixXd::Zero(num_positions(), from_subgraph_.order() + 1));
   vr_trajectory_ = BezierCurve<double>(
-      0, 1, MatrixXd::Zero(num_positions(), to_subgraph_order_ + 1));
+      0, 1, MatrixXd::Zero(num_positions(), to_subgraph_.order() + 1));
 
   // Zeroth order continuity constraints.
   //  ur_control.col(-1) == vr_control.col(0).
@@ -544,12 +544,12 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
         ConcatenateVariableRefList(
-            {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
+            {GetControlPointsU(*uv_edge).col(from_subgraph_.order()),
              GetControlPointsV(*uv_edge).col(0)})));
 
     if (subspace != nullptr) {
       // Add subspace constraints to the last control point of the u vertex.
-      const auto vars = GetControlPointsU(*uv_edge).col(from_subgraph_order_);
+      const auto vars = GetControlPointsU(*uv_edge).col(from_subgraph_.order());
 
       // subspace will either be a Point or HPolyhedron. We check if it's a
       // Point via the method ConvexSet::MaybeGetPoint(), which will return a
@@ -672,32 +672,32 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
   const Vector1d kVecInf = Vector1d::Constant(kInf);
   const Vector1d kVecZero = Vector1d::Zero();
 
-  if (from_subgraph_order_ == 0 && to_subgraph_order_ == 0) {
+  if (from_subgraph_.order() == 0 && to_subgraph_.order() == 0) {
     throw std::runtime_error(
         "Cannot add velocity bounds to a subgraph edges where both subgraphs "
         "have zero order.");
   }
 
-  if (from_subgraph_order_ > 0) {
+  if (from_subgraph_.order() > 0) {
     // Add velocity bounds to the last control point of the u set.
     // See BezierCurve::AsLinearInControlPoints().
-    solvers::VectorXDecisionVariable vars(from_subgraph_order_ + 2);
+    solvers::VectorXDecisionVariable vars(from_subgraph_.order() + 2);
     SparseMatrix<double> m = ur_trajectory_.AsLinearInControlPoints(1)
-                                 .col(from_subgraph_order_ - 1)
+                                 .col(from_subgraph_.order() - 1)
                                  .transpose();
     SparseMatrix<double> H_lb(
         1 /* we are only constraining the last point in the u set */,
-        from_subgraph_order_ +
+        from_subgraph_.order() +
             2 /* number of control points for one row of r(s) + 1*/);
-    H_lb.leftCols(from_subgraph_order_ + 1) = m;
+    H_lb.leftCols(from_subgraph_.order() + 1) = m;
     SparseMatrix<double> H_ub = H_lb;
     for (int i = 0; i < num_positions(); ++i) {
       // Lower bound.  0 <= ṙ(s).row(i) - h * lb <= inf.
-      H_lb.coeffRef(0, from_subgraph_order_ + 1) = -lb[i];
+      H_lb.coeffRef(0, from_subgraph_.order() + 1) = -lb[i];
       const auto lb_constraint =
           std::make_shared<LinearConstraint>(H_lb, kVecZero, kVecInf);
       // Upper bound. -inf <= ṙ(s).row(i) - h * ub <= 0.
-      H_ub.coeffRef(0, from_subgraph_order_ + 1) = -ub[i];
+      H_ub.coeffRef(0, from_subgraph_.order() + 1) = -ub[i];
       const auto ub_constraint =
           std::make_shared<LinearConstraint>(H_ub, -kVecInf, kVecZero);
       for (Edge* edge : edges_) {
@@ -710,25 +710,25 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
     }
   }
 
-  if (to_subgraph_order_ > 0) {
+  if (to_subgraph_.order() > 0) {
     // Add velocity bounds to the first control point of the v set.
     // See Subgraph::AddVelocityBounds().
-    solvers::VectorXDecisionVariable vars(to_subgraph_order_ + 2);
+    solvers::VectorXDecisionVariable vars(to_subgraph_.order() + 2);
     SparseMatrix<double> m =
         vr_trajectory_.AsLinearInControlPoints(1).col(0).transpose();
     SparseMatrix<double> H_lb(
         1 /* we are only constraining the last point in the u set */,
-        to_subgraph_order_ +
+        to_subgraph_.order() +
             2 /* number of control points for one row of r(s) + 1*/);
-    H_lb.leftCols(to_subgraph_order_ + 1) = m;
+    H_lb.leftCols(to_subgraph_.order() + 1) = m;
     SparseMatrix<double> H_ub = H_lb;
     for (int i = 0; i < num_positions(); ++i) {
       // Lower bound.  0 <= ṙ(s).row(i) - h * lb <= inf.
-      H_lb.coeffRef(0, to_subgraph_order_ + 1) = -lb[i];
+      H_lb.coeffRef(0, to_subgraph_.order() + 1) = -lb[i];
       const auto lb_constraint =
           std::make_shared<LinearConstraint>(H_lb, kVecZero, kVecInf);
       // Upper bound. -inf <= ṙ(s).row(i) - h * ub <= 0.
-      H_ub.coeffRef(0, to_subgraph_order_ + 1) = -ub[i];
+      H_ub.coeffRef(0, to_subgraph_.order() + 1) = -ub[i];
       const auto ub_constraint =
           std::make_shared<LinearConstraint>(H_ub, -kVecInf, kVecZero);
       for (Edge* edge : edges_) {
@@ -751,8 +751,8 @@ void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
     throw std::runtime_error("Order must be greater than or equal to 1.");
   }
 
-  if (from_subgraph_order_ < continuity_order ||
-      to_subgraph_order_ < continuity_order) {
+  if (from_subgraph_.order() < continuity_order ||
+      to_subgraph_.order() < continuity_order) {
     throw std::runtime_error(
         "Cannot add continuity constraint to a subgraph edge where both "
         "subgraphs order are not greater than or equal to the requested "
@@ -763,13 +763,13 @@ void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
   // control point of the u set and the first control point of the v set in an
   // edge. urdot_control.col(order-continuity_order) - vrdot_control.col(0) = 0,
   // The latter can be achieved by getting the control point matrix M.
-  // A = [M.col(from_subgraph_order - continuity_order).T, -M.col(0).T],
+  // A = [M.col(from_subgraph.order() - continuity_order).T, -M.col(0).T],
   // x = [u_controls.row(i); v_controls.row(i)].
   // Ax = 0,
 
   SparseMatrix<double> Mu_transpose =
       ur_trajectory_.AsLinearInControlPoints(continuity_order)
-          .col(from_subgraph_order_ - continuity_order)
+          .col(from_subgraph_.order() - continuity_order)
           .transpose();
 
   SparseMatrix<double> Mv_transpose =
@@ -783,10 +783,10 @@ void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
   // The A matrix will have one row since sparsity allows us to enforce the
   // continuity in each dimension. The number of columns matches the number of
   // control points for one row of r_u(s) and r_v(s).
-  SparseMatrix<double> A(1,
-                         (from_subgraph_order_ + 1) + (to_subgraph_order_ + 1));
-  A.leftCols(from_subgraph_order_ + 1) = Mu_transpose;
-  A.rightCols(to_subgraph_order_ + 1) = -Mv_transpose;
+  SparseMatrix<double> A(
+      1, (from_subgraph_.order() + 1) + (to_subgraph_.order() + 1));
+  A.leftCols(from_subgraph_.order() + 1) = Mu_transpose;
+  A.rightCols(to_subgraph_.order() + 1) = -Mv_transpose;
 
   const auto continuity_constraint =
       std::make_shared<LinearEqualityConstraint>(A, VectorXd::Zero(1));
@@ -805,29 +805,31 @@ Eigen::Map<const MatrixX<symbolic::Variable>>
 EdgesBetweenSubgraphs::GetControlPointsU(
     const geometry::optimization::GraphOfConvexSets::Edge& e) const {
   DRAKE_DEMAND(e.xu().size() ==
-               num_positions() * (from_subgraph_order_ + 1) + 1);
+               num_positions() * (from_subgraph_.order() + 1) + 1);
   return Eigen::Map<const MatrixX<symbolic::Variable>>(
-      e.xu().data(), num_positions(), from_subgraph_order_ + 1);
+      e.xu().data(), num_positions(), from_subgraph_.order() + 1);
 }
 
 Eigen::Map<const MatrixX<symbolic::Variable>>
 EdgesBetweenSubgraphs::GetControlPointsV(
     const geometry::optimization::GraphOfConvexSets::Edge& e) const {
-  DRAKE_DEMAND(e.xv().size() == num_positions() * (to_subgraph_order_ + 1) + 1);
+  DRAKE_DEMAND(e.xv().size() ==
+               num_positions() * (to_subgraph_.order() + 1) + 1);
   return Eigen::Map<const MatrixX<symbolic::Variable>>(
-      e.xv().data(), num_positions(), to_subgraph_order_ + 1);
+      e.xv().data(), num_positions(), to_subgraph_.order() + 1);
 }
 
 symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingU(
     const geometry::optimization::GraphOfConvexSets::Edge& e) const {
   DRAKE_DEMAND(e.xu().size() ==
-               num_positions() * (from_subgraph_order_ + 1) + 1);
+               num_positions() * (from_subgraph_.order() + 1) + 1);
   return e.xu()(e.xu().size() - 1);
 }
 
 symbolic::Variable EdgesBetweenSubgraphs::GetTimeScalingV(
     const geometry::optimization::GraphOfConvexSets::Edge& e) const {
-  DRAKE_DEMAND(e.xv().size() == num_positions() * (to_subgraph_order_ + 1) + 1);
+  DRAKE_DEMAND(e.xv().size() ==
+               num_positions() * (to_subgraph_.order() + 1) + 1);
   return e.xv()(e.xv().size() - 1);
 }
 
@@ -908,6 +910,50 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                std::move(name), edge_offsets);
 }
 
+void GcsTrajectoryOptimization::RemoveSubgraph(const Subgraph& subgraph) {
+  // Check if the subgraph is in the list of subgraphs.
+  if (!std::any_of(subgraphs_.begin(), subgraphs_.end(),
+                   [&](const std::unique_ptr<Subgraph>& s) {
+                     return s.get() == &subgraph;
+                   })) {
+    throw std::runtime_error(fmt::format(
+        "Subgraph {} is not registered with `this`", subgraph.name()));
+  }
+
+  // Remove the underlying edges between subgraphs from the gcs problem.
+  for (const std::unique_ptr<EdgesBetweenSubgraphs>& subgraph_edge :
+       subgraph_edges_) {
+    if (&subgraph_edge->from_subgraph_ == &subgraph ||
+        &subgraph_edge->to_subgraph_ == &subgraph) {
+      for (Edge* edge : subgraph_edge->edges_) {
+        gcs_.RemoveEdge(edge);
+      }
+    }
+  }
+
+  // Remove the edges between subgraphs objects.
+  subgraph_edges_.erase(
+      std::remove_if(subgraph_edges_.begin(), subgraph_edges_.end(),
+                     [&](const std::unique_ptr<EdgesBetweenSubgraphs>& e) {
+                       return &e->from_subgraph_ == &subgraph ||
+                              &e->to_subgraph_ == &subgraph;
+                     }),
+      subgraph_edges_.end());
+
+  // Remove all vertices in the subgraph.
+  for (Vertex* v : subgraph.vertices_) {
+    // This will also remove all edges connected to the vertex.
+    gcs_.RemoveVertex(v);
+  }
+
+  // Remove the subgraph from the list of subgraphs.
+  subgraphs_.erase(std::remove_if(subgraphs_.begin(), subgraphs_.end(),
+                                  [&](const std::unique_ptr<Subgraph>& s) {
+                                    return s.get() == &subgraph;
+                                  }),
+                   subgraphs_.end());
+}
+
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace) {
@@ -916,8 +962,8 @@ EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
 
   // Add global continuity constraints to the edges between subgraphs.
   for (int continuity_order : global_continuity_constraints_) {
-    if (subgraph_edge->from_subgraph_order_ >= continuity_order &&
-        subgraph_edge->to_subgraph_order_ >= continuity_order) {
+    if (subgraph_edge->from_subgraph_.order() >= continuity_order &&
+        subgraph_edge->to_subgraph_.order() >= continuity_order) {
       subgraph_edge->AddPathContinuityConstraints(continuity_order);
     }
   }
@@ -982,8 +1028,8 @@ void GcsTrajectoryOptimization::AddPathContinuityConstraints(
   // Add continuity constraints to the edges between subgraphs.
   for (std::unique_ptr<EdgesBetweenSubgraphs>& subgraph_edge :
        subgraph_edges_) {
-    if (subgraph_edge->from_subgraph_order_ >= continuity_order &&
-        subgraph_edge->to_subgraph_order_ >= continuity_order) {
+    if (subgraph_edge->from_subgraph_.order() >= continuity_order &&
+        subgraph_edge->to_subgraph_.order() >= continuity_order) {
       subgraph_edge->AddPathContinuityConstraints(continuity_order);
     }
   }
@@ -1193,6 +1239,25 @@ double GcsTrajectoryOptimization::EstimateComplexity() const {
     }
   }
   return result;
+}
+
+std::vector<Subgraph*> GcsTrajectoryOptimization::GetSubgraphs() const {
+  std::vector<Subgraph*> subgraphs;
+  subgraphs.reserve(subgraphs_.size());
+  for (const auto& subgraph : subgraphs_) {
+    subgraphs.push_back(subgraph.get());
+  }
+  return subgraphs;
+}
+
+std::vector<EdgesBetweenSubgraphs*>
+GcsTrajectoryOptimization::GetEdgesBetweenSubgraphs() const {
+  std::vector<EdgesBetweenSubgraphs*> subgraph_edges;
+  subgraph_edges.reserve(subgraph_edges_.size());
+  for (const auto& edge : subgraph_edges_) {
+    subgraph_edges.push_back(edge.get());
+  }
+  return subgraph_edges;
 }
 
 trajectories::CompositeTrajectory<double>
