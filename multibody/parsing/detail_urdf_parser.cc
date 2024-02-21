@@ -1141,14 +1141,16 @@ bool CheckDocumentAgainstUrdfSchema(
     return CheckDocumentFileAgainstRncSchemaFile(
         workspace.diagnostic,
         schema_file,
-        data_source.GetAbsolutePath());
+        data_source.GetAbsolutePath(),
+        Strictness::kLax);
   } else {
     DRAKE_ASSERT(data_source.IsContents());
     return CheckDocumentStringAgainstRncSchemaFile(
         workspace.diagnostic,
         schema_file,
         data_source.contents(),
-        data_source.GetStem() + ".urdf");
+        data_source.GetStem() + ".urdf",
+        Strictness::kLax);
   }
   DRAKE_UNREACHABLE();
 }

@@ -64,10 +64,8 @@ grammar {
       Parent &
       Child &
       Axis? &
-      Calibration? &
       Dynamics? &
       Limit? &
-      SafetyController? &
       Mimic?
 
    LinkE = element link {
@@ -89,7 +87,7 @@ grammar {
    Axis = element axis { attribute xyz { text }? }
    Dynamics = element dynamics {
       attribute damping { text }?,
-      attribute friction { text }?,
+      attribute friction { text }?
    }
    Limit = element limit {
       attribute lower { text }?,

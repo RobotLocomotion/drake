@@ -39,8 +39,23 @@ namespace {
 
 // Reprocesses errors and warnings from the rnv library to a diagnostic policy.
 bool ReplayDiagnostics(const DiagnosticPolicy& diagnostic,
-                       const std::vector<std::string>& rnv_messages) {
+                       const std::vector<std::string>& rnv_messages,
+                       Strictness strictness) {
   bool success = true;
+
+  // Allow adjustments of severity based on strictness.
+  enum class Severity { Error, Warning } severity = Severity::Error;
+  auto adjusted_severity = [&severity, &strictness]() {
+    switch (strictness) {
+      case Strictness::kLax:
+        return Severity::Warning;
+      case Strictness::kStrict:
+        return Severity::Error;
+      case Strictness::kNormal:
+        return severity;
+    }
+    DRAKE_UNREACHABLE();
+  };
 
   // Since the library issues informative multiline comments, group them here
   // into multiline Error() or Warning() events.
@@ -50,10 +65,10 @@ bool ReplayDiagnostics(const DiagnosticPolicy& diagnostic,
 
   // These hold the work-in-progress message.
   DiagnosticDetail detail;
-  enum class Severity { Error, Warning } severity = Severity::Error;
-  auto flush = [&diagnostic, &success, &detail, &severity]() {
+  auto flush = [&diagnostic, &success, &detail, &severity, &strictness,
+                &adjusted_severity]() {
     if (!detail.message.empty()) {
-      if (severity == Severity::Error) {
+      if (adjusted_severity() == Severity::Error) {
         diagnostic.Error(detail);
         success = false;
       } else {
@@ -137,20 +152,22 @@ RnvGuard* RnvGuard::g_singleton = nullptr;
 
 bool CheckDocumentFileAgainstRncSchemaFile(
     const DiagnosticPolicy& diagnostic, const std::filesystem::path& rnc_schema,
-    const std::filesystem::path& document) {
+    const std::filesystem::path& document,
+    Strictness strictness) {
   const std::optional<std::string> contents = ReadFile(document);
   if (!contents) {
     diagnostic.Error(
         fmt::format("Could not open file '{}'", document.string()));
   }
-  return CheckDocumentStringAgainstRncSchemaFile(diagnostic, rnc_schema,
-                                                 *contents, document);
+  return CheckDocumentStringAgainstRncSchemaFile(
+      diagnostic, rnc_schema, *contents, document, strictness);
 }
 
 bool CheckDocumentStringAgainstRncSchemaFile(
     const DiagnosticPolicy& diagnostic, const std::filesystem::path& rnc_schema,
     const std::string& document_contents,
-    const std::string& document_filename) {
+    const std::string& document_filename,
+    Strictness strictness) {
   const std::string rnc_data = ReadFileOrThrow(rnc_schema);
   std::vector<std::string> rnv_messages;
   {
@@ -165,7 +182,7 @@ bool CheckDocumentStringAgainstRncSchemaFile(
     xcl_validate_memory(const_cast<char*>(document_contents.c_str()),
                         document_contents.size(), document_filename.c_str());
   }
-  return ReplayDiagnostics(diagnostic, rnv_messages);
+  return ReplayDiagnostics(diagnostic, rnv_messages, strictness);
 }
 
 }  // namespace internal

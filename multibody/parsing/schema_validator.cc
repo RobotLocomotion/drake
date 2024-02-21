@@ -35,18 +35,13 @@ int do_main(int argc, char* argv[]) {
 
   drake::log()->info("checking {} against {}", argv[2], argv[1]);
 
-  // We want to see all errors and warnings. This isn't the best answer,
-  // because it flattens everything into severity=warning.
   DiagnosticPolicy policy;
-  policy.SetActionForErrors([&policy] (const DiagnosticDetail& detail) {
-    policy.WarningDefaultAction(detail);
-  });
 
   try {
     std::filesystem::path schema(argv[1]);
     std::filesystem::path document(argv[2]);
     return !internal::CheckDocumentFileAgainstRncSchemaFile(
-        policy, schema, document);
+        policy, schema, document, internal::Strictness::kLax);
   } catch (const std::exception& e) {
     drake::log()->error(e.what());
     return EXIT_FAILURE;
