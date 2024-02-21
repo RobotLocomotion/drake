@@ -364,8 +364,7 @@ void TestCalcGradientVectorOfLinearField() {
   auto mesh_M = TestVolumeMesh<T>();
   const std::array<T, 4> f{2., 3., 4., 5.};
 
-  const Vector3<T> gradf_M =
-      mesh_M->CalcGradientVectorOfLinearField(f, 0);
+  const Vector3<T> gradf_M = mesh_M->CalcGradientVectorOfLinearField(f, 0);
 
   // The field f on the tetrahedral element e0 satisfies this equation with
   // coordinates expressed in M's frame:

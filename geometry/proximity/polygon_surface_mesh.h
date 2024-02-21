@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -305,7 +306,9 @@ class PolygonSurfaceMesh {
 
   template <typename FieldValue>
   std::optional<Vector3<FieldValue>> MaybeCalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 3>&, int) const { return {}; }
+      const std::array<FieldValue, 3>&, int) const {
+    return {};
+  }
 
   /** Updates the position of all vertices in the mesh. Each sequential triple
    in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a position

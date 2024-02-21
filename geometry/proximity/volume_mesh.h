@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -305,8 +306,7 @@ class VolumeMesh {
     return gradu_M;
   }
   template <typename FieldValue>
-  Vector3<promoted_numerical_t<T, FieldValue>>
-  CalcGradientVectorOfLinearField(
+  Vector3<promoted_numerical_t<T, FieldValue>> CalcGradientVectorOfLinearField(
       const std::array<FieldValue, 4>& field_value, int e) const {
     auto result = MaybeCalcGradientVectorOfLinearField(field_value, e);
     if (!result.has_value()) {
@@ -314,7 +314,6 @@ class VolumeMesh {
     }
     return result.value();
   }
-
 
   /** Transforms the vertices of this mesh from its initial frame M to the new
    frame N.
@@ -354,8 +353,8 @@ class VolumeMesh {
 };
 
 template <typename T>
-std::optional<Vector3<T>>
-VolumeMesh<T>::MaybeCalcGradBarycentric(int e, int i) const {
+std::optional<Vector3<T>> VolumeMesh<T>::MaybeCalcGradBarycentric(int e,
+                                                                  int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of

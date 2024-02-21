@@ -296,7 +296,6 @@ class Geometries final : public ShapeReifier {
    marked vanished. TBD XXX give definition */
   bool is_vanished(GeometryId id) const;
 
-
   /* Returns the representation of the soft geometry with the given `id`.
    @pre hydroelastic_type(id) returns HydroelasticType::kSoft.  */
   const SoftGeometry& soft_geometry(GeometryId id) const {

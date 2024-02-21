@@ -113,7 +113,10 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
     case HydroelasticType::kSoft: {
       auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
       if (hydro_geometry) {
-        if (hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
+        if (hydro_geometry->is_half_space()) {
+          AddGeometry(data.id, std::move(*hydro_geometry));
+        } else if (hydro_geometry->pressure_field()
+                       .is_gradient_field_degenerate()) {
           vanished_geometries_.insert(data.id);
         } else {
           AddGeometry(data.id, std::move(*hydro_geometry));
