@@ -10,6 +10,7 @@ of robots.
 
 #pragma once
 
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -71,7 +72,7 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 
-/* Function overload to take in a list of convex sets, and partition all so as
+/** Function overload to take in a list of convex sets, and partition all so as
 to respect the convexity radius. Every set must be bounded and have the same
 ambient dimension. Each entry in continuous_revolute_joints must be
 non-negative, less than num_positions, and unique.
@@ -86,6 +87,30 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const geometry::optimization::ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
+
+/** Computes the pairwise intersections of sets in convex_sets_A with sets in
+convex_sets_B. Returns a list of tuples, where each tuple describes an edge:
+the first entry is the index of the first set in convex_sets_A, the second
+entry is the index of the second set in convex_sets_B, and the third entry is
+the translation that is applied to the first convex set to align it with the
+second convex set, such that intersection can directly be checked without
+considering the 2π wraparound that may occur with continuous revolute joints.
+Each component of this translation will always be a multiple of 2π, so the
+translation of the set still represents the same configurations. To compute
+the pairwise intersections within convex_set_A, pass an empty vector for
+convex_sets_B. convex_sets_A must have at least one element, and
+continuous_revolute_joints must pass ThrowsForInvalidContinuousJointsList. */
+std::vector<std::tuple<int, int, Eigen::VectorXd>>
+PairwiseIntersectionsContinuousJoints(
+    ConvexSets convex_sets_A, ConvexSets convex_sets_B,
+    const std::vector<int>& continuous_revolute_joints);
+
+/** Convenience overload for pairwise intersections within a single convex set.
+*/
+std::vector<std::tuple<int, int, Eigen::VectorXd>>
+PairwiseIntersectionsContinuousJoints(
+    ConvexSets convex_sets_A,
+    const std::vector<int>& continuous_revolute_joints);
 
 }  // namespace optimization
 }  // namespace geometry
