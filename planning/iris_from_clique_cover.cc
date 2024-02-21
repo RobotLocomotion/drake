@@ -20,8 +20,6 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solver_options.h"
 
-#include <iostream>
-
 namespace drake {
 namespace planning {
 
@@ -143,7 +141,7 @@ void ComputeGreedyTruncatedCliqueCover(
     const graph_algorithms::MaxCliqueSolverBase& max_clique_solver,
     SparseMatrix<bool>* adjacency_matrix,
     AsyncQueue<VectorX<bool>>* computed_cliques) {
-  int last_clique_size = std::numeric_limits<int>::infinity();
+  int last_clique_size = std::numeric_limits<int>::max();
   int num_cliques = 0;
   int num_points_left = adjacency_matrix->cols();
   const int num_points_original = adjacency_matrix->cols();
@@ -207,7 +205,8 @@ std::queue<HPolyhedron> IrisWorker(
     Hyperellipsoid clique_ellipse;
     try {
       clique_ellipse = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
-          clique_points, options.rank_tol_for_lowner_john_ellipse);
+          clique_points,
+          options.rank_tol_for_minimum_volume_circumscribed_ellipsoid);
     } catch (const std::runtime_error& e) {
       log()->info(
           "Iris builder thread {} failed to compute an ellipse for a clique.",
@@ -313,32 +312,32 @@ double ApproximatelyComputeCoverage(
 
 std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
 MakeDefaultMaxCliqueSolver() {
-//  solvers::SolverOptions options;
-////  const int feasible_solution_limit = 25;
-////  options.SetOption(solvers::MosekSolver().id(),
-////                    "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", feasible_solution_limit);
-////  options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
-////                    feasible_solution_limit);
-//  return std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>(
-//      new planning::graph_algorithms::MaxCliqueSolverViaMip(std::nullopt,
-//                                                            options));
+  solvers::SolverOptions options;
+  const int feasible_solution_limit = 100;
+  options.SetOption(solvers::MosekSolver().id(),
+                    "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", feasible_solution_limit);
+  options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
+                    feasible_solution_limit);
   return std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>(
-      new planning::graph_algorithms::MaxCliqueSolverViaMip());
+      new planning::graph_algorithms::MaxCliqueSolverViaMip(std::nullopt,
+                                                            options));
 }
 
 }  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
-    const CollisionChecker& checker,
-    const IrisFromCliqueCoverOptions& options,
+    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
     RandomGenerator* generator, std::vector<HPolyhedron>* sets,
-    const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver_ptr) {
+    const planning::graph_algorithms::MaxCliqueSolverBase*
+        max_clique_solver_ptr) {
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);
 
   const HPolyhedron domain = options.iris_options.bounding_region.value_or(
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
                            checker.plant().GetPositionUpperLimits()));
+  DRAKE_THROW_UNLESS(domain.ambient_dimension() ==
+                     checker.plant().num_positions());
   Eigen::VectorXd last_polytope_sample = domain.UniformSample(generator);
 
   // Override options which are set too aggressively.
@@ -362,14 +361,12 @@ void IrisInConfigurationSpaceFromCliqueCover(
       default_max_clique_solver;
   // Only construct the default solver if max_clique_solver is null.
   if (max_clique_solver_ptr == nullptr) {
-    std::cout << "HIT HERE" << std::endl;
     default_max_clique_solver = MakeDefaultMaxCliqueSolver();
   }
 
   const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =
       max_clique_solver_ptr == nullptr ? default_max_clique_solver.get()
                                        : max_clique_solver_ptr;
-
   auto approximate_coverage = [&]() {
     return ApproximatelyComputeCoverage(
         domain, *sets, checker, options.num_points_per_coverage_check,
@@ -430,8 +427,14 @@ void IrisInConfigurationSpaceFromCliqueCover(
       ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
                                         *max_clique_solver, &visibility_graph,
                                         &computed_cliques);
-      IrisWorker(checker, points, 0, options, &computed_cliques,
-                 false /* No need to disable meshcat */);
+      std::queue<HPolyhedron> new_set_queue =
+          IrisWorker(checker, points, 0, options, &computed_cliques,
+                     false /* No need to disable meshcat */);
+      while (!new_set_queue.empty()) {
+        sets->push_back(std::move(new_set_queue.front()));
+        new_set_queue.pop();
+        ++num_new_sets;
+      }
     } else {
       // Compute truncated clique cover.
       std::future<void> clique_future{

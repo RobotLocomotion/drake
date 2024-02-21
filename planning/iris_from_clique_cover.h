@@ -77,7 +77,7 @@ struct IrisFromCliqueCoverOptions {
    * MinimumVolumeCircumscribedEllipsoid of a clique. See
    * @MinimumVolumeCircumscribedEllipsoid.
    */
-  double rank_tol_for_lowner_john_ellipse{1e-6};
+  double rank_tol_for_minimum_volume_circumscribed_ellipsoid{1e-6};
 
   /**
    * The tolerance used for checking whether a point is contained inside an
@@ -97,12 +97,15 @@ struct IrisFromCliqueCoverOptions {
  *
  * @param checker The collision checker containing the plant and its associated
  * scene_graph.
- * @param max_clique_solver The max clique solver used. If parallelism is set to
- * allow more than 1 thread, then this class **must** be implemented in C++.
  * @param generator There are points in the algorithm requiring randomness. The
  * generator controls this source of randomness.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
+ * @param max_clique_solver The max clique solver used. If parallelism is set to
+ * allow more than 1 thread, then this class **must** be implemented in C++. If
+ * nullptr is passed as the `max_clique_solver`, then max clique will be solved
+ * using an instance of MaxCliqueSolverViaMip with a conservative limit set on
+ * the number of branch and bound nodes explored.
  *
  * Note that this method requires an implementation of a MaxCliqueSolverBase
  * which must be implemented in C++. The only solver of this kind implemented by

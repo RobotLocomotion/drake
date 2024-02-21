@@ -69,13 +69,12 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         self.assertEqual(options.minimum_clique_size, 2)
         options.num_points_per_visibility_round = 150
         self.assertEqual(options.num_points_per_visibility_round, 150)
-        options.rank_tol_for_lowner_john_ellipse = 1e-3
-        self.assertEqual(options.rank_tol_for_lowner_john_ellipse, 1e-3)
+        options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-3
+        self.assertEqual(
+            options.rank_tol_for_minimum_volume_circumscribed_ellipsoid,
+            1e-3)
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
-
-        self.assertIsInstance(options.max_clique_solver,
-                              mut.MaxCliqueSolverBase)
 
         def test_iris_in_configuration_space_from_clique_cover(self):
             cross_cspace_urdf = """

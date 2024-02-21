@@ -369,7 +369,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
-#    timeout = "moderate",
+    timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 2,
@@ -381,8 +381,8 @@ drake_cc_googletest(
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing:parser",
-        "//systems/framework:diagram_builder",
         "//planning/graph_algorithms:max_clique_solver_via_mip",
+        "//systems/framework:diagram_builder",
     ],
 )
 
