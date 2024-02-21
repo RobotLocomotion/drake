@@ -25,9 +25,10 @@ void CheckOrthogonalComplementBasis(const AffineSubspace& as) {
             as.ambient_dimension() - as.AffineDimension());
   EXPECT_EQ(perpendicular_basis.rows(), as.ambient_dimension());
   // Check that every perpendicular basis vector is orthogonal to
-  // every basis vector.
+  // every basis vector, and that no basis vector has norm zero.
   const double kTol = 1e-15;
   for (int i = 0; i < perpendicular_basis.cols(); ++i) {
+    EXPECT_GE(perpendicular_basis.col(i).norm(), kTol);
     for (int j = 0; j < as.basis().cols(); ++j) {
       EXPECT_NEAR(0, as.basis().col(j).dot(perpendicular_basis.col(i)), kTol);
     }
@@ -544,7 +545,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullCartesianProduct) {
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
-  // Test a full-dimensional HPolyhedron
+  // Test a full-dimensional HPolyhedron.
   HPolyhedron h1 = HPolyhedron::MakeUnitBox(3);
   AffineSubspace as1(h1);
 
@@ -558,20 +559,20 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, h1, kTol));
   CheckAffineHullTightness(as1, h1, kTol);
 
-  // Test a not-full-dimensional HPolyhedron
-  Eigen::MatrixXd A(6, 3);
-  Eigen::VectorXd b(6);
+  // Test a not-full-dimensional HPolyhedron.
+  Eigen::MatrixXd A2(6, 3);
+  Eigen::VectorXd b2(6);
 
   // clang-format off
-  A <<  1,  0,  0,
-       -1,  0,  0,
-        0,  1,  0,
-        0, -1,  0,
-        0,  0,  1,
-        0,  0, -1;
-  b << 1, 0, 1, 0, 0, 0;
+  A2 <<  1,  0,  0,
+        -1,  0,  0,
+         0,  1,  0,
+         0, -1,  0,
+         0,  0,  1,
+         0,  0, -1;
+  b2 << 1, 0, 1, 0, 0, 0;
   // clang-format on
-  HPolyhedron h2(A, b);
+  HPolyhedron h2(A2, b2);
 
   const double kTol2 = 1e-6;
 
@@ -584,6 +585,29 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
 
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, h2, kTol2));
   CheckAffineHullTightness(as2, h2, kTol2);
+
+  // Numerically-challenging HPolyhedron from #20985.
+  Eigen::Matrix<double, 6, 3> A3;
+  Eigen::Vector<double, 6> b3;
+  // clang-format off
+  A3 <<  1,  0,  0,
+         0,  1,  0,
+         0,  0,  1,
+        -1,  0,  0,
+         0, -1,  0,
+         0,  0, -1;
+  // clang-format on
+  b3 << 0.03, 0.03, 0.075, 0.03, 0.03, 0.075;
+  const HPolyhedron h3(A3, b3);
+  const AffineSubspace as3(h3, 0);
+
+  EXPECT_EQ(as3.basis().cols(), 3);
+  EXPECT_EQ(as3.basis().rows(), 3);
+  EXPECT_EQ(as3.translation().size(), 3);
+  EXPECT_EQ(as2.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, h3, kTol2));
+  CheckAffineHullTightness(as3, h3, kTol2);
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullHyperellipsoid) {

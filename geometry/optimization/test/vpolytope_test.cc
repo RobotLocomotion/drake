@@ -594,8 +594,6 @@ GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronNumericallyChallenging) {
   b << 0.03, 0.03, 0.075, 0.03, 0.03, 0.075;
   const HPolyhedron hpoly(A, b);
 
-  const AffineSubspace ah(hpoly, 0);
-
   const double kTol = 1e-4;
   const VPolytope vpoly(hpoly, kTol);
 
