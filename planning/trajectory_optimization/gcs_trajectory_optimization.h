@@ -396,6 +396,12 @@ class GcsTrajectoryOptimization final {
                        int order, double h_min = 0, double h_max = 20,
                        std::string name = "");
 
+  /** Remove a subgraph and all associated edges found in the subgraph and
+  to and from other subgraphs.
+  @pre The subgraph must be part of the graph.
+  */
+  void RemoveSubgraph(const Subgraph& subgraph);
+
   /** Connects two subgraphs with directed edges.
   @param from_subgraph is the subgraph to connect from. Must have been created
   from a call to AddRegions() on this object, not some other optimization

@@ -892,6 +892,28 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                std::move(name), edge_offsets);
 }
 
+void GcsTrajectoryOptimization::RemoveSubgraph(const Subgraph& subgraph) {
+  // Check if the subgraph is in the list of subgraphs.
+  DRAKE_THROW_UNLESS(std::any_of(subgraphs_.begin(), subgraphs_.end(),
+                                 [&](const std::unique_ptr<Subgraph>& s) {
+                                   return s.get() == &subgraph;
+                                 }));
+
+  // Remove all vertices in the subgraph.
+  for (Vertex* v : subgraph.vertices_) {
+    // This will also remove all edges connected to the vertex, including the
+    // edges in all associated EdgesBetweenSubgraph objects.
+    gcs_.RemoveVertex(v);
+  }
+
+  // Remove subgraph from the list of subgraphs.
+  subgraphs_.erase(std::remove_if(subgraphs_.begin(), subgraphs_.end(),
+                                  [&](const std::unique_ptr<Subgraph>& s) {
+                                    return s.get() == &subgraph;
+                                  }),
+                   subgraphs_.end());
+}
+
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace) {
