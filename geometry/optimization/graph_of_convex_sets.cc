@@ -752,7 +752,8 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     }
   } else if (RotatedLorentzConeConstraint* rc =
                  dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
-    // z = Ax + b => z = Ax + b phi = [b A] [phi; x]
+    // z ∈ K for z = Ax + b becomes
+    // z ∈ K for z = Ax + bϕ = [b A] [ϕ; x]
     MatrixXd A_cone = MatrixXd::Zero(rc->A().rows(), vars.size());
     A_cone.block(0, 0, rc->A().rows(), 1) = rc->b();
     A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
