@@ -46,6 +46,13 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   @throws std::exception if vpoly is empty and zero dimensional. */
   explicit HPolyhedron(const VPolytope& vpoly);
 
+  /** Constructs a new HPolyhedron as the feasible set of a linear program prog.
+  @throws std::exception if prog is not a linear program.
+  @throws std::exception if prog has no variables or no constraints.
+  @throws std::exception if prog has any trivially-infeasible bounding box
+  constraints. */
+  explicit HPolyhedron(const solvers::MathematicalProgram& prog);
+
   // TODO(russt): Add a method/constructor that would create the geometry using
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
   // #15121.

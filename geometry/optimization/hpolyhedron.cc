@@ -21,7 +21,9 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/solve.h"
 
@@ -277,6 +279,79 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
     b_(facet_count) = -facet.outerplane().offset();
     ++facet_count;
   }
+}
+
+HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
+    : ConvexSet(prog.num_vars(), false) {
+  // Preconditions
+  DRAKE_THROW_UNLESS(prog.num_vars() > 0);
+  DRAKE_THROW_UNLESS(prog.GetAllConstraints().size() > 0);
+  DRAKE_THROW_UNLESS(solvers::GetProgramType(prog) ==
+                     solvers::ProgramType::kLP);
+
+  // Get linear equality constraints.
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  std::vector<int> linear_eq_y_start_indices;
+  int num_rows_added = 0;
+  solvers::internal::ParseLinearEqualityConstraints(
+      prog, &A_triplets, &b, &A_row_count, &linear_eq_y_start_indices,
+      &num_rows_added);
+
+  // Get linear inequality constraints.
+  int num_equality_constraints = num_rows_added;
+  std::vector<std::vector<std::pair<int, int>>> linear_constraint_dual_indices;
+  solvers::internal::ParseLinearConstraints(prog, &A_triplets, &b, &A_row_count,
+                                            &linear_constraint_dual_indices,
+                                            &num_rows_added);
+
+  // Form the A and b matrices of the HPolyhedron.
+  Eigen::SparseMatrix<double> A_sparse(A_row_count, prog.num_vars());
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+
+  // Get bounding box constraints.
+  VectorXd lb;
+  VectorXd ub;
+  solvers::AggregateBoundingBoxConstraints(prog, &lb, &ub);
+
+  // Remove any trivial bounding box constraints.
+  VectorXd lb_valid(0);
+  VectorXd ub_valid(0);
+  DRAKE_THROW_UNLESS(lb.size() == ub.size());
+  for (int i = 0; i < lb.size(); ++i) {
+    if (lb[i] > -kInf) {
+      lb_valid.conservativeResize(lb_valid.size() + 1);
+      lb_valid.tail(1) = lb.segment(i, 1);
+    }
+    if (ub[i] < kInf) {
+      ub_valid.conservativeResize(ub_valid.size() + 1);
+      ub_valid.tail(1) = ub.segment(i, 1);
+    }
+  }
+
+  // The linear equality constraints are only added in one direction, so we need
+  // to duplicate those constraints, but reverse the inequality. So for each ax
+  // <= b, we add -ax <= -b (equivalent to ax >= b).
+  int total_rows = A_row_count + num_equality_constraints + lb_valid.size() +
+                   ub_valid.size();
+  MatrixXd A(total_rows, prog.num_vars());
+  A.topRows(A_row_count) = A_sparse;
+  A.middleRows(A_row_count, num_equality_constraints) =
+      -1 * A.topRows(num_equality_constraints);
+  A.middleRows(A_row_count + num_equality_constraints, ub_valid.size()) =
+      MatrixXd::Identity(ub_valid.size(), ub_valid.size());
+  A.bottomRows(lb_valid.size()) =
+      -MatrixXd::Identity(lb_valid.size(), lb_valid.size());
+
+  VectorXd b_eigen(total_rows);
+  b_eigen.head(A_row_count) = VectorXd::Map(b.data(), b.size());
+  b_eigen.segment(A_row_count, num_equality_constraints) =
+      -1 * b_eigen.head(num_equality_constraints);
+  b_eigen.segment(A_row_count + num_equality_constraints, ub_valid.size()) =
+      ub_valid;
+  b_eigen.tail(lb_valid.size()) = -lb_valid;
+  *this = HPolyhedron(A, b_eigen);
 }
 
 HPolyhedron::~HPolyhedron() = default;
