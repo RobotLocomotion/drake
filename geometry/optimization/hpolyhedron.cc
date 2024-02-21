@@ -131,7 +131,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
 }
 
-HPolyhedron::HPolyhedron(const VPolytope& vpoly)
+HPolyhedron::HPolyhedron(const VPolytope& vpoly, const double tol)
     : ConvexSet(vpoly.ambient_dimension(), false) {
   // First, handle the case where the VPolytope is empty.
   if (vpoly.IsEmpty()) {
@@ -167,7 +167,7 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
     return;
   }
   // Next, handle the case where the VPolytope is not full dimensional.
-  const AffineSubspace affine_hull(vpoly);
+  const AffineSubspace affine_hull(vpoly, tol);
   if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
     // This special case avoids two QHull errors: QH6214 and QH6154.
     // QH6214 is due to the VPolytope not having enough vertices to make a

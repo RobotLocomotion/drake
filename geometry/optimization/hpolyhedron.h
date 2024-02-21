@@ -43,8 +43,13 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
 
   /** Constructs a new HPolyedron from a VPolytope object.  This function will
   use qhull. If the VPolytope is empty, then the HPolyhedron will also be empty.
+  If the HPolyhedron is not full-dimensional, we perform computations in a
+  coordinate system of its affine hull. `tol` specifies the numerical tolerance
+  used in the computation of the affine hull. See the documentation of
+  AffineSubspace for  tighter tolerance can be used with commercial solvers
+  (e.g. Gurobi and Mosek).
   @throws std::exception if vpoly is empty and zero dimensional. */
-  explicit HPolyhedron(const VPolytope& vpoly);
+  explicit HPolyhedron(const VPolytope& vpoly, const double tol = 1e-9);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
