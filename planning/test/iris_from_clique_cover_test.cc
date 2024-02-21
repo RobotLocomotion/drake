@@ -264,6 +264,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   options.num_points_per_coverage_check = 1000;
   options.num_points_per_visibility_round = 100;
   options.coverage_termination_threshold = 0.95;
+  options.minimum_clique_size = 10;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;

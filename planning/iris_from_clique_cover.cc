@@ -313,7 +313,7 @@ double ApproximatelyComputeCoverage(
 std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
 MakeDefaultMaxCliqueSolver() {
   solvers::SolverOptions options;
-  const int feasible_solution_limit = 100;
+  const int feasible_solution_limit = 25;
   options.SetOption(solvers::MosekSolver().id(),
                     "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", feasible_solution_limit);
   options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
@@ -375,7 +375,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
   };
   while (approximate_coverage() < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
-    log()->debug("IrisFromCliqueCover Iteration {}/{}", num_iterations + 1,
+    log()->info("IrisFromCliqueCover Iteration {}/{}", num_iterations + 1,
                  options.iteration_limit);
     Eigen::MatrixXd points(domain.ambient_dimension(),
                            num_points_per_visibility_round);

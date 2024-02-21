@@ -369,11 +369,17 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
-    timeout = "long",
+    timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
+    # Most of these tests take an exceptionally long time under
+    # instrumentation, resulting in timeouts, and so are excluded.
+    # These test also can only be run with either mosek or gurobi enabled.
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ] + mosek_test_tags() + gurobi_test_tags(),
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 2,
-    tags = mosek_test_tags() + gurobi_test_tags(),
     deps = [
         ":iris_from_clique_cover",
         ":robot_diagram_builder",
