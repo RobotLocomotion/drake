@@ -1,4 +1,4 @@
-# Drake
+# DrAkE
 
 Model-Based Design and Verification for Robotics.
 
