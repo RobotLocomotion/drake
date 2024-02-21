@@ -9,6 +9,9 @@ from pydrake.solvers import MosekSolver, GurobiSolver
 
 import textwrap
 import numpy as np
+import scipy.sparse as sp
+import scipy
+
 
 
 class TestIrisFromCliqueCover(unittest.TestCase):
