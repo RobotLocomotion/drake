@@ -2394,13 +2394,12 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
   // TODO(DamrongGuoy): Make this static variable a class member.
   static std::unordered_set<std::string_view> already_started;
   if (!already_started.contains(path)) {
-    already_started.insert(path);
-    // TODO(DamrongGuoy): Find start time instead of 0.
-    const double time_start = 0;
     std::string path_object = fmt::format("{}/<object>", path);
-    SetProperty(path_object, "visible", false, time_start);
+    SetProperty(path_object, "visible", false, time);
+    already_started.insert(path);
   }
 
+  DRAKE_THROW_UNLESS(animation_.get() != nullptr);
   int current_frame_index = animation_->frame(time);
   std::string path_animation_current =
       fmt::format("{}/<animation>/{}", path, current_frame_index);
