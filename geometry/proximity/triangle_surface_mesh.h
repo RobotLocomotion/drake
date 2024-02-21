@@ -419,6 +419,17 @@ class TriangleSurfaceMesh {
     return gradu_M;
   }
 
+  /** Calculates the gradient ∇u of a linear field u on the triangle `t`.
+   Field u is defined by the three field values `field_value[i]` at the i-th
+   vertex of the triangle. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  std::optional<Vector3<FieldValue>> MaybeCalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>& field_value, int t) const {
+    return CalcGradientVectorOfLinearField(field_value, t);
+  }
+
   /** Updates the position of all vertices in the mesh. Each sequential triple
    in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a position
    vector associated with the iᵗʰ vertex. The position values are interpreted to

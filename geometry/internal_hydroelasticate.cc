@@ -54,20 +54,14 @@ void BackfillDefaults(ProximityProperties* properties,
 // Handle conversion details that require specific shape type
 // information. Specifically, these are:
 //  * implement `compliance_type_rigid_fallback` for non-convex surface meshes.
-//  * recommend too-small primitive geometries for later removal.
 class ShapeAdjuster final : private ShapeReifier {
  public:
   // For meshes, modifies `props` for rigid fallback if it is both necessary
-  // and requested in `config`. For primitives, detect if the geometry is too
-  // small.
-  //
-  // @returns true if the shape is too small to participate in
-  // hydroelastic contact for this scene.
-  bool MakeShapeAdjustments(const Shape& shape, const SceneGraphConfig& config,
+  // and requested in `config`.
+  void MakeShapeAdjustments(const Shape& shape, const SceneGraphConfig& config,
                             ProximityProperties* props) {
-    ReifyData data = {props, config, false};
+    ReifyData data = {props, config};
     shape.Reify(this, &data);
-    return data.is_too_small;
   }
 
  private:
@@ -76,37 +70,9 @@ class ShapeAdjuster final : private ShapeReifier {
   struct ReifyData {
     ProximityProperties* props{};
     const SceneGraphConfig& config;
-    bool is_too_small{false};
   };
 
-  // If a the `max_dimension` is less than some threshold, flag the
-  // shape as too small in the `data` struct. `max_dimension` is
-  // defined as 0.5 * max(bx, by, bz) where (bx, by, bz) are the
-  // dimensions of the smallest AABB (in the shape's cannonical frame)
-  // that contains the shape.
-  //
-  // Note that this heuristic does not flag shapes that are microscopic in
-  // only some dimensions: flat sheets, or long skinny shapes. Those may
-  // still hit some geometry exception (near-zero tetrahedron volume was the
-  // important one at the time of this writing).
-  void CheckTooSmall(ReifyData* data, double max_dimension) {
-    // Congratulations. Your geometry is smaller than a speck of household
-    // dust. For various numerical reasons, we restrict the size of primitives
-    // to those that are 'large' enough by our `max_dimension` heuristic.
-    const double kTooSmall = 2e-5;
-
-    if (max_dimension < kTooSmall) {
-      data->is_too_small = true;
-    }
-  }
-
   void AdjustMesh(ReifyData* data, const std::string& extension) {
-    // For now, let us claim that anything supplied as a mesh will likely be
-    // appropriately sized to be part of the scene, and not a point-contact
-    // helper shape. Therefore, too-small checking should not be
-    // necessary. TODO(rpoyner-tri): Revisit this if there are
-    // counter-examples.
-
     const auto& config = data->config;
     if (config.default_proximity_properties.compliance_type_rigid_fallback &&
         config.default_proximity_properties.compliance_type == "compliant" &&
@@ -117,43 +83,8 @@ class ShapeAdjuster final : private ShapeReifier {
     }
   }
 
-  void ImplementGeometry(const Box& box, void* user_data) final {
-    ReifyData* data = static_cast<ReifyData*>(user_data);
-    double max_dimension =
-        0.5 * std::max(box.width(), std::max(box.depth(), box.height()));
-    CheckTooSmall(data, max_dimension);
-  }
-
-  void ImplementGeometry(const Capsule& capsule, void* user_data) final {
-    ReifyData* data = static_cast<ReifyData*>(user_data);
-    double max_dimension = capsule.length() * 0.5 + capsule.radius();
-    CheckTooSmall(data, max_dimension);
-  }
-
-  void ImplementGeometry(const Convex&, void*) final {
-    // Nothing to adjust.
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {
-    ReifyData* data = static_cast<ReifyData*>(user_data);
-    double max_dimension = std::max(cylinder.radius(), cylinder.length() * 0.5);
-    CheckTooSmall(data, max_dimension);
-  }
-
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) final {
-    ReifyData* data = static_cast<ReifyData*>(user_data);
-    double max_dimension = std::max(
-        ellipsoid.a(), std::max(ellipsoid.b(), ellipsoid.c()));
-    CheckTooSmall(data, max_dimension);
-  }
-
-  void ImplementGeometry(const HalfSpace&, void*) final {
-    // Halfspaces are plenty big by definition; nothing to do.
-  }
-
-  void ImplementGeometry(const Sphere& sphere, void* user_data) final {
-    ReifyData* data = static_cast<ReifyData*>(user_data);
-    CheckTooSmall(data, sphere.radius());
+  void DefaultImplementGeometry(const Shape&) final {
+    // Most shapes need no adjustment.
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) final {

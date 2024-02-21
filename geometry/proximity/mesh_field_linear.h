@@ -372,7 +372,7 @@ class MeshFieldLinear {
     gradients_.clear();
     gradients_.reserve(this->mesh().num_elements());
     for (int e = 0; e < this->mesh().num_elements(); ++e) {
-      auto grad = CalcGradientVector(e);
+      auto grad = MaybeCalcGradientVector(e);
       if (!grad.has_value()) {
         is_gradient_field_degenerate_ = true;
         return;
@@ -381,7 +381,7 @@ class MeshFieldLinear {
     }
   }
 
-  std::optional<Vector3<T>> CalcGradientVector(int e) const {
+  std::optional<Vector3<T>> MaybeCalcGradientVector(int e) const {
     // In the case of the PolygonSurfaceMesh, where kVertexPerElement is marked
     // as "indeterminate" (aka -1), we'll simply use the first three vertices.
     // If we were to have a PolytopeVolumeMesh (i.e., a volume mesh that is
@@ -392,7 +392,15 @@ class MeshFieldLinear {
     for (int i = 0; i < kVCount; ++i) {
       u[i] = values_[this->mesh().element(e).vertex(i)];
     }
-    return this->mesh().CalcGradientVectorOfLinearField(u, e);
+    return this->mesh().MaybeCalcGradientVectorOfLinearField(u, e);
+  }
+
+  Vector3<T> CalcGradientVector(int e) const {
+    auto result = this->MaybeCalcGradientVector(e);
+    if (!result.has_value()) {
+      throw std::runtime_error("Bad geometry; cannot calculate gradient.");
+    }
+    return result.value();
   }
 
   void CalcValueAtMeshOriginForAllElements() {

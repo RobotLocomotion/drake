@@ -291,19 +291,30 @@ class VolumeMesh {
    */
   template <typename FieldValue>
   std::optional<Vector3<promoted_numerical_t<T, FieldValue>>>
-  CalcGradientVectorOfLinearField(
+  MaybeCalcGradientVectorOfLinearField(
       const std::array<FieldValue, 4>& field_value, int e) const {
     using ReturnType = promoted_numerical_t<T, FieldValue>;
-    auto grad_0 = CalcGradBarycentric(e, 0);
+    auto grad_0 = MaybeCalcGradBarycentric(e, 0);
     if (!grad_0.has_value()) return {};
     Vector3<ReturnType> gradu_M = field_value[0] * *grad_0;
     for (int i = 1; i < 4; ++i) {
-      auto grad_i = CalcGradBarycentric(e, i);
+      auto grad_i = MaybeCalcGradBarycentric(e, i);
       if (!grad_i.has_value()) return {};
       gradu_M += field_value[i] * *grad_i;
     }
     return gradu_M;
   }
+  template <typename FieldValue>
+  Vector3<promoted_numerical_t<T, FieldValue>>
+  CalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 4>& field_value, int e) const {
+    auto result = MaybeCalcGradientVectorOfLinearField(field_value, e);
+    if (!result.has_value()) {
+      throw std::runtime_error("Bad geometry; could not calculate gradient.");
+    }
+    return result.value();
+  }
+
 
   /** Transforms the vertices of this mesh from its initial frame M to the new
    frame N.
@@ -327,7 +338,11 @@ class VolumeMesh {
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 4.
-  std::optional<Vector3<T>> CalcGradBarycentric(int e, int i) const;
+  Vector3<T> CalcGradBarycentric(int e, int i) const;
+
+  // Like CalcGradBarycentric, but returns std::nullopt instead of throwing on
+  // degenerate geometry.
+  std::optional<Vector3<T>> MaybeCalcGradBarycentric(int e, int i) const;
 
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
@@ -340,7 +355,7 @@ class VolumeMesh {
 
 template <typename T>
 std::optional<Vector3<T>>
-VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
+VolumeMesh<T>::MaybeCalcGradBarycentric(int e, int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of

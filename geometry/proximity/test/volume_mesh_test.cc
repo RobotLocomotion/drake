@@ -23,7 +23,7 @@ class VolumeMeshTester {
  public:
   explicit VolumeMeshTester(const VolumeMesh<T>& mesh) : mesh_(mesh) {}
   Vector3<T> CalcGradBarycentric(int e, int i) const {
-    return mesh_.CalcGradBarycentric(e, i);
+    return mesh_.MaybeCalcGradBarycentric(e, i).value();
   }
 
  private:
@@ -364,7 +364,8 @@ void TestCalcGradientVectorOfLinearField() {
   auto mesh_M = TestVolumeMesh<T>();
   const std::array<T, 4> f{2., 3., 4., 5.};
 
-  const Vector3<T> gradf_M = mesh_M->CalcGradientVectorOfLinearField(f, 0);
+  const Vector3<T> gradf_M =
+      mesh_M->CalcGradientVectorOfLinearField(f, 0);
 
   // The field f on the tetrahedral element e0 satisfies this equation with
   // coordinates expressed in M's frame:
