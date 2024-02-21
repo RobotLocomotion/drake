@@ -145,7 +145,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   options.parallelism = Parallelism{1};
   std::vector<HPolyhedron> sets;
 
-  RandomGenerator generator;
+  RandomGenerator generator(0);
 
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
@@ -267,7 +267,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   options.minimum_clique_size = 10;
   std::vector<HPolyhedron> sets;
 
-  RandomGenerator generator;
+  RandomGenerator generator(0);
   planning::graph_algorithms::MaxCliqueSolverViaMip solver{};
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           &solver);
