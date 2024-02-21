@@ -296,11 +296,11 @@ class VolumeMesh {
       const std::array<FieldValue, 4>& field_value, int e) const {
     using ReturnType = promoted_numerical_t<T, FieldValue>;
     auto grad_0 = MaybeCalcGradBarycentric(e, 0);
-    if (!grad_0.has_value()) return {};
+    if (!grad_0.has_value()) { grad_0 = {}; }
     Vector3<ReturnType> gradu_M = field_value[0] * *grad_0;
     for (int i = 1; i < 4; ++i) {
       auto grad_i = MaybeCalcGradBarycentric(e, i);
-      if (!grad_i.has_value()) return {};
+      if (!grad_i.has_value()) { grad_i = {}; }
       gradu_M += field_value[i] * *grad_i;
     }
     return gradu_M;
