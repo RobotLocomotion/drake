@@ -225,6 +225,8 @@ drake_cc_library(
         "//geometry:meshcat",
         "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//planning/graph_algorithms:max_clique_solver_base",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
         ":scene_graph_collision_checker",
         ":visibility_graph",
     ],
@@ -379,6 +381,7 @@ drake_cc_googletest(
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing:parser",
+        "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//systems/framework:diagram_builder",
     ],
 )

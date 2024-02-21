@@ -10,6 +10,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -75,21 +76,9 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   options.num_points_per_visibility_round = 10;
   EXPECT_EQ(options.num_points_per_visibility_round, 10);
 
-  class DummyMaxCliqueSolver final
-      : public graph_algorithms::MaxCliqueSolverBase {
-    VectorX<bool> DoSolveMaxClique(
-        const Eigen::SparseMatrix<bool>& adjacency_matrix) const {
-      // Always returns an empty clique.
-      return VectorX<bool>::Zero(adjacency_matrix.rows());
-    }
-  };
-  options.max_clique_solver =
-      std::unique_ptr<graph_algorithms::MaxCliqueSolverBase>(
-          new DummyMaxCliqueSolver());
-
-  EXPECT_EQ(options.rank_tol_for_lowner_john_ellipse, 1e-6);
-  options.rank_tol_for_lowner_john_ellipse = 1e-3;
-  EXPECT_EQ(options.rank_tol_for_lowner_john_ellipse, 1e-3);
+  EXPECT_EQ(options.rank_tol_for_minimum_volume_circumscribed_ellipsoid, 1e-6);
+  options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-3;
+  EXPECT_EQ(options.rank_tol_for_minimum_volume_circumscribed_ellipsoid, 1e-3);
 
   EXPECT_EQ(options.point_in_set_tol, 1e-6);
   options.point_in_set_tol = 1e-3;
@@ -100,7 +89,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
 ┌───────────────┐
 │               │
 │               │
-|               │
+│               │
 │       o       │
 │               │
 │               │
@@ -146,11 +135,20 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 25;
+  options.iteration_limit = 1;
+  // Set a large bounding region to test the path where this is set in the
+  // IrisOptions.
+  options.iris_options.bounding_region =
+      HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
+  // Run this test without parallelism to test that no bugs occur in the
+  // non-parallel version.
+  options.parallelism = Parallelism{1};
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;
 
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets);
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
   EXPECT_GE(ssize(sets), 1);
 
   // expect perfect coverage
@@ -221,17 +219,29 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
                            -3.25, 3.25, -3.25, 3.25);
   meshcat->SetProperty("/Grid", "visible", true);
-  // draw true cspace
-  Eigen::Matrix3Xd env_points = Eigen::Matrix3Xd::Zero(3, 5);
-  env_points << -2, 2, 2, -2, -2, 2, 2, -2, -2, 2, 0, 0, 0, 0, 0;
+  // Draw the true cspace.
+  Eigen::Matrix3Xd env_points(3, 5);
+  // clang-format off
+  env_points << -2, 2,  2, -2, -2,
+                 2, 2, -2, -2,  2,
+                 0, 0,  0,  0,  0;
+  // clang-format on
   meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
-  Eigen::Matrix3Xd centers = Eigen::Matrix3Xd::Zero(3, 4);
+  Eigen::Matrix3Xd centers(3, 4);
   double c = 1.0;
-  centers << -c, c, c, -c, c, c, -c, -c, 0, 0, 0, 0;
-  Eigen::Matrix3Xd obs_points = Eigen::Matrix3Xd::Zero(3, 5);
+  // clang-format off
+  centers << -c, c,  c, -c,
+              c, c, -c, -c,
+              0, 0,  0,  0;
+  // clang-format on
+  Eigen::Matrix3Xd obs_points(3, 5);
   // approximating offset due to sphere radius with fixed offset
   double s = 0.7 + 0.01;
-  obs_points << -s, s, s, -s, -s, s, s, -s, -s, s, 0, 0, 0, 0, 0;
+  // clang-format off
+  obs_points << -s, s,  s, -s, -s,
+                 s, s, -s, -s, s,
+                 s, 0,  0,  0,  0;
+  // clang-format on
   for (int obstacle_idx = 0; obstacle_idx < 4; ++obstacle_idx) {
     Eigen::Matrix3Xd obstacle = obs_points;
     obstacle.colwise() += centers.col(obstacle_idx);
@@ -257,12 +267,12 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator;
-
-  // TODO(Alexandre.Amice) make this test actually check the cross.
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets);
+  planning::graph_algorithms::MaxCliqueSolverViaMip solver{};
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          &solver);
   EXPECT_EQ(ssize(sets), 6);
 
-  //   A manual convex decomposition of the space.
+  // A manual convex decomposition of the space.
   std::vector<Hyperrectangle> manual_decomposition{
       Hyperrectangle(Vector2d{-2, -2}, Vector2d{-1.7, 2}),
       Hyperrectangle(Vector2d{-2, -2}, Vector2d{2, -1.7}),
