@@ -69,6 +69,9 @@ class TestDrakeModels(unittest.TestCase):
         models_with_errors = [
             # TODO(#19992) for tracking these errors.
             "package://drake_models/atlas/robotiq_tendons.urdf",
+            # This file is not designed to be loaded independently from its
+            # parent file `homecart.dmd.yaml`; it will always error out.
+            "package://drake_models/tri_homecart/homecart_grippers.dmd.yaml",
         ]
         self.assertFalse(set(models_with_errors) - set(all_models))
         self.assertFalse(set(models_with_warnings) & set(models_with_errors))

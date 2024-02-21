@@ -81,9 +81,9 @@ drake_cc_googlebench_binary(
     srcs = ["homecart_global_ik.cc"],
     add_test_rule = True,
     data = [
-        "//manipulation/models/tri_homecart:models",
         "//manipulation/models/ur3e:models",
         "//manipulation/models/wsg_50_description:models",
+        "@drake_models",
     ],
     test_tags = gurobi_test_tags(),
     deps = [
