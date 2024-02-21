@@ -105,7 +105,9 @@ struct IrisFromCliqueCoverOptions {
  * allow more than 1 thread, then this class **must** be implemented in C++. If
  * nullptr is passed as the `max_clique_solver`, then max clique will be solved
  * using an instance of MaxCliqueSolverViaMip with a conservative limit set on
- * the number of branch and bound nodes explored.
+ * the number of branch and bound nodes explored. This default solver will in
+ * general use suboptimal cliques when constructing the greedy clique cover, but
+ * is faster than solving the max clique problem to global optimality.
  *
  * Note that this method requires an implementation of a MaxCliqueSolverBase
  * which must be implemented in C++. The only solver of this kind implemented by
@@ -117,8 +119,7 @@ struct IrisFromCliqueCoverOptions {
  * MaxCliqueSolverViaMip.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
-    const CollisionChecker& checker,
-    const IrisFromCliqueCoverOptions& options,
+    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
     RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets,
     const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =

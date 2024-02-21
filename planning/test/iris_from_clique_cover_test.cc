@@ -220,21 +220,21 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
                            -3.25, 3.25, -3.25, 3.25);
   meshcat->SetProperty("/Grid", "visible", true);
   // Draw the true cspace.
-  Eigen::Matrix3Xd env_points(3,5);// = Eigen::Matrix3Xd::Zero(3, 5);
+  Eigen::Matrix3Xd env_points(3, 5);
   // clang-format off
   env_points << -2, 2,  2, -2, -2,
                  2, 2, -2, -2,  2,
                  0, 0,  0,  0,  0;
   // clang-format on
   meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
-  Eigen::Matrix3Xd centers(3,4); // = Eigen::Matrix3Xd::Zero(3, 4);
+  Eigen::Matrix3Xd centers(3, 4);
   double c = 1.0;
   // clang-format off
   centers << -c, c,  c, -c,
               c, c, -c, -c,
               0, 0,  0,  0;
   // clang-format on
-  Eigen::Matrix3Xd obs_points(3,5);// = Eigen::Matrix3Xd::Zero(3, 5);
+  Eigen::Matrix3Xd obs_points(3, 5);
   // approximating offset due to sphere radius with fixed offset
   double s = 0.7 + 0.01;
   // clang-format off
