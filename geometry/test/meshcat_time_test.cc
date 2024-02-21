@@ -12,28 +12,28 @@ GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
 
   // Set untimed object
   meshcat.SetObject("morph", Box(0.2, 0.2, 0.3));
-  EXPECT_TRUE(meshcat.HasPath("morph"));
-  EXPECT_TRUE(meshcat.HasPath("/drake/morph"));
-
-  // I'm not sure yet why I don't have this path. It prevents me from
-  // checking that the visible property is turned on and off at the right time.
-  // For now, I have to do manual test:
-  //     bazel run //geometry:meshcat_time_test
-  //     Click on Meshcat URL in console's message.
-  // which is unreliable. Sometimes I had to run twice.
-  EXPECT_FALSE(meshcat.HasPath("/drake/morph/<object>"));
 
   meshcat.StartRecording();
   // Set timed object
   meshcat.SetObject("morph", Cylinder(0.1, 0.3), 1);
+  EXPECT_TRUE(meshcat.HasPath("/drake/morph/<object>"));
+  EXPECT_TRUE(meshcat.HasPath("/drake/morph/<animation>/64"));
+
   meshcat.SetObject("morph", Capsule(0.1, 0.3), 2);
+  EXPECT_TRUE(meshcat.HasPath("/drake/morph/<animation>/128"));
+
   meshcat.SetObject("morph", Ellipsoid(0.1, 0.1, (0.3 + 0.1 + 0.1) / 2), 3);
+  EXPECT_TRUE(meshcat.HasPath("/drake/morph/<animation>/192"));
 
   meshcat.StopRecording();
   meshcat.PublishRecording();
 
-  // TODO(DamrongGuoy) Remove sleep() when I don't need to test it manually.
-  sleep(5);
+  // TODO(DamrongGuoy) Remove this when I don't need to test it manually.
+  meshcat.AddButton("Exit");
+  int count_to_exit = 10;
+  while (meshcat.GetButtonClicks("Exit")==0 && count_to_exit != 0){
+    sleep(1); --count_to_exit;
+  }
 }
 
 }  // namespace
