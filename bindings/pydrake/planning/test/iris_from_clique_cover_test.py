@@ -8,6 +8,7 @@ from pydrake.planning import (RobotDiagramBuilder,
 from pydrake.solvers import MosekSolver, GurobiSolver
 
 import textwrap
+import numpy as np
 
 
 class TestIrisFromCliqueCover(unittest.TestCase):
@@ -76,73 +77,88 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
 
-        def test_iris_in_configuration_space_from_clique_cover(self):
-            cross_cspace_urdf = """
-            <robot name="boxes">
-              <link name="fixed">
-                <collision name="top_left">
-                  <origin rpy="0 0 0" xyz="-1 1 0"/>
-                  <geometry><box size="1 1 1"/></geometry>
-                </collision>
-                <collision name="top_right">
-                  <origin rpy="0 0 0" xyz="1 1 0"/>
-                  <geometry><box size="1 1 1"/></geometry>
-                </collision>
-                <collision name="bottom_left">
-                  <origin rpy="0 0 0" xyz="-1 -1 0"/>
-                  <geometry><box size="1 1 1"/></geometry>
-                </collision>
-                <collision name="bottom_right">
-                  <origin rpy="0 0 0" xyz="1 -1 0"/>
-                  <geometry><box size="1 1 1"/></geometry>
-                </collision>
-              </link>
-              <joint name="fixed_link_weld" type="fixed">
-                <parent link="world"/>
-                <child link="fixed"/>
-              </joint>
-              <link name="movable">
-                <collision name="sphere">
-                  <geometry><sphere radius="0.1"/></geometry>
-                </collision>
-              </link>
-              <link name="for_joint"/>
-              <joint name="x" type="prismatic">
-                <axis xyz="1 0 0"/>
-                <limit lower="-2" upper="2"/>
-                <parent link="world"/>
-                <child link="for_joint"/>
-              </joint>
-              <joint name="y" type="prismatic">
-                <axis xyz="0 1 0"/>
-                <limit lower="-2" upper="2"/>
-                <parent link="for_joint"/>
-                <child link="movable"/>
-              </joint>
-            </robot>
-    """
-            params = dict(edge_step_size=0.125)
-            builder = RobotDiagramBuilder()
-            params["robot_model_instances"] =\
-                builder.parser().AddModelsFromString(cross_cspace_urdf, "urdf")
-            params["model"] = builder.Build()
-            checker = SceneGraphCollisionChecker(**params)
+    def test_iris_in_configuration_space_from_clique_cover(self):
+        cross_cspace_urdf = """
+        <robot name="boxes">
+          <link name="fixed">
+            <collision name="top_left">
+              <origin rpy="0 0 0" xyz="-1 1 0"/>
+              <geometry><box size="1 1 1"/></geometry>
+            </collision>
+            <collision name="top_right">
+              <origin rpy="0 0 0" xyz="1 1 0"/>
+              <geometry><box size="1 1 1"/></geometry>
+            </collision>
+            <collision name="bottom_left">
+              <origin rpy="0 0 0" xyz="-1 -1 0"/>
+              <geometry><box size="1 1 1"/></geometry>
+            </collision>
+            <collision name="bottom_right">
+              <origin rpy="0 0 0" xyz="1 -1 0"/>
+              <geometry><box size="1 1 1"/></geometry>
+            </collision>
+          </link>
+          <joint name="fixed_link_weld" type="fixed">
+            <parent link="world"/>
+            <child link="fixed"/>
+          </joint>
+          <link name="movable">
+            <collision name="sphere">
+              <geometry><sphere radius="0.1"/></geometry>
+            </collision>
+          </link>
+          <link name="for_joint"/>
+          <joint name="x" type="prismatic">
+            <axis xyz="1 0 0"/>
+            <limit lower="-2" upper="2"/>
+            <parent link="world"/>
+            <child link="for_joint"/>
+          </joint>
+          <joint name="y" type="prismatic">
+            <axis xyz="0 1 0"/>
+            <limit lower="-2" upper="2"/>
+            <parent link="for_joint"/>
+            <child link="movable"/>
+          </joint>
+        </robot>
+"""
+        params = dict(edge_step_size=0.125)
+        builder = RobotDiagramBuilder()
+        params["robot_model_instances"] =\
+            builder.parser().AddModelsFromString(cross_cspace_urdf, "urdf")
+        params["model"] = builder.Build()
+        checker = SceneGraphCollisionChecker(**params)
 
-            options = mut.IrisFromCliqueCoverOptions()
-            options.num_builders = 2
-            options.num_points_per_coverage_check = 10
-            options.num_points_per_visibility_round = 10
-            # We can achieve almost 100% coverage with 2 regions.
-            options.coverage_termination_threshold = 0.999
+        options = mut.IrisFromCliqueCoverOptions()
+        options.num_points_per_coverage_check = 10
+        options.num_points_per_visibility_round = 25
 
-            generator = RandomGenerator(0)
+        # We can achieve almost 100% coverage with 2 regions.
+        options.coverage_termination_threshold = 0.999
 
-            if (MosekSolver().available() and MosekSolver().enabled()) or (
-                 GurobiSolver().available() and GurobiSolver().enabled()):
-                # We need a MIP solver to be available to run this method.
-                sets = mut.IrisInConfigurationSpaceFromCliqueCover(
-                    checker=checker, options=options, generator=generator,
-                    sets=[]
-                )
+        generator = RandomGenerator(0)
 
-                self.assertGreaterEqual(len(sets), 1)
+        if (MosekSolver().available() and MosekSolver().enabled()) or (
+             GurobiSolver().available() and GurobiSolver().enabled()):
+            # We need a MIP solver to be available to run this method.
+            sets = mut.IrisInConfigurationSpaceFromCliqueCover(
+                checker=checker, options=options, generator=generator,
+                sets=[]
+            )
+
+            self.assertGreaterEqual(len(sets), 1)
+
+        class DummyMaxCliqueSolver(mut.MaxCliqueSolverBase):
+            def __init__(self, name):
+                mut.MaxCliqueSolverBase.__init__(self)
+                self.name = name
+
+            def DoSolveMaxClique(self, adjacency_matrix):
+                return np.ones(adjacency_matrix.shape[1])
+
+        # Check that a Python solver can be used with 1 thread.
+        options.parallelism = Parallelism(1)
+        sets = mut.IrisInConfigurationSpaceFromCliqueCover(
+            checker=checker, options=options, generator=generator,
+            sets=[], max_clique_solver=DummyMaxCliqueSolver("dummy")
+        )
