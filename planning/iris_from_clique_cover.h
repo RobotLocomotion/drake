@@ -119,8 +119,7 @@ struct IrisFromCliqueCoverOptions {
  * MaxCliqueSolverViaMip.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
-    const CollisionChecker& checker,
-    const IrisFromCliqueCoverOptions& options,
+    const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
     RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets,
     const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =

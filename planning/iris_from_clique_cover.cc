@@ -99,7 +99,7 @@ class AsyncQueue {
     condition_.notify_all();
   }
 
-  int size() {
+  int size() const {
     // We need to lock the mutex since the queue size is not necessarily atomic.
     std::unique_lock<std::mutex> lock(mutex_);
     return queue_.size();
@@ -107,7 +107,7 @@ class AsyncQueue {
 
  private:
   std::queue<T> queue_;
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   std::condition_variable condition_;
   std::atomic<bool> still_filling_ = true;
 };
