@@ -655,6 +655,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.CalcGeneralizedForces.doc)
         .def("MakeActuationMatrix", &Class::MakeActuationMatrix,
             cls_doc.MakeActuationMatrix.doc)
+        .def("MakeActuationMatrixPseudoinverse",
+            &Class::MakeActuationMatrixPseudoinverse,
+            cls_doc.MakeActuationMatrixPseudoinverse.doc)
         .def(
             "MakeActuatorSelectorMatrix",
             [](const Class* self, const std::vector<JointActuatorIndex>&
