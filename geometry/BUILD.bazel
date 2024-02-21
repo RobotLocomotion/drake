@@ -576,6 +576,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":meshcat",
+        "//common/test_utilities:maybe_pause_for_user"
     ],
 )
 
