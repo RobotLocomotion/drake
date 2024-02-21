@@ -369,7 +369,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
-    timeout = "moderate",
+    timeout = "long",
     data = ["//multibody/parsing:test_models"],
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 2,
