@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
+
 namespace drake {
 namespace geometry {
 namespace {
@@ -10,11 +12,11 @@ namespace {
 GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
   Meshcat meshcat;
 
-  // Set untimed object
+  // Set immediate object
   meshcat.SetObject("morph", Box(0.2, 0.2, 0.3));
 
   meshcat.StartRecording();
-  // Set timed object
+  // Set timed objects
   meshcat.SetObject("morph", Cylinder(0.1, 0.3), 1);
   EXPECT_TRUE(meshcat.HasPath("/drake/morph/<object>"));
   EXPECT_TRUE(meshcat.HasPath("/drake/morph/<animation>/64"));
@@ -28,12 +30,12 @@ GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
   meshcat.StopRecording();
   meshcat.PublishRecording();
 
+  // clang-format off
   // TODO(DamrongGuoy) Remove this when I don't need to test it manually.
-  meshcat.AddButton("Exit");
-  int count_to_exit = 10;
-  while (meshcat.GetButtonClicks("Exit")==0 && count_to_exit != 0){
-    sleep(1); --count_to_exit;
-  }
+  //  It's important to invoke it directly with bazel/bin/[PROGRAM].
+  //     bazel build //geometry:meshcat_time_test ; bazel-bin/geometry/meshcat_time_test
+  drake::common::MaybePauseForUser();
+  // clang-format on
 }
 
 }  // namespace
