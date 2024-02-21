@@ -55,7 +55,7 @@ class AffineSubspace final : public ConvexSet {
   that dimension. If their displacement along that dimension is larger than tol,
   then the vector connecting the points is added as a basis vector.
   @pre !set.IsEmpty() */
-  explicit AffineSubspace(const ConvexSet& set, double tol = 0);
+  explicit AffineSubspace(const ConvexSet& set, double tol = 1e-12);
 
   ~AffineSubspace() final;
 
