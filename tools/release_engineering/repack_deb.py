@@ -2,15 +2,15 @@ r"""Re-package a Drake .tar.gz archive into a Debian archive.
 
 This script assumes that the Ubuntu distribution the .tar.gz archive was built
 for is the same as what is running the script.  For example, a
-drake-latest-focal.tar.gz must be re-packaged on a focal machine.
+drake-latest-noble.tar.gz must be re-packaged on a noble machine.
 
 Command line arguments should specify absolute paths, e.g.,
 
     bazel run //tools/release_engineering:repack_deb -- \
-        --tgz "$PWD/drake-latest-focal.tar.gz" \
+        --tgz "$PWD/drake-latest-noble.tar.gz" \
         --output-dir "$PWD/drake_deb"
 
-will repackage the file drake-latest-focal.tar.gz in the current directory,
+will repackage the file drake-latest-noble.tar.gz in the current directory,
 and copy the final re-packaged debian archive to the directory $PWD/drake_deb.
 """
 
@@ -108,8 +108,8 @@ def _run(args):
     # documentation, it appears to depend on both the name of the archive and
     # the --version argument.  Some examples:
     #
-    # - drake-latest-focal.tar.gz => drake-latest-focal-0.0.20220513083006
-    # - drake-20220512-focal.tar.gz => drake-0.0.20220512082823
+    # - drake-latest-noble.tar.gz => drake-latest-noble-0.0.20220513083006
+    # - drake-20220512-noble.tar.gz => drake-0.0.20220512082823
     # - foo.tar.gz => foo-0.0.20220513083006
     #
     # It appears to keep the original name _until_ it finds numbers e.g.

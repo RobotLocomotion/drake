@@ -53,7 +53,8 @@ if ! curl --fail --head --location --output /dev/null \
   exit 8
 fi
 
-platforms=( focal jammy )
+# TODO(jwnimmer-tri) We need "noble" here also, once we support it.
+platforms=( jammy )
 
 readonly gpg_key="$(
   curl --fail https://drake-apt.csail.mit.edu/drake.asc | \

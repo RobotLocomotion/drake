@@ -17,11 +17,6 @@ Linux:
     apt install awscli
 
 
-**Warning:** When running this process on on Focal, `aptly` will need to be
-updated to 1.5.0 to handle the zst compression used in Jammy packages
-(https://github.com/aptly-dev/aptly/pull/1050). To update, follow the
-instructions here: https://www.aptly.info/download.
-
 **Note:** There are compatibility issues with `gnupg2` and `aptly`. See
 [this issue](https://github.com/aptly-dev/aptly/issues/657), for example.
 
@@ -88,14 +83,14 @@ Verify that:
 
 1. [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
 contains a set of `drake-<version>-[...].tar.gz[...]` files for each supported
-configuration (e.g. focal, jammy and mac).
+configuration (e.g. jammy, noble, and mac).
 
 1. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
-has `<version>` tags for each supported configuration (e.g. focal and jammy).
+has `<version>` tags for each supported configuration (e.g. jammy and noble).
 
 1. The `*.deb` files are in AWS
 [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-`/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. focal and jammy)
+`/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. jammy and noble)
 
 ## Run script for apt
 

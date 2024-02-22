@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 20.04 (Focal) or 22.04 (Jammy).
+# Ubuntu.
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
