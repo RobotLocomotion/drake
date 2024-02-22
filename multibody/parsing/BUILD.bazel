@@ -30,6 +30,7 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.zip",
+        "test/**/*.usda",
         "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
@@ -700,6 +701,20 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         "//common/test_utilities:diagnostic_policy_test_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "usd_import_test",
+    data = [
+        ":test_models",
+    ],
+    copts = [
+        "-w"
+    ],
+    deps = [
+        "//common:find_resource",
+        "@openusd_internal//:openusd",
     ],
 )
 
