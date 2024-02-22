@@ -117,8 +117,6 @@ void ElementCollection<T, Element, Index>::Rename(Index index,
     names_map_.emplace(name, index);
     get_mutable_element(index).set_name(std::move(name));
   } else {
-    // Once we drop Ubuntu Focal (GCC 9), we can remove the annoying `unused()`.
-    unused(index, name);
     DRAKE_UNREACHABLE();
   }
 }

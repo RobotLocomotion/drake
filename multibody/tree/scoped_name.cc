@@ -32,22 +32,9 @@ ScopedName::ScopedName(std::string_view namespace_name,
   *this = std::move(*result);
 }
 
-namespace {
-// TODO(jwnimmer-tri) Use the C++ built-in starts_with when we drop C++17.
-bool StartsWith(std::string_view str, std::string_view prefix) {
-  return str.substr(0, prefix.size()) == prefix;
-}
-bool EndsWith(std::string_view str, std::string_view suffix) {
-  if (str.size() < suffix.size()) {
-    return false;
-  }
-  return str.substr(str.size() - suffix.size()) == suffix;
-}
-}  // namespace
-
 std::optional<ScopedName> ScopedName::Make(std::string_view namespace_name,
                                            std::string_view element_name) {
-  if (StartsWith(namespace_name, kDelim) || EndsWith(namespace_name, kDelim) ||
+  if (namespace_name.starts_with(kDelim) || namespace_name.ends_with(kDelim) ||
       element_name.empty() || HasScopeDelimiter(element_name)) {
     return std::nullopt;
   }
@@ -68,10 +55,10 @@ ScopedName ScopedName::Join(std::string_view name1, std::string_view name2) {
 
 ScopedName ScopedName::Parse(std::string scoped_name) {
   // Remove any leading or trailing "::".
-  while (EndsWith(scoped_name, kDelim)) {
+  while (scoped_name.ends_with(kDelim)) {
     scoped_name.resize(scoped_name.size() - kDelim.size());
   }
-  while (StartsWith(scoped_name, kDelim)) {
+  while (scoped_name.starts_with(kDelim)) {
     scoped_name = scoped_name.substr(kDelim.size());
   }
 

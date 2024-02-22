@@ -107,7 +107,7 @@ std::map<int, std::string> GetPositionNames(
 VectorXd Broadcast(
     const char* diagnostic_name, double default_value, int num_positions,
     std::variant<std::monostate, double, VectorXd> value) {
-  return visit_overloaded<VectorXd>(overloaded{
+  return std::visit<VectorXd>(overloaded{
     [num_positions, default_value](std::monostate) {
       return VectorXd::Constant(num_positions, default_value);
     },

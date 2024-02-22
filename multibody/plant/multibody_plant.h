@@ -571,7 +571,7 @@ Assign to auto, and use the named public fields:
   items.plant.DoFoo(...);
   items.scene_graph.DoBar(...);
 @endcode
-or taking advantage of C++17's structured binding
+or taking advantage of C++'s structured binding:
 @code
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   ...
@@ -5925,7 +5925,7 @@ struct AddMultibodyPlantSceneGraphResult final {
   // Returns the N-th member referenced by this struct.
   // If N = 0, returns the reference to the MultibodyPlant.
   // If N = 1, returns the reference to the geometry::SceneGraph.
-  // Provided to support C++17's structured binding.
+  // Provided to support C++'s structured binding.
   template <std::size_t N>
   decltype(auto) get() const {
     if constexpr (N == 0)
@@ -6010,7 +6010,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }  // namespace drake
 
 #ifndef DRAKE_DOXYGEN_CXX
-// Specializations provided to support C++17's structured binding for
+// Specializations provided to support C++'s structured binding for
 // AddMultibodyPlantSceneGraphResult.
 namespace std {
 // The GCC standard library defines tuple_size as class and struct which

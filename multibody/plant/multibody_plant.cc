@@ -1117,17 +1117,11 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
     // alone.
     auto& inspector = scene_graph_->model_inspector();
 
-    // TODO(rpoyner-tri): replace with c++ built-in starts_with once we drop
-    // C++17 support.
-    auto starts_with = [](const std::string& str, const std::string& prefix) {
-      return str.compare(0, prefix.size(), prefix) == 0;
-    };
-
     const std::string old_prefix(old_name + "::");
     const std::string new_prefix(name + "::");
     auto maybe_make_new_name = [&](auto id) {
       std::string existing_name(inspector.GetName(id));
-      if (starts_with(existing_name, old_prefix)) {
+      if (existing_name.starts_with(old_prefix)) {
         // Replace old prefix with new prefix.
         return new_prefix + existing_name.substr(old_prefix.size());
       }
