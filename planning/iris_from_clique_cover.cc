@@ -145,13 +145,12 @@ void ComputeGreedyTruncatedCliqueCover(
   int num_cliques = 0;
   int num_points_left = adjacency_matrix->cols();
   const int num_points_original = adjacency_matrix->cols();
-  log()->info("Solving Max Clique Cover with {} points",
-              adjacency_matrix->cols());
   while (last_clique_size > minimum_clique_size &&
-         adjacency_matrix->nonZeros() > minimum_clique_size) {
+         num_points_left > minimum_clique_size) {
     const VectorX<bool> max_clique =
         max_clique_solver.SolveMaxClique(*adjacency_matrix);
     last_clique_size = max_clique.template cast<int>().sum();
+    log()->debug("Last Clique Size = {}", last_clique_size);
     num_points_left -= last_clique_size;
     if (last_clique_size > minimum_clique_size) {
       computed_cliques->push(max_clique);
@@ -319,12 +318,11 @@ MakeDefaultMaxCliqueSolver() {
   const double kRelOptGap = 0.05;
   options.SetOption(solvers::MosekSolver().id(),
                     "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", kFeasibleSolutionLimit);
-  options.SetOption(solvers::MosekSolver().id(),
-                    "MSK_DPAR_MIO_TOL_REL_GAP", kRelOptGap);
+  options.SetOption(solvers::MosekSolver().id(), "MSK_DPAR_MIO_TOL_REL_GAP",
+                    kRelOptGap);
   options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
                     kFeasibleSolutionLimit);
-  options.SetOption(solvers::GurobiSolver().id(), "MIPGap",
-                    kRelOptGap);
+  options.SetOption(solvers::GurobiSolver().id(), "MIPGap", kRelOptGap);
   return std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>(
       new planning::graph_algorithms::MaxCliqueSolverViaMip(std::nullopt,
                                                             options));
@@ -383,7 +381,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
   while (approximate_coverage() < options.coverage_termination_threshold &&
          num_iterations < options.iteration_limit) {
     log()->info("IrisFromCliqueCover Iteration {}/{}", num_iterations + 1,
-                 options.iteration_limit);
+                options.iteration_limit);
     Eigen::MatrixXd points(domain.ambient_dimension(),
                            num_points_per_visibility_round);
     for (int i = 0; i < points.cols(); ++i) {

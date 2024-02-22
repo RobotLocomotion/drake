@@ -134,7 +134,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   IrisFromCliqueCoverOptions options;
 
   options.num_points_per_coverage_check = 100;
-  options.num_points_per_visibility_round = 25;
+  options.num_points_per_visibility_round = 100;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
@@ -264,10 +264,10 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   options.num_points_per_coverage_check = 1000;
   options.num_points_per_visibility_round = 100;
   options.coverage_termination_threshold = 0.95;
-  options.minimum_clique_size = 10;
+  options.minimum_clique_size = 25;
   std::vector<HPolyhedron> sets;
 
-  RandomGenerator generator(0);
+  RandomGenerator generator(1);
   planning::graph_algorithms::MaxCliqueSolverViaMip solver{};
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           &solver);
