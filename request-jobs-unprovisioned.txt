@@ -1,15 +1,3 @@
-@drake-jenkins-bot linux-focal-unprovisioned-clang-bazel-experimental-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-clang-bazel-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-focal-unprovisioned-clang-bazel-experimental-release please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-packaging please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-cmake-experimental-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-cmake-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-cmake-experimental-everything-release please
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-cmake-experimental-release please
 @drake-jenkins-bot linux-focal-unprovisioned-gcc-wheel-experimental-release please
 @drake-jenkins-bot linux-jammy-unprovisioned-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-jammy-unprovisioned-clang-bazel-experimental-everything-debug please
