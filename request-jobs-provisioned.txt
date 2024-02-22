@@ -1,18 +1,11 @@
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-gurobi-release please
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-mosek-release please
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-snopt-release please
-@drake-jenkins-bot linux-focal-gcc-bazel-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-gcc-cmake-experimental-debug please
-@drake-jenkins-bot linux-focal-gcc-cmake-experimental-everything-debug please
-@drake-jenkins-bot linux-focal-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-coverage please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-leak-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-undefined-behavior-sanitizer please
@@ -21,6 +14,7 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-leak-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-valgrind-memcheck please
@@ -30,6 +24,7 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-leak-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-valgrind-memcheck please
@@ -38,6 +33,7 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-leak-sanitizer please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-valgrind-memcheck please
@@ -47,6 +43,7 @@
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-coverage please
+@drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-gurobi-debug please
@@ -58,6 +55,9 @@
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-release please
+@drake-jenkins-bot linux-jammy-gcc-cmake-experimental-debug please
+@drake-jenkins-bot linux-jammy-gcc-cmake-experimental-everything-debug please
+@drake-jenkins-bot linux-jammy-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-gurobi-debug please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-gurobi-release please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-mosek-debug please
