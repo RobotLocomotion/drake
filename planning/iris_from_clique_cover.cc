@@ -313,17 +313,18 @@ double ApproximatelyComputeCoverage(
 std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
 MakeDefaultMaxCliqueSolver() {
   solvers::SolverOptions options;
-  const int feasible_solution_limit = 25;
+  // Quit after finding 25 solutions.
+  const int kFeasibleSolutionLimit = 25;
   // Quit at a 5% optimality gap
-  const double rel_gap_exit = 0.05;
+  const double kRelOptGap = 0.05;
   options.SetOption(solvers::MosekSolver().id(),
-                    "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", feasible_solution_limit);
+                    "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", kFeasibleSolutionLimit);
   options.SetOption(solvers::MosekSolver().id(),
-                    "MSK_DPAR_MIO_TOL_REL_GAP", rel_gap_exit);
+                    "MSK_DPAR_MIO_TOL_REL_GAP", kRelOptGap);
   options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
-                    feasible_solution_limit);
+                    kFeasibleSolutionLimit);
   options.SetOption(solvers::GurobiSolver().id(), "MIPGap",
-                    feasible_solution_limit);
+                    kRelOptGap);
   return std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>(
       new planning::graph_algorithms::MaxCliqueSolverViaMip(std::nullopt,
                                                             options));
