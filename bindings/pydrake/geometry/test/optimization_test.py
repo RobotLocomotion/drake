@@ -284,6 +284,13 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(hpoly.ambient_dimension(), 3)
         self.assertEqual(hpoly.A().shape, (4, 3))
 
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+        prog.AddLinearConstraint(x[0] >= 0)
+        hpoly = mut.HPolyhedron(prog=prog)
+        self.assertEqual(hpoly.ambient_dimension(), 1)
+        self.assertEqual(hpoly.A().shape, (1, 1))
+
     def test_hyper_ellipsoid(self):
         mut.Hyperellipsoid()
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)

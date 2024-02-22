@@ -247,13 +247,16 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
-            py::arg("A"), py::arg("b"), cls_doc.ctor.doc_2args)
+            py::arg("A"), py::arg("b"), cls_doc.ctor.doc_2args_A_b)
         .def(py::init<const QueryObject<double>&, GeometryId,
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
-            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
+            py::arg("reference_frame") = std::nullopt,
+            cls_doc.ctor.doc_3args_query_object_geometry_id_reference_frame)
         .def(py::init<const VPolytope&>(), py::arg("vpoly"),
-            cls_doc.ctor.doc_1args)
+            cls_doc.ctor.doc_1args_vpoly)
+        .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
+            cls_doc.ctor.doc_1args_prog)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
         .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
