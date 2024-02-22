@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"

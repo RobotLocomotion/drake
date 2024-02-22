@@ -17,6 +17,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using symbolic::Variable;
+using symbolic::Variables;
 
 namespace {
 void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
@@ -30,6 +31,9 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
   const MatrixXd X_expected = x_expected * x_expected.transpose();
   relaxation->SetInitialGuess(X, X_expected);
 }
+
+const double kInf = std::numeric_limits<double>::infinity();
+
 }  // namespace
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, NoCostsNorConstraints) {
@@ -118,7 +122,6 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, BoundingBoxConstraint) {
   VectorXd lb(N_VARS);
   lb << -1.5, -2.0;
 
-  const double kInf = std::numeric_limits<double>::infinity();
   VectorXd ub(N_VARS);
   ub << kInf, 2.3;
 
@@ -171,7 +174,6 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
   const auto y = prog.NewContinuousVariables<2>("y");
   MatrixXd A0(3, 2);
   A0 << 0.5, 0.7, -0.2, 0.4, -2.3, -4.5;
-  const double kInf = std::numeric_limits<double>::infinity();
   const Vector3d lb0(1.3, -kInf, 0.25);
   const Vector3d ub0(5.6, 0.1, kInf);
   prog.AddLinearConstraint(A0, lb0, ub0, y);
@@ -328,19 +330,17 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
             1.0);
 }
 
- class MakeSemidefiniteRelaxationVariableGroupTest: public ::testing::Test {
+class MakeSemidefiniteRelaxationVariableGroupTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    x_ = prog_.NewIndeterminates<3>();
-    y_ = prog_.NewIndeterminates<2>();
+    x_ = prog_.NewContinuousVariables<3>();
+    y_ = prog_.NewContinuousVariables<2>();
     partition_group_.emplace_back(x_);
     partition_group_.emplace_back(y_);
     overlap_group_.emplace_back(
-        std::initializer_list<symbolic::Variable>({x_(1), y_(0)})
-        );
+        std::initializer_list<symbolic::Variable>({x_(1), y_(0)}));
     overlap_group_.emplace_back(
-        std::initializer_list<symbolic::Variable>({x_(0), y_(1)})
-        );
+        std::initializer_list<symbolic::Variable>({x_(0), y_(1)}));
   }
 
   MathematicalProgram prog_;
@@ -348,24 +348,64 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticConstraint2) {
   VectorIndeterminate<2> y_;
 
   // A grouping of the variables that partitions the variables of the program.
-  std::vector<symbolic::Variables> partition_group_;
+  std::vector<Variables> partition_group_;
   // A grouping of the variables which overlaps.
-  std::vector<symbolic::Variables> overlap_group_;
+  std::vector<Variables> overlap_group_;
 };
 
-TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, NoCostNorConstraints) {
-  const auto relaxation_empty = MakeSemidefiniteRelaxation(prog_, std::vector<symbolic::Variables>());
+TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, EmptyVariableGroup) {
+  // Make prog_ a convex program.
+  prog_.AddLinearCost(y_[0]);
+  prog_.AddQuadraticCost(y_[0] * y_[0] + y_[1] * y_[1],
+                         true /* a convex cost*/);
 
+  prog_.AddLinearConstraint(x_[0] >= x_[1]);
+  prog_.AddLinearEqualityConstraint(x_[1] == x_[2]);
+  prog_.AddQuadraticConstraint(
+      x_[0] * x_[0] + x_[1] * x_[1], -kInf, 1,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
 
+  // Since prog_ is convex and we have no variable groups, then the relaxation
+  // should be exactly the original program.
+  const auto relaxation_empty =
+      MakeSemidefiniteRelaxation(prog_, std::vector<Variables>());
 
-  // X is 3x3 symmetric.
-  EXPECT_EQ(relaxation->num_vars(), 6);
-  // X ≽ 0.
-  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-  // X(-1,-1) = 1.
-  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 1);
+  // The relaxation has the exact same variables as the original program.
+  Variables relax_vars{relaxation_empty->decision_variables()};
+  Variables prog_vars{prog_.decision_variables()};
+  EXPECT_TRUE(relax_vars.IsSubsetOf(prog_vars) &&
+              prog_vars.IsSubsetOf(relax_vars));
 
-  EXPECT_EQ(relaxation->GetAllConstraints().size(), 2);
+  // The relaxation has the same costs.
+  EXPECT_EQ(relaxation_empty->linear_costs().size(),
+            prog_.linear_costs().size());
+  EXPECT_EQ(relaxation_empty->quadratic_costs().size(),
+            prog_.quadratic_costs().size());
+  EXPECT_EQ(relaxation_empty->GetAllCosts().size(), prog_.GetAllCosts().size());
+
+  // The relaxation has the same constraints.
+  EXPECT_EQ(relaxation_empty->linear_constraints().size(),
+            prog_.linear_constraints().size());
+  EXPECT_EQ(relaxation_empty->linear_equality_constraints().size(),
+            prog_.linear_equality_constraints().size());
+  EXPECT_EQ(relaxation_empty->quadratic_constraints().size(),
+            prog_.quadratic_constraints().size());
+  EXPECT_EQ(relaxation_empty->GetAllConstraints().size(),
+            prog_.GetAllConstraints().size());
+
+  // Now add a non-convex quadratic cost and expect a throw.
+  auto non_convex_quadratic_cost = prog_.AddQuadraticCost(x_[0] * y_[1], false);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeSemidefiniteRelaxation(prog_, std::vector<Variables>()),
+      ".*non-convex.*");
+  prog_.RemoveCost(non_convex_quadratic_cost);
+
+  // Now add a non-convex quadratic constraint and expect a throw.
+  auto non_convex_quadratic_constraint = prog_.AddQuadraticConstraint(
+      x_[0] * y_[1], 0, 1, QuadraticConstraint::HessianType::kIndefinite);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeSemidefiniteRelaxation(prog_, std::vector<Variables>()),
+      ".*non-convex.*");
 }
 
 }  // namespace internal
