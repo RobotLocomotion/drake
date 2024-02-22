@@ -21,6 +21,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(prefix));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_slider));
+    a->Visit(DRAKE_NVP(initial_alpha_slider_value));
     a->Visit(DRAKE_NVP(visible_by_default));
     a->Visit(DRAKE_NVP(show_hydroelastic));
     a->Visit(DRAKE_NVP(include_unspecified_accepting));
@@ -53,6 +54,9 @@ struct MeshcatVisualizerParams {
 
   /** Determines whether to enable the alpha slider for geometry display. */
   bool enable_alpha_slider{false};
+
+  /** Initial alpha slider value. */
+  double initial_alpha_slider_value{1.0};
 
   /** Determines whether our meshcat path should be default to being visible. */
   bool visible_by_default{true};
