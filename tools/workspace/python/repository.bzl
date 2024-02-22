@@ -237,7 +237,7 @@ interpreter_path_attrs = {
     "macos_interpreter_path": attr.string(
         # The version listed here should match what's listed in both the root
         # CMakeLists.txt and doc/_pages/installation.md.
-        default = "{homebrew_prefix}/bin/python3.11",
+        default = "{homebrew_prefix}/bin/python3.12",
     ),
 }
 
