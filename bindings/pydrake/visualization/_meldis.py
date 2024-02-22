@@ -170,7 +170,8 @@ class _ViewerApplet:
     """Displays lcmt_viewer_load_robot and lcmt_viewer_draw into MeshCat."""
 
     def __init__(self, *, meshcat, path, alpha_slider_name,
-                 should_accept_link=None, start_visible=True):
+                 should_accept_link=None, start_visible=True,
+                 initial_alpha_value=1):
         """Constructs an applet.
 
         If should_accept_link is given, only links where
@@ -183,6 +184,7 @@ class _ViewerApplet:
         self._load_message = None
         self._load_message_mesh_checksum = None
         self._alpha_slider = _Slider(meshcat, alpha_slider_name)
+        self._alpha_slider._value = initial_alpha_value
         if should_accept_link is not None:
             self._should_accept_link = should_accept_link
         else:
@@ -753,7 +755,8 @@ class Meldis:
         proximity_viewer = _ViewerApplet(meshcat=self.meshcat,
                                          path="/Collision Geometry",
                                          alpha_slider_name="Collision α",
-                                         start_visible=False)
+                                         start_visible=False,
+                                         initial_alpha_value=0.5)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
                         message_type=lcmt_viewer_load_robot,
                         handler=proximity_viewer.on_viewer_load)
