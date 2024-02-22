@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render/render_engine.h"
@@ -641,6 +642,13 @@ std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
 }
 
 template <typename T>
+const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
+    GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.convex_hull();
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -956,6 +964,15 @@ void GeometryState<T>::ChangeShape(SourceId source_id, GeometryId geometry_id,
     // further GeometryState checking.
     RemoveFromProximityEngineUnchecked(*geometry);
     AddToProximityEngineUnchecked(*geometry);
+
+    // A change in shape implies a (possible) change in convex hull. So, we'll
+    // clear any convex hull by default, and only replace it if the new shape
+    // requires it.
+    geometry->set_convex_hull(nullptr);
+    if (geometry_engine_->NeedsConvexHull(*geometry)) {
+      geometry->set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
+          internal::MakeConvexHull(geometry->shape())));
+    }
   }
   if (geometry->has_illustration_role()) {
     // Illustration has no "engine"; it's just the InternalGeometry. All
@@ -1025,6 +1042,15 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   RoleAssign assign) {
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
+
+  // TODO(SeanCurtis-TRI): if RoleAssign == kReplace I *may* not need to
+  // regenerate a convex hull. However, for now, we'll do it blindly.
+
+  // Add a convex hull if the proximity engine needs one.
+  if (geometry_engine_->NeedsConvexHull(geometry)) {
+    geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(geometry.shape())));
+  }
 
   geometry_version_.modify_proximity();
   switch (assign) {

@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":posed_half_space",
         ":sorted_triplet",
         ":tessellation_strategy",
@@ -760,6 +761,16 @@ drake_cc_library(
     deps = [
         ":mesh_traits",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygon_to_triangle_mesh",
+    srcs = ["polygon_to_triangle_mesh.cc"],
+    hdrs = ["polygon_to_triangle_mesh.h"],
+    deps = [
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
     ],
 )
 
@@ -1484,6 +1495,14 @@ drake_cc_googletest(
         ":polygon_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polygon_to_triangle_mesh_test",
+    deps = [
+        ":polygon_to_triangle_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

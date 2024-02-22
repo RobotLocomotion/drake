@@ -96,6 +96,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetPerceptionProperties(geometry_id);
   inspector.GetReferenceMesh(geometry_id);
   inspector.GetAllDeformableGeometryIds();
+  inspector.GetConvexHull(geometry_id);
   inspector.GetReferenceMesh(geometry_id);
   // Register an *additional* geometry and assign proximity properties to both
   // to prevent an exception being thrown.
