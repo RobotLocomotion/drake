@@ -134,7 +134,7 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
   if (type != HydroelasticType::kUndefined) { return; }
 
   // Shape adjuster will fix configurations that can't work.
-  /*bool is_too_small = */GetShapeAdjuster()->MakeShapeAdjustments(
+  GetShapeAdjuster()->MakeShapeAdjustments(
       geometry_state->GetShape(gid), config, &props);
 
   // The source_id arguments on most scene graph methods are marked with todo's
@@ -149,16 +149,8 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
   }
 
   // Make the final changes to proximity properties.
-
-  // XXX removal causes too much collateral damage. Disable for now to see a
-  // different set of damage.
-  // if (is_too_small) {
-  if (false) {
-    geometry_state->RemoveRole(gid_source_id, gid, Role::kProximity);
-  } else {
-    geometry_state->AssignRole(gid_source_id, gid, props,
-                               RoleAssign::kReplace);
-  }
+  geometry_state->AssignRole(gid_source_id, gid, props,
+                             RoleAssign::kReplace);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((

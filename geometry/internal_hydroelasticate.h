@@ -20,7 +20,7 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
 
 /* Ensures that one proximity geometry has hydroelastic properties.
 
-   Specifically, ensure that either:
+   Specifically, ensure that:
    - The geometry has sufficient, compatible hydro properties for contact.
      - The geometry has a defined compliance type.
      - All geometries will be given the requested default compliance type, but
@@ -28,13 +28,6 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
        `geometry::DefaultProximityProperties::compliance_type_rigid_fallback`
        for an exception to this rule.
      - All necessary properties are populated.
-   or:
-   - The geometry's proximity role is removed.
-     - This happens if the geometry is found to be smaller than household dust.
-       - Historically, such shapes were added to help stabilize point contact.
-     - Only primitive shapes are tested.
-       - Meshes are assumed to be large -- otherwise why go the trouble?
-       - Half-spaces are infinitely large.
 
    @pre geometry_state is not nullptr.
    @pre geometry_id indicates a geometry with an assigned proximity role.
