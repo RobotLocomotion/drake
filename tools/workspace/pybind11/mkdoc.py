@@ -737,7 +737,7 @@ def main():
     os.mkdir(tmpdir)
     glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
     with open(glue_filename, 'w') as glue_f:
-        # As the first line of the glue file, include a C++17 standard library
+        # As the first line of the glue file, include a C++ standard library
         # file to sanity check that it's working, before we start processing
         # the user headers.
         glue_f.write("#include <optional>\n")

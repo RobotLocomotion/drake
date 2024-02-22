@@ -127,7 +127,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   bool already_exists = !type_name.empty();
 
   if (already_exists) {
-    visit_overloaded<void>(
+    std::visit<void>(
         overloaded{
             [&type_name, &config](const std::string& class_name) {
               if (!class_name.empty() &&
@@ -152,7 +152,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   if (already_exists) return;
 
-  visit_overloaded<void>(
+  std::visit<void>(
       overloaded{
           [&config, scene_graph](const std::string& class_name) {
             MakeEngineByClassName(class_name, config, scene_graph);

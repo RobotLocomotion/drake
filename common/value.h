@@ -401,10 +401,6 @@ constexpr bool hash_template_argument_from_pretty_func(
   return true;
 }
 
-// Akin to C++17 std::void_t<>.
-template <typename...>
-using typehasher_void_t = void;
-
 // Traits type to ask whether T::NonTypeTemplateParameter exists.
 template <typename T, typename U = void>
 struct TypeHasherHasNonTypeTemplateParameter {
@@ -412,7 +408,7 @@ struct TypeHasherHasNonTypeTemplateParameter {
 };
 template <typename T>
 struct TypeHasherHasNonTypeTemplateParameter<
-    T, typehasher_void_t<typename T::NonTypeTemplateParameter>> {
+    T, std::void_t<typename T::NonTypeTemplateParameter>> {
   static constexpr bool value = true;
 };
 
