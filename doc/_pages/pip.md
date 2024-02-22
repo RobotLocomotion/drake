@@ -57,7 +57,7 @@ published nightly at a [PEP 503](https://peps.python.org/pep-0503/) index url
 [https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 
 - Nightly wheel version numbers are created as `0.0.YYYYMMDD`, e.g.,
-  `0.0.20230914` for Septemper 14th, 2023.
+  `0.0.20240221` for February 21st, 2024.
 - Nightly wheel packages are retained for 56 days from their date of creation,
   and drop out of the index after 48 days.
 
