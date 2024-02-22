@@ -316,18 +316,35 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   solvers::AggregateBoundingBoxConstraints(prog, &lb, &ub);
 
   // Remove any trivial bounding box constraints.
-  VectorXd lb_valid(0);
-  VectorXd ub_valid(0);
+  std::vector<int> lb_valid_idx;
+  std::vector<int> ub_valid_idx;
+  std::vector<double> lb_valid_std;
+  std::vector<double> ub_valid_std;
   DRAKE_THROW_UNLESS(lb.size() == ub.size());
   for (int i = 0; i < lb.size(); ++i) {
     if (lb[i] > -kInf) {
-      lb_valid.conservativeResize(lb_valid.size() + 1);
-      lb_valid.tail(1) = lb.segment(i, 1);
+      lb_valid_std.push_back(lb.segment(i, 1)[0]);
+      lb_valid_idx.push_back(i);
     }
     if (ub[i] < kInf) {
-      ub_valid.conservativeResize(ub_valid.size() + 1);
-      ub_valid.tail(1) = ub.segment(i, 1);
+      ub_valid_std.push_back(ub.segment(i, 1)[0]);
+      ub_valid_idx.push_back(i);
     }
+  }
+  VectorXd lb_valid = VectorXd::Map(lb_valid_std.data(), lb_valid_std.size());
+  VectorXd ub_valid = VectorXd::Map(ub_valid_std.data(), ub_valid_std.size());
+
+  MatrixXd lb_valid_A(lb_valid.size(), lb.size());
+  for (int i = 0; i < lb_valid.size(); ++i) {
+    VectorXd row = VectorXd::Zero(lb.size());
+    row[lb_valid_idx[i]] = 1;
+    lb_valid_A.row(i) = row;
+  }
+  MatrixXd ub_valid_A(ub_valid.size(), ub.size());
+  for (int i = 0; i < ub_valid.size(); ++i) {
+    VectorXd row = VectorXd::Zero(lb.size());
+    row[ub_valid_idx[i]] = -1;
+    ub_valid_A.row(i) = row;
   }
 
   // The linear equality constraints are only added in one direction, so we need
@@ -340,9 +357,8 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   A.middleRows(A_row_count, num_equality_constraints) =
       -1 * A.topRows(num_equality_constraints);
   A.middleRows(A_row_count + num_equality_constraints, ub_valid.size()) =
-      MatrixXd::Identity(ub_valid.size(), ub_valid.size());
-  A.bottomRows(lb_valid.size()) =
-      -MatrixXd::Identity(lb_valid.size(), lb_valid.size());
+      ub_valid_A;
+  A.bottomRows(lb_valid.size()) = lb_valid_A;
 
   VectorXd b_eigen(total_rows);
   b_eigen.head(A_row_count) = VectorXd::Map(b.data(), b.size());
