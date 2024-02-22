@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -400,6 +401,14 @@ class SceneGraphInspector {
   /** Returns all geometry ids that correspond to deformable geometries. The
    order is guaranteed to be stable and consistent.  */
   std::vector<GeometryId> GetAllDeformableGeometryIds() const;
+
+  /** Returns the convex hull associated with the given `geometry_id`, if it
+   exists.
+
+   The return value is guaranteed to be non-null if the geometry has proximity
+   properties and a convex representation in the ProximityEngine. No other
+   guarantees are provided. */
+  const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.
