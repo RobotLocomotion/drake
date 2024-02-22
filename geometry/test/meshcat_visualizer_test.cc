@@ -414,6 +414,44 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
   }
 }
 
+// When visualizing proximity geometry, if a geometry has a convex hull it is
+// used in place of the geometry.
+GTEST_TEST(MeshcatVisualizerTest, ConvexHull) {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  // Load a scene with mesh collision geometry.
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+  multibody::Parser(&plant).AddModelsFromUrl(
+      "package://drake/geometry/render/test/box.sdf");
+  plant.Finalize();
+
+  // Dig out a GeometryId that we just loaded.
+  const auto& inspector = scene_graph.model_inspector();
+  const GeometryId box_id =
+      inspector.GetAllGeometryIds(Role::kProximity).front();
+  ASSERT_EQ(inspector.GetName(box_id), "box::collision");
+  ASSERT_NE(inspector.GetConvexHull(box_id), nullptr);
+  ASSERT_EQ(inspector.GetShape(box_id).type_name(), "Mesh");
+
+  // Add a proximity visualizer, with or without hydro.
+  MeshcatVisualizerParams params {.role = Role::kProximity};
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                          params);
+
+  // Send the geometry to Meshcat.
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->ForcedPublish(*context);
+
+  // Read back the mesh shape. The message would have type _meshfile_object if
+  // the obj had been sent. If, however, the generated convex hull is sent, the
+  // type will be BufferGeometry.
+  const std::string data = meshcat->GetPackedObject(fmt::format(
+      "/drake/{}/box/box/{}", params.prefix, box_id.get_value()));
+  EXPECT_THAT(data, testing::HasSubstr("BufferGeometry"));
+}
+
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 

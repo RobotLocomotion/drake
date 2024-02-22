@@ -2991,6 +2991,46 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
   EXPECT_TRUE(has_expected_roles(anchored_geometry_, true, false, true));
 }
 
+// Test the APIs/functionality related to the computation of a convex hull.
+// Currently, one is generated only for geometries of certain types (see
+// ProximityEngine::NeedsConvexHull()) with the proximity role. This tests the
+// logic for generating, removing, and reporting convex hulls.
+TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
+  SetUpSingleSourceTree(Assign::kProximity);
+
+  // A shape that doesn't require a convex hull won't have one. All geometries
+  // added by SetUpSingleSourceTree() are spheres and get no convex hulls.
+  DRAKE_DEMAND(geometry_state_.GetProximityProperties(geometries_[0]) !=
+               nullptr);
+  EXPECT_EQ(geometry_state_.GetConvexHull(geometries_[0]), nullptr);
+
+  // A shape that *does* require a convex hull has one, after getting proximity
+  // properties.
+  const std::string mesh_name =
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj");
+  const GeometryId mesh_id = geometry_state_.RegisterAnchoredGeometry(
+      source_id_, make_unique<GeometryInstance>(
+                      RigidTransformd{}, Mesh(mesh_name, 1), "mesh_with_hull"));
+  EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
+  geometry_state_.AssignRole(source_id_, mesh_id, ProximityProperties());
+  EXPECT_NE(geometry_state_.GetConvexHull(mesh_id), nullptr);
+
+  // Updating properties leaves the convex hull defined.
+  EXPECT_FALSE(geometry_state_.GetProximityProperties(mesh_id)->HasProperty(
+      "test", "value"));
+  ProximityProperties alt_props;
+  alt_props.AddProperty("test", "value", 17);
+  geometry_state_.AssignRole(source_id_, mesh_id, alt_props,
+                             RoleAssign::kReplace);
+  DRAKE_DEMAND(geometry_state_.GetProximityProperties(mesh_id)->HasProperty(
+      "test", "value"));
+  EXPECT_NE(geometry_state_.GetConvexHull(mesh_id), nullptr);
+
+  // Changing the shape clears the convex hull.
+  geometry_state_.ChangeShape(source_id_, mesh_id, Sphere(2), std::nullopt);
+  EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
+}
+
 // Test the ability to reassign proximity properties to a geometry that already
 // has the proximity role.
 TEST_F(GeometryStateTest, ModifyProximityProperties) {

@@ -4837,6 +4837,41 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
   EXPECT_EQ(contact_surface.id_B(), rigid_id);
 }
 
+GTEST_TEST(ProximityEngineTests, ConvexHull) {
+  ProximityEngine<double> engine;
+
+  const SourceId s_id = SourceId::get_new_id();
+  const FrameId f_id = FrameId::get_new_id();
+  const GeometryId g_id = GeometryId::get_new_id();
+
+  // Shapes that don't require convex hulls.
+  vector<std::unique_ptr<Shape>> unsupported_shapes;
+  unsupported_shapes.push_back(make_unique<Box>(1, 1, 1));
+  unsupported_shapes.push_back(make_unique<Capsule>(1, 1));
+  unsupported_shapes.push_back(make_unique<Cylinder>(1, 1));
+  unsupported_shapes.push_back(make_unique<Ellipsoid>(1, 2, 3));
+  unsupported_shapes.push_back(make_unique<HalfSpace>());
+  unsupported_shapes.push_back(make_unique<MeshcatCone>(1));
+  unsupported_shapes.push_back(make_unique<Sphere>(1));
+  for (std::unique_ptr<Shape>& shape : unsupported_shapes) {
+    InternalGeometry geo(s_id, std::move(shape), f_id, g_id, "n", {});
+    EXPECT_FALSE(engine.NeedsConvexHull(geo));
+  }
+
+  // Rigid shapes that *do* require convex hulls.
+  EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
+      s_id, make_unique<Mesh>("unimportant", 1.0), f_id, g_id, "n", {})));
+  EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
+      s_id, make_unique<Convex>("unimportant", 1.0), f_id, g_id, "n", {})));
+
+  // Being deformable would eliminate the need for a convex hull.
+  EXPECT_FALSE(engine.NeedsConvexHull(InternalGeometry(
+      s_id,
+      make_unique<Mesh>(
+          FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), 1),
+      f_id, g_id, "n", {}, 1.0)));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

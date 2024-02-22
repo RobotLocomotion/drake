@@ -275,6 +275,12 @@ std::vector<GeometryId> SceneGraphInspector<T>::GetAllDeformableGeometryIds()
 }
 
 template <typename T>
+const PolygonSurfaceMesh<double>* SceneGraphInspector<T>::GetConvexHull(
+    GeometryId geometry_id) const {
+  return state_->GetConvexHull(geometry_id);
+}
+
+template <typename T>
 bool SceneGraphInspector<T>::CollisionFiltered(GeometryId geometry_id1,
                                                GeometryId geometry_id2) const {
   DRAKE_DEMAND(state_ != nullptr);
