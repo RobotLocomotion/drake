@@ -40,6 +40,7 @@ using math::RotationMatrixd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
+using solvers::VectorXDecisionVariable;
 
 GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   HPolyhedron H;
@@ -182,11 +183,14 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope1D) {
   EXPECT_FALSE(h2.PointInSet(Vector1d(43 + eps)));
 }
 
-void CheckHPolyhedronContainsVPolyhedron(const HPolyhedron& h,
+bool CheckHPolyhedronContainsVPolyhedron(const HPolyhedron& h,
                                          const VPolytope& v, double tol = 0) {
   for (int i = 0; i < v.vertices().cols(); ++i) {
-    EXPECT_TRUE(h.PointInSet(v.vertices().col(i)));
+    if (!h.PointInSet(v.vertices().col(i))) {
+      return false;
+    }
   }
+  return true;
 }
 
 GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
@@ -201,7 +205,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly1(vert1);
   EXPECT_NO_THROW(HPolyhedron{vpoly1});
   const HPolyhedron hpoly1(vpoly1);
-  CheckHPolyhedronContainsVPolyhedron(hpoly1, vpoly1);
+  EXPECT_TRUE(CheckHPolyhedronContainsVPolyhedron(hpoly1, vpoly1));
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(0, 0)));
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(2, 0)));
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(1, 1)));
@@ -215,7 +219,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly2(vert2);
   EXPECT_NO_THROW(HPolyhedron{vpoly2});
   const HPolyhedron hpoly2(vpoly2);
-  CheckHPolyhedronContainsVPolyhedron(hpoly2, vpoly2);
+  EXPECT_TRUE(CheckHPolyhedronContainsVPolyhedron(hpoly2, vpoly2));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(0, 0)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(1, 1)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(2, -1)));
@@ -230,7 +234,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly3(vert3);
   EXPECT_NO_THROW(HPolyhedron{vpoly3});
   const HPolyhedron hpoly3(vpoly3);
-  CheckHPolyhedronContainsVPolyhedron(hpoly3, vpoly3);
+  EXPECT_TRUE(CheckHPolyhedronContainsVPolyhedron(hpoly3, vpoly3));
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(1, 1, 0)));
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(-1, 0, 0)));
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(0, -1, 0)));
@@ -247,7 +251,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly4(vert4);
   EXPECT_NO_THROW(HPolyhedron{vpoly4});
   const HPolyhedron hpoly4(vpoly4);
-  CheckHPolyhedronContainsVPolyhedron(hpoly4, vpoly4);
+  EXPECT_TRUE(CheckHPolyhedronContainsVPolyhedron(hpoly4, vpoly4));
 
   Eigen::Matrix<double, 3, 4> vert5;
   // clang-format off
@@ -258,7 +262,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly5(vert5);
   EXPECT_NO_THROW(HPolyhedron{vpoly5});
   const HPolyhedron hpoly5(vpoly5);
-  CheckHPolyhedronContainsVPolyhedron(hpoly5, vpoly5);
+  EXPECT_TRUE(CheckHPolyhedronContainsVPolyhedron(hpoly5, vpoly5));
 
   // Case 3: VPolytope is empty
   Eigen::Matrix<double, 2, 0> vert6;
@@ -276,6 +280,134 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   // Should throw an error, because HPolyhedron can't
   // handle an empty zero dimensional set.
   EXPECT_THROW(HPolyhedron{vpoly7}, std::exception);
+}
+
+bool BoundedHPolyhedronEquivalenceTest(const HPolyhedron& h1,
+                                       const HPolyhedron& h2, double tol = 0) {
+  VPolytope v1(h1);
+  VPolytope v2(h2);
+  return CheckHPolyhedronContainsVPolyhedron(h1, v2, tol) &&
+         CheckHPolyhedronContainsVPolyhedron(h2, v1, tol);
+}
+
+GTEST_TEST(HPolyhedronTest, ConstructorFromLinearProgram) {
+  // Test that a program with no variables throws.
+  MathematicalProgram empty_prog;
+  EXPECT_THROW(HPolyhedron{empty_prog}, std::exception);
+
+  // Test that a program with no constraints throws.
+  MathematicalProgram prog_no_constraints;
+  VectorXDecisionVariable x_no_constraints =
+      prog_no_constraints.NewContinuousVariables(5);
+  EXPECT_THROW(HPolyhedron{prog_no_constraints}, std::exception);
+
+  // Test that non-linear programs throw.
+  MathematicalProgram prog_socp;
+  VectorXDecisionVariable x_socp = prog_socp.NewContinuousVariables(3);
+  prog_socp.AddRotatedLorentzConeConstraint(MatrixXd::Identity(3, 3),
+                                            VectorXd::Zero(3), x_socp);
+  EXPECT_THROW(HPolyhedron{prog_socp}, std::exception);
+
+  MathematicalProgram prog_sdp;
+  solvers::MatrixXDecisionVariable x_sdp =
+      prog_sdp.NewSymmetricContinuousVariables(3);
+  prog_sdp.AddPositiveSemidefiniteConstraint(x_sdp);
+  EXPECT_THROW(HPolyhedron{prog_sdp}, std::exception);
+
+  MathematicalProgram prog_nlp;
+  VectorXDecisionVariable x_nlp = prog_nlp.NewContinuousVariables(2);
+  prog_nlp.AddConstraint(x_nlp[0] * x_nlp[1] == 1);
+  EXPECT_THROW(HPolyhedron{prog_nlp}, std::exception);
+
+  const double kTol = 1e-12;
+
+  // Simple test #1. One set of variables, one set of constraints.
+  MathematicalProgram prog1;
+  VectorXDecisionVariable x1 = prog1.NewContinuousVariables(2);
+  prog1.AddLinearConstraint(MatrixXd::Identity(2, 2), VectorXd::Constant(2, -1),
+                            VectorXd::Constant(2, 1), x1);
+  EXPECT_NO_THROW(HPolyhedron{prog1});
+  HPolyhedron h1(prog1);
+  EXPECT_EQ(h1.ambient_dimension(), 2);
+  EXPECT_EQ(h1.A().rows(), 4);
+  EXPECT_EQ(h1.A().cols(), 2);
+  EXPECT_EQ(h1.b().rows(), 4);
+  Eigen::Matrix<double, 4, 2> A1_expected;
+  VectorXd b1_expected(4);
+  // clang-format off
+  A1_expected <<  1,  0,
+                 -1,  0,
+                  0,  1,
+                  0, -1;
+  // clang-format on
+  b1_expected << 1, 1, 1, 1;
+  HPolyhedron h1_expected(A1_expected, b1_expected);
+  EXPECT_TRUE(BoundedHPolyhedronEquivalenceTest(h1, h1_expected, kTol));
+
+  // Simple test #2. Multiple variables, make sure they get brought together
+  // correctly.
+  MathematicalProgram prog2;
+  VectorXDecisionVariable x2_1 = prog2.NewContinuousVariables(2);
+  VectorXDecisionVariable x2_2 = prog2.NewContinuousVariables(1);
+  prog2.AddLinearConstraint(MatrixXd::Identity(2, 2), VectorXd::Constant(2, -1),
+                            VectorXd::Constant(2, 3), x2_1);
+  prog2.AddLinearConstraint(MatrixXd::Identity(1, 1), VectorXd::Constant(1, -2),
+                            VectorXd::Constant(1, 4), x2_2);
+  EXPECT_NO_THROW(HPolyhedron{prog2});
+  HPolyhedron h2(prog2);
+  EXPECT_EQ(h2.ambient_dimension(), 3);
+  EXPECT_EQ(h2.A().rows(), 6);
+  EXPECT_EQ(h2.A().cols(), 3);
+  EXPECT_EQ(h2.b().rows(), 6);
+  Eigen::Matrix<double, 6, 3> A2_expected;
+  VectorXd b2_expected(6);
+  // clang-format off
+  A2_expected <<  1,  0,  0,
+                 -1,  0,  0,
+                  0,  1,  0,
+                  0, -1,  0,
+                  0,  0,  1,
+                  0,  0, -1;
+  // clang-format on
+  b2_expected << 3, 1, 3, 1, 4, 2;
+  HPolyhedron h2_expected(A2_expected, b2_expected);
+  EXPECT_TRUE(BoundedHPolyhedronEquivalenceTest(h2, h2_expected, kTol));
+
+  // Make sure equality constraints and bounding box constraints are handled
+  // correctly.
+  MathematicalProgram prog3;
+  VectorXDecisionVariable x3 = prog3.NewContinuousVariables(2);
+  prog3.AddLinearEqualityConstraint(Vector2d(1, -1), 2, x3);
+  prog3.AddBoundingBoxConstraint(-5, 5, x3);
+  EXPECT_NO_THROW(HPolyhedron{prog3});
+  HPolyhedron h3(prog3);
+  EXPECT_EQ(h3.ambient_dimension(), 2);
+  EXPECT_EQ(h3.A().rows(), 6);
+  EXPECT_EQ(h3.A().cols(), 2);
+  EXPECT_EQ(h3.b().rows(), 6);
+  Eigen::Matrix<double, 6, 2> A3_expected;
+  VectorXd b3_expected(6);
+  // clang-format off
+  A3_expected <<  1, -1,
+                 -1,  1,
+                  1,  0,
+                 -1,  0,
+                  0,  1,
+                  0, -1;
+  // clang-format on
+  b3_expected << 2, -2, 5, 5, 5, 5;
+  HPolyhedron h3_expected(A3_expected, b3_expected);
+  EXPECT_TRUE(BoundedHPolyhedronEquivalenceTest(h3, h3_expected, kTol));
+
+  // Check that PointInSet constraints work with HPolyhedron.
+  HPolyhedron h4_expected(h3_expected);
+  MathematicalProgram prog4;
+  VectorXDecisionVariable x4 =
+      prog4.NewContinuousVariables(h4_expected.ambient_dimension());
+  h4_expected.AddPointInSetConstraints(&prog4, x4);
+  EXPECT_NO_THROW(HPolyhedron{prog4});
+  HPolyhedron h4(prog4);
+  EXPECT_TRUE(BoundedHPolyhedronEquivalenceTest(h4, h4_expected, kTol));
 }
 
 GTEST_TEST(HPolyhedronTest, L1BallTest) {
