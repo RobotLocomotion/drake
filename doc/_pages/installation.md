@@ -23,9 +23,9 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | TBD ⁽⁵⁾      | TBD ⁽⁵⁾    | March 2028      |
-| macOS Monterey (12)                | x86_64       | 3.11       | October 2023    |
-| macOS Ventura (13)                 | arm64        | 3.11       | October 2024    |
-| macOS Sonoma (14)                  | arm64        | 3.11       | October 2025    |
+| macOS Monterey (12)                | x86_64       | 3.12       | October 2023    |
+| macOS Ventura (13)                 | arm64        | 3.12       | October 2024    |
+| macOS Sonoma (14)                  | arm64        | 3.12       | October 2025    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
