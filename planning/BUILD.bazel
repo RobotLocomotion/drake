@@ -229,6 +229,8 @@ drake_cc_library(
         "//solvers:mosek_solver",
         ":scene_graph_collision_checker",
         ":visibility_graph",
+    ],
+    deps = [
         "@common_robotics_utilities",
     ],
 )
