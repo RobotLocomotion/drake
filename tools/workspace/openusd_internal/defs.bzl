@@ -12,7 +12,7 @@ def pxr_library(
 
     Args:
         name: Matches the upstream name (the first argument in CMake).
-        subdir: The subdirectory under `OpenUSD/pxr` (e.g. "base/arch").
+        subdir: The subdirectory under `OpenUSD` (e.g. "pxr/base/arch").
     """
     attrs = FILES[subdir]
     srcs = [
@@ -42,11 +42,22 @@ def pxr_library(
         "@onetbb_internal//:tbb",
         # TODO(jwnimmer-tri) We also need to list some @boost here.
     ]
+
+    # TODO(jwnimmer-tri) The plugInfo files will need to be pseudo-installed.
+    data = native.glob([subdir + "/plugInfo.json"], allow_empty = True)
+
+    # OpenUSD uses `__attribute__((constructor))` in anger, so we must mark
+    # all of its code as "alwayslink" (aka "whole archive").
+    alwayslink = True
+
     cc_library(
         name = name,
         srcs = srcs,
         hdrs = hdrs,
         defines = defines,
         copts = ["-w"],
+        alwayslink = alwayslink,
+        linkstatic = True,
+        data = data,
         deps = deps,
     )
