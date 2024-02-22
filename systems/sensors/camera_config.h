@@ -411,7 +411,13 @@ struct CameraConfig {
    separate windows controlled by the thread in which the camera images are
    rendered). As both image types are rendered from `ColorRenderCamera`, it
    applies to both of them and depends on whether the RenderEngine instance
-   supports it. */
+   supports it.
+
+   Note: This flag is intended for quick debug use instead of serving as an
+   image viewer. Currently, the recommended way for image visualization is to
+   publish images over LCM and visualize them via
+   `//bindings/pydrake/visualization:lcm_image_array_viewer`, while a more
+   polished visualizer (#18862) is underway. */
   bool show_rgb{false};
 
   /** Controls whether the images are broadcast in a compressed format. */
