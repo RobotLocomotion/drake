@@ -381,6 +381,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromLinearProgram) {
   prog3.AddBoundingBoxConstraint(-5, 5, x3);
   EXPECT_NO_THROW(HPolyhedron{prog3});
   HPolyhedron h3(prog3);
+
   EXPECT_EQ(h3.ambient_dimension(), 2);
   EXPECT_EQ(h3.A().rows(), 6);
   EXPECT_EQ(h3.A().cols(), 2);

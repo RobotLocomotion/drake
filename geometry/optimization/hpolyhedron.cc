@@ -293,65 +293,86 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   std::vector<Eigen::Triplet<double>> A_triplets;
   std::vector<double> b;
   int A_row_count = 0;
-  std::vector<int> linear_eq_y_start_indices;
-  int num_rows_added = 0;
+  std::vector<int> unused_linear_eq_y_start_indices;
+  int unused_num_rows_added = 0;
   solvers::internal::ParseLinearEqualityConstraints(
-      prog, &A_triplets, &b, &A_row_count, &linear_eq_y_start_indices,
-      &num_rows_added);
+      prog, &A_triplets, &b, &A_row_count, &unused_linear_eq_y_start_indices,
+      &unused_num_rows_added);
+
+  // Linear equality constraints Ax = b are given in the form Ax <= b. So we add
+  // in the reverse of the constraint, Ax >= b, encoded as -Ax <= -b. This is
+  // implemented by taking each triplet (i, j, x) and adding in (i + N, j, -x),
+  // where N is the number of rows of A before we start adding new triplets.
+  const int num_equality_triplets = A_triplets.size();
+  const int& num_equality_constraints = A_row_count;
+  A_triplets.reserve(2 * A_triplets.size());
+  for (int i = 0; i < num_equality_triplets; ++i) {
+    const Eigen::Triplet<double>& triplet = A_triplets.at(i);
+    A_triplets.emplace_back(triplet.row() + num_equality_constraints,
+                            triplet.col(), -triplet.value());
+  }
+  // We also set b := [b; -b].
+  b.reserve(2 * b.size());
+  for (int i = 0; i < num_equality_constraints; ++i) {
+    b.push_back(-1 * b[i]);
+  }
+  A_row_count *= 2;
 
   // Get linear inequality constraints.
-  int num_equality_constraints = num_rows_added;
-  std::vector<std::vector<std::pair<int, int>>> linear_constraint_dual_indices;
-  solvers::internal::ParseLinearConstraints(prog, &A_triplets, &b, &A_row_count,
-                                            &linear_constraint_dual_indices,
-                                            &num_rows_added);
-
-  // Form the A and b matrices of the HPolyhedron.
-  Eigen::SparseMatrix<double> A_sparse(A_row_count, prog.num_vars());
-  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  std::vector<std::vector<std::pair<int, int>>>
+      unused_linear_constraint_dual_indices;
+  solvers::internal::ParseLinearConstraints(
+      prog, &A_triplets, &b, &A_row_count,
+      &unused_linear_constraint_dual_indices, &unused_num_rows_added);
 
   // Get bounding box constraints.
   VectorXd lb;
   VectorXd ub;
   solvers::AggregateBoundingBoxConstraints(prog, &lb, &ub);
 
-  // Remove any trivial bounding box constraints.
-  VectorXd lb_valid(0);
-  VectorXd ub_valid(0);
-  DRAKE_THROW_UNLESS(lb.size() == ub.size());
+  A_triplets.reserve(A_triplets.size() + (2 * lb.size()));
+  b.reserve(2 * lb.size());
   for (int i = 0; i < lb.size(); ++i) {
-    if (lb[i] > -kInf) {
-      lb_valid.conservativeResize(lb_valid.size() + 1);
-      lb_valid.tail(1) = lb.segment(i, 1);
+    // If lb[i] == Infinity or ub[i] == -Infinity, we have a trivial
+    // infeasibility, so we make a trivially infeasible HPolyhedron by just
+    // including the constraints x <= -1, x >= 0, where x is the first decision
+    // variable.
+    if (lb[i] == kInf || ub[i] == -kInf) {
+      MatrixXd A_infeasible(2, prog.num_vars());
+      A_infeasible.setZero();
+      A_infeasible(0, 0) = 1;
+      A_infeasible(1, 0) = -1;
+      Eigen::Vector2d b_infeasible(-1, 0);
+      *this = HPolyhedron(A_infeasible, b_infeasible);
+      return;
+    } else {
+      A_triplets.emplace_back(A_row_count, i, 1);
+      b.push_back(ub[i]);
+      ++A_row_count;
+      A_triplets.emplace_back(A_row_count, i, -1);
+      b.push_back(-lb[i]);
+      ++A_row_count;
     }
-    if (ub[i] < kInf) {
-      ub_valid.conservativeResize(ub_valid.size() + 1);
-      ub_valid.tail(1) = ub.segment(i, 1);
+  }
+  // Form the A and b matrices of the HPolyhedron.
+  Eigen::SparseMatrix<double> A_sparse(A_row_count, prog.num_vars());
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+
+  // Identify the rows that do not contain any infinities, as the rows to keep.
+  std::vector<int> rows_to_keep;
+  rows_to_keep.reserve(A_sparse.rows());
+  for (int i = 0; i < A_sparse.rows(); ++i) {
+    if (VectorXd{A_sparse.row(i)}.cwiseAbs().maxCoeff() < kInf &&
+        abs(b[i]) < kInf) {
+      rows_to_keep.push_back(i);
     }
   }
 
-  // The linear equality constraints are only added in one direction, so we need
-  // to duplicate those constraints, but reverse the inequality. So for each ax
-  // <= b, we add -ax <= -b (equivalent to ax >= b).
-  int total_rows = A_row_count + num_equality_constraints + lb_valid.size() +
-                   ub_valid.size();
-  MatrixXd A(total_rows, prog.num_vars());
-  A.topRows(A_row_count) = A_sparse;
-  A.middleRows(A_row_count, num_equality_constraints) =
-      -1 * A.topRows(num_equality_constraints);
-  A.middleRows(A_row_count + num_equality_constraints, ub_valid.size()) =
-      MatrixXd::Identity(ub_valid.size(), ub_valid.size());
-  A.bottomRows(lb_valid.size()) =
-      -MatrixXd::Identity(lb_valid.size(), lb_valid.size());
+  VectorXd b_eigen(b.size());
+  b_eigen = VectorXd::Map(b.data(), b.size());
 
-  VectorXd b_eigen(total_rows);
-  b_eigen.head(A_row_count) = VectorXd::Map(b.data(), b.size());
-  b_eigen.segment(A_row_count, num_equality_constraints) =
-      -1 * b_eigen.head(num_equality_constraints);
-  b_eigen.segment(A_row_count + num_equality_constraints, ub_valid.size()) =
-      ub_valid;
-  b_eigen.tail(lb_valid.size()) = -lb_valid;
-  *this = HPolyhedron(A, b_eigen);
+  *this = HPolyhedron(MatrixXd(A_sparse)(rows_to_keep, Eigen::all),
+                      b_eigen(rows_to_keep));
 }
 
 HPolyhedron::~HPolyhedron() = default;

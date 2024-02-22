@@ -48,9 +48,7 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
 
   /** Constructs a new HPolyhedron as the feasible set of a linear program prog.
   @throws std::exception if prog is not a linear program.
-  @throws std::exception if prog has no variables or no constraints.
-  @throws std::exception if prog has any trivially-infeasible bounding box
-  constraints. */
+  @throws std::exception if prog has no variables or no constraints. */
   explicit HPolyhedron(const solvers::MathematicalProgram& prog);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
