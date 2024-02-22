@@ -25,7 +25,6 @@
 namespace drake {
 namespace planning {
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
-using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;
 using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using Eigen::SparseMatrix;
