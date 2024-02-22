@@ -404,6 +404,10 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
         "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
     if (show_hydroelastic) {
       EXPECT_GT(data.size(), 5000);
+      // The BufferGeometry has explicitly declared its material to be flat
+      // shaded. The encoding includes the property name and the value \xC3 for
+      // true. (False is \xC2.)
+      EXPECT_THAT(data, testing::HasSubstr("flatShading\xC3")) << data;
     } else {
       EXPECT_LT(data.size(), 1000);
     }
