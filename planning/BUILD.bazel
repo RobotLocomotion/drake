@@ -229,6 +229,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
         ":scene_graph_collision_checker",
         ":visibility_graph",
+        "@common_robotics_utilities",
     ],
 )
 
@@ -380,8 +381,11 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_memcheck",
+        # IPOPT is exceptionally slow with IRIS so only test with snopt.
         "snopt",
-    ] + mosek_test_tags() + gurobi_test_tags(),
+    ] +
+    # Requires a MIP solver to run.
+    mosek_test_tags() + gurobi_test_tags(),
     deps = [
         ":iris_from_clique_cover",
         ":robot_diagram_builder",

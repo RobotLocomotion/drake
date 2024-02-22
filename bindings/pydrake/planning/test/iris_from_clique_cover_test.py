@@ -2,10 +2,12 @@ import unittest
 
 import pydrake.planning as mut
 from pydrake.common import RandomGenerator, Parallelism
-from pydrake.planning import (RobotDiagramBuilder,
-                              SceneGraphCollisionChecker,
-                              CollisionCheckerParams)
-from pydrake.solvers import MosekSolver, GurobiSolver
+from pydrake.planning import (
+    RobotDiagramBuilder,
+    SceneGraphCollisionChecker,
+    CollisionCheckerParams,
+)
+from pydrake.solvers import MosekSolver, GurobiSolver, SnoptSolver
 
 import textwrap
 import numpy as np
@@ -13,12 +15,25 @@ import scipy.sparse as sp
 import scipy
 
 
+def _snopt_and_mip_solver_available():
+    mip_solver_available = (
+       MosekSolver().available() and MosekSolver().enabled() or (
+        GurobiSolver().available() and GurobiSolver().enabled()
+        )
+    )
+    snopt_solver_available = (
+            SnoptSolver().available() and SnoptSolver().enabled()
+    )
+    return mip_solver_available and snopt_solver_available
+
+
 class TestIrisFromCliqueCover(unittest.TestCase):
     def _make_robot_diagram(self):
         # Code taken from
         # bindings/pydrake/planning/test/collision_checker_test.py
         builder = mut.RobotDiagramBuilder()
-        scene_yaml = textwrap.dedent("""
+        scene_yaml = textwrap.dedent(
+            """
         directives:
         - add_model:
             name: box
@@ -29,7 +44,8 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         - add_weld:
             parent: world
             child: ground::ground_plane_box
-        """)
+        """
+        )
         builder.parser().AddModelsFromString(scene_yaml, "dmd.yaml")
         model_instance_index = builder.plant().GetModelInstanceByName("box")
         robot_diagram = builder.Build()
@@ -43,16 +59,17 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         robot, index = self._make_robot_diagram()
         plant = robot.plant()
         checker_kwargs = dict(
-            model=robot,
-            robot_model_instances=[index],
-            edge_step_size=0.125)
+            model=robot, robot_model_instances=[index], edge_step_size=0.125
+        )
 
         if use_provider:
-            checker_kwargs["distance_and_interpolation_provider"] = \
-                mut.LinearDistanceAndInterpolationProvider(plant)
+            checker_kwargs[
+                "distance_and_interpolation_provider"
+            ] = mut.LinearDistanceAndInterpolationProvider(plant)
         if use_function:
-            checker_kwargs["configuration_distance_function"] = \
-                self._configuration_distance
+            checker_kwargs[
+                "configuration_distance_function"
+            ] = self._configuration_distance
 
         return mut.SceneGraphCollisionChecker(**checker_kwargs)
 
@@ -74,11 +91,17 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         self.assertEqual(options.num_points_per_visibility_round, 150)
         options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-3
         self.assertEqual(
-            options.rank_tol_for_minimum_volume_circumscribed_ellipsoid,
-            1e-3)
+            options.rank_tol_for_minimum_volume_circumscribed_ellipsoid, 1e-3
+        )
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
 
+    # IPOPT performs poorly on this test. We also need a MIP solver to
+    # be available.  Hence only run this test if both SNOPT and a MIP solver
+    # are available.
+    @unittest.skipUnless(
+        _snopt_and_mip_solver_available(), "Requires Snopt and a MIP solver"
+    )
     def test_iris_in_configuration_space_from_clique_cover(self):
         cross_cspace_urdf = """
         <robot name="boxes">
@@ -126,8 +149,9 @@ class TestIrisFromCliqueCover(unittest.TestCase):
 """
         params = dict(edge_step_size=0.125)
         builder = RobotDiagramBuilder()
-        params["robot_model_instances"] =\
-            builder.parser().AddModelsFromString(cross_cspace_urdf, "urdf")
+        params["robot_model_instances"] = builder.parser().AddModelsFromString(
+            cross_cspace_urdf, "urdf"
+        )
         params["model"] = builder.Build()
         checker = SceneGraphCollisionChecker(**params)
 
@@ -137,18 +161,14 @@ class TestIrisFromCliqueCover(unittest.TestCase):
 
         # We can achieve almost 100% coverage with 2 regions.
         options.coverage_termination_threshold = 0.999
+        options.iteration_limit = 3
 
         generator = RandomGenerator(0)
 
-        if (MosekSolver().available() and MosekSolver().enabled()) or (
-             GurobiSolver().available() and GurobiSolver().enabled()):
-            # We need a MIP solver to be available to run this method.
-            sets = mut.IrisInConfigurationSpaceFromCliqueCover(
-                checker=checker, options=options, generator=generator,
-                sets=[]
-            )
-
-            self.assertGreaterEqual(len(sets), 1)
+        sets = mut.IrisInConfigurationSpaceFromCliqueCover(
+            checker=checker, options=options, generator=generator, sets=[]
+        )
+        self.assertGreaterEqual(len(sets), 2)
 
         class DummyMaxCliqueSolver(mut.MaxCliqueSolverBase):
             def __init__(self, name):
@@ -161,6 +181,10 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         # Check that a Python solver can be used with 1 thread.
         options.parallelism = Parallelism(1)
         sets = mut.IrisInConfigurationSpaceFromCliqueCover(
-            checker=checker, options=options, generator=generator,
-            sets=[], max_clique_solver=DummyMaxCliqueSolver("dummy")
+            checker=checker,
+            options=options,
+            generator=generator,
+            sets=[],
+            max_clique_solver=DummyMaxCliqueSolver("dummy"),
         )
+        self.assertGreaterEqual(len(sets), 1)

@@ -11,6 +11,8 @@
 #include <thread>
 #include <utility>
 
+#include <common_robotics_utilities/parallelism.hpp>
+
 #include "drake/common/ssize.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/collision_checker.h"
@@ -22,7 +24,10 @@
 
 namespace drake {
 namespace planning {
-
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using Eigen::SparseMatrix;
 using geometry::Meshcat;
 using geometry::Rgba;
@@ -289,20 +294,21 @@ double ApproximatelyComputeCoverage(
   }
 
   std::atomic<int> num_in_sets{0};
-#if !defined(_OPENMP)
-  unused(parallelism);
-#endif
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(parallelism.num_threads()) schedule(static)
-#endif
-  for (int i = 0; i < sampled_points.cols(); ++i) {
+  const auto point_in_cover = [&sets, &num_in_sets, &sampled_points,
+                               &point_in_set_tol](const int thread_num,
+                                                  const int i) {
+    unused(thread_num);
     for (const auto& set : sets) {
       if (set.PointInSet(sampled_points.col(i), point_in_set_tol)) {
         num_in_sets.fetch_add(1);
         break;
       }
     }
-  }
+  };
+  StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()), 0,
+                             sampled_points.cols(), point_in_cover,
+                             ParallelForBackend::BEST_AVAILABLE);
+
   fraction_covered = static_cast<double>(num_in_sets.load()) / num_samples;
 
   log()->info("Current Fraction of Domain Covered = {}", fraction_covered);
