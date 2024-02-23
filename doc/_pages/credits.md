@@ -65,3 +65,4 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * [David von Wrangel](https://www.davidvonwrangel.com/)
 * Matthew Woehlke
 * Huihua Zhao
+* [Thomas Cohn](https://tommycohn.com/)
