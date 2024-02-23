@@ -712,13 +712,15 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     const std::vector<HPolyhedron>& intersecting_polytopes,
     const bool keep_whole_intersection, const double intersection_pad,
     const int random_seed) const {
-  DRAKE_DEMAND(min_v_ratio > 0);
-  DRAKE_DEMAND(max_iterations > 0);
-  DRAKE_DEMAND(intersection_pad >= 0);
+  DRAKE_THROW_UNLESS(min_v_ratio > 0);
+  DRAKE_THROW_UNLESS(max_iterations > 0);
+  DRAKE_THROW_UNLESS(intersection_pad >= 0);
 
   const HPolyhedron circumbody = this->ReduceInequalities(0);
   MatrixXd circumbody_A = circumbody.A();
   VectorXd circumbody_b = circumbody.b();
+  DRAKE_THROW_UNLESS(!circumbody.IsEmpty());
+  DRAKE_THROW_UNLESS(circumbody.IsBounded());
 
   for (int i = 0; i < points_to_contain.cols(); ++i) {
     DRAKE_DEMAND(circumbody.PointInSet(points_to_contain.col(i)));
@@ -806,8 +808,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         // Loop through intersecting hyperplanes and update `b_i_min_allowed`
         // based on how far each intersection allows the hyperplane to move.
         for (int intersection_ind = 0;
-             intersection_ind <
-             ssize(reduced_intersecting_polytopes);
+             intersection_ind < ssize(reduced_intersecting_polytopes);
              ++intersection_ind) {
           const HPolyhedron intersection = inbody.Intersection(
               reduced_intersecting_polytopes[intersection_ind]);
@@ -892,8 +893,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // Check if intersection and containment constraints are still satisfied after
   // affine transformation, and revert if not.  There is currently no way to
   // constrain that the affine transformation upholds these constraints.
-  for (int inter_ind = 0;
-       inter_ind < ssize(reduced_intersecting_polytopes);
+  for (int inter_ind = 0; inter_ind < ssize(reduced_intersecting_polytopes);
        ++inter_ind) {
     if (do_affine_transformation &&
         !inbody.IntersectsWith(reduced_intersecting_polytopes[inter_ind])) {
