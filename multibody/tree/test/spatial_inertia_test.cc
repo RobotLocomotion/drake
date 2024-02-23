@@ -1360,6 +1360,7 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
 
   // Repeat the previous test for the minimum bounding box B.
+  // Verify the answer is not be changed by translation
   std::tie(abc, X_BA) =
       M_BBo_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
@@ -1367,7 +1368,7 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
 
   // Verify CalcMinimumPhysicalLength() calculates the length of the
-  // space-diagonal of the minimum bounding box.
+  // space-diagonal of the minimum bounding box (unchanged by translation).
   space_diagonal = M_BBo_B.CalcMinimumPhysicalLength();
   EXPECT_NEAR(space_diagonal, (2 * abc).norm(), kTolerance);
 
