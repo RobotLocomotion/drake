@@ -8,9 +8,11 @@
 // lcm-gen tool. Here, we use those as an "oracle" to compare against.
 
 // clang-format off
-#include "papa/lima.h"
-#include "papa/november.h"
+#include "papa/lima.hpp"
+#include "papa/mike.hpp"
+#include "papa/november.hpp"
 #include "romeo/lima.hpp"
+#include "romeo/mike.hpp"
 #include "romeo/november.hpp"
 // clang-format on
 
@@ -67,7 +69,7 @@ GTEST_TEST(RomeoTest, LimaEncode) {
   ASSERT_TRUE(CompareEncode(papa, romeo));
 
   // We'll change the struct fields one at a time, and keep checking that both
-  // papa and romeo encode the same as we so do.
+  // papa and romeo encode the same as we do so.
   // clang-format off
   auto mutations = std::make_tuple(
       [](auto* message) { message->golf = true; },
@@ -121,6 +123,124 @@ GTEST_TEST(PapaTest, LimaRoundTrip) {
   EXPECT_EQ(send.encode(data.data(), 0, data.size()), -1);
 }
 
+// With the old lcm-gen, partially-fixed-size arrays are typed as std::vector so
+// need manual size bookkeeping.
+template <class T>
+void MaybeResizeLegacyLcmGenArray(std::vector<T>* array, int new_size) {
+  DRAKE_DEMAND(array != nullptr);
+  array->resize(new_size);
+}
+
+// With our new lcm-gen, partially-fixed-size arrays are typed as std::array so
+// don't need any manual bookkeeping.
+template <class T, std::size_t N>
+void MaybeResizeLegacyLcmGenArray(const std::array<T, N>*, int new_size) {
+  DRAKE_DEMAND(new_size == N);
+}
+
+// Check that our encoded 'mike' message is identical to upstream.
+GTEST_TEST(RomeoTest, MikeEncode) {
+  ASSERT_EQ(papa::mike::getHash(), romeo::mike::getHash());
+
+  papa::mike papa{};
+  romeo::mike romeo{};
+  ASSERT_TRUE(CompareEncode(papa, romeo));
+
+  // We'll change the struct fields one at a time, and keep checking that both
+  // papa and romeo encode the same as we do so.
+  // clang-format off
+  auto mutations = std::make_tuple(
+      [](auto* message) { message->delta[0] = 2.5; },
+      [](auto* message) { message->foxtrot[3][4] = 1.25; },
+      [](auto* message) { message->alpha.india8 = 22; },
+      [](auto* message) { message->sierra = "sierra"; },
+      [](auto* message) {
+        const int rows = 2;
+        const int cols = 3;
+        message->rows = rows;
+        message->cols = cols;
+        message->bravo.resize(rows);
+        message->india8.resize(rows);
+        for (auto& item : message->india8) {
+          item.resize(cols);
+        }
+        MaybeResizeLegacyLcmGenArray(&message->india16, 7);
+        for (auto& item : message->india16) {
+          item.resize(cols);
+        }
+        message->india32.resize(rows);
+        for (auto& item : message->india32) {
+          MaybeResizeLegacyLcmGenArray(&item, 11);
+        }
+        message->yankee.resize(rows);
+        message->zulu.resize(rows);
+        for (auto& item : message->zulu) {
+          MaybeResizeLegacyLcmGenArray(&item, 2);
+        }
+      },
+      [](auto* message) { message->xray[1].india8 = 22; },
+      [](auto* message) { message->yankee[1].india16 = 2222; },
+      [](auto* message) { message->zulu[1][0].india32 = 22222; });
+  // clang-format on
+  const auto check_one = [&](const auto& mutation) {
+    EXPECT_NO_THROW(mutation(&papa));
+    EXPECT_NO_THROW(mutation(&romeo));
+    ASSERT_TRUE(CompareEncode(papa, romeo));
+  };
+  std::apply(
+      [&](const auto&... mutation) {
+        (check_one(mutation), ...);
+      },
+      mutations);
+}
+
+// Checks that our generated code for `struct mike` can send and receive data.
+GTEST_TEST(PapaTest, MikeRoundTrip) {
+  papa::mike send{};
+  send.delta = {2.5, 22.25, 222.125};
+  send.foxtrot[3] = {2222};
+  send.alpha.india8 = 22;
+  send.sierra = "sierra";
+  send.rows = 2;
+  send.cols = 3;
+  send.bravo.resize(send.rows);
+  send.india8.resize(send.rows);
+  for (auto& item : send.india8) {
+    item.resize(send.cols);
+  }
+  for (auto& item : send.india16) {
+    item.resize(send.cols);
+  }
+  send.india32.resize(send.rows);
+  send.xray[1].india8 = 22;
+  send.yankee.resize(send.rows);
+  send.yankee[1].india16 = 2222;
+  send.zulu.resize(send.rows);
+  send.zulu[1][0].india32 = 22222;
+  auto data = drake::lcm::EncodeLcmMessage(send);
+
+  auto receive = drake::lcm::DecodeLcmMessage<papa::mike>(data);
+  EXPECT_EQ(receive.delta.at(2), 222.125);
+  EXPECT_EQ(receive.foxtrot.at(3).at(0), 2222);
+  EXPECT_EQ(receive.alpha.india8, 22);
+  EXPECT_EQ(receive.sierra, "sierra");
+  EXPECT_EQ(receive.rows, 2);
+  EXPECT_EQ(receive.cols, 3);
+  EXPECT_EQ(receive.xray.at(1).india8, 22);
+  EXPECT_EQ(receive.yankee.at(1).india16, 2222);
+  EXPECT_EQ(receive.zulu.at(1).at(0).india32, 22222);
+
+  // When the message is internally inconsistent, encoding detects the error.
+  send.india8.at(1).resize(send.cols - 1);
+  EXPECT_EQ(send.encode(data.data(), 0, data.size()), -1);
+  send.india8.at(1).resize(send.cols);
+  // When the received data is cut short, the message detects the error.
+  data.resize(data.size() - 1);
+  EXPECT_EQ(receive.decode(data.data(), 0, data.size()), -1);
+  // When the send buffer isn't large enough, the message detects the error.
+  EXPECT_EQ(send.encode(data.data(), 0, data.size()), -1);
+}
+
 // Check that our encoded 'november' message is identical to upstream.
 GTEST_TEST(RomeoTest, NovemberEncode) {
   // The hash is the same.
@@ -132,7 +252,7 @@ GTEST_TEST(RomeoTest, NovemberEncode) {
   ASSERT_TRUE(CompareEncode(papa, romeo));
 
   // We'll change the struct fields one at a time, and keep checking that both
-  // papa and romeo encode the same as we so do.
+  // papa and romeo encode the same as we do so.
   // clang-format off
   auto mutations = std::make_tuple(
       [](auto* message) { message->alpha.india8 = 22; },

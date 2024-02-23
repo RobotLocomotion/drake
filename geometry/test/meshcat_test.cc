@@ -50,6 +50,9 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
                            std::optional<int> expect_num_messages,
                            std::optional<std::string> expect_json,
                            bool expect_success = true) {
+  if (expect_num_messages) {
+    meshcat.Flush();
+  }
   std::vector<std::string> argv;
   argv.push_back(
       FindResourceOrThrow("drake/geometry/meshcat_websocket_client"));
@@ -326,7 +329,7 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube.gltf"),
+      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
            0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
   meshcat.SetObject(
@@ -633,7 +636,7 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   EXPECT_EQ(data.type, "set_property");
   EXPECT_EQ(data.path, "/Background/<object>");
   EXPECT_EQ(data.property, "environment_map");
-  EXPECT_THAT(data.value, testing::StartsWith("cas/sha256/"));
+  EXPECT_THAT(data.value, testing::StartsWith("cas-"));
 
   // Clear the map with an empty string.
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));
@@ -651,6 +654,39 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   // An invalid map throws.
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.SetEnvironmentMap("invalid_file.png"),
                               ".*invalid_file.png.*environment_map.*");
+}
+
+GTEST_TEST(MeshcatTest, InitialPropeties) {
+  // Construct Meshcat with some extra initial properties.
+  const std::vector<double> some_vector{1.0, 2.0};
+  const std::string some_string{"hello"};
+  const bool some_bool{true};
+  const double some_double{22.2};
+  const Meshcat meshcat{MeshcatParams{
+      .initial_properties = {
+          {.path = "/a", .property = "p1", .value = some_vector},
+          {.path = "/b", .property = "p2", .value = some_string},
+          {.path = "/c", .property = "p3", .value = some_bool},
+          {.path = "/d", .property = "p4", .value = some_double},
+      },
+  }};
+
+  // Check that they all showed up.
+  auto check_property = [&meshcat](auto path, auto property, auto value) {
+    SCOPED_TRACE(fmt::format("property = {}", property));
+    using T = decltype(value);
+    std::string packed = meshcat.GetPackedProperty(path, property);
+    msgpack::object_handle oh = msgpack::unpack(packed.data(), packed.size());
+    internal::SetPropertyData<T> message;
+    ASSERT_NO_THROW(message = oh.get().as<internal::SetPropertyData<T>>());
+    EXPECT_EQ(message.path, path);
+    EXPECT_EQ(message.property, property);
+    EXPECT_EQ(message.value, value);
+  };
+  check_property("/a", "p1", some_vector);
+  check_property("/b", "p2", some_string);
+  check_property("/c", "p3", some_bool);
+  check_property("/d", "p4", some_double);
 }
 
 // Tests the functional logic of button handling, without actually creating any

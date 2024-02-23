@@ -105,14 +105,20 @@ void MergeAccessors(nlohmann::json* j1, nlohmann::json&& j2);
 /* Merges the "bufferViews" array from j2 into j1. */
 void MergeBufferViews(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "buffers" array from j2 into j1. */
-void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "buffers" array from j2 into j1. As part of that process, converts
+any `uri`s with relative files into embedded `data:`. The `j2_directory` is the
+base path for resolving relative filenames against. */
+void MergeBuffers(nlohmann::json* j1, nlohmann::json&& j2,
+                  const std::filesystem::path& j2_directory);
 
 /* Merges the "textures" array from j2 into j1. */
 void MergeTextures(nlohmann::json* j1, nlohmann::json&& j2);
 
-/* Merges the "images" array from j2 into j1. */
-void MergeImages(nlohmann::json* j1, nlohmann::json&& j2);
+/* Merges the "images" array from j2 into j1. As part of that process, converts
+any `uri`s with relative files into embedded `data:`. The `j2_directory` is the
+base path for resolving relative filenames against. */
+void MergeImages(nlohmann::json* j1, nlohmann::json&& j2,
+                 const std::filesystem::path& j2_directory);
 
 /* Merges the "samplers" array from j2 into j1. */
 void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);
@@ -152,6 +158,18 @@ void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);
  2. We attempt to merge the "extras" and "extensions" at the glTF level, and in
     the "asset" and merged Scene properties. If there is any problem in merging,
     we throw an exception detailing the problem.
+ 3. When j2 refers to external resources (i.e., has `uri`s with relative paths)
+    those resources will be embedded directly into j1 using `data:` uris. This
+    is important for two reasons:
+     a. We expect to send j1 over the network, in which case filesystem paths
+        wouldn't make any sense.
+     b. We have no idea what filesystem path j1 lives at, so we can't do the
+        path algebra to convert the j2-relative paths to j1-relative paths.
+        Even if we added j1's path as a new argument, the path algebra would
+        still be somewhat difficult to get correct 100% of the time.
+    Note that to ensure that j1 never refers to external files, the caller must
+    ensure that it didn't have any to begin with. Our only promise is to not add
+    any new external files to j1; we don't touch anything that's already there.
 
  This explicitly excludes skin data, animation, and morph target elements
  (although the underlying data contained in buffers remains).

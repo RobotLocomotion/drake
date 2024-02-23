@@ -174,8 +174,17 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.MeshcatParams;
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
-    cls  // BR
-        .def(ParamInit<Class>());
+    // MeshcatParams::PropertyTuple
+    {
+      using Nested = MeshcatParams::PropertyTuple;
+      constexpr auto& nested_doc = doc.MeshcatParams.PropertyTuple;
+      py::class_<Nested> nested(cls, "PropertyTuple", nested_doc.doc);
+      nested.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&nested, nested_doc);
+      DefReprUsingSerialize(&nested);
+      DefCopyAndDeepCopy(&nested);
+    }
+    cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
@@ -343,7 +352,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
         .def("StartRecording", &Class::StartRecording,
-            py::arg("frames_per_second") = 32.0,
+            py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,
             cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)

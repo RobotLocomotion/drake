@@ -90,7 +90,7 @@ def create_modules_bzl(repo_ctx):
     subdirs = []
     for line in execute_or_fail(
         repo_ctx,
-        ["/usr/bin/find", ".", "-name", "vtk.module"],
+        ["/usr/bin/find", "-L", ".", "-name", "vtk.module"],
     ).stdout.splitlines():
         # Remove the leading "./" and tailing "/vtk.module".
         subdir = line[2:-11]
@@ -113,6 +113,22 @@ def create_modules_bzl(repo_ctx):
 
     # Write the output.
     repo_ctx.file("modules.bzl", content = bzl_content)
+
+def _impl_local_override(repo_ctx):
+    for item in repo_ctx.path(repo_ctx.attr.path).readdir():
+        repo_ctx.symlink(item, item.basename)
+    create_modules_bzl(repo_ctx)
+    repo_ctx.symlink(repo_ctx.attr.build_file, "BUILD.bazel")
+    repo_ctx.symlink(repo_ctx.attr.settings_bzl, "settings.bzl")
+
+_vtk_internal_repository_impl_local_override = repository_rule(
+    attrs = {
+        "path": attr.string(),
+        "build_file": attr.label(),
+        "settings_bzl": attr.label(allow_single_file = True),
+    },
+    implementation = _impl_local_override,
+)
 
 def _impl(repo_ctx):
     error = setup_github_repository(repo_ctx).error
@@ -151,12 +167,13 @@ def _resolve_drake_abbreviation(name, label_str):
 
 def vtk_internal_repository(
         name,
+        local_repository_override = None,
         repository = "Kitware/VTK",
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "1e12cb8353ba4dc478cb24054336a4eece5f7b05",
-        sha256 = "dc33b90d99edc9cc01f620969b8aba3f5e4e1be063eb258346f1e451d47653a0",  # noqa
+        commit = "04fb139f1dccaf0c538553e1b494bd21f71fd663",
+        sha256 = "eb8696d2622a79603055279ead20674772ce351565794cd7ce9c5f6bc1b44426",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/common_core_version.patch",
@@ -172,19 +189,35 @@ def vtk_internal_repository(
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):
+    """Declares VTK using a repository rule, typically from a github download
+    but when local_repository_override is provided it will be used instead.
+
+    The current local_repository_override support is slightly inelegant,
+    because it does not automatically apply any of the `patches = [...]`.
+    Instead, you will need to manually cherry-pick all of Drake's patches into
+    your VTK checkout by hand.
+    """
     build_file = _resolve_drake_abbreviation(name, build_file)
     patches = [
         _resolve_drake_abbreviation(name, one_patch)
         for one_patch in (patches or [])
     ]
     settings_bzl = _resolve_drake_abbreviation(name, settings_bzl)
-    _vtk_internal_repository_impl(
-        name = name,
-        repository = repository,
-        commit = commit,
-        sha256 = sha256,
-        build_file = build_file,
-        patches = patches,
-        settings_bzl = settings_bzl,
-        **kwargs
-    )
+    if local_repository_override:
+        _vtk_internal_repository_impl_local_override(
+            name = name,
+            path = local_repository_override,
+            build_file = build_file,
+            settings_bzl = settings_bzl,
+        )
+    else:
+        _vtk_internal_repository_impl(
+            name = name,
+            repository = repository,
+            commit = commit,
+            sha256 = sha256,
+            build_file = build_file,
+            patches = patches,
+            settings_bzl = settings_bzl,
+            **kwargs
+        )

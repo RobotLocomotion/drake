@@ -79,7 +79,7 @@ struct IrisOptions {
   pass in such configuration space obstacles. */
   ConvexSets configuration_obstacles{};
 
-  /** The initial hyperepllipsoid that IRIS will use for calculating hyperplanes
+  /** The initial hyperellipsoid that IRIS will use for calculating hyperplanes
   in the first iteration. If no hyperellipsoid is provided, a small hypershpere
   centered at the given sample will be used. */
   std::optional<Hyperellipsoid> starting_ellipse{};

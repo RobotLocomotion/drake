@@ -5,24 +5,38 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# The library target for this tool.
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     deps = ["//tools:module_py"],
 )
 
+# The command-line target for this tool.
+drake_py_binary(
+    name = "lcm_gen",
+    srcs = ["__init__.py"],
+    tags = [
+        # The "module_py" handles the linting for "__init__.py"; we suppress
+        # it here to avoid duplicate linter complaints.
+        "nolint",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [":module_py"],
+)
+
 drake_py_unittest(
     name = "lcm_gen_test",
     data = [
-        "test/goal/lima.h",
-        # TODO(jwnimmer) Eventually we want "test/goal/mike.h" here as well.
-        # For the moment, we don't support codegen on mike.lcm with our tool.
-        "test/goal/november.h",
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
         "test/lima.lcm",
         "test/mike.lcm",
         "test/november.lcm",
@@ -43,10 +57,12 @@ genrule(
     testonly = True,
     srcs = [
         "test/lima.lcm",
+        "test/mike.lcm",
         "test/november.lcm",
     ],
     outs = [
         "test/romeo/lima.lcm",
+        "test/romeo/mike.lcm",
         "test/romeo/november.lcm",
     ],
     cmd = " && ".join([
@@ -59,6 +75,7 @@ genrule(
         ])
         for name in [
             "lima",
+            "mike",
             "november",
         ]
     ]),
@@ -70,10 +87,12 @@ genrule(
     testonly = True,
     srcs = [
         ":test/romeo/lima.lcm",
+        ":test/romeo/mike.lcm",
         ":test/romeo/november.lcm",
     ],
     outs = [
         "test/romeo/lima.hpp",
+        "test/romeo/mike.hpp",
         "test/romeo/november.hpp",
     ],
     cmd = " ".join([
@@ -83,6 +102,7 @@ genrule(
         "--use-quotes-for-includes",
         "--cpp-hpath=$(RULEDIR)/test",
         "$(execpath :test/romeo/lima.lcm)",
+        "$(execpath :test/romeo/mike.lcm)",
         "$(execpath :test/romeo/november.lcm)",
     ]),
     tools = [
@@ -96,6 +116,7 @@ cc_library(
     testonly = True,
     hdrs = [
         ":test/romeo/lima.hpp",
+        ":test/romeo/mike.hpp",
         ":test/romeo/november.hpp",
     ],
     includes = ["test"],
@@ -113,8 +134,9 @@ cc_library(
     name = "papa",
     testonly = True,
     hdrs = [
-        "test/goal/lima.h",
-        "test/goal/november.h",
+        "test/goal/lima.hpp",
+        "test/goal/mike.hpp",
+        "test/goal/november.hpp",
     ],
     include_prefix = "papa",
     strip_include_prefix = "test/goal",

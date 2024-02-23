@@ -19,8 +19,8 @@ def rules_python_repository(
         rules_python commit listed in
         drake/tools/install/bazel/test/drake_bazel_installed_test.py.
         """,
-        commit = "0.27.1",
-        sha256 = "e85ae30de33625a63eca7fc40a94fea845e641888e52f32b6beea91e8b1b2793",  # noqa
+        commit = "0.29.0",
+        sha256 = "d71d2c67e0bce986e1c5a7731b4693226867c45bfe0b7c5e0067228a536fc580",  # noqa
         patches = [
             ":patches/internal_config_repo.patch",
         ],

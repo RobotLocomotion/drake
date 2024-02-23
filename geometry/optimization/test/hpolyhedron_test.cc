@@ -160,6 +160,28 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {
   EXPECT_TRUE(hpoly2.PointInSet(hpoly2.MaybeGetFeasiblePoint().value()));
 }
 
+GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope1D) {
+  const double eps = 1e-6;
+
+  Eigen::Matrix<double, 1, 4> vert1;
+  vert1 << 1, 0, 3, 2;
+  VPolytope v1(vert1);
+  EXPECT_NO_THROW(HPolyhedron{v1});
+  HPolyhedron h1(v1);
+  EXPECT_TRUE(h1.PointInSet(Vector1d(0)));
+  EXPECT_TRUE(h1.PointInSet(Vector1d(3)));
+  EXPECT_FALSE(h1.PointInSet(Vector1d(0 - eps)));
+  EXPECT_FALSE(h1.PointInSet(Vector1d(3 + eps)));
+
+  Eigen::Matrix<double, 1, 1> vert2;
+  vert2 << 43;
+  VPolytope v2(vert2);
+  HPolyhedron h2(v2);
+  EXPECT_TRUE(h2.PointInSet(Vector1d(43)));
+  EXPECT_FALSE(h2.PointInSet(Vector1d(43 - eps)));
+  EXPECT_FALSE(h2.PointInSet(Vector1d(43 + eps)));
+}
+
 void CheckHPolyhedronContainsVPolyhedron(const HPolyhedron& h,
                                          const VPolytope& v, double tol = 0) {
   for (int i = 0; i < v.vertices().cols(); ++i) {
@@ -425,6 +447,26 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   const VectorXd polytope_halfspace_residue =
       b - A * E2.center() - ((A * C).rowwise().lpNorm<2>());
   EXPECT_NEAR(polytope_halfspace_residue.minCoeff(), 0, kTol);
+
+  // Check numerical stability for poorly-formed A and b matrices
+  MatrixXd A2(24, 12);
+  VectorXd b2(24);
+  // clang-format off
+  A2 << MatrixXd::Identity(12, 12),
+        -MatrixXd::Identity(12, 12);
+  b2 << VectorXd::Ones(12),
+        VectorXd::Zero(12);
+  // clang-format on
+  for (int i = 0; i < A2.rows(); ++i) {
+    double scaling_factor = std::pow(10, i - 12);
+    A2.row(i) *= scaling_factor;
+    b2(i) *= scaling_factor;
+  }
+  HPolyhedron H4(A2, b2);
+
+  // Check that we can compute the maximum volume inscribed ellipsoid of the
+  // HPolyhedron defined by the ill-formed matrix.
+  EXPECT_NO_THROW(unused(H4.MaximumVolumeInscribedEllipsoid()));
 }
 
 GTEST_TEST(HPolyhedronTest, ChebyshevCenter) {

@@ -137,6 +137,8 @@ drake_cc_library(
     deps = [
         "//common:drake_export",
         "//common:essential",
+        "//common:find_resource",
+        "@common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
     ],
 )
@@ -365,6 +367,7 @@ drake_cc_googletest(
     name = "internal_merge_gltf_test",
     data = [
         ":merge_resources",
+        "//geometry/render:test_models",
     ],
     deps = [
         ":internal_merge_gltf",

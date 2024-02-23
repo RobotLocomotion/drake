@@ -260,6 +260,12 @@ PYBIND11_MODULE(parsing, m) {
       py::return_value_policy::reference,
       py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
       doc.parsing.GetScopedFrameByName.doc);
+
+  m.def("GetScopedFrameByNameMaybe", &parsing::GetScopedFrameByNameMaybe,
+      py::arg("plant"), py::arg("full_name"),
+      py::return_value_policy::reference,
+      py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
+      doc.parsing.GetScopedFrameByNameMaybe.doc);
 }
 
 }  // namespace pydrake

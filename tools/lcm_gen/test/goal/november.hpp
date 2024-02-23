@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "papa/lima.hpp"
+
 namespace papa {
 
 class november {
@@ -20,6 +22,7 @@ class november {
   // These functions match the expected API from the legacy lcm-gen tool,
   // but note that we use `int64_t` instead of `int` for byte counts.
   //@{
+  static const char* getTypeName() { return "november"; }
   int64_t getEncodedSize() const { return 8 + _getEncodedSizeNoHash(); }
   int64_t _getEncodedSizeNoHash() const {
     int64_t _result = 0;
@@ -129,48 +132,125 @@ class november {
     }
   }
 
+  // The dimensions of an array, for use during encoding / decoding, e.g., for
+  // a message field `int8_t image[6][4]` we'd use `ArrayDims<2>{6, 4}`.
+  template <size_t ndims>
+  using ArrayDims = std::array<int64_t, ndims>;
+
+  // Returns the second and following elements of _dims (i.e., _dims[1:]).
+  // https://en.wikipedia.org/wiki/CAR_and_CDR
+  template <size_t ndims>
+  static ArrayDims<ndims - 1> _cdr(const std::array<int64_t, ndims>& _dims) {
+    static_assert(ndims > 0);
+    ArrayDims<ndims - 1> _result;
+    for (size_t i = 1; i < ndims; ++i) {
+      _result[i - 1] = _dims[i];
+    }
+    return _result;
+  }
+
   // Given a field (or child element within a field), encodes it into the given
-  // byte cursor and advances the cursor, returning true on success.
-  template <typename T>
-  static bool _encode_field(const T& _input, uint8_t** _cursor,
-                            uint8_t* _end) {
+  // byte cursor and advances the cursor, returning true on success. Arrays are
+  // passed with `_input` as vector-like container and `_dims` as the list of
+  // multi-dimensional vector sizes, e.g., `int8_t image[6][4]` would be called
+  // like `_encode_field(image.at(0), &cursor, end, ArrayDims<2>{6, 4})`. In
+  // LCM messages, multi-dimensional arrays are encoded using C's memory layout
+  // (i.e., with the last dimension as the most tightly packed.)
+  template <typename T, size_t ndims = 0>
+  static bool _encode_field(const T& _input, uint8_t** _cursor, uint8_t* _end,
+                            const ArrayDims<ndims>& _dims = ArrayDims<0>{}) {
     static_assert(!std::is_pointer_v<T>);
-    if constexpr (std::is_fundamental_v<T>) {
-      // POD input.
-      constexpr size_t N = sizeof(T);
-      if (*_cursor + N > _end) {
+    if constexpr (ndims == 0) {
+      // With no array dimensions, just decode the field directly.
+      if constexpr (std::is_fundamental_v<T>) {
+        // POD input.
+        constexpr size_t N = sizeof(T);
+        if (*_cursor + N > _end) {
+          return false;
+        }
+        auto _swapped = _byteswap<N>(&_input);
+        std::memcpy(*_cursor, &_swapped, N);
+        *_cursor += N;
+        return true;
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        // String input.
+        const int32_t _size = _input.size() + 1;
+        const bool ok = (_input.size() < INT32_MAX) &&
+                        (*_cursor + sizeof(_size) + _size <= _end) &&
+                        _encode_field(_size, _cursor, _end);
+        if (ok) {
+          std::memcpy(*_cursor, _input.c_str(), _size);
+        }
+        *_cursor += _size;
+        return ok;
+      } else {
+        // Struct input.
+        return _input.template _encode<false>(_cursor, _end);
+      }
+    } else {
+      // Cross-check the container size vs the size specified in the message's
+      // size field. (For fixed-size containers this is a no-op.)
+      if (static_cast<int64_t>(_input.size()) != _dims[0]) {
         return false;
       }
-      auto _swapped = _byteswap<N>(&_input);
-      std::memcpy(*_cursor, &_swapped, N);
-      *_cursor += N;
+      // Encode each sub-item in turn, forwarding all the _dims but the first.
+      for (const auto& _child : _input) {
+        if (!_encode_field(_child, _cursor, _end, _cdr(_dims))) {
+          return false;
+        }
+      }
       return true;
-    } else {
-      // Struct input.
-      return _input.template _encode<false>(_cursor, _end);
     }
   }
 
   // Given a pointer to a field (or child element within a field), decodes it
   // from the given byte cursor and advances the cursor, returning true on
-  // success.
-  template <typename T>
+  // success. The array `_dims` and storage order follow the same pattern as in
+  // _encode_field(); refer to those docs for details.
+  template <typename T, size_t ndims = 0>
   static bool _decode_field(T* _output, const uint8_t** _cursor,
-                            const uint8_t* _end) {
+                            const uint8_t* _end,
+                            const ArrayDims<ndims>& _dims = {}) {
     static_assert(!std::is_pointer_v<T>);
-    if constexpr (std::is_fundamental_v<T>) {
-      // POD output.
-      constexpr size_t N = sizeof(T);
-      if (*_cursor + N > _end) {
-        return false;
+    if constexpr (ndims == 0) {
+      // With no array dimensions, just decode the field directly.
+      if constexpr (std::is_fundamental_v<T>) {
+        // POD output.
+        constexpr size_t N = sizeof(T);
+        if (*_cursor + N > _end) {
+          return false;
+        }
+        auto _swapped = _byteswap<N>(*_cursor);
+        std::memcpy(_output, &_swapped, N);
+        *_cursor += N;
+        return true;
+      } else if constexpr (std::is_same_v<T, std::string>) {
+        // String output.
+        int32_t _size{};
+        const bool ok = _decode_field(&_size, _cursor, _end) &&
+                        (_size > 0) && (*_cursor + _size <= _end);
+        if (ok) {
+          _output->replace(_output->begin(), _output->end(), *_cursor,
+                           *_cursor + _size - 1);
+        }
+        *_cursor += _size;
+        return ok;
+      } else {
+        // Struct output.
+        return _output->template _decode<false>(_cursor, _end);
       }
-      auto _swapped = _byteswap<N>(*_cursor);
-      std::memcpy(_output, &_swapped, N);
-      *_cursor += N;
-      return true;
     } else {
-      // Struct output.
-      return _output->template _decode<false>(_cursor, _end);
+      // In case of a variable-size dimension, resize our storage to match.
+      if constexpr (std::is_same_v<T, std::vector<typename T::value_type>>) {
+        _output->resize(_dims[0]);
+      }
+      // Decode each sub-item in turn.
+      for (auto& _child : *_output) {
+        if (!_decode_field(&_child, _cursor, _end, _cdr(_dims))) {
+          return false;
+        }
+      }
+      return true;
     }
   }
 };

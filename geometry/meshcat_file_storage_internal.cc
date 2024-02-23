@@ -130,6 +130,17 @@ size_t FileStorage::size() const {
   return impl_->map.size();
 }
 
+std::string FileStorage::GetCasUrl(const FileStorage::Handle& asset) {
+  // This URL pattern must align with HandleHttpGet() in `meshcat.cc`, so if you
+  // change it be sure to change both places. It's also important that it does
+  // not contain a subdirectory (i.e., no "/" characters) because that confuses
+  // any assets that refer to sub-assets. We use "v1" as in "version 1"; if we
+  // ever change the URL semantics in the future (e.g., if we find a bug where
+  // we were serving incomplete files) we will need to change the URL version
+  // salt so that clients will re-fetch the files.
+  return fmt::format("cas-v1-{}", asset.sha256.to_string());
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -86,13 +86,41 @@ class TestGeometryVisualizers(unittest.TestCase):
         load_subscriber.clear()
         draw_subscriber.clear()
 
-    def test_meshcat(self):
-        port = 7051
+    def test_meshcat_params(self):
+        prop_a = mut.MeshcatParams.PropertyTuple(
+            path="a",
+            property="p1",
+            value=[1.0, 2.0],
+        )
+        prop_b = mut.MeshcatParams.PropertyTuple(
+            path="b",
+            property="p2",
+            value="hello",
+        )
+        prop_c = mut.MeshcatParams.PropertyTuple(
+            path="c",
+            property="p3",
+            value=True,
+        )
+        prop_d = mut.MeshcatParams.PropertyTuple(
+            path="d",
+            property="p4",
+            value=22.2,
+        )
         params = mut.MeshcatParams(
             host="*",
-            port=port,
+            port=7777,
             web_url_pattern="http://host:{port}",
+            initial_properties=[prop_a, prop_b, prop_c, prop_d],
             show_stats_plot=False)
+        self.assertIn("port=7777", repr(params))
+        self.assertIn("path='a'", repr(prop_a))
+        copy.copy(prop_a)
+        copy.copy(params)
+
+    def test_meshcat(self):
+        port = 7051
+        params = mut.MeshcatParams(port=port)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
         self.assertIn("host", repr(params))

@@ -81,6 +81,7 @@ build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_OS=macos_wheel
 build --repo_env=SNOPT_PATH=git
 build --config=packaging
+build --define=LCM_INSTALL_JAVA=OFF
 # See tools/wheel/wheel_builder/macos.py for more on this env variable.
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF

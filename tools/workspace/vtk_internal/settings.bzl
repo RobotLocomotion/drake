@@ -132,6 +132,8 @@ MODULE_SETTINGS = {
             "CMake/vtkVersion.cmake",
         ],
         "cmake_defines": [
+            # Emulate the concatenation found in the root CMakeLists.txt.
+            "VTK_VERSION=@VTK_MAJOR_VERSION@.@VTK_MINOR_VERSION@.@VTK_BUILD_VERSION@",  # noqa
             # ABI
             "VTK_HAS_ABI_NAMESPACE=1",
             "VTK_ABI_NAMESPACE_NAME=drake_vendor",

@@ -153,6 +153,19 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
       return;
     }
   }
+  if (vpoly.ambient_dimension() == 1) {
+    // In 1D, QHull doesn't work. We can simply choose the largest and smallest
+    // points, and add a hyperplane there.
+    double min_val = vpoly.vertices().minCoeff();
+    double max_val = vpoly.vertices().maxCoeff();
+    Eigen::MatrixXd A(2, 1);
+    Eigen::VectorXd b(2);
+    // x <= max_val and x >= min_val (written as -x <= -min_val)
+    A << 1, -1;
+    b << max_val, -min_val;
+    *this = HPolyhedron(A, b);
+    return;
+  }
   // Next, handle the case where the VPolytope is not full dimensional.
   const AffineSubspace affine_hull(vpoly);
   if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
@@ -274,6 +287,11 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   MatrixXDecisionVariable C = prog.NewSymmetricContinuousVariables(N, "C");
   VectorXDecisionVariable d = prog.NewContinuousVariables(N, "d");
 
+  // Compute rowwise norms for later use in normalization of linear constraints.
+  MatrixXd augmented_matrix(A_.rows(), A_.cols() + b_.cols());
+  augmented_matrix << A_, b_;
+  VectorXd row_norms = augmented_matrix.rowwise().norm();
+
   // max log det (C).  This method also imposes C ≽ 0.
   prog.AddMaximizeLogDeterminantCost(C.cast<Expression>());
   // |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
@@ -281,6 +299,8 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   // vars = [d; C.col(0); C.col(1); ...; C.col(n-1)]
   // A_lorentz = block_diagonal(-A_.row(i), A_.row(i), ..., A_.row(i))
   // b_lorentz = [b_(i); 0; ...; 0]
+  // We also normalize each row, by dividing each instance of aᵢ and bᵢ with the
+  // corresponding row norm.
   VectorX<symbolic::Variable> vars(C.rows() * C.cols() + d.rows());
   vars.head(d.rows()) = d;
   for (int i = 0; i < C.cols(); ++i) {
@@ -292,11 +312,12 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(1 + C.cols());
   for (int i = 0; i < b_.size(); ++i) {
     A_lorentz.setZero();
-    A_lorentz.block(0, 0, 1, A_.cols()) = -A_.row(i);
+    A_lorentz.block(0, 0, 1, A_.cols()) = -A_.row(i) / row_norms(i);
     for (int j = 0; j < C.cols(); ++j) {
-      A_lorentz.block(j + 1, (j + 1) * C.cols(), 1, A_.cols()) = A_.row(i);
+      A_lorentz.block(j + 1, (j + 1) * C.cols(), 1, A_.cols()) =
+          A_.row(i) / row_norms(i);
     }
-    b_lorentz(0) = b_(i);
+    b_lorentz(0) = b_(i) / row_norms(i);
     prog.AddLorentzConeConstraint(A_lorentz, b_lorentz, vars);
   }
   auto result = solvers::Solve(prog);

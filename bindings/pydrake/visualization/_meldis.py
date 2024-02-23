@@ -1,3 +1,6 @@
+# Remove once we have Python >= 3.10.
+from __future__ import annotations
+
 import copy
 import hashlib
 import logging
@@ -56,6 +59,11 @@ from pydrake.perception import (
 )
 
 _logger = logging.getLogger("drake")
+
+_DEFAULT_MESHCAT_PARAMS = MeshcatParams(
+    host="localhost",
+    show_stats_plot=False,
+)
 
 
 def _to_pose(position, quaternion):
@@ -660,8 +668,16 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_host=None, meshcat_port=None,
-                 environment_map: Path = None):
+    def __init__(self, *,
+                 meshcat_host: str | None = None,
+                 meshcat_port: int | None = None,
+                 meshcat_params: MeshcatParams | None = None,
+                 environment_map: Path | None = None):
+        """Constructs a new Meldis instance. The meshcat_host (when given)
+        takes precedence over meshcat_params.host. The meshcat_post (when
+        given) takes precedence over meshcat_params.port.
+        """
+
         # Bookkeeping for update throttling.
         self._last_update_time = time.time()
 
@@ -676,9 +692,14 @@ class Meldis:
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
-        params = MeshcatParams(host=meshcat_host or "localhost",
-                               port=meshcat_port,
-                               show_stats_plot=False)
+        # Create our meshcat object, merging all of the params goop into one.
+        if meshcat_params is None:
+            meshcat_params = _DEFAULT_MESHCAT_PARAMS
+        params = copy.deepcopy(meshcat_params)
+        if meshcat_host is not None:
+            params.host = meshcat_host
+        if meshcat_port is not None:
+            params.port = meshcat_port
         self.meshcat = Meshcat(params=params)
         if environment_map is not None:
             self.meshcat.SetEnvironmentMap(environment_map)

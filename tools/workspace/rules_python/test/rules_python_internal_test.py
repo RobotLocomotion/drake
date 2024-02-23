@@ -1,3 +1,4 @@
+from pathlib import Path
 import unittest
 
 
@@ -9,18 +10,12 @@ class TestRulesPythonInternal(unittest.TestCase):
         name = "internal_config_repo.bzl"
         drake_dir = "third_party/com_github_bazelbuild_rules_python"
         external_dir = "external/rules_python/python/private"
-        with open(f"{drake_dir}/{name}", encoding="utf-8") as f:
-            drake_copy = f.read()
-        with open(f"{external_dir}/{name}", encoding="utf-8") as f:
-            external_copy = f.read()
+        drake = Path(f"{drake_dir}/{name}").read_text(encoding="utf-8")
+        upstream = Path(f"{external_dir}/{name}").read_text(encoding="utf-8")
 
-        # Drake contains one customization.
-        old = 'load("//python/private:bzlmod_enabled.bzl", "BZLMOD_ENABLED")'
-        new = 'BZLMOD_ENABLED = False'
-        patched_external_copy = external_copy.replace(old, new)
-
-        # Report any differences. If this test fails, you need to copy the
-        # file from bazel-drake/{external_dir}/{name} to {drake_dir}/{name}
-        # and re-apply the customization.
-        self.maxDiff = None
-        self.assertMultiLineEqual(drake_copy, patched_external_copy)
+        # Report any differences.
+        _HELP = (
+            "If this test fails, you need to copy the file from "
+            f"bazel-drake/{external_dir}/{name} to {drake_dir}/{name}"
+        )
+        self.assertMultiLineEqual(drake, upstream, f"\n\n{_HELP}")
