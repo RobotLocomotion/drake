@@ -657,15 +657,30 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Returns the length of the space-diagonal of the minimum bounding box for
-  /// `this` spatial inertia. This length can help assess whether the physical
-  /// object associated with this spatial inertia has a reasonable size.
-  /// @note For comparable sizes, the world's largest aircraft carrier has a
+  /// Returns the minimum possible length for the physical extent of the massive
+  /// object that underlies this spatial inertia. In other words, the underlying
+  /// physical object must have at least two particles whose distance between
+  /// each other is greater than or equal to the mininum possible length.
+  /// @note The minium possible length is equal to the space-diagonal of the
+  /// minimum bounding box for `this` spatial inertia, which happens to be equal
+  /// to √(2 * trace of the central unit inertia associated with `this`).
+  /// @note Minimum possible length can be used to detect erroneous inertias
+  /// associated with absurdly large objects or to detect errors when the
+  /// minimum possible length is larger than the real physical geometry that
+  /// underlies `this` spatial inertia (possibly due to inertia conversion
+  /// factors, e.g., 10⁷ from kg m² to g cm² or 10⁹ from kg m² to g mm²).
+  /// To assess whether the minimum possible length is reasonable, it helps to
+  /// have comparable sizes, e.g., the world's largest aircraft carrier has a
   /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m), the
   /// largest land vehicle (Bagger bucket-wheel excavator) is ≈ 224 m long, the
   /// largest human object in space (International Space Station) is 109 m long
   /// and 75 m wide, the USA space shuttle is ≈ 37 m long and can carry a 15.2 m
   /// Canadarm, the world's largest humanoid robot (Mononofu) is ≈ 8.5 m tall.
+  /// Also, minimum possible length can be compared to known physical geometry
+  /// (e.g., realistic collision geometry, visual geometry, or physical extents
+  /// associated with body connectivity data and topology), and this comparison
+  /// can be used to warn that a spatial inertia may be physically impossible
+  /// (e.g., underlying geometry is smaller than the minimum possible length).
   T CalcMinimumPhysicalLength() const;
   ///@}
 

@@ -475,14 +475,43 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   return std::pair(abc, X_EA);
 }
 
+// The derivation of the formula below starts with calculations documented in
+// UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape() of
+// lmax, lmed, lmin (½-lengths of sides of the minimum bounding box) that depend
+// on Gmax, Gmed, Gmin (the maximum, medium, minimum central principal moments
+// of the unit inertia calculated via shifting `this` to the center of mass).
+// 1. lmax² = 0.5 / inertia_shape_factor * (Gmed + Gmax - Gmin)
+//    lmed² = 0.5 / inertia_shape_factor * (Gmin + Gmax - Gmed)
+//    lmin² = 0.5 / inertia_shape_factor * (Gmin + Gmed - Gmax)
+// 2. lmax² + lmed² + lmin² = 0.5 / inertia_shape_factor * (Gmin + Gmed + Gmax)
+// 3. Gmin + Gmed + Gmax = Trace(unit_inertia) is invariant meaning it does not
+//    matter if unit_inertia has zero or non-zero products of inertia, i.e.,
+//    Gxx + Gyy + Gzz = Gmin + Gmed + Gmax is invariant to the unit inertia's
+//    expressed-in frame. One proof of this invarience is that the trace of a
+//    symmetric matrix is invariant under an orthogonal transformation, e.g.,
+//    for the rotation matrix R_AB and using the trace cyclic property
+//    Trace(R_AB * unit_inertia * R_BA) = Trace(unit_inertia * R_BA * R_AB)
+//                                      = Trace(unit_inertia * identity_matrix)
+//                                      = Trace(unit_inertia)
+// 4. space_diagonal² = (2 lmax)² + (2 lmed)² + (2 lmin)²
+//                    = 4 (lmax² + lmed² + lmin²)
+//                    = 4 * 0.5 / inertia_shape_factor * (Gxx + Gyy + Gzz)
+//                    = 4 * 0.5 / inertia_shape_factor * Trace(unit_inertia)
+//                    = 2 / inertia_shape_factor * Trace(unit_inertia)
+// 5. The largest inertia shape_factor is 1.0, which corresponds to a massless
+//    box with particles at its vertices. Hence the minimum space diagaonal is
+//    space_diagonal² = 2 * Trace(unit_inertia) or
+//    space_diagonal = √(2 * Trace(unit_inertia))
+// This space_diagonal formula is useful when template type <T> is symbolic or
+// Autodiff. Also, this formula is more efficient than calculating the length of
+// the space-diagonal via the minimum bounding box (which uses an inherently
+// numerical eigenvalue process).
 template <typename T>
 T SpatialInertia<T>::CalcMinimumPhysicalLength() const {
   const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
   const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
   using std::sqrt;
   return sqrt(2.0 * G_SScm_E.Trace());
-  // The derivation of the formula underlying this calculation is in
-  // UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape().
 }
 
 template <typename T>

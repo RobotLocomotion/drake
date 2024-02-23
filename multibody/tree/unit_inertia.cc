@@ -287,7 +287,9 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   // |b²⌉ = | 1 -1  1⌉ |Gmed ⌉ * 0.5 / inertia_shape_factor
   // ⌊c²⌋   ⌊ 1  1 -1⌋ ⌊Gmax ⌉
   // Since Gmin ≤ Gmed ≤ Gmax, we can deduce a² ≥ b² ≥ c², so we designate
-  // lmax² = a², lmed² = b², lmin² = c².
+  // lmax² = a² = 0.5 / inertia_shape_factor * (Gmed + Gmax - Gmin)
+  // lmed² = b² = 0.5 / inertia_shape_factor * (Gmin + Gmax - Gmed)
+  // lmin² = c² = 0.5 / inertia_shape_factor * (Gmin + Gmed - Gmax)
 
   // Form principal moments Gmoments and principal axes stored in R_EA.
   auto [Gmoments, R_EA] = this->CalcPrincipalMomentsAndAxesOfInertia();
@@ -304,19 +306,6 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);
   return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
-
-  // Proof that the space-diagonal of the minimum bounding box can be calculated
-  // directly from a unit inertia, without calculating the minimum bounding box
-  // (which requires a numerical eigenvalue solution).
-  // 1. From above: lmax² + lmed² + lmin² = coef * (Gmin + Gmed + Gmax)
-  // 2. Gmin + Gmed + Gmax = Trace(this) is a unit inertia invariant meaning
-  //    Trace(this) = Gxx + Gyy + Gzz = Gmin + Gmed + Gmax is invariant to the
-  //    expressed-in frame for this unit inertia.
-  // 3. space_diagonal² = (2 lmax)² + (2 lmed)² + (2 lmin)²
-  //                    = 4 (lmax² + lmed² + lmin²)
-  //                    = 4 * coef * (Gxx + Gyy + Gzz)
-  //                    = 4 * 0.5 / inertia_shape_factor * Trace(this)
-  //                    = 2 / inertia_shape_factor * Trace(this)
 }
 
 }  // namespace multibody
