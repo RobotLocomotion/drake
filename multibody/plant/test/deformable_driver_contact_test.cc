@@ -45,6 +45,8 @@ class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
   static constexpr double kDissipationTimeScale = 0.1;
+  static constexpr double kHcDampingRigid = 12.3;
+  static constexpr double kHcDampingDeformable = 45.6;
 
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
@@ -70,7 +72,8 @@ class DeformableDriverContactTest : public ::testing::Test {
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+    geometry::AddContactMaterial(kHcDampingRigid, {},
+                                 CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
     // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
     //  as the trigger for contact with deformable bodies.
@@ -194,8 +197,8 @@ class DeformableDriverContactTest : public ::testing::Test {
     auto geometry = make_unique<GeometryInstance>(
         X_WD, make_unique<Sphere>(1.0), std::move(name));
     geometry::ProximityProperties props;
-    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
-                                 &props);
+    geometry::AddContactMaterial(kHcDampingDeformable, {},
+                                 CoulombFriction<double>(1.0, 1.0), &props);
     props.AddProperty(geometry::internal::kMaterialGroup,
                       geometry::internal::kRelaxationTime,
                       kDissipationTimeScale);
@@ -395,8 +398,12 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
    rigid body (which then assumes the default value, dt). */
   constexpr double expected_tau = kDissipationTimeScale + kDt;
-  /* Stiffness is set to infinity for deformable contact pairs. */
-  constexpr double expected_k = std::numeric_limits<double>::infinity();
+  /* The H&C damping is set to be d = k₂/(k₁+k₂)⋅d₁ + k₁/(k₁+k₂)⋅d₂. In this
+   case, the stiffness of the rigid body defaults to infinity so the damping
+   value takes the mathematical limit in that expression, i.e. the damping
+   value of the deformable body. */
+  constexpr double expected_d = kHcDampingDeformable;
+
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
 
@@ -423,7 +430,11 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
       EXPECT_EQ(pair.p_WC(2), -0.5);
       EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, -1)));
     }
-    EXPECT_EQ(pair.stiffness, expected_k);
+    EXPECT_EQ(pair.damping, expected_d);
+    /* Verify that the stiffness and the normal contact force are compatible. */
+    EXPECT_EQ(pair.fn0, -pair.stiffness * pair.phi0);
+    /* Verify the sign of the normal contact force. It should be repulsive. */
+    EXPECT_GT(pair.fn0, 0.0);
     EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
     EXPECT_EQ(pair.friction_coefficient, 1.0);
     ASSERT_TRUE(pair.surface_index.has_value());
