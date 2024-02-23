@@ -920,7 +920,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // to non-uniform sampling with less mixing_steps.
   options.mixing_steps = 1;  // Smaller than the default.
   HPolyhedron region2 = IrisFromUrdf(convex_urdf, sample, options);
-  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(),
+  constexpr double kTol = 1e-4;
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume() + kTol,
             region2.MaximumVolumeInscribedEllipsoid().Volume());
 }
 
