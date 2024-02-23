@@ -109,6 +109,8 @@ struct IrisFromCliqueCoverOptions {
  * general use suboptimal cliques when constructing the greedy clique cover, but
  * is faster than solving the max clique problem to global optimality.
  *
+ * The final regions do NOT respect the padding in the collision checker.
+ *
  * Note that this method requires an implementation of a MaxCliqueSolverBase
  * which must be implemented in C++. The only solver of this kind implemented by
  * Drake is MaxCliqueSolverViaMip which requires the availability of a
