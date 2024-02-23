@@ -667,8 +667,8 @@ class SpatialInertia {
   /// @note Minimum possible length can be used to detect erroneous inertias
   /// associated with absurdly large objects or to detect errors when the
   /// minimum possible length is larger than the real physical geometry that
-  /// underlies `this` spatial inertia (possibly due to inertia conversion
-  /// factors, e.g., 10⁷ from kg m² to g cm² or 10⁹ from kg m² to g mm²).
+  /// underlies `this` spatial inertia (maybe due to inertia conversion errors,
+  /// e.g., factor of 10⁷ from kg m² to g cm² or 10⁹ from kg m² to g mm²).
   /// To assess whether the minimum possible length is reasonable, it helps to
   /// have comparable sizes, e.g., the world's largest aircraft carrier has a
   /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m), the
