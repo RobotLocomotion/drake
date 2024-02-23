@@ -1142,7 +1142,7 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
-  // x_u[0] >= x_u[1] ** 2 + x_v[0] ** 2 + x_v[1] ** 2 + 1
+  // x_u[0] >= sqrt(x_u[1] ** 2 + x_v[0] ** 2 + x_v[1] ** 2 + 1)
   Eigen::MatrixXd A(5, 4);
   A.topLeftCorner(4, 4) = Eigen::MatrixXd::Identity(4, 4);
   A.bottomLeftCorner(1, 4).setZero();
