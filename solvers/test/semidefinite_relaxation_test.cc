@@ -377,8 +377,6 @@ class MakeSemidefiniteRelaxationVariableGroupTest : public ::testing::Test {
   std::vector<Variables> partition_group_;
   // A grouping of the variables which overlaps.
   std::vector<Variables> overlap_group_;
-
-  //
 };
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, EmptyVariableGroup) {
@@ -448,7 +446,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   EXPECT_EQ(relaxation_partition->linear_costs().size(), 1);
   EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 1);
   // The variables which get relaxed are [x(0), x(1), x(2), 1]. The remaining
-  // variables that do not get relaxed are [y(0), y(1)]. So there are (4
+  // variables that do not get relaxed are [y(0), y(1)]. So there are (5
   // choose 2) + 2 variables in the program.
   EXPECT_EQ(relaxation_partition->num_vars(), 2 + Nchoose2(5));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
@@ -610,6 +608,108 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
   EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
                   relaxation_overlap->linear_costs()[1])[0],
               test_points.at(x_(2)) * test_points.at(y_(1)), 1e-12);
+
+  // Check that the equality constraint on the relaxation matrices is correct.
+  auto psd_agree_constraint =
+      relaxation_overlap->linear_equality_constraints()[2];
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_overlap->EvalBindingAtInitialGuess(psd_agree_constraint),
+      Eigen::VectorXd::Zero(
+          psd_agree_constraint.evaluator()->num_constraints())));
+}
+
+TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
+  const std::map<Variable, double> test_point{
+      {x_(0), 1.1}, {x_(1), 0.27}, {x_(2), -1.2}, {y_(0), -0.99}, {y_(1), 9.1}};
+
+  prog_.AddLinearConstraint(2 * x_[0] + x_[2] >= 0);
+  prog_.AddLinearConstraint(7 * y_[0] - 0.9 * y_[1] <= -3);
+
+  auto relaxation_partition =
+      MakeSemidefiniteRelaxation(prog_, partition_group_);
+  // Relaxes the x_ and y_ variables separately.
+  EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
+  // The variables which get relaxed are [x(0), x(1), x(2), 1]. The remaining
+  // variables that do not get relaxed are [y(0), y(1)]. So there are (4
+  // choose 2) + 2 variables in the program.
+  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
+            2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[1]
+                .evaluator()
+                ->matrix_rows(),
+            3);
+  EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(), 2);
+  // 2 original linear constraints, and each of these adds its own constraint.
+  EXPECT_EQ(relaxation_partition->linear_constraints().size(), 2 + 2);
+
+  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2+2+4);
+
+  SetRelaxationInitialGuess(test_points, relaxation_partition.get());
+  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
+                  relaxation_partition->linear_constraints()[2])[0],
+              test_points.at(x_(0)) * test_points.at(x_(1)), 1e-12);
+
+
+  auto relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
+
+  // Both variable groups intersect the linear cost, but the cost should only
+  // get added once so we still only have 1 PSD variable.
+  EXPECT_EQ(relaxation_overlap->linear_costs().size(), 1);
+  EXPECT_EQ(relaxation_overlap->GetAllCosts().size(), 1);
+  // The variables which get relaxed are [x(0), x(1), y(0), 1]. The remaining
+  // variables that do not get relaxed are [x(2), y(1)]. So there are (5 choose
+  // 2) + 2 variables in the program.
+  EXPECT_EQ(relaxation_overlap->num_vars(), Nchoose2(5) + 2);
+  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            overlap_group_[0].size() + 2);
+  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation_overlap->GetAllConstraints().size(), 2);
+
+  SetRelaxationInitialGuess(test_point, relaxation_overlap.get());
+  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
+                  relaxation_overlap->linear_costs()[0])[0],
+              test_point.at(x_(0)) + test_point.at(x_(1)), 1e-12);
+
+  // Add a linear cost that intersects the second of the variable groups.
+  prog_.AddLinearCost(y_[1]);
+  relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
+  // Both variable groups intersect the first linear cost and one of the groups
+  // intersects the second cost, we should get two PSD variables, one relaxing
+  // [x(0), x(1), y(0), 1] and another relaxing [x(1), y(0), y(1), 1]. There is
+  // the remaining x(2) variable that is not relaxed.
+  EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
+  EXPECT_EQ(relaxation_overlap->num_vars(),
+            Nchoose2(5) + Nchoose2(5) + 1 -
+                2 /* x(1) and y(0) are double counted so subtract 2*/);
+  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
+  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[1]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  // The two equality constraints that the "1" in the psd variables is equal to
+  // 1, plus the equality constraint of the psd matrices.
+  EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 3);
+  EXPECT_EQ(relaxation_overlap->GetAllConstraints().size(), 3 + 2);
+
+  SetRelaxationInitialGuess(test_point, relaxation_overlap.get());
+  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
+                  relaxation_overlap->linear_costs()[0])[0],
+              test_point.at(x_(0)) + test_point.at(x_(1)), 1e-12);
+  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
+                  relaxation_overlap->linear_costs()[1])[0],
+              test_point.at(y_(1)), 1e-12);
 
   // Check that the equality constraint on the relaxation matrices is correct.
   auto psd_agree_constraint =
