@@ -396,46 +396,6 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     }
   }
 
-  // Now constrain the semidefinite variables to agree where they overlap. Since
-  // the variables are not necessarily in the same order in matrix, we need to
-  // do some permuting stuff.
-  //  for (auto it = variable_groups.begin(); it != variable_groups.end(); it++)
-  //  {
-  //    const Variables& superset1{groups_to_superset.at(*it)};
-  //    const MathematicalProgram& prog1{groups_to_container_programs.at(*it)};
-  //    if (prog1.GetAllConstraints().empty() && prog1.GetAllCosts().empty()) {
-  //      continue;
-  //    }
-  //    const MatrixX<Variable> X1{supersets_to_psd_variables.at(superset1)};
-  //    for (auto it2 = std::next(it); it2 != variable_groups.end(); it2++) {
-  //      const Variables& superset2{groups_to_superset.at(*it2)};
-  //      const MathematicalProgram&
-  //      prog2{groups_to_container_programs.at(*it2)}; if
-  //      (prog2.GetAllConstraints().empty() && prog2.GetAllCosts().empty()) {
-  //        continue;
-  //      }
-  //      const Variables common_variables = intersect(superset1, superset2);
-  //      if (!common_variables.empty()) {
-  //        const MatrixX<Variable>
-  //        X2{supersets_to_psd_variables.at(superset2)}; for (auto var_it1 =
-  //        common_variables.begin();
-  //             var_it1 != common_variables.end(); var_it1++) {
-  //          const int i1 = prog1.FindDecisionVariableIndex(*var_it1);
-  //          const int i2 = prog2.FindDecisionVariableIndex(*var_it1);
-  //          for (auto var_it2 = var_it1; var_it2 != common_variables.end();
-  //               var_it2++) {
-  //            const int j1 = prog1.FindDecisionVariableIndex(*var_it2);
-  //            const int j2 = prog2.FindDecisionVariableIndex(*var_it2);
-  //            // TODO(Alexandre.Amice): If this repeated allocation becomes a
-  //            // problem, then
-  //            relaxation->AddLinearEqualityConstraint(X1(i1, j1) == X2(i2,
-  //            j2));
-  //          }
-  //        }
-  //      }
-  //    }
-  //  }
-
   if (CheckProgramRequireSemidefiniteRelaxation(*relaxation)) {
     throw std::runtime_error(
         "There is a non-convex cost or constraint in the program whose "

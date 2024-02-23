@@ -611,8 +611,6 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
                   relaxation_overlap->linear_costs()[1])[0],
               test_points.at(x_(2)) * test_points.at(y_(1)), 1e-12);
 
-  std::cout << *relaxation_overlap << std::endl;
-
   // Check that the equality constraint on the relaxation matrices is correct.
   auto psd_agree_constraint =
       relaxation_overlap->linear_equality_constraints()[2];
