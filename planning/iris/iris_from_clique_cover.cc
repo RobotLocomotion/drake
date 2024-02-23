@@ -1,4 +1,4 @@
-#include "drake/planning/iris_from_clique_cover.h"
+#include "drake/planning/iris/iris_from_clique_cover.h"
 
 #include <algorithm>
 #include <atomic>

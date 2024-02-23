@@ -5,7 +5,6 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,7 +18,6 @@ drake_cc_package_library(
         ":collision_checker_context",
         ":collision_checker_params",
         ":distance_and_interpolation_provider",
-        ":iris_from_clique_cover",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
@@ -215,26 +213,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "iris_from_clique_cover",
-    srcs = ["iris_from_clique_cover.cc"],
-    hdrs = ["iris_from_clique_cover.h"],
-    interface_deps = [
-        "//geometry/optimization:convex_set",
-        "//geometry/optimization:iris",
-        "//geometry:meshcat",
-        "//planning/graph_algorithms:max_clique_solver_via_mip",
-        "//planning/graph_algorithms:max_clique_solver_base",
-        "//solvers:gurobi_solver",
-        "//solvers:mosek_solver",
-        ":scene_graph_collision_checker",
-        ":visibility_graph",
-    ],
-    deps = [
-        "@common_robotics_utilities",
-    ],
-)
-
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
@@ -367,36 +345,6 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "iris_from_clique_cover_test",
-    timeout = "moderate",
-    data = ["//multibody/parsing:test_models"],
-    # Running with multiple threads is an essential part of our test coverage.
-    num_threads = 2,
-    shard_count = 8,
-    # Most of these tests take an exceptionally long time under
-    # instrumentation, resulting in timeouts, and so are excluded.
-    # These test also can only be run with either mosek or gurobi enabled.
-    tags = [
-        "no_asan",
-        "no_memcheck",
-        # IPOPT is exceptionally slow with IRIS so only test with snopt.
-        "snopt",
-    ] +
-    # Requires a MIP solver to run.
-    mosek_test_tags() + gurobi_test_tags(),
-    deps = [
-        ":iris_from_clique_cover",
-        ":robot_diagram_builder",
-        ":scene_graph_collision_checker",
-        "//common/test_utilities:maybe_pause_for_user",
-        "//geometry/test_utilities:meshcat_environment",
-        "//multibody/parsing:parser",
-        "//planning/graph_algorithms:max_clique_solver_via_mip",
-        "//systems/framework:diagram_builder",
     ],
 )
 
