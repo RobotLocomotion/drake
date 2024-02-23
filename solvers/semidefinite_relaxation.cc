@@ -64,24 +64,39 @@ bool CheckProgramRequireSemidefiniteRelaxation(
 // validated and that relaxation already contains all the variables and
 // constraints of prog. Returns the X matrix of the semidefinite relaxation.
 MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
-    const MathematicalProgram& prog, MathematicalProgram* relaxation) {
+    const MathematicalProgram& prog, MathematicalProgram* relaxation,
+    std::optional<int> group_number = std::nullopt) {
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
   // variables).
   relaxation->AddDecisionVariables(prog.decision_variables());
   MatrixX<Variable> X(prog.num_vars() + 1, prog.num_vars() + 1);
   // X = xxᵀ; x = [prog.decision_vars(); 1].
+  std::string name =
+      group_number.has_value() ? fmt::format("Y{}", group_number.value()) : "Y";
   X.topLeftCorner(prog.num_vars(), prog.num_vars()) =
-      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), "Y");
-  X.topRightCorner(prog.num_vars(), 1) = prog.decision_variables();
-  X.bottomLeftCorner(1, prog.num_vars()) =
-      prog.decision_variables().transpose();
+      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
+  // We sort the variables so that the matrix X is ordered in a predictable way.
+  VectorX<Variable> sorted_variables = prog.decision_variables();
+  std::sort(sorted_variables.data(),
+            sorted_variables.data() + sorted_variables.size(),
+            std::less<Variable>{});
+  X.topRightCorner(prog.num_vars(), 1) = sorted_variables;
+  X.bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
+
+  std::map<Variable, int> variables_to_sorted_indices;
+  int ctr = 0;
+  for (const auto& v : sorted_variables) {
+    variables_to_sorted_indices[v] = ctr++;
+  }
+
   // X(-1,-1) = 1.
   Variable one("one");
   X(prog.num_vars(), prog.num_vars()) = one;
   relaxation->AddDecisionVariables(Vector1<Variable>(one));
   relaxation->AddLinearEqualityConstraint(X(prog.num_vars(), prog.num_vars()),
                                           1);
+
   // X ≽ 0.
   relaxation->AddPositiveSemidefiniteConstraint(X);
 
@@ -89,13 +104,18 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
 
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
-  auto half_trace_QY = [&X, &prog](const Eigen::MatrixXd& Q,
-                                   const VectorXDecisionVariable& prog_vars)
+  auto half_trace_QY = [&X, &prog, &variables_to_sorted_indices](
+                           const Eigen::MatrixXd& Q,
+                           const VectorXDecisionVariable& prog_vars)
       -> std::pair<VectorXd, VectorX<Variable>> {
     const int N = prog_vars.size();
     const int num_vars = N * (N + 1) / 2;
-    const std::vector<int> indices =
-        prog.FindDecisionVariableIndices(prog_vars);
+    std::vector<int> indices;
+    indices.reserve(prog_vars.rows());
+    for (const auto& v : prog_vars) {
+      indices.emplace_back(variables_to_sorted_indices.at(v));
+    }
+
     VectorXd a = VectorXd::Zero(num_vars);
     VectorX<Variable> y(num_vars);
     int count = 0;
@@ -270,7 +290,6 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
           Ab, VectorXd::Zero(binding.evaluator()->num_constraints()), vars);
     }
   }
-
   return X;
 }
 
@@ -299,7 +318,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     groups_to_container_programs.try_emplace(group);
     VectorXDecisionVariable group_vec(group.size());
     int i = 0;
-    for(const auto& v: group){
+    for (const auto& v : group) {
       group_vec(i) = v;
       ++i;
     }
@@ -337,15 +356,16 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     }
   }
 
+  int group_number = 0;
   for (const auto& [group, container_program] : groups_to_container_programs) {
     if (!container_program.GetAllConstraints().empty() ||
         !container_program.GetAllCosts().empty()) {
       supersets_to_psd_variables.emplace(
           groups_to_superset.at(group),
           DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
-              container_program, relaxation.get()));
-      std::cout << *relaxation << std::endl;
+              container_program, relaxation.get(), group_number));
     }
+    ++group_number;
   }
 
   // Now constrain the semidefinite variables to agree where they overlap.
@@ -354,29 +374,67 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     for (auto it2 = std::next(it); it2 != supersets_to_psd_variables.end();
          it2++) {
       const Variables common_variables = intersect(it->first, it2->first);
-      std::cout << common_variables << std::endl;
-      std::cout << fmt::format("X1={}", fmt_eigen(it->second)) << std::endl;
-      std::cout << fmt::format("X2={}", fmt_eigen(it2->second)) << std::endl;
-      if (!common_variables.empty()) {
-        auto GetSubmatrixOfVariables =
-            [&common_variables](const MatrixXDecisionVariable& X) {
-              std::set<int> submatrix_indices;
-              for (const auto& v : common_variables) {
-                for (int i = 0; i < X.rows() - 1; ++i) {
-                  if (X(i, X.cols() - 1).equal_to(v)) {
-                    submatrix_indices.insert(i);
-                    break;
-                  }
+      // The variables which are shared between the two psd constraints are
+      // not necessarily ordered the same way in the two psd matrices, so we
+      // need to construct a permutation matrix.
+      auto GetSubmatrixOfVariables =
+          [&common_variables](const MatrixXDecisionVariable& X) {
+            std::set<int> submatrix_indices;
+            for (const auto& v : common_variables) {
+              for (int i = 0; i < X.rows() - 1; ++i) {
+                if (X(i, X.cols() - 1).equal_to(v)) {
+                  submatrix_indices.insert(i);
+                  break;
                 }
               }
-              return math::ExtractPrincipalSubmatrix(X, submatrix_indices);
-            };
-        relaxation->AddLinearEqualityConstraint(
-            GetSubmatrixOfVariables(it->second) ==
-            GetSubmatrixOfVariables(it2->second));
-      }
+            }
+            return math::ExtractPrincipalSubmatrix(X, submatrix_indices);
+          };
+      relaxation->AddLinearEqualityConstraint(
+          GetSubmatrixOfVariables(it->second) ==
+          GetSubmatrixOfVariables(it2->second));
     }
   }
+
+  // Now constrain the semidefinite variables to agree where they overlap. Since
+  // the variables are not necessarily in the same order in matrix, we need to
+  // do some permuting stuff.
+  //  for (auto it = variable_groups.begin(); it != variable_groups.end(); it++)
+  //  {
+  //    const Variables& superset1{groups_to_superset.at(*it)};
+  //    const MathematicalProgram& prog1{groups_to_container_programs.at(*it)};
+  //    if (prog1.GetAllConstraints().empty() && prog1.GetAllCosts().empty()) {
+  //      continue;
+  //    }
+  //    const MatrixX<Variable> X1{supersets_to_psd_variables.at(superset1)};
+  //    for (auto it2 = std::next(it); it2 != variable_groups.end(); it2++) {
+  //      const Variables& superset2{groups_to_superset.at(*it2)};
+  //      const MathematicalProgram&
+  //      prog2{groups_to_container_programs.at(*it2)}; if
+  //      (prog2.GetAllConstraints().empty() && prog2.GetAllCosts().empty()) {
+  //        continue;
+  //      }
+  //      const Variables common_variables = intersect(superset1, superset2);
+  //      if (!common_variables.empty()) {
+  //        const MatrixX<Variable>
+  //        X2{supersets_to_psd_variables.at(superset2)}; for (auto var_it1 =
+  //        common_variables.begin();
+  //             var_it1 != common_variables.end(); var_it1++) {
+  //          const int i1 = prog1.FindDecisionVariableIndex(*var_it1);
+  //          const int i2 = prog2.FindDecisionVariableIndex(*var_it1);
+  //          for (auto var_it2 = var_it1; var_it2 != common_variables.end();
+  //               var_it2++) {
+  //            const int j1 = prog1.FindDecisionVariableIndex(*var_it2);
+  //            const int j2 = prog2.FindDecisionVariableIndex(*var_it2);
+  //            // TODO(Alexandre.Amice): If this repeated allocation becomes a
+  //            // problem, then
+  //            relaxation->AddLinearEqualityConstraint(X1(i1, j1) == X2(i2,
+  //            j2));
+  //          }
+  //        }
+  //      }
+  //    }
+  //  }
 
   if (CheckProgramRequireSemidefiniteRelaxation(*relaxation)) {
     throw std::runtime_error(
