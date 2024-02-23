@@ -1360,7 +1360,7 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
 
   // Repeat the previous test for the minimum bounding box B.
-  // Verify the answer is not be changed by translation
+  // Verify the answer is not changed by translation.
   std::tie(abc, X_BA) =
       M_BBo_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(min_abc, abc, kTolerance));
