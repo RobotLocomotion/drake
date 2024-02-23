@@ -41,6 +41,21 @@ to facilitate multi-modal motion planning such as: Subgraph A: find a
 collision-free trajectory for the robot to a grasping posture, Subgraph B: find
 a collision-free trajectory for the robot with the object in its hand to a
 placing posture, etc.
+
+@anchor continuous_revolute_joints
+### Continuous Revolute Joints
+
+This class also supports robots with continuous revolute joints (revolute joints
+that don't have any joint limits) and mobile bases. Adding or subtracting 2π to
+such a joint's angle leaves it unchanged; this logic is implemented behind the
+scenes. To use it, one should specify the joint indices that don't have limits,
+and ensure all sets satisfy the "convexity radius" property -- their width along
+a dimension corresponding to a continuous revolute joint must be less than π.
+This can be enforced when constructing the convex sets, or after the fact with
+`geometry::optimization::PartitionConvexSet`. The `GcsTrajectoryOptimization`
+methods `AddRegions` and `AddEdges` will handle all of the intersection checks
+behind the scenes, including applying the appropriate logic to connect sets that
+"wrap around" 2π.
 */
 class GcsTrajectoryOptimization final {
  public:
@@ -278,7 +293,10 @@ class GcsTrajectoryOptimization final {
     bool RegionsConnectThroughSubspace(
         const geometry::optimization::ConvexSet& A,
         const geometry::optimization::ConvexSet& B,
-        const geometry::optimization::ConvexSet& subspace);
+        const geometry::optimization::ConvexSet& subspace,
+        std::optional<const Eigen::VectorXd> maybe_set_B_offset = std::nullopt,
+        std::optional<const Eigen::VectorXd> maybe_subspace_offset =
+            std::nullopt);
 
     /* Extracts the control points variables from an edge. */
     Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsU(

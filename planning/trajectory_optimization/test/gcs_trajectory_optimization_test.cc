@@ -1548,6 +1548,60 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
                               ".*doesn't respect the convexity radius.*");
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundSubspace) {
+  // 1D example.
+  Eigen::Matrix<double, 1, 2> points1;
+  Eigen::Matrix<double, 1, 2> points2;
+  Eigen::Matrix<double, 1, 2> points3;
+  points1 << 0, 3;
+  points2 << 2.5, 5.5;
+  points3 << 5, 8;
+  const VPolytope v1(points1);
+  const VPolytope v2(points2);
+  const VPolytope v3(points3);
+  std::vector<int> continuous_revolute_joints = {0};
+  const Point subspace12(Vector1d{2.75 + (6 * M_PI)});
+  const Point subspace23(Vector1d{5.25 - (4 * M_PI)});
+  const Point subspace13(Vector1d{7.0 + (2 * M_PI)});
+
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  auto& subgraph1 = gcs.AddRegions(MakeConvexSets(HPolyhedron(v1)), 1);
+  auto& subgraph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron(v2), HPolyhedron(v3)), 1);
+
+  // Initially, there should be two edges, v2 -> v3 and v3 -> v2.
+  int expected_num_edges = 2;
+
+  // When we add edges from subgraph1 to subgraph2, we add edges v1 -> v2
+  // and v1 -> v3.
+  gcs.AddEdges(subgraph1, subgraph2);
+  expected_num_edges += 2;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace12, only
+  // v1 -> v2 is added as an edge, since their intersection overlaps with
+  // subspace12. the intersection of v1 and v3 does not overlap with subspace12,
+  // so v1 -> v3 is not added.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace12);
+  expected_num_edges += 1;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace13, only
+  // v1 -> v3 is added as an edge, since their intersection overlaps with
+  // subspace13. the intersection of v1 and v2 does not overlap with subspace13,
+  // so v1 -> v2 is not added.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace13);
+  expected_num_edges += 1;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace23, no edges
+  // are added, since the intersection between v1 and v2 does not overlap with
+  // subspace23, and the intersection between v1 and v3 does not overlap with
+  // subspace23.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace23);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
   Eigen::Matrix<double, 1, 2> points;
   points << 0, 2;
