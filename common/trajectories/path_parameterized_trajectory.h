@@ -70,6 +70,10 @@ class PathParameterizedTrajectory final : public Trajectory<T> {
   // @pre derivative_order must be non-negative.
   MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
 
+  // Uses DerivativeTrajectory to provide a derivative object.
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const final;
+
   // Evaluates the Bell Polynomial B_n,k(x) for use in calculating the
   // derivative.
   // @pre n and k must be non-negative and the length of x must be at least n.

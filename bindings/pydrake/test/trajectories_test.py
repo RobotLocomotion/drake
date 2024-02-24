@@ -17,6 +17,7 @@ from pydrake.trajectories import (
     BezierCurve_,
     BsplineTrajectory_,
     CompositeTrajectory_,
+    DerivativeTrajectory_,
     PathParameterizedTrajectory_,
     PiecewisePolynomial_,
     PiecewisePose_,
@@ -162,6 +163,18 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
         assert_pickle(self, bspline,
                       lambda traj: np.array(traj.control_points()), T=T)
+
+    @numpy_compare.check_all_types
+    def test_derivative_trajectory(self, T):
+        breaks = [0, 1, 2]
+        samples = [[[0]], [[1]], [[2]]]
+        foh = PiecewisePolynomial_[T].FirstOrderHold(breaks, samples)
+        dut = DerivativeTrajectory_[T](nominal=foh, derivative_order=1)
+        self.assertEqual(dut.rows(), 1)
+        self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
 
     def test_legacy_unpickle(self):
         """Checks that data pickled as BsplineTrajectory_[float] in Drake
