@@ -19,6 +19,7 @@ from pydrake.trajectories import (
     CompositeTrajectory_,
     DerivativeTrajectory_,
     ExponentialPlusPiecewisePolynomial,
+    FunctionHandleTrajectory_,
     PathParameterizedTrajectory_,
     PiecewisePolynomial_,
     PiecewisePose_,
@@ -207,6 +208,23 @@ class TestTrajectories(unittest.TestCase):
         dut.shiftRight(1.0)
         self.assertEqual(dut.start_time(), 1.0)
         self.assertEqual(dut.end_time(), 1.5)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    @numpy_compare.check_all_types
+    def test_function_handle_trajectory(self, T):
+        def f(t):
+            print(t)
+            return np.array([[t, t**2]])
+        dut = FunctionHandleTrajectory_[T](
+            func=f, rows=1, cols=2, start_time=0, end_time=1)
+        self.assertEqual(dut.rows(), 1)
+        self.assertEqual(dut.cols(), 2)
+        numpy_compare.assert_float_equal(dut.start_time(), 0.0)
+        numpy_compare.assert_float_equal(dut.end_time(), 1.0)
+        for t in [0.0, 0.5, 1.0]:
+            numpy_compare.assert_float_equal(dut.value(t), f(t))
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
