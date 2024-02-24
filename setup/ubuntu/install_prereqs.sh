@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development and runtime prerequisites for both binary and source
-# distributions of Drake on Ubuntu 20.04 (Focal) or 22.04 (Jammy).
+# distributions of Drake on Ubuntu.
 
 set -euo pipefail
 

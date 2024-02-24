@@ -7,15 +7,32 @@ enumerate_filegroup(
     data = ["@drake_models"],
 )
 
+_MODEL_DATA = [
+    "@drake_models",
+    # TODO(jwnimmer-tri) As we incrementally transition model files from
+    # `package://drake` to `package://drake_models` we have a problem that
+    # `package://drake_models` depends on `package://drake`. We should aim
+    # to drop these extra data dependencies after the transition completes.
+    "//manipulation/models/ur3e:models",
+    "//manipulation/models/wsg_50_description:models",
+]
+
 drake_py_unittest(
     name = "parse_test",
-    data = [
+    data = _MODEL_DATA + [
         ":inventory.txt",
-        "@drake_models",
     ],
     deps = [
         "//bindings/pydrake",
         "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_py_unittest(
+    name = "tri_homecart_test",
+    data = _MODEL_DATA,
+    deps = [
+        "//bindings/pydrake",
     ],
 )
 

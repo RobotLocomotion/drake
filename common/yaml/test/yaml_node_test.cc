@@ -291,7 +291,7 @@ struct VisitorThatCopies {
 
   std::optional<std::string> scalar;
   std::optional<std::vector<Node>> sequence;
-  std::optional<std::map<std::string, Node>> mapping;
+  std::optional<string_map<Node>> mapping;
 };
 
 // Check visiting.
@@ -316,7 +316,7 @@ TEST_P(YamlNodeParamaterizedTest, Visiting) {
       return;
     }
     case NodeType::kMapping: {
-      const std::map<std::string, Node> empty;
+      const string_map<Node> empty;
       ASSERT_EQ(visitor.mapping.value_or(empty).size(), 1);
       EXPECT_EQ(visitor.mapping->begin()->first, "key");
       EXPECT_EQ(visitor.mapping->at("key").GetScalar(), "value");

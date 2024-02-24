@@ -40,6 +40,7 @@ drake_pybind_library(
         "planning_py_robot_diagram.cc",
         "planning_py_trajectory_optimization.cc",
         "planning_py_visibility_graph.cc",
+        "planning_py_iris_from_clique_cover.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -107,6 +108,20 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "graph_algorithms_test",
+    deps = [
+        ":planning",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "iris_from_clique_cover_test",
+    data = [
+        "//multibody:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+    ],
+    num_threads = 2,
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",

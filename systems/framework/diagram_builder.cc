@@ -277,16 +277,18 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
   // Save bookkeeping data.
   const auto return_id = InputPortIndex(diagram_input_data_.size());
   diagram_input_indices_[port_name] = return_id;
-  diagram_input_data_.push_back({id, port_name});
+  diagram_input_data_.push_back({id, std::move(port_name)});
   return return_id;
 }
 
 template <typename T>
 void DiagramBuilder<T>::ConnectInput(
-    const std::string& diagram_port_name, const InputPort<T>& input) {
+    std::string_view diagram_port_name, const InputPort<T>& input) {
   ThrowIfAlreadyBuilt();
   DRAKE_THROW_UNLESS(diagram_input_indices_.count(diagram_port_name));
-  ConnectInput(diagram_input_indices_[diagram_port_name], input);
+  const InputPortIndex diagram_port_index =
+      diagram_input_indices_.find(diagram_port_name)->second;
+  ConnectInput(diagram_port_index, input);
 }
 
 template <typename T>

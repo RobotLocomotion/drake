@@ -1117,17 +1117,11 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
     // alone.
     auto& inspector = scene_graph_->model_inspector();
 
-    // TODO(rpoyner-tri): replace with c++ built-in starts_with once we drop
-    // C++17 support.
-    auto starts_with = [](const std::string& str, const std::string& prefix) {
-      return str.compare(0, prefix.size(), prefix) == 0;
-    };
-
     const std::string old_prefix(old_name + "::");
     const std::string new_prefix(name + "::");
     auto maybe_make_new_name = [&](auto id) {
       std::string existing_name(inspector.GetName(id));
-      if (starts_with(existing_name, old_prefix)) {
+      if (existing_name.starts_with(old_prefix)) {
         // Replace old prefix with new prefix.
         return new_prefix + existing_name.substr(old_prefix.size());
       }
@@ -1294,6 +1288,27 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
     B(actuator.joint().velocity_start(), int{actuator.index()}) = 1;
   }
   return B;
+}
+
+template <typename T>
+Eigen::SparseMatrix<double>
+MultibodyPlant<T>::MakeActuationMatrixPseudoinverse() const {
+  // We leverage here the assumption that B (the actuation matrix) is a
+  // permutation matrix, so Bᵀ is the pseudoinverse.
+  std::vector<Eigen::Triplet<double>> triplets;
+  for (JointActuatorIndex actuator_index(0); actuator_index < num_actuators();
+       ++actuator_index) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    // This method assumes actuators on single dof joints. Assert this
+    // condition.
+    DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
+    triplets.push_back(Eigen::Triplet<double>(
+        int{actuator.index()}, actuator.joint().velocity_start(), 1.0));
+  }
+
+  Eigen::SparseMatrix<double> Bplus(num_actuated_dofs(), num_velocities());
+  Bplus.setFromTriplets(triplets.begin(), triplets.end());
+  return Bplus;
 }
 
 namespace {

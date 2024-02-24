@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/common/symbolic/expression.h"
 
 namespace drake {
@@ -119,8 +120,7 @@ class SequentialExpressionManager {
 
  private:
   int num_samples_{};
-  std::unordered_map<std::string, VectorX<symbolic::Variable>>
-      name_to_placeholders_;
+  string_unordered_map<VectorX<symbolic::Variable>> name_to_placeholders_;
   std::unordered_map<symbolic::Variable, RowVectorX<symbolic::Expression>>
       placeholders_to_expressions_;
 };

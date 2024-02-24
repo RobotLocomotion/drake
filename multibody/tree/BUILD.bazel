@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":rotational_inertia",
         ":scoped_name",
         ":spatial_inertia",
-        ":string_view_map_key",
         ":unit_inertia",
     ],
 )
@@ -74,15 +73,6 @@ drake_cc_library(
         "//multibody/math:spatial_algebra",
         "//systems/framework:leaf_context",
     ],
-)
-
-drake_cc_library(
-    name = "string_view_map_key",
-    srcs = [],
-    hdrs = [
-        "string_view_map_key.h",
-    ],
-    deps = [],
 )
 
 drake_cc_library(
@@ -182,10 +172,10 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":scoped_name",
         ":spatial_inertia",
-        ":string_view_map_key",
         "//common:default_scalars",
         "//common:name_value",
         "//common:nice_type_name",
+        "//common:string_container",
         "//common:unused",
         "//math:geometric_transform",
         "//multibody/topology:multibody_graph",
@@ -423,13 +413,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "string_view_map_key_test",
-    deps = [
-        ":string_view_map_key",
     ],
 )
 

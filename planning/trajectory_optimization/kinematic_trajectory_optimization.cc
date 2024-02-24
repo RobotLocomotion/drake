@@ -27,7 +27,12 @@ using math::EigenToStdVector;
 using math::ExtractValue;
 using math::InitializeAutoDiff;
 using math::StdVectorToEigen;
+using solvers::Binding;
+using solvers::BoundingBoxConstraint;
 using solvers::Constraint;
+using solvers::Cost;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::VectorXDecisionVariable;
@@ -243,17 +248,21 @@ KinematicTrajectoryOptimization::ReconstructTrajectory(
       EigenToStdVector<double>(result.GetSolution(control_points_)));
 }
 
-void KinematicTrajectoryOptimization::AddPathPositionConstraint(
+Binding<LinearConstraint>
+KinematicTrajectoryOptimization::AddPathPositionConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub, double s) {
   DRAKE_DEMAND(lb.size() == num_positions());
   DRAKE_DEMAND(ub.size() == num_positions());
   DRAKE_DEMAND(0 <= s && s <= 1);
   const VectorX<symbolic::Expression> sym_r_value = sym_r_->value(s);
-  prog_.AddLinearConstraint(lb <= sym_r_value && sym_r_value <= ub);
+  auto binding =
+      prog_.AddLinearConstraint(lb <= sym_r_value && sym_r_value <= ub);
+  binding.evaluator()->set_description("path position constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddPathPositionConstraint(
+Binding<Constraint> KinematicTrajectoryOptimization::AddPathPositionConstraint(
     const std::shared_ptr<Constraint>& constraint, double s) {
   DRAKE_DEMAND(constraint->num_vars() == num_positions_);
   DRAKE_DEMAND(0 <= s && s <= 1);
@@ -272,22 +281,29 @@ void KinematicTrajectoryOptimization::AddPathPositionConstraint(
     var_vector.segment(i * num_positions(), num_positions()) =
         control_points_.col(control_point_index);
   }
-  prog_.AddConstraint(
+  auto binding = prog_.AddConstraint(
       std::make_shared<PathConstraint>(constraint, basis_function_values),
       var_vector);
+  binding.evaluator()->set_description("path position constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddPathVelocityConstraint(
+Binding<LinearConstraint>
+KinematicTrajectoryOptimization::AddPathVelocityConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub, double s) {
   DRAKE_DEMAND(lb.size() == num_positions());
   DRAKE_DEMAND(ub.size() == num_positions());
   DRAKE_DEMAND(0 <= s && s <= 1);
   const VectorX<symbolic::Expression> sym_rdot_value = sym_rdot_->value(s);
-  prog_.AddLinearConstraint(lb <= sym_rdot_value && sym_rdot_value <= ub);
+  auto binding =
+      prog_.AddLinearConstraint(lb <= sym_rdot_value && sym_rdot_value <= ub);
+  binding.evaluator()->set_description("path velocity constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
+Binding<Constraint>
+KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
     const std::shared_ptr<solvers::Constraint>& constraint, double s) {
   DRAKE_DEMAND(constraint->num_vars() == 2 * num_positions_);
   DRAKE_DEMAND(0 <= s && s <= 1);
@@ -308,27 +324,37 @@ void KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
   duration_and_vars << duration_, vars_pos, vars_vel;
   auto wrapped_constraint = std::make_shared<WrappedVelocityConstraint>(
       constraint, std::move(M_pos), std::move(M_vel));
-  prog_.AddConstraint(wrapped_constraint, duration_and_vars);
+  auto binding = prog_.AddConstraint(wrapped_constraint, duration_and_vars);
+  binding.evaluator()->set_description("velocity constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddPathAccelerationConstraint(
+Binding<LinearConstraint>
+KinematicTrajectoryOptimization::AddPathAccelerationConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub, double s) {
   DRAKE_DEMAND(lb.size() == num_positions());
   DRAKE_DEMAND(ub.size() == num_positions());
   DRAKE_DEMAND(0 <= s && s <= 1);
   const VectorX<symbolic::Expression> sym_rddot_value = sym_rddot_->value(s);
-  prog_.AddLinearConstraint(lb <= sym_rddot_value && sym_rddot_value <= ub);
+  auto binding =
+      prog_.AddLinearConstraint(lb <= sym_rddot_value && sym_rddot_value <= ub);
+  binding.evaluator()->set_description("path acceleration constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddDurationConstraint(
-    optional<double> lb, optional<double> ub) {
-  prog_.AddBoundingBoxConstraint(
+Binding<BoundingBoxConstraint>
+KinematicTrajectoryOptimization::AddDurationConstraint(optional<double> lb,
+                                                       optional<double> ub) {
+  auto binding = prog_.AddBoundingBoxConstraint(
       lb.value_or(0), ub.value_or(std::numeric_limits<double>::infinity()),
       duration_);
+  binding.evaluator()->set_description("duration constraint");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddPositionBounds(
+std::vector<Binding<BoundingBoxConstraint>>
+KinematicTrajectoryOptimization::AddPositionBounds(
     const Eigen::Ref<const VectorXd>& lb,
     const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == num_positions());
@@ -337,12 +363,18 @@ void KinematicTrajectoryOptimization::AddPositionBounds(
   // control points satisfy these convex constraints and the curve is inside
   // the convex hull of these constraints, then the curve satisfies the
   // constraints for all s (and therefore all t).
+  std::vector<Binding<BoundingBoxConstraint>> binding;
   for (int i = 0; i < num_control_points(); ++i) {
-    prog_.AddBoundingBoxConstraint(lb, ub, control_points_.col(i));
+    binding.emplace_back(
+        prog_.AddBoundingBoxConstraint(lb, ub, control_points_.col(i)));
+    binding[i].evaluator()->set_description(
+        fmt::format("position bound {}", i));
   }
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddVelocityBounds(
+std::vector<Binding<LinearConstraint>>
+KinematicTrajectoryOptimization::AddVelocityBounds(
     const Eigen::Ref<const VectorXd>& lb,
     const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == num_positions());
@@ -355,14 +387,19 @@ void KinematicTrajectoryOptimization::AddVelocityBounds(
   // the control points satisfy these convex constraints and the curve is
   // inside the convex hull of these constraints, then the curve satisfies the
   // constraints for all t.
+  std::vector<Binding<LinearConstraint>> binding;
   for (int i = 0; i < sym_rdot_->num_control_points(); ++i) {
-    prog_.AddLinearConstraint(sym_rdot_->control_points()[i] >=
-                                  duration_ * lb &&
-                              sym_rdot_->control_points()[i] <= duration_ * ub);
+    binding.emplace_back(prog_.AddLinearConstraint(
+        sym_rdot_->control_points()[i] >= duration_ * lb &&
+        sym_rdot_->control_points()[i] <= duration_ * ub));
+    binding[i].evaluator()->set_description(
+        fmt::format("velocity bound {}", i));
   }
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddAccelerationBounds(
+std::vector<std::vector<Binding<Constraint>>>
+KinematicTrajectoryOptimization::AddAccelerationBounds(
     const Eigen::Ref<const VectorXd>& lb,
     const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == num_positions());
@@ -376,23 +413,30 @@ void KinematicTrajectoryOptimization::AddAccelerationBounds(
   Eigen::RowVectorXd M;
   VectorXDecisionVariable vars, duration_and_vars;
   std::unordered_map<symbolic::Variable::Id, int> unused_map;
+  std::vector<std::vector<Binding<Constraint>>> binding(
+      sym_rddot_->num_control_points());
   for (int i = 0; i < sym_rddot_->num_control_points(); ++i) {
     for (int j = 0; j < num_positions(); ++j) {
       std::tie(vars, unused_map) = symbolic::ExtractVariablesFromExpression(
           sym_rddot_->control_points()[i](j));
       M.resize(vars.size());
+      // TODO(russt): Avoid symbolic here and throughout.
       symbolic::DecomposeLinearExpressions(
           Vector1<Expression>(sym_rddot_->control_points()[i](j)), vars, &M);
       auto con = std::make_shared<DerivativeConstraint>(M, 2, lb.segment<1>(j),
                                                         ub.segment<1>(j));
       duration_and_vars.resize(vars.size() + 1);
       duration_and_vars << duration_, vars;
-      prog_.AddConstraint(con, duration_and_vars);
+      binding[i].emplace_back(prog_.AddConstraint(con, duration_and_vars));
+      binding[i][j].evaluator()->set_description(
+          fmt::format("acceleration bound {}, {}", i, j));
     }
   }
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddJerkBounds(
+std::vector<std::vector<Binding<Constraint>>>
+KinematicTrajectoryOptimization::AddJerkBounds(
     const Eigen::Ref<const VectorXd>& lb,
     const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == num_positions());
@@ -405,6 +449,8 @@ void KinematicTrajectoryOptimization::AddJerkBounds(
   Eigen::RowVectorXd M;
   VectorXDecisionVariable vars, duration_and_vars;
   std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  std::vector<std::vector<Binding<Constraint>>> binding(
+      sym_rddot_->num_control_points());
   for (int i = 0; i < sym_rdddot_->num_control_points(); ++i) {
     for (int j = 0; j < num_positions(); ++j) {
       std::tie(vars, map_var_to_index) =
@@ -417,16 +463,22 @@ void KinematicTrajectoryOptimization::AddJerkBounds(
                                                         ub.segment<1>(j));
       duration_and_vars.resize(vars.size() + 1);
       duration_and_vars << duration_, vars;
-      prog_.AddConstraint(con, duration_and_vars);
+      binding[i].emplace_back(prog_.AddConstraint(con, duration_and_vars));
+      binding[i][j].evaluator()->set_description(
+          fmt::format("jerk bound {}, {}", i, j));
     }
   }
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddDurationCost(double weight) {
-  prog_.AddLinearCost(weight * duration_);
+Binding<LinearCost> KinematicTrajectoryOptimization::AddDurationCost(
+    double weight) {
+  auto binding = prog_.AddLinearCost(weight * duration_);
+  binding.evaluator()->set_description("duration cost");
+  return binding;
 }
 
-void KinematicTrajectoryOptimization::AddPathLengthCost(
+std::vector<Binding<Cost>> KinematicTrajectoryOptimization::AddPathLengthCost(
     double weight, bool use_conic_constraint) {
   MatrixXd A(num_positions_, 2 * num_positions_);
   A.leftCols(num_positions_) =
@@ -435,15 +487,25 @@ void KinematicTrajectoryOptimization::AddPathLengthCost(
       -weight * MatrixXd::Identity(num_positions_, num_positions_);
   const VectorXd b = VectorXd::Zero(num_positions_);
   VectorXDecisionVariable vars(2 * num_positions_);
+  std::vector<Binding<Cost>> binding;
   for (int i = 1; i < num_control_points(); ++i) {
     vars.head(num_positions_) = control_points_.col(i);
     vars.tail(num_positions_) = control_points_.col(i - 1);
     if (use_conic_constraint) {
-      prog_.AddL2NormCostUsingConicConstraint(A, b, vars);
+      auto slack_cost_and_constraint_tuple =
+          prog_.AddL2NormCostUsingConicConstraint(A, b, vars);
+      binding.emplace_back(std::get<1>(slack_cost_and_constraint_tuple));
+      std::get<2>(slack_cost_and_constraint_tuple)
+          .evaluator()
+          ->set_description(
+              fmt::format("path length cost {} conic constraint", i));
     } else {
-      prog_.AddL2NormCost(A, b, vars);
+      binding.emplace_back(prog_.AddL2NormCost(A, b, vars));
     }
+    binding[i - 1].evaluator()->set_description(
+        fmt::format("path length cost {}", i));
   }
+  return binding;
 }
 
 }  // namespace trajectory_optimization

@@ -9,14 +9,11 @@ def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_macos:
-        # On macOS, we use spdlog from homebrew via pkg-config.
-        error = setup_pkg_config_repository(repo_ctx).error
-    elif os_result.is_manylinux or os_result.is_macos_wheel:
+    if os_result.is_manylinux or os_result.is_macos_wheel:
         # Compile it from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
     else:
-        # On Ubuntu, we use the host-provided spdlog via pkg-config.
+        # When not using a wheel build, find spdlog via pkg-config.
         error = setup_pkg_config_repository(repo_ctx).error
     if error != None:
         fail(error)
@@ -47,17 +44,17 @@ install(name = "install")
             default = "gabime/spdlog",
         ),
         "commit": attr.string(
-            # Here, we elect to use the same version as Ubuntu 20.04, even
+            # Here, we elect to use the same version as Ubuntu 22.04, even
             # though it is not the newest revision.  Sticking with a single,
             # older revision helps reduce spurious CI failures.
-            default = "v1.5.0",
+            default = "v1.9.2",
         ),
         "commit_pin": attr.int(
             # Per the comment on "commit", above.
             default = 1,
         ),
         "sha256": attr.string(
-            default = "b38e0bbef7faac2b82fed550a0c19b0d4e7f6737d5321d4fd8f216b80f8aee8a",  # noqa
+            default = "6fff9215f5cb81760be4cc16d033526d1080427d236e86d70bb02994f85e3d38",  # noqa
         ),
         "build_file": attr.label(
             default = "@drake//tools/workspace/spdlog:package.BUILD.bazel",

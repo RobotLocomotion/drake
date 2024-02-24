@@ -279,7 +279,7 @@ void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
   if (!(y->IsMapping())) {
     return;
   }
-  const std::map<std::string, internal::Node>& y_map = y->GetMapping();
+  const string_map<internal::Node>& y_map = y->GetMapping();
 
   // Both x are y are maps.  Remove from x any key-value pair that is identical
   // within both x and y.

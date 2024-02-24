@@ -71,7 +71,7 @@ Element<T>& ElementCollection<T, Element, Index>::AddImpl(
 }
 
 template <typename T, template <typename> class Element, typename Index>
-typename std::unordered_multimap<StringViewMapKey, Index>::const_iterator
+typename string_unordered_multimap<Index>::const_iterator
 ElementCollection<T, Element, Index>::FindNamesIterator(std::string_view name,
                                                         Index index) const {
   auto [lower, upper] = names_map_.equal_range(name);
@@ -117,8 +117,6 @@ void ElementCollection<T, Element, Index>::Rename(Index index,
     names_map_.emplace(name, index);
     get_mutable_element(index).set_name(std::move(name));
   } else {
-    // Once we drop Ubuntu Focal (GCC 9), we can remove the annoying `unused()`.
-    unused(index, name);
     DRAKE_UNREACHABLE();
   }
 }

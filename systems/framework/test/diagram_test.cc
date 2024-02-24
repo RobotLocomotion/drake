@@ -169,6 +169,8 @@ class EmptySystemDiagram : public Diagram<double> {
     }
     builder.BuildInto(this);
     EXPECT_FALSE(IsDifferenceEquationSystem());
+    // There are periodic updates, but no discrete state.
+    EXPECT_TRUE(IsDifferentialEquationSystem());
   }
 };
 
@@ -1933,6 +1935,7 @@ class DiscreteStateDiagram : public Diagram<double> {
     builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
     EXPECT_FALSE(IsDifferenceEquationSystem());
+    EXPECT_FALSE(IsDifferentialEquationSystem());
   }
 
   ZeroOrderHold<double>* hold1() { return hold1_; }
@@ -2446,6 +2449,21 @@ class ForcedPublishingSystemDiagramTest : public ::testing::Test {
   ForcedPublishingSystemDiagram diagram_;
   std::unique_ptr<Context<double>> context_;
 };
+
+GTEST_TEST(ContinuousStateDiagramTest, IsDifferentialEquationSystem) {
+  DiagramBuilder<double> builder;
+  builder.template AddSystem<Integrator>(1);
+  builder.template AddSystem<Integrator>(2);
+  const auto two_integrator_diagram = builder.Build();
+  EXPECT_TRUE(two_integrator_diagram->IsDifferentialEquationSystem());
+
+  DiagramBuilder<double> builder2;
+  builder2.template AddSystem<Integrator>(1);
+  builder2.template AddSystem<SystemWithDiscreteState>(1, 0.1);
+  const auto mixed_discrete_continuous_diagram = builder2.Build();
+  EXPECT_FALSE(
+      mixed_discrete_continuous_diagram->IsDifferentialEquationSystem());
+}
 
 // Tests that a forced publish is processed through the event handler.
 TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {

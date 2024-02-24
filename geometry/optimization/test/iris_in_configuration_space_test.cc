@@ -914,6 +914,15 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
 
     MaybePauseForUser();
   }
+
+  // Confirm that mixing_steps has a tangible effect (this example is
+  // particularly sensitive to the sampling), and obtains a smaller volume due
+  // to non-uniform sampling with less mixing_steps.
+  options.mixing_steps = 1;  // Smaller than the default.
+  HPolyhedron region2 = IrisFromUrdf(convex_urdf, sample, options);
+  constexpr double kTol = 1e-4;
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume() + kTol,
+            region2.MaximumVolumeInscribedEllipsoid().Volume());
 }
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic

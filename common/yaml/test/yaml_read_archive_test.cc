@@ -46,7 +46,7 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
     if (!loaded.IsMapping()) {
       throw std::logic_error("Bad contents parse " + contents);
     }
-    const std::map<std::string, internal::Node>& mapping = loaded.GetMapping();
+    const string_map<internal::Node>& mapping = loaded.GetMapping();
     if (mapping.count("doc") != 1) {
       throw std::logic_error("Missing doc parse " + contents);
     }
@@ -213,7 +213,7 @@ TEST_P(YamlReadArchiveTest, StdMap) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
-    std::map<std::string, double> adjusted_expected = expected;
+    string_map<double> adjusted_expected{expected.begin(), expected.end()};
     if (GetParam().retain_map_defaults) {
       adjusted_expected["kNominalDouble"] = kNominalDouble;
     }
@@ -323,7 +323,7 @@ TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
-    std::map<std::string, double> adjusted_expected = expected;
+    string_map<double> adjusted_expected{expected.begin(), expected.end()};
     if (GetParam().retain_map_defaults) {
       adjusted_expected["kNominalDouble"] = kNominalDouble;
     }

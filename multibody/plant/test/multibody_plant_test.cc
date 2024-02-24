@@ -418,7 +418,7 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   MultibodyPlant<double>& plant_ref = pair;
   EXPECT_EQ(&plant_ref, plant);
 
-  // Check support for C++17's structured binding.
+  // Check support for C++ structured binding.
   auto [first_element, second_element] =
       AddMultibodyPlantSceneGraph(&builder, 0.0);
   // Verify the expected types.
@@ -2774,6 +2774,31 @@ GTEST_TEST(KukaModel, JointIndexes) {
   EXPECT_EQ(xc, xc_expected);
 }
 
+GTEST_TEST(KukaModel, ActuationMatrix) {
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModels(FindResourceOrThrow(kSdfPath));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_positions(), 7);
+  EXPECT_EQ(plant.num_velocities(), 7);
+  EXPECT_EQ(plant.num_actuated_dofs(), 7);
+
+  const Eigen::MatrixXd B = plant.MakeActuationMatrix();
+  EXPECT_EQ(B.rows(), plant.num_velocities());
+  EXPECT_EQ(B.cols(), plant.num_actuated_dofs());
+  const Eigen::SparseMatrix<double> B_inv =
+      plant.MakeActuationMatrixPseudoinverse();
+  EXPECT_EQ(B_inv.rows(), plant.num_actuated_dofs());
+  EXPECT_EQ(B_inv.cols(), plant.num_velocities());
+  EXPECT_TRUE((B * B_inv).isIdentity());
+  EXPECT_TRUE((B_inv * B).isIdentity());
+}
+
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
 // update period of the plant. This allows us to test some of the plant's
 // functionality for both continuous and discrete models.
@@ -3258,6 +3283,14 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   const MatrixX<double> B = plant.MakeActuationMatrix();
   ASSERT_EQ(B.rows(), nv);
   ASSERT_EQ(B.cols(), nu);
+  // B is not invertible.
+  const Eigen::SparseMatrix<double> Bplus =
+      plant.MakeActuationMatrixPseudoinverse();
+  EXPECT_EQ(Bplus.rows(), nu);
+  EXPECT_EQ(Bplus.cols(), nv);
+  // since nv >= nu, it's a true left inverse.
+  EXPECT_TRUE((Bplus * B).isIdentity());
+
   MatrixX<double> B_expected = MatrixX<double>::Zero(nv, nu);
 
   // Fill in the block for the IIWA's actuators.

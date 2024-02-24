@@ -318,8 +318,10 @@ reasonable! Alternately, use a footnote to avoid running over. -->
 
 Quantity                     |Symbol|     Typeset              | Monogram   | Meaningᵃ
 -----------------------------|:----:|:------------------------:|:----------:|----------------------------
+Generic vector v             |  v   |@f$[v]_E@f$               |`v_E`       |Vector v expressed in frame E.
 Rotation matrix              |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
-Position vector              |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position vector from point P to point Q
+Position vector              |  p   |@f$^Bp^C@f$               |`p_BC`      |Position vector from Bo (frame B's origin) to Co (frame C's origin), expressed in frame B (implied).
+Position vector              |  p   |@f$[^Pp^Q]_E@f$           |`p_PQ_E`    |Position vector from point P to point Q, expressed in frame E.
 Transform/pose               |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
 General Transform            |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
 Angular velocity             |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame Bᵃ
@@ -344,6 +346,7 @@ Jacobian wrt qᵈ              | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E
 Jacobian wrt q̇               | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|%Point Q's translational velocity Jacobian in frame B wrt q̇
 Jacobian wrt v               | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |%Point Q's translational velocity Jacobian in frame B wrt v
 Jacobian wrt v               | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |%Frame C's angular velocity Jacobian in frame B wrt v
+Ez measure of vector v       |  v   |@f$[v]_{Ez}@f$            |`v_Ez`      |Ez scalar component of vector v, i.e., v • Ez, where Ez is frame E's z-direction unit vector.
 
 ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset

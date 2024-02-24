@@ -181,7 +181,6 @@ def vtk_internal_repository(
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
             ":patches/io_image_formats.patch",
-            ":patches/io_legacy_data_reader_uninit.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",

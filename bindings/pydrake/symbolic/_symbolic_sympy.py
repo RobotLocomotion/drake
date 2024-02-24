@@ -2,7 +2,7 @@
 `_symbolic_extra.py`. It is loaded is loaded lazily (on demand), so that Drake
 does not directly depend on SymPy.
 """
-
+import math
 import operator
 from typing import Dict, Union
 
@@ -26,6 +26,15 @@ def _no_change(x):
     return x
 
 
+def _handle_constant(x):
+    """This function is used to cast constant expressions to the appropriate
+    sympy type.
+    """
+    if not math.isinf(x) and not math.isnan(x) and int(x) == x:
+        return sympy.Integer(x)
+    return sympy.Float(x)
+
+
 def _make_sympy_if_then_else(cond: sympy.Expr,
                              expr_then: sympy.Expr,
                              expr_else: sympy.Expr):
@@ -40,8 +49,7 @@ def _make_sympy_if_then_else(cond: sympy.Expr,
 # This table maps from ExpressionKind and FormulaKind to the SymPy constructor
 # for that kind of term; this forms the core of `pydrake.symbolic.to_sympy()`.
 _SYMPY_CONSTRUCTOR = {
-    # Leave floats alone -- don't preemptively wrap them in sympy.Float.
-    ExpressionKind.Constant: _no_change,
+    ExpressionKind.Constant: _handle_constant,
     # Like Drake's NaN, the SymPy NaN also rejects, e.g., comparison operators.
     # That's more like what we want than `math.nan`, which allows comparison.
     ExpressionKind.NaN: lambda _: sympy.nan,

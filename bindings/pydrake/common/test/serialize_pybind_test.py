@@ -99,15 +99,6 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_map, {'new_key': 70})
         self.assertEqual(dut.some_variant, 80.0)
 
-        try:
-            # Use the PEP-585 types if supported (Python >= 3.9).
-            expected_vector_type = list[float]
-            expected_dict_type = dict[str, float]
-        except TypeError:
-            # Otherwise, use the Python 3.8 types.
-            expected_vector_type = typing.List[float]
-            expected_dict_type = typing.Dict[str, float]
-
         # Check all field types.
         fields = getattr(MyData2, "__fields__")
         self.assertSequenceEqual([(x.name, x.type) for x in fields], (
@@ -119,8 +110,8 @@ class TestSerializePybind(unittest.TestCase):
             ("some_string", str),
             ("some_eigen", np.ndarray),
             ("some_optional", typing.Optional[float]),
-            ("some_vector", expected_vector_type),
-            ("some_map", expected_dict_type),
+            ("some_vector", list[float]),
+            ("some_map", dict[str, float]),
             ("some_variant", typing.Union[float, MyData1])))
 
     def test_repr_using_serialize_no_docs(self):

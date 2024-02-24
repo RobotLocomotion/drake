@@ -11,7 +11,7 @@ GTEST_TEST(OverloadedTest, CommentExampleTest) {
   // Test the exact text of the example in the file comment.
   using MyVariant = std::variant<int, std::string>;
   MyVariant v = 5;
-  std::string result = visit_overloaded<const char*>(overloaded{
+  std::string result = std::visit<const char*>(overloaded{
     [](const int arg) { return "found an int"; },
     [](const std::string& arg) { return "found a string"; }
   }, v);
@@ -24,7 +24,7 @@ GTEST_TEST(OverloadedTest, AutoTest) {
 
   // An 'auto' arm doesn't match if there's any explicit match,
   // no matter if it's earlier or later in the list.
-  std::string result = visit_overloaded<const char*>(overloaded{
+  std::string result = std::visit<const char*>(overloaded{
     [](const auto arg) { return "found an auto"; },
     [](const int arg) { return "found an int"; },
     [](const std::string& arg) { return "found a string"; },
@@ -33,7 +33,7 @@ GTEST_TEST(OverloadedTest, AutoTest) {
   EXPECT_EQ(result, "found an int");
 
   // An 'auto' arm matches if there's no explicit match.
-  result = visit_overloaded<const char*>(overloaded{
+  result = std::visit<const char*>(overloaded{
     [](const auto arg) { return "found an auto"; },
     [](const std::string& arg) { return "found a string"; },
   }, v);
