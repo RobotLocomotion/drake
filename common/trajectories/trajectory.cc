@@ -44,6 +44,7 @@ bool Trajectory<T>::do_has_derivative() const {
 template <typename T>
 MatrixX<T> Trajectory<T>::EvalDerivative(const T& t,
                                          int derivative_order) const {
+  DRAKE_THROW_UNLESS(derivative_order >= 0);
   return DoEvalDerivative(t, derivative_order);
 }
 
@@ -66,6 +67,7 @@ MatrixX<T> Trajectory<T>::DoEvalDerivative(const T& t,
 template <typename T>
 std::unique_ptr<Trajectory<T>> Trajectory<T>::MakeDerivative(
     int derivative_order) const {
+  DRAKE_THROW_UNLESS(derivative_order >= 0);
   return DoMakeDerivative(derivative_order);
 }
 
