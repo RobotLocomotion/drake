@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":bezier_curve",
         ":bspline_trajectory",
         ":composite_trajectory",
+        ":derivative_trajectory",
         ":discrete_time_trajectory",
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
@@ -27,13 +28,57 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "trajectory",
-    srcs = ["trajectory.cc"],
-    hdrs = ["trajectory.h"],
+    name = "bezier_curve",
+    srcs = [
+        "bezier_curve.cc",
+    ],
+    hdrs = [
+        "bezier_curve.h",
+    ],
     deps = [
+        ":trajectory",
+        "//common:drake_bool",
+        "//common/symbolic:polynomial",
+        "//math:binomial_coefficient",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_trajectory",
+    srcs = [
+        "bspline_trajectory.cc",
+    ],
+    hdrs = [
+        "bspline_trajectory.h",
+    ],
+    deps = [
+        ":trajectory",
+        "//common:name_value",
+        "//math:bspline_basis",
+    ],
+)
+
+drake_cc_library(
+    name = "composite_trajectory",
+    srcs = [
+        "composite_trajectory.cc",
+    ],
+    hdrs = [
+        "composite_trajectory.h",
+    ],
+    deps = [
+        ":piecewise_trajectory",
+    ],
+)
+
+drake_cc_library(
+    name = "derivative_trajectory",
+    srcs = ["derivative_trajectory.cc"],
+    hdrs = ["derivative_trajectory.h"],
+    deps = [
+        ":trajectory",
         "//common:default_scalars",
         "//common:essential",
-        "//common:unused",
     ],
 )
 
@@ -55,17 +100,7 @@ drake_cc_library(
     srcs = ["path_parameterized_trajectory.cc"],
     hdrs = ["path_parameterized_trajectory.h"],
     deps = [
-        ":trajectory",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "piecewise_trajectory",
-    srcs = ["piecewise_trajectory.cc"],
-    hdrs = ["piecewise_trajectory.h"],
-    deps = [
+        ":derivative_trajectory",
         ":trajectory",
         "//common:default_scalars",
         "//common:essential",
@@ -119,6 +154,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "piecewise_trajectory",
+    srcs = ["piecewise_trajectory.cc"],
+    hdrs = ["piecewise_trajectory.h"],
+    deps = [
+        ":trajectory",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "stacked_trajectory",
     srcs = ["stacked_trajectory.cc"],
     hdrs = ["stacked_trajectory.h"],
@@ -129,64 +175,59 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "bspline_trajectory",
-    srcs = [
-        "bspline_trajectory.cc",
-    ],
-    hdrs = [
-        "bspline_trajectory.h",
-    ],
+    name = "trajectory",
+    srcs = ["trajectory.cc"],
+    hdrs = ["trajectory.h"],
     deps = [
-        ":trajectory",
-        "//common:name_value",
-        "//math:bspline_basis",
-    ],
-)
-
-drake_cc_library(
-    name = "bezier_curve",
-    srcs = [
-        "bezier_curve.cc",
-    ],
-    hdrs = [
-        "bezier_curve.h",
-    ],
-    deps = [
-        ":trajectory",
-        "//common:drake_bool",
-        "//common/symbolic:polynomial",
-        "//math:binomial_coefficient",
-    ],
-)
-
-drake_cc_library(
-    name = "composite_trajectory",
-    srcs = [
-        "composite_trajectory.cc",
-    ],
-    hdrs = [
-        "composite_trajectory.h",
-    ],
-    deps = [
-        ":piecewise_trajectory",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
 # === test/ ===
 
-drake_cc_library(
-    name = "random_piecewise_polynomial",
-    testonly = 1,
-    hdrs = ["test/random_piecewise_polynomial.h"],
+drake_cc_googletest(
+    name = "bezier_curve_test",
     deps = [
-        "//common/test_utilities:random_polynomial_matrix",
+        ":bezier_curve",
+        "//common/symbolic:polynomial",
+        "//common/test_utilities",
+        "//geometry/optimization:convex_set",
+        "//solvers:mathematical_program",
     ],
 )
 
 drake_cc_googletest(
-    name = "trajectory_test",
+    name = "bspline_trajectory_test",
     deps = [
-        ":trajectory",
+        ":bspline_trajectory",
+        "//common:find_resource",
+        "//common/proto:call_python",
+        "//common/test_utilities",
+        "//common/yaml",
+        "//math:compute_numerical_gradient",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "composite_trajectory_test",
+    deps = [
+        ":bezier_curve",
+        ":composite_trajectory",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "derivative_trajectory_test",
+    deps = [
+        ":derivative_trajectory",
+        ":discrete_time_trajectory",
+        ":piecewise_polynomial",
+        ":piecewise_quaternion",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -201,19 +242,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "exponential_plus_piecewise_polynomial_test",
+    deps = [
+        ":piecewise_polynomial",
+        ":random_piecewise_polynomial",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "path_parameterized_trajectory_test",
     deps = [
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "piecewise_trajectory_test",
-    deps = [
-        ":piecewise_trajectory",
     ],
 )
 
@@ -242,15 +285,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "exponential_plus_piecewise_polynomial_test",
-    deps = [
-        ":piecewise_polynomial",
-        ":random_piecewise_polynomial",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "piecewise_pose_test",
     deps = [
         ":piecewise_pose",
@@ -268,6 +302,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "piecewise_trajectory_test",
+    deps = [
+        ":piecewise_trajectory",
+    ],
+)
+
+drake_cc_library(
+    name = "random_piecewise_polynomial",
+    testonly = 1,
+    hdrs = ["test/random_piecewise_polynomial.h"],
+    deps = [
+        "//common/test_utilities:random_polynomial_matrix",
+    ],
+)
+
+drake_cc_googletest(
     name = "stacked_trajectory_test",
     deps = [
         ":discrete_time_trajectory",
@@ -279,35 +329,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "bspline_trajectory_test",
+    name = "trajectory_test",
     deps = [
-        ":bspline_trajectory",
-        "//common:find_resource",
-        "//common/proto:call_python",
-        "//common/test_utilities",
-        "//common/yaml",
-        "//math:compute_numerical_gradient",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "bezier_curve_test",
-    deps = [
-        ":bezier_curve",
-        "//common/symbolic:polynomial",
-        "//common/test_utilities",
-        "//geometry/optimization:convex_set",
-        "//solvers:mathematical_program",
-    ],
-)
-
-drake_cc_googletest(
-    name = "composite_trajectory_test",
-    deps = [
-        ":bezier_curve",
-        ":composite_trajectory",
-        "//common/test_utilities",
+        ":trajectory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

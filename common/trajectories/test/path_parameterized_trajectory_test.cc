@@ -60,17 +60,23 @@ TEST_F(PathParameterizedTrajectoryTest, TestDerivatives) {
     double s_dot = time_scaling_.EvalDerivative(time, 1)(0, 0);
     VectorX<double> x_dot = path_.EvalDerivative(s, 1) * s_dot;
     EXPECT_TRUE(CompareMatrices(dut_->EvalDerivative(t, 1), x_dot, 1e-14));
+    auto deriv = dut_->MakeDerivative(1);
+    EXPECT_TRUE(CompareMatrices(deriv->value(t), x_dot, 1e-14));
 
     double s_ddot = time_scaling_.EvalDerivative(time, 2)(0, 0);
     VectorX<double> x_ddot = path_.EvalDerivative(s, 1) * s_ddot +
                              path_.EvalDerivative(s, 2) * s_dot * s_dot;
     EXPECT_TRUE(CompareMatrices(dut_->EvalDerivative(t, 2), x_ddot, 1e-14));
+    auto deriv2 = dut_->MakeDerivative(2);
+    EXPECT_TRUE(CompareMatrices(deriv2->value(t), x_ddot, 1e-14));
 
     double s_3dot = time_scaling_.EvalDerivative(time, 3)(0, 0);
     VectorX<double> x_3dot = path_.EvalDerivative(s, 1) * s_3dot +
                              3 * path_.EvalDerivative(s, 2) * s_ddot * s_dot +
                              path_.EvalDerivative(s, 3) * std::pow(s_dot, 3);
     EXPECT_TRUE(CompareMatrices(dut_->EvalDerivative(t, 3), x_3dot, 1e-12));
+    auto deriv3 = dut_->MakeDerivative(3);
+    EXPECT_TRUE(CompareMatrices(deriv3->value(t), x_3dot, 1e-12));
   }
 }
 
