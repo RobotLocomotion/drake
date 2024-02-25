@@ -373,10 +373,10 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
           groups_to_superset.at(group),
           DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
               container_program, relaxation.get(), group_number));
-//      std::cout << fmt::format("X=\n{}",
-//                               fmt_eigen(supersets_to_psd_variables.at(
-//                                   groups_to_superset.at(group))))
-//                << std::endl;
+            std::cout << fmt::format("X=\n{}",
+                                     fmt_eigen(supersets_to_psd_variables.at(
+                                         groups_to_superset.at(group))))
+                      << std::endl;
     }
     ++group_number;
   }
@@ -412,7 +412,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     throw std::runtime_error(
         "There is a non-convex cost or constraint in the program whose "
         "variables do not overlap with any variable groups. Therefore, these "
-        "costs or constraints would not be converted to convex semidefinite "
+        "costs or constraints would not be converted to convex, semidefinite "
         "constraints and so the returned program would not be convex. Consider "
         "further specifying the variable groups.");
   }

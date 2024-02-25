@@ -619,6 +619,234 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
           psd_agree_constraint.evaluator()->num_constraints())));
 }
 
+TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
+  const std::map<Variable, double> test_point{
+      {x_(0), 0.3}, {x_(1), -1.9}, {x_(2), -1.4}, {y_(0), -2.3}, {y_(1), -6.3}};
+
+  // An indefinite Q for the x_ variables.
+  // clang-format off
+  const Matrix3d Qx{{-3.3,  -0.8,  -0.5},
+                    {-1.1,  -1.7, -10.3},
+                    { 2.4,   0.3,   1.9}};
+  // clang-format on
+  const Vector3d bx(-0.2, -3.1, 2.7);
+  const double lbx = -.7, ubx = 1.5;
+  prog_.AddQuadraticConstraint(Qx, bx, lbx, ubx, x_);
+
+  // A PSD Q for the y_ variables. Q is PSD since it is diagonally dominant.
+  // clang-format off
+  const Matrix2d Qy{{1.7,  -0.8},
+                    {-0.8,   4.6}};
+  // clang-format on
+  const Vector2d by(-1.3, -0.4);
+  const double lby = 1.1, uby = 4.7;
+  prog_.AddQuadraticConstraint(
+      Qy, by, lby, uby, y_,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+
+  // Relaxes the x_ and y_ variables separately.
+  auto relaxation_partition =
+      MakeSemidefiniteRelaxation(prog_, partition_group_);
+  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
+
+  EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
+  // The variables which get relaxed are [x(0), x(1), x(2), 1] and
+  // [y(0), y(1), 1]. So there are (5 choose 2) + (4 choose 2) variables in the
+  // program.
+  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
+            2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[1]
+                .evaluator()
+                ->matrix_rows(),
+            3);
+  // The two constraints that the "1" in the psd variables are equal to 1.
+  EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(), 2);
+  // 2 original quadratic constraints.
+  EXPECT_EQ(relaxation_partition->linear_constraints().size(), 2);
+  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 2 + 2);
+  const Vector3d x_test(test_point.at(x_(0)), test_point.at(x_(1)),
+                        test_point.at(x_(2)));
+  EXPECT_NEAR(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_constraints()[0])[0],
+      (0.5 * x_test.transpose() * Qx * x_test + bx.transpose() * x_test)[0],
+      1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[0]
+                .evaluator()
+                ->lower_bound()[0],
+            lbx);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[0]
+                .evaluator()
+                ->upper_bound()[0],
+            ubx);
+
+  const Vector2d y_test(test_point.at(y_(0)), test_point.at(y_(1)));
+  EXPECT_NEAR(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_constraints()[1])[0],
+      (0.5 * y_test.transpose() * Qy * y_test + by.transpose() * y_test)[0],
+      1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[1]
+                .evaluator()
+                ->lower_bound()[0],
+            lby);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[1]
+                .evaluator()
+                ->upper_bound()[0],
+            uby);
+
+  // Now add a quadratic constraint which intersects both variable groups. This
+  // will add 1 linear constraint to each semidefinite variable group, a linear
+  // equality constraint on the two semidefinite variables enforcing agreement.
+  // clang-format off
+  const Matrix2d Q_overlap{{2.3, -4.1},
+                           {-7.6,  1.9}};
+  // clang-format on
+  const Vector2d b_overlap{-1.2, 7.3};
+  const double lb_overlap = 0.1, ub_overlap = 2.2;
+  VectorXDecisionVariable overlap_vars(2);
+  // These are intentionally placed out of order with respect to the sorting
+  // that happens DoAddSemidefiniteVariableAndImpliedCostsAndConstraints in
+  overlap_vars << y_(1), x_(0);
+  prog_.AddQuadraticConstraint(Q_overlap, b_overlap, lb_overlap, ub_overlap,
+                               overlap_vars);
+  relaxation_partition = MakeSemidefiniteRelaxation(prog_, partition_group_);
+  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
+
+  EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
+  // The variables which get relaxed are [x(0), x(1), x(2), y(1), 1] and
+  // [x(0), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
+  // So there are (6 choose 2) + (5 choose 2) - 2 variables in the program
+  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(6) + Nchoose2(5) - 2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
+            2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            5);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[1]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  // The two constraints that the "1" in the psd variables are equal to 1 plus
+  // the one constraints that the minors indexed by [x(0), y(1)] are equal.
+  EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(), 3);
+  // Check that the linear equality constraints are the claimed ones.
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_equality_constraints()[0]),
+      Eigen::VectorXd::Ones(1)));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_equality_constraints()[1]),
+      Eigen::VectorXd::Ones(1)));
+  auto psd_agree_constraint =
+      relaxation_partition->linear_equality_constraints()[2];
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(psd_agree_constraint),
+      Eigen::VectorXd::Zero(
+          psd_agree_constraint.evaluator()->num_constraints())));
+
+  // The first two quadratic constraints each become linear constraints. The
+  // third quadratic constraints gets converted to a linear constraint in each
+  // relaxation of the subgroups.
+  EXPECT_EQ(relaxation_partition->linear_constraints().size(), 4);
+  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 3 + 4);
+  VectorXd overlap_test_vec1(4);
+  overlap_test_vec1 << test_point.at(x_(0)), test_point.at(x_(1)),
+      test_point.at(x_(2)), test_point.at(y_(1));
+
+  // The first quadratic constraint should be the Qx quadratic constraint.
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(4, 4);
+  Q.topLeftCorner(Qx.rows(), Qx.rows()) = Qx;
+  Eigen::VectorXd b(4);
+  b << bx, 0;
+  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
+                  relaxation_partition->linear_constraints()[0])[0],
+              (0.5 * overlap_test_vec1.transpose() * Q * overlap_test_vec1 +
+               b.transpose() * overlap_test_vec1)[0],
+              1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[0]
+                .evaluator()
+                ->lower_bound()[0],
+            lbx);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[0]
+                .evaluator()
+                ->upper_bound()[0],
+            ubx);
+  // The second quadratic constraint should be Q_overlap quadratic constraint.
+  Q.setZero();
+  Q(0, 0) = Q_overlap(1, 1);
+  Q(0, 3) = Q_overlap(1, 0);
+  Q(3, 0) = Q_overlap(0, 1);
+  Q(3, 3) = Q_overlap(0, 0);
+  b.setZero();
+  b(0) = b_overlap(1);
+  b(3) = b_overlap(0);
+  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
+                  relaxation_partition->linear_constraints()[1])[0],
+              (0.5 * overlap_test_vec1.transpose() * Q * overlap_test_vec1 +
+               b.transpose() * overlap_test_vec1)[0],
+              1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[1]
+                .evaluator()
+                ->lower_bound()[0],
+            lb_overlap);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[1]
+                .evaluator()
+                ->upper_bound()[0],
+            ub_overlap);
+
+  VectorXd overlap_test_vec2(3);
+  overlap_test_vec2 << test_point.at(x_(0)), test_point.at(y_(0)),
+      test_point.at(y_(1));
+  // The third quadratic constraint should be the Qy quadratic constraint.
+  Q = Eigen::MatrixXd::Zero(3, 3);
+  Q.bottomRightCorner(Qy.rows(), Qy.rows()) = Qy;
+  b = Eigen::VectorXd::Zero(3);
+  b << 0, by;
+  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
+                  relaxation_partition->linear_constraints()[2])[0],
+              (0.5 * overlap_test_vec2.transpose() * Q * overlap_test_vec2 +
+               b.transpose() * overlap_test_vec2)[0],
+              1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[2]
+                .evaluator()
+                ->lower_bound()[0],
+            lby);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[2]
+                .evaluator()
+                ->upper_bound()[0],
+            uby);
+  // The fourth quadratic constraint should be Q_overlap quadratic constraint.
+  Q.setZero();
+  Q(0, 0) = Q_overlap(1, 1);
+  Q(0, 2) = Q_overlap(1, 0);
+  Q(2, 0) = Q_overlap(0, 1);
+  Q(2, 2) = Q_overlap(0, 0);
+  b.setZero();
+  b(0) = b_overlap(1);
+  b(2) = b_overlap(0);
+  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
+                  relaxation_partition->linear_constraints()[3])[0],
+              (0.5 * overlap_test_vec2.transpose() * Q * overlap_test_vec2 +
+               b.transpose() * overlap_test_vec2)[0],
+              1e-12);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[3]
+                .evaluator()
+                ->lower_bound()[0],
+            lb_overlap);
+  EXPECT_EQ(relaxation_partition->linear_constraints()[3]
+                .evaluator()
+                ->upper_bound()[0],
+            ub_overlap);
+}
+
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   const std::map<Variable, double> test_point{
       {x_(0), 1.1}, {x_(1), 0.27}, {x_(2), -1.2}, {y_(0), -0.99}, {y_(1), 9.1}};
@@ -645,9 +873,10 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   // Relaxes the x_ and y_ variables separately.
   auto relaxation_partition =
       MakeSemidefiniteRelaxation(prog_, partition_group_);
+  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
   EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
   // The variables which get relaxed are [x(0), x(1), x(2), 1] and
-  // [y(0), y(1),1]. So there are (5 choose 2) + (4 choose 2) variables in the
+  // [y(0), y(1), 1]. So there are (5 choose 2) + (4 choose 2) variables in the
   // program.
   EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
@@ -667,7 +896,6 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   EXPECT_EQ(relaxation_partition->linear_constraints().size(), 2 + 2);
   EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 2 + 4);
 
-  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
   // First 2 linear constraints are lbx ≤ Ax * x ≤ ubx, and lby ≤ Ay * y ≤ uby.
   EXPECT_TRUE(CompareMatrices(
       Ax,
@@ -737,9 +965,9 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 
   // Now add a linear constraint which intersects both variable groups. This
-  // will add 2 linear constraints to each semidefinite variable group, a linear
-  // equality constraint on the two semidefinite variables enforcing agreement
-  // on the overlap, and...
+  // will add 2 linear constraints to each semidefinite variable group, and 1
+  // linear equality constraint on the two semidefinite variables enforcing
+  // agreement on the overlap.
   MatrixXd A_overlap(1, 2);
   // clang-format off
   A_overlap << -1.9, 2.7;
