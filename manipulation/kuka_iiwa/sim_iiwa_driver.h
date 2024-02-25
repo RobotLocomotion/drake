@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -11,10 +12,11 @@
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
-namespace internal {
 
 /* SimIiwaDriver simulates the IIWA control and status interface using a
 MultibodyPlant.
+
+@experimental
 
 @system
 name: SimIiwaDriver
@@ -55,9 +57,29 @@ class SimIiwaDriver : public systems::Diagram<T> {
   /* Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit SimIiwaDriver(const SimIiwaDriver<U>&);
+
+  /// Given a @p plant (and associated @p iiwa_instance) and a @p builder,
+  /// installs in that builder the @p SimIiwaDriver system to control and
+  /// monitor an iiwa described by @p controller_plant in that plant.
+  ///
+  /// The installed plant will connect itself to the actuation input port, state
+  /// and generalized contact forces output ports in `plant` corresponding to
+  /// the iiwa model.
+  ///
+  /// Returns the newly-added @p SimIiwaDriver System.
+  ///
+  /// Note: The Diagram will maintain an internal reference to
+  /// `controller_plant`, so you must ensure that `controller_plant` has a
+  /// longer lifetime than the Diagram.
+  static const systems::System<double>& AddSimIiwaDriver(
+      const multibody::MultibodyPlant<double>& plant,
+      const multibody::ModelInstanceIndex iiwa_instance,
+      const multibody::MultibodyPlant<double>& controller_plant,
+      systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
+      const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
+      IiwaControlMode control_mode);
 };
 
-}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake
