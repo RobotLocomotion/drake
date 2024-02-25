@@ -490,12 +490,12 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
   // Both variable groups intersect the first linear cost and one of the groups
   // intersects the second cost, we should get two PSD variables, one relaxing
-  // [x(0), x(1), y(0), 1] and another relaxing [x(1), y(0), y(1), 1]. There is
-  // the remaining x(2) variable that is not relaxed.
+  // [x(0), x(1), y(0), 1] and another relaxing [x(0), x(1), y(0), y(1), 1].
+  // There is the remaining x(2) variable that is not relaxed.
   EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
   EXPECT_EQ(relaxation_overlap->num_vars(),
-            Nchoose2(5) + Nchoose2(5) + 1 -
-                2 /* x(1) and y(0) are double counted so subtract 2*/);
+            Nchoose2(5) + Nchoose2(6) + 1 -
+                3 /* x(0), x(1) and y(0) are double counted so subtract 3*/);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
@@ -504,7 +504,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[1]
                 .evaluator()
                 ->matrix_rows(),
-            4);
+            5);
   // The two equality constraints that the "1" in the psd variables is equal to
   // 1, plus the equality constraint of the psd matrices.
   EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 3);
@@ -577,16 +577,17 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
                   relaxation_overlap->linear_costs()[0])[0],
               test_points.at(x_(0)) * test_points.at(x_(1)), 1e-12);
 
-  //  // Add a quadratic cost that intersects the second of the variable groups.
+  //  Add a quadratic cost that intersects the second of the variable groups.
   prog_.AddQuadraticCost(x_[2] * y_[1]);
   relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
   // Both variable groups intersect the first linear cost and one of the groups
   // intersects the second cost, we should get two PSD variables, one relaxing
-  // [x(0), x(1), y(0), 1] and another relaxing [x(1), x(2), y(0), y(1), 1].
+  // [x(0), x(1), y(0), 1] and another relaxing
+  // [x(0), x(1), x(2), y(0), y(1), 1].
   EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
   EXPECT_EQ(relaxation_overlap->num_vars(),
-            Nchoose2(5) + Nchoose2(6) -
-                2 /* x(1) and y(0) are double counted so subtract 2*/);
+            Nchoose2(5) + Nchoose2(7) -
+                3 /* x(0), x(1) and y(0) are double counted so subtract 2*/);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
@@ -595,7 +596,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[1]
                 .evaluator()
                 ->matrix_rows(),
-            5);
+            6);
   // The two equality constraints that the "1" in the psd variables are equal to
   // 1, plus the PSD variables overlapping in
   EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 3);
@@ -622,16 +623,32 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   const std::map<Variable, double> test_point{
       {x_(0), 1.1}, {x_(1), 0.27}, {x_(2), -1.2}, {y_(0), -0.99}, {y_(1), 9.1}};
 
-  prog_.AddLinearConstraint(2 * x_[0] + x_[2] >= 0);
-  prog_.AddLinearConstraint(7 * y_[0] - 0.9 * y_[1] <= -3);
+  MatrixXd Ax(2, 3);
+  // clang-format off
+  Ax << 2,     0, 3.1,
+        -1, -1.7, 2.1;
+  // clang-format on
+  const Vector2d lbx(1.3, -kInf);
+  const Vector2d ubx(kInf, 0.1);
+  prog_.AddLinearConstraint(Ax, lbx, ubx, x_);
 
+  MatrixXd Ay(3, 2);
+  // clang-format off
+  Ay << 1.1,   2.7,
+        0.27, -9.1,
+        -1.2, -0.99;
+  // clang-format on
+  const Vector3d lby(1.3, -kInf, kInf);
+  const Vector3d uby(kInf, 0.1, 7.2);
+  prog_.AddLinearConstraint(Ay, lby, uby, y_);
+
+  // Relaxes the x_ and y_ variables separately.
   auto relaxation_partition =
       MakeSemidefiniteRelaxation(prog_, partition_group_);
-  // Relaxes the x_ and y_ variables separately.
   EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
-  // The variables which get relaxed are [x(0), x(1), x(2), 1]. The remaining
-  // variables that do not get relaxed are [y(0), y(1)]. So there are (4
-  // choose 2) + 2 variables in the program.
+  // The variables which get relaxed are [x(0), x(1), x(2), 1] and
+  // [y(0), y(1),1]. So there are (5 choose 2) + (4 choose 2) variables in the
+  // program.
   EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
@@ -643,81 +660,231 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
                 .evaluator()
                 ->matrix_rows(),
             3);
+  // The two constraints that the "1" in the psd variables are equal to 1.
   EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(), 2);
-  // 2 original linear constraints, and each of these adds its own constraint.
+  // 2 original linear constraints, and each of these adds one product
+  // constraint.
   EXPECT_EQ(relaxation_partition->linear_constraints().size(), 2 + 2);
+  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 2 + 4);
 
-  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2+2+4);
-
-  SetRelaxationInitialGuess(test_points, relaxation_partition.get());
-  EXPECT_NEAR(relaxation_partition->EvalBindingAtInitialGuess(
-                  relaxation_partition->linear_constraints()[2])[0],
-              test_points.at(x_(0)) * test_points.at(x_(1)), 1e-12);
-
-
-  auto relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
-
-  // Both variable groups intersect the linear cost, but the cost should only
-  // get added once so we still only have 1 PSD variable.
-  EXPECT_EQ(relaxation_overlap->linear_costs().size(), 1);
-  EXPECT_EQ(relaxation_overlap->GetAllCosts().size(), 1);
-  // The variables which get relaxed are [x(0), x(1), y(0), 1]. The remaining
-  // variables that do not get relaxed are [x(2), y(1)]. So there are (5 choose
-  // 2) + 2 variables in the program.
-  EXPECT_EQ(relaxation_overlap->num_vars(), Nchoose2(5) + 2);
-  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
-                .evaluator()
-                ->matrix_rows(),
-            overlap_group_[0].size() + 2);
-  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 1);
-  EXPECT_EQ(relaxation_overlap->GetAllConstraints().size(), 2);
-
-  SetRelaxationInitialGuess(test_point, relaxation_overlap.get());
-  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
-                  relaxation_overlap->linear_costs()[0])[0],
-              test_point.at(x_(0)) + test_point.at(x_(1)), 1e-12);
-
-  // Add a linear cost that intersects the second of the variable groups.
-  prog_.AddLinearCost(y_[1]);
-  relaxation_overlap = MakeSemidefiniteRelaxation(prog_, overlap_group_);
-  // Both variable groups intersect the first linear cost and one of the groups
-  // intersects the second cost, we should get two PSD variables, one relaxing
-  // [x(0), x(1), y(0), 1] and another relaxing [x(1), y(0), y(1), 1]. There is
-  // the remaining x(2) variable that is not relaxed.
-  EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
-  EXPECT_EQ(relaxation_overlap->num_vars(),
-            Nchoose2(5) + Nchoose2(5) + 1 -
-                2 /* x(1) and y(0) are double counted so subtract 2*/);
-  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
-  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
-                .evaluator()
-                ->matrix_rows(),
-            4);
-  EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[1]
-                .evaluator()
-                ->matrix_rows(),
-            4);
-  // The two equality constraints that the "1" in the psd variables is equal to
-  // 1, plus the equality constraint of the psd matrices.
-  EXPECT_EQ(relaxation_overlap->linear_equality_constraints().size(), 3);
-  EXPECT_EQ(relaxation_overlap->GetAllConstraints().size(), 3 + 2);
-
-  SetRelaxationInitialGuess(test_point, relaxation_overlap.get());
-  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
-                  relaxation_overlap->linear_costs()[0])[0],
-              test_point.at(x_(0)) + test_point.at(x_(1)), 1e-12);
-  EXPECT_NEAR(relaxation_overlap->EvalBindingAtInitialGuess(
-                  relaxation_overlap->linear_costs()[1])[0],
-              test_point.at(y_(1)), 1e-12);
-
-  // Check that the equality constraint on the relaxation matrices is correct.
-  auto psd_agree_constraint =
-      relaxation_overlap->linear_equality_constraints()[2];
+  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
+  // First 2 linear constraints are lbx ≤ Ax * x ≤ ubx, and lby ≤ Ay * y ≤ uby.
   EXPECT_TRUE(CompareMatrices(
-      relaxation_overlap->EvalBindingAtInitialGuess(psd_agree_constraint),
+      Ax,
+      relaxation_partition->linear_constraints()[0].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(lbx, relaxation_partition->linear_constraints()[0]
+                                       .evaluator()
+                                       ->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(ubx, relaxation_partition->linear_constraints()[0]
+                                       .evaluator()
+                                       ->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      Ay,
+      relaxation_partition->linear_constraints()[1].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(lby, relaxation_partition->linear_constraints()[1]
+                                       .evaluator()
+                                       ->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(uby, relaxation_partition->linear_constraints()[1]
+                                       .evaluator()
+                                       ->upper_bound()));
+  // Third linear (in the new decision variables) constraint is 0 ≤
+  // (A*x-b)(A*x-b)ᵀ, where A and b represent all of the on x_ constraints
+  // stacked.
+  VectorXd b(2);  // all of the finite lower/upper bounds.
+  b << -lbx[0], ubx[1];
+  MatrixXd A(2, 3);
+  A << -Ax.row(0), Ax.row(1);
+  int expected_size = (b.size() * (b.size() + 1)) / 2;
+  EXPECT_EQ(relaxation_partition->linear_constraints()[2]
+                .evaluator()
+                ->num_constraints(),
+            expected_size);
+  const Vector3d x_test(test_point.at(x_(0)), test_point.at(x_(1)),
+                        test_point.at(x_(2)));
+  VectorXd value = relaxation_partition->EvalBindingAtInitialGuess(
+      relaxation_partition->linear_constraints()[2]);
+  MatrixXd expected_mat =
+      (A * x_test - b) * (A * x_test - b).transpose() - b * b.transpose();
+  VectorXd expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value =
+      relaxation_partition->linear_constraints()[2].evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  // Fourth linear (in the new decision variables) constraint is 0 ≤
+  // (A*y-b)(A*y-b)ᵀ, where A and b represent all of the on y_ constraints
+  // stacked.
+  b.resize(3);  // all of the finite lower/upper bounds.
+  b << -lby[0], uby[1], uby[2];
+  A.resize(3, 2);
+  A << -Ay.row(0), Ay.row(1), Ay.row(2);
+  expected_size = (b.size() * (b.size() + 1)) / 2;
+  EXPECT_EQ(relaxation_partition->linear_constraints()[3]
+                .evaluator()
+                ->num_constraints(),
+            expected_size);
+  const Vector2d y_test(test_point.at(y_(0)), test_point.at(y_(1)));
+  value = relaxation_partition->EvalBindingAtInitialGuess(
+      relaxation_partition->linear_constraints()[3]);
+  expected_mat =
+      (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
+  expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value =
+      relaxation_partition->linear_constraints()[3].evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  // Now add a linear constraint which intersects both variable groups. This
+  // will add 2 linear constraints to each semidefinite variable group, a linear
+  // equality constraint on the two semidefinite variables enforcing agreement
+  // on the overlap, and...
+  MatrixXd A_overlap(1, 2);
+  // clang-format off
+  A_overlap << -1.9, 2.7;
+  // clang-format on
+  const Vector1d lb_overlap(1.7);
+  const Vector1d ub_overlap(2.3);
+  VectorXDecisionVariable overlap_vars(2);
+  overlap_vars << x_(1), y_(1);
+  prog_.AddLinearConstraint(A_overlap, lb_overlap, ub_overlap, overlap_vars);
+  relaxation_partition = MakeSemidefiniteRelaxation(prog_, partition_group_);
+  SetRelaxationInitialGuess(test_point, relaxation_partition.get());
+
+  EXPECT_EQ(relaxation_partition->GetAllCosts().size(), 0);
+  // The variables which get relaxed are [x(0), x(1), x(2), y(1), 1] and
+  // [x(1), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
+  // So there are (6 choose 2) + (5 choose 2) - 2 variables in the program
+  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(6) + Nchoose2(5) - 2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
+            2);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
+                .evaluator()
+                ->matrix_rows(),
+            5);
+  EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[1]
+                .evaluator()
+                ->matrix_rows(),
+            4);
+  // The two constraints that the "1" in the psd variables are equal to 1 plus
+  // the one constraints that the minors indexed by [x(1), y(1)] are equal.
+  EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(), 3);
+  // Check that the linear equality constraints are the claimed ones.
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_equality_constraints()[0]),
+      Eigen::VectorXd::Ones(1)));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(
+          relaxation_partition->linear_equality_constraints()[1]),
+      Eigen::VectorXd::Ones(1)));
+  auto psd_agree_constraint =
+      relaxation_partition->linear_equality_constraints()[2];
+  EXPECT_TRUE(CompareMatrices(
+      relaxation_partition->EvalBindingAtInitialGuess(psd_agree_constraint),
       Eigen::VectorXd::Zero(
           psd_agree_constraint.evaluator()->num_constraints())));
+
+  // 3 original linear constraints, and each semidefinite relaxation has the
+  // product constraints.
+  EXPECT_EQ(relaxation_partition->linear_constraints().size(), 3 + 2);
+  EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 3 + 5);
+
+  // First 3 linear constraints are lbx ≤ Ax * x ≤ ubx, and lby ≤ Ay * y ≤ uby
+  // and lb_overlap ≤ A_overlap * overlap_vars ≤ ub_overlap.
+  EXPECT_TRUE(CompareMatrices(
+      Ax,
+      relaxation_partition->linear_constraints()[0].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(lbx, relaxation_partition->linear_constraints()[0]
+                                       .evaluator()
+                                       ->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(ubx, relaxation_partition->linear_constraints()[0]
+                                       .evaluator()
+                                       ->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      Ay,
+      relaxation_partition->linear_constraints()[1].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(lby, relaxation_partition->linear_constraints()[1]
+                                       .evaluator()
+                                       ->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(uby, relaxation_partition->linear_constraints()[1]
+                                       .evaluator()
+                                       ->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      A_overlap,
+      relaxation_partition->linear_constraints()[2].evaluator()->GetDenseA()));
+  EXPECT_TRUE(
+      CompareMatrices(lb_overlap, relaxation_partition->linear_constraints()[2]
+                                      .evaluator()
+                                      ->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(ub_overlap, relaxation_partition->linear_constraints()[2]
+                                      .evaluator()
+                                      ->upper_bound()));
+
+  // Fourth linear (in the new decision variables) constraint is 0 ≤
+  // (A*x-b)(A*x-b)ᵀ, where A and b represent all of the on x_ and the overlap
+  // constraints stacked.
+  b.resize(4);  // all of the finite lower/upper bounds.
+  b << -lbx[0], ubx[1], -lb_overlap[0], ub_overlap[0];
+  A.resize(4, 4);
+  // clang-format off
+  A << -Ax.row(0), 0,
+        Ax.row(1), 0,
+        0, -A_overlap(0,0), 0, -A_overlap(0,1),
+        0,  A_overlap(0,0), 0,  A_overlap(0,1);
+  // clang-format on
+  expected_size = (b.size() * (b.size() + 1)) / 2;
+  EXPECT_EQ(relaxation_partition->linear_constraints()[3]
+                .evaluator()
+                ->num_constraints(),
+            expected_size);
+  VectorXd test_vec(4);
+  test_vec << test_point.at(x_(0)), test_point.at(x_(1)), test_point.at(x_(2)),
+      test_point.at(y_(1));
+  value = relaxation_partition->EvalBindingAtInitialGuess(
+      relaxation_partition->linear_constraints()[3]);
+  expected_mat =
+      (A * test_vec - b) * (A * test_vec - b).transpose() - b * b.transpose();
+  expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value =
+      relaxation_partition->linear_constraints()[3].evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  // Fifth linear (in the new decision variables) constraint is 0 ≤
+  // (A*x-b)(A*x-b)ᵀ, where A and b represent all of the on y_ and the overlap
+  // constraints stacked.
+  b.resize(5);  // all of the finite lower/upper bounds.
+  b << -lby[0], uby[1], uby[2], -lb_overlap[0], ub_overlap[0];
+  A.resize(5, 3);
+  // clang-format off
+  A << 0,              -Ay.row(0),
+       0,               Ay.row(1),
+       0,               Ay.row(2),
+       -A_overlap(0,0), 0, -A_overlap(0,1),
+        A_overlap(0,0), 0,  A_overlap(0,1);
+  // clang-format on
+  expected_size = (b.size() * (b.size() + 1)) / 2;
+  EXPECT_EQ(relaxation_partition->linear_constraints()[4]
+                .evaluator()
+                ->num_constraints(),
+            expected_size);
+  test_vec.resize(3);
+  test_vec << test_point.at(x_(1)), test_point.at(y_(0)), test_point.at(y_(1));
+
+  value = relaxation_partition->EvalBindingAtInitialGuess(
+      relaxation_partition->linear_constraints()[4]);
+  expected_mat =
+      (A * test_vec - b) * (A * test_vec - b).transpose() - b * b.transpose();
+  expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value =
+      relaxation_partition->linear_constraints()[4].evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
 }
 
 }  // namespace internal
