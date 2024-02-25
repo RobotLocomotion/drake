@@ -43,6 +43,7 @@ def read_repository_metadata(repositories=None):
         # NOTE: At this time, we are skipping the rust_toolchain repositories;
         # see TODO in tools/workspace/rust_toolchain/repository.bzl.
         repositories.add("bazel_skylib")
+        repositories.add("com_github_nelhage_rules_boost_internal")
 
     # Make sure all of the repository_rule results are up-to-date.
     subprocess.check_call(["bazel", "fetch", "//..."])
