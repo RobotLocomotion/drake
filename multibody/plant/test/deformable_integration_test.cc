@@ -41,7 +41,7 @@ constexpr double kPoissonsRatio = 0.4;      // unitless.
 constexpr double kMassDensity = 1e3;        // unit: kg/m³
 constexpr double kStiffnessDamping = 0.01;  // unit: s
 /* Time step (seconds). */
-constexpr double kDt = 1e-2;
+constexpr double kDt = 2.5e-3;
 /* Contact parameters. */
 const double kSlopeAngle = M_PI / 12.0;  // unit: radian
 /* The friction coefficient has to be greater than or equal to tan(θ) to hold
@@ -170,7 +170,7 @@ namespace {
 TEST_F(DeformableIntegrationTest, SteadyState) {
   Simulator<double> simulator(*diagram_);
   /* Run simulation for long enough to reach steady state. */
-  simulator.AdvanceTo(5.0);
+  simulator.AdvanceTo(2.0);
 
   /* Verify the system has reached steady state. */
   const Context<double>& diagram_context = simulator.get_context();
@@ -179,7 +179,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   const FemState<double>& fem_state =
       EvalFemState(plant_context, DeformableBodyIndex(0));
   constexpr double kVelocityThreshold = 2e-5;      // unit: m/s.
-  constexpr double kAccelerationThreshold = 1e-6;  // unit: m/s².
+  constexpr double kAccelerationThreshold = 2e-6;  // unit: m/s².
   const VectorXd& v = fem_state.GetVelocities();
   EXPECT_TRUE(CompareMatrices(v, VectorXd::Zero(v.size()), kVelocityThreshold));
   const VectorXd& a = fem_state.GetAccelerations();

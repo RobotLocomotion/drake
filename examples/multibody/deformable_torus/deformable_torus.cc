@@ -35,6 +35,14 @@ DEFINE_double(beta, 0.01,
 DEFINE_string(gripper, "parallel",
               "Type of gripper used to pick up the deformable torus. Options "
               "are: 'parallel' and 'suction'.");
+DEFINE_string(contact_approximation, "lagged",
+              "Type of convex contact approximation. See "
+              "multibody::DiscreteContactApproximation for details. Options "
+              "are: 'sap', 'lagged', and 'similar'.");
+DEFINE_double(
+    contact_damping, 10.0,
+    "Hunt and Crossley damping for the deformable body, only used when "
+    "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
 
 using drake::examples::deformable_torus::ParallelGripperController;
 using drake::examples::deformable_torus::PointSourceForceField;
@@ -156,8 +164,7 @@ int do_main() {
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_time_step;
-  /* Deformable simulation only works with SAP. */
-  plant_config.discrete_contact_approximation = "sap";
+  plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
@@ -218,7 +225,8 @@ int do_main() {
   /* Minimumly required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
   ProximityProperties deformable_proximity_props;
-  AddContactMaterial({}, {}, surface_friction, &deformable_proximity_props);
+  AddContactMaterial(FLAGS_contact_damping, {}, surface_friction,
+                     &deformable_proximity_props);
   torus_instance->set_proximity_properties(deformable_proximity_props);
 
   /* Registration of all deformable geometries ostensibly requires a resolution
