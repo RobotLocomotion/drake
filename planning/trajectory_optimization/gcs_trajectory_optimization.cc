@@ -32,6 +32,7 @@ using drake::solvers::VectorXDecisionVariable;
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
+using geometry::optimization::CalcPairwiseIntersections;
 using geometry::optimization::CartesianProduct;
 using geometry::optimization::CheckIfSatisfiesConvexityRadius;
 using geometry::optimization::ConvexSet;
@@ -40,7 +41,6 @@ using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Intersection;
-using geometry::optimization::PairwiseIntersectionsContinuousJoints;
 using geometry::optimization::PartitionConvexSet;
 using geometry::optimization::Point;
 using geometry::optimization::internal::ComputeOffsetContinuousRevoluteJoints;
@@ -395,9 +395,8 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      PairwiseIntersectionsContinuousJoints(from_subgraph.regions(),
-                                            to_subgraph.regions(),
-                                            continuous_revolute_joints());
+      CalcPairwiseIntersections(from_subgraph.regions(), to_subgraph.regions(),
+                                continuous_revolute_joints());
   for (const auto& edge : edge_data) {
     int i = std::get<0>(edge);
     int j = std::get<1>(edge);
@@ -773,8 +772,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   DRAKE_DEMAND(regions.size() > 0);
 
   const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      PairwiseIntersectionsContinuousJoints(regions,
-                                            continuous_revolute_joints());
+      CalcPairwiseIntersections(regions, continuous_revolute_joints());
 
   std::vector<std::pair<int, int>> edges_between_regions;
   std::vector<Eigen::VectorXd> edge_offsets;

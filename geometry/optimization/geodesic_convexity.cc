@@ -228,8 +228,7 @@ ConvexSets PartitionConvexSet(
   return sets;
 }
 
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     ConvexSets convex_sets_A, ConvexSets convex_sets_B,
     const std::vector<int>& continuous_revolute_joints) {
   DRAKE_DEMAND(convex_sets_A.size() > 0);
@@ -363,13 +362,11 @@ PairwiseIntersectionsContinuousJoints(
   return edges;
 }
 
-// Convenience overload for pairwise intersections within a single convex set.
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     ConvexSets convex_sets_A,
     const std::vector<int>& continuous_revolute_joints) {
-  return PairwiseIntersectionsContinuousJoints(convex_sets_A, {},
-                                               continuous_revolute_joints);
+  return CalcPairwiseIntersections(convex_sets_A, {},
+                                   continuous_revolute_joints);
 }
 
 }  // namespace optimization

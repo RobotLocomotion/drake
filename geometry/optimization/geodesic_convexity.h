@@ -130,21 +130,19 @@ the translation that is applied to the first convex set to align it with the
 second convex set, such that intersection can directly be checked without
 considering the 2π wraparound that may occur with continuous revolute joints.
 Each component of this translation will always be a multiple of 2π, so the
-translation of the set still represents the same configurations. To compute
-the pairwise intersections within convex_set_A, pass an empty vector for
-convex_sets_B. convex_sets_A must have at least one element, and
-continuous_revolute_joints must pass ThrowsForInvalidContinuousJointsList. */
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
+translation of the set still represents the same configurations.
+
+@throws if ThrowsForInvalidContinuousJointsList.
+*/
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     ConvexSets convex_sets_A, ConvexSets convex_sets_B,
     const std::vector<int>& continuous_revolute_joints);
 
-/** Convenience overload for pairwise intersections within a single convex set.
-*/
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
-    ConvexSets convex_sets_A,
-    const std::vector<int>& continuous_revolute_joints);
+/** Convenience overload to compute pairwise intersections within a list of
+convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
+convex_sets, continuous_revolute_joints). */
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
+    ConvexSets convex_sets, const std::vector<int>& continuous_revolute_joints);
 
 }  // namespace optimization
 }  // namespace geometry
