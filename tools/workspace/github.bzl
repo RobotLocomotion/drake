@@ -400,6 +400,7 @@ def github_release_attachments(
         repository = None,
         commit = None,
         attachments = None,
+        strip_prefix = None,
         build_file = None,
         mirrors = None,
         upgrade_advice = None,
@@ -418,6 +419,9 @@ def github_release_attachments(
         commit: required commit is the tag name to download.
         attachments: required dict whose keys are the filenames (attachment
             names) to download and values are the expected SHA-256 checksums.
+        strip_prefix: optional dict whose keys are the filenames and values
+            indicate that the attachment should be extracted (e.g., `*.tgz`
+            files) and in that case what prefix to strip when doing so.
         build_file: required build file is the BUILD file label to use for
             building this external. As a Drake-specific abbreviation, when
             provided as a relative label (e.g., ":package.BUILD.bazel"), it
@@ -450,6 +454,7 @@ def github_release_attachments(
         repository = repository,
         commit = commit,
         attachments = attachments,
+        strip_prefix = strip_prefix,
         build_file = build_file,
         mirrors = mirrors,
         upgrade_advice = upgrade_advice,
@@ -478,6 +483,7 @@ _github_release_attachments_real = repository_rule(
         "attachments": attr.string_dict(
             mandatory = True,
         ),
+        "strip_prefix": attr.string_dict(),
         "build_file": attr.label(
             mandatory = True,
         ),
@@ -502,6 +508,7 @@ def setup_github_release_attachments(repository_ctx):
     repository = repository_ctx.attr.repository
     commit = repository_ctx.attr.commit
     attachments = repository_ctx.attr.attachments
+    strip_prefix = getattr(repository_ctx.attr, "strip_prefix", dict())
     mirrors = repository_ctx.attr.mirrors
     upgrade_advice = getattr(repository_ctx.attr, "upgrade_advice", "")
     patterns = mirrors.get("github_release_attachments")
@@ -517,11 +524,19 @@ def setup_github_release_attachments(repository_ctx):
             )
             for pattern in patterns
         ]
-        repository_ctx.download(
-            urls,
-            output = filename,
-            sha256 = _sha256(sha256),
-        )
+        should_strip_prefix = strip_prefix.get(filename, None)
+        if should_strip_prefix != None:
+            repository_ctx.download_and_extract(
+                urls,
+                stripPrefix = should_strip_prefix,
+                sha256 = _sha256(sha256),
+            )
+        else:
+            repository_ctx.download(
+                urls,
+                output = filename,
+                sha256 = _sha256(sha256),
+            )
         downloads.append(dict(
             urls = urls,
             sha256 = sha256,
@@ -537,6 +552,7 @@ def setup_github_release_attachments(repository_ctx):
         repository = repository,
         commit = commit,
         attachments = attachments,
+        strip_prefix = strip_prefix,
         downloads = downloads,
         upgrade_advice = upgrade_advice,
     )
