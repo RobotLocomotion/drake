@@ -23,6 +23,25 @@ from pydrake.systems.lcm import LcmBuses
 
 
 class TestKukaIiwa(unittest.TestCase):
+    def make_builder_plant_controller_plant(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(1.0))
+        parser = Parser(plant)
+        directives = LoadModelDirectives(FindResourceOrThrow(
+            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        models_from_directives = ProcessModelDirectives(directives, parser)
+        plant.Finalize()
+        controller_plant = MultibodyPlant(1.)
+        parser = Parser(controller_plant)
+        parser.AddModels(FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/iiwa7/"
+            "iiwa7_no_collision.sdf"))
+        controller_plant.WeldFrames(
+            controller_plant.world_frame(),
+            controller_plant.GetFrameByName("iiwa_link_0"), RigidTransform())
+        controller_plant.Finalize()
+        return builder, plant, controller_plant
+
     def test_constants(self):
         self.assertEqual(mut.kIiwaArmNumJoints, 7)
         self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
@@ -103,23 +122,9 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertEqual(mut.get_iiwa_max_joint_velocities().shape, (7,))
 
     def test_kuka_iiwa_build_control(self):
-        builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(1.))
-        parser = Parser(plant)
-        directives = LoadModelDirectives(FindResourceOrThrow(
-            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
-        models_from_directives = ProcessModelDirectives(directives, parser)
-        plant.Finalize()
-        controller_plant = MultibodyPlant(1.)
-        parser = Parser(controller_plant)
-        parser.AddModels(FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_no_collision.sdf"))
-        controller_plant.WeldFrames(
-            controller_plant.world_frame(),
-            controller_plant.GetFrameByName("iiwa_link_0"), RigidTransform())
-        controller_plant.Finalize()
-
+        builder, plant, controller_plant = (
+            self.make_builder_plant_controller_plant()
+        )
         tare = len(builder.GetSystems())
         mut.BuildIiwaControl(
             plant=plant, iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
@@ -136,7 +141,7 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertIn("lcm_bus", repr(dut))
 
         builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(1.))
+        plant = builder.AddSystem(MultibodyPlant(1.0))
         parser = Parser(plant)
         directives = LoadModelDirectives(FindResourceOrThrow(
             "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
@@ -153,4 +158,32 @@ class TestKukaIiwa(unittest.TestCase):
             driver_config=dut, model_instance_name="iiwa7",
             sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
             builder=builder)
+        self.assertGreater(len(builder.GetSystems()), tare)
+
+    def test_kuka_iiwa_sim_driver(self):
+        builder, plant, controller_plant = (
+            self.make_builder_plant_controller_plant()
+        )
+
+        dut = mut.SimIiwaDriver(
+            control_mode=mut.IiwaControlMode.kPositionAndTorque,
+            controller_plant=controller_plant,
+            ext_joint_filter_tau=0.1,
+            kp_gains=np.full(7, 100.0),
+        )
+        self.assertGreater(dut.num_input_ports(), 0)
+        self.assertGreater(dut.num_output_ports(), 0)
+
+        tare = len(builder.GetSystems())
+        dut1 = mut.SimIiwaDriver.AddToBuilder(
+            builder=builder,
+            plant=plant,
+            iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
+            controller_plant=controller_plant,
+            ext_joint_filter_tau=0.1,
+            desired_iiwa_kp_gains=np.full(7, 100.0),
+            control_mode=mut.IiwaControlMode.kPositionAndTorque,
+        )
+        self.assertGreater(dut1.num_input_ports(), 0)
+        self.assertGreater(dut1.num_output_ports(), 0)
         self.assertGreater(len(builder.GetSystems()), tare)

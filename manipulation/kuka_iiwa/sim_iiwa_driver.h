@@ -11,10 +11,11 @@
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
-namespace internal {
 
-/* SimIiwaDriver simulates the IIWA control and status interface using a
+/** SimIiwaDriver simulates the IIWA control and status interface using a
 MultibodyPlant.
+
+@experimental
 
 @system
 name: SimIiwaDriver
@@ -44,7 +45,7 @@ class SimIiwaDriver : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimIiwaDriver);
 
-  /* Constructs a diagram with the given parameters. A reference to the
+  /** Constructs a diagram with the given parameters. A reference to the
   `controller_plant` is retained by this system, so the `controller_plant`
   must outlive `this`. */
   SimIiwaDriver(IiwaControlMode control_mode,
@@ -52,12 +53,33 @@ class SimIiwaDriver : public systems::Diagram<T> {
                 double ext_joint_filter_tau,
                 const std::optional<Eigen::VectorXd>& kp_gains);
 
-  /* Scalar-converting copy constructor. See @ref system_scalar_conversion. */
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit SimIiwaDriver(const SimIiwaDriver<U>&);
+
+  /** Given a `plant` (and associated `iiwa_instance`) and a `builder`,
+  installs in that builder the `SimIiwaDriver` system to control and
+  monitor an iiwa described by `controller_plant`.
+
+  The added `SimIiwaDriver` system is connected to the actuation input port,
+  state and generalized contact forces output ports in `plant` corresponding to
+  the iiwa model.
+
+  Returns the newly-added `SimIiwaDriver` System.
+
+  Note: The Diagram will maintain an internal reference to
+  `controller_plant`, so you must ensure that `controller_plant` has a
+  longer lifetime than the Diagram. */
+  static const systems::System<double>& AddToBuilder(
+      systems::DiagramBuilder<double>* builder,
+      const multibody::MultibodyPlant<double>& plant,
+      const multibody::ModelInstanceIndex iiwa_instance,
+      const multibody::MultibodyPlant<double>& controller_plant,
+      double ext_joint_filter_tau,
+      const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
+      IiwaControlMode control_mode);
 };
 
-}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

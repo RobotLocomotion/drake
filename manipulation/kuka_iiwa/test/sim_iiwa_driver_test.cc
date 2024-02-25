@@ -5,6 +5,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -13,7 +14,6 @@
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
-namespace internal {
 namespace {
 
 using multibody::MultibodyPlant;
@@ -30,28 +30,16 @@ class SimIiwaDriverTest : public ::testing::Test {
   void SetUp() {
     sim_plant_ = std::make_unique<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_.get()};
-    parser.AddModelsFromUrl(
+    iiwa_instance_ = parser.AddModelsFromUrl(
         "package://drake/manipulation/models/iiwa_description/iiwa7/"
-        "iiwa7_no_collision.sdf");
+        "iiwa7_no_collision.sdf")[0];
     sim_plant_->WeldFrames(sim_plant_->world_frame(),
                            sim_plant_->GetFrameByName("iiwa_link_0"));
     sim_plant_->Finalize();
     controller_plant_ = System<double>::Clone(*sim_plant_);
   }
 
-  std::unique_ptr<MultibodyPlant<double>> sim_plant_;
-  std::unique_ptr<MultibodyPlant<double>> controller_plant_;
-  double ext_joint_filter_tau_{0.1};
-};
-
-TEST_F(SimIiwaDriverTest, SanityCheck) {
-  for (const auto& mode :
-       {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
-        IiwaControlMode::kPositionAndTorque}) {
-    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
-    const SimIiwaDriver<double> dut(mode, controller_plant_.get(),
-                                    ext_joint_filter_tau_, {});
-
+  void TestSimIiwaDriverPorts(IiwaControlMode mode, const System<double>& dut) {
     // Check input port names.
     std::vector<std::string> inputs;
     for (InputPortIndex i{0}; i < dut.num_input_ports(); ++i) {
@@ -77,6 +65,25 @@ TEST_F(SimIiwaDriverTest, SanityCheck) {
         "velocity_estimated", "state_estimated",    "torque_commanded",
         "torque_measured",    "torque_external"};
     EXPECT_THAT(outputs, testing::ElementsAreArray(expected_outputs));
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> sim_plant_;
+  std::unique_ptr<MultibodyPlant<double>> controller_plant_;
+  multibody::ModelInstanceIndex iiwa_instance_;
+  double ext_joint_filter_tau_{0.1};
+  const Eigen::VectorXd desired_iiwa_kp_gains_ =
+      (Eigen::VectorXd(7) << 100, 100, 100, 100, 100, 100, 100).finished();
+};
+
+TEST_F(SimIiwaDriverTest, SanityCheck) {
+  for (const auto& mode :
+       {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
+        IiwaControlMode::kPositionAndTorque}) {
+    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
+    const SimIiwaDriver<double> dut(mode, controller_plant_.get(),
+                                    ext_joint_filter_tau_, {});
+
+    TestSimIiwaDriverPorts(mode, dut);
 
     // Check scalar conversion.
     EXPECT_TRUE(systems::is_autodiffxd_convertible(dut));
@@ -84,8 +91,22 @@ TEST_F(SimIiwaDriverTest, SanityCheck) {
   }
 }
 
+TEST_F(SimIiwaDriverTest, AddToBuilder) {
+  for (const auto& mode :
+       {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
+        IiwaControlMode::kPositionAndTorque}) {
+    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
+    systems::DiagramBuilder<double> builder;
+    auto* sim_plant = builder.AddSystem(System<double>::Clone(*sim_plant_));
+    const System<double>* const dut = &SimIiwaDriver<double>::AddToBuilder(
+        &builder, *sim_plant, iiwa_instance_, *controller_plant_,
+        ext_joint_filter_tau_, desired_iiwa_kp_gains_, mode);
+
+    TestSimIiwaDriverPorts(mode, *dut);
+  }
+}
+
 }  // namespace
-}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

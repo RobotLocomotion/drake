@@ -1,5 +1,7 @@
 #include "drake/manipulation/kuka_iiwa/sim_iiwa_driver.h"
 
+#include <string>
+
 #include "drake/common/default_scalars.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -12,8 +14,8 @@
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
-namespace internal {
 
+using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using systems::Adder;
 using systems::Context;
@@ -158,10 +160,31 @@ template <typename U>
 SimIiwaDriver<T>::SimIiwaDriver(const SimIiwaDriver<U>& other)
     : Diagram<T>(systems::SystemTypeTag<SimIiwaDriver>{}, other) {}
 
-}  // namespace internal
+template <typename T>
+const System<double>& SimIiwaDriver<T>::AddToBuilder(
+    DiagramBuilder<double>* builder, const MultibodyPlant<double>& plant,
+    const ModelInstanceIndex iiwa_instance,
+    const MultibodyPlant<double>& controller_plant, double ext_joint_filter_tau,
+    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
+    IiwaControlMode control_mode) {
+  const std::string name =
+      fmt::format("IiwaDriver({})", plant.GetModelInstanceName(iiwa_instance));
+  auto system = builder->AddNamedSystem<SimIiwaDriver<double>>(
+      name, control_mode, &controller_plant, ext_joint_filter_tau,
+      desired_iiwa_kp_gains);
+  builder->Connect(plant.get_state_output_port(iiwa_instance),
+                   system->GetInputPort("state"));
+  builder->Connect(
+      plant.get_generalized_contact_forces_output_port(iiwa_instance),
+      system->GetInputPort("generalized_contact_forces"));
+  builder->Connect(system->GetOutputPort("actuation"),
+                   plant.get_actuation_input_port(iiwa_instance));
+  return *system;
+}
+
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::manipulation::kuka_iiwa::internal::SimIiwaDriver)
+    class ::drake::manipulation::kuka_iiwa::SimIiwaDriver)
