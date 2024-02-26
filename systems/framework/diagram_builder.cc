@@ -269,7 +269,7 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
   DRAKE_DEMAND(!port_name.empty());
 
   // Reject duplicate declarations.
-  if (diagram_input_indices_.count(port_name) != 0) {
+  if (diagram_input_indices_.contains(port_name)) {
     throw std::logic_error(
         fmt::format("Diagram already has an input port named {}", port_name));
   }

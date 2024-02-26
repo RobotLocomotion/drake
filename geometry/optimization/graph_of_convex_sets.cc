@@ -368,8 +368,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
       graphviz << "\n";
       if (e->ell_.size() > 0) {
         // SolveConvexRestriction does not yet return the rewritten costs.
-        if (result->get_decision_variable_index()->count(e->ell_[0].get_id()) !=
-            0) {
+        if (result->get_decision_variable_index()->contains(
+                e->ell_[0].get_id())) {
           graphviz << "cost = " << e->GetSolutionCost(*result);
         }
       } else {
@@ -378,8 +378,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
       if (show_slacks) {
         graphviz << ",\n";
         graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
-        if (result->get_decision_variable_index()->count(e->y_[0].get_id()) !=
-            0) {
+        if (result->get_decision_variable_index()->contains(
+                e->y_[0].get_id())) {
           graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
                    << "],\n";
           graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
