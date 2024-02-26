@@ -106,6 +106,16 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   return !(polyhedron_is_empty || -result.get_optimal_cost() > d + tol);
 }
 
+/* Returns a trivially-infeasible HPolyhedron of a given dimension. */
+HPolyhedron ConstructInfeasibleHPolyhedron(int dimension) {
+  MatrixXd A_infeasible(2, dimension);
+  A_infeasible.setZero();
+  A_infeasible(0, 0) = 1;
+  A_infeasible(1, 0) = -1;
+  Eigen::Vector2d b_infeasible(-1, 0);
+  return HPolyhedron(A_infeasible, b_infeasible);
+}
+
 }  // namespace
 
 HPolyhedron::HPolyhedron() : ConvexSet(0, false) {}
@@ -143,15 +153,7 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
           "a HPolyhedron.");
     } else {
       // Just create an infeasible HPolyhedron.
-      Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, vpoly.ambient_dimension());
-      Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
-      // x <= 1
-      A(0, 0) = 1;
-      b[0] = 1;
-      // -x <= -2, equivalent to x >= 2
-      A(1, 0) = -1;
-      b[1] = -2;
-      *this = HPolyhedron(A, b);
+      *this = ConstructInfeasibleHPolyhedron(vpoly.ambient_dimension());
       return;
     }
   }
@@ -299,10 +301,11 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
       prog, &A_triplets, &b, &A_row_count, &unused_linear_eq_y_start_indices,
       &unused_num_rows_added);
 
-  // Linear equality constraints Ax = b are given in the form Ax <= b. So we add
-  // in the reverse of the constraint, Ax >= b, encoded as -Ax <= -b. This is
-  // implemented by taking each triplet (i, j, x) and adding in (i + N, j, -x),
-  // where N is the number of rows of A before we start adding new triplets.
+  // Linear equality constraints Ax = b are parsed in the form Ax <= b. So we
+  // add in the reverse of the constraint, Ax >= b, encoded as -Ax <= -b. This
+  // is implemented by taking each triplet (i, j, v) and adding in
+  // (i + N, j, -v), where N is the number of rows of A before we start adding
+  // new triplets.
   const int num_equality_triplets = A_triplets.size();
   const int& num_equality_constraints = A_row_count;
   A_triplets.reserve(2 * A_triplets.size());
@@ -325,6 +328,18 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
       prog, &A_triplets, &b, &A_row_count,
       &unused_linear_constraint_dual_indices, &unused_num_rows_added);
 
+  // Check that none of the linear inequality constraints are trivially
+  // infeasible by requiring a variable be at least ∞ or at most -∞. If this is
+  // the case, return a trivially infeasible HPolyhedron. Constraints that
+  // violate this condition may not be returned by ParseLinearConstraints.
+  for (const auto& binding : prog.linear_constraints()) {
+    if (binding.evaluator()->lower_bound().maxCoeff() == kInf ||
+        binding.evaluator()->upper_bound().minCoeff() == -kInf) {
+      *this = ConstructInfeasibleHPolyhedron(prog.num_vars());
+      return;
+    }
+  }
+
   // Get bounding box constraints.
   VectorXd lb;
   VectorXd ub;
@@ -338,12 +353,7 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
     // including the constraints x <= -1, x >= 0, where x is the first decision
     // variable.
     if (lb[i] == kInf || ub[i] == -kInf) {
-      MatrixXd A_infeasible(2, prog.num_vars());
-      A_infeasible.setZero();
-      A_infeasible(0, 0) = 1;
-      A_infeasible(1, 0) = -1;
-      Eigen::Vector2d b_infeasible(-1, 0);
-      *this = HPolyhedron(A_infeasible, b_infeasible);
+      *this = ConstructInfeasibleHPolyhedron(prog.num_vars());
       return;
     } else {
       A_triplets.emplace_back(A_row_count, i, 1);
@@ -355,15 +365,18 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
     }
   }
   // Form the A and b matrices of the HPolyhedron.
-  Eigen::SparseMatrix<double> A_sparse(A_row_count, prog.num_vars());
+  Eigen::SparseMatrix<double, Eigen::RowMajor> A_sparse(A_row_count,
+                                                        prog.num_vars());
   A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
 
   // Identify the rows that do not contain any infinities, as the rows to keep.
+  // Since we have filtered out infinities that render the problem infeasible
+  // above, these correspond to inequalities that are trivially satisfied by all
+  // vectors x, and need not be included in the HPolyhedron.
   std::vector<int> rows_to_keep;
   rows_to_keep.reserve(A_sparse.rows());
-  for (int i = 0; i < A_sparse.rows(); ++i) {
-    if (VectorXd{A_sparse.row(i)}.cwiseAbs().maxCoeff() < kInf &&
-        abs(b[i]) < kInf) {
+  for (int i = 0; i < ssize(b); ++i) {
+    if (abs(b[i]) < kInf) {
       rows_to_keep.push_back(i);
     }
   }
@@ -371,7 +384,7 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   VectorXd b_eigen(b.size());
   b_eigen = VectorXd::Map(b.data(), b.size());
 
-  *this = HPolyhedron(MatrixXd(A_sparse)(rows_to_keep, Eigen::all),
+  *this = HPolyhedron(A_sparse.toDense()(rows_to_keep, Eigen::all),
                       b_eigen(rows_to_keep));
 }
 
