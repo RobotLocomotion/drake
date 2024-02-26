@@ -321,6 +321,29 @@ TEST_F(MujocoParserTest, GeometryTypes) {
   CheckShape("box_from_sub", "Box");
 }
 
+// Confirm that multiple instances of the same geometry defaults get unique
+// names.
+TEST_F(MujocoParserTest, UniqueGeometryNames) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <default class="default_box">
+    <geom type="box" size="0.1 0.2 0.3"/>
+  </default>
+  <worldbody>
+    <geom class="default_box"/>
+    <geom class="default_box"/>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_NO_THROW(inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "geom0"));
+  EXPECT_NO_THROW(inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "geom1"));
+}
+
 TEST_F(MujocoParserTest, UnrecognizedGeometryTypes) {
   std::string xml = R"""(
 <mujoco model="test">
