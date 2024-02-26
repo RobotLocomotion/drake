@@ -216,7 +216,7 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
   std::unordered_map<symbolic::Variable::Id, int> vars_to_vars_new;
   int unique_var_count = 0;
   for (int i = 0; i < vars.rows(); ++i) {
-    const bool seen_already = vars_to_vars_new.count(vars(i).get_id());
+    const bool seen_already = vars_to_vars_new.contains(vars(i).get_id());
     if (!seen_already) {
       (*vars_new)(unique_var_count) = vars(i);
       vars_to_vars_new.emplace(vars(i).get_id(), unique_var_count);

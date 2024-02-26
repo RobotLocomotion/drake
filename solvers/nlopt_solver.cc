@@ -187,7 +187,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   const Eigen::VectorXd& upper_bound = c->upper_bound();
   size_t result_idx = 0;
   for (int i = 0; i < num_constraints; i++) {
-    if (!wrapped->active_constraints.count(i)) {
+    if (!wrapped->active_constraints.contains(i)) {
       continue;
     }
     if (wrapped->force_bounds && wrapped->force_upper &&
@@ -217,7 +217,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           wrapped->prog->FindDecisionVariableIndex((*wrapped->vars)(i));
     }
     for (int i = 0; i < num_constraints; i++) {
-      if (!wrapped->active_constraints.count(i)) {
+      if (!wrapped->active_constraints.contains(i)) {
         continue;
       }
       double grad_sign = 1;

@@ -1144,7 +1144,7 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(
     for (const auto& [sys_input, sys_output] : sys_feedthroughs) {
       if (sys_output == current_output_id.second) {
         const InputPortLocator curr_input_id(sys, sys_input);
-        if (target_input_ids.count(curr_input_id)) {
+        if (target_input_ids.contains(curr_input_id)) {
           // We've found a direct-feedthrough path to the input_port.
           return true;
         } else {

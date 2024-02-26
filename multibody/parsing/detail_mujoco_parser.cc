@@ -620,7 +620,7 @@ class MujocoParser {
                                  geom.name));
           return geom;
       }
-      if (mesh_.count(mesh)) {
+      if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
       } else {
         Warning(
@@ -701,7 +701,7 @@ class MujocoParser {
 
     std::string material;
     if (ParseStringAttribute(node, "material", &material)) {
-      if (material_.count(material)) {
+      if (material_.contains(material)) {
         XMLElement* material_node = material_.at(material);
         // Note: there are many material attributes that we do not support yet,
         // nor perhaps ever. Consider warning about them here (currently, it

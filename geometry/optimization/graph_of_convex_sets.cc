@@ -495,7 +495,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
   }
 
   for (const auto& [edge_id, e] : edges_) {
-    if (unusable_edges.count(edge_id)) {
+    if (unusable_edges.contains(edge_id)) {
       continue;
     }
 
@@ -809,7 +809,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   for (const auto& [edge_id, e] : edges_) {
     // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
     // include it in the optimization.
-    if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+    if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
       // Track excluded edges (ϕ = 0 and preprocessed) so that their variables
       // can be set in the optimization result.
       excluded_edges.emplace_back(e.get());
@@ -1085,7 +1085,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     std::vector<std::vector<const Edge*>> paths;
     std::map<EdgeId, double> flows;
     for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
         flows.emplace(edge_id, 0);
       } else {
         flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));

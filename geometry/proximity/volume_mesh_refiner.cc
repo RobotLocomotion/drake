@@ -161,10 +161,9 @@ std::vector<int> VolumeMeshRefiner::GetTetrahedraOnTriangle(int v0, int v1,
     const std::unordered_set<int> tetrahedron_vertices{
         tetrahedra_[tetrahedron].vertex(0), tetrahedra_[tetrahedron].vertex(1),
         tetrahedra_[tetrahedron].vertex(2), tetrahedra_[tetrahedron].vertex(3)};
-    // TODO(DamrongGuoy): Use tetrahedron_vertices.contains(key) instead of
-    //  tetrahedron_vertices.count(key) when C++20 is available.
-    if (tetrahedron_vertices.count(v0) && tetrahedron_vertices.count(v1) &&
-        tetrahedron_vertices.count(v2)) {
+    if (tetrahedron_vertices.contains(v0) &&
+        tetrahedron_vertices.contains(v1) &&
+        tetrahedron_vertices.contains(v2)) {
       incident_tetrahedra.push_back(tetrahedron);
     }
   }
@@ -179,9 +178,8 @@ std::vector<int> VolumeMeshRefiner::GetTetrahedraOnEdge(int v0, int v1) const {
     const std::unordered_set<int> tetrahedron_vertices{
         tetrahedra_[tetrahedron].vertex(0), tetrahedra_[tetrahedron].vertex(1),
         tetrahedra_[tetrahedron].vertex(2), tetrahedra_[tetrahedron].vertex(3)};
-    // TODO(DamrongGuoy): Use tetrahedron_vertices.contains(key) instead of
-    //  tetrahedron_vertices.count(key) when C++20 is available.
-    if (tetrahedron_vertices.count(v0) && tetrahedron_vertices.count(v1)) {
+    if (tetrahedron_vertices.contains(v0) &&
+        tetrahedron_vertices.contains(v1)) {
       incident_tetrahedra.push_back(tetrahedron);
     }
   }
