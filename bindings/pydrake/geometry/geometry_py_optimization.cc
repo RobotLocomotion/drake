@@ -1162,7 +1162,9 @@ void DefineGeometryOptimization(py::module m) {
         return result;
       },
       py::arg("convex_set"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
+      py::arg("epsilon") = 1e-5,
+      doc.PartitionConvexSet
+          .doc_3args_convex_set_continuous_revolute_joints_epsilon);
   m.def(
       "PartitionConvexSet",
       [](const std::vector<ConvexSet*>& convex_sets,
@@ -1177,7 +1179,9 @@ void DefineGeometryOptimization(py::module m) {
         return result;
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
+      py::arg("epsilon") = 1e-5,
+      doc.PartitionConvexSet
+          .doc_3args_convex_sets_continuous_revolute_joints_epsilon);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

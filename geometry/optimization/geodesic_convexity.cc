@@ -264,7 +264,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
-  bool compute_intersections_within_A = convex_sets_B.size() == 0;
+  bool compute_intersections_within_A = convex_sets_A == convex_sets_B;
   const auto convex_sets_B_local =
       compute_intersections_within_A ? convex_sets_A : convex_sets_B;
   if (compute_intersections_within_A) {
@@ -366,7 +366,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A,
     const std::vector<int>& continuous_revolute_joints) {
-  return CalcPairwiseIntersections(convex_sets_A, {},
+  return CalcPairwiseIntersections(convex_sets_A, convex_sets_A,
                                    continuous_revolute_joints);
 }
 
