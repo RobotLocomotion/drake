@@ -2085,7 +2085,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
             single_tree_dynamic_geometry_count() - 1);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
-  EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
+  EXPECT_FALSE(gs_tester_.get_geometries().contains(g_id));
 
   // Confirm that, post removal, updating poses still works.
   DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());

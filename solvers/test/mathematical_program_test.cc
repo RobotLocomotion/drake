@@ -3300,8 +3300,8 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   prog.RemoveCost(obj1);
   prog.RemoveCost(obj2);
   EXPECT_EQ(prog.l2norm_costs().size(), 0u);
-  EXPECT_EQ(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
-            0u);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kL2NormCost));
 
   prog.AddL2NormCost(A, b, {x.head<1>(), x.tail<1>()});
   EXPECT_EQ(prog.l2norm_costs().size(), 1u);
@@ -4317,11 +4317,11 @@ void RemoveCostTest(MathematicalProgram* prog,
   EXPECT_EQ(program_costs->size(), 2u);
   EXPECT_EQ(prog->RemoveCost(cost2), 2);
   EXPECT_EQ(program_costs->size(), 0u);
-  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(affected_capability));
 
   // Currently program_costs is empty.
   EXPECT_EQ(prog->RemoveCost(cost1), 0);
-  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(affected_capability));
 
   prog->AddCost(cost1);
   // prog doesn't contain cost2, removing cost2 from prog ends up as a no-opt.
@@ -4415,17 +4415,15 @@ GTEST_TEST(TestMathematicalProgram, RemoveLinearConstraint) {
   EXPECT_EQ(prog.RemoveConstraint(lin_con1), 0);
   EXPECT_EQ(prog.RemoveConstraint(lin_con2), 2);
   EXPECT_EQ(prog.linear_constraints().size(), 0u);
-  EXPECT_EQ(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
 
   auto bbcon = prog.AddBoundingBoxConstraint(1, 2, x);
   EXPECT_TRUE(prog.required_capabilities().contains(
       ProgramAttribute::kLinearConstraint));
   EXPECT_EQ(prog.RemoveConstraint(bbcon), 1);
-  EXPECT_EQ(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, RemoveConstraintPSD) {
@@ -4463,7 +4461,7 @@ void TestRemoveConstraint(MathematicalProgram* prog,
   ASSERT_TRUE(prog->required_capabilities().contains(removed_capability));
   EXPECT_EQ(prog->RemoveConstraint(constraint), 1);
   EXPECT_EQ(prog_constraints->size(), 0u);
-  EXPECT_EQ(prog->required_capabilities().count(removed_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(removed_capability));
 }
 
 GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {

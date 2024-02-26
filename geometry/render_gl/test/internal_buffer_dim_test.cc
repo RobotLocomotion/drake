@@ -44,7 +44,7 @@ GTEST_TEST(BufferDimTest, HashableKey) {
 
   std::unordered_set<BufferDim> buffers;
 
-  EXPECT_EQ(buffers.count(buffer), 0);
+  EXPECT_FALSE(buffers.contains(buffer));
   buffers.insert(buffer);
   EXPECT_TRUE(buffers.contains(buffer));
   EXPECT_TRUE(buffers.contains(same));
@@ -53,9 +53,9 @@ GTEST_TEST(BufferDimTest, HashableKey) {
   EXPECT_TRUE(buffers.contains(same));
 
   // Show that different buffers aren't mistaken for `buffer`.
-  EXPECT_EQ(buffers.count(BufferDim(w, h + 1)), 0);
-  EXPECT_EQ(buffers.count(BufferDim(w + 1, h)), 0);
-  EXPECT_EQ(buffers.count(BufferDim(w + 1, h + 1)), 0);
+  EXPECT_FALSE(buffers.contains(BufferDim(w, h + 1)));
+  EXPECT_FALSE(buffers.contains(BufferDim(w + 1, h)));
+  EXPECT_FALSE(buffers.contains(BufferDim(w + 1, h + 1)));
 }
 
 }  // namespace

@@ -504,10 +504,10 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
       EXPECT_TRUE(certificate.has_value());
       const auto& plane = tester.cspace_free_polytope()
                               .separating_planes()[certificate->plane_index];
-      EXPECT_EQ(ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-                    plane.positive_side_geometry->id(),
-                    plane.negative_side_geometry->id())),
-                0);
+      EXPECT_FALSE(
+          ignored_collision_pairs.contains(SortedPair<geometry::GeometryId>(
+              plane.positive_side_geometry->id(),
+              plane.negative_side_geometry->id())));
 
       CheckSeparationBySamples(tester, *diagram_, s_samples, C, d,
                                {{certificate->plane_index, certificate->a}},
@@ -620,11 +620,11 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
       const SortedPair<geometry::GeometryId> geometry_pair(
           plane.positive_side_geometry->id(),
           plane.negative_side_geometry->id());
-      EXPECT_EQ(inseparable_geometries.count(geometry_pair), 0);
+      EXPECT_FALSE(inseparable_geometries.contains(geometry_pair));
     }
   }
   for (const auto& [geometry_pair, certificate] : certificates_map) {
-    EXPECT_EQ(inseparable_geometries.count(geometry_pair), 0);
+    EXPECT_FALSE(inseparable_geometries.contains(geometry_pair));
   }
 }
 
