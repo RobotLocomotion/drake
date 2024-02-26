@@ -76,10 +76,10 @@ StronglyConnectedComponents<T> FindStronglyConnectedComponents(
     ++index_counter;
     stack.push_back(node);
 
-    if (graph.count(node)) {
+    if (graph.contains(node)) {
       const auto& successors = graph.at(node);
       for (const auto& successor : successors) {
-        if (!lowlinks.count(successor)) {
+        if (!lowlinks.contains(successor)) {
           // Successor has not yet been visited; recurse on it.
           strongconnect(successor);
           lowlinks[node] = std::min(lowlinks[node], lowlinks[successor]);
@@ -108,7 +108,7 @@ StronglyConnectedComponents<T> FindStronglyConnectedComponents(
 
   for (const auto& item : graph) {
     const auto& node = item.first;
-    if (!lowlinks.count(node)) {
+    if (!lowlinks.contains(node)) {
       strongconnect(node);
     }
   }

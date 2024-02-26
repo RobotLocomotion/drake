@@ -26,7 +26,7 @@ TEST_F(CIrisToyRobotTest, GetCollisionGeometries) {
         }
         EXPECT_EQ(geometry_ids.size(), geometry_ids_expected.size());
         for (const auto id : geometry_ids) {
-          EXPECT_GT(geometry_ids_expected.count(id), 0);
+          EXPECT_TRUE(geometry_ids_expected.contains(id));
         }
       };
 

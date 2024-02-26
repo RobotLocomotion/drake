@@ -332,7 +332,7 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
   // Now look for proof that the gltf got added correctly.
   const std::map<GeometryId, Tester::GltfRecord>& gltfs =
       Tester::gltfs(engine_);
-  ASSERT_EQ(gltfs.count(gltf_id), 1);
+  ASSERT_TRUE(gltfs.contains(gltf_id));
   const Tester::GltfRecord& record = gltfs.at(gltf_id);
   EXPECT_EQ(record.scale, scale_);
   EXPECT_EQ(record.label, label_);

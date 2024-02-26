@@ -112,17 +112,17 @@ void ContinuousState<T>::DemandInvariants() const {
   for (int i = 0; i < num_q(); ++i) {
     const T* element = &(generalized_position_->GetAtIndex(i));
     qvz_element_pointers.emplace(element);
-    DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    DRAKE_DEMAND(state_element_pointers.contains(element));
   }
   for (int i = 0; i < num_v(); ++i) {
     const T* element = &(generalized_velocity_->GetAtIndex(i));
     qvz_element_pointers.emplace(element);
-    DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    DRAKE_DEMAND(state_element_pointers.contains(element));
   }
   for (int i = 0; i < num_z(); ++i) {
     const T* element = &(misc_continuous_state_->GetAtIndex(i));
     qvz_element_pointers.emplace(element);
-    DRAKE_DEMAND(state_element_pointers.count(element) == 1);
+    DRAKE_DEMAND(state_element_pointers.contains(element));
   }
   DRAKE_DEMAND(static_cast<int>(qvz_element_pointers.size()) == num_total);
 }

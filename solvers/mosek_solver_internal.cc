@@ -526,7 +526,7 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
         // This variable is a Mosek matrix variable. The bound on this variable
         // is imposed as a linear constraint.
         DRAKE_DEMAND(
-            decision_variable_to_mosek_matrix_variable().count(var_index) > 0);
+            decision_variable_to_mosek_matrix_variable().contains(var_index));
         lower_bound_duals[i].type = DualVarType::kLinearConstraint;
         upper_bound_duals[i].type = DualVarType::kLinearConstraint;
         const int linear_constraint_index =
@@ -1285,7 +1285,7 @@ MapDecisionVariableToMosekVariable::MapDecisionVariableToMosekVariable(
   // Mosek.
   int nonmatrix_variable_count = 0;
   for (int i = 0; i < prog.num_vars(); ++i) {
-    if (decision_variable_to_mosek_matrix_variable.count(i) == 0) {
+    if (!decision_variable_to_mosek_matrix_variable.contains(i)) {
       decision_variable_to_mosek_nonmatrix_variable.emplace(
           i, nonmatrix_variable_count++);
     }

@@ -233,7 +233,7 @@ class GeometryProperties {
 
   /** Reports if the given named group is part of this property set.  */
   bool HasGroup(const std::string& group_name) const {
-    return values_.count(group_name) > 0;
+    return values_.contains(group_name);
   }
 
   /** Reports the number of property groups in this set.  */

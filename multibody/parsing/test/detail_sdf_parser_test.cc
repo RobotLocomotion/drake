@@ -158,7 +158,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
         CollisionPair names{m_name, n_name};
         auto contains =
             [&expected_filters](const CollisionPair& key) {
-              return expected_filters.count(key) > 0;
+              return expected_filters.contains(key);
             };
         EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]),
                   contains(names));

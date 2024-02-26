@@ -236,7 +236,7 @@ TYPED_TEST(BvhTest, TestBuildBvTree) {
       for (int i = 0; i < node.num_element_indices(); ++i) {
         EXPECT_GE(node.element_index(i), 0);
         EXPECT_LT(node.element_index(i), num_elements);
-        EXPECT_EQ(element_indices.count(node.element_index(i)), 0);
+        EXPECT_FALSE(element_indices.contains(node.element_index(i)));
         element_indices.insert(node.element_index(i));
       }
     }

@@ -28,7 +28,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
       VectorX<symbolic::Variable> s_vars{
           tester.get_rational_forward_kin()->s()};
       for (int i = 0; i < s_vars.size(); ++i) {
-        EXPECT_GT(tester.get_path().count(s_vars(i)), 0);
+        EXPECT_TRUE(tester.get_path().contains(s_vars(i)));
 
         const symbolic::Polynomial& path_component{
             tester.get_path().at(s_vars(i))};

@@ -46,7 +46,7 @@ Spectrahedron::Spectrahedron() : ConvexSet(0, false) {}
 Spectrahedron::Spectrahedron(const MathematicalProgram& prog)
     : ConvexSet(prog.num_vars(), false) {
   for (const ProgramAttribute& attr : prog.required_capabilities()) {
-    if (supported_attributes().count(attr) < 1) {
+    if (!supported_attributes().contains(attr)) {
       throw std::runtime_error(fmt::format(
           "Spectrahedron does not support MathematicalPrograms that require "
           "ProgramAttribute {}. If that attribute is convex, it might be "

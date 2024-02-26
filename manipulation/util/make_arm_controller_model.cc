@@ -188,7 +188,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     }
     std::vector<BodyIndex> sim_to_calc_inertia;
     for (const RigidBody<double>* sim_welded_body : sim_welded_bodies) {
-      if (sim_bodies_accounted_for.count(sim_welded_body->index()) > 0) {
+      if (sim_bodies_accounted_for.contains(sim_welded_body->index())) {
         continue;
       }
       sim_bodies_accounted_for.insert(sim_welded_body->index());

@@ -751,7 +751,7 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSink2) {
 
   const InputPortLocator in1_input{in1_, InputPortIndex{0}};
   const auto& connections = diagram->connection_map();
-  ASSERT_EQ(connections.count(in1_input), 1);
+  ASSERT_TRUE(connections.contains(in1_input));
   EXPECT_EQ(connections.find(in1_input)->second.first, out1_);
 }
 

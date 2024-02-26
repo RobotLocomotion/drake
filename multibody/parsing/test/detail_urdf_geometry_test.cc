@@ -1133,14 +1133,14 @@ TEST_F(UrdfGeometryTest, AcceptingRenderers) {
       const auto& names =
           props.GetProperty<std::set<std::string>>(group, property);
       EXPECT_EQ(names.size(), 1);
-      EXPECT_EQ(names.count("renderer1"), 1);
+      EXPECT_TRUE(names.contains("renderer1"));
     } else if (instance.name() == "multi_renderer") {
       EXPECT_TRUE(props.HasProperty(group, property));
       const auto& names =
           props.GetProperty<std::set<std::string>>(group, property);
       EXPECT_EQ(names.size(), 2);
-      EXPECT_EQ(names.count("renderer1"), 1);
-      EXPECT_EQ(names.count("renderer2"), 1);
+      EXPECT_TRUE(names.contains("renderer1"));
+      EXPECT_TRUE(names.contains("renderer2"));
     } else {
       GTEST_FAIL() << "Encountered visual geometry not expected: "
                      << instance.name();

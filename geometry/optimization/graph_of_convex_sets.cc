@@ -277,7 +277,7 @@ Edge* GraphOfConvexSets::AddEdge(Vertex* u, Vertex* v, std::string name) {
 void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   DRAKE_THROW_UNLESS(vertex != nullptr);
   VertexId vertex_id = vertex->id();
-  DRAKE_THROW_UNLESS(vertices_.count(vertex_id) > 0);
+  DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
   for (auto it = edges_.begin(); it != edges_.end();) {
     if (it->second->u().id() == vertex_id) {
       it->second->v().RemoveIncomingEdge(it->second.get());
@@ -294,7 +294,7 @@ void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
 
 void GraphOfConvexSets::RemoveEdge(Edge* edge) {
   DRAKE_THROW_UNLESS(edge != nullptr);
-  DRAKE_THROW_UNLESS(edges_.count(edge->id()) > 0);
+  DRAKE_THROW_UNLESS(edges_.contains(edge->id()));
   edge->u().RemoveOutgoingEdge(edge);
   edge->v().RemoveIncomingEdge(edge);
   edges_.erase(edge->id());
@@ -368,8 +368,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
       graphviz << "\n";
       if (e->ell_.size() > 0) {
         // SolveConvexRestriction does not yet return the rewritten costs.
-        if (result->get_decision_variable_index()->count(e->ell_[0].get_id()) !=
-            0) {
+        if (result->get_decision_variable_index()->contains(
+                e->ell_[0].get_id())) {
           graphviz << "cost = " << e->GetSolutionCost(*result);
         }
       } else {
@@ -378,8 +378,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
       if (show_slacks) {
         graphviz << ",\n";
         graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
-        if (result->get_decision_variable_index()->count(e->y_[0].get_id()) !=
-            0) {
+        if (result->get_decision_variable_index()->contains(
+                e->y_[0].get_id())) {
           graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
                    << "],\n";
           graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
@@ -495,7 +495,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
   }
 
   for (const auto& [edge_id, e] : edges_) {
-    if (unusable_edges.count(edge_id)) {
+    if (unusable_edges.contains(edge_id)) {
       continue;
     }
 
@@ -809,7 +809,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   for (const auto& [edge_id, e] : edges_) {
     // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
     // include it in the optimization.
-    if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+    if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
       // Track excluded edges (ϕ = 0 and preprocessed) so that their variables
       // can be set in the optimization result.
       excluded_edges.emplace_back(e.get());
@@ -1085,7 +1085,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     std::vector<std::vector<const Edge*>> paths;
     std::map<EdgeId, double> flows;
     for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
         flows.emplace(edge_id, 0);
       } else {
         flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
@@ -1263,12 +1263,12 @@ std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
     throw std::runtime_error(
         "Cannot extract a solution path when result.is_success() is false.");
   }
-  if (vertices_.count(source.id()) == 0) {
+  if (!vertices_.contains(source.id())) {
     throw std::invalid_argument(fmt::format(
         "Source vertex {} is not a vertex in this GraphOfConvexSets.",
         source.name()));
   }
-  if (vertices_.count(target.id()) == 0) {
+  if (!vertices_.contains(target.id())) {
     throw std::invalid_argument(fmt::format(
         "Target vertex {} is not a vertex in this GraphOfConvexSets.",
         target.name()));
@@ -1289,7 +1289,7 @@ std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
       // If the edge has not been visited and has a flow greater than the
       // current maximum, then this is our new maximum.
       if (flow >= 1 - tolerance && flow > maximum_flow &&
-          visited_vertices.count(&e->v()) == 0) {
+          !visited_vertices.contains(&e->v())) {
         maximum_flow = flow;
         max_flow_vertex = &e->v();
         max_flow_edge = e;
@@ -1422,7 +1422,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
 
   std::set<const Vertex*, VertexIdComparator> vertices;
   for (const auto* e : active_edges) {
-    if (edges_.count(e->id()) == 0) {
+    if (!edges_.contains(e->id())) {
       throw std::runtime_error(
           fmt::format("Edge {} is not in the graph.", e->name()));
     }
@@ -1470,7 +1470,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   std::vector<const Vertex*> excluded_vertices;
   for (const auto& pair : vertices_) {
     const Vertex* v = pair.second.get();
-    if (vertices.count(v) == 0) {
+    if (!vertices.contains(v)) {
       num_excluded_vars += v->x().size();
       excluded_vertices.emplace_back(v);
     }

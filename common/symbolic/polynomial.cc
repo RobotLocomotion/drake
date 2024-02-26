@@ -474,7 +474,7 @@ namespace {
 // returns `(2, xy)`.
 pair<int, Monomial> DifferentiateMonomial(const Monomial& m,
                                           const Variable& x) {
-  if (m.get_powers().count(x) == 0) {
+  if (!m.get_powers().contains(x)) {
     // x does not appear in m. Returns (0, 1).
     return make_pair(0, Monomial{});
   }

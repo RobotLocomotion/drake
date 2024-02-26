@@ -626,16 +626,16 @@ TEST_F(SymbolicFormulaTest, AndWithBooleanVariableOperator) {
   // Checks if operator&& works Boolean variables as expected.
   const Formula f1{var_b1_ && var_b2_};
   ASSERT_TRUE(is_conjunction(f1));
-  EXPECT_EQ(get_operands(f1).count(b1_), 1);
-  EXPECT_EQ(get_operands(f1).count(b2_), 1);
+  EXPECT_TRUE(get_operands(f1).contains(b1_));
+  EXPECT_TRUE(get_operands(f1).contains(b2_));
 
   const Formula f2{var_b1_ && (y_ > 0)};
   ASSERT_TRUE(is_conjunction(f2));
-  EXPECT_EQ(get_operands(f2).count(b1_), 1);
+  EXPECT_TRUE(get_operands(f2).contains(b1_));
 
   const Formula f3{(x_ > 0) && var_b2_};
   ASSERT_TRUE(is_conjunction(f3));
-  EXPECT_EQ(get_operands(f3).count(b2_), 1);
+  EXPECT_TRUE(get_operands(f3).contains(b2_));
 }
 
 TEST_F(SymbolicFormulaTest, AndWithBooleanVariableEvaluate) {
@@ -715,16 +715,16 @@ TEST_F(SymbolicFormulaTest, OrWithBooleanVariableOperator) {
   // Checks if operator|| works with Boolean variables as expected.
   const Formula f1{var_b1_ || var_b2_};
   ASSERT_TRUE(is_disjunction(f1));
-  EXPECT_EQ(get_operands(f1).count(b1_), 1);
-  EXPECT_EQ(get_operands(f1).count(b2_), 1);
+  EXPECT_TRUE(get_operands(f1).contains(b1_));
+  EXPECT_TRUE(get_operands(f1).contains(b2_));
 
   const Formula f2{var_b1_ || (y_ > 0)};
   ASSERT_TRUE(is_disjunction(f2));
-  EXPECT_EQ(get_operands(f2).count(b1_), 1);
+  EXPECT_TRUE(get_operands(f2).contains(b1_));
 
   const Formula f3{(x_ > 0) || var_b2_};
   ASSERT_TRUE(is_disjunction(f3));
-  EXPECT_EQ(get_operands(f3).count(b2_), 1);
+  EXPECT_TRUE(get_operands(f3).contains(b2_));
 }
 
 TEST_F(SymbolicFormulaTest, OrWithBooleanVariableEvaluate) {
@@ -1066,19 +1066,19 @@ TEST_F(SymbolicFormulaTest, GetRhsExpression) {
 TEST_F(SymbolicFormulaTest, GetOperandsConjunction) {
   const set<Formula> formulas{get_operands(f1_ && f2_ && f3_ && f4_)};
   EXPECT_EQ(formulas.size(), 4u);
-  EXPECT_EQ(formulas.count(f1_), 1u);
-  EXPECT_EQ(formulas.count(f2_), 1u);
-  EXPECT_EQ(formulas.count(f3_), 1u);
-  EXPECT_EQ(formulas.count(f4_), 1u);
+  EXPECT_TRUE(formulas.contains(f1_));
+  EXPECT_TRUE(formulas.contains(f2_));
+  EXPECT_TRUE(formulas.contains(f3_));
+  EXPECT_TRUE(formulas.contains(f4_));
 }
 
 TEST_F(SymbolicFormulaTest, GetOperandsDisjunction) {
   const set<Formula> formulas{get_operands(f1_ || f2_ || f3_ || f4_)};
   EXPECT_EQ(formulas.size(), 4u);
-  EXPECT_EQ(formulas.count(f1_), 1u);
-  EXPECT_EQ(formulas.count(f2_), 1u);
-  EXPECT_EQ(formulas.count(f3_), 1u);
-  EXPECT_EQ(formulas.count(f4_), 1u);
+  EXPECT_TRUE(formulas.contains(f1_));
+  EXPECT_TRUE(formulas.contains(f2_));
+  EXPECT_TRUE(formulas.contains(f3_));
+  EXPECT_TRUE(formulas.contains(f4_));
 }
 
 TEST_F(SymbolicFormulaTest, GetOperand) {

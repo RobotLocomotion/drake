@@ -602,7 +602,7 @@ GTEST_TEST(TypeSafeIndex, SortedPairIndexHashable) {
   AIndex a2(2);
   std::unordered_set<SortedPair<AIndex>> pairs;
   pairs.insert({a2, a1});
-  EXPECT_EQ(pairs.count(SortedPair<AIndex>(a1, a2)), 1);
+  EXPECT_TRUE(pairs.contains(SortedPair<AIndex>(a1, a2)));
 }
 
 }  // namespace

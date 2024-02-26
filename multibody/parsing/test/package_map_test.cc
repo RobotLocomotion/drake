@@ -57,12 +57,12 @@ void VerifyMatch(const PackageMap& package_map,
   // packages.
   for (const auto& [package_name, count] : package_name_counts) {
     ASSERT_EQ(count, 1);
-    ASSERT_EQ(expected_packages.count(package_name), 1);
+    ASSERT_TRUE(expected_packages.contains(package_name));
   }
   // Confirm that every expected package is in the set of package names.
   for (const auto& [package_name, path] : expected_packages) {
     unused(path);
-    ASSERT_EQ(package_name_counts.count(package_name), 1);
+    ASSERT_TRUE(package_name_counts.contains(package_name));
   }
 }
 

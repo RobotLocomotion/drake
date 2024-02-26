@@ -308,7 +308,7 @@ class SliceTest : public ::testing::TestWithParam<SliceFunctionType> {
     const auto& poly = slice_mesh_W.element(0);
     for (int i = 0; i < poly.num_vertices(); ++i) {
       const int v = poly.vertex(i);
-      if (slice_vertex_indices.count(v) > 0) continue;
+      if (slice_vertex_indices.contains(v)) continue;
       slice_vertex_indices.insert(v);
       // The slice polygon vertex S in the mesh frame F.
       const Vector3d p_FS = X_FW * slice_mesh_W.vertex(v);
@@ -356,7 +356,7 @@ class SliceTest : public ::testing::TestWithParam<SliceFunctionType> {
     // cache: cut_edges_. Make sure they line up.
     for (const auto& edge_vertex : edge_vertices) {
       const SortedPair<int>& computed_edge = edge_vertex.edge;
-      if (cut_edges_.count(computed_edge) == 0) {
+      if (!cut_edges_.contains(computed_edge)) {
         return {{},
                 ::testing::AssertionFailure() << fmt::format(
                     "We matched surface vertex {} to edge {}, but that can't "

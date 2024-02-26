@@ -636,7 +636,7 @@ void CheckAllCacheValuesUpToDateExcept(
   for (CacheIndex i(0); i < cache.cache_size(); ++i) {
     if (!cache.has_cache_entry_value(i)) continue;
     const CacheEntryValue& entry = cache.get_cache_entry_value(i);
-    EXPECT_EQ(entry.is_out_of_date(), should_be_out_of_date.count(i) != 0) << i;
+    EXPECT_EQ(entry.is_out_of_date(), should_be_out_of_date.contains(i)) << i;
   }
 }
 

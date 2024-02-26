@@ -182,7 +182,7 @@ void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
                                       bool is_invariant,
                                       FilterState* state_out) {
   FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.count(id_A) == 1 && filter_state.count(id_B) == 1);
+  DRAKE_DEMAND(filter_state.contains(id_A) && filter_state.contains(id_B));
 
   if (id_A == id_B) return;
   PairRelationship& pair_relation =
@@ -194,7 +194,7 @@ void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
 void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B,
                                          FilterState* state_out) {
   FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.count(id_A) == 1 && filter_state.count(id_B) == 1);
+  DRAKE_DEMAND(filter_state.contains(id_A) && filter_state.contains(id_B));
   if (id_A == id_B) return;
   PairRelationship& pair_relation =
       id_A < id_B ? filter_state[id_A][id_B] : filter_state[id_B][id_A];
@@ -263,7 +263,7 @@ void CollisionFilter::AddGeometry(GeometryId new_id,
                                   FilterState* filter_state_out,
                                   PairRelationship relationship) {
   FilterState& filter_state = *filter_state_out;
-  DRAKE_DEMAND(filter_state.count(new_id) == 0);
+  DRAKE_DEMAND(!filter_state.contains(new_id));
   GeometryMap& new_map = filter_state[new_id] = {};
   for (auto& [other_id, other_map] : filter_state) {
     /* Whichever id is *smaller* tracks the relationship with the other.
@@ -285,7 +285,7 @@ void CollisionFilter::AddGeometry(GeometryId new_id,
 void CollisionFilter::RemoveGeometry(GeometryId remove_id,
                                      FilterState* filter_state_out) {
   FilterState& filter_state = *filter_state_out;
-  DRAKE_DEMAND(filter_state.count(remove_id) == 1);
+  DRAKE_DEMAND(filter_state.contains(remove_id));
   filter_state.erase(remove_id);
   for (auto& [other_id, other_map] : filter_state) {
     /* remove_id will only be found in maps belonging to geometries with ids

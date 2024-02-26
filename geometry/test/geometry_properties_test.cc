@@ -304,7 +304,7 @@ GTEST_TEST(GeometryProperties, PropertyIteration) {
   std::set<string> visited_properties;
   for (const auto& pair : properties.GetPropertiesInGroup(default_group)) {
     const string& name = pair.first;
-    EXPECT_GT(reference.count(name), 0);
+    EXPECT_TRUE(reference.contains(name));
     EXPECT_EQ(reference[name],
               properties.GetProperty<int>(default_group, name));
     visited_properties.insert(name);

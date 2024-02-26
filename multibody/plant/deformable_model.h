@@ -203,7 +203,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /** (Internal use only) Returns the true iff the deformable body with the
    given `id` has constraints associated with it. */
   bool HasConstraint(DeformableBodyId id) const {
-    return body_id_to_constraint_ids_.count(id) > 0;
+    return body_id_to_constraint_ids_.contains(id);
   }
 
   /** (Internal use only) Returns the fixed constraint specification
@@ -211,7 +211,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws if `id` is not a valid identifier for a fixed constraint. */
   const internal::DeformableRigidFixedConstraintSpec& fixed_constraint_spec(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(fixed_constraint_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(fixed_constraint_specs_.contains(id));
     return fixed_constraint_specs_.at(id);
   }
 

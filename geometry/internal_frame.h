@@ -112,7 +112,7 @@ class InternalFrame {
   /* Returns true if this frame considers the given `frame_id` to be a child.
    */
   bool has_child(FrameId frame_id) const {
-    return child_frames_.count(frame_id) > 0;
+    return child_frames_.contains(frame_id);
   }
 
   /* Adds the given `frame_id` to the set of frames that this frame considers
@@ -122,7 +122,7 @@ class InternalFrame {
   /* Returns true if this frame considers the given `geometry_id` to be rigidly
    affixed to it.  */
   bool has_child(GeometryId geometry_id) const {
-    return child_geometries_.count(geometry_id) > 0;
+    return child_geometries_.contains(geometry_id);
   }
 
   /* Adds the given `geometry_id` to the set of geometries that this frame
@@ -135,7 +135,7 @@ class InternalFrame {
    considers to be children.
    @pre the id _is_ a valid child of this frame.  */
   void remove_child(GeometryId geometry_id) {
-    DRAKE_ASSERT(child_geometries_.count(geometry_id) > 0);
+    DRAKE_ASSERT(child_geometries_.contains(geometry_id));
     child_geometries_.erase(geometry_id);
   }
 
