@@ -149,7 +149,7 @@ SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
 
 template <typename T>
 bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
-  return input_source_ids_.count(id) > 0;
+  return input_source_ids_.contains(id);
 }
 
 template <typename T>
@@ -444,7 +444,7 @@ void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
 template <typename T>
 void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
-  DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
+  DRAKE_ASSERT(!input_source_ids_.contains(source_id));
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
   source_ports.pose_port =

@@ -327,7 +327,7 @@ GTEST_TEST(MakeModel, EnvironmentalFloatingBase) {
   const std::set<int> base_dofs = GetFloatingBaseDofs();
   const int start = floater.floating_positions_start();
   for (int i = start; i < start + 7; ++i) {
-    EXPECT_EQ(base_dofs.count(i), 1);
+    EXPECT_TRUE(base_dofs.contains(i));
   }
 }
 
@@ -538,7 +538,7 @@ GTEST_TEST(CollisionCheckerTest, RobotClearance) {
   const RobotClearance clearance = checker->CalcRobotClearance(q, 0);
   ASSERT_EQ(clearance.size(), 1);
   for (int i = 0; i < clearance.num_positions(); ++i) {
-    if (non_robot_dofs.count(i) > 0) {
+    if (non_robot_dofs.contains(i)) {
       EXPECT_EQ(clearance.jacobians()(i), 0);
     } else {
       EXPECT_EQ(clearance.jacobians()(i), i + 1);

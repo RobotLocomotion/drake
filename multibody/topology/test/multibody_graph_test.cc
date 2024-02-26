@@ -221,7 +221,7 @@ GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {
 
   // The first subgraph must contain the world.
   const std::set<BodyIndex> world_subgraph = welded_subgraphs[0];
-  EXPECT_EQ(world_subgraph.count(world_index()), 1);
+  EXPECT_TRUE(world_subgraph.contains(world_index()));
 
   // Build the expected set of subgraphs.
   std::set<std::set<BodyIndex>> expected_subgraphs;

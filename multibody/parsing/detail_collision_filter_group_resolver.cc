@@ -46,7 +46,7 @@ void CollisionFilterGroupResolver::AddGroup(
                                  full_group_name));
     return;
   }
-  if (groups_.count(full_group_name)) {
+  if (groups_.contains(full_group_name)) {
     diagnostic.Error(fmt::format("group '{}' has already been defined",
                                  full_group_name));
     return;
@@ -95,7 +95,7 @@ void CollisionFilterGroupResolver::AddGroup(
   for (const auto& insertion_group : member_group_names) {
     const auto full_insertion_group{
       FullyQualify(insertion_group, model_instance)};
-    if (!group_insertion_graph_.count(full_insertion_group)) {
+    if (!group_insertion_graph_.contains(full_insertion_group)) {
       group_insertion_graph_[full_insertion_group] = {};
     }
     group_insertion_graph_[full_insertion_group].insert(full_group_name);

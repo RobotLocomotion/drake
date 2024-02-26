@@ -261,7 +261,7 @@ CspaceFreePath::SolveSeparationCertificateProgram(
 
 int CspaceFreePath::GetSeparatingPlaneIndex(
     const SortedPair<geometry::GeometryId>& pair) const {
-  return (map_geometries_to_separating_planes_.count(pair) == 0)
+  return (!map_geometries_to_separating_planes_.contains(pair))
              ? -1
              : map_geometries_to_separating_planes_.at(pair);
 }

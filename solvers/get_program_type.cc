@@ -25,19 +25,19 @@ bool SatisfiesProgramType(const Requirements& requirements,
                           const ProgramAttributes& program_attributes) {
   // Check if program_attributes is a subset of acceptable_attributes
   for (const auto attribute : program_attributes) {
-    if (requirements.acceptable.count(attribute) == 0) {
+    if (!requirements.acceptable.contains(attribute)) {
       return false;
     }
   }
   // Check if program_attributes include must_include_attributes
   for (const auto& must_include_attr : requirements.must_include) {
-    if (program_attributes.count(must_include_attr) == 0) {
+    if (!program_attributes.contains(must_include_attr)) {
       return false;
     }
   }
   bool include_one_of = requirements.must_include_one_of.empty() ? true : false;
   for (const auto& include : requirements.must_include_one_of) {
-    if (program_attributes.count(include) > 0) {
+    if (program_attributes.contains(include)) {
       include_one_of = true;
       break;
     }
@@ -205,12 +205,11 @@ bool IsNLP(const MathematicalProgram& prog) {
   // 3. It has at least one of : generic costs, generic constraints, non-convex
   // quadratic cost, linear complementarity constraints, quadratic constraints.
   const bool has_generic_cost =
-      prog.required_capabilities().count(ProgramAttribute::kGenericCost) > 0;
+      prog.required_capabilities().contains(ProgramAttribute::kGenericCost);
   const bool has_nonconvex_quadratic_cost =
       !AllQuadraticCostsConvex(prog.quadratic_costs());
-  const bool has_generic_constraint =
-      prog.required_capabilities().count(ProgramAttribute::kGenericConstraint) >
-      0;
+  const bool has_generic_constraint = prog.required_capabilities().contains(
+      ProgramAttribute::kGenericConstraint);
   const bool has_quadratic_constraint =
       prog.required_capabilities().count(
           ProgramAttribute::kQuadraticConstraint) > 0;

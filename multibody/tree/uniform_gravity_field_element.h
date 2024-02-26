@@ -60,7 +60,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
     if (model_instance >= this->get_parent_tree().num_model_instances()) {
       throw std::logic_error("Model instance index is invalid.");
     }
-    return disabled_model_instances_.count(model_instance) == 0;
+    return !disabled_model_instances_.contains(model_instance);
   }
 
   /// Sets is_enabled() for `model_instance` to `is_enabled`.

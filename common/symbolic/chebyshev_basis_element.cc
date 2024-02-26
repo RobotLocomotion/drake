@@ -38,7 +38,7 @@ bool ChebyshevBasisElement::operator<(
 
 std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Differentiate(
     const Variable& var) const {
-  if (var_to_degree_map().count(var) == 0) {
+  if (!var_to_degree_map().contains(var)) {
     // Return an empty map (the differentiation result is 0) when @p var is not
     // a variable in @p this.
     return {};

@@ -1420,7 +1420,7 @@ void SnoptSolver::DoSolve(const MathematicalProgram& prog,
   // deliberately, set "Timing level" to zero if the user hasn't requested
   // another value.
   const std::string kTimingLevel = "Timing level";
-  if (int_options.count(kTimingLevel) == 0) {
+  if (!int_options.contains(kTimingLevel)) {
     int_options[kTimingLevel] = 0;
   }
 

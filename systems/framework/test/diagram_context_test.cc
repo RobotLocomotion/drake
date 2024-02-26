@@ -236,7 +236,7 @@ class DiagramContextTest : public ::testing::Test {
     ASSERT_EQ(count_now.size(), kNumSystems + 1);
     ASSERT_EQ(before_count->size(), kNumSystems + 1);
     for (int i = 0; i <= kNumSystems; ++i) {
-      const int n = should_have_been_notified.count(i) ? 1 : 0;
+      const int n = should_have_been_notified.contains(i) ? 1 : 0;
       (*before_count)[i] += n;
       EXPECT_EQ(count_now[i], (*before_count)[i]) << which << " of system "
                                                   << i;

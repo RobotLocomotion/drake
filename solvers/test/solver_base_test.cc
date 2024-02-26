@@ -55,10 +55,10 @@ class StubSolverBase final : public SolverBase {
     result->set_optimal_cost(1.0);
     Eigen::VectorXd x_val = x_init;
     const auto& options_double = options.GetOptionsDouble(id());
-    if (options_double.count("x0_solution")) {
+    if (options_double.contains("x0_solution")) {
       x_val[0] = options_double.find("x0_solution")->second;
     }
-    if (options_double.count("x1_solution")) {
+    if (options_double.contains("x1_solution")) {
       x_val[1] = options_double.find("x1_solution")->second;
     }
     result->set_x_val(x_val);

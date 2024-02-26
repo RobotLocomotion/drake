@@ -121,7 +121,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     SimplifiedNode node = {
         .degree = nodes[n].degree,
         .index = nodes[n].index,
-        .priority = priority_elements.count(nodes[n].index) > 0 ? 0 : 1};
+        .priority = priority_elements.contains(nodes[n].index) ? 0 : 1};
     sorted_nodes.insert(node);
   }
 
@@ -152,7 +152,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       const SimplifiedNode old_node = {
           .degree = node_i.degree,
           .index = node_i.index,
-          .priority = priority_elements.count(node_i.index) > 0 ? 0 : 1};
+          .priority = priority_elements.contains(node_i.index) ? 0 : 1};
       /* Pruning. */
       node_i.A = SetDifference(node_i.A, node_p.L);
       /* Convert p from a variable to an element in node i. Note that Lp was
@@ -240,7 +240,7 @@ std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
   std::vector<int> global_to_local(n);
 
   auto in_v1 = [&](int b) {
-    return v1.count(b) > 0;
+    return v1.contains(b);
   };
 
   for (int i = 0; i < n; ++i) {

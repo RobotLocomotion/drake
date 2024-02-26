@@ -73,7 +73,7 @@ These changes *should* be upstreamed to VTK.
 +  {
 +    if (info.Index >= 0) uv_sets.insert(info.TexCoord);
 +  }
-+  if (uv_sets.count(-1) > 0) {
++  if (uv_sets.contains(-1)) {
 +    vtkErrorWithObjectMacro(parent,
 +                            "A material defined a texture index without "
 +                            "defining a texture coordinate set.");

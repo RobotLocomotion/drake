@@ -51,7 +51,7 @@ std::set<SortedTriplet<int>> GetInteriorFaceSet(
       SortedTriplet<int> face(tetrahedron.vertex(face_vertices[0]),
                               tetrahedron.vertex(face_vertices[1]),
                               tetrahedron.vertex(face_vertices[2]));
-      if (1 != boundary_face_set.count(face)) {
+      if (!boundary_face_set.contains(face)) {
         interior_face_set.insert(face);
       }
     }
@@ -83,7 +83,7 @@ std::set<SortedPair<int>> GetInteriorEdgeSet(const VolumeMesh<double>& mesh_M) {
     for (const auto& edge_vertices : tetrahedron_edges) {
       SortedPair<int> edge(tetrahedron.vertex(edge_vertices[0]),
                            tetrahedron.vertex(edge_vertices[1]));
-      if (1 != boundary_edge_set.count(edge)) {
+      if (!boundary_edge_set.contains(edge)) {
         interior_edge_set.insert(edge);
       }
     }
@@ -101,7 +101,7 @@ std::vector<int> DetectTetrahedronWithAllBoundaryVertices(
   auto is_all_vertices_on_boundary =
       [&boundary_vertex_set](const VolumeElement& tetrahedron) -> bool {
     for (int i = 0; i < 4; ++i) {
-      if (boundary_vertex_set.count(tetrahedron.vertex(i)) < 1) return false;
+      if (!boundary_vertex_set.contains(tetrahedron.vertex(i))) return false;
     }
     return true;
   };
@@ -124,9 +124,9 @@ std::vector<SortedTriplet<int>> DetectInteriorTriangleWithAllBoundaryVertices(
   std::vector<SortedTriplet<int>> null_interior_triangles;
   for (const SortedTriplet<int>& interior_triangle :
        GetInteriorFaceSet(mesh_M)) {
-    if (1 == boundary_vertex_set.count(interior_triangle.first()) &&
-        1 == boundary_vertex_set.count(interior_triangle.second()) &&
-        1 == boundary_vertex_set.count(interior_triangle.third())) {
+    if (boundary_vertex_set.contains(interior_triangle.first()) &&
+        boundary_vertex_set.contains(interior_triangle.second()) &&
+        boundary_vertex_set.contains(interior_triangle.third())) {
       null_interior_triangles.push_back(interior_triangle);
     }
   }
@@ -141,8 +141,8 @@ std::vector<SortedPair<int>> DetectInteriorEdgeWithAllBoundaryVertices(
 
   std::vector<SortedPair<int>> null_interior_edges;
   for (const SortedPair<int>& interior_edge : GetInteriorEdgeSet(mesh_M)) {
-    if (1 == boundary_vertex_set.count(interior_edge.first()) &&
-        1 == boundary_vertex_set.count(interior_edge.second())) {
+    if (boundary_vertex_set.contains(interior_edge.first()) &&
+        boundary_vertex_set.contains(interior_edge.second())) {
       null_interior_edges.push_back(interior_edge);
     }
   }

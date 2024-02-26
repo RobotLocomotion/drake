@@ -194,7 +194,7 @@ std::string ImageWriter::MakeFileName(const std::string& format,
                                       PixelType pixel_type, double time,
                                       const std::string& port_name,
                                       int count) const {
-  DRAKE_DEMAND(labels_.count(pixel_type) > 0);
+  DRAKE_DEMAND(labels_.contains(pixel_type));
 
   int64_t u_time = static_cast<int64_t>(time * 1e6 + 0.5);
   int m_time = static_cast<int>(time * 1e3 + 0.5);

@@ -758,7 +758,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                         const GeometryFrame& frame) {
   FrameId frame_id = frame.id();
 
-  if (frames_.count(frame_id) > 0) {
+  if (frames_.contains(frame_id)) {
     throw std::logic_error(
         "Registering frame with an id that has already been registered: " +
         to_string(frame_id));
@@ -1249,7 +1249,7 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  if (render_engines_.count(name) > 0) {
+  if (render_engines_.contains(name)) {
     throw std::logic_error(fmt::format(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
@@ -1268,7 +1268,7 @@ void GeometryState<T>::AddRenderer(
       DRAKE_DEMAND(properties != nullptr);
       auto accepting_renderers = properties->GetPropertyOrDefault(
           "renderer", "accepting", set<string>{});
-      if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
+      if (accepting_renderers.empty() || accepting_renderers.contains(name)) {
         const GeometryId id = id_geo_pair.first;
         accepted |= render_engine->RegisterVisual(
             id, geometry.shape(), *properties, RigidTransformd(geometry.X_FG()),
@@ -1285,7 +1285,7 @@ void GeometryState<T>::AddRenderer(
 
 template <typename T>
 void GeometryState<T>::RemoveRenderer(const std::string& name) {
-  if (render_engines_.count(name) == 0) {
+  if (!render_engines_.contains(name)) {
     throw std::logic_error(fmt::format(
         "RemoveRenderer(): A renderer with the name '{}' does not exist",
         name));
@@ -1444,7 +1444,7 @@ void GeometryState<T>::ValidateFrameIds(
 template <typename T>
 void GeometryState<T>::ValidateRegistrationAndSetTopology(
     SourceId source_id, FrameId frame_id, GeometryId geometry_id) {
-  if (geometries_.count(geometry_id) > 0) {
+  if (geometries_.contains(geometry_id)) {
     throw std::logic_error(
         "Registering geometry with an id that has already been registered: " +
         to_string(geometry_id));
@@ -1720,7 +1720,7 @@ bool GeometryState<T>::AddToCompatibleRenderersUnchecked(
 
   bool added_to_renderer{false};
   for (auto& [name, engine] : render_engines_) {
-    if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
+    if (accepting_renderers.empty() || accepting_renderers.contains(name)) {
       added_to_renderer =
           engine->RegisterVisual(geometry.id(), geometry.shape(), properties,
                                  X_WG, geometry.is_dynamic()) ||

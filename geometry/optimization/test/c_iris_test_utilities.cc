@@ -358,7 +358,7 @@ bool IsPolynomialSos(const symbolic::Polynomial& p, double tol) {
     // p = 0.
     return true;
   } else if (p.monomial_to_coefficient_map().size() == 1 &&
-             p.monomial_to_coefficient_map().count(symbolic::Monomial()) > 0) {
+             p.monomial_to_coefficient_map().contains(symbolic::Monomial())) {
     // p is a constant
     symbolic::Environment env;
     const double constant =
