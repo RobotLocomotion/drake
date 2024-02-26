@@ -1,10 +1,7 @@
 #include "drake/solvers/semidefinite_relaxation.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/matrix_util.h"
@@ -1063,8 +1060,8 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   // clang-format off
   A << -Ax.row(0), 0,
         Ax.row(1), 0,
-        0, -A_overlap(0,0), 0, -A_overlap(0,1),
-        0,  A_overlap(0,0), 0,  A_overlap(0,1);
+        0, -A_overlap(0, 0), 0, -A_overlap(0, 1),
+        0,  A_overlap(0, 0), 0,  A_overlap(0, 1);
   // clang-format on
   expected_size = (b.size() * (b.size() + 1)) / 2;
   EXPECT_EQ(relaxation_partition->linear_constraints()[3]
@@ -1095,8 +1092,8 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   A << 0,              -Ay.row(0),
        0,               Ay.row(1),
        0,               Ay.row(2),
-       -A_overlap(0,0), 0, -A_overlap(0,1),
-        A_overlap(0,0), 0,  A_overlap(0,1);
+       -A_overlap(0, 0), 0, -A_overlap(0, 1),
+        A_overlap(0, 0), 0,  A_overlap(0, 1);
   // clang-format on
   expected_size = (b.size() * (b.size() + 1)) / 2;
   EXPECT_EQ(relaxation_partition->linear_constraints()[4]
@@ -1237,11 +1234,9 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
   VectorXDecisionVariable overlap_vars(2);
   overlap_vars << x_(2), y_(0);
   prog_.AddLinearEqualityConstraint(A_overlap, b_overlap, overlap_vars);
-  std::cout << "SECOND ONE HERE" << std::endl;
 
   relaxation_partition = MakeSemidefiniteRelaxation(prog_, partition_group_);
   SetRelaxationInitialGuess(test_point, relaxation_partition.get());
-  std::cout << *relaxation_partition << std::endl;
 
   // The variables which get relaxed are [x(0), x(1), x(2), y(0), 1] and
   // [x(2), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
@@ -1261,8 +1256,8 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
   // constraints that the "1" in the psd variables are equal to 1. Additionally,
   // the relaxation of each groups causes one extra product constraint for each
   // linear equality constraint and for each of the column of the resulting PSD
-  // matrices minus 1. Finally, one more equality constraint for the agreement of the
-  // PSD matrices.
+  // matrices minus 1. Finally, one more equality constraint for the agreement
+  // of the PSD matrices.
   EXPECT_EQ(relaxation_partition->linear_equality_constraints().size(),
             3 + 2 + 2 * 4 + 2 * 3 + 1);
   EXPECT_EQ(relaxation_partition->GetAllConstraints().size(), 2 + 20);
@@ -1338,15 +1333,14 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
     EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
   }
 
-  std::cout << "cur constraint idx = " << cur_constraint << std::endl;
   ASSERT_EQ(cur_constraint, 19);
-
   auto psd_agree_constraint =
       relaxation_partition->linear_equality_constraints()[cur_constraint++];
   EXPECT_TRUE(CompareMatrices(
       relaxation_partition->EvalBindingAtInitialGuess(psd_agree_constraint),
       Eigen::VectorXd::Zero(
           psd_agree_constraint.evaluator()->num_constraints())));
+  // All linear equality constraints have been checked.
   ASSERT_EQ(cur_constraint,
             relaxation_partition->linear_equality_constraints().size());
 }
