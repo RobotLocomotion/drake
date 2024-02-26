@@ -59,7 +59,7 @@ std::string ResolveBadUri(
 // exhaustive list of all ways a valid path can be unnormalized. Ultimately,
 // we're relying on std::filesystem to get the job done and these are just
 // indicators (representing common cases) that show it's actually happening.
-GTEST_TEST(ResoluveUriUncheckedTest, NormalizedPath) {
+GTEST_TEST(ResolveUriUncheckedTest, NormalizedPath) {
   // Use an empty package map.
   PackageMap package_map;
 

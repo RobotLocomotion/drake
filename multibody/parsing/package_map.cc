@@ -28,6 +28,7 @@
 #include "drake/common/sha256.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -761,6 +762,11 @@ const std::string& PackageMap::GetPath(
 
   // If this is a remote package and we haven't fetched it yet, do that now.
   return data.GetPathWithAutomaticFetching(package_name);
+}
+
+std::string PackageMap::ResolveUrl(const std::string& url) const {
+  drake::internal::DiagnosticPolicy diagnostic_policy;
+  return internal::ResolveUri(diagnostic_policy, url, *this, {});
 }
 
 void PackageMap::PopulateFromFolder(const std::string& path) {

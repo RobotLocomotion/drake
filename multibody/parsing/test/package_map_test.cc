@@ -423,6 +423,33 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
             4);
 }
 
+// ResolveUrl is just a thin wrapper around internal::ResolveUri (which is
+// tested elsewhere). This test is just to ensure that the wrapper is working.
+GTEST_TEST(PackageMapTest, TestResolveUrl) {
+  const string xml_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "package_map_test_packages/package_map_test_package_a/package.xml");
+  PackageMap package_map = PackageMap::MakeEmpty();
+  package_map.AddPackageXml(xml_filename);
+
+  const string filename = package_map.ResolveUrl(
+      "package://package_map_test_package_a/sdf/test_model.sdf");
+
+  const string expected_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/package_map_test_packages/"
+      "package_map_test_package_a/sdf/test_model.sdf");
+
+  EXPECT_EQ(filename, expected_filename);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
+      "package://bad_package_name/sdf/test_model.sdf"),
+      ".*unknown package.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
+      "package://package_map_test_package_a/bad_filename.sdf"),
+      ".*does not exist.*");
+}
+
 // Tests that PackageMap is parsing deprecation messages
 GTEST_TEST(PackageMapTest, TestDeprecation) {
   const

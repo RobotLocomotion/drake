@@ -59,6 +59,10 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(dut.GetPath(package_name="root"), tmpdir)
         dut.AddPackageXml(filename=FindResourceOrThrow(
             "drake/multibody/parsing/test/box_package/package.xml"))
+        self.assertEqual(
+            dut.ResolveUrl(url="package://box_model/urdfs/box.urdf"),
+            FindResourceOrThrow(
+                "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))
         dut2.Remove(package_name="root")
         self.assertEqual(dut2.size(), 0)
 
