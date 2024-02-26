@@ -1108,24 +1108,21 @@ class MujocoParser {
             Warning(*node,
                     fmt::format("If you have built Drake from source, "
                                 "running\n\n bazel run "
-                                "//manipulation/utils/stl2obj -- \"{}\" "
-                                "\"{}\"\n\nonce will "
-                                "resolve this.",
+                                "//manipulation/util:stl2obj -- --input \"{}\" "
+                                "--output \"{}\"\n\nonce will resolve this.",
                                 original_filename.string(), filename.string()));
           }
         } else {
           Warning(*node,
                   fmt::format("The mesh asset \"{}\" could not be found, nor "
-                              "could its .obj "
-                              "replacement \"{}\".",
+                              "could its .obj replacement \"{}\".",
                               original_filename.string(), filename.string()));
         }
       } else {
         std::string name{};
         ParseStringAttribute(mesh_node, "name", &name);
         Warning(*node, fmt::format("The mesh asset named {} did not specify a "
-                                   "'file' attribute and so "
-                                   "will be ignored.",
+                                   "'file' attribute and so will be ignored.",
                                    name));
       }
     }
