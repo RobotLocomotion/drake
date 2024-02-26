@@ -299,10 +299,11 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
       prog, &A_triplets, &b, &A_row_count, &unused_linear_eq_y_start_indices,
       &unused_num_rows_added);
 
-  // Linear equality constraints Ax = b are given in the form Ax <= b. So we add
-  // in the reverse of the constraint, Ax >= b, encoded as -Ax <= -b. This is
-  // implemented by taking each triplet (i, j, x) and adding in (i + N, j, -x),
-  // where N is the number of rows of A before we start adding new triplets.
+  // Linear equality constraints Ax = b are parsed in the form Ax <= b. So we
+  // add in the reverse of the constraint, Ax >= b, encoded as -Ax <= -b. This
+  // is implemented by taking each triplet (i, j, v) and adding in
+  // (i + N, j, -v), where N is the number of rows of A before we start adding
+  // new triplets.
   const int num_equality_triplets = A_triplets.size();
   const int& num_equality_constraints = A_row_count;
   A_triplets.reserve(2 * A_triplets.size());
@@ -318,12 +319,28 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   }
   A_row_count *= 2;
 
+  // Throw if we have any trivially infeasible upper bounds. Note that we check
+  // here by simply seeing if -∞ is anywhere in the b vector. This does not work
+  // later for the inequality constraints, because ParseLinearConstraints may
+  // not actually return infeasible constraints that have infinity in them.
+  for (int i = 0; i < ssize(b); ++i) {
+    DRAKE_THROW_UNLESS(b[i] > -kInf);
+  }
+
   // Get linear inequality constraints.
   std::vector<std::vector<std::pair<int, int>>>
       unused_linear_constraint_dual_indices;
   solvers::internal::ParseLinearConstraints(
       prog, &A_triplets, &b, &A_row_count,
       &unused_linear_constraint_dual_indices, &unused_num_rows_added);
+
+  // Check that none of the linear inequality constraints are trivially
+  // infeasible by requiring a variable be at least ∞ or at most -∞. Constraints
+  // that violate this condition may not be returned by ParseLinearConstraints.
+  for (const auto& binding : prog.linear_constraints()) {
+    DRAKE_THROW_UNLESS(binding.evaluator()->lower_bound().maxCoeff() < kInf);
+    DRAKE_THROW_UNLESS(binding.evaluator()->upper_bound().minCoeff() > -kInf);
+  }
 
   // Get bounding box constraints.
   VectorXd lb;
@@ -355,15 +372,15 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
     }
   }
   // Form the A and b matrices of the HPolyhedron.
-  Eigen::SparseMatrix<double> A_sparse(A_row_count, prog.num_vars());
+  Eigen::SparseMatrix<double, Eigen::RowMajor> A_sparse(A_row_count,
+                                                        prog.num_vars());
   A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
 
   // Identify the rows that do not contain any infinities, as the rows to keep.
   std::vector<int> rows_to_keep;
   rows_to_keep.reserve(A_sparse.rows());
-  for (int i = 0; i < A_sparse.rows(); ++i) {
-    if (VectorXd{A_sparse.row(i)}.cwiseAbs().maxCoeff() < kInf &&
-        abs(b[i]) < kInf) {
+  for (int i = 0; i < ssize(b); ++i) {
+    if (abs(b[i]) < kInf) {
       rows_to_keep.push_back(i);
     }
   }
@@ -371,7 +388,7 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   VectorXd b_eigen(b.size());
   b_eigen = VectorXd::Map(b.data(), b.size());
 
-  *this = HPolyhedron(MatrixXd(A_sparse)(rows_to_keep, Eigen::all),
+  *this = HPolyhedron(A_sparse.toDense()(rows_to_keep, Eigen::all),
                       b_eigen(rows_to_keep));
 }
 

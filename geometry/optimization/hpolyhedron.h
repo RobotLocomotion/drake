@@ -46,9 +46,13 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   @throws std::exception if vpoly is empty and zero dimensional. */
   explicit HPolyhedron(const VPolytope& vpoly);
 
-  /** Constructs a new HPolyhedron as the feasible set of a linear program prog.
+  /** Constructs a new HPolyhedron as the feasible set of a linear program @p
+  prog. The `i`th dimension in this representation corresponds to the `i`th
+  decision variable of @p prog. The Variable object itself can be obtained with
+  `prog.decision_variable(i)`.
   @throws std::exception if prog is not a linear program.
-  @throws std::exception if prog has no variables or no constraints. */
+  @throws std::exception if prog has any variables that are constrained to be
+  at least ∞ or at most -∞. */
   explicit HPolyhedron(const solvers::MathematicalProgram& prog);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
