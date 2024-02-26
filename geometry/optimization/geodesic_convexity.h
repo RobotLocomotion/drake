@@ -106,6 +106,10 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 
+// TODO(@cohnt): Call the following function "PartitionConvexSets" instead.
+// Currently // the name is misleading and causes problem in the documentation.
+// see https://github.com/RobotLocomotion/drake/issues/21046
+
 /** Function overload to take in a list of convex sets, and partition all so as
 to respect the convexity radius. Every set must be bounded and have the same
 ambient dimension. Each entry in continuous_revolute_joints must be
@@ -122,27 +126,48 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 
-/** Computes the pairwise intersections of sets in convex_sets_A with sets in
-convex_sets_B. Returns a list of tuples, where each tuple describes an edge:
-the first entry is the index of the first set in convex_sets_A, the second
-entry is the index of the second set in convex_sets_B, and the third entry is
-the translation that is applied to the first convex set to align it with the
-second convex set, such that intersection can directly be checked without
-considering the 2π wraparound that may occur with continuous revolute joints.
-Each component of this translation will always be a multiple of 2π, so the
-translation of the set still represents the same configurations.
+/** Computes the pairwise intersections edges between two lists of convex sets.
+Each edge is a tuple in the form [index_A, index_B, offset_A_to_B], where
+Each is a tuple in the form [index_A, index_B, offset_A_to_B],
+where index_A is the index of the list in @p convex_sets_A, index_B is the
+index of the list in @p convex_sets_B, and offset_A_to_B is is the translation
+to applied to all the points in the index_A'th set in @p convex_sets_A to align
+them with the index_B'th set in @p convex_sets_B. This translation may only have
+non-zero entries along the dimensions corresponding to @p
+continuous_revolute_joints. All non-zero entries are integer multiples of 2π as
+the translation of the sets still represents the same configurations for the
+indices in @p continuous_revolute_joints.
 
-@throws if ThrowsForInvalidContinuousJointsList.
+@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
+computed between @p convex_sets_A and @p convex_sets_B.
+@param convex_sets_B is the other vector of convex sets.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+
+@throws if @p continuous_revolute_joints has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
-    ConvexSets convex_sets_A, ConvexSets convex_sets_B,
+    const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints);
 
 /** Convenience overload to compute pairwise intersections within a list of
 convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
-convex_sets, continuous_revolute_joints). */
+convex_sets, continuous_revolute_joints).
+
+@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
+computed within @p convex_sets_A.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+
+@throws if @p continuous_revolute_joints has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
+*/
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
-    ConvexSets convex_sets, const std::vector<int>& continuous_revolute_joints);
+    const ConvexSets& convex_sets,
+    const std::vector<int>& continuous_revolute_joints);
 
 }  // namespace optimization
 }  // namespace geometry
