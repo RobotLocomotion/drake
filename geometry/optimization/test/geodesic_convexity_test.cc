@@ -292,10 +292,10 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
   ConvexSets sets_A = MakeConvexSets(h1, h2);
   ConvexSets sets_B = MakeConvexSets(h3, h4);
   // Let's check the expected value of each pair of intersections.
-  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2pi
-  // h1 <--> h4: would intersect if h1 is translated by (1, -4) * 2pi
-  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2pi
-  // h2 <--> h4: would intersect if h2 is translated by (1, -5) * 2pi
+  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
+  // h1 <--> h4: would intersect if h1 is translated by (1, -4) * 2π
+  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
+  // h2 <--> h4: would intersect if h2 is translated by (1, -5) * 2π
   // Without continuous revolute joints, the intersection is empty.
   EXPECT_EQ(
       CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{}).size(), 0);
@@ -310,10 +310,10 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
       CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1});
   EXPECT_EQ(intersection_edges.size(), 4);
   for (const auto& [index_a, index_b, offset] : intersection_edges) {
-    // Verify all centers are integer multiples of 2pi apart.
-    const auto offset_mod_2pi = offset.array() / (2 * M_PI);
-    for (int i = 0; i < offset_mod_2pi.size(); ++i) {
-      EXPECT_NEAR(offset_mod_2pi[i], std::round(offset_mod_2pi[i]), 1e-9);
+    // Verify all centers are integer multiples of 2π apart.
+    const auto offset_mod_2π = offset.array() / (2 * M_PI);
+    for (int i = 0; i < offset_mod_2π.size(); ++i) {
+      EXPECT_NEAR(offset_mod_2π[i], std::round(offset_mod_2π[i]), 1e-9);
     }
     // The center of the first rectangle + offset should be inside the second
     // rectangle.
@@ -333,9 +333,9 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections2) {
                     Eigen::Vector2d(1.0 + 8 * M_PI, 1.0));
   ConvexSets sets = MakeConvexSets(h1, h2, h3);
   // Let's check the expected value of each pair of intersections.
-  // h1 <--> h2: would intersect if h1 is translated by (0, 1) * 2pi
-  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2pi
-  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2pi
+  // h1 <--> h2: would intersect if h1 is translated by (0, 1) * 2π
+  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
+  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
   // Without continuous revolute joints, the intersection is empty.
   auto intersections_none = CalcPairwiseIntersections(sets, std::vector<int>{});
   EXPECT_EQ(intersections_none.size(), 0);
@@ -352,10 +352,10 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections2) {
       CalcPairwiseIntersections(sets, std::vector<int>{0, 1});
   EXPECT_EQ(intersections_all.size(), 6);
   for (const auto& [index_1, index_2, offset] : intersections_all) {
-    // Verify all centers are integer multiples of 2pi apart.
-    const auto offset_mod_2pi = offset.array() / (2 * M_PI);
-    for (int i = 0; i < offset_mod_2pi.size(); ++i) {
-      EXPECT_NEAR(offset_mod_2pi[i], std::round(offset_mod_2pi[i]), 1e-9);
+    // Verify all centers are integer multiples of 2π apart.
+    const auto offset_mod_2π = offset.array() / (2 * M_PI);
+    for (int i = 0; i < offset_mod_2π.size(); ++i) {
+      EXPECT_NEAR(offset_mod_2π[i], std::round(offset_mod_2π[i]), 1e-9);
     }
     // The center of the first rectangle + offset should be inside the second
     // rectangle.
