@@ -110,6 +110,9 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
   relaxation->AddDecisionVariables(Vector1<Variable>(one));
   relaxation->AddLinearEqualityConstraint(X(prog.num_vars(), prog.num_vars()),
                                           1);
+  std::cout << fmt::format("relaxation has {} linear equality constraints",
+                               relaxation->linear_equality_constraints().size())
+                << std::endl;
 
   // X ≽ 0.
   relaxation->AddPositiveSemidefiniteConstraint(X);
@@ -290,6 +293,9 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
     Ab.leftCols(N) = binding.evaluator()->GetDenseA();
     Ab.col(N) = -binding.evaluator()->lower_bound();
     // We don't need to do the last column of X.
+    std::cout << "ADDING {} equality constraints = "
+              << static_cast<int>(x.size()) - 1 << std::endl;
+    std::cout << fmt::format("x =  {} ", fmt_eigen(x)) << std::endl;
     for (int j = 0; j < static_cast<int>(x.size()) - 1; ++j) {
       for (int i = 0; i < N; ++i) {
         vars[i] = X(indices[i], j);
@@ -297,6 +303,9 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
       vars[N] = x[j];
       relaxation->AddLinearEqualityConstraint(
           Ab, VectorXd::Zero(binding.evaluator()->num_constraints()), vars);
+      std::cout << fmt::format("relaxation has {} linear equality constraints",
+                               relaxation->linear_equality_constraints().size())
+                << std::endl;
     }
   }
   return X;
@@ -317,6 +326,9 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
     std::vector<symbolic::Variables> variable_groups) {
   auto relaxation = prog.Clone();
+  std::cout << fmt::format("relaxation after CLONE has {} linear equality constraints",
+                               relaxation->linear_equality_constraints().size())
+                << std::endl;
   std::map<symbolic::Variables, solvers::MathematicalProgram>
       groups_to_container_programs;
   std::map<symbolic::Variables, symbolic::Variables> groups_to_superset;
@@ -373,10 +385,10 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
           groups_to_superset.at(group),
           DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
               container_program, relaxation.get(), group_number));
-            std::cout << fmt::format("X=\n{}",
-                                     fmt_eigen(supersets_to_psd_variables.at(
-                                         groups_to_superset.at(group))))
-                      << std::endl;
+      std::cout << fmt::format("X=\n{}",
+                               fmt_eigen(supersets_to_psd_variables.at(
+                                   groups_to_superset.at(group))))
+                << std::endl;
     }
     ++group_number;
   }
@@ -404,6 +416,9 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
         relaxation->AddLinearEqualityConstraint(
             GetSubmatrixOfVariables(it->second) ==
             GetSubmatrixOfVariables(it2->second));
+        std::cout << fmt::format("relaxation has {} linear equality constraints",
+                               relaxation->linear_equality_constraints().size())
+                << std::endl;
       }
     }
   }
