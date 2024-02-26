@@ -47,7 +47,7 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
       throw std::logic_error("Bad contents parse " + contents);
     }
     const string_map<internal::Node>& mapping = loaded.GetMapping();
-    if (mapping.count("doc") != 1) {
+    if (!mapping.contains("doc")) {
       throw std::logic_error("Missing doc parse " + contents);
     }
     const internal::Node doc = mapping.at("doc");
