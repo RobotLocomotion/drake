@@ -122,7 +122,6 @@ drake_jupyter_py_binary(
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
         "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
     ],
-    test_timeout = "short",
     deps = [
         "//bindings/pydrake",
     ],
