@@ -316,7 +316,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
-    std::vector<symbolic::Variables> variable_groups) {
+    const std::vector<symbolic::Variables>& variable_groups) {
   auto relaxation = prog.Clone();
   std::map<symbolic::Variables, solvers::MathematicalProgram>
       groups_to_container_programs;

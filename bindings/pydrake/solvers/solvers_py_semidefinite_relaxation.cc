@@ -12,8 +12,16 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
-  m.def("MakeSemidefiniteRelaxation", &solvers::MakeSemidefiniteRelaxation,
-      py::arg("prog"), doc.MakeSemidefiniteRelaxation.doc);
+  m.def("MakeSemidefiniteRelaxation",
+      py::overload_cast<const MathematicalProgram&>(
+          &solvers::MakeSemidefiniteRelaxation),
+      py::arg("prog"), doc.MakeSemidefiniteRelaxation.doc_1args);
+  m.def("MakeSemidefiniteRelaxation",
+      py::overload_cast<const MathematicalProgram&,
+          const std::vector<symbolic::Variables>&>(
+          &solvers::MakeSemidefiniteRelaxation),
+      py::arg("prog"), py::arg("variable_groups"),
+      doc.MakeSemidefiniteRelaxation.doc_2args);
 }
 
 }  // namespace internal
