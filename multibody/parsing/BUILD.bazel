@@ -66,8 +66,14 @@ genrule(
 
 drake_cc_library(
     name = "package_map",
-    srcs = ["package_map.cc"],
-    hdrs = ["package_map.h"],
+    srcs = [
+        "detail_path_utils.cc",
+        "package_map.cc",
+    ],
+    hdrs = [
+        "detail_path_utils.h",
+        "package_map.h",
+    ],
     data = [
         ":drake_models.json",
         ":package_downloader.py",
@@ -80,6 +86,7 @@ drake_cc_library(
         "//common:name_value",
     ],
     deps = [
+        "//common:diagnostic_policy",
         "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
@@ -100,7 +107,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.cc",
         "detail_common.cc",
         "detail_ignition.cc",
-        "detail_path_utils.cc",
         "detail_tinyxml.cc",
         "detail_tinyxml2_diagnostic.cc",
     ],
@@ -108,7 +114,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
-        "detail_path_utils.h",
         "detail_strongly_connected_components.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",

@@ -64,6 +64,8 @@ PYBIND11_MODULE(parsing, m) {
               return self.GetPath(package_name);
             },
             py::arg("package_name"), cls_doc.GetPath.doc)
+        .def("ResolveUrl", &Class::ResolveUrl, py::arg("url"),
+            cls_doc.ResolveUrl.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
             cls_doc.PopulateFromFolder.doc)
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
