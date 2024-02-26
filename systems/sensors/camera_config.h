@@ -411,7 +411,13 @@ struct CameraConfig {
    separate windows controlled by the thread in which the camera images are
    rendered). As both image types are rendered from `ColorRenderCamera`, it
    applies to both of them and depends on whether the RenderEngine instance
-   supports it. */
+   supports it.
+
+   Note: This flag is intended for quick debug use during development instead of
+   serving as an image viewer. Currently, there are known issues, e.g.,
+   flickering windows when multiple cameras share the same renderer or
+   upside-down images if RenderEngineGl is set. See issue #18862 for the
+   proposal to visualize images via Meldis. */
   bool show_rgb{false};
 
   /** Controls whether the images are broadcast in a compressed format. */
