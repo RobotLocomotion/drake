@@ -116,7 +116,7 @@ void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
   const std::vector<SolverId> available_ids = GetAvailableSolvers(prog_type);
   const auto known_solvers = GetKnownSolvers();
   for (const auto& available_id : available_ids) {
-    EXPECT_GT(known_solvers.count(available_id), 0);
+    EXPECT_TRUE(known_solvers.contains(available_id));
     std::unique_ptr<SolverInterface> solver = MakeSolver(available_id);
     EXPECT_TRUE(solver->available());
     EXPECT_TRUE(solver->enabled());
@@ -144,7 +144,7 @@ void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
         // GetAvailableSolvers(kQuadraticCostConicConstraint).
         continue;
       } else {
-        EXPECT_GT(available_id_set.count(solver_id), 0);
+        EXPECT_TRUE(available_id_set.contains(solver_id));
       }
     }
   }

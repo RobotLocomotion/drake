@@ -29,9 +29,8 @@ GTEST_TEST(SpectrahedronTest, DefaultCtor) {
 }
 
 GTEST_TEST(SpectrahedronTest, Attributes) {
-  EXPECT_GT(Spectrahedron::supported_attributes().count(
-                solvers::ProgramAttribute::kPositiveSemidefiniteConstraint),
-            0);
+  EXPECT_TRUE(Spectrahedron::supported_attributes().contains(
+      solvers::ProgramAttribute::kPositiveSemidefiniteConstraint));
 }
 
 GTEST_TEST(SpectrahedronTest, UnsupportedProgram) {
