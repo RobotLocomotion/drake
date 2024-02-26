@@ -1946,15 +1946,13 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   for (int i = 0; i < 3; ++i) {
     if (!std::isinf(lb_in_constraint(i))) {
       // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_constraint(i)) +
-                    constraint_set.count(-(Ax(i) - lb_in_constraint(i))),
-                1);
+      EXPECT_NE(constraint_set.contains(Ax(i) - lb_in_constraint(i)),
+                constraint_set.contains(-(Ax(i) - lb_in_constraint(i))));
     }
     if (!std::isinf(ub_in_constraint(i))) {
       // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_constraint(i)) +
-                    constraint_set.count(-(Ax(i) - ub_in_constraint(i))),
-                1);
+      EXPECT_NE(constraint_set.contains(Ax(i) - ub_in_constraint(i)),
+                constraint_set.contains(-(Ax(i) - ub_in_constraint(i))));
     }
   }
 }
