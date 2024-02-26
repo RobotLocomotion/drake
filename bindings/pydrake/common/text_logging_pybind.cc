@@ -44,9 +44,6 @@ class pylogging_sink final
     // Annotate that the logger is alive (fed by spdlog).
     py::setattr(logger, "_tied_to_spdlog", py::cast(true));
 
-    // Save the thread ID of our thread.
-    initial_thread_id_ = std::this_thread::get_id();
-
     // Match the C++ default level.
     logger.attr("setLevel")(to_py_level(drake::log()->level()));
 
@@ -58,17 +55,25 @@ class pylogging_sink final
 
  protected:
   void sink_it_(const spdlog::details::log_msg& msg) final {
-    const auto this_thread_id = std::this_thread::get_id();
-    if (this_thread_id != initial_thread_id_) {
-      const std::string error_msg = fmt::format(
-          "C++ -> Python log redirection called from non-main thread {}, "
-          "(main thread is {}), this may result in deadlocks. Call "
-          "pydrake.common.use_native_cpp_logging() to disable log redirection.",
-          fmt_streamed(this_thread_id), fmt_streamed(initial_thread_id_));
-      std::cerr << error_msg << std::endl;
-    }
+    // Create a thread to warn us in 1 second.
+    auto gil_acquire_warning_thread = std::jthread([](std::stop_token token) {
+      if (token.stop_requested()) {
+        return;
+      }
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      if (!token.stop_requested()) {
+        const std::string error_msg =
+            "C++ -> Python log redirection is taking unusually long to "
+            "acquire the Python GIL, you may be missing a GIL release in "
+            "bindings or need to disable logging redirection";
+        std::cerr << error_msg << std::endl;
+      }
+    });
 
     py::gil_scoped_acquire acquire;
+
+    // Stop the warning thread now that the GIL has been acquired.
+    gil_acquire_warning_thread.request_stop();
 
     // Bail out quickly in case this log level is disabled.
     const int level = to_py_level(msg.level);
@@ -138,7 +143,6 @@ class pylogging_sink final
   }
 
   std::atomic<bool> is_configured_{false};
-  std::thread::id initial_thread_id_;
   py::object name_{py::cast("drake")};
   py::object is_enabled_for_;
   py::object make_record_;
