@@ -217,7 +217,7 @@ ExtractVariablesFromExpression(
   std::unordered_map<Variable::Id, int> map_var_to_index{};
   for (int i = 0; i < expressions.rows(); ++i) {
     for (const Variable& var : expressions(i).GetVariables()) {
-      if (map_var_to_index.count(var.get_id()) == 0) {
+      if (!map_var_to_index.contains(var.get_id())) {
         map_var_to_index.emplace(var.get_id(), var_vec.size());
         var_vec.push_back(var);
       }

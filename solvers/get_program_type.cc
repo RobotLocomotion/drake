@@ -25,13 +25,13 @@ bool SatisfiesProgramType(const Requirements& requirements,
                           const ProgramAttributes& program_attributes) {
   // Check if program_attributes is a subset of acceptable_attributes
   for (const auto attribute : program_attributes) {
-    if (requirements.acceptable.count(attribute) == 0) {
+    if (!requirements.acceptable.contains(attribute)) {
       return false;
     }
   }
   // Check if program_attributes include must_include_attributes
   for (const auto& must_include_attr : requirements.must_include) {
-    if (program_attributes.count(must_include_attr) == 0) {
+    if (!program_attributes.contains(must_include_attr)) {
       return false;
     }
   }

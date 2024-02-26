@@ -149,9 +149,9 @@ void CspaceFreeBox::GeneratePolynomialsToCertify(
       separating_planes_map;
   for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
     const auto& plane = separating_planes()[i];
-    if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+    if (!ignored_collision_pairs.contains(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
-            plane.negative_side_geometry->id())) == 0) {
+            plane.negative_side_geometry->id()))) {
       separating_planes_map.emplace(i, &plane);
     }
   }

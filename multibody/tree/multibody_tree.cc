@@ -1007,7 +1007,7 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
 template <typename T>
 void MultibodyTree<T>::SetDefaultFreeBodyPose(
     const RigidBody<T>& body, const RigidTransform<double>& X_WB) {
-  if (default_body_poses_.count(body.index()) == 0 ||
+  if (!default_body_poses_.contains(body.index()) ||
       std::holds_alternative<
           std::pair<Eigen::Quaternion<double>, Vector3<double>>>(
           default_body_poses_.at(body.index()))) {
@@ -1037,7 +1037,7 @@ template <typename T>
 std::pair<Eigen::Quaternion<double>, Vector3<double>>
 MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
     const RigidBody<T>& body) const {
-  if (default_body_poses_.count(body.index()) == 0) {
+  if (!default_body_poses_.contains(body.index())) {
     return std::make_pair(Eigen::Quaternion<double>::Identity(),
                           Vector3<double>::Zero());
   }

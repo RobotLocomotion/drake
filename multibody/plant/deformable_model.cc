@@ -230,7 +230,7 @@ GeometryId DeformableModel<T>::GetGeometryId(DeformableBodyId id) const {
 template <typename T>
 DeformableBodyId DeformableModel<T>::GetBodyId(
     geometry::GeometryId geometry_id) const {
-  if (geometry_id_to_body_id_.count(geometry_id) == 0) {
+  if (!geometry_id_to_body_id_.contains(geometry_id)) {
     throw std::runtime_error(
         fmt::format("The given GeometryId {} does not correspond to a "
                     "deformable body registered with this model.",

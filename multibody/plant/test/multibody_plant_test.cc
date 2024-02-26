@@ -1459,8 +1459,8 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
                                                   GeometryId id2) {
         auto pair1 = std::make_pair(id1, id2);
         auto pair2 = std::make_pair(id2, id1);
-        if (expected_pairs.count(pair1) == 0 &&
-            expected_pairs.count(pair2) == 0) {
+        if (!expected_pairs.contains(pair1) &&
+            !expected_pairs.contains(pair2)) {
           GTEST_FAIL() << "The pair " << id1 << ", " << id2
                        << " is not in the expected set";
         }
@@ -1746,7 +1746,7 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   // list of expected feedthrough ports.
   const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
   for (const auto& inout_pair : feedthroughs) {
-    if (ok_to_feedthrough.count(inout_pair.second) == 0)
+    if (!ok_to_feedthrough.contains(inout_pair.second))
       return false;  // Found a spurious feedthrough port.
   }
   return true;

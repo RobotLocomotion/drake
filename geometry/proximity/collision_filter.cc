@@ -263,7 +263,7 @@ void CollisionFilter::AddGeometry(GeometryId new_id,
                                   FilterState* filter_state_out,
                                   PairRelationship relationship) {
   FilterState& filter_state = *filter_state_out;
-  DRAKE_DEMAND(filter_state.count(new_id) == 0);
+  DRAKE_DEMAND(!filter_state.contains(new_id));
   GeometryMap& new_map = filter_state[new_id] = {};
   for (auto& [other_id, other_map] : filter_state) {
     /* Whichever id is *smaller* tracks the relationship with the other.

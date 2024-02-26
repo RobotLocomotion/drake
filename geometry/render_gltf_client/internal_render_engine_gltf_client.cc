@@ -573,7 +573,7 @@ bool RenderEngineGltfClient::ImplementGltf(
   std::map<int, Matrix4<double>> root_nodes = FindRootNodes(mesh_data);
   SetRootPoses(&mesh_data, root_nodes, data.X_WG, scale, true);
 
-  DRAKE_DEMAND(gltfs_.count(data.id) == 0);
+  DRAKE_DEMAND(!gltfs_.contains(data.id));
   gltfs_.insert({data.id,
                  {gltf_path, std::move(mesh_data), std::move(root_nodes), scale,
                   GetRenderLabelOrThrow(data.properties)}});

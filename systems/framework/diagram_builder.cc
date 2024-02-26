@@ -36,7 +36,7 @@ DiagramBuilder<T>::~DiagramBuilder() {}
 template <typename T>
 void DiagramBuilder<T>::RemoveSystem(const System<T>& system) {
   ThrowIfAlreadyBuilt();
-  if (systems_.count(&system) == 0) {
+  if (!systems_.contains(&system)) {
     throw std::logic_error(fmt::format(
         "Cannot RemoveSystem on {} because it has not been added to this "
         "DiagramBuilder",
@@ -461,7 +461,7 @@ template <typename T>
 void DiagramBuilder<T>::ThrowIfSystemNotRegistered(
     const System<T>* system) const {
   DRAKE_DEMAND(system != nullptr);
-  if (systems_.count(system) == 0) {
+  if (!systems_.contains(system)) {
     std::string registered_system_names{};
     for (const auto& sys : registered_systems_) {
       if (!registered_system_names.empty()) {
@@ -516,7 +516,7 @@ bool HasCycleRecurse(
     const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
     std::set<PortIdentifier>* visited,
     std::vector<PortIdentifier>* stack) {
-  DRAKE_ASSERT(visited->count(n) == 0);
+  DRAKE_ASSERT(!visited->contains(n));
   visited->insert(n);
 
   auto edge_iter = edges.find(n);
@@ -524,7 +524,7 @@ bool HasCycleRecurse(
     DRAKE_ASSERT(std::find(stack->begin(), stack->end(), n) == stack->end());
     stack->push_back(n);
     for (const auto& target : edge_iter->second) {
-      if (visited->count(target) == 0 &&
+      if (!visited->contains(target) &&
           HasCycleRecurse(target, edges, visited, stack)) {
         return true;
       } else if (std::find(stack->begin(), stack->end(), target) !=

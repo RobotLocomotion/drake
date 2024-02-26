@@ -309,7 +309,7 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
     for (const auto& v_pair : kEdges) {
       const SortedPair<int> key{t.vertex(v_pair.first),
                                 t.vertex(v_pair.second)};
-      if (edge_vertex_map.count(key) == 0) {
+      if (!edge_vertex_map.contains(key)) {
         // We haven't already split this edge; compute the vertex and determine
         // its boundary condition.
         const Vector3<T>& p_MA = mesh.vertex(key.first());
@@ -387,7 +387,7 @@ std::pair<VolumeMesh<T>, int> RefineUnitSphereMeshOnSurface(
       const SortedPair<int> key{t.vertex(v_pair.first),
                                 t.vertex(v_pair.second)};
       // TODO(SeanCurtis-TRI): Refactor edge refinement into a single method.
-      if (edge_vertex_map.count(key) == 0) {
+      if (!edge_vertex_map.contains(key)) {
         // We haven't already split this edge; compute the vertex and determine
         // its boundary condition.
         const Vector3<T>& p_MA = mesh.vertex(key.first());

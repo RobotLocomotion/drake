@@ -1257,7 +1257,7 @@ vector<int> RenderEngineGl::GetMeshes(const string& filename_in,
 
   const std::string file_key = GetPathKey(filename_in);
 
-  if (meshes_.count(file_key) == 0) {
+  if (!meshes_.contains(file_key)) {
     const vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
         filename_in, PerceptionProperties(), parameters_.default_diffuse,
         drake::internal::DiagnosticPolicy());

@@ -91,7 +91,7 @@ bool RenderEngine::has_geometry(GeometryId id) const {
 void RenderEngine::UpdateDeformableConfigurations(
     GeometryId id, const std::vector<VectorX<double>>& q_WGs,
     const std::vector<VectorX<double>>& nhats_W) {
-  if (deformable_mesh_dofs_.count(id) == 0) {
+  if (!deformable_mesh_dofs_.contains(id)) {
     throw std::runtime_error(fmt::format(
         "No deformable geometry with id {} has been registered.", id));
   }

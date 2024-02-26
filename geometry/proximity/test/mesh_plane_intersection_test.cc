@@ -356,7 +356,7 @@ class SliceTest : public ::testing::TestWithParam<SliceFunctionType> {
     // cache: cut_edges_. Make sure they line up.
     for (const auto& edge_vertex : edge_vertices) {
       const SortedPair<int>& computed_edge = edge_vertex.edge;
-      if (cut_edges_.count(computed_edge) == 0) {
+      if (!cut_edges_.contains(computed_edge)) {
         return {{},
                 ::testing::AssertionFailure() << fmt::format(
                     "We matched surface vertex {} to edge {}, but that can't "

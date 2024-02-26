@@ -1013,7 +1013,7 @@ class MultibodyTreeTopology {
       DRAKE_DEMAND(body_index.is_valid() && body_index < num_rigid_bodies());
       // Skip bodies that are already traversed because the subtree with it
       // being the root has necessarily been traversed already.
-      if (outboard_bodies.count(body_index) == 0) {
+      if (!outboard_bodies.contains(body_index)) {
         const BodyNodeTopology& root =
             get_body_node(get_rigid_body(body_index).mobod_index);
         TraverseOutboardNodes(root, collect_body);

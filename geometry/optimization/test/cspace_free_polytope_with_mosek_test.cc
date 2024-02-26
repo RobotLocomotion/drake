@@ -69,7 +69,7 @@ void CheckLagrangians(const VectorX<symbolic::Polynomial>& lagrangians,
                       const Eigen::MatrixXd& indeterminates_samples,
                       const VectorX<symbolic::Variable>& indeterminates) {
   for (int i = 0; i < lagrangians.rows(); ++i) {
-    if (redundant_indices.count(i) == 0) {
+    if (!redundant_indices.contains(i)) {
       CheckPositivePolynomialBySamples(lagrangians(i), indeterminates,
                                        indeterminates_samples.transpose());
     } else {
@@ -117,9 +117,9 @@ void CheckSeparationBySamples(
          ++plane_index) {
       const auto& plane =
           tester.cspace_free_polytope().separating_planes()[plane_index];
-      if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+      if (!ignored_collision_pairs.contains(SortedPair<geometry::GeometryId>(
               plane.positive_side_geometry->id(),
-              plane.negative_side_geometry->id())) == 0 &&
+              plane.negative_side_geometry->id())) &&
           a.contains(plane_index) && b.contains(plane_index)) {
         Eigen::Vector3d a_val;
         for (int j = 0; j < 3; ++j) {

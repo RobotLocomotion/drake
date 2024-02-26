@@ -1285,7 +1285,7 @@ MapDecisionVariableToMosekVariable::MapDecisionVariableToMosekVariable(
   // Mosek.
   int nonmatrix_variable_count = 0;
   for (int i = 0; i < prog.num_vars(); ++i) {
-    if (decision_variable_to_mosek_matrix_variable.count(i) == 0) {
+    if (!decision_variable_to_mosek_matrix_variable.contains(i)) {
       decision_variable_to_mosek_nonmatrix_variable.emplace(
           i, nonmatrix_variable_count++);
     }

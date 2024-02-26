@@ -1263,12 +1263,12 @@ std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
     throw std::runtime_error(
         "Cannot extract a solution path when result.is_success() is false.");
   }
-  if (vertices_.count(source.id()) == 0) {
+  if (!vertices_.contains(source.id())) {
     throw std::invalid_argument(fmt::format(
         "Source vertex {} is not a vertex in this GraphOfConvexSets.",
         source.name()));
   }
-  if (vertices_.count(target.id()) == 0) {
+  if (!vertices_.contains(target.id())) {
     throw std::invalid_argument(fmt::format(
         "Target vertex {} is not a vertex in this GraphOfConvexSets.",
         target.name()));
@@ -1289,7 +1289,7 @@ std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
       // If the edge has not been visited and has a flow greater than the
       // current maximum, then this is our new maximum.
       if (flow >= 1 - tolerance && flow > maximum_flow &&
-          visited_vertices.count(&e->v()) == 0) {
+          !visited_vertices.contains(&e->v())) {
         maximum_flow = flow;
         max_flow_vertex = &e->v();
         max_flow_edge = e;
@@ -1422,7 +1422,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
 
   std::set<const Vertex*, VertexIdComparator> vertices;
   for (const auto* e : active_edges) {
-    if (edges_.count(e->id()) == 0) {
+    if (!edges_.contains(e->id())) {
       throw std::runtime_error(
           fmt::format("Edge {} is not in the graph.", e->name()));
     }
@@ -1470,7 +1470,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   std::vector<const Vertex*> excluded_vertices;
   for (const auto& pair : vertices_) {
     const Vertex* v = pair.second.get();
-    if (vertices.count(v) == 0) {
+    if (!vertices.contains(v)) {
       num_excluded_vars += v->x().size();
       excluded_vertices.emplace_back(v);
     }

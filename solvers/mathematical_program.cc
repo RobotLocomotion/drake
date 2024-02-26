@@ -2105,7 +2105,7 @@ void MathematicalProgram::CheckIsDecisionVariable(
     const VectorXDecisionVariable& vars) const {
   for (int i = 0; i < vars.rows(); ++i) {
     for (int j = 0; j < vars.cols(); ++j) {
-      if (decision_variable_index_.count(vars(i, j).get_id()) == 0) {
+      if (!decision_variable_index_.contains(vars(i, j).get_id())) {
         throw std::logic_error(fmt::format(
             "{} is not a decision variable of the mathematical program.",
             vars(i, j)));

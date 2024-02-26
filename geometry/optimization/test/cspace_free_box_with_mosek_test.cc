@@ -402,7 +402,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenBoxFailure) {
       const SortedPair<geometry::GeometryId> geometry_pair{
           separating_plane.positive_side_geometry->id(),
           separating_plane.negative_side_geometry->id()};
-      if (ignored_collision_pairs.count(geometry_pair) == 0) {
+      if (!ignored_collision_pairs.contains(geometry_pair)) {
         auto it = certificates.find(geometry_pair);
         if (it == certificates.end()) {
           // Cannot find the separation certificate for this pair   of

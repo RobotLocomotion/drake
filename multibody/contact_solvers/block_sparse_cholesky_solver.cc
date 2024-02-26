@@ -123,7 +123,7 @@ BlockSparseCholeskySolver<BlockType>::FactorAndCalcSchurComplement(
   remaining_block_sizes.reserve(num_remaining_blocks);
   int remaining_index = 0;
   for (int i = 0; i < num_total_blocks; ++i) {
-    if (eliminated_blocks.count(i) == 0) {
+    if (!eliminated_blocks.contains(i)) {
       global_to_remaining[i] = remaining_index++;
       remaining_block_sizes.emplace_back(block_sizes[i]);
     }

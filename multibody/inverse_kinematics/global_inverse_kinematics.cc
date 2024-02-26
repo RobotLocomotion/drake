@@ -275,7 +275,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
   auto dummy_plant_context = plant_.CreateDefaultContext();
   const Joint<double>& joint = plant_.get_joint(body_to_joint_map.at(body_idx));
   const RigidBody<double>& parent = joint.parent_body();
-  if (weld_to_world_body_index_set.count(body_idx) == 0) {
+  if (!weld_to_world_body_index_set.contains(body_idx)) {
     // R_WP is the rotation matrix of parent frame to the world frame.
     const Matrix3d& R_WP = reconstruct_R_WB->at(parent.index());
     const RigidTransformd X_PJp =

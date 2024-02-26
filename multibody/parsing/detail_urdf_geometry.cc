@@ -396,7 +396,7 @@ std::optional<std::string> ParseGeometryName(
         return {};
       }
       std::string guess = fmt::format("{}_{}", result, i);
-      if (geometry_names->count(guess) == 0) {
+      if (!geometry_names->contains(guess)) {
         if (explicitly_named) {
           policy.Warning(fmt::format(
               "{} name '{}' has already been used, renaming to '{}' instead",
