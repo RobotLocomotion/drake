@@ -109,7 +109,11 @@ struct IrisFromCliqueCoverOptions {
  * general use suboptimal cliques when constructing the greedy clique cover, but
  * is faster than solving the max clique problem to global optimality.
  *
- * The final regions do NOT respect the padding in the collision checker.
+ * Currently, the padding in the collision checker is not forwarded to the
+ * algorithm, and therefore the final regions do not necessarily respect this
+ * padding. Effectively, this means that the regions are generated as if the
+ * padding is set to 0. This behavior may be adjusted in the future at the
+ * resolution of #18830.
  *
  * Note that this method requires an implementation of a MaxCliqueSolverBase
  * which must be implemented in C++. The only solver of this kind implemented by
