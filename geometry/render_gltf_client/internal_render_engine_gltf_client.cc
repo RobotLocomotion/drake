@@ -525,7 +525,7 @@ void RenderEngineGltfClient::DoUpdateVisualPose(
 }
 
 bool RenderEngineGltfClient::DoRemoveGeometry(GeometryId id) {
-  if (gltfs_.count(id) == 1) {
+  if (gltfs_.contains(id)) {
     gltfs_.erase(id);
     return true;
   } else {

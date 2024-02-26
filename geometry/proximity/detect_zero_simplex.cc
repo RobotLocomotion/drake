@@ -124,9 +124,9 @@ std::vector<SortedTriplet<int>> DetectInteriorTriangleWithAllBoundaryVertices(
   std::vector<SortedTriplet<int>> null_interior_triangles;
   for (const SortedTriplet<int>& interior_triangle :
        GetInteriorFaceSet(mesh_M)) {
-    if (1 == boundary_vertex_set.count(interior_triangle.first()) &&
-        1 == boundary_vertex_set.count(interior_triangle.second()) &&
-        1 == boundary_vertex_set.count(interior_triangle.third())) {
+    if (boundary_vertex_set.contains(interior_triangle.first()) &&
+        boundary_vertex_set.contains(interior_triangle.second()) &&
+        boundary_vertex_set.contains(interior_triangle.third())) {
       null_interior_triangles.push_back(interior_triangle);
     }
   }
@@ -141,8 +141,8 @@ std::vector<SortedPair<int>> DetectInteriorEdgeWithAllBoundaryVertices(
 
   std::vector<SortedPair<int>> null_interior_edges;
   for (const SortedPair<int>& interior_edge : GetInteriorEdgeSet(mesh_M)) {
-    if (1 == boundary_vertex_set.count(interior_edge.first()) &&
-        1 == boundary_vertex_set.count(interior_edge.second())) {
+    if (boundary_vertex_set.contains(interior_edge.first()) &&
+        boundary_vertex_set.contains(interior_edge.second())) {
       null_interior_edges.push_back(interior_edge);
     }
   }

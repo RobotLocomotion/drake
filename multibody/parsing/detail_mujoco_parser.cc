@@ -404,7 +404,7 @@ class MujocoParser {
     using geometry::ShapeReifier::ImplementGeometry;
 
     void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.count(name_) == 1);
+      DRAKE_DEMAND(mesh_inertia_.contains(name_));
       M_GG_G_ = mesh_inertia_.at(name_);
     }
 
