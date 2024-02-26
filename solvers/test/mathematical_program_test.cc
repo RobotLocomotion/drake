@@ -1906,10 +1906,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   set<Expression> constraint_set;
   constraint_set.emplace(x(0) + 2 * x(1) - 5);
   constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
-  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_constraint(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_constraint(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_constraint(1)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_constraint(1)), 1);
+  EXPECT_TRUE(constraint_set.contains(Ax(0) - lb_in_constraint(0)));
+  EXPECT_TRUE(constraint_set.contains(Ax(0) - ub_in_constraint(0)));
+  EXPECT_TRUE(constraint_set.contains(Ax(1) - lb_in_constraint(1)));
+  EXPECT_TRUE(constraint_set.contains(Ax(1) - ub_in_constraint(1)));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {

@@ -48,7 +48,7 @@ class ChooseBestSolverTest : public ::testing::Test {
     EXPECT_EQ(solver_id, expected_solver_id);
 
     // Ensure GetKnownSolvers is comprehensive.
-    EXPECT_EQ(GetKnownSolvers().count(solver_id), 1);
+    EXPECT_TRUE(GetKnownSolvers().contains(solver_id));
   }
 
   void CheckMakeSolver(const SolverInterface& solver) const {
@@ -56,7 +56,7 @@ class ChooseBestSolverTest : public ::testing::Test {
     EXPECT_EQ(new_solver->solver_id(), solver.solver_id());
 
     // Ensure GetKnownSolvers is comprehensive.
-    EXPECT_EQ(GetKnownSolvers().count(solver.solver_id()), 1);
+    EXPECT_TRUE(GetKnownSolvers().contains(solver.solver_id()));
   }
 
   void CheckBestSolver(const std::vector<SolverInterface*>& solvers) {

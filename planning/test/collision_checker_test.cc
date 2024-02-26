@@ -327,7 +327,7 @@ GTEST_TEST(MakeModel, EnvironmentalFloatingBase) {
   const std::set<int> base_dofs = GetFloatingBaseDofs();
   const int start = floater.floating_positions_start();
   for (int i = start; i < start + 7; ++i) {
-    EXPECT_EQ(base_dofs.count(i), 1);
+    EXPECT_TRUE(base_dofs.contains(i));
   }
 }
 

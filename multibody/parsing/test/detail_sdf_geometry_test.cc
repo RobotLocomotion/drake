@@ -1060,7 +1060,7 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
     const auto& names =
         material->GetProperty<std::set<std::string>>(group, property);
     EXPECT_EQ(names.size(), 1);
-    EXPECT_EQ(names.count("renderer1"), 1);
+    EXPECT_TRUE(names.contains("renderer1"));
   }
 
   // Case: Multiple <drake:accepting_renderer> tag.
@@ -1085,8 +1085,8 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
     const auto& names =
         material->GetProperty<std::set<std::string>>(group, property);
     EXPECT_EQ(names.size(), 2);
-    EXPECT_EQ(names.count("renderer1"), 1);
-    EXPECT_EQ(names.count("renderer2"), 1);
+    EXPECT_TRUE(names.contains("renderer1"));
+    EXPECT_TRUE(names.contains("renderer2"));
   }
 
   // Case: Missing names throws exception.

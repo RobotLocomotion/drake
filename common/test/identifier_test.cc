@@ -171,15 +171,15 @@ TEST_F(IdentifierTests, PutInSet) {
   EXPECT_EQ(ids.size(), 0u);
   ids.insert(a1);
   EXPECT_EQ(ids.size(), 1u);
-  EXPECT_EQ(ids.count(a1), 1u);
+  EXPECT_TRUE(ids.contains(a1));
 
   ids.insert(a2);
   EXPECT_EQ(ids.size(), 2u);
-  EXPECT_EQ(ids.count(a2), 1u);
+  EXPECT_TRUE(ids.contains(a2));
 
   ids.insert(a1);
   EXPECT_EQ(ids.size(), 2u);
-  EXPECT_EQ(ids.count(a1), 1u);
+  EXPECT_TRUE(ids.contains(a1));
 }
 
 // Tests the streaming behavior.

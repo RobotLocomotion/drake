@@ -109,7 +109,7 @@ TEST_F(FinalizedIiwaTest, CalcBodyPose1) {
     s_index_set.emplace_hint(s_index_set.end(), s_index);
   }
   // There is one welded joint hence one of s_index is -1.
-  EXPECT_EQ(s_index_set.count(-1), 1);
+  EXPECT_TRUE(s_index_set.contains(-1));
 }
 
 TEST_F(FinalizedIiwaTest, CalcBodyPose2) {
