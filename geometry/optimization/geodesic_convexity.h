@@ -147,6 +147,7 @@ continuous revolute joints.
 @throws if @p continuous_revolute_joints has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
+@throws if @p convex_sets_A or @p convex_sets_B are empty.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
@@ -164,6 +165,7 @@ continuous revolute joints.
 @throws if @p continuous_revolute_joints has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
+@throws if @p convex_sets_A is empty.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,

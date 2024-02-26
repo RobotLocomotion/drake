@@ -231,29 +231,24 @@ ConvexSets PartitionConvexSet(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints) {
-  DRAKE_DEMAND(convex_sets_A.size() > 0);
+  DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
+  DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
   internal::ThrowsForInvalidContinuousJointsList(dimension,
                                                  continuous_revolute_joints);
 
   std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
 
-  // Region bounding boxes along dimensions corresponding to continuous
-  // revolute joints. We make region_minimum_and_maximum_values_B a reference
-  // type, so if convex_sets_B is not provided (and we want to do pairwise
-  // intersections within convex_sets_A), we can simply point it to
-  // region_minimum_and_maximum_values_A and not have to copy the data over. If
-  // convex_sets_B is provided, then we point it to
-  // maybe_region_minimum_and_maximum_values_B, and store the data there.
+  // Region bounding boxes along dimensions corresponding to continuous revolute
+  // joints. If convex_sets_B == convex_sets_A, then we do not populate
+  // region_minimum_and_maximum_values_B, and instead point to the corresponding
+  // value in region_minimum_and_maximum_values_A.
   std::vector<std::vector<std::pair<double, double>>>
       region_minimum_and_maximum_values_A;
   std::vector<std::vector<std::pair<double, double>>>
-      maybe_region_minimum_and_maximum_values_B;
-  std::vector<std::vector<std::pair<double, double>>>&
-      region_minimum_and_maximum_values_B =
-          maybe_region_minimum_and_maximum_values_B;
+      region_minimum_and_maximum_values_B;
 
-  // Compute the bounding boxes.
+  // Compute bounding boxes for convex_sets_A.
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     region_minimum_and_maximum_values_A.emplace_back(
         std::vector<std::pair<double, double>>());
@@ -264,19 +259,14 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
-  bool compute_intersections_within_A = convex_sets_B.size() == 0;
-  const auto convex_sets_B_local =
-      compute_intersections_within_A ? convex_sets_A : convex_sets_B;
-  if (compute_intersections_within_A) {
-    // If convex_sets_B.size() == 0, then we want to compute the pairwise
-    // intersections within convex_sets_A, so we can just copy over the data.
-    region_minimum_and_maximum_values_B = region_minimum_and_maximum_values_A;
-  } else {
+  // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
+  bool compute_intersections_within_A = convex_sets_A == convex_sets_B;
+  if (!compute_intersections_within_A) {
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
-      maybe_region_minimum_and_maximum_values_B.emplace_back(
+      region_minimum_and_maximum_values_B.emplace_back(
           std::vector<std::pair<double, double>>());
       for (const int k : continuous_revolute_joints) {
-        maybe_region_minimum_and_maximum_values_B.at(i).emplace_back(
+        region_minimum_and_maximum_values_B.at(i).emplace_back(
             internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
                                                               k));
       }
@@ -285,13 +275,17 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
-    for (int j = 0; j < ssize(convex_sets_B_local); ++j) {
+    for (int j = 0; j < ssize(convex_sets_B); ++j) {
       if (compute_intersections_within_A && j <= i) {
         // If we're computing intersections within convex_sets_A and j <= i,
         // then we've already checked if we need to add an edge when i and j
         // were flipped, and that set has already been added.
         continue;
       }
+      const auto& bbox_A = region_minimum_and_maximum_values_A.at(i);
+      const auto& bbox_B = region_minimum_and_maximum_values_B.empty()
+                               ? region_minimum_and_maximum_values_A.at(j)
+                               : region_minimum_and_maximum_values_B.at(j);
 
       offset.setZero();
 
@@ -299,8 +293,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
       for (int k = 0; k < ssize(continuous_revolute_joints); ++k) {
         const int joint_index = continuous_revolute_joints.at(k);
-        if (region_minimum_and_maximum_values_A.at(i).at(k).first <
-            region_minimum_and_maximum_values_B.at(j).at(k).first) {
+        if (bbox_A.at(k).first < bbox_B.at(k).first) {
           // In this case, the minimum value of convex_sets_A[i] along dimension
           // k is smaller than the minimum value of convex_sets_B[j] along
           // dimension k, so we must translate by a positive amount. By the
@@ -312,10 +305,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           // by taking that difference, dividing by 2π, and truncating.
           offset(joint_index) =
               2 * M_PI *
-              std::floor(
-                  (region_minimum_and_maximum_values_B.at(j).at(k).second -
-                   region_minimum_and_maximum_values_A.at(i).at(k).first) /
-                  (2 * M_PI));
+              std::floor((bbox_B.at(k).second - bbox_A.at(k).first) /
+                         (2 * M_PI));
         } else {
           // In this case, the minimum value of convex_sets_B[j] along dimension
           // k is smaller than the minimum value of convex_sets_A[i] along
@@ -324,10 +315,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           // translation.
           offset(joint_index) =
               -2 * M_PI *
-              std::floor(
-                  (region_minimum_and_maximum_values_A.at(i).at(k).second -
-                   region_minimum_and_maximum_values_B.at(j).at(k).first) /
-                  (2 * M_PI));
+              std::floor((bbox_A.at(k).second - bbox_B.at(k).first) /
+                         (2 * M_PI));
         }
       }
 
@@ -346,7 +335,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           Eigen::MatrixXd::Identity(dimension, dimension);
       prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
       convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
-      convex_sets_B_local.at(j)->AddPointInSetConstraints(&prog, y);
+      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
       const auto result = Solve(prog);
       if (result.is_success()) {
         // Regions are overlapping, add edge (i, j). If we're adding edges
@@ -366,7 +355,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A,
     const std::vector<int>& continuous_revolute_joints) {
-  return CalcPairwiseIntersections(convex_sets_A, {},
+  return CalcPairwiseIntersections(convex_sets_A, convex_sets_A,
                                    continuous_revolute_joints);
 }
 

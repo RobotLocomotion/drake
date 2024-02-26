@@ -281,6 +281,17 @@ GTEST_TEST(GeodesicConvexityTest, ComputeOffset) {
   EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
 }
 
+GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersectionsAPI) {
+  VPolytope v(Vector1d(1));
+  ConvexSets sets = MakeConvexSets(v);
+  EXPECT_THROW(CalcPairwiseIntersections({}, std::vector<int>{}),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections(sets, {}, std::vector<int>{}),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections({}, sets, std::vector<int>{}),
+               std::exception);
+}
+
 GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
   Hyperrectangle h1(Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 1.0));
   Hyperrectangle h2(Eigen::Vector2d(0.5, 0.5 + 2 * M_PI),
