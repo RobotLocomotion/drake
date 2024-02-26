@@ -353,7 +353,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // "AddDynamicGeometry() or AddAnchoredGeometry()") and has not been since
   // removed (via "RemoveGeometry()").
   bool IsRegisteredAsRigid(GeometryId id) {
-    return dynamic_objects_.count(id) > 0 || anchored_objects_.count(id) > 0;
+    return dynamic_objects_.contains(id) || anchored_objects_.contains(id);
   }
 
   // Removes a non-deformable geometry from this engine.

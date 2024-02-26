@@ -624,7 +624,7 @@ void CspaceFreePolytope::SearchResult::SetSeparatingPlanes(
   // Check that a and b have the same keys.
   DRAKE_THROW_UNLESS(a.size() == b.size());
   for (const auto& [plane_index, a_poly] : a) {
-    DRAKE_THROW_UNLESS(b.count(plane_index) > 0);
+    DRAKE_THROW_UNLESS(b.contains(plane_index));
   }
   a_ = std::move(a);
   b_ = std::move(b);

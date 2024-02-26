@@ -120,7 +120,7 @@ void CheckSeparationBySamples(
       if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
               plane.positive_side_geometry->id(),
               plane.negative_side_geometry->id())) == 0 &&
-          a.count(plane_index) > 0 && b.count(plane_index) > 0) {
+          a.contains(plane_index) && b.contains(plane_index)) {
         Eigen::Vector3d a_val;
         for (int j = 0; j < 3; ++j) {
           a_val(j) = a.at(plane_index)(j).Evaluate(env);

@@ -388,7 +388,7 @@ std::optional<std::string> ParseGeometryName(
   }
 
   // Check if we need to salt it.
-  if (geometry_names->count(result) > 0) {
+  if (geometry_names->contains(result)) {
     for (int i = 1;; ++i) {
       if (i >= numeric_name_suffix_limit) {
         policy.Error(fmt::format("Too many geometries with identical name '{}'",

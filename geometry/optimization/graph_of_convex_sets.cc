@@ -277,7 +277,7 @@ Edge* GraphOfConvexSets::AddEdge(Vertex* u, Vertex* v, std::string name) {
 void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   DRAKE_THROW_UNLESS(vertex != nullptr);
   VertexId vertex_id = vertex->id();
-  DRAKE_THROW_UNLESS(vertices_.count(vertex_id) > 0);
+  DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
   for (auto it = edges_.begin(); it != edges_.end();) {
     if (it->second->u().id() == vertex_id) {
       it->second->v().RemoveIncomingEdge(it->second.get());
@@ -294,7 +294,7 @@ void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
 
 void GraphOfConvexSets::RemoveEdge(Edge* edge) {
   DRAKE_THROW_UNLESS(edge != nullptr);
-  DRAKE_THROW_UNLESS(edges_.count(edge->id()) > 0);
+  DRAKE_THROW_UNLESS(edges_.contains(edge->id()));
   edge->u().RemoveOutgoingEdge(edge);
   edge->v().RemoveIncomingEdge(edge);
   edges_.erase(edge->id());

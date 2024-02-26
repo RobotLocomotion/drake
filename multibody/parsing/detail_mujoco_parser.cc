@@ -289,7 +289,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_joint_.count(class_name) > 0) {
+    if (default_joint_.contains(class_name)) {
       ApplyDefaultAttributes(*default_joint_.at(class_name), node);
     }
 
@@ -486,7 +486,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_geometry_.count(class_name) > 0) {
+    if (default_geometry_.contains(class_name)) {
       // TODO(russt): Add a test case covering childclass/default nesting once
       // the body element is supported.
       ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
@@ -945,7 +945,7 @@ class MujocoParser {
          e = e->NextSiblingElement(elt_name)) {
       (*default_map)[class_name] = e;
       if (!parent_default.empty() &&
-          default_map->count(parent_default) > 0) {
+          default_map->contains(parent_default)) {
         ApplyDefaultAttributes(*default_map->at(parent_default), e);
       }
     }
@@ -1017,7 +1017,7 @@ class MujocoParser {
       if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
         class_name = "main";
       }
-      if (default_mesh_.count(class_name) > 0) {
+      if (default_mesh_.contains(class_name)) {
         ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
       }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");

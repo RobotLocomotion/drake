@@ -149,7 +149,7 @@ SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
 
 template <typename T>
 bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
-  return input_source_ids_.count(id) > 0;
+  return input_source_ids_.contains(id);
 }
 
 template <typename T>

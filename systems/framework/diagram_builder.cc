@@ -365,7 +365,7 @@ bool DiagramBuilder<T>::ConnectToSame(
   }
 
   // Check if `exemplar` was exported.
-  if (diagram_input_set_.count(exemplar_id) > 0) {
+  if (diagram_input_set_.contains(exemplar_id)) {
     for (size_t i = 0; i < input_port_ids_.size(); ++i) {
       if (input_port_ids_[i] == exemplar_id) {
         ConnectInput(input_port_names_[i], dest);
@@ -417,8 +417,8 @@ template <typename T>
 bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
   ThrowIfAlreadyBuilt();
   InputPortLocator id{&port.get_system(), port.get_index()};
-  if (this->connection_map_.count(id) > 0 ||
-      this->diagram_input_set_.count(id) > 0) {
+  if (this->connection_map_.contains(id) ||
+      this->diagram_input_set_.contains(id)) {
     return true;
   }
   return false;
@@ -588,7 +588,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
           subsystem_index, InputPortIndex{item.first}, system};
       const PortIdentifier output{
           subsystem_index, OutputPortIndex{item.second}, system};
-      if (nodes.count(input) > 0 && nodes.count(output) > 0) {
+      if (nodes.contains(input) && nodes.contains(output)) {
         edges[input].insert(output);
       }
     }
@@ -606,7 +606,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
   std::set<PortIdentifier> visited;
   std::vector<PortIdentifier> stack;
   for (const auto& node : nodes) {
-    if (visited.count(node) > 0) {
+    if (visited.contains(node)) {
       continue;
     }
     if (HasCycleRecurse(node, edges, &visited, &stack)) {
@@ -630,7 +630,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
 template <typename T>
 void DiagramBuilder<T>::CheckInvariants() const {
   auto has_system = [this](const System<T>* system) {
-    return std::count(systems_.begin(), systems_.end(), system) > 0;
+    return systems_.contains(system);
   };
 
   // The systems_ and registered_systems_ are identical sets.

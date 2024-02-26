@@ -230,7 +230,7 @@ CspaceFreeBox::ConstructPlaneSearchProgram(
     symbolic::Polynomial poly = rational.numerator();
 
     for (int i = 0; i < s_size; ++i) {
-      if (s_for_plane_indices_set.count(i) > 0) {
+      if (s_for_plane_indices_set.contains(i)) {
         gram_and_monomial_basis.AddSos(
             prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
             &lagrangians.mutable_s_box_lower()(i));

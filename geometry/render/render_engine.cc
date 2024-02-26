@@ -84,8 +84,8 @@ bool RenderEngine::RemoveGeometry(GeometryId id) {
 }
 
 bool RenderEngine::has_geometry(GeometryId id) const {
-  return update_ids_.count(id) > 0 || anchored_ids_.count(id) > 0 ||
-         deformable_mesh_dofs_.count(id) > 0;
+  return update_ids_.contains(id) || anchored_ids_.contains(id) ||
+         deformable_mesh_dofs_.contains(id);
 }
 
 void RenderEngine::UpdateDeformableConfigurations(

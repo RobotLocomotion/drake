@@ -102,7 +102,7 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
 
   /* Reports `true` if the given id is registered with `this` engine.  */
   bool is_registered(GeometryId id) const {
-    return registered_geometries_.count(id) > 0;
+    return registered_geometries_.contains(id);
   }
 
   // These six functions (and supporting members) facilitate testing while there

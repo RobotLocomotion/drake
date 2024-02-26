@@ -909,7 +909,7 @@ void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
 void RenderEngineGl::DoUpdateDeformableConfigurations(
     GeometryId id, const std::vector<VectorX<double>>& q_WGs,
     const std::vector<VectorX<double>>& nhats_W) {
-  DRAKE_DEMAND(deformable_meshes_.count(id) > 0);
+  DRAKE_DEMAND(deformable_meshes_.contains(id));
   std::vector<int>& gl_mesh_indices = deformable_meshes_.at(id);
   DRAKE_DEMAND(q_WGs.size() == gl_mesh_indices.size());
 
@@ -936,7 +936,7 @@ void RenderEngineGl::DoUpdateDeformableConfigurations(
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   // Clean up the convenience look up table for deformable if the id is
   // associated with a deformable geometry.
-  if (deformable_meshes_.count(id) > 0) {
+  if (deformable_meshes_.contains(id)) {
     deformable_meshes_.erase(id);
   }
   // Now remove the instances associated with the id (stored in visuals_).
@@ -950,7 +950,7 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
         [this, &visited_families](GeometryId g_id, const auto& shader_data,
                                   RenderType render_type) {
           const ShaderId s_id = shader_data[render_type].shader_id();
-          if (visited_families.count(s_id) > 0) {
+          if (visited_families.contains(s_id)) {
             return;
           }
           visited_families.insert(s_id);

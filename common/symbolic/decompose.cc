@@ -136,7 +136,7 @@ void DecomposeLinearExpressions(
                       fmt_eigen(vars.transpose())));  // e should be linear.
     }
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
-    if (map.count(Monomial{}) > 0) {
+    if (map.contains(Monomial{})) {
       // e should not have a constant term.
       ThrowError(
           "non-linear", e.to_string(),

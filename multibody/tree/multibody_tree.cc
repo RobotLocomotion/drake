@@ -417,7 +417,7 @@ bool MultibodyTree<T>::HasJointActuatorNamed(
 
 template <typename T>
 bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
-  return model_instances_.names_map().count(name) > 0;
+  return model_instances_.names_map().contains(name);
 }
 
 template <typename T>

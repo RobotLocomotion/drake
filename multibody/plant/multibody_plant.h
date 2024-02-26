@@ -1518,7 +1518,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a coupler constraint.
   const internal::CouplerConstraintSpec& get_coupler_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(coupler_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(coupler_constraints_specs_.contains(id));
     return coupler_constraints_specs_.at(id);
   }
 
@@ -1527,7 +1527,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a distance constraint.
   const internal::DistanceConstraintSpec& get_distance_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(distance_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(distance_constraints_specs_.contains(id));
     return distance_constraints_specs_.at(id);
   }
 
@@ -1536,7 +1536,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a ball constraint.
   const internal::BallConstraintSpec& get_ball_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(ball_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(ball_constraints_specs_.contains(id));
     return ball_constraints_specs_.at(id);
   }
 
@@ -1545,7 +1545,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a weld constraint.
   const internal::WeldConstraintSpec& get_weld_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(weld_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(weld_constraints_specs_.contains(id));
     return weld_constraints_specs_.at(id);
   }
 

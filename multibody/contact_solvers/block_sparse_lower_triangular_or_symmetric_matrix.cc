@@ -128,7 +128,7 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
   for (int j = 0; j < block_cols(); ++j) {
     /* Zero all blocks in the column except the diagonal if j is among the
      row/column indices to be zeroed out. */
-    if (indices_set.count(j) > 0) {
+    if (indices_set.contains(j)) {
       /* We want to keep the conditioning of the matrix in the ballpark of the
        original matrix (e.g. setting diagonal blocks to identity when the
        original values are the on order of millions is a bad idea), so we keep

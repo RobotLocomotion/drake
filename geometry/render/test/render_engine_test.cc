@@ -26,9 +26,9 @@ class RenderEngineTester {
   }
 
   bool has_id(GeometryId id) const {
-    return engine_.update_ids_.count(id) > 0 ||
-           engine_.anchored_ids_.count(id) > 0 ||
-           engine_.deformable_mesh_dofs_.count(id) > 0;
+    return engine_.update_ids_.contains(id) ||
+           engine_.anchored_ids_.contains(id) ||
+           engine_.deformable_mesh_dofs_.contains(id);
   }
 
  private:
