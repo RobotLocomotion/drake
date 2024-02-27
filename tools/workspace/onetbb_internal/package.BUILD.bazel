@@ -8,6 +8,7 @@ cc_library(
         "include/oneapi/tbb/detail/*.h",
     ]),
     includes = [
+        "include",
         "include/oneapi",
     ],
     deps = [
