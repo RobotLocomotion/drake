@@ -477,11 +477,6 @@ class MujocoParser {
                                const std::string& child_class = "") {
     MujocoGeometry geom;
 
-    if (!ParseStringAttribute(node, "name", &geom.name)) {
-      // Use "geom#" as the default body name.
-      geom.name = fmt::format("geom{}", num_geom);
-    }
-
     std::string class_name;
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
@@ -490,6 +485,13 @@ class MujocoParser {
       // TODO(russt): Add a test case covering childclass/default nesting once
       // the body element is supported.
       ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
+    }
+
+    // Per the MuJoCo documentation, the name is not part of the defaults. This
+    // is consistent with Drake requiring that geometry names are unique.
+    if (!ParseStringAttribute(node, "name", &geom.name)) {
+      // Use "geom#" as the default body name.
+      geom.name = fmt::format("geom{}", num_geom);
     }
 
     geom.X_BG = ParseTransform(node);
@@ -901,10 +903,10 @@ class MujocoParser {
 
   void ParseWorldBody(XMLElement* node) {
     if (plant_->geometry_source_is_registered()) {
-      std::vector<MujocoGeometry> geometries;
+      int num_geometries = 0;
       for (XMLElement* link_node = node->FirstChildElement("geom"); link_node;
            link_node = link_node->NextSiblingElement("geom")) {
-        auto geom = ParseGeometry(link_node, geometries.size(), false);
+        auto geom = ParseGeometry(link_node, num_geometries, false);
         if (!geom.shape) continue;
         if (geom.register_visual) {
           plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
@@ -915,6 +917,7 @@ class MujocoParser {
                                             *geom.shape, geom.name,
                                             geom.friction);
         }
+        ++num_geometries;
       }
     }
 
