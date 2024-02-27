@@ -73,15 +73,7 @@ cc_library(
         ":vt",
         ":work",
     ],
+    alwayslink = True,
+    linkstatic = True,
     visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "usdcat",
-    srcs = ["pxr/usd/bin/usdcat/usdcat.cpp"],
-    copts = ["-w"],
-    deps = [":openusd"],
-    visibility = [
-        "@drake//tools/workspace/openusd_internal:__pkg__",
-    ],
 )

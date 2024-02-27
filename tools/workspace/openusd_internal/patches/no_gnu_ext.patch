@@ -1,0 +1,20 @@
+[openusd_internal] Opt-out of GNU libstdc++ extensions
+
+They are deprecated old smelly stuff that spews compiler warnings.
+This opt-out is a Drake choice, do we don't plan to upstream this patch.
+
+--- pxr/base/arch/defines.h
++++ pxr/base/arch/defines.h
+@@ -88,10 +88,8 @@
+ // Features
+ //
+ 
+-// Only use the GNU STL extensions on Linux when using gcc.
+-#if defined(ARCH_OS_LINUX) && defined(ARCH_COMPILER_GCC)
+-#define ARCH_HAS_GNU_STL_EXTENSIONS
+-#endif
++// N.B. Drake never uses the GNU STL extensions.
++// #define ARCH_HAS_GNU_STL_EXTENSIONS
+ 
+ // The current version of Apple clang does not support the thread_local
+ // keyword.
