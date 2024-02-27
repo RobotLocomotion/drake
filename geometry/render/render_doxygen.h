@@ -25,9 +25,9 @@ namespace render {
                               that broadcasts Drake's visual state in a glTF
                               file.
 
- These implementations differ in many ways largely differ in performance and
- flexibility potential. RenderEngineVtk is slower but has the possibility of
- leveraging the full VTK API to provide *post hoc* customizations.
+ These implementations differ mostly in performance and flexibility.
+ RenderEngineVtk is slower but has the possibility of leveraging the full VTK
+ API to provide *post hoc* customizations.
  RenderEngineGl is faster, but gains that performance boost by implementing a
  barebones rendering pipeline. RenderEngineGltfClient can connect to a server
  backed by arbitrary rendering technology with the potential of producing the
