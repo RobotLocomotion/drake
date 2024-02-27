@@ -499,7 +499,7 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
 //                    = 4 * 0.5 / inertia_shape_factor * Trace(unit_inertia)
 //                    = 2 / inertia_shape_factor * Trace(unit_inertia)
 // 5. The largest inertia shape_factor is 1.0, which corresponds to a massless
-//    box with particles at its vertices. Hence the minimum space diagaonal is
+//    box with particles at its vertices. Hence the minimum space diagonal is
 //    space_diagonal² = 2 * Trace(unit_inertia) or
 //    space_diagonal = √(2 * Trace(unit_inertia))
 // This space_diagonal formula is useful when template type <T> is symbolic or

@@ -660,8 +660,8 @@ class SpatialInertia {
   /// Returns the minimum possible length for the physical extent of the massive
   /// object that underlies this spatial inertia. In other words, the underlying
   /// physical object must have at least two particles whose distance between
-  /// each other is greater than or equal to the mininum possible length.
-  /// @note The minium possible length is equal to the space-diagonal of the
+  /// each other is greater than or equal to the minimun possible length.
+  /// @note The minimun possible length is equal to the space-diagonal of the
   /// minimum bounding box for `this` spatial inertia, which happens to be equal
   /// to √(2 * trace of the central unit inertia associated with `this`).
   /// @note Minimum possible length can be used to detect erroneous inertias
