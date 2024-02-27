@@ -1144,9 +1144,6 @@ drake_cc_googletest(
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
-    linkopts = [
-        "-pthread",
-    ],
     use_default_main = False,
     deps = [
         "@fmt",
