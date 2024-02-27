@@ -609,10 +609,14 @@ class SpatialInertia {
   /// principal moments of inertia and their associated principal directions.
   ///@{
 
-  /// Returns semi-diameters, orientation, and position of a solid ellipsoid
+  /// Returns 3 principal semi-diameters [lmax lmed lmin] sorted in descending
+  /// order (lmax ≥ lmed ≥ lmin), orientation, and position of a solid ellipsoid
   /// whose spatial inertia is equal to `this` spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
+  /// @throws std::exception if the elements of `this` spatial inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
   CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid() const {
     constexpr double inertia_shape_factor = 1.0 / 5.0;
@@ -620,16 +624,64 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Returns half-lengths, orientation, and position of a solid box
+  /// Returns three ½-lengths [lmax lmed lmin] sorted in descending order
+  /// (lmax ≥ lmed ≥ lmin), orientation, and position of a solid box
   /// whose spatial inertia is equal to `this` spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
+  /// @throws std::exception if the elements of `this` spatial inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
   CalcPrincipalHalfLengthsAndPoseForSolidBox() const {
     constexpr double inertia_shape_factor = 1.0 / 3.0;
     return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
         inertia_shape_factor);
   }
+
+  /// Returns three ½-lengths [lmax lmed lmin] sorted in descending order
+  /// (lmax ≥ lmed ≥ lmin), orientation, and position of a box whose mass is
+  /// concentrated in 8 particles at the box's corners and whose spatial inertia
+  /// is equal to `this` spatial inertia. The physical geometry of the actual
+  /// underlying object must be larger than this box, as this box is the minimum
+  /// bounding box for the actual geometry.
+  /// See @ref spatial_inertia_equivalent_shapes
+  /// "Spatial inertia equivalent shapes" for more details.
+  /// @throws std::exception if the elements of `this` spatial inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() const {
+    constexpr double inertia_shape_factor = 1.0;
+    return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
+        inertia_shape_factor);
+  }
+
+  /// Returns the minimum possible length for the physical extent of the massive
+  /// object that underlies this spatial inertia. In other words, the underlying
+  /// physical object must have at least two particles whose distance between
+  /// each other is greater than or equal to the minimum possible length.
+  /// @note The minimum possible length is equal to the space-diagonal of the
+  /// minimum bounding box for `this` spatial inertia, which happens to be equal
+  /// to √(2 * trace of the central unit inertia associated with `this`).
+  /// @note Minimum possible length can be used to detect erroneous inertias
+  /// associated with absurdly large objects or to detect errors when the
+  /// minimum possible length is larger than the real physical geometry that
+  /// underlies `this` spatial inertia (maybe due to inertia conversion errors,
+  /// e.g., factor of 10⁷ from kg m² to g cm² or 10⁹ from kg m² to g mm²).
+  /// To assess whether the minimum possible length is reasonable, it helps to
+  /// have comparable sizes, e.g., the world's largest aircraft carrier has a
+  /// space-diagonal ≈ 355 m (length ≈ 337 m, width ≈ 78 m, height ≈ 76 m), the
+  /// largest land vehicle (Bagger bucket-wheel excavator) is ≈ 224 m long, the
+  /// largest human object in space (International Space Station) is 109 m long
+  /// and 75 m wide, the USA space shuttle is ≈ 37 m long and can carry a 15.2 m
+  /// Canadarm, the world's largest humanoid robot (Mononofu) is ≈ 8.5 m tall.
+  /// Also, minimum possible length can be compared to known physical geometry
+  /// (e.g., realistic collision geometry, visual geometry, or physical extents
+  /// associated with body connectivity data and topology), and this comparison
+  /// can be used to warn that a spatial inertia may be physically impossible
+  /// (e.g., underlying geometry is smaller than the minimum possible length).
+  T CalcMinimumPhysicalLength() const;
   ///@}
 
   /// Copy to a full 6x6 matrix representation.
@@ -880,6 +932,28 @@ class SpatialInertia {
   // entry the position vector p_PScm underlying `this` is the zero vector.
   [[nodiscard]] SpatialInertia<T> ShiftFromCenterOfMass(
       const Vector3<T>& p_ScmP_E) const;
+
+  // Shifts `this` spatial inertia for a body (or composite body) S from
+  // about-point P to about-point Scm (S's center of mass). In other words,
+  // shifts `M_SP_E` to `M_SScm_E` (both are expressed-in frame E).
+  // @returns A reference to M_SScm_E, `this` spatial inertia that has been
+  // shifted from about-point P to about-point Scm, expressed in frame E.
+  // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
+  // on return the position vector p_PScm underlying `this` is the zero vector.
+  // @see SpatialInertia::ShiftToCenterOfMass(), ShiftFromCenterOfMassInPlace().
+  SpatialInertia<T>& ShiftToCenterOfMassInPlace();
+
+  // Calculates the spatial inertia that results from shifting `this` spatial
+  // inertia for a body (or composite body) S from about-point P to
+  // about-point Scm (S's center of mass). In other words, shifts
+  // `M_SP_E` to `M_SScm_E` (both are expressed-in frame E).
+  // @retval M_SScm_E S's spatial inertia about-point Scm expressed-in frame E.
+  // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
+  // on return the position vector p_PScm underlying `this` is the zero vector.
+  // @see SpatialInertia::ShiftToCenterOfMassInPlace(), ShiftFromCenterOfMass().
+  [[nodiscard]] SpatialInertia<T> ShiftToCenterOfMass() const {
+    return SpatialInertia<T>(*this).ShiftToCenterOfMassInPlace();
+  }
 
   // Returns principal semi-diameters (half-lengths), associated principal axes
   // orientations, and the position of a simple uniform-density body D whose

@@ -334,7 +334,8 @@ boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   if (ret_value) {
     // Form a rotational inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
+    const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+    const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
     const RotationalInertia<T> I_SScm_E =
         G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
     ret_value = I_SScm_E.CouldBePhysicallyValid();
@@ -393,6 +394,13 @@ SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
 }
 
 template <typename T>
+SpatialInertia<T>& SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
+  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
+  p_PScm_E_ = Vector3<T>::Zero();
+  return *this;  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
+}
+
+template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::ShiftInPlace(const Vector3<T>& p_PQ_E) {
   const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
   // The following two lines apply the parallel axis theorem (in place) so that:
@@ -446,22 +454,19 @@ template <typename T>
 std::pair<Vector3<double>, drake::math::RigidTransform<double>>
 SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
     double inertia_shape_factor) const {
-  // Get position vector from P (`this` spatial inertia's about point) to
-  // Scm (`this` spatial inertia's center of mass), expressed in frame E.
-  const Vector3<T>& p_PScm_E = get_com();
-
-  // Shift `this` spatial inertia's unit inertia from P to Scm.
-  const UnitInertia<T>& G_SP_E = get_unit_inertia();
-  const UnitInertia<T> G_SScm_E = G_SP_E.ShiftToCenterOfMass(p_PScm_E);
+  // Form M_SScm_E by shifting `this` spatial inertia from about-point P to Scm.
+  const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
 
   // Form the principal semi-diameters (half-lengths) and rotation matrix R_EA
   // that contains the associated principal axes directions Ax, Ay, Az.
+  const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
   const auto [abc, R_EA] =
       G_SScm_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
           inertia_shape_factor);
 
   // Since R_EA is of type double and X_EA must also be of type double,
   // create a position vector from P to Scm that is of type double.
+  const Vector3<T>& p_PScm_E = get_com();
   const double xcm = ExtractDoubleOrThrow(p_PScm_E(0));
   const double ycm = ExtractDoubleOrThrow(p_PScm_E(1));
   const double zcm = ExtractDoubleOrThrow(p_PScm_E(2));
@@ -470,23 +475,59 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   return std::pair(abc, X_EA);
 }
 
+// The derivation of the formula below starts with calculations documented in
+// UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape() of
+// lmax, lmed, lmin (½-lengths of sides of the minimum bounding box) that depend
+// on Gmax, Gmed, Gmin (the maximum, medium, minimum central principal moments
+// of the unit inertia calculated via shifting `this` to the center of mass).
+// 1. lmax² = 0.5 / inertia_shape_factor * (Gmed + Gmax - Gmin)
+//    lmed² = 0.5 / inertia_shape_factor * (Gmin + Gmax - Gmed)
+//    lmin² = 0.5 / inertia_shape_factor * (Gmin + Gmed - Gmax)
+// 2. lmax² + lmed² + lmin² = 0.5 / inertia_shape_factor * (Gmin + Gmed + Gmax)
+// 3. Gmin + Gmed + Gmax = Trace(unit_inertia) is invariant meaning it does not
+//    matter if unit_inertia has zero or non-zero products of inertia, i.e.,
+//    Gxx + Gyy + Gzz = Gmin + Gmed + Gmax is invariant to the unit inertia's
+//    expressed-in frame. One proof of this invarience is that the trace of a
+//    symmetric matrix is invariant under an orthogonal transformation, e.g.,
+//    for the rotation matrix R_AB and using the trace cyclic property
+//    Trace(R_AB * unit_inertia * R_BA) = Trace(unit_inertia * R_BA * R_AB)
+//                                      = Trace(unit_inertia * identity_matrix)
+//                                      = Trace(unit_inertia)
+// 4. space_diagonal² = (2 lmax)² + (2 lmed)² + (2 lmin)²
+//                    = 4 (lmax² + lmed² + lmin²)
+//                    = 4 * 0.5 / inertia_shape_factor * (Gxx + Gyy + Gzz)
+//                    = 4 * 0.5 / inertia_shape_factor * Trace(unit_inertia)
+//                    = 2 / inertia_shape_factor * Trace(unit_inertia)
+// 5. The largest inertia shape_factor is 1.0, which corresponds to a massless
+//    box with particles at its vertices. Hence the minimum space diagonal is
+//    space_diagonal² = 2 * Trace(unit_inertia) or
+//    space_diagonal = √(2 * Trace(unit_inertia))
+// This space_diagonal formula is useful when template type <T> is symbolic or
+// Autodiff. Also, this formula is more efficient than calculating the length of
+// the space-diagonal via the minimum bounding box (which uses an inherently
+// numerical eigenvalue process).
+template <typename T>
+T SpatialInertia<T>::CalcMinimumPhysicalLength() const {
+  const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+  const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
+  using std::sqrt;
+  return sqrt(2.0 * G_SScm_E.Trace());
+}
+
 template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
     std::string* message) const {
   DRAKE_DEMAND(message != nullptr);
-  const T& mass = get_mass();
-  const Vector3<T>& p_PBcm = get_com();
-
-  // Get G_BP (unit inertia about point P) and use it to calculate G_BBcm (unit
-  // inertia about Bcm).  Use G_BBcm to calculate I_BBcm (rotational inertia
-  // about Bcm) without validity checks such as IsPhysicallyValid().
-  // Hence, this method works for error messages.
-  const UnitInertia<T>& G_BP = get_unit_inertia();
-  const UnitInertia<T> G_BBcm = G_BP.ShiftToCenterOfMass(p_PBcm);
+  // Form M_BBcm by shifting `this` from about-point P to Scm. Use unit inertia
+  // G_BBcm to form I_BBcm (rotational inertia about Bcm) without validity
+  // checks like IsPhysicallyValid() so this function works for error messages.
+  const SpatialInertia<T> M_BBcm = ShiftToCenterOfMass();
+  const UnitInertia<T>& G_BBcm = M_BBcm.get_unit_inertia();
   const RotationalInertia<T> I_BBcm =
-      G_BBcm.MultiplyByScalarSkipValidityCheck(mass);
+      G_BBcm.MultiplyByScalarSkipValidityCheck(get_mass());
 
-  // If point P is not at Bcm, write B's rotational inertia about Bcm.
+  // If `this` about-point P is not Bcm, write B's rotational inertia about Bcm.
+  const Vector3<T>& p_PBcm = get_com();
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
   if (!is_position_zero) {
     *message += fmt::format(
