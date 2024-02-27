@@ -1324,7 +1324,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation) {
   }
 }
 
-GTEST_TEST(HPolyhedronTest, OptimizeAffineTransformationInCircumbody) {
+GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformation) {
   const double kConstraintTol = 1e-4;
   const int kNumFaces = 4;
   const int kDimension = 2;
@@ -1347,7 +1347,7 @@ GTEST_TEST(HPolyhedronTest, OptimizeAffineTransformationInCircumbody) {
   HPolyhedron initial_polytope = HPolyhedron(VPolytope(initial_polytope_verts));
 
   HPolyhedron inbody =
-      initial_polytope.OptimizeAffineTransformationInCircumbody(circumbody);
+      initial_polytope.MaximumVolumeInscribedAffineTransformation(circumbody);
 
   // Check containment, and that volume increased.
   EXPECT_TRUE(inbody.ContainedIn(circumbody, kConstraintTol));

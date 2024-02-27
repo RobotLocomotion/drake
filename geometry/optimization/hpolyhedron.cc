@@ -880,7 +880,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
   // Affine transformation.
   if (do_affine_transformation) {
-    inbody = inbody.OptimizeAffineTransformationInCircumbody(circumbody);
+    inbody = inbody.MaximumVolumeInscribedAffineTransformation(circumbody);
     log()->info("Inner ellipsoid volume ratio before affine transform: {}",
                 V_inbody_ellipsoid_before_affine_transformation /
                     V_circumbody_ellipsoid);
@@ -914,7 +914,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   return inbody;
 }
 
-HPolyhedron HPolyhedron::OptimizeAffineTransformationInCircumbody(
+HPolyhedron HPolyhedron::MaximumVolumeInscribedAffineTransformation(
     const HPolyhedron& circumbody) const {
   int Ny = circumbody.A().rows();
   int Nx = this->A().rows();
@@ -938,11 +938,32 @@ HPolyhedron HPolyhedron::OptimizeAffineTransformationInCircumbody(
   solvers::MatrixXDecisionVariable Lambda =
       prog.NewContinuousVariables(Ny, Nx, "Lambda");
   prog.AddBoundingBoxConstraint(0, kInf, Lambda);
-  prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx,
-                                   MatrixXd::Zero(Ny, ambient_dimension()));
-  prog.AddLinearConstraint(
-      Lambda * this->b() - circumbody.b() + circumbody.A() * tx,
-      VectorXd::Constant(Ny, -kInf), VectorXd::Zero(Ny));
+  // prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx,
+  //                                  MatrixXd::Zero(Ny, ambient_dimension()));
+  // Loop through elements of the constraint 
+  // Λ * `this`.A() = circumbody.A() * T.
+
+  // prog.AddLinearConstraint(
+  //     Lambda * this->b() - circumbody.b() + circumbody.A() * tx,
+  //     VectorXd::Constant(Ny, -kInf), VectorXd::Zero(Ny)); // TODO(rhjiang) don't do as expression
+  MatrixXd left_hand_equality_matrix(1, Nx + circumbody.ambient_dimension());
+  solvers::VectorXDecisionVariable equality_variables(Nx + circumbody.ambient_dimension());
+  MatrixXd left_hand_inequality_matrix(1, Nx + circumbody.ambient_dimension());
+  solvers::VectorXDecisionVariable inequality_variables(Nx + circumbody.ambient_dimension());
+  for (int i_row = 0; i_row < Ny; ++i_row) {
+    for (int i_col = 0; i_col < circumbody.ambient_dimension(); ++i_col) {
+      left_hand_equality_matrix << this->A().col(i_col).transpose(), circumbody.A().row(i_row);
+      equality_variables << Lambda.row(i_row).transpose(), Tx.col(i_col);
+      prog.AddLinearEqualityConstraint(left_hand_equality_matrix, VectorXd::Zero(1), equality_variables);
+    }
+  left_hand_inequality_matrix << this->b(), circumbody.A().row(i_row);
+  inequality_variables << Lambda.row(i_row).transpose(), tx;
+  prog.AddLinearConstraint(left_hand_inequality_matrix, -kInf, circumbody.b()[i_row], inequality_variables);
+  }
+  
+  
+  
+  
   solvers::MathematicalProgramResult result = Solve(prog);
 
   if (!result.is_success()) {

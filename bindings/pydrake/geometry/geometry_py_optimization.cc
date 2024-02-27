@@ -273,8 +273,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("intersecting_polytopes") = std::vector<HPolyhedron>(),
             py::arg("keep_whole_intersection") = false,
             py::arg("intersection_pad") = 1e-4, py::arg("random_seed") = 0)
-        .def("OptimizeAffineTransformationInCircumbody",
-            &HPolyhedron::OptimizeAffineTransformationInCircumbody,
+        .def("MaximumVolumeInscribedAffineTransformation",
+            &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
             py::arg("circumbody"))
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,

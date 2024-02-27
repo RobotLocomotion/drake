@@ -113,7 +113,7 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   @param min_v_ratio is a lower bound for the ratio of the volume of the
   returned inbody and the volume of `this`.
   @param do_affine_transformation specifies whether to call
-  OptimizeAffineTransformationInCircumbody(), to take an affine transformation
+  MaximumVolumeInscribedAffineTransformation(), to take an affine transformation
   of the inner approximation to maximize its volume.  The affine transformation
   is reverted if the resulting inner approximation violates conditions related
   to `points_to_contain` or `intersecting_polytopes`.
@@ -157,20 +157,15 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   semi-definite.  The latter condition is necessary for convexity of the
   program.  We solve
   @verbatim
-  max_{T,t,Λ} log det (T)
+  max_{T,t} log det (T)
         s.t. T ≽ 0
-        Λ ≥ 0
-        Λ * A_1 = A_2 * T
-        Λ * b_1 ≤ b_2 + A_2 * t
+        t + TX ⊆ Y
   @endverbatim
-  where A_1 and b_1 are the A and b matrices belonging to `this`, and A_2 and
-  b_2 are the A and b matrices belonging to `circumbody`. Returns the polytope
-  whose A and b matrices are A_1 * T^{-1} and b_1 + A_1 * T^{-1} * t,
-  respectively.
+  where X is `this`, and Y is `circumbody`.  Returns t + TX.
 
   @param circumbody is an HPolyhedron that must contain the returned inbody.
   @throws std::exception if the solver fails to solve the problem.*/
-  [[nodiscard]] HPolyhedron OptimizeAffineTransformationInCircumbody(
+  [[nodiscard]] HPolyhedron MaximumVolumeInscribedAffineTransformation(
       const HPolyhedron& circumbody) const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
