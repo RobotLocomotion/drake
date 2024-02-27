@@ -287,7 +287,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
        {Vector3d{1e-15, 1e-15, 1e-15}, Vector3d{0.1, 0.2, 0.3},
         Vector3d{-10.23, 27, 77}, Vector3d{321.3, -843.2, 202.02}}) {
     for (int e = 0; e < mesh_M.num_elements(); ++e) {
-      if (positive_set.count(e) == 1) {
+      if (positive_set.contains(e)) {
         // f⁺(x,y,z) =  3.5x - 2.7y + 0.7z + 1.23
         const double expect = f_p(p_MQ);
         const double tolerance = 1e-13 * abs(expect);

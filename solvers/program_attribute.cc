@@ -24,7 +24,7 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
   // tally any unsupported attributes to populate the message at the end.
   std::vector<ProgramAttribute> unsupported_enums;
   for (const auto& attribute : required) {
-    if (supported.count(attribute) == 0) {
+    if (!supported.contains(attribute)) {
       if (unsupported_message == nullptr) {
         return false;
       } else {

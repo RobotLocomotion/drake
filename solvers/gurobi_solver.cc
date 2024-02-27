@@ -1306,7 +1306,7 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
 
   // Default the option for number of threads based on an environment variable
   // (but only if the user hasn't set the option directly already).
-  if (merged_options.GetOptionsInt(id()).count("Threads") == 0) {
+  if (!merged_options.GetOptionsInt(id()).contains("Threads")) {
     if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
       const std::optional<int> num_threads = ParseInt(num_threads_str);
       if (num_threads.has_value()) {

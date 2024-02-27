@@ -26,9 +26,9 @@ class RenderEngineTester {
   }
 
   bool has_id(GeometryId id) const {
-    return engine_.update_ids_.count(id) > 0 ||
-           engine_.anchored_ids_.count(id) > 0 ||
-           engine_.deformable_mesh_dofs_.count(id) > 0;
+    return engine_.update_ids_.contains(id) ||
+           engine_.anchored_ids_.contains(id) ||
+           engine_.deformable_mesh_dofs_.contains(id);
   }
 
  private:
@@ -298,7 +298,7 @@ GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
     X_WG_all[id].set_translation(p_WG);
     engine.UpdatePoses(X_WG_all);
     EXPECT_EQ(engine.updated_ids().size(), 1);
-    ASSERT_EQ(engine.updated_ids().count(id), 1);
+    ASSERT_TRUE(engine.updated_ids().contains(id));
     EXPECT_TRUE(
         CompareMatrices(engine.updated_ids().at(id).translation(), p_WG));
     EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),

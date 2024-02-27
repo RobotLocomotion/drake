@@ -295,7 +295,7 @@ std::set<BodyIndex> MultibodyGraph::FindBodiesWeldedTo(
   // TODO(amcastro-tri): Consider storing within RigidBody the subgraph it
   //  belongs to if performance becomes an issue.
   auto predicate = [body_index](auto& subgraph) {
-    return subgraph.count(body_index) > 0;
+    return subgraph.contains(body_index);
   };
   auto subgraph_iter =
       std::find_if(subgraphs.begin(), subgraphs.end(), predicate);

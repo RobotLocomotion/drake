@@ -90,7 +90,7 @@ symbolic::Polynomial MathematicalProgramResult::GetSolution(
     const symbolic::Polynomial& p) const {
   DRAKE_ASSERT(decision_variable_index_.has_value());
   for (const auto& indeterminate : p.indeterminates()) {
-    if (decision_variable_index_->count(indeterminate.get_id()) > 0) {
+    if (decision_variable_index_->contains(indeterminate.get_id())) {
       throw std::invalid_argument(
           fmt::format("GetSolution: {} is an indeterminate in the polynomial, "
                       "but result stores its value as a decision variable.",

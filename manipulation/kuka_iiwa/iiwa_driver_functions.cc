@@ -26,7 +26,7 @@ void ApplyDriverConfig(
   DRAKE_THROW_UNLESS(builder != nullptr);
   const std::string& arm_name = model_instance_name;
   const std::string& hand_name = driver_config.hand_model_name;
-  if (models_from_directives.count(arm_name) == 0) {
+  if (!models_from_directives.contains(arm_name)) {
     throw std::runtime_error(fmt::format(
         "IiwaDriver could not find arm model directive '{}' to actuate",
         arm_name));
@@ -34,7 +34,7 @@ void ApplyDriverConfig(
   const ModelInstanceInfo& arm_model = models_from_directives.at(arm_name);
   std::optional<ModelInstanceInfo> hand_model;
   if (!hand_name.empty()) {
-    if (models_from_directives.count(hand_name) == 0) {
+    if (!models_from_directives.contains(hand_name)) {
       throw std::runtime_error(fmt::format(
           "IiwaDriver could not find hand model directive '{}' to actuate",
           hand_name));

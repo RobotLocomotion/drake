@@ -48,7 +48,7 @@ class ChooseBestSolverTest : public ::testing::Test {
     EXPECT_EQ(solver_id, expected_solver_id);
 
     // Ensure GetKnownSolvers is comprehensive.
-    EXPECT_EQ(GetKnownSolvers().count(solver_id), 1);
+    EXPECT_TRUE(GetKnownSolvers().contains(solver_id));
   }
 
   void CheckMakeSolver(const SolverInterface& solver) const {
@@ -56,7 +56,7 @@ class ChooseBestSolverTest : public ::testing::Test {
     EXPECT_EQ(new_solver->solver_id(), solver.solver_id());
 
     // Ensure GetKnownSolvers is comprehensive.
-    EXPECT_EQ(GetKnownSolvers().count(solver.solver_id()), 1);
+    EXPECT_TRUE(GetKnownSolvers().contains(solver.solver_id()));
   }
 
   void CheckBestSolver(const std::vector<SolverInterface*>& solvers) {
@@ -116,7 +116,7 @@ void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
   const std::vector<SolverId> available_ids = GetAvailableSolvers(prog_type);
   const auto known_solvers = GetKnownSolvers();
   for (const auto& available_id : available_ids) {
-    EXPECT_GT(known_solvers.count(available_id), 0);
+    EXPECT_TRUE(known_solvers.contains(available_id));
     std::unique_ptr<SolverInterface> solver = MakeSolver(available_id);
     EXPECT_TRUE(solver->available());
     EXPECT_TRUE(solver->enabled());
@@ -144,7 +144,7 @@ void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
         // GetAvailableSolvers(kQuadraticCostConicConstraint).
         continue;
       } else {
-        EXPECT_GT(available_id_set.count(solver_id), 0);
+        EXPECT_TRUE(available_id_set.contains(solver_id));
       }
     }
   }

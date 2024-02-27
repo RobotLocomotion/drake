@@ -388,7 +388,7 @@ std::optional<std::string> ParseGeometryName(
   }
 
   // Check if we need to salt it.
-  if (geometry_names->count(result) > 0) {
+  if (geometry_names->contains(result)) {
     for (int i = 1;; ++i) {
       if (i >= numeric_name_suffix_limit) {
         policy.Error(fmt::format("Too many geometries with identical name '{}'",
@@ -396,7 +396,7 @@ std::optional<std::string> ParseGeometryName(
         return {};
       }
       std::string guess = fmt::format("{}_{}", result, i);
-      if (geometry_names->count(guess) == 0) {
+      if (!geometry_names->contains(guess)) {
         if (explicitly_named) {
           policy.Warning(fmt::format(
               "{} name '{}' has already been used, renaming to '{}' instead",

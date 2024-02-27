@@ -91,20 +91,20 @@ GTEST_TEST(GeometryUtilities, MapKeyRange) {
   int count = 0;
   for (int i : range) {
     ++count;
-    EXPECT_EQ(values.count(i), 1);
+    EXPECT_TRUE(values.contains(i));
   }
   EXPECT_EQ(count, values.size());
 
   std::set<int> read_values_set(range.begin(), range.end());
   EXPECT_EQ(read_values_set.size(), values.size());
   for (int i : read_values_set) {
-    EXPECT_EQ(values.count(i), 1);
+    EXPECT_TRUE(values.contains(i));
   }
 
   std::vector<int> read_values_vector(range.begin(), range.end());
   EXPECT_EQ(read_values_vector.size(), values.size());
   for (int i : read_values_vector) {
-    EXPECT_EQ(values.count(i), 1);
+    EXPECT_TRUE(values.contains(i));
   }
 }
 

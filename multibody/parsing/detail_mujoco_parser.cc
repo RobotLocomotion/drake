@@ -289,7 +289,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_joint_.count(class_name) > 0) {
+    if (default_joint_.contains(class_name)) {
       ApplyDefaultAttributes(*default_joint_.at(class_name), node);
     }
 
@@ -404,7 +404,7 @@ class MujocoParser {
     using geometry::ShapeReifier::ImplementGeometry;
 
     void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.count(name_) == 1);
+      DRAKE_DEMAND(mesh_inertia_.contains(name_));
       M_GG_G_ = mesh_inertia_.at(name_);
     }
 
@@ -481,7 +481,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_geometry_.count(class_name) > 0) {
+    if (default_geometry_.contains(class_name)) {
       // TODO(russt): Add a test case covering childclass/default nesting once
       // the body element is supported.
       ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
@@ -622,7 +622,7 @@ class MujocoParser {
                                  geom.name));
           return geom;
       }
-      if (mesh_.count(mesh)) {
+      if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
       } else {
         Warning(
@@ -703,7 +703,7 @@ class MujocoParser {
 
     std::string material;
     if (ParseStringAttribute(node, "material", &material)) {
-      if (material_.count(material)) {
+      if (material_.contains(material)) {
         XMLElement* material_node = material_.at(material);
         // Note: there are many material attributes that we do not support yet,
         // nor perhaps ever. Consider warning about them here (currently, it
@@ -948,7 +948,7 @@ class MujocoParser {
          e = e->NextSiblingElement(elt_name)) {
       (*default_map)[class_name] = e;
       if (!parent_default.empty() &&
-          default_map->count(parent_default) > 0) {
+          default_map->contains(parent_default)) {
         ApplyDefaultAttributes(*default_map->at(parent_default), e);
       }
     }
@@ -1020,7 +1020,7 @@ class MujocoParser {
       if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
         class_name = "main";
       }
-      if (default_mesh_.count(class_name) > 0) {
+      if (default_mesh_.contains(class_name)) {
         ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
       }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");

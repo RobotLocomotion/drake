@@ -60,7 +60,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(const std::string& model_path,
 
   if (!parent_bodies.empty()) {
     for (const BodyIndex& child : child_bodies) {
-      if (parent_bodies.count(child)) {
+      if (parent_bodies.contains(child)) {
         parent_bodies.erase(child);
       }
     }

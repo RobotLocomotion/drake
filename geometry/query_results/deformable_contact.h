@@ -380,7 +380,7 @@ class DeformableContact {
 
   /* Returns true iff a geometry with the given `id` has been registered. */
   bool IsRegistered(GeometryId id) const {
-    return contact_participations_.count(id) > 0;
+    return contact_participations_.contains(id);
   }
 
   /* Returns the number of vertices in the geometry with the given `id`.

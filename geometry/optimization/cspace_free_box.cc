@@ -149,9 +149,9 @@ void CspaceFreeBox::GeneratePolynomialsToCertify(
       separating_planes_map;
   for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
     const auto& plane = separating_planes()[i];
-    if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+    if (!ignored_collision_pairs.contains(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
-            plane.negative_side_geometry->id())) == 0) {
+            plane.negative_side_geometry->id()))) {
       separating_planes_map.emplace(i, &plane);
     }
   }
@@ -230,7 +230,7 @@ CspaceFreeBox::ConstructPlaneSearchProgram(
     symbolic::Polynomial poly = rational.numerator();
 
     for (int i = 0; i < s_size; ++i) {
-      if (s_for_plane_indices_set.count(i) > 0) {
+      if (s_for_plane_indices_set.contains(i)) {
         gram_and_monomial_basis.AddSos(
             prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
             &lagrangians.mutable_s_box_lower()(i));

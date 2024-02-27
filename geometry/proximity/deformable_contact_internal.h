@@ -46,14 +46,14 @@ class Geometries final : public ShapeReifier {
   /* Returns true if a rigid (non-deformable) geometry representation with the
    given `id` exists. */
   bool is_rigid(GeometryId id) const {
-    return rigid_geometries_.count(id) != 0 ||
-           rigid_geometries_pending_.count(id) != 0;
+    return rigid_geometries_.contains(id) ||
+           rigid_geometries_pending_.contains(id);
   }
 
   /* Returns true if a deformable geometry representation with the given `id`
    exists. */
   bool is_deformable(GeometryId id) const {
-    return deformable_geometries_.count(id) != 0;
+    return deformable_geometries_.contains(id);
   }
 
   /* Removes the geometry (if it has a deformable contact representation). No-op

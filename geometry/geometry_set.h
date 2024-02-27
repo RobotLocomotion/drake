@@ -282,13 +282,13 @@ class GeometrySet {
 
   // Reports if the given `frame_id` has been added to the group.
   bool contains(FrameId frame_id) const {
-    return frame_ids_.count(frame_id) > 0;
+    return frame_ids_.contains(frame_id);
   }
 
   // Reports if the given `geometry_id` has been *explicitly* added to the
   // group. It will *not* capture geometry ids affixed to added frames.
   bool contains(GeometryId geometry_id) const {
-    return geometry_ids_.count(geometry_id) > 0;
+    return geometry_ids_.contains(geometry_id);
   }
 
   std::unordered_set<FrameId> frame_ids_;

@@ -449,7 +449,7 @@ bool MultibodyPlant<T>::GetConstraintActiveStatus(
   this->ValidateContext(context);
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       this->GetConstraintActiveStatus(context);
-  DRAKE_THROW_UNLESS(constraint_active_status.count(id) > 0);
+  DRAKE_THROW_UNLESS(constraint_active_status.contains(id));
   return constraint_active_status.at(id);
 }
 
@@ -461,7 +461,7 @@ void MultibodyPlant<T>::SetConstraintActiveStatus(systems::Context<T>* context,
   this->ValidateContext(context);
   std::map<MultibodyConstraintId, bool>& constraint_active_status =
       this->GetMutableConstraintActiveStatus(context);
-  DRAKE_THROW_UNLESS(constraint_active_status.count(id) > 0);
+  DRAKE_THROW_UNLESS(constraint_active_status.contains(id));
   constraint_active_status[id] = status;
 }
 

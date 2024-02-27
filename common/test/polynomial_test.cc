@@ -300,21 +300,21 @@ GTEST_TEST(PolynomialTest, GetVariables) {
   Polynomiald z = Polynomiald("z");
   Polynomiald::VarType z_var = z.GetSimpleVariable();
 
-  EXPECT_TRUE(x.GetVariables().count(x_var));
-  EXPECT_FALSE(x.GetVariables().count(y_var));
+  EXPECT_TRUE(x.GetVariables().contains(x_var));
+  EXPECT_FALSE(x.GetVariables().contains(y_var));
 
-  EXPECT_FALSE(Polynomiald().GetVariables().count(x_var));
+  EXPECT_FALSE(Polynomiald().GetVariables().contains(x_var));
 
-  EXPECT_TRUE((x + x).GetVariables().count(x_var));
+  EXPECT_TRUE((x + x).GetVariables().contains(x_var));
 
-  EXPECT_TRUE((x + y).GetVariables().count(x_var));
-  EXPECT_TRUE((x + y).GetVariables().count(y_var));
+  EXPECT_TRUE((x + y).GetVariables().contains(x_var));
+  EXPECT_TRUE((x + y).GetVariables().contains(y_var));
 
-  EXPECT_TRUE((x * y * y + z).GetVariables().count(x_var));
-  EXPECT_TRUE((x * y * y + z).GetVariables().count(y_var));
-  EXPECT_TRUE((x * y * y + z).GetVariables().count(z_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().contains(x_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().contains(y_var));
+  EXPECT_TRUE((x * y * y + z).GetVariables().contains(z_var));
 
-  EXPECT_FALSE(x.Derivative().GetVariables().count(x_var));
+  EXPECT_FALSE(x.Derivative().GetVariables().contains(x_var));
 }
 
 GTEST_TEST(PolynomialTest, Simplification) {
