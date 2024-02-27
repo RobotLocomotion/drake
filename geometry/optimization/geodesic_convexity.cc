@@ -260,8 +260,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   }
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
-  bool compute_intersections_within_A = convex_sets_A == convex_sets_B;
-  if (!compute_intersections_within_A) {
+  bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
+  if (!convex_sets_A_and_B_are_identical) {
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
       region_minimum_and_maximum_values_B.emplace_back(
           std::vector<std::pair<double, double>>());
@@ -276,14 +276,17 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
-      if (compute_intersections_within_A && j <= i) {
+      if (convex_sets_A_and_B_are_identical && j <= i) {
         // If we're computing intersections within convex_sets_A and j <= i,
         // then we've already checked if we need to add an edge when i and j
         // were flipped, and that set has already been added.
         continue;
       }
       const auto& bbox_A = region_minimum_and_maximum_values_A.at(i);
-      const auto& bbox_B = region_minimum_and_maximum_values_B.empty()
+      // If convex_sets_A == convex_sets_B, then
+      // region_minimum_and_maximum_values_B is empty, so we instead get the
+      // bbox value from region_minimum_and_maximum_values_A.
+      const auto& bbox_B = convex_sets_A_and_B_are_identical
                                ? region_minimum_and_maximum_values_A.at(j)
                                : region_minimum_and_maximum_values_B.at(j);
 
@@ -342,7 +345,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
         // within convex_sets_A, also add edge (j, i), since edges are
         // considered bidirectional in that context.
         edges.emplace_back(i, j, offset);
-        if (compute_intersections_within_A) {
+        if (convex_sets_A_and_B_are_identical) {
           edges.emplace_back(j, i, -offset);
         }
       }
@@ -353,9 +356,9 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 }
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
-    const ConvexSets& convex_sets_A,
+    const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints) {
-  return CalcPairwiseIntersections(convex_sets_A, convex_sets_A,
+  return CalcPairwiseIntersections(convex_sets, convex_sets,
                                    continuous_revolute_joints);
 }
 

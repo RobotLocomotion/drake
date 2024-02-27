@@ -1182,6 +1182,26 @@ void DefineGeometryOptimization(py::module m) {
       py::arg("epsilon") = 1e-5,
       doc.PartitionConvexSet
           .doc_3args_convex_sets_continuous_revolute_joints_epsilon);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets_A,
+          const std::vector<ConvexSet*>& convex_sets_B,
+          const std::vector<int>& continuous_revolute_joints) {
+        return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
+            CloneConvexSets(convex_sets_B), continuous_revolute_joints);
+      },
+      py::arg("convex_sets_A"), py::arg("convex_sets_B"),
+      py::arg("continuous_revolute_joints"),
+      doc.CalcPairwiseIntersections.doc_3args);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets,
+          const std::vector<int>& continuous_revolute_joints) {
+        return CalcPairwiseIntersections(
+            CloneConvexSets(convex_sets), continuous_revolute_joints);
+      },
+      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
+      doc.CalcPairwiseIntersections.doc_2args);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

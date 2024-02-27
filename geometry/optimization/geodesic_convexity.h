@@ -129,25 +129,25 @@ geometry::optimization::ConvexSets PartitionConvexSet(
 /** Computes the pairwise intersections edges between two lists of convex sets.
 Each edge is a tuple in the form [index_A, index_B, offset_A_to_B], where
 Each is a tuple in the form [index_A, index_B, offset_A_to_B],
-where index_A is the index of the list in @p convex_sets_A, index_B is the
-index of the list in @p convex_sets_B, and offset_A_to_B is is the translation
-to applied to all the points in the index_A'th set in @p convex_sets_A to align
-them with the index_B'th set in @p convex_sets_B. This translation may only have
+where index_A is the index of the list in `convex_sets_A`, index_B is the
+index of the list in `convex_sets_B`, and offset_A_to_B is is the translation
+to applied to all the points in the index_A'th set in `convex_sets_A` to align
+them with the index_B'th set in `convex_sets_B`. This translation may only have
 non-zero entries along the dimensions corresponding to @p
 continuous_revolute_joints. All non-zero entries are integer multiples of 2π as
 the translation of the sets still represents the same configurations for the
-indices in @p continuous_revolute_joints.
+indices in `continuous_revolute_joints`.
 
 @param convex_sets_A is a vector of convex sets. Pairwise intersections will be
-computed between @p convex_sets_A and @p convex_sets_B.
+computed between `convex_sets_A` and `convex_sets_B`.
 @param convex_sets_B is the other vector of convex sets.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
 
-@throws if @p continuous_revolute_joints has repeated entries, or if any entry
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
-ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
-@throws if @p convex_sets_A or @p convex_sets_B are empty.
+ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
+@throws if `convex_sets_A` or `convex_sets_B` are empty.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
@@ -158,14 +158,14 @@ convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
 convex_sets, continuous_revolute_joints).
 
 @param convex_sets_A is a vector of convex sets. Pairwise intersections will be
-computed within @p convex_sets_A.
+computed within `convex_sets_A`.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
 
-@throws if @p continuous_revolute_joints has repeated entries, or if any entry
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
-ambient dimension of the convex sets in @p convex_sets_A and @p convex_sets_B.
-@throws if @p convex_sets_A is empty.
+ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
+@throws if `convex_sets_A` is empty.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
