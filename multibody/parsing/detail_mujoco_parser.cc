@@ -917,7 +917,7 @@ class MujocoParser {
                                             *geom.shape, geom.name,
                                             geom.friction);
         }
-        num_geometries++;
+        ++num_geometries;
       }
     }
 
