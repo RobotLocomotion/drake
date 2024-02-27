@@ -295,7 +295,7 @@ def aliases(
 _NORMAL_DEPENDENCIES = {
     "": {
         _COMMON_CONDITION: {
-            "clarabel": "@crate__clarabel-0.6.0//:clarabel",
+            "clarabel": "@crate__clarabel-0.7.0//:clarabel",
         },
     },
 }
