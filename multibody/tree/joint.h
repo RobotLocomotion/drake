@@ -523,7 +523,7 @@ class Joint : public MultibodyElement<T> {
   /// N⋅m⋅s. Refer to each joint's documentation for further details.
   const VectorX<double>& default_damping_vector() const { return damping_; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.");
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.")
   const VectorX<double>& damping_vector() const { return damping_; }
 
   /// Returns the Context dependent damping coefficients stored as parameters in
@@ -553,6 +553,13 @@ class Joint : public MultibodyElement<T> {
   /// @param[in] damping The vector of damping values.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
+  /// @note Some multi-dof joints may have specific semantics for their damping
+  /// vector that are not enforced here. For instance, QuaternionFloatingJoint
+  /// assumes identical damping values for all 3 angular velocity components and
+  /// identical damping values for all 3 translational velocity components. It
+  /// will thus use `angular_damping = damping[0]` and `translational_damping =
+  /// damping[3]`. Refer to the particular subclass for more semantic
+  /// information.
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
@@ -802,14 +809,6 @@ class Joint : public MultibodyElement<T> {
   /// If the MultibodyTree has been finalized, this will return true.
   bool has_implementation() const { return implementation_ != nullptr; }
 
-  /// Called by DoDeclareParameters(). Derived classes may choose to override
-  /// to declare their sub-class specific parameters.
-  virtual void DoDeclareJointParameters(internal::MultibodyTreeSystem<T>*) {}
-
-  /// Called by DoSetDefaultParameters(). Derived classes may choose to override
-  /// to set their sub-class specific parameters.
-  virtual void DoSetDefaultJointParameters(systems::Parameters<T>*) const {}
-
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
   // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().
@@ -830,8 +829,6 @@ class Joint : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
-    DoDeclareJointParameters(tree_system);
-
     // Declare a parameter for damping.
     damping_parameter_index_ = this->DeclareNumericParameter(
         tree_system, systems::BasicVector<T>(damping_.size()));
@@ -839,8 +836,6 @@ class Joint : public MultibodyElement<T> {
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
   void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
-    DoSetDefaultJointParameters(parameters);
-
     // Set default damping.
     systems::BasicVector<T>& damping_parameter =
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);

@@ -117,8 +117,15 @@ TEST_F(PlanarJointTest, GetJointLimits) {
 }
 
 TEST_F(PlanarJointTest, Damping) {
-  EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->default_damping(), Vector3d::Constant(kDamping));
   EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
+
+  // Ensure the deprecated versions are correct until removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
+#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.
@@ -152,6 +159,10 @@ TEST_F(PlanarJointTest, ContextDependentAccess) {
   EXPECT_EQ(joint_->GetDampingVector(*context_), Vector3d::Constant(kDamping));
   EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
   EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint_->SetDampingVector(context_.get(), Vector3d::Constant(-1)),
+               std::exception);
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding
@@ -223,7 +234,7 @@ TEST_F(PlanarJointTest, Clone) {
             joint_->acceleration_lower_limits());
   EXPECT_EQ(joint_clone.acceleration_upper_limits(),
             joint_->acceleration_upper_limits());
-  EXPECT_EQ(joint_clone.damping(), joint_->damping());
+  EXPECT_EQ(joint_clone.default_damping(), joint_->default_damping());
   EXPECT_EQ(joint_clone.get_default_rotation(), joint_->get_default_rotation());
   EXPECT_EQ(joint_clone.get_default_translation(),
             joint_->get_default_translation());

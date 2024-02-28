@@ -116,8 +116,8 @@ TEST_P(AcrobotModelTests, ModelBasics) {
             elbow_->index());
 
   // Verify we parse damping correctly.
-  EXPECT_EQ(shoulder_->damping(), parameters_.b1());
-  EXPECT_EQ(elbow_->damping(), parameters_.b2());
+  EXPECT_EQ(shoulder_->default_damping(), parameters_.b1());
+  EXPECT_EQ(elbow_->default_damping(), parameters_.b2());
 
   // State size.
   EXPECT_EQ(plant_->num_positions(), benchmark_plant_->num_positions());

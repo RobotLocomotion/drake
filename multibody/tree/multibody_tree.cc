@@ -1260,8 +1260,7 @@ template <typename T>
 void MultibodyTree<T>::CalcJointDamping(const systems::Context<T>& context,
                                         VectorX<T>* joint_damping) const {
   DRAKE_THROW_UNLESS(joint_damping != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(joint_damping->size()) ==
-                     num_velocities());
+  DRAKE_THROW_UNLESS(ssize(*joint_damping) == num_velocities());
 
   for (const Joint<T>* joint : joints_.elements()) {
     joint_damping->segment(joint->velocity_start(), joint->num_velocities()) =
