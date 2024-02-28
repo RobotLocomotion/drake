@@ -23,7 +23,7 @@ class VolumeMeshTester {
  public:
   explicit VolumeMeshTester(const VolumeMesh<T>& mesh) : mesh_(mesh) {}
   Vector3<T> CalcGradBarycentric(int e, int i) const {
-    return mesh_.CalcGradBarycentric(e, i);
+    return mesh_.MaybeCalcGradBarycentric(e, i).value();
   }
 
  private:

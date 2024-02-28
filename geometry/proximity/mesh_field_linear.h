@@ -4,6 +4,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -209,6 +210,10 @@ class MeshFieldLinear {
     CalcValueAtMeshOriginForAllElements();
   }
 
+  bool is_gradient_field_degenerate() const {
+    return is_gradient_field_degenerate_;
+  }
+
   /** Evaluates the field value at a vertex.
    @param v The index of the vertex.
    @pre v ∈ [0, this->mesh().num_vertices()).
@@ -368,11 +373,16 @@ class MeshFieldLinear {
     gradients_.clear();
     gradients_.reserve(this->mesh().num_elements());
     for (int e = 0; e < this->mesh().num_elements(); ++e) {
-      gradients_.push_back(CalcGradientVector(e));
+      auto grad = MaybeCalcGradientVector(e);
+      if (!grad.has_value()) {
+        is_gradient_field_degenerate_ = true;
+        return;
+      }
+      gradients_.push_back(*grad);
     }
   }
 
-  Vector3<T> CalcGradientVector(int e) const {
+  std::optional<Vector3<T>> MaybeCalcGradientVector(int e) const {
     // In the case of the PolygonSurfaceMesh, where kVertexPerElement is marked
     // as "indeterminate" (aka -1), we'll simply use the first three vertices.
     // If we were to have a PolytopeVolumeMesh (i.e., a volume mesh that is
@@ -383,7 +393,15 @@ class MeshFieldLinear {
     for (int i = 0; i < kVCount; ++i) {
       u[i] = values_[this->mesh().element(e).vertex(i)];
     }
-    return this->mesh().CalcGradientVectorOfLinearField(u, e);
+    return this->mesh().MaybeCalcGradientVectorOfLinearField(u, e);
+  }
+
+  Vector3<T> CalcGradientVector(int e) const {
+    auto result = this->MaybeCalcGradientVector(e);
+    if (!result.has_value()) {
+      throw std::runtime_error("Bad geometry; cannot calculate gradient.");
+    }
+    return result.value();
   }
 
   void CalcValueAtMeshOriginForAllElements() {
@@ -418,6 +436,8 @@ class MeshFieldLinear {
   // piecewise linear field on the mesh elements_[i] at Mo the origin of
   // frame M of the mesh. Notice that Mo may or may not lie inside elements_[i].
   std::vector<T> values_at_Mo_;
+
+  bool is_gradient_field_degenerate_{false};
 };
 
 }  // namespace geometry

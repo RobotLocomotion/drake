@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -417,6 +418,17 @@ class TriangleSurfaceMesh {
     gradu_M += field_value[1] * CalcGradBarycentric(t, 1);
     gradu_M += field_value[2] * CalcGradBarycentric(t, 2);
     return gradu_M;
+  }
+
+  /** Calculates the gradient ∇u of a linear field u on the triangle `t`.
+   Field u is defined by the three field values `field_value[i]` at the i-th
+   vertex of the triangle. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  std::optional<Vector3<FieldValue>> MaybeCalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>& field_value, int t) const {
+    return CalcGradientVectorOfLinearField(field_value, t);
   }
 
   /** Updates the position of all vertices in the mesh. Each sequential triple
