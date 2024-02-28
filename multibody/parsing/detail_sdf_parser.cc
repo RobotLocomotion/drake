@@ -146,12 +146,6 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
 
   return {resolved_model_instance, unscoped_local_name};
 }
-// Returns true if `str` starts with `prefix`. The length of `prefix` has to be
-// strictly less than the size of `str`.
-bool StartsWith(const std::string_view str, const std::string_view prefix) {
-  return prefix.size() < str.size() &&
-         std::equal(str.begin(), str.begin() + prefix.size(), prefix.begin());
-}
 
 // Calculates the scoped name of a body relative to the model instance @p
 // relative_to_model_instance. If the body is a direct child of the model,
@@ -183,7 +177,7 @@ std::string GetRelativeBodyName(
     // descendent of the model relative to which we are computing the name.
     const std::string required_prefix =
         relative_to_model_absolute_name + std::string(sdf::kScopeDelimiter);
-    DRAKE_DEMAND(StartsWith(nested_model_absolute_name, required_prefix));
+    DRAKE_DEMAND(nested_model_absolute_name.starts_with(required_prefix));
 
     const std::string nested_model_relative_name =
         nested_model_absolute_name.substr(required_prefix.size());

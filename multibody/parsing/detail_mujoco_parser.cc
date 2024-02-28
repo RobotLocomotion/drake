@@ -45,15 +45,6 @@ using tinyxml2::XMLNode;
 
 namespace {
 
-// TODO(rpoyner-tri): replace with std::string_view::ends_with once c++20
-// features are available.
-bool EndsWith(std::string_view value, std::string_view ending) {
-  if (ending.size() > value.size()) {
-    return false;
-  }
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
-
 // Any attributes from `default` that are not specified in `node` will be added
 // to `node`.
 void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
@@ -1295,7 +1286,7 @@ class MujocoParser {
         // geometry name to model_instance_name::geometry_name (in
         // MultibodyPlant::GetScopedName). Cope with that change here.
         const std::string candidate_name = inspector.GetName(id);
-        if (EndsWith(candidate_name, name)) {
+        if (candidate_name.ends_with(name)) {
           return id;
         }
       }
