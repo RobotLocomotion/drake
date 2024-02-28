@@ -1,7 +1,6 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/geometry/optimization/spectrahedron.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -54,7 +53,15 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
         "AffineSubspace: Cannot take the affine hull of an empty set!");
   }
   const VectorXd translation = translation_maybe.value();
-  std::vector<VectorXd> basis_vectors;
+  // The basis of the affine hull. We preallocate the maximum dimension this
+  // basis could assume.
+  MatrixXd basis(set.ambient_dimension(), set.ambient_dimension());
+  // The basis of the orthogonal complement.
+  MatrixXd basis_orth = Eigen::MatrixXd::Identity(set.ambient_dimension(),
+                                                  set.ambient_dimension());
+  const MatrixXd I =
+      MatrixXd::Identity(set.ambient_dimension(), set.ambient_dimension());
+  int affine_dimension = 0;
 
   // Create the mathematical program we will use to find basis vectors.
   MathematicalProgram prog;
@@ -74,44 +81,63 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   set.AddPointInSetConstraints(&prog, y);
   set.AddPointInSetConstraints(&prog, z);
 
-  // This is the objective we use. We will iteratively try to minimize the ith
-  // component of x for each dimension. Anytime this value is negative, it means
+  // This is the objective we use. At each iteration, we will update this cost
+  // to search for a new basis vector. Anytime this value is negative, it means
   // we have found a new feasible direction, so we add it to the basis, and also
   // constrain future feasible x vectors to be orthogonal to it (to ensure
   // linear independence of the basis).
-  VectorXd new_objective_vector = VectorXd::Zero(set.ambient_dimension());
-  Binding<LinearCost> objective = prog.AddLinearCost(new_objective_vector, x);
+  Binding<LinearCost> objective =
+      prog.AddLinearCost(VectorXd::Zero(set.ambient_dimension()), x);
 
-  for (int i = 0; i < set.ambient_dimension(); ++i) {
-    // Update the objective to check the ith dimension
-    new_objective_vector.setZero();
-    new_objective_vector[i] = 1;
-    objective.evaluator()->UpdateCoefficients(new_objective_vector);
+  // We build up a basis of the affine hull iteratively.  For each vector v in
+  // the orthogonal complement of the affine hull basis, we try to
+  // minimize <x,v>. If the inner product is less than -tol, we add x to the
+  // basis vectors and increment our count of the affine dimension. If no vector
+  // in the orthogonal complement basis generates a sufficiently negative cost,
+  // then we have succeeded in computing the affine hull.
+  while (affine_dimension < set.ambient_dimension()) {
+    int j = 0;
+    for (; j < set.ambient_dimension(); ++j) {
+      objective.evaluator()->UpdateCoefficients(basis_orth.col(j));
+      // Minimize <x, objective>.
+      auto result = solvers::Solve(prog);
+      if (!result.is_success()) {
+        throw std::runtime_error(fmt::format(
+            "AffineSubspace: Failed to compute the affine hull! The "
+            "solution result was {}.",
+            result.get_solution_result()));
+      }
+      if (result.get_optimal_cost() < -tol) {
+        // In principle result.GetSolution(x) should be orthogonal to the basis,
+        // but we still perform this projection for numerical reasons.
+        VectorXd new_basis_vector =
+            (I - basis.leftCols(affine_dimension) *
+                     basis.leftCols(affine_dimension).transpose()) *
+            result.GetSolution(x);
+        basis.col(affine_dimension++) =
+            new_basis_vector / new_basis_vector.norm();
+        prog.AddLinearEqualityConstraint(basis.col(affine_dimension - 1), 0, x);
 
-    // Minimize x[i]
-    auto result = solvers::Solve(prog);
-    if (!result.is_success()) {
-      throw std::runtime_error(
-          fmt::format("AffineSubspace: Failed to compute the affine hull! The "
-                      "solution result was {}.",
-                      result.get_solution_result()));
+        // The matrix is orthogonal to the basis vectors, but will not be full
+        // column rank.
+        basis_orth = (I - basis.leftCols(affine_dimension) *
+                              basis.leftCols(affine_dimension).transpose());
+        // Normalize the columns for numerical stability.
+        for (int i = 0; i < basis_orth.cols(); i++) {
+          basis_orth.col(i).normalize();
+        }
+        break;
+      }
     }
-    if (result.get_optimal_cost() < -tol) {
-      // Get the solution as a new basis vector, and add a constraint that x
-      // must now be orthogonal to that new basis vector.
-      basis_vectors.push_back(result.GetSolution(x));
-      prog.AddLinearConstraint(basis_vectors.back(), 0, 0, x);
+    if (j == set.ambient_dimension()) {
+      break;
     }
   }
 
   // By construction, basis_vectors is linearly independent. Because we have
   // checked each direction in the ambient space, it will also span the other
   // convex set, so we now have its affine hull.
-  MatrixXd basis(set.ambient_dimension(), basis_vectors.size());
-  for (size_t i = 0; i < basis_vectors.size(); ++i) {
-    basis.col(i) = basis_vectors[i];
-  }
-  *this = AffineSubspace(basis, translation);
+  *this = AffineSubspace(basis.leftCols(affine_dimension), translation);
 }
 
 AffineSubspace::~AffineSubspace() = default;
@@ -284,14 +310,14 @@ Eigen::MatrixXd AffineSubspace::OrthogonalComplementBasis() const {
   if (!basis_decomp_.has_value()) {
     return MatrixXd::Identity(ambient_dimension(), ambient_dimension());
   }
-  // The perpendicular space is equivalent to the kernel of the QR decomposition
-  // stored in this class. So we can simply access the rightmost columns of the
-  // Q matrix, as described here:
+  // The orthogonal complement is equivalent to the kernel of the QR
+  // decomposition stored in this class. So we can simply access the rightmost
+  // columns of the Q matrix, as described here:
   // https://stackoverflow.com/questions/54766392/eigen-obtain-the-kernel-of-a-sparse-matrix
-  int perpendicular_basis_dimension = ambient_dimension() - AffineDimension();
+  int orthogonal_complement_dimension = ambient_dimension() - AffineDimension();
   MatrixXd Q = basis_decomp_.value().householderQ() *
                MatrixXd::Identity(ambient_dimension(), ambient_dimension());
-  return Q.rightCols(perpendicular_basis_dimension);
+  return Q.rightCols(orthogonal_complement_dimension);
 }
 
 }  // namespace optimization

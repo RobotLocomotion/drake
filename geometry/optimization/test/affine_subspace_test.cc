@@ -25,9 +25,10 @@ void CheckOrthogonalComplementBasis(const AffineSubspace& as) {
             as.ambient_dimension() - as.AffineDimension());
   EXPECT_EQ(perpendicular_basis.rows(), as.ambient_dimension());
   // Check that every perpendicular basis vector is orthogonal to
-  // every basis vector.
+  // every basis vector, and that no basis vector has norm zero.
   const double kTol = 1e-15;
   for (int i = 0; i < perpendicular_basis.cols(); ++i) {
+    EXPECT_GE(perpendicular_basis.col(i).norm(), kTol);
     for (int j = 0; j < as.basis().cols(); ++j) {
       EXPECT_NEAR(0, as.basis().col(j).dot(perpendicular_basis.col(i)), kTol);
     }
@@ -496,7 +497,7 @@ bool CheckAffineSubspaceSetContainment(const AffineSubspace& as,
 // don't have the affine hull, since it's not the smallest affine set
 // containing the ConvexSet.
 void CheckAffineHullTightness(const AffineSubspace& as, const ConvexSet& set,
-                              double tol = 0) {
+                              double tol = 1e-12) {
   ASSERT_TRUE(as.ambient_dimension() == set.ambient_dimension());
   ASSERT_FALSE(set.IsEmpty());
 
@@ -544,7 +545,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullCartesianProduct) {
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
-  // Test a full-dimensional HPolyhedron
+  // Test a full-dimensional HPolyhedron.
   HPolyhedron h1 = HPolyhedron::MakeUnitBox(3);
   AffineSubspace as1(h1);
 
@@ -558,20 +559,20 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, h1, kTol));
   CheckAffineHullTightness(as1, h1, kTol);
 
-  // Test a not-full-dimensional HPolyhedron
-  Eigen::MatrixXd A(6, 3);
-  Eigen::VectorXd b(6);
+  // Test a not-full-dimensional HPolyhedron.
+  Eigen::MatrixXd A2(6, 3);
+  Eigen::VectorXd b2(6);
 
   // clang-format off
-  A <<  1,  0,  0,
-       -1,  0,  0,
-        0,  1,  0,
-        0, -1,  0,
-        0,  0,  1,
-        0,  0, -1;
-  b << 1, 0, 1, 0, 0, 0;
+  A2 <<  1,  0,  0,
+        -1,  0,  0,
+         0,  1,  0,
+         0, -1,  0,
+         0,  0,  1,
+         0,  0, -1;
+  b2 << 1, 0, 1, 0, 0, 0;
   // clang-format on
-  HPolyhedron h2(A, b);
+  HPolyhedron h2(A2, b2);
 
   const double kTol2 = 1e-6;
 
@@ -584,6 +585,29 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
 
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, h2, kTol2));
   CheckAffineHullTightness(as2, h2, kTol2);
+
+  // Numerically-challenging HPolyhedron from #20985.
+  Eigen::Matrix<double, 6, 3> A3;
+  Eigen::Vector<double, 6> b3;
+  // clang-format off
+  A3 <<  1,  0,  0,
+         0,  1,  0,
+         0,  0,  1,
+        -1,  0,  0,
+         0, -1,  0,
+         0,  0, -1;
+  // clang-format on
+  b3 << 0.03, 0.03, 0.075, 0.03, 0.03, 0.075;
+  const HPolyhedron h3(A3, b3);
+  const AffineSubspace as3(h3, 0);
+
+  EXPECT_EQ(as3.basis().cols(), 3);
+  EXPECT_EQ(as3.basis().rows(), 3);
+  EXPECT_EQ(as3.translation().size(), 3);
+  EXPECT_EQ(as3.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, h3, kTol2));
+  CheckAffineHullTightness(as3, h3, kTol2);
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullHyperellipsoid) {
@@ -906,6 +930,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullSpectrahedron) {
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
+  const double kTol = 1e-12;
   // Check that computing the affine hull of an empty set throws an error
   const VPolytope dut;
   EXPECT_THROW(AffineSubspace{dut}, std::exception);
@@ -920,8 +945,8 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as1.translation().size(), 3);
   EXPECT_EQ(as1.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, -1, 0)));
-  EXPECT_FALSE(as1.PointInSet(Eigen::Vector3d(2, -1, 1)));
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, -1, 0), kTol));
+  EXPECT_FALSE(as1.PointInSet(Eigen::Vector3d(2, -1, 1), kTol));
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, v));
   CheckAffineHullTightness(as1, v);
 
@@ -940,9 +965,9 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as2.translation().size(), 3);
   EXPECT_EQ(as2.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(2, 2, 2)));
-  EXPECT_FALSE(as2.PointInSet(Eigen::Vector3d(2, 2, 0)));
-  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, line_segment));
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(2, 2, 2), kTol));
+  EXPECT_FALSE(as2.PointInSet(Eigen::Vector3d(2, 2, 0), kTol));
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, line_segment, kTol));
   CheckAffineHullTightness(as2, line_segment);
 
   // Check a triangle in 3D as a VPolytope
@@ -960,8 +985,8 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as3.translation().size(), 3);
   EXPECT_EQ(as3.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(42, 27, 0)));
-  EXPECT_FALSE(as3.PointInSet(Eigen::Vector3d(42, 27, 1)));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(42, 27, 0), kTol));
+  EXPECT_FALSE(as3.PointInSet(Eigen::Vector3d(42, 27, 1), kTol));
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, triangle));
   CheckAffineHullTightness(as3, triangle);
 }

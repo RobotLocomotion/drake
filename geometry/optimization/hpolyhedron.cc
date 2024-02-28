@@ -131,7 +131,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
 }
 
-HPolyhedron::HPolyhedron(const VPolytope& vpoly)
+HPolyhedron::HPolyhedron(const VPolytope& vpoly, double tol)
     : ConvexSet(vpoly.ambient_dimension(), false) {
   // First, handle the case where the VPolytope is empty.
   if (vpoly.IsEmpty()) {
@@ -167,7 +167,7 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
     return;
   }
   // Next, handle the case where the VPolytope is not full dimensional.
-  const AffineSubspace affine_hull(vpoly);
+  const AffineSubspace affine_hull(vpoly, tol);
   if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
     // This special case avoids two QHull errors: QH6214 and QH6154.
     // QH6214 is due to the VPolytope not having enough vertices to make a
@@ -241,20 +241,22 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
                  hpoly_subspace.A() * P * affine_hull.translation();
     }
 
-    // Finally, we add additional constraints from the perpendicular basis. This
-    // ensures that the points in the new HPolyhedron lie along the affine hull
-    // of the VPolytope.
-    Eigen::MatrixXd perpendicular_basis =
+    // Finally, we add additional constraints from the orthogonal complement
+    // basis. This ensures that the points in the new HPolyhedron lie along the
+    // affine hull of the VPolytope.
+    Eigen::MatrixXd orthogonal_complement_basis =
         affine_hull.OrthogonalComplementBasis();
-    Eigen::MatrixXd perp_A(2 * perpendicular_basis.cols(), ambient_dimension());
-    perp_A << perpendicular_basis.transpose(), -perpendicular_basis.transpose();
-    Eigen::VectorXd perp_b = perp_A * affine_hull.translation();
-
-    Eigen::MatrixXd full_A(global_A.rows() + perp_A.rows(),
+    Eigen::MatrixXd orth_A(2 * orthogonal_complement_basis.cols(),
                            ambient_dimension());
-    full_A << global_A, perp_A;
-    Eigen::VectorXd full_b(global_b.size() + perp_b.size());
-    full_b << global_b, perp_b;
+    orth_A << orthogonal_complement_basis.transpose(),
+        -orthogonal_complement_basis.transpose();
+    Eigen::VectorXd orth_b = orth_A * affine_hull.translation();
+
+    Eigen::MatrixXd full_A(global_A.rows() + orth_A.rows(),
+                           ambient_dimension());
+    full_A << global_A, orth_A;
+    Eigen::VectorXd full_b(global_b.size() + orth_b.size());
+    full_b << global_b, orth_b;
     *this = HPolyhedron(full_A, full_b);
     return;
   }

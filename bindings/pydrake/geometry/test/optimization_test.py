@@ -281,6 +281,7 @@ class TestGeometryOptimization(unittest.TestCase):
         vpoly = mut.VPolytope(np.array(
             [[0., 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
         hpoly = mut.HPolyhedron(vpoly=vpoly)
+        hpoly = mut.HPolyhedron(vpoly=vpoly, tol=1E-9)
         self.assertEqual(hpoly.ambient_dimension(), 3)
         self.assertEqual(hpoly.A().shape, (4, 3))
 

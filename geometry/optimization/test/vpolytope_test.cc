@@ -579,6 +579,38 @@ GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronQHullProblems) {
   EXPECT_FALSE(vpoly4.PointInSet(Vector1d(0 - 2 * vpolyTol), vpolyTol));
 }
 
+GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronNumericallyChallenging) {
+  // Example identified in #20985.
+  Eigen::Matrix<double, 6, 3> A;
+  Eigen::Vector<double, 6> b;
+  // clang-format off
+  A <<  1,  0,  0,
+        0,  1,  0,
+        0,  0,  1,
+       -1,  0,  0,
+        0, -1,  0,
+        0,  0, -1;
+  // clang-format on
+  b << 0.03, 0.03, 0.075, 0.03, 0.03, 0.075;
+  const HPolyhedron hpoly(A, b);
+
+  const double kTol = 1e-4;
+  const VPolytope vpoly(hpoly, kTol);
+
+  // This is a box, so it should have 8 vertices.
+  ASSERT_EQ(vpoly.vertices().cols(), 8);
+  // Check that each corner of the form (+/- 0.03, +/- 0.03, +/- 0.075) is
+  // contained within the VPolytope.
+  for (int i = -1; i < 2; i += 2) {
+    for (int j = -1; j < 2; j += 2) {
+      for (int k = -1; k < 2; k += 2) {
+        Eigen::Vector3d point(i * 0.03, j * 0.03, k * 0.075);
+        EXPECT_TRUE(vpoly.PointInSet(point, kTol));
+      }
+    }
+  }
+}
+
 GTEST_TEST(VPolytopeTest, CloneTest) {
   VPolytope V = VPolytope::MakeBox(Vector3d{-3, -4, -5}, Vector3d{6, 7, 8});
   std::unique_ptr<ConvexSet> clone = V.Clone();
