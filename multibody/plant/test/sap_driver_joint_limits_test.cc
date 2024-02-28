@@ -303,9 +303,9 @@ class KukaIiwaArmTests : public ::testing::Test {
         // Arbitrary position within position limits.
         const double ql = revolute_joint.position_lower_limit();
         const double qu = revolute_joint.position_upper_limit();
-        const double w =
-            revolute_joint.velocity_start() / kNumJoints;  // Number in (0,1).
-        const double q = w * ql + (1.0 - w) * qu;          // q in (ql, qu)
+        const double w = 1. * revolute_joint.velocity_start() /
+                         kNumJoints;               // Number in [0,1).
+        const double q = w * ql + (1.0 - w) * qu;  // q in (ql, qu)
         revolute_joint.set_angle(context, q);
         // Arbitrary velocity.
         revolute_joint.set_angular_rate(context, 0.5 * joint_index);
@@ -318,9 +318,9 @@ class KukaIiwaArmTests : public ::testing::Test {
         // Arbitrary position within position limits.
         const double ql = prismatic_joint.position_lower_limit();
         const double qu = prismatic_joint.position_upper_limit();
-        const double w =
-            prismatic_joint.velocity_start() / kNumJoints;  // Number in (0,1).
-        const double q = w * ql + (1.0 - w) * qu;           // q in (ql, qu)
+        const double w = 1. * prismatic_joint.velocity_start() /
+                         kNumJoints;               // Number in [0,1).
+        const double q = w * ql + (1.0 - w) * qu;  // q in (ql, qu)
         prismatic_joint.set_translation(context, q);
         // Arbitrary velocity.
         prismatic_joint.set_translation_rate(context, 0.5 * joint_index);

@@ -64,14 +64,14 @@ class RpyFloatingJoint final : public Joint<T> {
   @param[in] angular_damping
     Viscous damping coefficient in N⋅m⋅s for the angular component of this
     joint's velocity, used to model losses within the joint. See documentation
-    of angular_damping() for details on modeling of the damping force.
+    of default_angular_damping() for details on modeling of the damping force.
   @param[in] translational_damping
     Viscous damping coefficient in N⋅s/m for the translational component of
     this joint's velocity, used to model losses within the joint. See
-    documentation of translational_damping() for details on modeling of the
-    damping force.
-  @throws std::exception if angular_damping is negative.
-  @throws std::exception if translational_damping is negative. */
+    documentation of default_translational_damping() for details on modeling of
+  the damping force.
+  @throws std::exception if angular_damping is negative or infinite.
+  @throws std::exception if translational_damping is negative or infinite. */
   RpyFloatingJoint(const std::string& name, const Frame<T>& frame_on_parent,
                    const Frame<T>& frame_on_child, double angular_damping = 0.0,
                    double translational_damping = 0.0)
@@ -87,7 +87,12 @@ class RpyFloatingJoint final : public Joint<T> {
                  Vector6d::Constant(-std::numeric_limits<double>::infinity()),
                  Vector6d::Constant(std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(angular_damping >= 0);
+    DRAKE_THROW_UNLESS(angular_damping <
+                       std::numeric_limits<double>::infinity());
     DRAKE_THROW_UNLESS(translational_damping >= 0);
+    DRAKE_THROW_UNLESS(translational_damping <
+                       std::numeric_limits<double>::infinity());
+
     // Parent constructor sets all default positions to zero which is correct
     // for this joint.
   }
@@ -95,24 +100,38 @@ class RpyFloatingJoint final : public Joint<T> {
   /** Returns the name of this joint type: "rpy_floating" */
   const std::string& type_name() const final;
 
-  /** Returns this joint's angular damping constant in N⋅m⋅s. The damping
-  torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with
-  ω the angular velocity of frame M in F (see get_angular_velocity()) and τ
+  /** Returns this joint's default angular damping constant in N⋅m⋅s. The
+  damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion,
+  with ω the angular velocity of frame M in F (see get_angular_velocity()) and τ
   the torque on child body B (to which M is rigidly attached). */
+  double default_angular_damping() const {
+    // N.B. All 3 angular damping coefficients are set to the same value for
+    // this joint.
+    return this->default_damping_vector()[0];
+  }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_angular_damping() instead.")
   double angular_damping() const {
     // N.B. All 3 angular damping coefficients are set to the same value for
     // this joint.
-    return this->damping_vector()[0];
+    return this->default_damping_vector()[0];
   }
 
-  /** Returns this joint's translational damping constant in N⋅s/m. The
+  /** Returns this joint's default translational damping constant in N⋅s/m. The
   damping force (in N) is modeled as `f = -damping⋅v` i.e. opposing motion,
   with v the translational velocity of frame M in F (see
   get_translational_velocity()) and f the force on child body B at Mo. */
+  double default_translational_damping() const {
+    // N.B. All 3 translational damping coefficients are set to the same value
+    // for this joint.
+    return this->default_damping_vector()[3];
+  }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_translational_damping() instead.")
   double translational_damping() const {
     // N.B. All 3 translational damping coefficients are set to the same value
     // for this joint.
-    return this->damping_vector()[3];
+    return this->default_damping_vector()[3];
   }
 
   /** @name Context-dependent value access
@@ -365,9 +384,10 @@ class RpyFloatingJoint final : public Joint<T> {
   Therefore arguments were already checked to be valid. This method adds into
   the translational component of `forces` for `this` joint a dissipative force
   according to the viscous law `f = -d⋅v`, with d the damping coefficient (see
-  translational_damping()). This method also adds into the angular component of
-  `forces` for `this` joint a dissipative torque according to the viscous law
-  `τ = -d⋅ω`, with d the damping coefficient (see angular_damping()). */
+  default_translational_damping()). This method also adds into the angular
+  component of `forces` for `this` joint a dissipative torque according to the
+  viscous law `τ = -d⋅ω`, with d the damping coefficient (see
+  default_angular_damping()). */
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> t_BMo_F =

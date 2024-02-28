@@ -477,19 +477,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
-            cls_doc.is_locked.doc)
+            cls_doc.is_locked.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("damping_vector",
             WrapDeprecated(
                 cls_doc.damping_vector.doc_deprecated, &Class::damping_vector),
-            cls_doc.damping_vector.doc_deprecated)
+            cls_doc.damping_vector.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("default_damping_vector", &Class::default_damping_vector,
-            cls_doc.default_damping_vector.doc)
+            py_rvp::reference_internal, cls_doc.default_damping_vector.doc)
         .def("set_default_damping_vector", &Class::set_default_damping_vector,
             py::arg("damping"), cls_doc.set_default_damping_vector.doc)
         .def("GetDampingVector", &Class::GetDampingVector, py::arg("context"),
-            cls_doc.GetDampingVector.doc)
+            py::keep_alive<0, 1>(), cls_doc.GetDampingVector.doc)
         .def("SetDampingVector", &Class::SetDampingVector, py::arg("context"),
-            py::arg("damping"), cls_doc.SetDampingVector.doc);
+            py::arg("damping"), py::keep_alive<0, 1>(),
+            cls_doc.SetDampingVector.doc);
   }
 
   // BallRpyJoint
@@ -502,8 +508,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("damping") = 0, cls_doc.ctor.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+            py::arg("frame_on_child"), py::arg("damping") = 0,
+            cls_doc.ctor.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
@@ -533,8 +549,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  Vector3<double>>(),
             py::arg("name"), py::arg("frame_on_parent"),
             py::arg("frame_on_child"),
-            py::arg("damping") = Vector3<double>::Zero(), cls_doc.ctor.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+            py::arg("damping") = Vector3<double>::Zero(), cls_doc.ctor.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
@@ -587,8 +612,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 std::numeric_limits<double>::infinity(),
             py::arg("damping") = 0, cls_doc.ctor.doc)
         .def("translation_axis", &Class::translation_axis,
-            cls_doc.translation_axis.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+            cls_doc.translation_axis.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("set_default_damping", &Class::set_default_damping,
             py::arg("damping"), cls_doc.set_default_damping.doc)
         .def("position_lower_limit", &Class::position_lower_limit,
@@ -636,11 +670,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
             py::arg("frame_on_child"), py::arg("angular_damping") = 0,
-            py::arg("translational_damping") = 0, cls_doc.ctor.doc)
-        .def("angular_damping", &Class::angular_damping,
-            cls_doc.angular_damping.doc)
-        .def("translational_damping", &Class::translational_damping,
-            cls_doc.translational_damping.doc)
+            py::arg("translational_damping") = 0, cls_doc.ctor.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("angular_damping",
+            WrapDeprecated(cls_doc.angular_damping.doc_deprecated,
+                &Class::angular_damping),
+            cls_doc.angular_damping.doc_deprecated)
+        .def("translational_damping",
+            WrapDeprecated(cls_doc.translational_damping.doc_deprecated,
+                &Class::translational_damping),
+            cls_doc.translational_damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_angular_damping", &Class::default_angular_damping,
+            cls_doc.default_angular_damping.doc)
+        .def("default_translational_damping",
+            &Class::default_translational_damping,
+            cls_doc.default_translational_damping.doc)
         .def("get_quaternion", &Class::get_quaternion, py::arg("context"),
             cls_doc.get_quaternion.doc)
         .def("get_position", &Class::get_position, py::arg("context"),
@@ -705,8 +753,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("frame_on_child"), py::arg("axis"),
             py::arg("pos_lower_limit"), py::arg("pos_upper_limit"),
             py::arg("damping") = 0.0, cls_doc.ctor.doc_7args)
-        .def("revolute_axis", &Class::revolute_axis, cls_doc.revolute_axis.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("revolute_axis", &Class::revolute_axis, cls_doc.revolute_axis.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("set_default_damping", &Class::set_default_damping,
             py::arg("damping"), cls_doc.set_default_damping.doc)
         .def("position_lower_limit", &Class::position_lower_limit,
@@ -753,11 +810,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
             py::arg("frame_on_child"), py::arg("angular_damping") = 0,
-            py::arg("translational_damping") = 0, cls_doc.ctor.doc)
-        .def("angular_damping", &Class::angular_damping,
-            cls_doc.angular_damping.doc)
-        .def("translational_damping", &Class::translational_damping,
-            cls_doc.translational_damping.doc)
+            py::arg("translational_damping") = 0, cls_doc.ctor.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("angular_damping",
+            WrapDeprecated(cls_doc.angular_damping.doc_deprecated,
+                &Class::angular_damping),
+            cls_doc.angular_damping.doc_deprecated)
+        .def("translational_damping",
+            WrapDeprecated(cls_doc.translational_damping.doc_deprecated,
+                &Class::translational_damping),
+            cls_doc.translational_damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_angular_damping", &Class::default_angular_damping,
+            cls_doc.default_angular_damping.doc)
+        .def("default_translational_damping",
+            &Class::default_translational_damping,
+            cls_doc.default_translational_damping.doc)
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
@@ -815,8 +886,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("name"), py::arg("frame_on_parent"),
             py::arg("frame_on_child"), py::arg("axis"), py::arg("screw_pitch"),
             py::arg("damping"), cls_doc.ctor.doc_6args)
-        .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -860,8 +940,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("damping") = 0, cls_doc.ctor.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
+            py::arg("frame_on_child"), py::arg("damping") = 0,
+            cls_doc.ctor.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("damping",
+            WrapDeprecated(cls_doc.damping.doc_deprecated, &Class::damping),
+            cls_doc.damping.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("default_damping", &Class::default_damping,
+            cls_doc.default_damping.doc)
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),

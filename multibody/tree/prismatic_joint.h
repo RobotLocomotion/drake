@@ -62,7 +62,7 @@ class PrismaticJoint final : public Joint<T> {
   ///   get_translation_rate()).
   /// @throws std::exception if the L2 norm of `axis` is less than the square
   /// root of machine epsilon.
-  /// @throws std::exception if damping is negative.
+  /// @throws std::exception if damping is negative or infinite.
   /// @throws std::exception if pos_lower_limit > pos_upper_limit.
   PrismaticJoint(
       const std::string& name, const Frame<T>& frame_on_parent,
@@ -81,14 +81,19 @@ class PrismaticJoint final : public Joint<T> {
     return axis_;
   }
 
-  /// Returns `this` joint's damping constant in N⋅s/m.
+  /// Returns `this` joint's default damping constant in N⋅s/m.
+  double default_damping() const { return this->default_damping_vector()[0]; }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
   double damping() const { return this->default_damping_vector()[0]; }
+
 
   /// Sets the default value of viscous damping for this joint, in N⋅s/m.
   /// @throws std::exception if damping is negative.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping(double damping) {
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(damping < std::numeric_limits<double>::infinity());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     this->set_default_damping_vector(Vector1d(damping));
   }
@@ -175,7 +180,7 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// Returns the Context dependent damping coefficient stored as a parameter in
-  /// `context`. Refer to damping() for details.
+  /// `context`. Refer to default_damping() for details.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` joint belongs.
   const T& GetDamping(const Context<T>& context) const {
@@ -183,13 +188,14 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// Sets the value of the viscous damping coefficient for this joint, stored
-  /// as a parameter in `context`. Refer to damping() for details.
+  /// as a parameter in `context`. Refer to default_damping() for details.
   /// @param[out] context The context storing the state and parameters for the
   /// model to which `this` joint belongs.
   /// @param[in] damping The damping value.
-  /// @throws std::exception if `damping` is negative.
+  /// @throws std::exception if `damping` is negative or infinite.
   void SetDamping(Context<T>* context, const T& damping) const {
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(damping < std::numeric_limits<double>::infinity());
     this->SetDampingVector(context, Vector1<T>(damping));
   }
 
@@ -256,7 +262,8 @@ class PrismaticJoint final : public Joint<T> {
   /// Joint<T> override called through public NVI, Joint::AddInDamping().
   /// Therefore arguments were already checked to be valid.
   /// This method adds into `forces` a dissipative force according to the
-  /// viscous law `f = -d⋅v`, with d the damping coefficient (see damping()).
+  /// viscous law `f = -d⋅v`, with d the damping coefficient (see
+  /// default_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
     const T damping_force =
