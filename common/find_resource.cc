@@ -111,10 +111,6 @@ namespace {
 // A valid resource root will always contain this file.
 const char* const kSentinelRelpath = "drake/.drake-find_resource-sentinel";
 
-bool StartsWith(const string& str, const string& prefix) {
-  return str.compare(0, prefix.size(), prefix) == 0;
-}
-
 // Returns true iff the path is relative (not absolute nor empty).
 bool IsRelativePath(const string& path) {
   return !path.empty() && (path[0] != '/');
@@ -238,7 +234,7 @@ Result FindResource(const string& resource_path) {
                     resource_path));
   }
   const string prefix("drake/");
-  if (!StartsWith(resource_path, prefix)) {
+  if (!resource_path.starts_with(prefix)) {
     return Result::make_error(
         resource_path,
         fmt::format("Drake resource_path '{}' does not start with {}.",
