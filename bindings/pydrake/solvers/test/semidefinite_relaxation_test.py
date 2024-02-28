@@ -32,11 +32,13 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         x_vars = Variables(x)
         y_vars = Variables(y)
 
-        A = np.array([[0.5, 0.7], [-.2, 0.4], [-2.3, -4.5]])
+        A = np.array([[0.5, 0.7],
+                      [-.2, 0.4],
+                      [-2.3, -4.5]])
         lb = np.array([1.3, -.24, 0.25])
         ub = np.array([5.6, 0.1, 1.4])
         prog.AddLinearConstraint(A, lb, ub, x)
-        prog.AddQuadraticConstraint(A, lb, 0, 5, y)
+        prog.AddQuadraticConstraint(A@A.T, lb, 0, 5, y)
         relaxation = MakeSemidefiniteRelaxation(prog, [x_vars, y_vars])
 
         self.assertEqual(relaxation.num_vars(), 6 + 10)
