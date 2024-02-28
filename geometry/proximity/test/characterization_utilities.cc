@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <fstream>
 #include <limits>
+#include <memory>
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/utilities.h"
@@ -390,7 +392,13 @@ class ProximityEngineTester {
   // fcl::Convex.
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Convex(obj_path, 1.0), {}, id);
+  InternalGeometry geometry(SourceId::get_new_id(),
+                            std::make_unique<Mesh>(obj_path, 1.0),
+                            FrameId::get_new_id(), id, "unused", {});
+  geometry.SetRole(ProximityProperties());
+  geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
+      internal::MakeConvexHull(geometry.shape())));
+  engine.AddDynamicGeometry(geometry, {});
   if (ProximityEngineTester::IsFclConvexType(engine, id)) {
     return ::testing::AssertionSuccess();
   }

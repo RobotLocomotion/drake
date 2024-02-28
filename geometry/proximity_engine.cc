@@ -276,16 +276,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   CollisionFilter& collision_filter() { return collision_filter_; }
 
-  void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
-                          GeometryId id, const ProximityProperties& props) {
-    AddGeometry(shape, X_WG, id, props, true, &dynamic_tree_,
-                &dynamic_objects_);
+  void AddDynamicGeometry(const InternalGeometry& geometry,
+                          const RigidTransformd& X_WG) {
+    AddGeometry(geometry, X_WG, true, &dynamic_tree_, &dynamic_objects_);
   }
 
-  void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
-                           GeometryId id, const ProximityProperties& props) {
-    AddGeometry(shape, X_WG, id, props, false, &anchored_tree_,
-                &anchored_objects_);
+  void AddAnchoredGeometry(const InternalGeometry& geometry,
+                           const RigidTransformd& X_WG) {
+    AddGeometry(geometry, X_WG, false, &anchored_tree_, &anchored_objects_);
   }
 
   void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id) {
@@ -882,23 +880,25 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   friend class ProximityEngine;
 
   void AddGeometry(
-      const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
-      const ProximityProperties& props, bool is_dynamic,
-      fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      const InternalGeometry& geometry, const RigidTransformd& X_WG,
+      bool is_dynamic, fcl::DynamicAABBTreeCollisionManager<double>* tree,
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
-    ReifyData data{nullptr, id, props, X_WG};
-    shape.Reify(this, &data);
+    DRAKE_DEMAND(geometry.proximity_properties() != nullptr);
+    ReifyData data{.id = geometry.id(),
+                   .properties = *geometry.proximity_properties(),
+                   .X_WG = X_WG};
+    geometry.shape().Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
     data.fcl_object->computeAABB();
-    EncodedData encoding(id, is_dynamic);
+    EncodedData encoding(geometry.id(), is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
     tree->registerObject(data.fcl_object.get());
     tree->update();
-    (*objects)[id] = std::move(data.fcl_object);
+    (*objects)[geometry.id()] = std::move(data.fcl_object);
 
-    collision_filter_.AddGeometry(id);
+    collision_filter_.AddGeometry(geometry.id());
   }
 
   // Removes the geometry with the given id from the given tree.
@@ -1006,19 +1006,15 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
-                                            const RigidTransformd& X_WG,
-                                            GeometryId id,
-                                            const ProximityProperties& props) {
-  impl_->AddDynamicGeometry(shape, X_WG, id, props);
+void ProximityEngine<T>::AddDynamicGeometry(const InternalGeometry& geometry,
+                                            const RigidTransformd& X_WG) {
+  impl_->AddDynamicGeometry(geometry, X_WG);
 }
 
 template <typename T>
-void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
-                                             const RigidTransformd& X_WG,
-                                             GeometryId id,
-                                             const ProximityProperties& props) {
-  impl_->AddAnchoredGeometry(shape, X_WG, id, props);
+void ProximityEngine<T>::AddAnchoredGeometry(const InternalGeometry& geometry,
+                                             const RigidTransformd& X_WG) {
+  impl_->AddAnchoredGeometry(geometry, X_WG);
 }
 
 template <typename T>

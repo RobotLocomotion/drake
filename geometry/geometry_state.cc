@@ -1064,13 +1064,9 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         // Pass the geometry to the engine.
         const RigidTransformd& X_WG =
             convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
-        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
-                                             geometry_id,
-                                             *geometry.proximity_properties());
+        geometry_engine_->AddDynamicGeometry(geometry, X_WG);
       } else {
-        geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                              geometry_id,
-                                              *geometry.proximity_properties());
+        geometry_engine_->AddAnchoredGeometry(geometry, geometry.X_FG());
       }
       // The set of geometries G such that I need to introduce filtered pairs
       // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
@@ -1702,12 +1698,9 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
     // Pass the geometry to the engine.
     const RigidTransformd& X_WG =
         convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
-    geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG, geometry_id,
-                                         *geometry.proximity_properties());
+    geometry_engine_->AddDynamicGeometry(geometry, X_WG);
   } else {
-    geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                          geometry_id,
-                                          *geometry.proximity_properties());
+    geometry_engine_->AddAnchoredGeometry(geometry, geometry.X_FG());
   }
   geometry_version_.modify_proximity();
 }

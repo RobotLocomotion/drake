@@ -91,24 +91,19 @@ class ProximityEngine {
   /* @name Topology management */
   //@{
 
-  /* Adds the given `shape` to the engine's _dynamic_ geometry.
-   @param shape   The shape to add.
-   @param X_WG    The pose of the shape in the world frame.
-   @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.
-   @param props   The proximity properties for the shape.  */
-  void AddDynamicGeometry(const Shape& shape, const math::RigidTransformd& X_WG,
-                          GeometryId id, const ProximityProperties& props = {});
+  /* Adds the given geometry (shape, properties, etc.) to the engine's _dynamic_
+   geometry.
+   @param geometry  The geometry to add to the proximity engine.
+   @param X_WG      The pose of the shape in the world frame. */
+  void AddDynamicGeometry(const InternalGeometry& geometry,
+                          const math::RigidTransformd& X_WG);
 
-  /* Adds the given `shape` to the engine's _anchored_ geometry.
-   @param shape   The shape to add.
-   @param X_WG    The pose of the shape in the world frame.
-   @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.
-   @param props   The proximity properties for the shape.  */
-  void AddAnchoredGeometry(const Shape& shape,
-                           const math::RigidTransformd& X_WG, GeometryId id,
-                           const ProximityProperties& props = {});
+  /* Adds the given geometry (shape, properties, etc.) to the engine's
+   _anchored_ geometry.
+   @param geometry  The geometry to add to the proximity engine.
+   @param X_WG      The pose of the shape in the world frame. */
+  void AddAnchoredGeometry(const InternalGeometry& geometry,
+                           const math::RigidTransformd& X_WG);
 
   /* Adds a new deformable geometry to the engine.
    @param mesh_W  The volume mesh representation of the deformable geometry
