@@ -102,6 +102,151 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, BasicTest) {
   EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
 }
 
+// Sets frame_A to be iiwa_link_0 instead of the world frame.
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, FrameATest) {
+  // This time the iiwa will _not_ be welded to the world.
+  auto robot = std::make_unique<multibody::MultibodyPlant<double>>(0.01);
+  multibody::Parser parser(robot.get());
+  const std::string filename = FindResourceOrThrow(
+      "drake/manipulation/models/"
+      "iiwa_description/sdf/iiwa14_no_collision.sdf");
+  parser.AddModels(filename);
+  robot->Finalize();
+
+  auto robot_context = robot->CreateDefaultContext();
+  const multibody::Frame<double>& frame_A =
+      robot->GetFrameByName("iiwa_link_0");
+  const multibody::Frame<double>& frame_E =
+      robot->GetFrameByName("iiwa_link_7");
+
+  DifferentialInverseKinematicsParameters params(robot->num_positions(),
+                                                 robot->num_velocities());
+
+  const double time_step = 0.1;
+  DifferentialInverseKinematicsIntegrator diff_ik(
+      *robot, frame_A, frame_E, time_step, params);
+  auto diff_ik_context = diff_ik.CreateDefaultContext();
+
+  // Set the results status state to a failure state.
+  diff_ik_context->get_mutable_discrete_state(1).SetAtIndex(
+      0, static_cast<double>(
+             DifferentialInverseKinematicsStatus::kNoSolutionFound));
+
+  Eigen::VectorXd q(14);
+  q << 0.1, 0.2,  -.15, 0.43, -0.32, -0.21, 0.11,
+       0.4, 0.21, -.25, 0.67, -0.21, -0.53, 0.21;
+
+  // Test SetPosition and ForwardKinematics.
+  robot->SetPositions(robot_context.get(), q);
+  diff_ik.SetPositions(diff_ik_context.get(), q);
+  EXPECT_TRUE(diff_ik.ForwardKinematics(*diff_ik_context)
+                  .IsExactlyEqualTo(frame_E.CalcPose(*robot_context, frame_A)));
+
+  // Test that discrete update is equivalent to calling diff IK directly.
+  math::RigidTransformd X_AE_desired(Eigen::Vector3d(0.2, 0.0, 0.2));
+  diff_ik.GetInputPort("X_AE_desired")
+      .FixValue(diff_ik_context.get(), X_AE_desired);
+  auto discrete_state = diff_ik.AllocateDiscreteVariables();
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(diff_ik, *diff_ik_context, discrete_state.get());
+  }
+
+  // Confirm that the result status state was updated properly.
+  EXPECT_EQ(
+      discrete_state->get_vector(1).GetAtIndex(0),
+      static_cast<double>(DifferentialInverseKinematicsStatus::kSolutionFound));
+
+  params.set_time_step(time_step);  // intentionally set this after diff_ik call
+  DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
+      *robot, *robot_context, X_AE_desired, frame_A, frame_E, params);
+
+  EXPECT_EQ(result.status, DifferentialInverseKinematicsStatus::kSolutionFound);
+  Eigen::VectorXd qdot(robot->num_positions());
+  robot->MapVelocityToQDot(*robot_context, result.joint_velocities.value(),
+                           &qdot);
+  EXPECT_TRUE(CompareMatrices(q + time_step * qdot,
+                              discrete_state->get_vector(0).get_value()));
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(DeprecatedTest, BasicTest) {
+  auto robot = MakeIiwa();
+  auto robot_context = robot->CreateDefaultContext();
+  const multibody::Frame<double>& frame_E =
+      robot->GetFrameByName("iiwa_link_7");
+
+  DifferentialInverseKinematicsParameters params(robot->num_positions(),
+                                                 robot->num_velocities());
+
+  const double time_step = 0.1;
+  DifferentialInverseKinematicsIntegrator diff_ik(
+      *robot, frame_E, time_step, params);
+  auto diff_ik_context = diff_ik.CreateDefaultContext();
+
+  // Set the results status state to a failure state.
+  diff_ik_context->get_mutable_discrete_state(1).SetAtIndex(
+      0, static_cast<double>(
+             DifferentialInverseKinematicsStatus::kNoSolutionFound));
+
+  Eigen::VectorXd q(7);
+  q << 0.1, 0.2, -.15, 0.43, -0.32, -0.21, 0.11;
+
+  // Test SetPosition and ForwardKinematics.
+  robot->SetPositions(robot_context.get(), q);
+  diff_ik.SetPositions(diff_ik_context.get(), q);
+  // Note: BodyPoseInWorld == FramePoseInWorld because this is a body frame.
+  EXPECT_TRUE(diff_ik.ForwardKinematics(*diff_ik_context)
+                  .IsExactlyEqualTo(robot->EvalBodyPoseInWorld(
+                      *robot_context, frame_E.body())));
+
+  // Test that discrete update is equivalent to calling diff IK directly.
+  math::RigidTransformd X_WE_desired(Eigen::Vector3d(0.2, 0.0, 0.2));
+  diff_ik.GetInputPort("X_WE_desired")
+      .FixValue(diff_ik_context.get(), X_WE_desired);
+  auto discrete_state = diff_ik.AllocateDiscreteVariables();
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(diff_ik, *diff_ik_context, discrete_state.get());
+  }
+
+  // Confirm that the result status state was updated properly.
+  EXPECT_EQ(
+      discrete_state->get_vector(1).GetAtIndex(0),
+      static_cast<double>(DifferentialInverseKinematicsStatus::kSolutionFound));
+
+  params.set_time_step(time_step);  // intentionally set this after diff_ik call
+  DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
+      *robot, *robot_context, X_WE_desired, frame_E, params);
+
+  EXPECT_EQ(result.status, DifferentialInverseKinematicsStatus::kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(q + time_step * result.joint_velocities.value(),
+                              discrete_state->get_vector(0).get_value()));
+
+  // Add infeasible constraints, and confirm the result state.
+  // clang-format off
+  const auto A = (MatrixX<double>(2, 7) <<
+      1, -1,  0, 0, 0, 0, 0,
+      0,  1, -1, 0, 0, 0, 0).finished();
+  // clang-format on
+  const auto b = Eigen::VectorXd::Zero(A.rows());
+  diff_ik.get_mutable_parameters().AddLinearVelocityConstraint(
+      std::make_shared<solvers::LinearConstraint>(A, b, b));
+  Eigen::VectorXd last_q = robot->GetPositions(*robot_context);
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(diff_ik, *diff_ik_context, discrete_state.get());
+  }
+  EXPECT_EQ(discrete_state->get_vector(1).GetAtIndex(0),
+            static_cast<double>(
+                DifferentialInverseKinematicsStatus::kStuck));
+  // kStuck does *not* imply that the positions will not advance.
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
+}
+#pragma GCC diagnostic pop
+
+
 GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, ParametersTest) {
   auto robot = MakeIiwa();
   auto robot_context = robot->CreateDefaultContext();

@@ -34,6 +34,7 @@ struct IrisOptions {
     a->Visit(DRAKE_NVP(num_collision_infeasible_samples));
     a->Visit(DRAKE_NVP(num_additional_constraint_infeasible_samples));
     a->Visit(DRAKE_NVP(random_seed));
+    a->Visit(DRAKE_NVP(mixing_steps));
   }
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -152,6 +153,11 @@ struct IrisOptions {
   require_sample_point_is_contained is enforced.
   */
   std::function<bool(const HPolyhedron&)> termination_func{};
+
+  /* The `mixing_steps` parameters is passed to HPolyhedron::UniformSample to
+  control the total number of hit-and-run steps taken for each new random
+  sample. */
+  int mixing_steps{10};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -214,6 +220,10 @@ collisions in configuration space; each potential collision is
 probabilistically "certified" by restarting the nonlinear optimization from
 random initial seeds inside the candidate IRIS region until it fails to find a
 collision in `options.num_collision_infeasible_samples` consecutive attempts.
+
+This method constructs a single Iris region in the configuration space of
+@p plant. @see planning::IrisInConfigurationSpaceFromCliqueCover for a method to
+automatically cover the configuration space with multiple Iris regions.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.

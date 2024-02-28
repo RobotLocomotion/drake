@@ -11,19 +11,27 @@ using systems::Context;
 
 DifferentialInverseKinematicsIntegrator::
     DifferentialInverseKinematicsIntegrator(
-        const MultibodyPlant<double>& robot,
+        const MultibodyPlant<double>& robot, const Frame<double>& frame_A,
         const Frame<double>& frame_E, double time_step,
         const DifferentialInverseKinematicsParameters& parameters,
         const Context<double>* context, bool log_only_when_result_state_changes)
     : robot_(robot),
+      frame_A_(frame_A),
       frame_E_(frame_E),
       parameters_(parameters),
       time_step_(time_step) {
+  DRAKE_DEMAND(frame_A.index() != frame_E.index());
   parameters_.set_time_step(time_step);
 
-  X_WE_desired_index_ = this->DeclareAbstractInputPort(
-                                "X_WE_desired", Value<math::RigidTransformd>{})
+  X_AE_desired_index_ = this->DeclareAbstractInputPort(
+                                "X_AE_desired", Value<math::RigidTransformd>{})
                             .get_index();
+
+  systems::InputPort<double>& X_WE_desired = this->DeclareAbstractInputPort(
+                                "X_WE_desired", Value<math::RigidTransformd>{});
+  this->DeprecateInputPort(X_WE_desired,
+                           "Use the `X_AE_desired` input port instead.");
+  X_WE_desired_index_ = X_WE_desired.get_index();
 
   robot_state_index_ =
       this->DeclareVectorInputPort("robot_state", robot.num_multibody_states())
@@ -61,6 +69,16 @@ DifferentialInverseKinematicsIntegrator::
       &DifferentialInverseKinematicsIntegrator::UpdateRobotContext);
 }
 
+DifferentialInverseKinematicsIntegrator::
+    DifferentialInverseKinematicsIntegrator(
+        const MultibodyPlant<double>& robot, const Frame<double>& frame_E,
+        double time_step,
+        const DifferentialInverseKinematicsParameters& parameters,
+        const Context<double>* context, bool log_only_when_result_state_changes)
+    : DifferentialInverseKinematicsIntegrator(
+          robot, robot.world_frame(), frame_E, time_step, parameters, context,
+          log_only_when_result_state_changes) {}
+
 void DifferentialInverseKinematicsIntegrator::SetPositions(
     Context<double>* context,
     const Eigen::Ref<const Eigen::VectorXd>& positions) const {
@@ -71,11 +89,11 @@ void DifferentialInverseKinematicsIntegrator::SetPositions(
 math::RigidTransformd
 DifferentialInverseKinematicsIntegrator::ForwardKinematics(
     const Context<double>& context) const {
+  this->ValidateContext(context);
   const Context<double>& robot_context =
       robot_context_cache_entry_->Eval<Context<double>>(context);
 
-  return robot_.EvalBodyPoseInWorld(robot_context, frame_E_.body()) *
-         frame_E_.CalcPoseInBodyFrame(robot_context);
+  return frame_E_.CalcPose(robot_context, frame_A_);
 }
 
 const DifferentialInverseKinematicsParameters&
@@ -107,16 +125,21 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
     const Context<double>& context,
     systems::DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input =
-      this->EvalAbstractInput(context, X_WE_desired_index_);
-  DRAKE_DEMAND(input != nullptr);
+      this->EvalAbstractInput(context, X_AE_desired_index_);
+  if (!input) {
+    // Continue to support the deprecated input port until removal.
+    DRAKE_THROW_UNLESS(frame_A_.index() == robot_.world_frame().index());
+    input = this->EvalAbstractInput(context, X_WE_desired_index_);
+    DRAKE_DEMAND(input != nullptr);
+  }
   DRAKE_THROW_UNLESS(parameters_.get_time_step() == time_step_);
-  const math::RigidTransformd& X_WE_desired =
+  const math::RigidTransformd& X_AE_desired =
       input->get_value<math::RigidTransformd>();
 
   const Context<double>& robot_context =
       robot_context_cache_entry_->Eval<Context<double>>(context);
   DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
-      robot_, robot_context, X_WE_desired, frame_E_, parameters_);
+      robot_, robot_context, X_AE_desired, frame_A_, frame_E_, parameters_);
 
   const auto& positions = robot_.GetPositions(robot_context);
   if (result.status == DifferentialInverseKinematicsStatus::kNoSolutionFound) {
@@ -127,8 +150,11 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
     }
     discrete_state->set_value(0, positions);
   } else {
+    Eigen::VectorXd qdot(robot_.num_positions());
+    robot_.MapVelocityToQDot(robot_context, result.joint_velocities.value(),
+                             &qdot);
     discrete_state->set_value(
-        0, positions + time_step_ * result.joint_velocities.value());
+        0, positions + time_step_ * qdot);
   }
 
   if (this->num_discrete_state_groups() > 1) {

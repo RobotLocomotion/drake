@@ -1,14 +1,2 @@
-# Use C++17 by default.
-build --cxxopt=-std=c++17
-build --host_cxxopt=-std=c++17
-
-# Options for explicitly using Clang.
-common:clang --repo_env=CC=clang-12
-common:clang --repo_env=CXX=clang++-12
-build:clang --action_env=CC=clang-12
-build:clang --action_env=CXX=clang++-12
-build:clang --host_action_env=CC=clang-12
-build:clang --host_action_env=CXX=clang++-12
-
-# The tools on Focal are too old to support Clarabel.
-build --define=NO_CLARABEL=ON
+# Placeholder to support Focal Wheel builds
+# TODO (betsymcphail) Remove this file when wheel builds move to Jammy

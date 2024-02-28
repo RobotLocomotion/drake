@@ -226,7 +226,7 @@ void CheckOptionKeysForSolverHelper(
     const std::unordered_set<std::string>& allowable_keys,
     const std::string& solver_name) {
   for (const auto& key_val : key_vals) {
-    if (allowable_keys.count(key_val.first) == 0) {
+    if (!allowable_keys.contains(key_val.first)) {
       throw std::invalid_argument(key_val.first +
                                   " is not allowed in the SolverOptions for " +
                                   solver_name + ".");

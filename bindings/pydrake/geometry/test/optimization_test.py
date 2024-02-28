@@ -623,6 +623,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.termination_threshold = 0.1
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
+        options.mixing_steps = 20
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         options.bounding_region = mut.HPolyhedron.MakeBox(
             lb=[-6, -6, -6], ub=[6, 6, 6])
@@ -1246,3 +1247,19 @@ class TestCspaceFreePolytope(unittest.TestCase):
                                epsilon=1e-5)
         mut.CheckIfSatisfiesConvexityRadius(convex_set=big_convex_set,
                                             continuous_revolute_joints=[0])
+
+    def test_calc_pairwise_intersections(self):
+        sets_A = [mut.VPolytope(np.array([[0, 4]])),
+                  mut.VPolytope(np.array([[2, 6]]))]
+        sets_B = [mut.VPolytope(np.array([[1, 5]]) - (2 * np.pi))]
+        out = mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
+                                            convex_sets_B=sets_B,
+                                            continuous_revolute_joints=[0])
+        self.assertIsInstance(out, list)
+        self.assertEqual(len(out), 2)
+        self.assertIsInstance(out[0], tuple)
+        out2 = mut.CalcPairwiseIntersections(convex_sets=sets_A,
+                                             continuous_revolute_joints=[0])
+        self.assertIsInstance(out, list)
+        self.assertEqual(len(out), 2)
+        self.assertIsInstance(out[0], tuple)

@@ -36,7 +36,7 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
   contact_wrench_evaluators_and_lambda_.reserve(
       collision_candidate_pairs.size());
   for (const auto& collision_candidate_pair : collision_candidate_pairs) {
-    if (ignored_collision_pairs.count(collision_candidate_pair) == 0) {
+    if (!ignored_collision_pairs.contains(collision_candidate_pair)) {
       auto contact_wrench_evaluator =
           std::make_shared<ContactWrenchFromForceInWorldFrameEvaluator>(
               &plant_, context_,

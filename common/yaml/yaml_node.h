@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/string_map.h"
 
 // Note that even though this file contains "class Node", the file is named
 // "yaml_node.h" not "node.h" to avoid conflict with "yaml-cpp/node/node.h".
@@ -234,7 +235,7 @@ class Node final {
   //@{
 
   /* Gets this node's Mapping data. */
-  const std::map<std::string, Node>& GetMapping() const;
+  const string_map<Node>& GetMapping() const;
 
   /* Add a new node to this Mapping.
   Any iterators based on GetMapping() remain valid.
@@ -278,7 +279,7 @@ class Node final {
   struct MappingData final {
     // Even though YAML mappings are notionally unordered, we use an ordered
     // map here to ensure program determinism.
-    std::map<std::string, Node> mapping;
+    string_map<Node> mapping;
 
     friend bool operator==(const MappingData&, const MappingData&);
   };

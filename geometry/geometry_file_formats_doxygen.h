@@ -123,9 +123,7 @@ namespace geometry {
  Generally, Drake provides broad support of glTF features. But there are some
  notable exceptions:
 
-  - .glb files and .gltf files with external references (to image or .bin files)
-    are not supported. Currently, Drake only supports .glTF files with all
-    binary assets embedded (as buffers of base64-encoded data blobs).
+  - .glb "container" files are not supported.
   - Support for glTF extensions depends on the ultimate consumer of the glTF
     file (see below).
   - Animation and skinning. If such data is present, it is ignored.
@@ -147,7 +145,7 @@ namespace geometry {
          - RenderEngineVtk does not yet support specifying an environment map.
            This will lead to PBR materials being under illuminated.
      - RenderEngineGltfClient does support .gltf files (as the name suggests).
-         - Geometries defined by a .gltf file are based almost verbatim to the
+         - Geometries defined by a .gltf file are passed almost verbatim to the
            render server (animation and morphing data is excluded).
          - The extensions are passed along, but whether or not they are
            supported depends on the server's implementation.
@@ -156,6 +154,10 @@ namespace geometry {
      - .gltf files are not currently supported for proximity roles at all.
        Assigning the proximity role to a Mesh with anything other than a .obj
        file will throw an exception.
+
+ As a rule of thumb, for Drake's purposes .gltf files with external assets
+ (i.e., separate .bin and .png files) will load faster than .gltf files
+ with assets embedded as base64-encoded `data:` URIs.
 
  <!-- TODO(SeanCurtis-TRI): Flesh this out. Technically, Meshcat will consume
   the .dae file. But it will probably cause chaos if passed anywhere else.

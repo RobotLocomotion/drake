@@ -214,7 +214,7 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   std::set<FrameId> actual_ids;
   for (FrameId id : poses.ids()) actual_ids.insert(id);
   EXPECT_EQ(ids.size(), actual_ids.size());
-  for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
+  for (FrameId id : ids) EXPECT_TRUE(actual_ids.contains(id));
 }
 
 }  // namespace test

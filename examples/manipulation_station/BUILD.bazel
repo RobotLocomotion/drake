@@ -157,8 +157,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "manipulation_station_test",
-    # Frequently exceeds short timeout in
-    # linux-focal-clang-bazel-nightly-coverage
+    # Frequently exceeds short timeout in coverage builds.
     timeout = "moderate",
     tags = vtk_test_tags(),
     deps = [

@@ -30,7 +30,7 @@ void CheckCalcMonomialBasisOrderUpToOne(const drake::symbolic::Variables& t) {
   const auto basis_sorted = CalcMonomialBasisOrderUpToOne(t, true);
   EXPECT_EQ(basis_sorted.rows(), basis_size_expected);
   for (int i = 0; i < basis_sorted.rows(); ++i) {
-    EXPECT_EQ(basis_set.count(basis_sorted(i)), 1);
+    EXPECT_TRUE(basis_set.contains(basis_sorted(i)));
   }
   // Make sure that basis_sorted is actually in the graded lexicographic order.
   for (int i = 0; i < basis_sorted.rows() - 1; ++i) {

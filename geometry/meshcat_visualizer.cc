@@ -47,6 +47,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
           .get_index();
 
   if (params_.enable_alpha_slider) {
+    alpha_value_ = params_.initial_alpha_slider_value;
     meshcat_->AddSlider(alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
   }
 }
@@ -204,7 +205,7 @@ void MeshcatVisualizer<T>::SetObjects(
       if constexpr (std::is_same_v<T, double>) {
         if (params_.show_hydroelastic) {
           auto maybe_mesh = inspector.maybe_get_hydroelastic_mesh(geom_id);
-          visit_overloaded<void>(
+          std::visit<void>(
               overloaded{[](std::monostate) {},
                          [&](const TriangleSurfaceMesh<double>* mesh) {
                            DRAKE_DEMAND(mesh != nullptr);

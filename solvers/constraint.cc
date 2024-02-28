@@ -397,16 +397,16 @@ LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
     : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
-  DRAKE_DEMAND(A.rows() == lb.rows());
-  DRAKE_DEMAND(A.array().isFinite().all());
+  DRAKE_THROW_UNLESS(A.rows() == lb.rows());
+  DRAKE_THROW_UNLESS(A.array().allFinite());
 }
 
 LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
     : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
-  DRAKE_DEMAND(A.rows() == lb.rows());
-  DRAKE_DEMAND(A_.IsFinite());
+  DRAKE_THROW_UNLESS(A.rows() == lb.rows());
+  DRAKE_THROW_UNLESS(A_.IsFinite());
 }
 
 const Eigen::MatrixXd& LinearConstraint::GetDenseA() const {
@@ -426,7 +426,7 @@ void LinearConstraint::UpdateCoefficients(
   }
 
   A_ = new_A;
-  DRAKE_DEMAND(A_.IsFinite());
+  DRAKE_THROW_UNLESS(A_.IsFinite());
   set_num_outputs(A_.get_as_sparse().rows());
   set_bounds(new_lb, new_ub);
 }
@@ -443,7 +443,7 @@ void LinearConstraint::UpdateCoefficients(
     throw std::runtime_error("Can't change the number of decision variables");
   }
   A_ = new_A;
-  DRAKE_DEMAND(A_.IsFinite());
+  DRAKE_THROW_UNLESS(A_.IsFinite());
   set_num_outputs(A_.get_as_sparse().rows());
   set_bounds(new_lb, new_ub);
 }

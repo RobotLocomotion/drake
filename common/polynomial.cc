@@ -246,7 +246,7 @@ Polynomial<T> Polynomial<T>::EvaluatePartial(
     T new_coefficient = monomial.coefficient;
     std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
-      if (var_values.count(term.var)) {
+      if (var_values.contains(term.var)) {
         new_coefficient *= pow(var_values.at(term.var), term.power);
       } else {
         new_terms.push_back(term);

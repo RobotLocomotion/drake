@@ -71,8 +71,27 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
   auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
 
-  gcs.AddEdges(source, regions);
-  gcs.AddEdges(regions, target);
+  // Verify that the subgraphs are present in gcs trajectory optimization.
+  auto all_subgraphs = gcs.GetSubgraphs();
+  EXPECT_NE(std::find(all_subgraphs.begin(), all_subgraphs.end(), &regions),
+            all_subgraphs.end());
+  EXPECT_NE(std::find(all_subgraphs.begin(), all_subgraphs.end(), &source),
+            all_subgraphs.end());
+  EXPECT_NE(std::find(all_subgraphs.begin(), all_subgraphs.end(), &target),
+            all_subgraphs.end());
+
+  auto& source_to_regions = gcs.AddEdges(source, regions);
+  auto& regions_to_target = gcs.AddEdges(regions, target);
+
+  // Verify that the edges between subgraphs are present in gcs trajectory
+  // optimization.
+  auto all_subgraph_edges = gcs.GetEdgesBetweenSubgraphs();
+  EXPECT_NE(std::find(all_subgraph_edges.begin(), all_subgraph_edges.end(),
+                      &source_to_regions),
+            all_subgraph_edges.end());
+  EXPECT_NE(std::find(all_subgraph_edges.begin(), all_subgraph_edges.end(),
+                      &regions_to_target),
+            all_subgraph_edges.end());
 
   auto [traj, result] = gcs.SolvePath(source, target);
   EXPECT_TRUE(result.is_success());
@@ -80,6 +99,22 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   EXPECT_EQ(traj.cols(), 1);
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  // If we would like to find another path for a different goal, we can remove
+  // the target subgraph and add a new one while keeping the remaining graph.
+  gcs.RemoveSubgraph(target);
+  Vector2d new_goal(0.5, -0.5);
+  auto& new_target = gcs.AddRegions(MakeConvexSets(Point(new_goal)), 0);
+  gcs.AddEdges(regions, new_target);
+
+  auto [new_traj, new_result] = gcs.SolvePath(source, new_target);
+  EXPECT_TRUE(new_result.is_success());
+  EXPECT_EQ(new_traj.rows(), 2);
+  EXPECT_EQ(new_traj.cols(), 1);
+  EXPECT_TRUE(
+      CompareMatrices(new_traj.value(new_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(new_traj.value(new_traj.end_time()), new_goal, 1e-6));
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
@@ -337,6 +372,34 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   const double fastest_path_duration =
       fastest_path_traj.end_time() - fastest_path_traj.start_time();
   EXPECT_LT(fastest_path_duration, shortest_path_duration);
+
+  // Oh oh, it has been raining a lot! The street has been flooded and Bob
+  // can't take the scooter. We can remove the scooter regions from the graph
+  // and solve the path again.
+  gcs.RemoveSubgraph(scooter_regions);
+
+  auto [rain_path_traj, rain_path_result] = gcs.SolvePath(source, target);
+  EXPECT_TRUE(rain_path_result.is_success());
+  EXPECT_EQ(rain_path_traj.rows(), 2);
+  EXPECT_EQ(rain_path_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(rain_path_traj.value(rain_path_traj.start_time()),
+                              start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(rain_path_traj.value(rain_path_traj.end_time()),
+                              goal, 1e-6));
+
+  // Since the scooter regions have been removed, Bob can only walk through the
+  // through the gravel.
+  std::vector<const geometry::optimization::GraphOfConvexSets::Edge*>
+      expected_walking_path_edges = {
+          walking_regions.Vertices()[0]->incoming_edges()[0],
+          walking_regions.Vertices()[0]->outgoing_edges()[0]};
+
+  std::vector<const geometry::optimization::GraphOfConvexSets::Edge*>
+      rain_path_edges = gcs.graph_of_convex_sets().GetSolutionPath(
+          *source.Vertices()[0], *target.Vertices()[0], rain_path_result, 1.0);
+  for (size_t i = 0; i < rain_path_edges.size(); i++) {
+    EXPECT_EQ(rain_path_edges[i], expected_walking_path_edges[i]);
+  }
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
@@ -454,6 +517,51 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   EXPECT_TRUE(
       CompareMatrices(traj_vel->value(stopped_at_ducks_time + kDuckDelay),
                       Vector2d(0, 0), 1e-6));
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, RemoveSubgraph) {
+  /*Ensure that removing a subgraph actually removes vertices/edges in the gcs*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& graph1 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  auto& graph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                    HPolyhedron::MakeUnitBox(kDimension)),
+                     1);
+  gcs.AddEdges(graph1, graph2);
+
+  // We expect four vertices, since there are two regions per subgraph.
+  const int kExpectedVertices = 4;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Vertices().size(), kExpectedVertices);
+  // The regions in the subgraph are connected via two edges and since they
+  // overlap, another four edges are added between the subgraphs.
+  const int kExpectedEdges = 2 * 2 + 4;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), kExpectedEdges);
+
+  // After removing both subgraphs, we expect no vertices or edges in the gcs.
+  gcs.RemoveSubgraph(graph1);
+  gcs.RemoveSubgraph(graph2);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Vertices().size(), 0);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), 0);
+  EXPECT_EQ(gcs.GetSubgraphs().size(), 0);
+  EXPECT_EQ(gcs.GetEdgesBetweenSubgraphs().size(), 0);
+
+  // Create to remove a subgraph that hasn't been associated with the gcs
+  // instance. For that, we will create another gcs object with a separate
+  // subgraph and try to remove it from the previous instance.
+  GcsTrajectoryOptimization gcs2(kDimension);
+
+  auto& graph3 =
+      gcs2.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension),
+                                     HPolyhedron::MakeUnitBox(kDimension)),
+                      1);
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.RemoveSubgraph(graph3),
+                              ".* is not registered with `this`.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidPositions) {
@@ -1546,6 +1654,60 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
                               ".*doesn't respect the convexity radius.*");
   DRAKE_EXPECT_THROWS_MESSAGE(gcs3.AddRegions(MakeConvexSets(w), 1),
                               ".*doesn't respect the convexity radius.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundSubspace) {
+  // 1D example.
+  Eigen::Matrix<double, 1, 2> points1;
+  Eigen::Matrix<double, 1, 2> points2;
+  Eigen::Matrix<double, 1, 2> points3;
+  points1 << 0, 3;
+  points2 << 2.5, 5.5;
+  points3 << 5, 8;
+  const VPolytope v1(points1);
+  const VPolytope v2(points2);
+  const VPolytope v3(points3);
+  std::vector<int> continuous_revolute_joints = {0};
+  const Point subspace12(Vector1d{2.75 + (6 * M_PI)});
+  const Point subspace23(Vector1d{5.25 - (4 * M_PI)});
+  const Point subspace13(Vector1d{7.0 + (2 * M_PI)});
+
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  auto& subgraph1 = gcs.AddRegions(MakeConvexSets(HPolyhedron(v1)), 1);
+  auto& subgraph2 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron(v2), HPolyhedron(v3)), 1);
+
+  // Initially, there should be two edges, v2 -> v3 and v3 -> v2.
+  int expected_num_edges = 2;
+
+  // When we add edges from subgraph1 to subgraph2, we add edges v1 -> v2
+  // and v1 -> v3.
+  gcs.AddEdges(subgraph1, subgraph2);
+  expected_num_edges += 2;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace12, only
+  // v1 -> v2 is added as an edge, since their intersection overlaps with
+  // subspace12. the intersection of v1 and v3 does not overlap with subspace12,
+  // so v1 -> v3 is not added.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace12);
+  expected_num_edges += 1;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace13, only
+  // v1 -> v3 is added as an edge, since their intersection overlaps with
+  // subspace13. the intersection of v1 and v2 does not overlap with subspace13,
+  // so v1 -> v2 is not added.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace13);
+  expected_num_edges += 1;
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+
+  // When we add edges from subgraph1 to subgraph2 through subspace23, no edges
+  // are added, since the intersection between v1 and v2 does not overlap with
+  // subspace23, and the intersection between v1 and v3 does not overlap with
+  // subspace23.
+  gcs.AddEdges(subgraph1, subgraph2, &subspace23);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {

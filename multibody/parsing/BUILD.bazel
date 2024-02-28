@@ -66,8 +66,14 @@ genrule(
 
 drake_cc_library(
     name = "package_map",
-    srcs = ["package_map.cc"],
-    hdrs = ["package_map.h"],
+    srcs = [
+        "detail_path_utils.cc",
+        "package_map.cc",
+    ],
+    hdrs = [
+        "detail_path_utils.h",
+        "package_map.h",
+    ],
     data = [
         ":drake_models.json",
         ":package_downloader.py",
@@ -80,6 +86,7 @@ drake_cc_library(
         "//common:name_value",
     ],
     deps = [
+        "//common:diagnostic_policy",
         "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
@@ -100,7 +107,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.cc",
         "detail_common.cc",
         "detail_ignition.cc",
-        "detail_path_utils.cc",
         "detail_tinyxml.cc",
         "detail_tinyxml2_diagnostic.cc",
     ],
@@ -108,7 +114,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
-        "detail_path_utils.h",
         "detail_strongly_connected_components.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
@@ -222,6 +227,40 @@ drake_cc_library(
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
     ],
+)
+
+drake_cc_library(
+    name = "detail_usd_parser",
+    srcs = select({
+        "//tools:with_usd": [
+            "detail_usd_parser.cc",
+        ],
+        "//conditions:default": [
+            "detail_usd_parser_off.cc",
+        ],
+    }),
+    hdrs = ["detail_usd_parser.h"],
+    copts = [
+        # TODO(jwnimmer-tri) OpenUSD has a gargantuan number of warnings.
+        # We should really try to patch it to fix most/all of them.
+        "-w",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
+    interface_deps = [
+        ":detail_misc",
+        ":detail_parsing_workspace",
+        "//multibody/plant",
+    ],
+    deps = [
+        "//common:find_runfiles",
+        "//common:unused",
+    ] + select({
+        "//tools:with_usd": [
+            "@openusd_internal//:openusd",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 drake_cc_library(
@@ -703,6 +742,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "detail_usd_parser_test",
+    args = select({
+        "//tools:with_usd": [],
+        "//conditions:default": [
+            "--gtest_filter=-*",
+        ],
+    }),
+    deps = [
+        ":detail_usd_parser",
+        "//common/test_utilities:diagnostic_policy_test_base",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
@@ -713,4 +767,10 @@ install_files(
     visibility = ["//visibility:public"],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "detail_usd_parser.cc",
+        "detail_usd_parser_off.cc",
+    ],
+    enable_clang_format_lint = False,
+)

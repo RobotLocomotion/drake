@@ -621,6 +621,7 @@ drake_cc_library(
     deps = [
         ":abstract_value_cloner",
         "//common:pointer_cast",
+        "//common:string_container",
     ],
 )
 
@@ -632,6 +633,7 @@ drake_cc_library(
         ":diagram",
         "//common:default_scalars",
         "//common:essential",
+        "//common:string_container",
     ],
     deps = [
         "//common:pointer_cast",

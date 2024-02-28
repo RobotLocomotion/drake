@@ -43,6 +43,9 @@ cc_library(
         "@eigen",
         "@zlib",
     ],
+    linkopts = [
+        "-pthread",
+    ],
 )
 
 cc_library(

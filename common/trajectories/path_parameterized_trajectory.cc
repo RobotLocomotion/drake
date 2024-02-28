@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/trajectories/derivative_trajectory.h"
 
 namespace drake {
 namespace trajectories {
@@ -77,6 +78,12 @@ MatrixX<T> PathParameterizedTrajectory<T>::DoEvalDerivative(
                     "be greater than or equal to 0.",
                     derivative_order));
   }
+}
+
+template <typename T>
+std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::DoMakeDerivative(
+    int derivative_order) const {
+  return std::make_unique<DerivativeTrajectory<T>>(*this, derivative_order);
 }
 
 }  // namespace trajectories

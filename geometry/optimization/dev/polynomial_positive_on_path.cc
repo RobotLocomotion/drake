@@ -97,10 +97,8 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   for (int i = 0;
        i < psatz_variables_and_psd_constraints_.indeterminates().size(); ++i) {
     // Check that prog contains the indeterminates of this program.
-    DRAKE_DEMAND(
-        prog->indeterminates_index().count(
-            psatz_variables_and_psd_constraints_.indeterminates()(i).get_id()) >
-        0);
+    DRAKE_DEMAND(prog->indeterminates_index().contains(
+        psatz_variables_and_psd_constraints_.indeterminates()(i).get_id()));
   }
 
   prog->AddDecisionVariables(

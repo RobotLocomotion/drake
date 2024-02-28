@@ -141,8 +141,8 @@ GTEST_TEST(StronglyConnectedComponentsTest, DeepNest) {
   EXPECT_EQ(sccs.size(), depth);
 
   // Ordering is top-down; successors before sources.
-  EXPECT_EQ(sccs[0].count(depth - 1), 1);
-  EXPECT_EQ(sccs[depth - 1].count(0), 1);
+  EXPECT_TRUE(sccs[0].contains(depth - 1));
+  EXPECT_TRUE(sccs[depth - 1].contains(0));
 }
 
 }  // namespace

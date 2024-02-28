@@ -392,8 +392,8 @@ GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
-  EXPECT_GT(
-      prog.required_capabilities().count(ProgramAttribute::kBinaryVariable), 0);
+  EXPECT_TRUE(
+      prog.required_capabilities().contains(ProgramAttribute::kBinaryVariable));
 
   const auto decision_variable_index = prog.decision_variable_index();
   {
@@ -1906,10 +1906,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   set<Expression> constraint_set;
   constraint_set.emplace(x(0) + 2 * x(1) - 5);
   constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
-  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_constraint(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_constraint(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_constraint(1)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_constraint(1)), 1);
+  EXPECT_TRUE(constraint_set.contains(Ax(0) - lb_in_constraint(0)));
+  EXPECT_TRUE(constraint_set.contains(Ax(0) - ub_in_constraint(0)));
+  EXPECT_TRUE(constraint_set.contains(Ax(1) - lb_in_constraint(1)));
+  EXPECT_TRUE(constraint_set.contains(Ax(1) - ub_in_constraint(1)));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
@@ -1946,15 +1946,13 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   for (int i = 0; i < 3; ++i) {
     if (!std::isinf(lb_in_constraint(i))) {
       // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_constraint(i)) +
-                    constraint_set.count(-(Ax(i) - lb_in_constraint(i))),
-                1);
+      EXPECT_NE(constraint_set.contains(Ax(i) - lb_in_constraint(i)),
+                constraint_set.contains(-(Ax(i) - lb_in_constraint(i))));
     }
     if (!std::isinf(ub_in_constraint(i))) {
       // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_constraint(i)) +
-                    constraint_set.count(-(Ax(i) - ub_in_constraint(i))),
-                1);
+      EXPECT_NE(constraint_set.contains(Ax(i) - ub_in_constraint(i)),
+                constraint_set.contains(-(Ax(i) - ub_in_constraint(i))));
     }
   }
 }
@@ -3289,8 +3287,8 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
 
   auto obj1 =
       prog.AddCost(Binding<L2NormCost>(std::make_shared<L2NormCost>(A, b), x));
-  EXPECT_GT(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
-            0);
+  EXPECT_TRUE(prog.required_capabilities().contains(
+      ProgramAttribute::kL2NormCost));
   EXPECT_EQ(prog.l2norm_costs().size(), 1u);
   EXPECT_EQ(prog.GetAllCosts().size(), 1u);
 
@@ -3300,13 +3298,13 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   prog.RemoveCost(obj1);
   prog.RemoveCost(obj2);
   EXPECT_EQ(prog.l2norm_costs().size(), 0u);
-  EXPECT_EQ(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
-            0u);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kL2NormCost));
 
   prog.AddL2NormCost(A, b, {x.head<1>(), x.tail<1>()});
   EXPECT_EQ(prog.l2norm_costs().size(), 1u);
-  EXPECT_GT(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
-            0u);
+  EXPECT_TRUE(prog.required_capabilities().contains(
+      ProgramAttribute::kL2NormCost));
 
   auto new_prog = prog.Clone();
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
@@ -4310,24 +4308,24 @@ void RemoveCostTest(MathematicalProgram* prog,
   EXPECT_EQ(prog->RemoveCost(cost1), 1);
   EXPECT_EQ(program_costs->size(), 1u);
   EXPECT_EQ(program_costs->at(0).evaluator().get(), cost2.evaluator().get());
-  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_TRUE(prog->required_capabilities().contains(affected_capability));
   // Now add another cost2 to program. If we remove cost2, now we get a program
   // with empty linear cost.
   prog->AddCost(cost2);
   EXPECT_EQ(program_costs->size(), 2u);
   EXPECT_EQ(prog->RemoveCost(cost2), 2);
   EXPECT_EQ(program_costs->size(), 0u);
-  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(affected_capability));
 
   // Currently program_costs is empty.
   EXPECT_EQ(prog->RemoveCost(cost1), 0);
-  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(affected_capability));
 
   prog->AddCost(cost1);
   // prog doesn't contain cost2, removing cost2 from prog ends up as a no-opt.
   EXPECT_EQ(prog->RemoveCost(cost2), 0);
   EXPECT_EQ(program_costs->size(), 1u);
-  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_TRUE(prog->required_capabilities().contains(affected_capability));
 
   // cost3 and cost1 share the same evaluator, but the associated variables are
   // different.
@@ -4337,7 +4335,7 @@ void RemoveCostTest(MathematicalProgram* prog,
   auto cost3 = prog->AddCost(cost1.evaluator(), cost3_vars);
   EXPECT_EQ(prog->RemoveCost(cost1), 1);
   EXPECT_EQ(program_costs->size(), 1u);
-  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_TRUE(prog->required_capabilities().contains(affected_capability));
   EXPECT_EQ(program_costs->at(0).evaluator().get(), cost3.evaluator().get());
 }
 
@@ -4408,26 +4406,22 @@ GTEST_TEST(TestMathematicalProgram, RemoveLinearConstraint) {
   auto lin_con2 = prog.AddLinearConstraint(x[0] + 2 * x[1] <= 1);
   EXPECT_EQ(prog.RemoveConstraint(lin_con1), 1);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
-  EXPECT_GT(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_TRUE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
   // Now the program contains 2 lin_con2
   prog.AddConstraint(lin_con2);
   EXPECT_EQ(prog.RemoveConstraint(lin_con1), 0);
   EXPECT_EQ(prog.RemoveConstraint(lin_con2), 2);
   EXPECT_EQ(prog.linear_constraints().size(), 0u);
-  EXPECT_EQ(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
 
   auto bbcon = prog.AddBoundingBoxConstraint(1, 2, x);
-  EXPECT_GT(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_TRUE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
   EXPECT_EQ(prog.RemoveConstraint(bbcon), 1);
-  EXPECT_EQ(
-      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
-      0);
+  EXPECT_FALSE(prog.required_capabilities().contains(
+      ProgramAttribute::kLinearConstraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, RemoveConstraintPSD) {
@@ -4462,10 +4456,10 @@ void TestRemoveConstraint(MathematicalProgram* prog,
                           const std::vector<Binding<C>>* prog_constraints,
                           ProgramAttribute removed_capability) {
   ASSERT_EQ(prog_constraints->size(), 1);
-  ASSERT_GT(prog->required_capabilities().count(removed_capability), 0);
+  ASSERT_TRUE(prog->required_capabilities().contains(removed_capability));
   EXPECT_EQ(prog->RemoveConstraint(constraint), 1);
   EXPECT_EQ(prog_constraints->size(), 0u);
-  EXPECT_EQ(prog->required_capabilities().count(removed_capability), 0);
+  EXPECT_FALSE(prog->required_capabilities().contains(removed_capability));
 }
 
 GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {

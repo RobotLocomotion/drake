@@ -603,6 +603,8 @@ class LinearConstraint : public Constraint {
 
   /**
    * Construct the linear constraint lb <= A*x <= ub
+   *
+   * Throws if A has any entry which is not finite.
    * @pydrake_mkdoc_identifier{dense_A}
    */
   LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -611,6 +613,7 @@ class LinearConstraint : public Constraint {
 
   /**
    * Overloads constructor with a sparse A matrix.
+   * Throws if A has any entry which is not finite.
    * @pydrake_mkdoc_identifier{sparse_A}
    */
   LinearConstraint(const Eigen::SparseMatrix<double>& A,
@@ -637,6 +640,10 @@ class LinearConstraint : public Constraint {
    * new_lb <= new_A * x <= new_ub
    * Note that the size of constraints (number of rows) can change, but the
    * number of variables (number of cols) cannot.
+   *
+   * Throws if new_A has any entry which is not finite or if new_A, new_lb, and
+   * new_ub don't all have the same number of rows.
+   *
    * @param new_A new linear term
    * @param new_lb new lower bound
    * @param new_up new upper bound
@@ -648,6 +655,10 @@ class LinearConstraint : public Constraint {
 
   /**
    * Overloads UpdateCoefficients but with a sparse A matrix.
+   *
+   * Throws if new_A has any entry which is not finite or if new_A, new_lb, and
+   * new_ub don't all have the same number of rows.
+   *
    * @pydrake_mkdoc_identifier{sparse_A}
    */
   void UpdateCoefficients(const Eigen::SparseMatrix<double>& new_A,
@@ -706,12 +717,15 @@ class LinearEqualityConstraint : public LinearConstraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint)
 
   /**
-   * Constructs the linear equality constraint Aeq * x = beq
+   * Constructs the linear equality constraint Aeq * x = beq.
+   *
+   * Throws is any entry in Aeq or beq is not finite.
    * @pydrake_mkdoc_identifier{dense_Aeq}
    */
   LinearEqualityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
                            const Eigen::Ref<const Eigen::VectorXd>& beq)
       : LinearConstraint(Aeq, beq, beq) {
+    DRAKE_THROW_UNLESS(beq.allFinite());
   }
 
   /**
@@ -721,6 +735,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   LinearEqualityConstraint(const Eigen::SparseMatrix<double>& Aeq,
                            const Eigen::Ref<const Eigen::VectorXd>& beq)
       : LinearConstraint(Aeq, beq, beq) {
+    DRAKE_THROW_UNLESS(beq.allFinite());
   }
 
   /**
@@ -729,25 +744,34 @@ class LinearEqualityConstraint : public LinearConstraint {
    */
   LinearEqualityConstraint(const Eigen::Ref<const Eigen::RowVectorXd>& a,
                            double beq)
-      : LinearEqualityConstraint(a, Vector1d(beq)) {}
+      : LinearEqualityConstraint(a, Vector1d(beq)) {
+    DRAKE_THROW_UNLESS(this->lower_bound().allFinite());
+  }
 
   /*
    * @brief change the parameters of the constraint (A and b), but not the
-   *variable associations
+   * variable associations.
    *
-   * note that A and b can change size in the rows only (representing a
-   *different number of linear constraints, but on the same decision variables)
+   * Note that A and b can change size in the rows only (representing a
+   * different number of linear constraints, but on the same decision
+   * variables).
+   *
+   * Throws if any entry of beq or Aeq is not finite.
    */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
                           const Eigen::Ref<const Eigen::VectorXd>& beq) {
+    DRAKE_THROW_UNLESS(beq.allFinite());
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 
   /**
    * Overloads UpdateCoefficients but with a sparse A matrix.
+   *
+   * Throws if any entry of beq or Aeq is not finite.
    */
   void UpdateCoefficients(const Eigen::SparseMatrix<double>& Aeq,
                           const Eigen::Ref<const Eigen::VectorXd>& beq) {
+    DRAKE_THROW_UNLESS(beq.allFinite());
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 

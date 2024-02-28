@@ -399,6 +399,7 @@ drake_py_binary(
     deps = [
         ":all_py",
         "@mypy_internal//:mypy",
+        "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 

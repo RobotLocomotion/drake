@@ -2085,7 +2085,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
             single_tree_dynamic_geometry_count() - 1);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
-  EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
+  EXPECT_FALSE(gs_tester_.get_geometries().contains(g_id));
 
   // Confirm that, post removal, updating poses still works.
   DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
@@ -3507,7 +3507,7 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
           EXPECT_TRUE(render_engine_->has_geometry(id));
           // Should report in the renderer if it is *not* in the removed set.
           EXPECT_EQ(other_engine.has_geometry(id),
-                    removed_from_renderer.count(id) == 0);
+                    !removed_from_renderer.contains(id));
         }
       };
   set<GeometryId> removed_ids;
@@ -3583,7 +3583,7 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
           EXPECT_TRUE(render_engine_->has_geometry(id));
           // Should report in the renderer if it is *not* in the removed set.
           EXPECT_EQ(other_engine.has_geometry(id),
-                    removed_from_renderer.count(id) == 0);
+                    !removed_from_renderer.contains(id));
         }
       };
   set<GeometryId> removed_ids;
@@ -4334,7 +4334,7 @@ class RemoveRoleTests : public GeometryStateTestBase,
           // If this id is *not* in the set with the role removed, then it
           // _should_ report as having the role.
           EXPECT_EQ(gs_tester_.GetGeometry(id)->has_role(role),
-                    ids_without_role.count(id) == 0);
+                    !ids_without_role.contains(id));
         } else {
           EXPECT_TRUE(gs_tester_.GetGeometry(id)->has_role(role));
         }

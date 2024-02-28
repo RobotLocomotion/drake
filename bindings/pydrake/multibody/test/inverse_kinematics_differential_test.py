@@ -139,18 +139,34 @@ class TestPlanner(unittest.TestCase):
         Parser(plant).AddModels(file_name)
         plant.Finalize()
 
-        context = plant.CreateDefaultContext()
+        robot_context = plant.CreateDefaultContext()
         frame = plant.GetFrameByName("Link2")
         time_step = 0.1
         parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
 
         integrator = mut.DifferentialInverseKinematicsIntegrator(
             robot=plant,
+            frame_A=plant.world_frame(),
             frame_E=frame,
             time_step=time_step,
             parameters=parameters,
-            robot_context=context,
+            robot_context=robot_context,
             log_only_when_result_state_changes=True)
+
+        context = integrator.CreateDefaultContext()
+        X_AE = integrator.ForwardKinematics(context=context)
 
         integrator.get_mutable_parameters().set_time_step(0.2)
         self.assertEqual(integrator.get_parameters().get_time_step(), 0.2)
+
+        integrator2 = mut.DifferentialInverseKinematicsIntegrator(
+            robot=plant,
+            frame_E=frame,
+            time_step=time_step,
+            parameters=parameters,
+            robot_context=robot_context,
+            log_only_when_result_state_changes=True)
+
+        context2 = integrator2.CreateDefaultContext()
+        X_WE = integrator2.ForwardKinematics(context2)
+        self.assertTrue(X_AE.IsExactlyEqualTo(X_WE))

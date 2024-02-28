@@ -45,15 +45,6 @@ using tinyxml2::XMLNode;
 
 namespace {
 
-// TODO(rpoyner-tri): replace with std::string_view::ends_with once c++20
-// features are available.
-bool EndsWith(std::string_view value, std::string_view ending) {
-  if (ending.size() > value.size()) {
-    return false;
-  }
-  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
-
 // Any attributes from `default` that are not specified in `node` will be added
 // to `node`.
 void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
@@ -289,7 +280,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_joint_.count(class_name) > 0) {
+    if (default_joint_.contains(class_name)) {
       ApplyDefaultAttributes(*default_joint_.at(class_name), node);
     }
 
@@ -404,7 +395,7 @@ class MujocoParser {
     using geometry::ShapeReifier::ImplementGeometry;
 
     void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.count(name_) == 1);
+      DRAKE_DEMAND(mesh_inertia_.contains(name_));
       M_GG_G_ = mesh_inertia_.at(name_);
     }
 
@@ -477,19 +468,21 @@ class MujocoParser {
                                const std::string& child_class = "") {
     MujocoGeometry geom;
 
-    if (!ParseStringAttribute(node, "name", &geom.name)) {
-      // Use "geom#" as the default body name.
-      geom.name = fmt::format("geom{}", num_geom);
-    }
-
     std::string class_name;
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_geometry_.count(class_name) > 0) {
+    if (default_geometry_.contains(class_name)) {
       // TODO(russt): Add a test case covering childclass/default nesting once
       // the body element is supported.
       ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
+    }
+
+    // Per the MuJoCo documentation, the name is not part of the defaults. This
+    // is consistent with Drake requiring that geometry names are unique.
+    if (!ParseStringAttribute(node, "name", &geom.name)) {
+      // Use "geom#" as the default body name.
+      geom.name = fmt::format("geom{}", num_geom);
     }
 
     geom.X_BG = ParseTransform(node);
@@ -620,7 +613,7 @@ class MujocoParser {
                                  geom.name));
           return geom;
       }
-      if (mesh_.count(mesh)) {
+      if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
       } else {
         Warning(
@@ -701,7 +694,7 @@ class MujocoParser {
 
     std::string material;
     if (ParseStringAttribute(node, "material", &material)) {
-      if (material_.count(material)) {
+      if (material_.contains(material)) {
         XMLElement* material_node = material_.at(material);
         // Note: there are many material attributes that we do not support yet,
         // nor perhaps ever. Consider warning about them here (currently, it
@@ -901,10 +894,10 @@ class MujocoParser {
 
   void ParseWorldBody(XMLElement* node) {
     if (plant_->geometry_source_is_registered()) {
-      std::vector<MujocoGeometry> geometries;
+      int num_geometries = 0;
       for (XMLElement* link_node = node->FirstChildElement("geom"); link_node;
            link_node = link_node->NextSiblingElement("geom")) {
-        auto geom = ParseGeometry(link_node, geometries.size(), false);
+        auto geom = ParseGeometry(link_node, num_geometries, false);
         if (!geom.shape) continue;
         if (geom.register_visual) {
           plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
@@ -915,6 +908,7 @@ class MujocoParser {
                                             *geom.shape, geom.name,
                                             geom.friction);
         }
+        ++num_geometries;
       }
     }
 
@@ -945,7 +939,7 @@ class MujocoParser {
          e = e->NextSiblingElement(elt_name)) {
       (*default_map)[class_name] = e;
       if (!parent_default.empty() &&
-          default_map->count(parent_default) > 0) {
+          default_map->contains(parent_default)) {
         ApplyDefaultAttributes(*default_map->at(parent_default), e);
       }
     }
@@ -1017,7 +1011,7 @@ class MujocoParser {
       if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
         class_name = "main";
       }
-      if (default_mesh_.count(class_name) > 0) {
+      if (default_mesh_.contains(class_name)) {
         ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
       }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
@@ -1108,24 +1102,21 @@ class MujocoParser {
             Warning(*node,
                     fmt::format("If you have built Drake from source, "
                                 "running\n\n bazel run "
-                                "//manipulation/utils/stl2obj -- \"{}\" "
-                                "\"{}\"\n\nonce will "
-                                "resolve this.",
+                                "//manipulation/util:stl2obj -- --input \"{}\" "
+                                "--output \"{}\"\n\nonce will resolve this.",
                                 original_filename.string(), filename.string()));
           }
         } else {
           Warning(*node,
                   fmt::format("The mesh asset \"{}\" could not be found, nor "
-                              "could its .obj "
-                              "replacement \"{}\".",
+                              "could its .obj replacement \"{}\".",
                               original_filename.string(), filename.string()));
         }
       } else {
         std::string name{};
         ParseStringAttribute(mesh_node, "name", &name);
         Warning(*node, fmt::format("The mesh asset named {} did not specify a "
-                                   "'file' attribute and so "
-                                   "will be ignored.",
+                                   "'file' attribute and so will be ignored.",
                                    name));
       }
     }
@@ -1295,7 +1286,7 @@ class MujocoParser {
         // geometry name to model_instance_name::geometry_name (in
         // MultibodyPlant::GetScopedName). Cope with that change here.
         const std::string candidate_name = inspector.GetName(id);
-        if (EndsWith(candidate_name, name)) {
+        if (candidate_name.ends_with(name)) {
           return id;
         }
       }

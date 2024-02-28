@@ -571,7 +571,7 @@ Assign to auto, and use the named public fields:
   items.plant.DoFoo(...);
   items.scene_graph.DoBar(...);
 @endcode
-or taking advantage of C++17's structured binding
+or taking advantage of C++'s structured binding:
 @code
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   ...
@@ -1518,7 +1518,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a coupler constraint.
   const internal::CouplerConstraintSpec& get_coupler_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(coupler_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(coupler_constraints_specs_.contains(id));
     return coupler_constraints_specs_.at(id);
   }
 
@@ -1527,7 +1527,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a distance constraint.
   const internal::DistanceConstraintSpec& get_distance_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(distance_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(distance_constraints_specs_.contains(id));
     return distance_constraints_specs_.at(id);
   }
 
@@ -1536,7 +1536,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a ball constraint.
   const internal::BallConstraintSpec& get_ball_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(ball_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(ball_constraints_specs_.contains(id));
     return ball_constraints_specs_.at(id);
   }
 
@@ -1545,7 +1545,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws if `id` is not a valid identifier for a weld constraint.
   const internal::WeldConstraintSpec& get_weld_constraint_specs(
       MultibodyConstraintId id) const {
-    DRAKE_THROW_UNLESS(weld_constraints_specs_.count(id) > 0);
+    DRAKE_THROW_UNLESS(weld_constraints_specs_.contains(id));
     return weld_constraints_specs_.at(id);
   }
 
@@ -4399,6 +4399,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// for very large systems.
   MatrixX<T> MakeActuationMatrix() const;
 
+  /// Creates the pseudoinverse of the actuation matrix B directly (without
+  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
+  ///
+  /// Notably, when B is full row rank (the system is fully actuated), then the
+  /// pseudoinverse is a true inverse.
+  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
+
   /// Alternative signature to build an actuation selector matrix `Su` such
   /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
   /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
@@ -5918,7 +5925,7 @@ struct AddMultibodyPlantSceneGraphResult final {
   // Returns the N-th member referenced by this struct.
   // If N = 0, returns the reference to the MultibodyPlant.
   // If N = 1, returns the reference to the geometry::SceneGraph.
-  // Provided to support C++17's structured binding.
+  // Provided to support C++'s structured binding.
   template <std::size_t N>
   decltype(auto) get() const {
     if constexpr (N == 0)
@@ -6003,7 +6010,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }  // namespace drake
 
 #ifndef DRAKE_DOXYGEN_CXX
-// Specializations provided to support C++17's structured binding for
+// Specializations provided to support C++'s structured binding for
 // AddMultibodyPlantSceneGraphResult.
 namespace std {
 // The GCC standard library defines tuple_size as class and struct which

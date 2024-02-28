@@ -23,9 +23,7 @@ RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
     Context<T>* context) : ImplicitIntegrator<T>(system, context) {
   A_.resize(num_stages, num_stages);
 
-  // TODO(edrumwri) Convert A_, c_, b_, and d_ to fixed-size when Drake supports
-  // "if constexpr" (C++17 feature). Lack of partial template function
-  // specialization makes turning those into fixed-sizes painful at the moment.
+  // TODO(edrumwri) Convert A_, c_, b_, and d_ to fixed-size via "if constexpr".
 
   if (num_stages == 2) {
     // Set the matrix coefficients (from [Hairer, 1996] Table 5.5).

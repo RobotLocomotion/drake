@@ -622,7 +622,7 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
   VectorXd b_new(A_new.rows());
   int i = 0;
   for (int j = 0; j < A_.rows(); ++j) {
-    if (redundant_indices.count(j) == 0) {
+    if (!redundant_indices.contains(j)) {
       A_new.row(i) = A_.row(j);
       b_new.row(i) = b_.row(j);
       ++i;

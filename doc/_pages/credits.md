@@ -17,6 +17,7 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * Alejandro Castro
 * John Carter
 * Mmanu Chaturvedi
+* [Thomas Cohn](https://tommycohn.com/)
 * Rick Cory
 * Eric Cousineau
 * Sean Curtis

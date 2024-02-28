@@ -665,6 +665,58 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.8);
 }
 
+// A glTF file can either embed its assets as data URIs, or can use relative
+// pathnames for the URI. It can use buffer views into a single asset buffer,
+// or have assets in different files. We'll render a simple cube loaded from
+// multiple different asset formats, and confirm that it looks the same in all
+// cases. This test doesn't confirm that VTK does the _right_ thing with glTF
+// files (for that, see WholeImageCustomParams), just that it treats the glTF
+// asset formats uniformly.
+TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
+  constexpr int kCount = 3;
+  const std::array<std::string, kCount> filenames{
+      FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
+      FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf"),
+      FindResourceOrThrow("drake/geometry/render/test/meshes/cube3.gltf")};
+
+  Init(X_WC_, true);
+
+  std::array<ImageRgba8U, kCount> images;
+  for (int i = 0; i < ssize(filenames); ++i) {
+    // Add the i'th cube to the scene.
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, Mesh(filenames[i]), PerceptionProperties{},
+                              RigidTransformd::Identity(), true);
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd::Identity()}});
+
+    // Render an image of it.
+    images[i].resize(kWidth, kHeight);
+    Render(nullptr, nullptr, &images[i], nullptr, nullptr);
+
+    // Compare against the prior image.
+    if (i > 0) {
+      EXPECT_TRUE(images[i - i] == images[i]) << fmt::format(
+          "The gltf_asset_formats_{}.png and gltf_asset_formats_{}.png should "
+          "have been identical, but were not! Check the bazel-testlogs for "
+          "the saved images",
+          i - 1, i);
+    }
+
+    // Reset for the next cube.
+    renderer_->RemoveGeometry(id);
+  }
+
+  // Save the images for offline inspection.
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const std::filesystem::path out_dir(dir);
+    for (int i = 0; i < ssize(images); ++i) {
+      ImageIo{}.Save(images[i],
+                     out_dir / fmt::format("gltf_asset_formats_{}.png", i));
+    }
+  }
+}
+
 // Primitives result in a geometry with a single Part. However, we can load
 // meshes from .gltf or .obj files that will create multiple parts. The meshes
 // in this test are conceptually identical: a cube with different colors on each

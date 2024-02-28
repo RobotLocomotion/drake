@@ -508,6 +508,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.num_additional_constraint_infeasible_samples.doc)
         .def_readwrite(
             "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
+        .def_readwrite("mixing_steps", &IrisOptions::mixing_steps,
+            cls_doc.mixing_steps.doc)
         .def("__repr__", [](const IrisOptions& self) {
           return py::str(
               "IrisOptions("
@@ -520,7 +522,8 @@ void DefineGeometryOptimization(py::module m) {
               "configuration_obstacles {}, "
               "prog_with_additional_constraints {}, "
               "num_additional_constraint_infeasible_samples={}, "
-              "random_seed={}"
+              "random_seed={}, "
+              "mixing_steps={}"
               ")")
               .format(self.require_sample_point_is_contained,
                   self.iteration_limit, self.termination_threshold,
@@ -531,7 +534,7 @@ void DefineGeometryOptimization(py::module m) {
                   self.prog_with_additional_constraints ? "is set"
                                                         : "is not set",
                   self.num_additional_constraint_infeasible_samples,
-                  self.random_seed);
+                  self.random_seed, self.mixing_steps);
         });
 
     DefReadWriteKeepAlive(&iris_options, "prog_with_additional_constraints",
@@ -1160,7 +1163,9 @@ void DefineGeometryOptimization(py::module m) {
         return result;
       },
       py::arg("convex_set"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
+      py::arg("epsilon") = 1e-5,
+      doc.PartitionConvexSet
+          .doc_3args_convex_set_continuous_revolute_joints_epsilon);
   m.def(
       "PartitionConvexSet",
       [](const std::vector<ConvexSet*>& convex_sets,
@@ -1175,7 +1180,29 @@ void DefineGeometryOptimization(py::module m) {
         return result;
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
-      py::arg("epsilon") = 1e-5, doc.PartitionConvexSet.doc);
+      py::arg("epsilon") = 1e-5,
+      doc.PartitionConvexSet
+          .doc_3args_convex_sets_continuous_revolute_joints_epsilon);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets_A,
+          const std::vector<ConvexSet*>& convex_sets_B,
+          const std::vector<int>& continuous_revolute_joints) {
+        return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
+            CloneConvexSets(convex_sets_B), continuous_revolute_joints);
+      },
+      py::arg("convex_sets_A"), py::arg("convex_sets_B"),
+      py::arg("continuous_revolute_joints"),
+      doc.CalcPairwiseIntersections.doc_3args);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets,
+          const std::vector<int>& continuous_revolute_joints) {
+        return CalcPairwiseIntersections(
+            CloneConvexSets(convex_sets), continuous_revolute_joints);
+      },
+      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
+      doc.CalcPairwiseIntersections.doc_2args);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

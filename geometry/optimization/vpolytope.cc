@@ -336,6 +336,11 @@ VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
   int ii = 0;
   for (const auto& facet : qhull.facetList()) {
     auto incident_hyperplanes = facet.vertices();
+    // A temporary fix that makes sure that vertex_A is a square matrix, as
+    // otherwise partialPivLu can segfault. This randomly occurs when Gurobi
+    // is used as a solver, see bug issue #21055 for details.
+    DRAKE_THROW_UNLESS(incident_hyperplanes.count() ==
+                       hpoly.ambient_dimension());
     MatrixXd vertex_A(incident_hyperplanes.count(), hpoly.ambient_dimension());
     for (int jj = 0; jj < incident_hyperplanes.count(); jj++) {
       std::vector<double> hyperplane =

@@ -55,6 +55,7 @@ drake_cc_package_library(
         ":scoped_singleton",
         ":sha256",
         ":sorted_pair",
+        ":string_container",
         ":temp_directory",
         ":timer",
         ":type_safe_index",
@@ -529,6 +530,17 @@ drake_cc_library(
     hdrs = ["scoped_singleton.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "string_container",
+    hdrs = [
+        "string_hash.h",
+        "string_map.h",
+        "string_set.h",
+        "string_unordered_map.h",
+        "string_unordered_set.h",
     ],
 )
 
@@ -1071,6 +1083,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:random_polynomial_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "string_container_test",
+    deps = [
+        ":string_container",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

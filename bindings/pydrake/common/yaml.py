@@ -637,11 +637,9 @@ def _yaml_dump_typed_item(*, obj, schema):
 
     # Handle NumPy types.
     if schema == np.ndarray:
-        # TODO(jwnimmer-tri) Once we drop support for Ubuntu 20.04 "Focal",
-        # then we can upgrade to numpy >= 1.21 as our minimum at which point
-        # we can use the numpy.typing module here to statically specify a
-        # shape and/or dtype in the schema. Until then, we only support floats
-        # with no restrictions on the shape.
+        # TODO(jwnimmer-tri) We should use the numpy.typing module here to
+        # statically specify a shape and/or dtype in the schema. For now,
+        # we only support floats with no restrictions on the shape.
         assert obj.dtype == np.dtype(np.float64)
         list_value = obj.tolist()
         list_schema = float

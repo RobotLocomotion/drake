@@ -110,8 +110,9 @@ class YamlWriteArchive final {
   // This version applies when `value` is a std::map from std::string to
   // Serializable.  The map's values must be serializable, but there is no
   // Serialize function required for the map itself.
-  template <typename Serializable>
-  void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
+  template <typename Serializable, typename Compare, typename Allocator>
+  void DoAccept(std::map<std::string, Serializable, Compare, Allocator>* value,
+                int32_t) {
     root_ = VisitMapDirectly(value);
   }
 
@@ -155,14 +156,17 @@ class YamlWriteArchive final {
   }
 
   // For std::map.
-  template <typename NVP, typename K, typename V, typename C>
-  void DoVisit(const NVP& nvp, const std::map<K, V, C>&, int32_t) {
+  template <typename NVP, typename K, typename V, typename C, typename A>
+  void DoVisit(const NVP& nvp, const std::map<K, V, C, A>&, int32_t) {
     this->VisitMap<K, V>(nvp);
   }
 
   // For std::unordered_map.
-  template <typename NVP, typename K, typename V, typename C>
-  void DoVisit(const NVP& nvp, const std::unordered_map<K, V, C>&, int32_t) {
+  template <typename NVP, typename K, typename V, typename Hash,
+            typename KeyEqual, typename Allocator>
+  void DoVisit(const NVP& nvp,
+               const std::unordered_map<K, V, Hash, KeyEqual, Allocator>&,
+               int32_t) {
     this->VisitMap<K, V>(nvp);
   }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install Bazel as /usr/bin/bazel on Ubuntu 20.04 (Focal) or 22.04 (Jammy).
+# Install Bazel as /usr/bin/bazel on Ubuntu.
 # This script does not accept any command line arguments.
 
 set -euo pipefail

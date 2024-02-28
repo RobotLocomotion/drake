@@ -142,32 +142,12 @@ class _Generic:
         return f"<Generic {self._name}>"
 
 
-def _has_pep585():
-    return sys.version_info[:2] >= (3, 9)
-
-
 def _dict_instantiator(params):
-    # Backport PEP-585 support into Python 3.8 and earlier.
-    if _has_pep585():
-        result = dict[params]
-    else:
-        result = typing.Dict[params]
-        # We need the result to be a callable type to match PEP-585 (i.e.,
-        # calling it must return a fresh `dict` object.)
-        result._inst = True
-    return result
+    return dict[params]
 
 
 def _list_instantiator(params):
-    # Backport PEP-585 support into Python 3.8 and earlier.
-    if _has_pep585():
-        result = list[params]
-    else:
-        result = typing.List[params]
-        # We need the result to be a callable type to match PEP-585 (i.e.,
-        # calling it must return a fresh `list` object.)
-        result._inst = True
-    return result
+    return list[params]
 
 
 def _optional_instantiator(params):

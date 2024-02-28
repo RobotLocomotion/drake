@@ -404,6 +404,10 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
         "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
     if (show_hydroelastic) {
       EXPECT_GT(data.size(), 5000);
+      // The BufferGeometry has explicitly declared its material to be flat
+      // shaded. The encoding includes the property name and the value \xC3 for
+      // true. (False is \xC2.)
+      EXPECT_THAT(data, testing::HasSubstr("flatShading\xC3")) << data;
     } else {
       EXPECT_LT(data.size(), 1000);
     }
@@ -512,12 +516,18 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
   }
 }
 
-// Full system acceptance test of setting alpha slider values.
+// Full system acceptance test of setting alpha slider values (including the
+// initial value).
 TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
-  MeshcatVisualizerParams params;
-  params.enable_alpha_slider = true;
+  // Note: due to the quantizing effect of the slider, we can't set an
+  // arbitrary value for the initial slider value and expect a perfect match.
+  // Only values that are integer multiples of 0.02 will work.
+  const MeshcatVisualizerParams params{.enable_alpha_slider = true,
+                                       .initial_alpha_slider_value = 0.5};
   SetUpDiagram(params);
   systems::Simulator<double> simulator(*diagram_);
+
+  EXPECT_EQ(meshcat_->GetSliderValue("visualizer α"), 0.5);
 
   // Simulate for a moment and publish to populate the visualizer.
   simulator.AdvanceTo(0.1);

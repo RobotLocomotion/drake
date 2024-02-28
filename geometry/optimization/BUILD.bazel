@@ -431,6 +431,7 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         ":geodesic_convexity",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

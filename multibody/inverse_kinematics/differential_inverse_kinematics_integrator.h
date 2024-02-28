@@ -55,6 +55,7 @@ class DifferentialInverseKinematicsIntegrator
   /** Constructs the system.
 
   @param robot A MultibodyPlant describing the robot.
+  @param frame_A Reference frame (inertial or non-inertial).
   @param frame_E End-effector frame.
   @param time_step the discrete time step of the (Euler) integration.
   @param parameters Collection of various problem specific constraints and
@@ -71,6 +72,40 @@ class DifferentialInverseKinematicsIntegrator
   IsDifferenceEquationSystem() to return `true`.
 
   Note: All references must remain valid for the lifetime of this system.
+  @pre frame_E != frame_A.
+  */
+  DifferentialInverseKinematicsIntegrator(
+      const MultibodyPlant<double>& robot,
+      const Frame<double>& frame_A,
+      const Frame<double>& frame_E,
+      double time_step,
+      // Note: parameters last so they could be optional in the future.
+      const DifferentialInverseKinematicsParameters& parameters,
+      const systems::Context<double>* robot_context = nullptr,
+      bool log_only_when_result_state_changes = true);
+
+  /** Constructs the system.
+
+  @param robot A MultibodyPlant describing the robot.
+  @param frame_E End-effector frame.
+  @param time_step the discrete time step of the (Euler) integration.
+  @param parameters Collection of various problem specific constraints and
+  constants.  The `time_step` parameter will be set to @p time_step.
+  @param robot_context Optional Context of the MultibodyPlant.  The position
+  values of this context will be overwritten during integration; you only need
+  to pass this in if the robot has any non-default parameters.  @default
+  `robot.CreateDefaultContext()`.
+  @param log_only_when_result_state_changes is a boolean that determines whether
+  the system will log on every differential IK failure, or only when the failure
+  state changes.  When the value is `true`, it will cause the system to have an
+  additional discrete state variable to store the most recent
+  DifferentialInverseKinematicsStatus.  Set this to `false` if you want
+  IsDifferenceEquationSystem() to return `true`.
+
+  In this overload, the reference frame, A, is taken to be the world frame.
+
+  Note: All references must remain valid for the lifetime of this system.
+  @pre frame_E != robot.world_frame().
   */
   DifferentialInverseKinematicsIntegrator(
       const MultibodyPlant<double>& robot,
@@ -86,7 +121,7 @@ class DifferentialInverseKinematicsIntegrator
   void SetPositions(systems::Context<double>* context,
                     const Eigen::Ref<const Eigen::VectorXd>& positions) const;
 
-  /** Provides X_WE as a function of the joint position set in `context`. */
+  /** Provides X_AE as a function of the joint position set in `context`. */
   math::RigidTransformd ForwardKinematics(
       const systems::Context<double>& context) const;
 
@@ -120,10 +155,12 @@ class DifferentialInverseKinematicsIntegrator
       systems::DiscreteValues<double>* values) const;
 
   const MultibodyPlant<double>& robot_;
+  const Frame<double>& frame_A_;
   const Frame<double>& frame_E_;
   DifferentialInverseKinematicsParameters parameters_;
   const double time_step_{0.0};
   const systems::CacheEntry* robot_context_cache_entry_{};
+  systems::InputPortIndex X_AE_desired_index_{};
   systems::InputPortIndex X_WE_desired_index_{};
   systems::InputPortIndex robot_state_index_{};
   systems::InputPortIndex use_robot_state_index_{};

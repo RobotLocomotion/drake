@@ -3,8 +3,10 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <unordered_set>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/string_unordered_set.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/subvector.h"
@@ -1142,7 +1144,7 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(
     for (const auto& [sys_input, sys_output] : sys_feedthroughs) {
       if (sys_output == current_output_id.second) {
         const InputPortLocator curr_input_id(sys, sys_input);
-        if (target_input_ids.count(curr_input_id)) {
+        if (target_input_ids.contains(curr_input_id)) {
           // We've found a direct-feedthrough path to the input_port.
           return true;
         } else {
@@ -1722,7 +1724,7 @@ bool Diagram<T>::PortsAreValid() const {
 
 template <typename T>
 bool Diagram<T>::NamesAreUniqueAndNonEmpty() const {
-  std::set<std::string> names;
+  string_unordered_set names;
   for (const auto& system : registered_systems_) {
     const std::string& name = system->get_name();
     if (name.empty()) {

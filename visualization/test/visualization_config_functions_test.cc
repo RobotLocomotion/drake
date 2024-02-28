@@ -101,6 +101,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(2).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(2).initial_alpha_slider_value,
+            config.initial_proximity_alpha);
   EXPECT_EQ(meshcat_params.at(2).visible_by_default, false);
   EXPECT_EQ(meshcat_params.at(2).show_hydroelastic, true);
   EXPECT_EQ(meshcat_params.at(2).include_unspecified_accepting, true);
@@ -137,6 +139,15 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   EXPECT_EQ(meshcat_params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
   EXPECT_EQ(meshcat_params.at(0).prefix, "illustration");
   EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider, true);
+
+  // Testing non-default value for initial_proximity_alpha requires
+  // publishing proximity.
+  const VisualizationConfig proximity_alpha_config{
+      .publish_proximity = true, .initial_proximity_alpha = 0.25};
+  const std::vector<MeshcatVisualizerParams> meshcat_params2 =
+      ConvertVisualizationConfigToMeshcatParams(proximity_alpha_config);
+  EXPECT_EQ(meshcat_params2.at(2).role, Role::kProximity);
+  EXPECT_EQ(meshcat_params2.at(2).initial_alpha_slider_value, 0.25);
 }
 
 // Tests everything disabled.

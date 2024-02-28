@@ -36,7 +36,7 @@ DiagramBuilder<T>::~DiagramBuilder() {}
 template <typename T>
 void DiagramBuilder<T>::RemoveSystem(const System<T>& system) {
   ThrowIfAlreadyBuilt();
-  if (systems_.count(&system) == 0) {
+  if (!systems_.contains(&system)) {
     throw std::logic_error(fmt::format(
         "Cannot RemoveSystem on {} because it has not been added to this "
         "DiagramBuilder",
@@ -269,7 +269,7 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
   DRAKE_DEMAND(!port_name.empty());
 
   // Reject duplicate declarations.
-  if (diagram_input_indices_.count(port_name) != 0) {
+  if (diagram_input_indices_.contains(port_name)) {
     throw std::logic_error(
         fmt::format("Diagram already has an input port named {}", port_name));
   }
@@ -277,16 +277,18 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
   // Save bookkeeping data.
   const auto return_id = InputPortIndex(diagram_input_data_.size());
   diagram_input_indices_[port_name] = return_id;
-  diagram_input_data_.push_back({id, port_name});
+  diagram_input_data_.push_back({id, std::move(port_name)});
   return return_id;
 }
 
 template <typename T>
 void DiagramBuilder<T>::ConnectInput(
-    const std::string& diagram_port_name, const InputPort<T>& input) {
+    std::string_view diagram_port_name, const InputPort<T>& input) {
   ThrowIfAlreadyBuilt();
   DRAKE_THROW_UNLESS(diagram_input_indices_.count(diagram_port_name));
-  ConnectInput(diagram_input_indices_[diagram_port_name], input);
+  const InputPortIndex diagram_port_index =
+      diagram_input_indices_.find(diagram_port_name)->second;
+  ConnectInput(diagram_port_index, input);
 }
 
 template <typename T>
@@ -363,7 +365,7 @@ bool DiagramBuilder<T>::ConnectToSame(
   }
 
   // Check if `exemplar` was exported.
-  if (diagram_input_set_.count(exemplar_id) > 0) {
+  if (diagram_input_set_.contains(exemplar_id)) {
     for (size_t i = 0; i < input_port_ids_.size(); ++i) {
       if (input_port_ids_[i] == exemplar_id) {
         ConnectInput(input_port_names_[i], dest);
@@ -415,8 +417,8 @@ template <typename T>
 bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
   ThrowIfAlreadyBuilt();
   InputPortLocator id{&port.get_system(), port.get_index()};
-  if (this->connection_map_.count(id) > 0 ||
-      this->diagram_input_set_.count(id) > 0) {
+  if (this->connection_map_.contains(id) ||
+      this->diagram_input_set_.contains(id)) {
     return true;
   }
   return false;
@@ -459,7 +461,7 @@ template <typename T>
 void DiagramBuilder<T>::ThrowIfSystemNotRegistered(
     const System<T>* system) const {
   DRAKE_DEMAND(system != nullptr);
-  if (systems_.count(system) == 0) {
+  if (!systems_.contains(system)) {
     std::string registered_system_names{};
     for (const auto& sys : registered_systems_) {
       if (!registered_system_names.empty()) {
@@ -514,7 +516,7 @@ bool HasCycleRecurse(
     const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
     std::set<PortIdentifier>* visited,
     std::vector<PortIdentifier>* stack) {
-  DRAKE_ASSERT(visited->count(n) == 0);
+  DRAKE_ASSERT(!visited->contains(n));
   visited->insert(n);
 
   auto edge_iter = edges.find(n);
@@ -522,7 +524,7 @@ bool HasCycleRecurse(
     DRAKE_ASSERT(std::find(stack->begin(), stack->end(), n) == stack->end());
     stack->push_back(n);
     for (const auto& target : edge_iter->second) {
-      if (visited->count(target) == 0 &&
+      if (!visited->contains(target) &&
           HasCycleRecurse(target, edges, visited, stack)) {
         return true;
       } else if (std::find(stack->begin(), stack->end(), target) !=
@@ -586,7 +588,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
           subsystem_index, InputPortIndex{item.first}, system};
       const PortIdentifier output{
           subsystem_index, OutputPortIndex{item.second}, system};
-      if (nodes.count(input) > 0 && nodes.count(output) > 0) {
+      if (nodes.contains(input) && nodes.contains(output)) {
         edges[input].insert(output);
       }
     }
@@ -604,7 +606,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
   std::set<PortIdentifier> visited;
   std::vector<PortIdentifier> stack;
   for (const auto& node : nodes) {
-    if (visited.count(node) > 0) {
+    if (visited.contains(node)) {
       continue;
     }
     if (HasCycleRecurse(node, edges, &visited, &stack)) {
@@ -628,7 +630,7 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
 template <typename T>
 void DiagramBuilder<T>::CheckInvariants() const {
   auto has_system = [this](const System<T>* system) {
-    return std::count(systems_.begin(), systems_.end(), system) > 0;
+    return systems_.contains(system);
   };
 
   // The systems_ and registered_systems_ are identical sets.

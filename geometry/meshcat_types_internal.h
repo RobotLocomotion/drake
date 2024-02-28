@@ -96,6 +96,18 @@ struct MaterialData {
   // is 1.
   std::optional<double> wireframeLineWidth;
 
+  // Explicitly controls the rendered smoothness of a surface. Set it to `true`
+  // to force the geometry to be rendered as faceted. If omitted, meshcat will
+  // apply its default behavior.
+  //
+  // Note: this only meaningfully applies to the most common surface materials.
+  // So, limit the material `type` to be one of: MeshPhongMaterial,
+  // MeshLambertMaterial, MeshStandardMaterial, MeshPhysicalMaterial,
+  // MeshNormalMaterial, MeshMatcapMaterial, and SpriteMaterial. In practice,
+  // this is *not* a limiting requirement as we wouldn't really look to use any
+  // other materials.
+  std::optional<bool> flatShading;
+
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
@@ -108,6 +120,7 @@ struct MaterialData {
     if (transparent) ++n;
     if (wireframe) ++n;
     if (wireframeLineWidth) ++n;
+    if (flatShading) ++n;
     o.pack_map(n);
     PACK_MAP_VAR(o, uuid);
     PACK_MAP_VAR(o, type);
@@ -144,6 +157,10 @@ struct MaterialData {
     if (wireframeLineWidth) {
       o.pack("wireframeLineWidth");
       o.pack(*wireframeLineWidth);
+    }
+    if (flatShading) {
+      o.pack("flatShading");
+      o.pack(*flatShading);
     }
   }
 

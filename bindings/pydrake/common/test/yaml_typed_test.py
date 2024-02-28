@@ -74,9 +74,8 @@ class OptionalStructNoDefault:
 
 @dc.dataclass
 class NumpyStruct:
-    # TODO(jwnimmer-tri) Once we drop support for Ubuntu 20.04 "Focal", then we
-    # can upgrade to numpy >= 1.21 as our minimum at which point we can use the
-    # numpy.typing module here to constrain the shape and/or dtype.
+    # TODO(jwnimmer-tri) We should use the numpy.typing module here to
+    # constrain the shape and/or dtype.
     value: np.ndarray = dc.field(
         default_factory=lambda: np.array([nan]))
 

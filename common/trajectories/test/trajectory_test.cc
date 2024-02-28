@@ -35,6 +35,9 @@ GTEST_TEST(TrajectoryTest, EvalDerivativesTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       traj_yes_deriv.EvalDerivative(traj_yes_deriv.start_time()),
       ".* must implement .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      traj_yes_deriv.EvalDerivative(traj_yes_deriv.start_time(), -1),
+      ".*derivative_order >= 0.*");
 
   TrajectoryTester traj_no_deriv(false);
   EXPECT_FALSE(traj_no_deriv.has_derivative());

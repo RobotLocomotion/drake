@@ -192,6 +192,7 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     proximity.delete_on_initialization_event =
         config.delete_on_initialization_event;
     proximity.enable_alpha_slider = config.enable_alpha_sliders;
+    proximity.initial_alpha_slider_value = config.initial_proximity_alpha;
     proximity.visible_by_default = false;
     proximity.show_hydroelastic = true;
     result.push_back(proximity);

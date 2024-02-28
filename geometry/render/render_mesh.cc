@@ -233,7 +233,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
           // increment it without worry.
           ++material_uvs[mat_index];
         }
-        if (obj_vertex_to_new_vertex.count(obj_indices) == 0) {
+        if (!obj_vertex_to_new_vertex.contains(obj_indices)) {
           obj_vertex_to_new_vertex[obj_indices] =
               static_cast<int>(positions.size());
           /* Guarantee that the positions.size() == normals.size() == uvs.size()
@@ -298,7 +298,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     for (const auto& t : tri_indices) {
       const auto& tri = triangles[t];
       for (int i = 0; i < 3; ++i) {
-        if (vertex_index_full_to_part.count(tri[i]) == 0) {
+        if (!vertex_index_full_to_part.contains(tri[i])) {
           vertex_index_full_to_part[tri(i)] =
               static_cast<indices_uint_t>(vertex_index_full_to_part.size());
         }

@@ -339,7 +339,7 @@ void YamlReadArchive::CheckAllAccepted() const {
   }
   for (const auto& [key, value] : root_->GetMapping()) {
     unused(value);
-    if (visited_names_.count(key) == 0) {
+    if (!visited_names_.contains(key)) {
       ReportError(fmt::format("key '{}' did not match any visited value", key));
     }
   }

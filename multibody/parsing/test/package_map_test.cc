@@ -57,12 +57,12 @@ void VerifyMatch(const PackageMap& package_map,
   // packages.
   for (const auto& [package_name, count] : package_name_counts) {
     ASSERT_EQ(count, 1);
-    ASSERT_EQ(expected_packages.count(package_name), 1);
+    ASSERT_TRUE(expected_packages.contains(package_name));
   }
   // Confirm that every expected package is in the set of package names.
   for (const auto& [package_name, path] : expected_packages) {
     unused(path);
-    ASSERT_EQ(package_name_counts.count(package_name), 1);
+    ASSERT_TRUE(package_name_counts.contains(package_name));
   }
 }
 
@@ -421,6 +421,33 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   // Verifies the number of lines in the resulting string.
   EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
             4);
+}
+
+// ResolveUrl is just a thin wrapper around internal::ResolveUri (which is
+// tested elsewhere). This test is just to ensure that the wrapper is working.
+GTEST_TEST(PackageMapTest, TestResolveUrl) {
+  const string xml_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "package_map_test_packages/package_map_test_package_a/package.xml");
+  PackageMap package_map = PackageMap::MakeEmpty();
+  package_map.AddPackageXml(xml_filename);
+
+  const string filename = package_map.ResolveUrl(
+      "package://package_map_test_package_a/sdf/test_model.sdf");
+
+  const string expected_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/package_map_test_packages/"
+      "package_map_test_package_a/sdf/test_model.sdf");
+
+  EXPECT_EQ(filename, expected_filename);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
+      "package://bad_package_name/sdf/test_model.sdf"),
+      ".*unknown package.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
+      "package://package_map_test_package_a/bad_filename.sdf"),
+      ".*does not exist.*");
 }
 
 // Tests that PackageMap is parsing deprecation messages

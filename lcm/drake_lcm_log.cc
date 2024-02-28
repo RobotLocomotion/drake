@@ -10,6 +10,7 @@
 #include "lcm/lcm.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/string_map.h"
 
 namespace drake {
 namespace lcm {
@@ -20,7 +21,7 @@ using MultichannelHandlerFunction =
 
 class DrakeLcmLog::Impl {
  public:
-  std::multimap<std::string, HandlerFunction> subscriptions_;
+  string_multimap<HandlerFunction> subscriptions_;
   std::vector<MultichannelHandlerFunction> multichannel_subscriptions_;
   std::unique_ptr<::lcm_eventlog_t, decltype(&::lcm_eventlog_destroy)>  // BR
       log_{nullptr, &::lcm_eventlog_destroy};
@@ -142,7 +143,7 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   }
 
   // Dispatch message if necessary.
-  const std::string channel(next_event.channel, next_event.channellen);
+  const std::string_view channel(next_event.channel, next_event.channellen);
   const auto& range = impl_->subscriptions_.equal_range(channel);
   for (auto iter = range.first; iter != range.second; ++iter) {
     const HandlerFunction& handler = iter->second;

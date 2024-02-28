@@ -203,7 +203,7 @@ const auto& GetElementByIndex(
 
 // Shorthand type name for our name_to_index multimaps.
 template <typename ElementIndex>
-using NameToIndex = std::unordered_multimap<StringViewMapKey, ElementIndex>;
+using NameToIndex = string_unordered_multimap<ElementIndex>;
 
 // In service of error messages, returns a string listing the names of all
 // model instances that contain an element of the given name.
@@ -309,8 +309,7 @@ const auto& GetElementByName(
         names_by_model_instance;
     for (const auto& [element_name, element_index] : name_to_index) {
       const auto& element = GetElementByIndex(tree, element_index);
-      names_by_model_instance[element.model_instance()].push_back(
-          element_name.view());
+      names_by_model_instance[element.model_instance()].push_back(element_name);
     }
     if (names_by_model_instance.empty()) {
       message =
@@ -418,7 +417,7 @@ bool MultibodyTree<T>::HasJointActuatorNamed(
 
 template <typename T>
 bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
-  return model_instances_.names_map().count(name) > 0;
+  return model_instances_.names_map().contains(name);
 }
 
 template <typename T>
@@ -577,7 +576,7 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
     std::vector<std::string_view> valid_names;
     valid_names.reserve(names.size());
     for (const auto& [valid_name, _] : names) {
-      valid_names.push_back(valid_name.view());
+      valid_names.push_back(valid_name);
     }
     std::sort(valid_names.begin(), valid_names.end());
     throw std::logic_error(fmt::format(
@@ -1008,7 +1007,7 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
 template <typename T>
 void MultibodyTree<T>::SetDefaultFreeBodyPose(
     const RigidBody<T>& body, const RigidTransform<double>& X_WB) {
-  if (default_body_poses_.count(body.index()) == 0 ||
+  if (!default_body_poses_.contains(body.index()) ||
       std::holds_alternative<
           std::pair<Eigen::Quaternion<double>, Vector3<double>>>(
           default_body_poses_.at(body.index()))) {
@@ -1038,7 +1037,7 @@ template <typename T>
 std::pair<Eigen::Quaternion<double>, Vector3<double>>
 MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
     const RigidBody<T>& body) const {
-  if (default_body_poses_.count(body.index()) == 0) {
+  if (!default_body_poses_.contains(body.index())) {
     return std::make_pair(Eigen::Quaternion<double>::Identity(),
                           Vector3<double>::Zero());
   }
