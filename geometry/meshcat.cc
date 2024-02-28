@@ -16,8 +16,6 @@
 #include <string>
 #include <thread>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 #include <App.h>
@@ -2391,12 +2389,11 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape,
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
                         const Rgba& rgba) {
-  // TODO(DamrongGuoy): Make this static variable a class member.
-  static std::unordered_set<std::string_view> already_started;
-  if (!already_started.contains(path)) {
+  const std::string path_str(path);
+  if (!already_started_.contains(path_str)) {
     std::string path_object = fmt::format("{}/<object>", path);
     SetProperty(path_object, "visible", false, time);
-    already_started.insert(path);
+    already_started_.insert(path_str);
   }
 
   DRAKE_THROW_UNLESS(animation_.get() != nullptr);
@@ -2408,12 +2405,9 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
   SetProperty(path_animation_current, "visible", false);
   SetObject(path_animation_current, shape, rgba);
 
-  // TODO(DamrongGuoy): Make this static variable a class member.
-  static std::unordered_map<std::string_view, int> last_frame_index_map;
-
   // If there is a previous frame, it becomes invisible.
-  if (last_frame_index_map.contains(path)) {
-    int previous_frame_index = last_frame_index_map[path];
+  if (last_frame_index_map_.contains(path_str)) {
+    int previous_frame_index = last_frame_index_map_[path_str];
     DRAKE_THROW_UNLESS(previous_frame_index <= current_frame_index);
     std::string path_animation_previous =
         fmt::format("{}/<animation>/{}", path, previous_frame_index);
@@ -2421,13 +2415,13 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
   }
 
   SetProperty(path_animation_current, "visible", true, time);
-  last_frame_index_map[path] = current_frame_index;
+  last_frame_index_map_[path_str] = current_frame_index;
 
   // TODO(DamrongGuoy): Find final time instead of infinity and do it after
   //  StopRecording() instead of here.
-  if (last_frame_index_map.contains(path)) {
+  if (last_frame_index_map_.contains(path_str)) {
     std::string path_animation_last =
-        fmt::format("{}/<animation>/{}", path, last_frame_index_map[path]);
+        fmt::format("{}/<animation>/{}", path, last_frame_index_map_[path_str]);
     std::string path_object = fmt::format("{}/<object>", path);
     const double time_final = std::numeric_limits<double>::infinity();
     SetProperty(path_animation_last, "visible", false, time_final);
@@ -2699,8 +2693,29 @@ std::string Meshcat::StaticHtml() {
 void Meshcat::StartRecording(double frames_per_second,
                              bool set_visualizations_while_recording) {
   animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  already_started_.clear();
+  last_frame_index_map_.clear();
   recording_ = true;
   set_visualizations_while_recording_ = set_visualizations_while_recording;
+}
+
+void Meshcat::StopRecording() {
+  recording_ = false;
+
+  // TODO(DamrongGuoy): I'm not sure yet why I can't just move similar code
+  //  from the end of SetObject(shape, time) to here. It will look like the
+  //  following code. When I did that, in the animation, I lost the untimed Box
+  //  and the timed Cylinder(1) and got only the timed Capsule(2) and
+  //  timed Ellipsoid(3).
+  //
+  // for (const auto& [path, frame_index] : last_frame_index_map_) {
+  //   std::string path_animation_last =
+  //       fmt::format("{}/<animation>/{}", path, frame_index);
+  //   std::string path_object = fmt::format("{}/<object>", path);
+  //   const double time_final = std::numeric_limits<double>::infinity();
+  //   SetProperty(path_animation_last, "visible", false, time_final);
+  //   SetProperty(path_object, "visible", true, time_final);
+  // }
 }
 
 void Meshcat::PublishRecording() {
