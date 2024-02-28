@@ -10,6 +10,7 @@ of robots.
 
 #pragma once
 
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -105,7 +106,11 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 
-/* Function overload to take in a list of convex sets, and partition all so as
+// TODO(@cohnt): Call the following function "PartitionConvexSets" instead.
+// Currently // the name is misleading and causes problem in the documentation.
+// see https://github.com/RobotLocomotion/drake/issues/21046
+
+/** Function overload to take in a list of convex sets, and partition all so as
 to respect the convexity radius. Every set must be bounded and have the same
 ambient dimension. Each entry in continuous_revolute_joints must be
 non-negative, less than num_positions, and unique.
@@ -120,6 +125,51 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const geometry::optimization::ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
+
+/** Computes the pairwise intersections edges between two lists of convex sets.
+Each edge is a tuple in the form [index_A, index_B, offset_A_to_B], where
+Each is a tuple in the form [index_A, index_B, offset_A_to_B],
+where index_A is the index of the list in `convex_sets_A`, index_B is the
+index of the list in `convex_sets_B`, and offset_A_to_B is is the translation
+to applied to all the points in the index_A'th set in `convex_sets_A` to align
+them with the index_B'th set in `convex_sets_B`. This translation may only have
+non-zero entries along the dimensions corresponding to @p
+continuous_revolute_joints. All non-zero entries are integer multiples of 2π as
+the translation of the sets still represents the same configurations for the
+indices in `continuous_revolute_joints`.
+
+@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
+computed between `convex_sets_A` and `convex_sets_B`.
+@param convex_sets_B is the other vector of convex sets.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
+@throws if `convex_sets_A` or `convex_sets_B` are empty.
+*/
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
+    const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
+    const std::vector<int>& continuous_revolute_joints);
+
+/** Convenience overload to compute pairwise intersections within a list of
+convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
+convex_sets, continuous_revolute_joints).
+
+@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
+computed within `convex_sets_A`.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
+@throws if `convex_sets_A` is empty.
+*/
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
+    const ConvexSets& convex_sets,
+    const std::vector<int>& continuous_revolute_joints);
 
 }  // namespace optimization
 }  // namespace geometry

@@ -281,6 +281,102 @@ GTEST_TEST(GeodesicConvexityTest, ComputeOffset) {
   EXPECT_TRUE(CompareMatrices(offset, Vector1d(0.0), kTol));
 }
 
+GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersectionsAPI) {
+  VPolytope v(Vector1d(1));
+  ConvexSets sets = MakeConvexSets(v);
+  EXPECT_THROW(CalcPairwiseIntersections({}, std::vector<int>{}),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections(sets, {}, std::vector<int>{}),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections({}, sets, std::vector<int>{}),
+               std::exception);
+}
+
+GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
+  Hyperrectangle h1(Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 1.0));
+  Hyperrectangle h2(Eigen::Vector2d(0.5, 0.5 + 2 * M_PI),
+                    Eigen::Vector2d(1.5, 1.5 + 2 * M_PI));
+  Hyperrectangle h3(Eigen::Vector2d(8 * M_PI, 0.0),
+                    Eigen::Vector2d(1.0 + 8 * M_PI, 1.0));
+  Hyperrectangle h4(Eigen::Vector2d(2 * M_PI, -4 * M_PI),
+                    Eigen::Vector2d(1.0 + 2 * M_PI, 1.0 - 4 * M_PI));
+  ConvexSets sets_A = MakeConvexSets(h1, h2);
+  ConvexSets sets_B = MakeConvexSets(h3, h4);
+  // Let's check the expected value of each pair of intersections.
+  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
+  // h1 <--> h4: would intersect if h1 is translated by (1, -4) * 2π
+  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
+  // h2 <--> h4: would intersect if h2 is translated by (1, -5) * 2π
+  // Without continuous revolute joints, the intersection is empty.
+  EXPECT_EQ(
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{}).size(), 0);
+  // With only first joint continuous, the only intersection is h1 <--> h3.
+  EXPECT_EQ(
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0}).size(), 1);
+  // With only second joint continuous, the intersection is empty.
+  EXPECT_EQ(
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{1}).size(), 0);
+  // With all joints continuous, all possible pairs exist.
+  const auto intersection_edges =
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1});
+  EXPECT_EQ(intersection_edges.size(), 4);
+  for (const auto& [index_a, index_b, offset] : intersection_edges) {
+    // Verify all centers are integer multiples of 2π apart.
+    const auto offset_mod_2π = offset.array() / (2 * M_PI);
+    for (int i = 0; i < offset_mod_2π.size(); ++i) {
+      EXPECT_NEAR(offset_mod_2π[i], std::round(offset_mod_2π[i]), 1e-9);
+    }
+    // The center of the first rectangle + offset should be inside the second
+    // rectangle.
+    const auto* h_a =
+        dynamic_cast<const Hyperrectangle*>(sets_A[index_a].get());
+    DRAKE_DEMAND(h_a != nullptr);
+    EXPECT_TRUE(sets_B[index_b]->PointInSet(h_a->Center() + offset, 1e-6));
+  }
+}
+
+GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections2) {
+  // Test the self intersections overload.
+  Hyperrectangle h1(Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 1.0));
+  Hyperrectangle h2(Eigen::Vector2d(0.5, 0.5 + 2 * M_PI),
+                    Eigen::Vector2d(1.5, 1.5 + 2 * M_PI));
+  Hyperrectangle h3(Eigen::Vector2d(8 * M_PI, 0.0),
+                    Eigen::Vector2d(1.0 + 8 * M_PI, 1.0));
+  ConvexSets sets = MakeConvexSets(h1, h2, h3);
+  // Let's check the expected value of each pair of intersections.
+  // h1 <--> h2: would intersect if h1 is translated by (0, 1) * 2π
+  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
+  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
+  // Without continuous revolute joints, the intersection is empty.
+  auto intersections_none = CalcPairwiseIntersections(sets, std::vector<int>{});
+  EXPECT_EQ(intersections_none.size(), 0);
+  // With only first joint continuous, the only intersection is h1 <--> h3.
+  auto intersections_zero =
+      CalcPairwiseIntersections(sets, std::vector<int>{0});
+  EXPECT_EQ(intersections_zero.size(), 2);
+  EXPECT_EQ(std::get<0>(intersections_zero[0]), 0);
+  EXPECT_EQ(std::get<1>(intersections_zero[0]), 2);
+  EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_zero[0]),
+                              Eigen::Vector2d(8 * M_PI, 0.0), 1e-9));
+  // With all joints continuous, all pairs of intersections are non-empty.
+  auto intersections_all =
+      CalcPairwiseIntersections(sets, std::vector<int>{0, 1});
+  EXPECT_EQ(intersections_all.size(), 6);
+  for (const auto& [index_1, index_2, offset] : intersections_all) {
+    // Verify all centers are integer multiples of 2π apart.
+    const auto offset_mod_2π = offset.array() / (2 * M_PI);
+    for (int i = 0; i < offset_mod_2π.size(); ++i) {
+      EXPECT_NEAR(offset_mod_2π[i], std::round(offset_mod_2π[i]), 1e-9);
+    }
+    // The center of the first rectangle + offset should be inside the second
+    // rectangle.
+    const auto* h_first =
+        dynamic_cast<const Hyperrectangle*>(sets[index_1].get());
+    DRAKE_DEMAND(h_first != nullptr);
+    EXPECT_TRUE(sets[index_2]->PointInSet(h_first->Center() + offset, 1e-6));
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

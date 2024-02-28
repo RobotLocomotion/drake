@@ -32,6 +32,7 @@ using drake::solvers::VectorXDecisionVariable;
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
+using geometry::optimization::CalcPairwiseIntersections;
 using geometry::optimization::CartesianProduct;
 using geometry::optimization::CheckIfSatisfiesConvexityRadius;
 using geometry::optimization::ConvexSet;
@@ -71,124 +72,6 @@ using VertexId = GraphOfConvexSets::VertexId;
 using EdgeId = GraphOfConvexSets::EdgeId;
 
 const double kInf = std::numeric_limits<double>::infinity();
-
-namespace {
-// Computes the pairwise intersections of sets in convex_sets_A with sets in
-// convex_sets_B. Returns a list of tuples, where each tuple describes an edge:
-// the first entry is the index of the first set in convex_sets_A, the second
-// entry is the index of the second set in convex_sets_B, and the third entry is
-// the translation that is applied to the first convex set to align it with the
-// second convex set, such that intersection can directly be checked without
-// considering the 2π wraparound that may occur with continuous revolute joints.
-// Each component of this translation will always be a multiple of 2π, so the
-// translation of the set still represents the same configurations. To compute
-// the pairwise intersections within convex_set_A, pass an empty vector for
-// convex_sets_B. convex_sets_A must have at least one element, and
-// continuous_revolute_joints must pass ThrowsForInvalidContinuousJointsList.
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
-    ConvexSets convex_sets_A, ConvexSets convex_sets_B,
-    const std::vector<int>& continuous_revolute_joints) {
-  DRAKE_DEMAND(convex_sets_A.size() > 0);
-  const int dimension = convex_sets_A[0]->ambient_dimension();
-  ThrowsForInvalidContinuousJointsList(dimension, continuous_revolute_joints);
-
-  std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
-
-  // Region bounding boxes along dimensions corresponding to continuous
-  // revolute joints. We make region_minimum_and_maximum_values_B a reference
-  // type, so if convex_sets_B is not provided (and we want to do pairwise
-  // intersections within convex_sets_A), we can simply point it to
-  // region_minimum_and_maximum_values_A and not have to copy the data over. If
-  // convex_sets_B is provided, then we point it to
-  // maybe_region_minimum_and_maximum_values_B, and store the data there.
-  std::vector<std::vector<std::pair<double, double>>>
-      region_minimum_and_maximum_values_A;
-  std::vector<std::vector<std::pair<double, double>>>
-      maybe_region_minimum_and_maximum_values_B;
-  std::vector<std::vector<std::pair<double, double>>>&
-      region_minimum_and_maximum_values_B =
-          maybe_region_minimum_and_maximum_values_B;
-
-  // Compute the bounding boxes.
-  for (int i = 0; i < ssize(convex_sets_A); ++i) {
-    region_minimum_and_maximum_values_A.emplace_back(
-        GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
-                                                continuous_revolute_joints));
-  }
-
-  bool compute_intersections_within_A = convex_sets_B.size() == 0;
-  if (compute_intersections_within_A) {
-    // If convex_sets_B.size() == 0, then we want to compute the pairwise
-    // intersections within convex_sets_A, so we can just copy over the data.
-    convex_sets_B = convex_sets_A;
-    region_minimum_and_maximum_values_B = region_minimum_and_maximum_values_A;
-  } else {
-    for (int i = 0; i < ssize(convex_sets_B); ++i) {
-      maybe_region_minimum_and_maximum_values_B.emplace_back(
-          GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
-                                                  continuous_revolute_joints));
-    }
-  }
-
-  VectorXd offset;
-  for (int i = 0; i < ssize(convex_sets_A); ++i) {
-    for (int j = 0; j < ssize(convex_sets_B); ++j) {
-      if (compute_intersections_within_A && j <= i) {
-        // If we're computing intersections within convex_sets_A and j <= i,
-        // then we've already checked if we need to add an edge when i and j
-        // were flipped, and that set has already been added.
-        continue;
-      }
-
-      // First, we compute what the offset that should be applied to
-      // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
-      offset = ComputeOffsetContinuousRevoluteJoints(
-          dimension, continuous_revolute_joints,
-          region_minimum_and_maximum_values_A.at(i),
-          region_minimum_and_maximum_values_B.at(j));
-
-      // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect.
-      MathematicalProgram prog;
-      // TODO(cohnt) Once #20842 lands, reuse the Mathematical program
-      // (modifying or deleting and re-adding constraints as needed).
-      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
-      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-      Eigen::MatrixXd Aeq(dimension, 2 * dimension);
-      // Add x + offset == y by [-I, I][x; y] == [offset]
-      Aeq.leftCols(dimension) =
-          -Eigen::MatrixXd::Identity(dimension, dimension);
-      Aeq.rightCols(dimension) =
-          Eigen::MatrixXd::Identity(dimension, dimension);
-      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
-      convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
-      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
-      const auto result = Solve(prog);
-      if (result.is_success()) {
-        // Regions are overlapping, add edge (i, j). If we're adding edges
-        // within convex_sets_A, also add edge (j, i), since edges are
-        // considered bidirectional in that context.
-        edges.emplace_back(i, j, offset);
-        if (compute_intersections_within_A) {
-          edges.emplace_back(j, i, -offset);
-        }
-      }
-    }
-  }
-
-  return edges;
-}
-
-// Convenience overload for pairwise intersections within a single convex set.
-std::vector<std::tuple<int, int, Eigen::VectorXd>>
-PairwiseIntersectionsContinuousJoints(
-    ConvexSets convex_sets_A,
-    const std::vector<int>& continuous_revolute_joints) {
-  return PairwiseIntersectionsContinuousJoints(convex_sets_A, {},
-                                               continuous_revolute_joints);
-}
-}  // namespace
 
 Subgraph::Subgraph(
     const ConvexSets& regions,
@@ -512,9 +395,8 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      PairwiseIntersectionsContinuousJoints(from_subgraph.regions(),
-                                            to_subgraph.regions(),
-                                            continuous_revolute_joints());
+      CalcPairwiseIntersections(from_subgraph.regions(), to_subgraph.regions(),
+                                continuous_revolute_joints());
   for (const auto& edge : edge_data) {
     int i = std::get<0>(edge);
     int j = std::get<1>(edge);
@@ -892,8 +774,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   DRAKE_DEMAND(regions.size() > 0);
 
   const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      PairwiseIntersectionsContinuousJoints(regions,
-                                            continuous_revolute_joints());
+      CalcPairwiseIntersections(regions, continuous_revolute_joints());
 
   std::vector<std::pair<int, int>> edges_between_regions;
   std::vector<Eigen::VectorXd> edge_offsets;
