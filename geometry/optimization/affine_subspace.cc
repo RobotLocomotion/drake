@@ -1,7 +1,5 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
-#include <iostream>
-
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/solvers/solve.h"
 
@@ -315,14 +313,14 @@ Eigen::MatrixXd AffineSubspace::OrthogonalComplementBasis() const {
   if (!basis_decomp_.has_value()) {
     return MatrixXd::Identity(ambient_dimension(), ambient_dimension());
   }
-  // The perpendicular space is equivalent to the kernel of the QR decomposition
-  // stored in this class. So we can simply access the rightmost columns of the
-  // Q matrix, as described here:
+  // The orthogonal complement is equivalent to the kernel of the QR
+  // decomposition stored in this class. So we can simply access the rightmost
+  // columns of the Q matrix, as described here:
   // https://stackoverflow.com/questions/54766392/eigen-obtain-the-kernel-of-a-sparse-matrix
-  int perpendicular_basis_dimension = ambient_dimension() - AffineDimension();
+  int orthogonal_complement_dimension = ambient_dimension() - AffineDimension();
   MatrixXd Q = basis_decomp_.value().householderQ() *
                MatrixXd::Identity(ambient_dimension(), ambient_dimension());
-  return Q.rightCols(perpendicular_basis_dimension);
+  return Q.rightCols(orthogonal_complement_dimension);
 }
 
 }  // namespace optimization

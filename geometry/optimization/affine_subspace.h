@@ -123,11 +123,11 @@ class AffineSubspace final : public ConvexSet {
   bool ContainedIn(const AffineSubspace& other, double tol = 1e-15) const;
 
   /** Returns true if the two AffineSubspaces describe the same set, by checking
-   * that each set is contained in the other. */
+  that each set is contained in the other. */
   bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
 
-  /** Returns an orthonormal basis of the vector subspace which is perpendicular
-   * to this AffineSubspace.*/
+  /** Returns an orthonormal basis of the vector subspace which is orthogonal
+  to this AffineSubspace.*/
   Eigen::MatrixXd OrthogonalComplementBasis() const;
 
  private:
