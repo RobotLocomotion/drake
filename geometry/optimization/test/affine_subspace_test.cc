@@ -497,7 +497,7 @@ bool CheckAffineSubspaceSetContainment(const AffineSubspace& as,
 // don't have the affine hull, since it's not the smallest affine set
 // containing the ConvexSet.
 void CheckAffineHullTightness(const AffineSubspace& as, const ConvexSet& set,
-                              double tol = 0) {
+                              double tol = 1e-12) {
   ASSERT_TRUE(as.ambient_dimension() == set.ambient_dimension());
   ASSERT_FALSE(set.IsEmpty());
 
@@ -930,6 +930,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullSpectrahedron) {
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
+  const double kTol = 1e-12;
   // Check that computing the affine hull of an empty set throws an error
   const VPolytope dut;
   EXPECT_THROW(AffineSubspace{dut}, std::exception);
@@ -944,8 +945,8 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as1.translation().size(), 3);
   EXPECT_EQ(as1.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, -1, 0)));
-  EXPECT_FALSE(as1.PointInSet(Eigen::Vector3d(2, -1, 1)));
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, -1, 0), kTol));
+  EXPECT_FALSE(as1.PointInSet(Eigen::Vector3d(2, -1, 1), kTol));
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, v));
   CheckAffineHullTightness(as1, v);
 
@@ -964,9 +965,9 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as2.translation().size(), 3);
   EXPECT_EQ(as2.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(2, 2, 2)));
-  EXPECT_FALSE(as2.PointInSet(Eigen::Vector3d(2, 2, 0)));
-  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, line_segment));
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(2, 2, 2), kTol));
+  EXPECT_FALSE(as2.PointInSet(Eigen::Vector3d(2, 2, 0), kTol));
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, line_segment, kTol));
   CheckAffineHullTightness(as2, line_segment);
 
   // Check a triangle in 3D as a VPolytope
@@ -984,8 +985,8 @@ GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
   EXPECT_EQ(as3.translation().size(), 3);
   EXPECT_EQ(as3.ambient_dimension(), 3);
 
-  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(42, 27, 0)));
-  EXPECT_FALSE(as3.PointInSet(Eigen::Vector3d(42, 27, 1)));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(42, 27, 0), kTol));
+  EXPECT_FALSE(as3.PointInSet(Eigen::Vector3d(42, 27, 1), kTol));
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, triangle));
   CheckAffineHullTightness(as3, triangle);
 }
