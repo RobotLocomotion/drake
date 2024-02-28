@@ -127,8 +127,6 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
         for (int i = 0; i < basis_orth.cols(); i++) {
           basis_orth.col(i).normalize();
         }
-        // Now that we've found a new basis vector, we break out of the inner
-        // loop, to compute a new basis for the orthogonal complement.
         break;
       }
     }
