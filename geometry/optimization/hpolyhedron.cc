@@ -131,7 +131,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
 }
 
-HPolyhedron::HPolyhedron(const VPolytope& vpoly, const double tol)
+HPolyhedron::HPolyhedron(const VPolytope& vpoly, double tol)
     : ConvexSet(vpoly.ambient_dimension(), false) {
   // First, handle the case where the VPolytope is empty.
   if (vpoly.IsEmpty()) {

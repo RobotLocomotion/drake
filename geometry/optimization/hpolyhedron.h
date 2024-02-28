@@ -49,7 +49,7 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   AffineSubspace.) A tighter tolerance can be used with commercial solvers
   (e.g. Gurobi and Mosek).
   @throws std::exception if vpoly is empty and zero dimensional. */
-  explicit HPolyhedron(const VPolytope& vpoly, const double tol = 1e-9);
+  explicit HPolyhedron(const VPolytope& vpoly, double tol = 1e-9);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
