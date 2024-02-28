@@ -151,7 +151,7 @@ config_setting(
 # We are exploring adding USD support to Drake. For the moment, it is opt-in.
 # See https://github.com/PixarAnimationStudios/OpenUSD for details.
 # Use `--define=WITH_USD=ON` on the bazel command line to enable it.
-# (In CI, --config=everything also enables it on Ubuntu.)
+# (In CI, --config=everything also enables it.)
 config_setting(
     name = "with_usd",
     values = {"define": "WITH_USD=ON"},
