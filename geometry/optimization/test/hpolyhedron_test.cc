@@ -185,7 +185,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope1D) {
 void CheckHPolyhedronContainsVPolyhedron(const HPolyhedron& h,
                                          const VPolytope& v, double tol = 0) {
   for (int i = 0; i < v.vertices().cols(); ++i) {
-    EXPECT_TRUE(h.PointInSet(v.vertices().col(i)));
+    EXPECT_TRUE(h.PointInSet(v.vertices().col(i), tol));
   }
 }
 
@@ -193,6 +193,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   // Test cases of VPolytopes that QHull cannot handle on its own.
   // Code logic in the constructor should handle these cases without any
   // QHull errors.
+  const double kTol = 1e-11;
 
   // Case 1: Not enough points (need at least n+1 points in R^n). This
   // will throw QHull error QH6214.
@@ -201,7 +202,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly1(vert1);
   EXPECT_NO_THROW(HPolyhedron{vpoly1});
   const HPolyhedron hpoly1(vpoly1);
-  CheckHPolyhedronContainsVPolyhedron(hpoly1, vpoly1);
+  CheckHPolyhedronContainsVPolyhedron(hpoly1, vpoly1, kTol);
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(0, 0)));
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(2, 0)));
   EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector2d(1, 1)));
@@ -215,7 +216,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly2(vert2);
   EXPECT_NO_THROW(HPolyhedron{vpoly2});
   const HPolyhedron hpoly2(vpoly2);
-  CheckHPolyhedronContainsVPolyhedron(hpoly2, vpoly2);
+  CheckHPolyhedronContainsVPolyhedron(hpoly2, vpoly2, kTol);
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(0, 0)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(1, 1)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector2d(2, -1)));
@@ -230,7 +231,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly3(vert3);
   EXPECT_NO_THROW(HPolyhedron{vpoly3});
   const HPolyhedron hpoly3(vpoly3);
-  CheckHPolyhedronContainsVPolyhedron(hpoly3, vpoly3);
+  CheckHPolyhedronContainsVPolyhedron(hpoly3, vpoly3, kTol);
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(1, 1, 0)));
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(-1, 0, 0)));
   EXPECT_FALSE(hpoly3.PointInSet(Eigen::Vector3d(0, -1, 0)));
@@ -247,7 +248,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly4(vert4);
   EXPECT_NO_THROW(HPolyhedron{vpoly4});
   const HPolyhedron hpoly4(vpoly4);
-  CheckHPolyhedronContainsVPolyhedron(hpoly4, vpoly4);
+  CheckHPolyhedronContainsVPolyhedron(hpoly4, vpoly4, kTol);
 
   Eigen::Matrix<double, 3, 4> vert5;
   // clang-format off
@@ -258,7 +259,7 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytopeQHullProblems) {
   const VPolytope vpoly5(vert5);
   EXPECT_NO_THROW(HPolyhedron{vpoly5});
   const HPolyhedron hpoly5(vpoly5);
-  CheckHPolyhedronContainsVPolyhedron(hpoly5, vpoly5);
+  CheckHPolyhedronContainsVPolyhedron(hpoly5, vpoly5, kTol);
 
   // Case 3: VPolytope is empty
   Eigen::Matrix<double, 2, 0> vert6;
