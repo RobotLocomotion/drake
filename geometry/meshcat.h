@@ -4,6 +4,8 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <Eigen/Core>
@@ -844,7 +846,7 @@ class Meshcat {
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
   not add frames to the animation. */
-  void StopRecording() { recording_ = false; }
+  void StopRecording();
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
@@ -940,6 +942,12 @@ class Meshcat {
   frame in the animation. */
   bool recording_{false};
   bool set_visualizations_while_recording_{true};
+  // TODO(DamrongGuoy): Rename already_started_ and last_frame_index_map_ to
+  //  something related to recording. They have moved out of
+  //  SetObject(path, shape, time, rgba). Perhaps move them again into
+  //  MeshcatAnimation?
+  std::unordered_set<std::string> already_started_{};
+  std::unordered_map<std::string, int> last_frame_index_map_{};
 };
 
 }  // namespace geometry
