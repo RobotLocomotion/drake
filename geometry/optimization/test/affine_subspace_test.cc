@@ -604,7 +604,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
   EXPECT_EQ(as3.basis().cols(), 3);
   EXPECT_EQ(as3.basis().rows(), 3);
   EXPECT_EQ(as3.translation().size(), 3);
-  EXPECT_EQ(as2.ambient_dimension(), 3);
+  EXPECT_EQ(as3.ambient_dimension(), 3);
 
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, h3, kTol2));
   CheckAffineHullTightness(as3, h3, kTol2);

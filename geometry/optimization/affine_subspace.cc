@@ -95,8 +95,7 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   // basis vectors and increment our count of the affine dimension. If no vector
   // in the orthogonal complement basis generates a sufficiently negative cost,
   // then we have succeeded in computing the affine hull.
-  bool dimension_added = true;
-  while (dimension_added && affine_dimension < set.ambient_dimension()) {
+  while (affine_dimension < set.ambient_dimension()) {
     int j = 0;
     for (; j < set.ambient_dimension(); ++j) {
       objective.evaluator()->UpdateCoefficients(basis_orth.col(j));
@@ -127,13 +126,11 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
         for (int i = 0; i < basis_orth.cols(); i++) {
           basis_orth.col(i).normalize();
         }
-        // Now that we've found a new basis vector, we break out of the inner
-        // loop, to compute a new basis for the orthogonal complement.
         break;
       }
     }
     if (j == set.ambient_dimension()) {
-      dimension_added = false;
+      break;
     }
   }
 
