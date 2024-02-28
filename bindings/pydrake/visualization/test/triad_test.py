@@ -5,6 +5,7 @@ import numpy as np
 from pydrake.geometry import Meshcat, Rgba
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import FixedOffsetFrame
 from pydrake.planning import RobotDiagramBuilder
 import pydrake.visualization as mut
 
@@ -16,9 +17,28 @@ class TestTriad(unittest.TestCase):
         builder = RobotDiagramBuilder()
         builder.parser().AddModels(
             url="package://drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        self._X_PF = RigidTransform([1.0, 2.0, 3.0])
+        self._frame = builder.plant().AddFrame(
+            FixedOffsetFrame(
+                "frame", builder.plant().GetFrameByName("Link2"), self._X_PF))
         robot = builder.Build()
         self._plant = robot.plant()
         self._scene_graph = robot.scene_graph()
+
+        self._axis_offsets = {
+            "x": RigidTransform(
+                RotationMatrix.MakeYRotation(np.pi/2),
+                [0.1, 0, 0]),
+            "y": RigidTransform(
+                RotationMatrix.MakeXRotation(np.pi/2),
+                [0, 0.1, 0]),
+            "z": RigidTransform(
+                RotationMatrix.MakeZRotation(np.pi/2),
+                [0, 0, 0.1]),
+        }
+
+    def _assert_equal_transform(self, X1, X2):
+        np.testing.assert_equal(X1.GetAsMatrix34(), X2.GetAsMatrix34())
 
     def test_via_body(self):
         # Illustrate the Link2 body frame.
@@ -33,21 +53,12 @@ class TestTriad(unittest.TestCase):
 
         # Check the geometry pose of each axis.
         inspect = self._scene_graph.model_inspector()
-        np.testing.assert_equal(
-            inspect.GetPoseInFrame(x).GetAsMatrix34(),
-            RigidTransform(
-                RotationMatrix.MakeYRotation(np.pi/2),
-                [0.1, 0, 0]).GetAsMatrix34())
-        np.testing.assert_equal(
-            inspect.GetPoseInFrame(y).GetAsMatrix34(),
-            RigidTransform(
-                RotationMatrix.MakeXRotation(np.pi/2),
-                [0, 0.1, 0]).GetAsMatrix34())
-        np.testing.assert_equal(
-            inspect.GetPoseInFrame(z).GetAsMatrix34(),
-            RigidTransform(
-                RotationMatrix.MakeZRotation(np.pi/2),
-                [0, 0, 0.1]).GetAsMatrix34())
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(x), self._axis_offsets["x"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(y), self._axis_offsets["y"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(z), self._axis_offsets["z"])
 
         # Check the geometry details of each axis.
         for i, char in enumerate(("x", "y", "z")):
@@ -60,6 +71,25 @@ class TestTriad(unittest.TestCase):
             props = inspect.GetIllustrationProperties(geom_id)
             self.assertEqual(props.GetProperty("phong", "diffuse"),
                              Rgba(r=(i == 0), g=(i == 1), b=(i == 2), a=0.5))
+
+    def test_via_frame(self):
+        # Illustrate our custom added frame.
+        X_FT = RigidTransform([0.1, 0.2, 0.3])
+        x, y, z = mut.AddFrameTriadIllustration(
+            scene_graph=self._scene_graph,
+            frame=self._frame,
+            length=0.2,
+            X_FT=X_FT)
+
+        # Check the geometry pose of each axis.
+        inspect = self._scene_graph.model_inspector()
+        X_PT = self._X_PF @ X_FT
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(x), X_PT @ self._axis_offsets["x"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(y), X_PT @ self._axis_offsets["y"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(z), X_PT @ self._axis_offsets["z"])
 
     def test_via_frame_id(self):
         # Illustrate the Link2 geometry frame.
@@ -84,11 +114,22 @@ class TestTriad(unittest.TestCase):
             plant=self._plant,
             scene_graph=self._scene_graph,
             body=self._plant.GetBodyByName("Link2"))
+        mut.AddFrameTriadIllustration(
+            plant=self._plant,
+            scene_graph=self._scene_graph,
+            frame=self._frame,
+            name="frame 2")
 
     def test_wrong_plant_arg(self):
         # Pass the wrong plant= value and get rejected.
-        with self.assertRaisesRegex(ValueError, "Mismatched"):
+        wrong_plant = MultibodyPlant(0.0)
+        with self.assertRaisesRegex(ValueError, "Mismatched body="):
             mut.AddFrameTriadIllustration(
-                plant=MultibodyPlant(0.0),
+                plant=wrong_plant,
                 scene_graph=self._scene_graph,
                 body=self._plant.GetBodyByName("Link2"))
+        with self.assertRaisesRegex(ValueError, "Mismatched frame="):
+            mut.AddFrameTriadIllustration(
+                plant=wrong_plant,
+                scene_graph=self._scene_graph,
+                frame=self._frame)
