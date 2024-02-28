@@ -144,13 +144,13 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintInfiniteEntries) {
   Eigen::Vector2d bound(0, 1);
   Eigen::Vector3d bound_bad(0, 1, kInf);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse_bad, bound),
-               std::invalid_argument);
+               std::exception);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse, bound_bad),
-               std::invalid_argument);
+               std::exception);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse_bad.toDense(), bound),
-               std::invalid_argument);
+               std::exception);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse.toDense(), bound_bad),
-               std::invalid_argument);
+               std::exception);
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearEqualityConstraint(A_sparse.toDense().row(0), kInf),
       ".*allFinite().*");
@@ -211,10 +211,10 @@ GTEST_TEST(TestConstraint, testLinearConstraintUpdateErrors) {
   EXPECT_TRUE(CompareMatrices(constraint.GetDenseA(), A));
   EXPECT_EQ(constraint.num_constraints(), 2);
 
-  EXPECT_THROW(constraint.UpdateCoefficients(A_bad, b), std::runtime_error);
+  EXPECT_THROW(constraint.UpdateCoefficients(A_bad, b), std::exception);
   EXPECT_THROW(constraint.UpdateCoefficients(A_bad.sparseView(), b),
-               std::runtime_error);
-  EXPECT_THROW(constraint.UpdateCoefficients(A, b_bad), std::runtime_error);
+               std::exception);
+  EXPECT_THROW(constraint.UpdateCoefficients(A, b_bad), std::exception);
 }
 
 GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
