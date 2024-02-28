@@ -1975,12 +1975,22 @@ class TestPlant(unittest.TestCase):
             damping_vector = []
             different_damping_vector = []
 
+            # Calling deprecated Joint.damping_vector() should raise a warning.
+            with catch_drake_warnings(expected_count=1) as w:
+                joint.damping_vector()
+                self.assertIn("2024-06-01", str(w[0].message))
+
             if joint.name() != "weld":
                 damping_vector = joint.num_velocities() * [damping]
                 different_damping_vector = \
                     joint.num_velocities() * [different_damping]
                 numpy_compare.assert_equal(
                     joint.default_damping_vector(), damping_vector)
+                # Test deprecated API still works until removal.
+                with catch_drake_warnings(expected_count=1) as w:
+                    numpy_compare.assert_equal(joint.damping_vector(),
+                                               damping_vector)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 joint.set_default_damping_vector(
                     damping=different_damping_vector)
                 numpy_compare.assert_equal(
@@ -1990,7 +2000,7 @@ class TestPlant(unittest.TestCase):
             if joint.name() in ["prismatic", "revolute"]:
                 # This must be called pre-Finalize().
                 joint.set_default_damping(damping=damping)
-                self.assertEqual(joint.damping(), damping)
+                self.assertEqual(joint.default_damping(), damping)
 
             plant.Finalize()
             context = plant.CreateDefaultContext()
@@ -2035,7 +2045,12 @@ class TestPlant(unittest.TestCase):
                                        array_T(damping_vector))
 
             if joint.name() == "ball_rpy":
-                joint.damping()
+                self.assertEqual(joint.default_damping(), damping)
+                # Calling deprecated BallRpyJoint.damping() should raise a
+                # warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 set_point = array_T([1., 2., 3.])
                 joint.set_angles(context=context, angles=set_point)
                 numpy_compare.assert_equal(
@@ -2050,7 +2065,12 @@ class TestPlant(unittest.TestCase):
                 joint.get_default_angles()
                 joint.set_default_angles(angles=[0.0, 0.0, 0.0])
             elif joint.name() == "planar":
-                self.assertEqual(len(joint.damping()), 3)
+                self.assertEqual(len(joint.default_damping()), 3)
+                # Calling deprecated PlanarJoint.damping() should raise a
+                # warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(len(joint.damping()), 3)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 set_translation = array_T([1., 2.])
                 set_angle = T(3.)
                 joint.set_translation(context=context,
@@ -2080,7 +2100,12 @@ class TestPlant(unittest.TestCase):
                 joint.set_default_rotation(theta=0.0)
                 joint.set_default_pose(p_FoMo_F=[0.0, 0.0], theta=0.0)
             elif joint.name() == "prismatic":
-                self.assertEqual(joint.damping(), damping)
+                self.assertEqual(joint.default_damping(), damping)
+                # Calling deprecated PrismaticJoint.damping() should raise a
+                # warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 numpy_compare.assert_equal(joint.translation_axis(), x_axis)
                 set_point = T(1.)
                 joint.set_translation(context=context, translation=set_point)
@@ -2107,8 +2132,17 @@ class TestPlant(unittest.TestCase):
                 numpy_compare.assert_equal(
                     joint.GetDamping(context), T(different_damping))
             elif joint.name() == "quaternion_floating":
-                self.assertEqual(joint.angular_damping(), damping)
-                self.assertEqual(joint.translational_damping(), damping)
+                self.assertEqual(joint.default_angular_damping(), damping)
+                self.assertEqual(joint.default_translational_damping(),
+                                 damping)
+                # Calling deprecated QuaternionFloatingJoint.angular_damping()
+                # and .translational_damping() should raise a warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.angular_damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.translational_damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 joint.get_quaternion(context=context)
                 joint.get_position(context=context)
                 joint.get_pose(context=context)
@@ -2139,7 +2173,12 @@ class TestPlant(unittest.TestCase):
                 joint.GetDefaultPosePair()
             elif joint.name() == "revolute":
                 numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
-                self.assertEqual(joint.damping(), damping)
+                self.assertEqual(joint.default_damping(), damping)
+                # Calling deprecated RevoluteJoint.damping() should raise a
+                # warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 set_point = T(1.)
                 joint.set_angle(context=context, angle=set_point)
                 numpy_compare.assert_equal(
@@ -2199,8 +2238,12 @@ class TestPlant(unittest.TestCase):
                 joint.GetDefaultPose()
                 joint.GetDefaultPosePair()
             elif joint.name() == "screw":
-                self.assertEqual(joint.damping(), damping)
-                joint.damping()
+                self.assertEqual(joint.default_damping(), damping)
+                # Calling deprecated PrismaticJoint.damping() should raise a
+                # warning.
+                with catch_drake_warnings(expected_count=1) as w:
+                    self.assertEqual(joint.damping(), damping)
+                    self.assertIn("2024-06-01", str(w[0].message))
                 joint.screw_pitch()
                 joint.get_default_rotation()
                 joint.set_default_rotation(0.0)

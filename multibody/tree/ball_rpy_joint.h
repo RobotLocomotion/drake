@@ -49,9 +49,9 @@ class BallRpyJoint final : public Joint<T> {
   /// The additional parameters are:
   /// @param[in] damping
   ///   Viscous damping coefficient, in N⋅m⋅s, used to model losses within the
-  ///   joint. See documentation of damping() for details on modelling of the
-  ///   damping torque.
-  /// @throws std::exception if damping is negative.
+  ///   joint. See documentation of default_damping() for details on modelling
+  ///   of the damping torque.
+  /// @throws std::exception if damping is negative or infinite.
   BallRpyJoint(const std::string& name, const Frame<T>& frame_on_parent,
                const Frame<T>& frame_on_child, double damping = 0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
@@ -69,14 +69,21 @@ class BallRpyJoint final : public Joint<T> {
                  VectorX<double>::Constant(
                      3, std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(damping < std::numeric_limits<double>::infinity());
   }
 
   const std::string& type_name() const override;
 
-  /// Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
-  /// (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with ω the
-  /// angular velocity of frame M in F (see get_angular_velocity()) and τ the
-  /// torque on child body B (to which M is rigidly attached).
+  /// Returns `this` joint's default damping constant in N⋅m⋅s. The damping
+  /// torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with
+  /// ω the angular velocity of frame M in F (see get_angular_velocity()) and τ
+  /// the torque on child body B (to which M is rigidly attached).
+  double default_damping() const {
+    // N.B. All damping coefficients are set to the same value for this joint.
+    return this->default_damping_vector()[0];
+  }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
   double damping() const {
     // N.B. All damping coefficients are set to the same value for this joint.
     return this->default_damping_vector()[0];
@@ -198,7 +205,8 @@ class BallRpyJoint final : public Joint<T> {
   /// Joint<T> override called through public NVI, Joint::AddInDamping().
   /// Therefore arguments were already checked to be valid.
   /// This method adds into `forces` a dissipative torque according to the
-  /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()).
+  /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see
+  /// default_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
     Eigen::Ref<VectorX<T>> t_BMo_F =

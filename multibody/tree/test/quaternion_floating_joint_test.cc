@@ -121,13 +121,25 @@ TEST_F(QuaternionFloatingJointTest, GetJointLimits) {
 }
 
 TEST_F(QuaternionFloatingJointTest, Damping) {
-  EXPECT_EQ(joint_->angular_damping(), kAngularDamping);
-  EXPECT_EQ(joint_->translational_damping(), kTranslationalDamping);
+  EXPECT_EQ(joint_->default_angular_damping(), kAngularDamping);
+  EXPECT_EQ(joint_->default_translational_damping(), kTranslationalDamping);
   EXPECT_EQ(
       joint_->default_damping_vector(),
       (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
        kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
           .finished());
+
+  // Ensure the deprecated versions are correct until removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(joint_->angular_damping(), kAngularDamping);
+  EXPECT_EQ(joint_->translational_damping(), kTranslationalDamping);
+  EXPECT_EQ(
+      joint_->damping_vector(),
+      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
+       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
+          .finished());
+#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.
@@ -182,6 +194,14 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   EXPECT_EQ(joint_->GetDampingVector(*context_), damping);
   EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
   EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint_->SetDampingVector(context_.get(), Vector6d::Constant(-1)),
+               std::runtime_error);
+  EXPECT_THROW(joint_->SetDampingVector(
+                   context_.get(),
+                   Vector6d::Constant(std::numeric_limits<double>::infinity())),
+               std::runtime_error);
 }
 
 // Tests API to apply torques to joint.
@@ -241,9 +261,10 @@ TEST_F(QuaternionFloatingJointTest, Clone) {
             joint_->acceleration_lower_limits());
   EXPECT_EQ(joint_clone.acceleration_upper_limits(),
             joint_->acceleration_upper_limits());
-  EXPECT_EQ(joint_clone.angular_damping(), joint_->angular_damping());
-  EXPECT_EQ(joint_clone.translational_damping(),
-            joint_->translational_damping());
+  EXPECT_EQ(joint_clone.default_angular_damping(),
+            joint_->default_angular_damping());
+  EXPECT_EQ(joint_clone.default_translational_damping(),
+            joint_->default_translational_damping());
   EXPECT_EQ(joint_clone.get_default_quaternion().coeffs(),
             joint_->get_default_quaternion().coeffs());
   EXPECT_EQ(joint_clone.get_default_position(), joint_->get_default_position());

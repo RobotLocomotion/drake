@@ -102,7 +102,7 @@ class RpyFloatingJoint final : public Joint<T> {
   double angular_damping() const {
     // N.B. All 3 angular damping coefficients are set to the same value for
     // this joint.
-    return this->damping_vector()[0];
+    return this->default_damping_vector()[0];
   }
 
   /** Returns this joint's translational damping constant in N⋅s/m. The
@@ -112,7 +112,7 @@ class RpyFloatingJoint final : public Joint<T> {
   double translational_damping() const {
     // N.B. All 3 translational damping coefficients are set to the same value
     // for this joint.
-    return this->damping_vector()[3];
+    return this->default_damping_vector()[3];
   }
 
   /** @name Context-dependent value access

@@ -523,7 +523,7 @@ class Joint : public MultibodyElement<T> {
   /// N⋅m⋅s. Refer to each joint's documentation for further details.
   const VectorX<double>& default_damping_vector() const { return damping_; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.");
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.")
   const VectorX<double>& damping_vector() const { return damping_; }
 
   /// Returns the Context dependent damping coefficients stored as parameters in
@@ -537,11 +537,14 @@ class Joint : public MultibodyElement<T> {
   /// Sets the default value of the viscous damping coefficients for this joint.
   /// Refer to default_damping_vector() for details.
   /// @throws std::exception if damping.size() != num_velocities().
-  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @throws std::exception if any of the damping coefficients is negative or
+  /// infinite.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping_vector(const VectorX<double>& damping) {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS(
+        (damping.array() < std::numeric_limits<double>::infinity()).all());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     damping_ = damping;
   }
@@ -552,11 +555,14 @@ class Joint : public MultibodyElement<T> {
   /// model to which `this` joint belongs.
   /// @param[in] damping The vector of damping values.
   /// @throws std::exception if damping.size() != num_velocities().
-  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @throws std::exception if any of the damping coefficients is negative or
+  /// infinite.
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS(
+        (damping.array() < std::numeric_limits<double>::infinity()).all());
     context->get_mutable_numeric_parameter(damping_parameter_index_)
         .set_value(damping);
   }
@@ -802,14 +808,6 @@ class Joint : public MultibodyElement<T> {
   /// If the MultibodyTree has been finalized, this will return true.
   bool has_implementation() const { return implementation_ != nullptr; }
 
-  /// Called by DoDeclareParameters(). Derived classes may choose to override
-  /// to declare their sub-class specific parameters.
-  virtual void DoDeclareJointParameters(internal::MultibodyTreeSystem<T>*) {}
-
-  /// Called by DoSetDefaultParameters(). Derived classes may choose to override
-  /// to set their sub-class specific parameters.
-  virtual void DoSetDefaultJointParameters(systems::Parameters<T>*) const {}
-
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
   // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().
@@ -830,8 +828,6 @@ class Joint : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
-    DoDeclareJointParameters(tree_system);
-
     // Declare a parameter for damping.
     damping_parameter_index_ = this->DeclareNumericParameter(
         tree_system, systems::BasicVector<T>(damping_.size()));
@@ -839,8 +835,6 @@ class Joint : public MultibodyElement<T> {
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
   void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
-    DoSetDefaultJointParameters(parameters);
-
     // Set default damping.
     systems::BasicVector<T>& damping_parameter =
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);

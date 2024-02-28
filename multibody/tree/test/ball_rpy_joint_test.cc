@@ -115,8 +115,15 @@ TEST_F(BallRpyJointTest, GetJointLimits) {
 }
 
 TEST_F(BallRpyJointTest, Damping) {
-  EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->default_damping(), kDamping);
   EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
+
+  // Ensure the deprecated versions are correct until removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
+#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.
@@ -138,6 +145,14 @@ TEST_F(BallRpyJointTest, ContextDependentAccess) {
   EXPECT_EQ(joint_->GetDampingVector(*context_), Vector3d::Constant(kDamping));
   EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), some_value));
   EXPECT_EQ(joint_->GetDampingVector(*context_), some_value);
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint_->SetDampingVector(context_.get(), Vector3d::Constant(-1)),
+               std::runtime_error);
+  EXPECT_THROW(joint_->SetDampingVector(
+                   context_.get(),
+                   Vector3d::Constant(std::numeric_limits<double>::infinity())),
+               std::runtime_error);
 }
 
 // Tests API to apply torques to joint.
@@ -187,7 +202,7 @@ TEST_F(BallRpyJointTest, Clone) {
             joint_->acceleration_lower_limits());
   EXPECT_EQ(joint_clone.acceleration_upper_limits(),
             joint_->acceleration_upper_limits());
-  EXPECT_EQ(joint_clone.damping(), joint_->damping());
+  EXPECT_EQ(joint_clone.default_damping(), joint_->default_damping());
   EXPECT_EQ(joint_clone.get_default_angles(), joint_->get_default_angles());
 }
 
