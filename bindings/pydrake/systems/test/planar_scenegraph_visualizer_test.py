@@ -162,7 +162,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         runfiles = bazel_tools.tools.python.runfiles.runfiles.Create()
         mesh_name = runfiles.Rlocation(
             "drake_models/iiwa_description/meshes/iiwa14/visual/"
-            "link_0.obj")
+            "link_0.gltf")
         scene_graph = scene_graph_with_mesh(mesh_name)
         PlanarSceneGraphVisualizer(scene_graph)
 
