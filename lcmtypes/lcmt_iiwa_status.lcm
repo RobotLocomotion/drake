@@ -33,12 +33,15 @@ struct lcmt_iiwa_status {
   //
   // This appears to be the raw measurement of the torque sensors, which is
   // attempting to track joint_torque_commanded.
+  //
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
   double joint_torque_measured[num_joints];
 
   // From FRI documentation: "The last commanded joint torques of the robot in
   // Nm."
   //
   // This appears to be most similar to the torque input to multibody plant.
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
   double joint_torque_commanded[num_joints];
 
   // From FRI documentation: "The currently measured external joint torques of
@@ -51,5 +54,7 @@ struct lcmt_iiwa_status {
   // the tool is included (potentially very approximately) in the onboard Kuka
   // model, so long as a tool is defined in the active Sunrise project. You can
   // use the Kuka pendant to teach the tool inertia.
+  //
+  // This is correct w.r.t. the conventions outlined in manipulation/README.
   double joint_torque_external[num_joints];
 }

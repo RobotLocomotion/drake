@@ -14,8 +14,10 @@ struct lcmt_jaco_status
   double joint_velocity[num_joints];
 
   // "Angular Force" in Kinova's documentation.
+  // This is correct w.r.t. the conventions outlined in manipulation/README.
   double joint_torque[num_joints];
   // "AngularForceGravityFree" in Kinova's documentation.
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
   double joint_torque_external[num_joints];
   double joint_current[num_joints];
 
