@@ -10,13 +10,14 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.tree import RigidBody
+from pydrake.multibody.tree import Frame, RigidBody
 
 
 def AddFrameTriadIllustration(
     *,
     scene_graph: SceneGraph,
     body: RigidBody = None,
+    frame: Frame = None,
     frame_id: FrameId = None,
     plant: MultibodyPlant = None,
     name: str = "frame",
@@ -28,39 +29,51 @@ def AddFrameTriadIllustration(
     """
     Adds illustration geometry representing the given frame using an RGB triad,
     with the x-axis drawn in red, the y-axis in green and the z-axis in blue.
-    The given frame can be either a geometry FrameId or a multibody RigidBody.
+    The given frame can be either a geometry FrameId, a multibody RigidBody, or
+    a multibody Frame.
 
     Args:
       scene_graph: the SceneGraph where geometry will be added.
       body: when provided, illustrates the frame of the given body;
-        either body= or frame_id= must be provided, but not both.
+        exactly one of body=, frame=, or frame_id= must be provided.
+      frame: when provided, illustrates the frame from a plant;
+        exactly one of body=, frame=, or frame_id= must be provided.
       frame_id: when provided, illustrates the given geometry.FrameId
         registered with the given plant and scene_graph;
-        either body= or frame_id= must be provided, but not both.
+        exactly one of body=, frame=, or frame_id= must be provided.
       plant: MultibodyPlant associated with the given frame_id;
-        required if and only if a frame_id= is being used (not body=).
+        required if frame_id= is being used. If body= or frame= is supplied,
+        they must belong to this plant.
       name: the added geometries will have names "{name} x-axis", etc.
       length: the length of each axis in meters.
       radius: the radius of each axis in meters.
       opacity: the opacity each axis, between 0.0 and 1.0.
       X_FT: optional rigid transform relating frame T (the triad geometry) and
-        frame F (the given frame_id= or body= frame); when None, X_FT is the
-        identity transform and therefore the triad will depict F.
+        frame F (the given body=, frame=, or frame_id=  frame); when None, X_FT
+        is the identity transform and therefore the triad will depict F.
     Returns:
       The newly-added geometry ids for (x, y, z) respectively.
     """
-    if sum([body is not None, frame_id is not None]) != 1:
-        raise ValueError("Must provide either body= xor frame_id=")
+    if sum([body is not None, frame is not None, frame_id is not None]) != 1:
+        raise ValueError(
+            "Must provide exactly one of body=, frame=, or frame_id=")
+    if X_FT is None:
+        X_FT = RigidTransform()
+    resolved_plant_arg = "body="
+    if frame is not None:
+        body = frame.body()
+        X_FT = frame.GetFixedPoseInBodyFrame() @ X_FT
+        resolved_plant_arg = "frame="
     if body is not None:
         if plant is not None:
             if plant is not body.GetParentPlant():
                 raise ValueError(
-                    "Mismatched body= and plant=; remove the plant= arg")
+                    f"Mismatched {resolved_plant_arg} and plant=; remove the "
+                    f"plant= arg")
         else:
             plant = body.GetParentPlant()
         frame_id = plant.GetBodyFrameIdOrThrow(body.index())
-    if X_FT is None:
-        X_FT = RigidTransform()
+
     source_id = plant.get_source_id()
     eye = np.eye(3)
     result = []
