@@ -25,7 +25,8 @@ class Hyperrectangle final : public ConvexSet {
 
   /** Constructs a hyperrectangle from its lower and upper bounds.
    @pre lb.size() == ub.size()
-   @pre lb and ub are not NaN*/
+   @pre lb and ub are finite.
+   @pre lb(i) <= ub(i) for all i */
   Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                  const Eigen::Ref<const Eigen::VectorXd>& ub);
 
@@ -45,9 +46,11 @@ class Hyperrectangle final : public ConvexSet {
   HPolyhedron MakeHPolyhedron() const;
 
   /** Constructs the intersection of two Hyperrectangle by taking the pointwise
-   * maximum of the lower bounds and the pointwise minimums of the upper
-   * bounds.*/
-  [[nodiscard]] Hyperrectangle Intersection(const Hyperrectangle& other) const;
+  maximum of the lower bounds and the pointwise minimums of the upper
+  bounds. Returns std::nullopt if the intersection is empty.
+   @pre this and other need to have the same ambient dimension.*/
+  [[nodiscard]] std::optional<Hyperrectangle> Intersection(
+      const Hyperrectangle& other) const;
 
   /** Returns the minimum axis-aligned bounding box of a convex set, for sets
   with finite volume. (std::nullopt otherwise). */
@@ -67,11 +70,12 @@ class Hyperrectangle final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsEmpty() const final { return (lb_.array() > ub_.array()).any(); }
+  /** An Hyperrectangle can not empty as lb <= ub is already checked in the ctor
+   */
+  bool DoIsEmpty() const final { return false; }
 
-  std::optional<bool> DoIsBoundedShortcut() const final {
-    return lb_.array().allFinite() && ub_.array().allFinite();
-  }
+  /** We only support finite hyperrectangles */
+  std::optional<bool> DoIsBoundedShortcut() const final { return true; }
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 

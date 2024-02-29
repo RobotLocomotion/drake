@@ -187,7 +187,13 @@ HPolyhedron Hyperrectangle::MakeHPolyhedron() const {
   return HPolyhedron::MakeBox(lb_, ub_);
 }
 
-Hyperrectangle Hyperrectangle::Intersection(const Hyperrectangle& other) const {
+std::optional<Hyperrectangle> Hyperrectangle::Intersection(
+    const Hyperrectangle& other) const {
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == other.ambient_dimension());
+  if ((lb_.array() > other.ub_.array()).any() ||
+      (ub_.array() < other.lb_.array()).any()) {
+    return std::nullopt;
+  }
   return Hyperrectangle(lb_.cwiseMax(other.lb_), ub_.cwiseMin(other.ub_));
 }
 
@@ -207,9 +213,11 @@ double Hyperrectangle::DoCalcVolume() const {
 }
 
 void Hyperrectangle::CheckInvariants() {
-  DRAKE_THROW_UNLESS(!lb_.array().isNaN().any());
-  DRAKE_THROW_UNLESS(!ub_.array().isNaN().any());
+  // only bounded hyperrectangles are supported.
+  DRAKE_THROW_UNLESS(lb_.array().allFinite());
+  DRAKE_THROW_UNLESS(ub_.array().allFinite());
   DRAKE_THROW_UNLESS(lb_.size() == ub_.size());
+  DRAKE_THROW_UNLESS((lb_.array() <= ub_.array()).all());
 }
 
 }  // namespace optimization
