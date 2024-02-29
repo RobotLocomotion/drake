@@ -133,6 +133,6 @@ cargo_build_script(
 
 alias(
     name = "build_script_build",
-    actual = "proc-macro2_build_script",
+    actual = ":proc-macro2_build_script",
     tags = ["manual"],
 )
