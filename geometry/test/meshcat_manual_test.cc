@@ -55,6 +55,10 @@ int do_main() {
   Vector3d sphere_home{++x, 0, 0};
   meshcat->SetObject("sphere", Sphere(0.25), Rgba(1.0, 0, 0, 1));
   meshcat->SetTransform("sphere", RigidTransformd(sphere_home));
+  // Note: this isn't the preferred means for setting opacity, but it is the
+  // simplest way to exercise chained property names.
+  meshcat->SetProperty("sphere/<object>", "material.opacity", 0.5);
+  meshcat->SetProperty("sphere/<object>", "material.transparent", true);
 
   meshcat->SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
   meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{++x, 0, 0}));
@@ -232,7 +236,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   std::cout << ltrim(R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
-  - a red sphere
+  - a slightly transparent red sphere
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
@@ -343,14 +347,16 @@ Ignore those for now; we'll need to circle back and fix them later.
   std::cout << "- An environment map has been loaded from a png -- the Cornell "
             << "box.\n"
             << "  The dented green box should reflect it (the camera has moved "
-               "to focus on the box).\n";
+            << "to focus on the box). This may not be apparent until after you "
+            << "move the mouse.\n";
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_brick_room.jpg"));
 
   std::cout << "- The Cornell box has been replaced by a room with brick walls "
-            << "loaded from a jpg.\n";
+            << "loaded from a jpg. Again, the change may not be apparent "
+            << "until after you move the mouse.\n";
   MaybePauseForUser();
 
   std::cout << ltrim(R"""(
