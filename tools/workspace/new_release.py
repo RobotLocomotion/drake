@@ -93,6 +93,7 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "pycodestyle": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
+    "xmlrunner_py": "",
 }
 
 # Packages in these cohorts should be upgraded together (in a single commit).
