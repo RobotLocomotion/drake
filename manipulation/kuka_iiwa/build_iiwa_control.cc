@@ -14,7 +14,6 @@ namespace manipulation {
 namespace kuka_iiwa {
 
 using drake::lcm::DrakeLcmInterface;
-using kuka_iiwa::internal::SimIiwaDriver;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using systems::Demultiplexer;
@@ -103,8 +102,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   DRAKE_THROW_UNLESS(num_positions == 7);
 
   // Add the sim driver to the builder.
-  const System<double>* const system = &internal::AddSimIiwaDriver(
-      plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
+  const System<double>* const system = &SimIiwaDriver<double>::AddToBuilder(
+      builder, plant, iiwa_instance, controller_plant, ext_joint_filter_tau,
       desired_iiwa_kp_gains, control_mode);
 
   // Return the necessary port pointers.
@@ -142,30 +141,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   return result;
 }
 
-namespace internal {
-
-const System<double>& AddSimIiwaDriver(
-    const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant,
-    DiagramBuilder<double>* builder, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
-  const std::string inner_name =
-      fmt::format("IiwaDriver({})", plant.GetModelInstanceName(iiwa_instance));
-  auto system = builder->template AddNamedSystem<SimIiwaDriver>(
-      inner_name, control_mode, &controller_plant, ext_joint_filter_tau,
-      desired_iiwa_kp_gains);
-  builder->Connect(plant.get_state_output_port(iiwa_instance),
-                   system->GetInputPort("state"));
-  builder->Connect(
-      plant.get_generalized_contact_forces_output_port(iiwa_instance),
-      system->GetInputPort("generalized_contact_forces"));
-  builder->Connect(system->GetOutputPort("actuation"),
-                   plant.get_actuation_input_port(iiwa_instance));
-  return *system;
-}
-
-}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

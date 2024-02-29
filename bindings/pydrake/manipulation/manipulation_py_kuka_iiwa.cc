@@ -9,6 +9,7 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
+#include "drake/manipulation/kuka_iiwa/sim_iiwa_driver.h"
 
 namespace drake {
 namespace pydrake {
@@ -161,6 +162,27 @@ void DefineManipulationKukaIiwa(py::module m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = SimIiwaDriver<double>;
+    constexpr auto& cls_doc = doc.SimIiwaDriver;
+    py::class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
+        .def(py::init<IiwaControlMode, const multibody::MultibodyPlant<double>*,
+                 double, const std::optional<Eigen::VectorXd>&>(),
+            py::arg("control_mode"), py::arg("controller_plant"),
+            py::arg("ext_joint_filter_tau"), py::arg("kp_gains"),
+            // Keep alive, ownership: `self` keeps `controller_plant` alive.
+            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
+        .def_static("AddToBuilder", &Class::AddToBuilder, py::arg("builder"),
+            py::arg("plant"), py::arg("iiwa_instance"),
+            py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
+            py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `controller_plant` alive.
+            py::keep_alive<1, 4>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc);
   }
 
   {
