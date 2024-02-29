@@ -435,6 +435,8 @@ TYPED_TEST(PolygonSurfaceMeshTest, CalcGradientVectorOfLinearField) {
       "PolygonSurfaceMesh does not support this calculation. Defining a "
       "MeshFieldLinear on a PolygonSurfaceMesh requires field gradients to "
       "be provided at construction.");
+  EXPECT_FALSE(
+      mesh_M.MaybeCalcGradientVectorOfLinearField(dummy_values, 0).has_value());
 }
 
 TYPED_TEST(PolygonSurfaceMeshTest, ComputePositionDependentQuantities) {

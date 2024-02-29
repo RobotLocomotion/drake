@@ -70,7 +70,8 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     pressure_values[bv] = T(0.);
   }
 
-  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C,
+                                     MeshGradientMode::kOkOrMarkDegenerate);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

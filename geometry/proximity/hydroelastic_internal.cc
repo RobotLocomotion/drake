@@ -29,6 +29,62 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
+namespace {
+
+class IsPrimitiveChecker final : public ShapeReifier {
+ private:
+  //@{
+  // Non-primitives.
+  void ImplementGeometry(const Convex&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const HalfSpace&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const Mesh&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const MeshcatCone&, void*) final {
+    DRAKE_UNREACHABLE();
+  }
+  //@}
+
+  //@{
+  // Primitives.
+  void ImplementGeometry(const Box&, void* user_data) final {
+    *static_cast<bool*>(user_data) = true;
+  }
+
+  void ImplementGeometry(const Capsule&, void* user_data) final {
+    *static_cast<bool*>(user_data) = true;
+  }
+
+  void ImplementGeometry(const Cylinder&, void* user_data) final {
+    *static_cast<bool*>(user_data) = true;
+  }
+
+  void ImplementGeometry(const Ellipsoid&, void* user_data) final {
+    *static_cast<bool*>(user_data) = true;
+  }
+
+  void ImplementGeometry(const Sphere&, void* user_data) final {
+    *static_cast<bool*>(user_data) = true;
+  }
+  //@}
+};
+
+bool is_primitive(const Shape& shape) {
+  bool result{};
+  IsPrimitiveChecker checker;
+  shape.Reify(&checker, &result);
+  return result;
+}
+
+}  // namespace
+
 using std::make_unique;
 
 SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
@@ -47,6 +103,10 @@ HydroelasticType Geometries::hydroelastic_type(GeometryId id) const {
   auto iter = supported_geometries_.find(id);
   if (iter != supported_geometries_.end()) return iter->second;
   return HydroelasticType::kUndefined;
+}
+
+bool Geometries::is_vanished(GeometryId id) const {
+  return vanished_geometries_.contains(id);
 }
 
 void Geometries::RemoveGeometry(GeometryId id) {
@@ -108,7 +168,14 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
     } break;
     case HydroelasticType::kSoft: {
       auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
-      if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
+      if (hydro_geometry) {
+        if (is_primitive(shape) &&
+            hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
+          vanished_geometries_.insert(data.id);
+        } else {
+          AddGeometry(data.id, std::move(*hydro_geometry));
+        }
+      }
     } break;
     case HydroelasticType::kUndefined:
       // No action required.
