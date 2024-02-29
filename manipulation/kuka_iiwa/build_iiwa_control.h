@@ -57,6 +57,9 @@ namespace kuka_iiwa {
 /// Note: The Diagram will maintain an internal reference to `controller_plant`,
 /// so you must ensure that `controller_plant` has a longer lifetime than the
 /// Diagram.
+///
+/// The torque values in the published LCM status messages will follow the
+/// IIWA-specific LCM conventions outlined in manipulation/README.
 void BuildIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
@@ -69,6 +72,9 @@ void BuildIiwaControl(
 /// The return type of BuildSimplifiedIiwaControl(). Depending on the
 /// `control_mode`, some of the input ports might be null. The output ports are
 /// never null.
+///
+/// These follow the general conventions for torque as outlined in
+/// manipulation/README.
 struct IiwaControlPorts {
   /// This will be non-null iff the control_mode denotes commanded positions.
   const systems::InputPort<double>* commanded_positions{};
