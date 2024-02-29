@@ -282,9 +282,6 @@ class RigidBody : public MultibodyElement<T> {
     return topology_.mobod_index;
   }
 
-  DRAKE_DEPRECATED("2024-03-01",  "Use mobod_index() instead.")
-  internal::MobodIndex node_index() const { return mobod_index(); }
-
   /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
   /// @note A floating body is not necessarily modeled with a quaternion
