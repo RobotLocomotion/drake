@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -413,9 +414,30 @@ class TriangleSurfaceMesh {
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
       const std::array<FieldValue, 3>& field_value, int t) const {
-    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(t, 0);
-    gradu_M += field_value[1] * CalcGradBarycentric(t, 1);
-    gradu_M += field_value[2] * CalcGradBarycentric(t, 2);
+    std::optional<Vector3<FieldValue>> grad =
+        MaybeCalcGradientVectorOfLinearField(field_value, t);
+    if (!grad.has_value()) {
+      throw std::runtime_error("Bad geometry; could not calculate gradient.");
+    }
+    return grad.value();
+  }
+
+  /** Calculates the gradient ∇u of a linear field u on the triangle `t`.
+   Field u is defined by the three field values `field_value[i]` at the i-th
+   vertex of the triangle. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  std::optional<Vector3<FieldValue>> MaybeCalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>& field_value, int t) const {
+    Vector3<FieldValue> gradu_M = Vector3<FieldValue>::Zero();
+    for (int k = 0; k < 3; ++k) {
+      auto grad_k = MaybeCalcGradBarycentric(t, k);
+      if (!grad_k.has_value()) {
+        return {};
+      }
+      gradu_M += field_value[k] * grad_k.value();
+    }
     return gradu_M;
   }
 
@@ -439,7 +461,19 @@ class TriangleSurfaceMesh {
   // function bᵢ of the i-th vertex of the triangle `t`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 3.
-  Vector3<T> CalcGradBarycentric(int t, int i) const;
+  // @throws if triangle is degenerate.
+  // TODO(rpoyner-tri): currently only used by the test helper; delete?
+  Vector3<T> CalcGradBarycentric(int t, int i) const {
+    auto result = MaybeCalcGradBarycentric(t, i);
+    if (!result.has_value()) {
+      throw std::runtime_error("Bad geometry; could not calculate gradient.");
+    }
+    return *result;
+  }
+
+  // Like CalcGradBarycentric, but returns std::nullopt if triangle is
+  // degenerate.
+  std::optional<Vector3<T>> MaybeCalcGradBarycentric(int t, int i) const;
 
   // The triangles that comprise the surface.
   std::vector<SurfaceTriangle> triangles_;
@@ -499,7 +533,8 @@ void TriangleSurfaceMesh<T>::ComputePositionDependentQuantities() {
 }
 
 template <typename T>
-Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
+std::optional<Vector3<T>> TriangleSurfaceMesh<T>::MaybeCalcGradBarycentric(
+    int t, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
   DRAKE_DEMAND(0 <= t && t < num_triangles());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
@@ -555,7 +590,7 @@ Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
       (ab2 <= kEps2) ? p_AV_M : p_AV_M - (p_AV_M.dot(p_AB_M)) * p_AB_M / ab2;
   const T h2 = H_M.squaredNorm();
   if (h2 <= kEps2) {
-    throw std::runtime_error("Bad triangle. Cannot compute gradient.");
+    return {};
   }
   return H_M / h2;
 }

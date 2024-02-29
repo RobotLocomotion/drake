@@ -61,7 +61,8 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(
     }
     pressure_values.push_back(hydroelastic_modulus * extent);
   }
-  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_S);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_S,
+                                     MeshGradientMode::kOkOrMarkDegenerate);
 }
 
 }  // namespace internal

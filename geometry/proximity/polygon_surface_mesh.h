@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -301,6 +302,15 @@ class PolygonSurfaceMesh {
         "PolygonSurfaceMesh does not support this calculation. Defining a "
         "MeshFieldLinear on a PolygonSurfaceMesh requires field gradients to "
         "be provided at construction.");
+  }
+
+  /** Like CalcGradientVectorOfLinearField above, this is a stub method,
+   provided for compatibility with MeshFieldLinear. The empty return value
+   here will cause the caller to report errors. */
+  template <typename FieldValue>
+  std::optional<Vector3<FieldValue>> MaybeCalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>&, int) const {
+    return {};
   }
 
   /** Updates the position of all vertices in the mesh. Each sequential triple

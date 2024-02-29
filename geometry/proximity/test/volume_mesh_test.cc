@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
@@ -40,7 +41,8 @@ using math::RollPitchYaw;
 // The optional parameter X_WM will change the vertex positions to W's frame.
 template <typename T>
 std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
-    const RigidTransform<T> X_WM = RigidTransform<T>::Identity()) {
+    const RigidTransform<T> X_WM = RigidTransform<T>::Identity(),
+    double scale = 1.0) {
   // A  trivial volume mesh comprises of two tetrahedral elements with
   // vertices on the coordinate axes and the origin like this:
   //
@@ -67,13 +69,15 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
                                      Vector3<T>::UnitY(), Vector3<T>::UnitZ(),
                                      -Vector3<T>::UnitZ()};
   std::vector<Vector3<T>> vertices_W;
-  for (int v = 0; v < 5; ++v) vertices_W.emplace_back(X_WM * vertex_data[v]);
+  for (int v = 0; v < 5; ++v) {
+    vertices_W.emplace_back(X_WM * vertex_data[v] * scale);
+  }
   auto volume_mesh_W = std::make_unique<VolumeMesh<T>>(std::move(elements),
                                                        std::move(vertices_W));
   EXPECT_EQ(2, volume_mesh_W->num_elements());
   EXPECT_EQ(5, volume_mesh_W->num_vertices());
   for (int v = 0; v < 5; ++v)
-    EXPECT_EQ(X_WM * vertex_data[v], volume_mesh_W->vertex(v));
+    EXPECT_EQ(X_WM * vertex_data[v] * scale, volume_mesh_W->vertex(v));
   for (int e = 0; e < 2; ++e)
     for (int v = 0; v < 4; ++v)
       EXPECT_EQ(element_data[e][v], volume_mesh_W->element(e).vertex(v));
@@ -84,6 +88,18 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
 // type.
 GTEST_TEST(VolumeMeshTest, TestVolumeMeshDouble) {
   auto volume_mesh = TestVolumeMesh<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestDegenerateVolumeMeshDouble) {
+  auto volume_mesh =
+      TestVolumeMesh<double>(RigidTransform<double>::Identity(), 1e-8);
+  std::array<double, 4> dummy_values{1, 2, 3, 4};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      volume_mesh->CalcGradientVectorOfLinearField(dummy_values, 0),
+      ".*not calculate gradient.*");
+  auto result =
+      volume_mesh->MaybeCalcGradientVectorOfLinearField(dummy_values, 0);
+  EXPECT_FALSE(result.has_value());
 }
 
 // Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose

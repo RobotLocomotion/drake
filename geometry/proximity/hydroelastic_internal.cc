@@ -29,6 +29,47 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
+namespace {
+
+// Decide whether a shape is primitive for vanished-checking purposes. (See
+// Geometries::is_vanished() documentation).  This reifier expects that
+// user_data will point to a single boolean flag, which is pre-set to `true`.
+class IsPrimitiveChecker final : public ShapeReifier {
+ private:
+  using ShapeReifier::ImplementGeometry;
+
+  // Primitives are the default. The handler here does nothing; rely on the
+  // caller to have pre-set the user_data flag to true.
+  void DefaultImplementGeometry(const Shape&) final {}
+
+  // Non-primitives.
+
+  void ImplementGeometry(const Convex&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const HalfSpace&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const Mesh&, void* user_data) final {
+    *static_cast<bool*>(user_data) = false;
+  }
+
+  void ImplementGeometry(const MeshcatCone&, void*) final {
+    DRAKE_UNREACHABLE();
+  }
+};
+
+bool is_primitive(const Shape& shape) {
+  bool result{true};  // The reifier default is to assume primitive.
+  IsPrimitiveChecker checker;
+  shape.Reify(&checker, &result);
+  return result;
+}
+
+}  // namespace
+
 using std::make_unique;
 
 SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
@@ -47,6 +88,10 @@ HydroelasticType Geometries::hydroelastic_type(GeometryId id) const {
   auto iter = supported_geometries_.find(id);
   if (iter != supported_geometries_.end()) return iter->second;
   return HydroelasticType::kUndefined;
+}
+
+bool Geometries::is_vanished(GeometryId id) const {
+  return vanished_geometries_.contains(id);
 }
 
 void Geometries::RemoveGeometry(GeometryId id) {
@@ -108,7 +153,14 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
     } break;
     case HydroelasticType::kSoft: {
       auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
-      if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
+      if (hydro_geometry) {
+        if (is_primitive(shape) &&
+            hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
+          vanished_geometries_.insert(data.id);
+        } else {
+          AddGeometry(data.id, std::move(*hydro_geometry));
+        }
+      }
     } break;
     case HydroelasticType::kUndefined:
       // No action required.

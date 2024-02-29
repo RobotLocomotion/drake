@@ -174,10 +174,9 @@ TriMeshBuilder<T>::MakeMeshAndField() {
   auto mesh = std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces_),
                                                        std::move(vertices_B_));
   auto* raw = mesh.get();
-  const bool calculate_gradient = false;
   return {std::move(mesh),
           std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
-              std::move(pressures_), raw, calculate_gradient)};
+              std::move(pressures_), raw, MeshGradientMode::kNone)};
 }
 
 template <typename T>
