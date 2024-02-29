@@ -11,13 +11,16 @@ namespace internal {
 Eigen::SparseMatrix<double> SparseKroneckerProduct(
     const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B);
 
-// Get the matrix for the map Y -> [tr(Y), y00 - ∑ᵢ₌₁ʳ⁻¹yᵢᵢ, 2y_{0i-1} when
-// applied to the lower triangular part of Y as a column. This map goes from
-// symmetric matrices with r - 1 rows to vectors with r rows.
+// Get the matrix representation for the map Y -> [tr(Y), y00 - ∑ᵢ₌₁ʳ⁻¹yᵢᵢ,
+// 2y_{0i-1}] when applied to the lower triangular part of Y as a column. This
+// map goes from symmetric matrices with r - 1 rows to a vector with r rows.
 Eigen::SparseMatrix<double> GetWAdjForTril(const int r);
 
-// Given a vector expressing an element of Sⁿ ⊗ Sᵐ, return the symmetric matrix
-// of size Sⁿᵐ which it corresponds to.
+// Given a vector expressing an element of Sⁿ ⊗ Sᵐ, return the corresponding
+// symmetric matrix of size Sⁿᵐ which it corresponds to. Note that Sⁿ ⊗ Sᵐ is a
+// subspace of Sⁿᵐ of dimension (n+1) choose 2 * (m+1) choose 2. Therefore, this
+// method requires that tensor_vector.rows() be of size (n+1) choose 2 * (m+1)
+// choose 2.
 template <typename Derived>
 drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
     const Eigen::MatrixBase<Derived>& tensor_vector, int n, int m) {

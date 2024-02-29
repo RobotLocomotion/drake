@@ -177,8 +177,10 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
       prog.positive_semidefinite_constraints()[0];
   EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
 
+  // A vector in the Lorentz cone of size m.
   Eigen::VectorXd xm_lorentz(m);
   xm_lorentz << 4, -1.7, 0.1;
+  // A vector in the Lorentz cone of size n.
   Eigen::VectorXd xn_lorentz(n);
   xn_lorentz << 13, -0.1, 5, -2.3;
   Eigen::MatrixXd X_tensor_lorentz = xm_lorentz * xn_lorentz.transpose();
@@ -194,6 +196,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
   ym_lorentz << 9.1, 1.3, 4.2;
   Eigen::VectorXd yn_lorentz(n);
   yn_lorentz << 2, -0.1, 0.5, -0.3;
+  // The tensor product of cones is another cone. Hence, a conic combination of
+  // two elements in the cone of Lorentz separable matrices must also be Lorentz
+  // separable.
   Eigen::MatrixXd Y_tensor_lorentz = 2 * xm_lorentz * xn_lorentz.transpose() +
                                      4 * ym_lorentz * yn_lorentz.transpose();
   auto Y_equal_lorentz_tensor_constraint =
