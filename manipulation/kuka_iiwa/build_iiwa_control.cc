@@ -118,26 +118,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   result.position_commanded = &system->GetOutputPort("position_commanded");
   result.position_measured = &system->GetOutputPort("position_measured");
   result.velocity_estimated = &system->GetOutputPort("velocity_estimated");
-  {
-    // TODO(eric.cousineau): Why do we flip this?
-    auto negate = builder->AddNamedSystem<Gain>(
-        fmt::format("sign_flip_{}_torque_commanded",
-                    plant.GetModelInstanceName(iiwa_instance)),
-        -1, num_positions);
-    builder->Connect(system->GetOutputPort("torque_commanded"),
-                     negate->get_input_port());
-    result.joint_torque = &negate->get_output_port();
-  }
-  {
-    // TODO(eric.cousineau): Why do we flip this?
-    auto negate = builder->AddNamedSystem<Gain>(
-        fmt::format("sign_flip_{}_torque_measured",
-                    plant.GetModelInstanceName(iiwa_instance)),
-        -1, num_positions);
-    builder->Connect(system->GetOutputPort("torque_measured"),
-                     negate->get_input_port());
-    result.torque_measured = &negate->get_output_port();
-  }
+  result.joint_torque = &system->GetOutputPort("torque_commanded");
+  result.torque_measured = &system->GetOutputPort("torque_measured");
   result.external_torque = &system->GetOutputPort("torque_external");
   return result;
 }
