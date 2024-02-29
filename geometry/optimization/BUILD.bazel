@@ -82,6 +82,7 @@ drake_cc_library(
     ],
     deps = [
         "//geometry:read_obj",
+        "//solvers:aggregate_costs_constraints",
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:get_program_type",
