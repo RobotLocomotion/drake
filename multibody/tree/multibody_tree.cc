@@ -103,6 +103,31 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
         model_instances_.get_element(model_instance).name(), name));
   }
 
+  // Throw an exception if the minimum bounding box associated with M_BBo_B
+  // is unreasonably large for a robotic system, e.g., larger than the length of
+  // world's vehicle which is the Japanese-made Seawise Giant ship (458 m).
+  if constexpr (scalar_predicate<T>::is_bool) {
+    using std::isfinite;
+    const double mass = M_BBo_B.get_mass();
+    const Vector3<double>& p_PBcm = M_BBo_B.get_com();
+    const UnitInertia<double>& unit_inertia = M_BBo_B.get_unit_inertia();
+    if (isfinite(mass) && mass >= 0 && p_PBcm.allFinite() &&
+        unit_inertia.get_moments().allFinite() &&
+        unit_inertia.get_products().allFinite()) {
+      const T space_diagonal = M_BBo_B.CalcMinimumPhysicalLength();
+      constexpr double max_allowable_dimension = 500;
+      if (space_diagonal > max_allowable_dimension) {
+        std::string error_message = fmt::format(
+          "Function {}() did not add rigid body {} because it is too large."
+          "\nThis body's spatial inertia corresponds to a physical object "
+          "with a minimum length of {} meters."
+          "\nThe maximum allowable space-diagonal is {} meters.\n",
+          __func__, name, space_diagonal, max_allowable_dimension);
+        throw std::runtime_error(error_message);
+      }
+    }
+  }
+
   const RigidBody<T>& body = this->AddRigidBodyImpl(
       std::make_unique<RigidBody<T>>(name, model_instance, M_BBo_B));
   return body;
