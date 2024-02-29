@@ -383,6 +383,11 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.b(), box.b())
         assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
 
+        rect2 = mut.Hyperrectangle(lb=-2*self.b, ub=0.5*self.b)
+        intersection = rect.Intersection(rect2)
+        np.testing.assert_array_equal(intersection.lb(), -self.b)
+        np.testing.assert_array_equal(intersection.ub(), 0.5*self.b)
+
         other = mut.VPolytope(np.eye(2))
         bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
         self.assertIsInstance(bbox, mut.Hyperrectangle)

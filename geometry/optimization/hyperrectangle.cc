@@ -187,6 +187,10 @@ HPolyhedron Hyperrectangle::MakeHPolyhedron() const {
   return HPolyhedron::MakeBox(lb_, ub_);
 }
 
+Hyperrectangle Hyperrectangle::Intersection(const Hyperrectangle& other) const {
+  return Hyperrectangle(lb_.cwiseMax(other.lb_), ub_.cwiseMin(other.ub_));
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 Hyperrectangle::DoToShapeWithPose() const {
   if (ambient_dimension() != 3) {
@@ -203,11 +207,9 @@ double Hyperrectangle::DoCalcVolume() const {
 }
 
 void Hyperrectangle::CheckInvariants() {
-  // only bounded hyperrectangles are supported.
-  DRAKE_THROW_UNLESS(lb_.array().allFinite());
-  DRAKE_THROW_UNLESS(ub_.array().allFinite());
+  DRAKE_THROW_UNLESS(!lb_.array().isNaN().any());
+  DRAKE_THROW_UNLESS(!ub_.array().isNaN().any());
   DRAKE_THROW_UNLESS(lb_.size() == ub_.size());
-  DRAKE_THROW_UNLESS((lb_.array() <= ub_.array()).all());
 }
 
 }  // namespace optimization

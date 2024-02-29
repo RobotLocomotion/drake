@@ -24,6 +24,9 @@ using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
+namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+}
 
 bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
                       const solvers::VectorXDecisionVariable& t_vars,
@@ -73,9 +76,7 @@ GTEST_TEST(HyperrectangleTest, BasicTests) {
   const auto hpolyhedron = hyperrectangle.MakeHPolyhedron();
   const auto chebyshev_center = hpolyhedron.ChebyshevCenter();
   EXPECT_TRUE(CompareMatrices(chebyshev_center, center, 1e-6));
-  // Can not make an invalid hyperrectangle.
-  EXPECT_THROW(Hyperrectangle(Vector3d{1, 2, 3}, Vector3d{1, 2, 1}),
-               std::exception);
+
   // It is ok to make a point hyperrectangle.
   const Hyperrectangle point_hyperrectangle(Vector3d{1, 2, 3},
                                             Vector3d{1, 2, 3});
@@ -111,10 +112,86 @@ GTEST_TEST(HyperrectangleTest, Sampling) {
       CompareMatrices(variance, Eigen::Vector2d{16.0 / 12, 16.0 / 12}, 1e-1));
 }
 
-GTEST_TEST(HyperrectangleTest, InfinityTest) {
-  const auto lb = Vector3d::Constant(-std::numeric_limits<double>::infinity());
-  const auto ub = Vector3d::Constant(1);
-  EXPECT_THROW(Hyperrectangle(lb, ub), std::exception);
+GTEST_TEST(HyperrectangleTest, InvariantTest) {
+  // Can not make a hyperrectangle with nan.
+  EXPECT_THROW(
+      Hyperrectangle(Vector3d{1, 2, 3},
+                     Vector3d{1, 2, std::numeric_limits<double>::quiet_NaN()}),
+      std::exception);
+  EXPECT_THROW(
+      Hyperrectangle(Vector3d{std::numeric_limits<double>::quiet_NaN(), 2, 3},
+                     Vector3d{1, 2, 3}),
+      std::exception);
+  EXPECT_THROW(Hyperrectangle(Vector3d{1, 2, 3}, Vector3d{1, 2}),
+               std::exception);
+}
+
+GTEST_TEST(HyperrectangleTest, IsBoundedTest) {
+  EXPECT_TRUE(
+      Hyperrectangle(Vector3d{-1, -2, -3}, Vector3d{3, 2, 1}).IsBounded());
+  EXPECT_FALSE(Hyperrectangle(Vector2d{-kInf, 0}, Vector2d{0, 1}).IsBounded());
+  EXPECT_FALSE(Hyperrectangle(Vector2d{0, 0}, Vector2d{1, kInf}).IsBounded());
+  // An empty hyperrectangle is bounded.
+  EXPECT_TRUE(Hyperrectangle(Vector2d{1, 2}, Vector2d{-1, -2}).IsBounded());
+}
+
+GTEST_TEST(HyperrectangleTest, IsEmptyTest) {
+  EXPECT_FALSE(
+      Hyperrectangle(Vector3d{-1, -2, -3}, Vector3d{3, 2, 1}).IsEmpty());
+  EXPECT_FALSE(Hyperrectangle(Vector2d{-kInf, 0}, Vector2d{0, 1}).IsEmpty());
+  // An empty hyperrectangle.
+  EXPECT_TRUE(Hyperrectangle(Vector2d{1, 2}, Vector2d{-1, 4}).IsEmpty());
+}
+
+GTEST_TEST(HyperrectangleTest, Intersection) {
+  const Vector3d lb1{-1, -2, -3};
+  const Vector3d ub1{3, 2, 1};
+  const Vector3d lb2{-2, 1, -2};
+  const Vector3d ub2{4, 1, 0};
+  const Hyperrectangle h1(lb1, ub1);
+  const Hyperrectangle h2(lb2, ub2);
+  const Hyperrectangle intersection12 = h1.Intersection(h2);
+  const Hyperrectangle intersection21 = h2.Intersection(h1);
+  EXPECT_TRUE(intersection12.IsBounded());
+  EXPECT_FALSE(intersection12.IsEmpty());
+  EXPECT_TRUE(CompareMatrices(intersection12.lb(), Vector3d{-1, 1, -2}));
+  EXPECT_TRUE(CompareMatrices(intersection12.ub(), Vector3d{3, 1, 0}));
+  EXPECT_TRUE(CompareMatrices(intersection12.lb(), intersection21.lb()));
+  EXPECT_TRUE(CompareMatrices(intersection12.ub(), intersection21.ub()));
+
+  const Vector3d lb3{-30, -20, -10};
+  const Vector3d ub3{-20, -11, -8};
+  const Hyperrectangle h3(lb3, ub3);
+  const Hyperrectangle intersection13 = h1.Intersection(h3);
+  const Hyperrectangle intersection31 = h3.Intersection(h1);
+  EXPECT_TRUE(intersection13.IsBounded());
+  EXPECT_TRUE(intersection13.IsEmpty());
+  EXPECT_TRUE(CompareMatrices(intersection13.lb(), intersection31.lb()));
+  EXPECT_TRUE(CompareMatrices(intersection13.ub(), intersection31.ub()));
+
+  const Vector3d lb4{-kInf, 2, 0};
+  const Vector3d ub4{0, kInf, 1};
+  const Hyperrectangle h4(lb4, ub4);
+  const Hyperrectangle intersection14 = h1.Intersection(h4);
+  const Hyperrectangle intersection41 = h4.Intersection(h1);
+  EXPECT_TRUE(intersection14.IsBounded());
+  EXPECT_FALSE(intersection14.IsEmpty());
+  EXPECT_TRUE(CompareMatrices(intersection14.lb(), Vector3d{-1, 2, 0}));
+  EXPECT_TRUE(CompareMatrices(intersection14.ub(), Vector3d{0, 2, 1}));
+  EXPECT_TRUE(CompareMatrices(intersection14.lb(), intersection41.lb()));
+  EXPECT_TRUE(CompareMatrices(intersection14.ub(), intersection41.ub()));
+
+  const Vector3d lb5{-kInf, -kInf, 1};
+  const Vector3d ub5{-2, kInf, 0};
+  const Hyperrectangle h5(lb5, ub5);
+  const Hyperrectangle intersection45 = h4.Intersection(h5);
+  const Hyperrectangle intersection54 = h5.Intersection(h4);
+  EXPECT_FALSE(intersection45.IsBounded());
+  EXPECT_FALSE(intersection14.IsEmpty());
+  EXPECT_TRUE(CompareMatrices(intersection45.lb(), Vector3d{-kInf, 2, 1}));
+  EXPECT_TRUE(CompareMatrices(intersection45.ub(), Vector3d{-2, kInf, 0}));
+  EXPECT_TRUE(CompareMatrices(intersection45.lb(), intersection54.lb()));
+  EXPECT_TRUE(CompareMatrices(intersection45.ub(), intersection54.ub()));
 }
 
 GTEST_TEST(HyperrectangleTest, AddPointInSetConstraints) {
@@ -183,8 +260,8 @@ GTEST_TEST(HyperrectangleTest,
       hyperrectangle.AddPointInNonnegativeScalingConstraints(&prog, A, b, c, d,
                                                              x, t);
   EXPECT_EQ(scaled_matrix_con.size(), 3);
-  // Ax + b \in  (c't + d) * hyperrectangle or  test_point := (Ax + b) / (c't +
-  // d) \in hyperrectangle
+  // Ax + b \in  (c't + d) * hyperrectangle or  test_point := (Ax + b) / (c't
+  // + d) \in hyperrectangle
   {
     // test_point = b / 2 = 2.5, 0.5, -1. Inside the hyperrectangle
     const Eigen::Vector2d x_value{0, 0};

@@ -356,6 +356,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("UniformSample", &Hyperrectangle::UniformSample,
             py::arg("generator"), cls_doc.UniformSample.doc)
         .def("Center", &Hyperrectangle::Center, cls_doc.Center.doc)
+        .def("Intersection", &Hyperrectangle::Intersection,
+            cls_doc.Intersection.doc)
         .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
             cls_doc.MakeHPolyhedron.doc)
         .def(py::pickle(
