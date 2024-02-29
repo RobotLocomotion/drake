@@ -63,7 +63,8 @@ VolumeMeshFieldLinear<T, T> MakeCapsulePressureField(
   // non-zero pressure values.
   pressure_values[0] = pressure_values[1] = hydroelastic_modulus;
 
-  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C,
+                                     MeshGradientMode::kOkOrMarkDegenerate);
 }
 
 }  // namespace internal

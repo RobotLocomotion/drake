@@ -75,7 +75,8 @@ VolumeMeshFieldLinear<T, T> MakeEllipsoidPressureField(
     }
     pressure_values.push_back(hydroelastic_modulus * extent);
   }
-  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_E);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_E,
+                                     MeshGradientMode::kOkOrMarkDegenerate);
 }
 
 }  // namespace internal

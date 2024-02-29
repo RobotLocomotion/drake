@@ -50,7 +50,8 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(const Box& box,
     pressure_values.push_back(hydroelastic_modulus * extent);
   }
 
-  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_B);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_B,
+                                     MeshGradientMode::kOkOrMarkDegenerate);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

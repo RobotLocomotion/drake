@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 
@@ -209,6 +210,17 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, tol);
 }
 
+GTEST_TEST(SurfaceMeshTest, TestDegenerateGradients) {
+  auto zero_area_mesh = GenerateZeroAreaMesh();
+  std::array<double, 3> dummy_values{1, 2, 3};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      zero_area_mesh->CalcGradientVectorOfLinearField(dummy_values, 0),
+      ".*not calculate gradient.*");
+  EXPECT_FALSE(
+      zero_area_mesh->MaybeCalcGradientVectorOfLinearField(dummy_values, 0)
+          .has_value());
+}
+
 GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshAutoDiffXd) {
   auto surface_mesh = TestSurfaceMesh<AutoDiffXd>();
 }
@@ -352,7 +364,7 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
   std::unique_ptr<TriangleSurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
   const TriangleSurfaceMeshTester<double> tester(*mesh);
-  EXPECT_THROW(tester.CalcGradBarycentric(0, 0), std::runtime_error);
+  EXPECT_THROW(tester.CalcGradBarycentric(0, 0), std::exception);
 }
 
 template <typename T>
