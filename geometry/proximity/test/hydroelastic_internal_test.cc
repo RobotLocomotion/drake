@@ -366,6 +366,77 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   DRAKE_EXPECT_NO_THROW(geometries.rigid_geometry(rigid_id));
 }
 
+void DoTestVanished(const Shape& shape, bool expect_vanished) {
+  SCOPED_TRACE(fmt::format("DoTestVanished: {}, expect_vanished: {}",
+                           shape.to_string(), expect_vanished));
+  Geometries geometries;
+
+  GeometryId soft_id = GeometryId::get_new_id();
+  ProximityProperties soft_properties;
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
+  const double thickness = 1.3;
+  soft_properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
+
+  geometries.MaybeAddGeometry(shape, soft_id, soft_properties);
+  EXPECT_EQ(geometries.is_vanished(soft_id), expect_vanished);
+}
+
+// Primitives may vanish if they are too small and cause numerical problems.
+
+GTEST_TEST(HydroelasticVanished, Sphere) {
+  DoTestVanished(Sphere(0.5), false);
+  DoTestVanished(Sphere(1e-6), true);
+}
+
+GTEST_TEST(HydroelasticVanished, Box) {
+  DoTestVanished(Box(0.5, 0.5, 0.5), false);
+  DoTestVanished(Box(1e-6, 1e-6, 1e-6), true);
+}
+
+GTEST_TEST(HydroelasticVanished, Capsule) {
+  DoTestVanished(Capsule(0.5, 0.5), false);
+  DoTestVanished(Capsule(1e-6, 1e-6), true);
+}
+
+GTEST_TEST(HydroelasticVanished, Cylinder) {
+  DoTestVanished(Cylinder(0.5, 0.5), false);
+  DoTestVanished(Cylinder(1e-6, 1e-6), true);
+}
+
+GTEST_TEST(HydroelasticVanished, Ellipsoid) {
+  DoTestVanished(Ellipsoid(0.5, 0.5, 0.5), false);
+  DoTestVanished(Ellipsoid(1e-6, 1e-6, 1e-6), true);
+}
+
+// Half-spaces never vanish.
+
+GTEST_TEST(HydroelasticVanished, HalfSpace) {
+  DoTestVanished(HalfSpace{}, false);
+}
+
+// Mesh types that are tiny do not vanish, and are allowed to throw exceptions
+// on degenerate gradients.
+
+GTEST_TEST(HydroelasticVanished, Mesh) {
+  const Mesh normal_mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"), 1e-4);
+  DoTestVanished(normal_mesh_specification, false);
+  const Mesh tiny_mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"), 1e-8);
+  DRAKE_EXPECT_THROWS_MESSAGE(DoTestVanished(tiny_mesh_specification, false),
+                              ".*cannot compute gradient.*");
+}
+
+GTEST_TEST(HydroelasticVanished, Convex) {
+  const Convex normal_convex_specification(
+      FindResourceOrThrow("drake/geometry/test/octahedron.obj"), 1e-4);
+  DoTestVanished(normal_convex_specification, false);
+  const Convex tiny_convex_specification(
+      FindResourceOrThrow("drake/geometry/test/octahedron.obj"), 1e-8);
+  DRAKE_EXPECT_THROWS_MESSAGE(DoTestVanished(tiny_convex_specification, false),
+                              ".*cannot compute gradient.*");
+}
+
 GTEST_TEST(Hydroelastic, RemoveGeometry) {
   Geometries geometries;
 

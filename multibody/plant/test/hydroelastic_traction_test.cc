@@ -759,7 +759,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
       geometry::TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
-      std::move(values), mesh_W.get(), false);
+      std::move(values), mesh_W.get(), geometry::MeshGradientMode::kNone);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into
   // A, we generate a pair of id's such that idA < idB to ensure that

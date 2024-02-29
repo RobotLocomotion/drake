@@ -209,7 +209,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   auto make_e_field = [](TriangleSurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
     return make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
-        std::move(e_values), mesh, false /* calc_gradient */);
+        std::move(e_values), mesh, MeshGradientMode::kNone);
   };
   vector<Vector3d> grad_e;
   for (int i = 0; i < surface_mesh->num_elements(); ++i) {

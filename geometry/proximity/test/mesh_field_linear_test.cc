@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/math/autodiff.h"
@@ -23,7 +24,7 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 
 template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
+std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh(double scale = 1.0) {
   // A simple surface mesh consists of two right triangles that make a square.
   //
   //   y
@@ -46,7 +47,9 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
   const Vector3<T> vertex_data[4] = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
   std::vector<Vector3<T>> vertices;
-  for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
+  for (int v = 0; v < 4; ++v) {
+    vertices.emplace_back(vertex_data[v] * scale);
+  }
   auto surface_mesh = std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(faces), std::move(vertices));
   return surface_mesh;
@@ -54,6 +57,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
 
 GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   auto mesh = GenerateMesh<double>();
+
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
@@ -134,10 +138,9 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
 GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
   auto mesh = GenerateMesh<double>();
   std::vector<double> e_values = {0., 1., 2., 3.};
-  const bool calculate_gradient = false;
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
-          std::move(e_values), mesh.get(), calculate_gradient);
+          std::move(e_values), mesh.get(), MeshGradientMode::kNone);
 
   EXPECT_THROW(mesh_field->EvaluateGradient(0), std::runtime_error);
 }
@@ -152,12 +155,12 @@ GTEST_TEST(MeshFieldLinearTest, TestTransform) {
   auto mesh_M = GenerateMesh<double>();
   const std::vector<double> e_values = {0., 1., 2., 3.};
   MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_M(
-      std::vector<double>(e_values), mesh_M.get(), true /* calc_gradients */);
+      std::vector<double>(e_values), mesh_M.get());
 
   RigidTransformd X_NM(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
                        Vector3d(1.2, 1.3, -4.3));
   MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_N(
-      std::vector<double>(e_values), mesh_M.get(), true /* calc_gradients */);
+      std::vector<double>(e_values), mesh_M.get());
 
   // NOTE: re-expressing the field like this (and subsequent calls to
   // EvaluateCartesian()) don't actually require the field's captured mesh to
@@ -249,9 +252,9 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   std::vector<double> values_copy = values;
 
   const MeshFieldLinear<double, VolumeMesh<double>> field_without_gradient(
-      std::move(values_copy), &mesh_M, false);
+      std::move(values_copy), &mesh_M, MeshGradientMode::kNone);
   const MeshFieldLinear<double, VolumeMesh<double>> field_with_gradient(
-      std::move(values), &mesh_M, true);
+      std::move(values), &mesh_M);
 
   ASSERT_THROW(field_without_gradient.EvaluateGradient(0), std::runtime_error);
   ASSERT_NO_THROW(field_with_gradient.EvaluateGradient(0));
@@ -306,6 +309,27 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
       }
     }
   }
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestDegeneracy) {
+  // Tiny mesh has a bad gradient computation.
+  auto mesh = GenerateMesh<double>(1e-20);
+
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (MeshFieldLinear<double, TriangleSurfaceMesh<double>>(std::move(e_values),
+                                                            mesh.get())),
+      ".*cannot compute gradient.*");
+
+  e_values = {0., 1., 2., 3.};
+  auto mesh_field_degenerate =
+      std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
+          std::move(e_values), mesh.get(),
+          MeshGradientMode::kOkOrMarkDegenerate);
+  EXPECT_TRUE(mesh_field_degenerate->is_gradient_field_degenerate());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(mesh_field_degenerate->EvaluateGradient(0),
+                              ".*Gradient field is degenerate.*");
 }
 
 /* A double-valued field can produce AutoDiffXd-valued results for
