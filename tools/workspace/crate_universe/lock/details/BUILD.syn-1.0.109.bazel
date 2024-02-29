@@ -149,6 +149,6 @@ cargo_build_script(
 
 alias(
     name = "build_script_build",
-    actual = "syn_build_script",
+    actual = ":syn_build_script",
     tags = ["manual"],
 )

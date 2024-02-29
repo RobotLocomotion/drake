@@ -19,7 +19,7 @@ settings for rules to later use.
 """
 
 _ENABLE_PYSTAR_ENVVAR_NAME = "RULES_PYTHON_ENABLE_PYSTAR"
-_ENABLE_PYSTAR_DEFAULT = "0"
+_ENABLE_PYSTAR_DEFAULT = "1"
 
 _CONFIG_TEMPLATE = """\
 config = struct(
