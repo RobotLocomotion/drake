@@ -1318,6 +1318,17 @@ class MultibodyTree {
   void CalcReflectedInertia(const systems::Context<T>& context,
       VectorX<T>* reflected_inertia) const;
 
+  // Computes the joint damping for each velocity index.
+  // @param[in] context
+  //  The context storing the state of the model.
+  // @param[out] joint_damping
+  //  For each degree of freedom, joint_damping[i] contains the viscous damping
+  //  coefficient for the i-th degree of freedom.
+  // @throws std::exception if joint_damping is nullptr or if its size is not
+  // num_velocities().
+  void CalcJointDamping(const systems::Context<T>& context,
+                        VectorX<T>* joint_damping) const;
+
   // Computes the composite body inertia Mc_B_W(q) for each body B in the
   // model about its frame origin Bo and expressed in the world frame W.
   // The composite body inertia is the effective mass properties B would have
@@ -2702,6 +2713,14 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalReflectedInertiaCache(context);
+  }
+
+  // Evaluates the cache entry stored in context with the joint damping for each
+  // degree of freedom in the system. These will be updated as needed.
+  const VectorX<T>& EvalJointDampingCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalJointDampingCache(context);
   }
 
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(

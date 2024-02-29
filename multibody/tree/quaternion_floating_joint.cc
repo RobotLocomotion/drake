@@ -21,7 +21,7 @@ QuaternionFloatingJoint<T>::TemplatedDoCloneToScalar(
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<QuaternionFloatingJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
-      this->angular_damping(), this->translational_damping());
+      this->default_angular_damping(), this->default_translational_damping());
   joint_clone->set_position_limits(this->position_lower_limits(),
                                    this->position_upper_limits());
   joint_clone->set_velocity_limits(this->velocity_lower_limits(),
@@ -85,8 +85,10 @@ void QuaternionFloatingJoint<T>::DoAddInDamping(
           &forces->mutable_generalized_forces());
   const Vector3<T>& w_FM = get_angular_velocity(context);
   const Vector3<T>& v_FM = get_translational_velocity(context);
-  t_BMo_F.template head<3>() -= angular_damping() * w_FM;
-  t_BMo_F.template tail<3>() -= translational_damping() * v_FM;
+  const T& angular_damping = this->GetDampingVector(context)[0];
+  const T& translational_damping = this->GetDampingVector(context)[3];
+  t_BMo_F.template head<3>() -= angular_damping * w_FM;
+  t_BMo_F.template tail<3>() -= translational_damping * v_FM;
 }
 
 }  // namespace multibody

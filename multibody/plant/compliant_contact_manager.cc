@@ -118,7 +118,7 @@ VectorX<T> CompliantContactManager<T>::CalcEffectiveDamping(
     const systems::Context<T>& context) const {
   const VectorX<T> diagonal_inertia =
       plant().EvalReflectedInertiaCache(context) +
-      joint_damping_ * plant().time_step();
+      plant().EvalJointDampingCache(context) * plant().time_step();
   return diagonal_inertia;
 }
 
@@ -248,15 +248,6 @@ CompliantContactManager<T>::CloneToSymbolic() const {
 
 template <typename T>
 void CompliantContactManager<T>::DoExtractModelInfo() {
-  // Collect joint damping coefficients into a vector.
-  joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
-  for (JointIndex j(0); j < plant().num_joints(); ++j) {
-    const Joint<T>& joint = plant().get_joint(j);
-    const int velocity_start = joint.velocity_start();
-    const int nv = joint.num_velocities();
-    joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
-  }
-
   // Solver drivers are only created when ExtractModelInfo() is called and
   // therefore we expect these pointers to equal nullptr. The only reason for
   // one of them to be non-nullptr would be a bug leading to this method being

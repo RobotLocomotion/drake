@@ -121,6 +121,17 @@ TEST_F(QuaternionFloatingJointTest, GetJointLimits) {
 }
 
 TEST_F(QuaternionFloatingJointTest, Damping) {
+  EXPECT_EQ(joint_->default_angular_damping(), kAngularDamping);
+  EXPECT_EQ(joint_->default_translational_damping(), kTranslationalDamping);
+  EXPECT_EQ(
+      joint_->default_damping_vector(),
+      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
+       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
+          .finished());
+
+  // Ensure the deprecated versions are correct until removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(joint_->angular_damping(), kAngularDamping);
   EXPECT_EQ(joint_->translational_damping(), kTranslationalDamping);
   EXPECT_EQ(
@@ -128,6 +139,7 @@ TEST_F(QuaternionFloatingJointTest, Damping) {
       (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
        kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
           .finished());
+#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.
@@ -171,6 +183,21 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   joint_->Lock(context_.get());
   EXPECT_EQ(joint_->get_angular_velocity(*context_), Vector3d::Zero());
   EXPECT_EQ(joint_->get_translational_velocity(*context_), Vector3d::Zero());
+
+  // Damping.
+  const Vector6d damping =
+      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
+       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
+          .finished();
+  const Vector6d different_damping =
+      (Vector6d() << 2.3, 2.3, 2.3, 4.5, 4.5, 4.5).finished();
+  EXPECT_EQ(joint_->GetDampingVector(*context_), damping);
+  EXPECT_NO_THROW(joint_->SetDampingVector(context_.get(), different_damping));
+  EXPECT_EQ(joint_->GetDampingVector(*context_), different_damping);
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint_->SetDampingVector(context_.get(), Vector6d::Constant(-1)),
+               std::exception);
 }
 
 // Tests API to apply torques to joint.
@@ -182,6 +209,31 @@ TEST_F(QuaternionFloatingJointTest, AddInOneForce) {
   // not make physical sense, this method should throw.
   EXPECT_THROW(joint_->AddInOneForce(*context_, 0, some_value, &forces),
                std::exception);
+}
+
+// Tests API to add in damping forces.
+TEST_F(QuaternionFloatingJointTest, AddInDampingForces) {
+  const Vector3d angular_velocity(0.1, 0.2, 0.3);
+  const Vector3d translational_veloctiy(0.4, 0.5, 0.6);
+  const double angular_damping = 3 * kAngularDamping;
+  const double translational_damping = 4 * kTranslationalDamping;
+
+  const Vector6d damping_forces_expected =
+      (Vector6d() << -angular_damping * angular_velocity,
+       -translational_damping * translational_veloctiy)
+          .finished();
+
+  joint_->set_angular_velocity(context_.get(), angular_velocity);
+  joint_->set_translational_velocity(context_.get(), translational_veloctiy);
+  joint_->SetDampingVector(
+      context_.get(),
+      (Vector6d() << angular_damping, angular_damping, angular_damping,
+       translational_damping, translational_damping, translational_damping)
+          .finished());
+
+  MultibodyForces<double> forces(tree());
+  joint_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_forces_expected);
 }
 
 TEST_F(QuaternionFloatingJointTest, Clone) {
@@ -205,9 +257,10 @@ TEST_F(QuaternionFloatingJointTest, Clone) {
             joint_->acceleration_lower_limits());
   EXPECT_EQ(joint_clone.acceleration_upper_limits(),
             joint_->acceleration_upper_limits());
-  EXPECT_EQ(joint_clone.angular_damping(), joint_->angular_damping());
-  EXPECT_EQ(joint_clone.translational_damping(),
-            joint_->translational_damping());
+  EXPECT_EQ(joint_clone.default_angular_damping(),
+            joint_->default_angular_damping());
+  EXPECT_EQ(joint_clone.default_translational_damping(),
+            joint_->default_translational_damping());
   EXPECT_EQ(joint_clone.get_default_quaternion().coeffs(),
             joint_->get_default_quaternion().coeffs());
   EXPECT_EQ(joint_clone.get_default_position(), joint_->get_default_position());
@@ -224,14 +277,14 @@ TEST_F(QuaternionFloatingJointTest, SetVelocityAndAccelerationLimits) {
   // Does not match num_velocities().
   EXPECT_THROW(mutable_joint_->set_velocity_limits(VectorX<double>(3),
                                                    VectorX<double>()),
-               std::runtime_error);
+               std::exception);
   EXPECT_THROW(mutable_joint_->set_velocity_limits(VectorX<double>(),
                                                    VectorX<double>(3)),
-               std::runtime_error);
+               std::exception);
   // Lower limit is larger than upper limit.
   EXPECT_THROW(mutable_joint_->set_velocity_limits(Vector6d::Constant(2),
                                                    Vector6d::Constant(0)),
-               std::runtime_error);
+               std::exception);
 
   // Check for acceleration limits.
   mutable_joint_->set_acceleration_limits(Vector6d::Constant(new_lower),
@@ -241,14 +294,14 @@ TEST_F(QuaternionFloatingJointTest, SetVelocityAndAccelerationLimits) {
   // Does not match num_velocities().
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(VectorX<double>(3),
                                                        VectorX<double>()),
-               std::runtime_error);
+               std::exception);
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(VectorX<double>(),
                                                        VectorX<double>(3)),
-               std::runtime_error);
+               std::exception);
   // Lower limit is larger than upper limit.
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(Vector6d::Constant(2),
                                                        Vector6d::Constant(0)),
-               std::runtime_error);
+               std::exception);
 }
 
 TEST_F(QuaternionFloatingJointTest, CanRotateOrTranslate) {
