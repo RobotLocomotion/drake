@@ -1,4 +1,3 @@
-@drake-jenkins-bot linux-focal-gcc-wheel-experimental-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-debug please
