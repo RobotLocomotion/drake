@@ -6,8 +6,8 @@ def xmlrunner_py_repository(
     github_archive(
         name = name,
         repository = "xmlrunner/unittest-xml-reporting",
-        commit = "3.0.2",
-        sha256 = "dbe165386952ec5373d4db5b4ac0644b60b734f4b02b9e575b1d0dc873616ba4",  # noqa
+        commit = "3.2.0",
+        sha256 = "be4607e18c4f3bb103f743fc1d98acec095d2cc570d69a6fd5db1c1a4decc86c",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
