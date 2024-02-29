@@ -27,7 +27,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -53,7 +53,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -102,7 +102,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -113,7 +113,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -164,7 +164,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -175,7 +175,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -186,7 +186,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -235,7 +235,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -246,7 +246,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -295,7 +295,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -306,7 +306,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -317,7 +317,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -366,7 +366,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -377,7 +377,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.gltf</uri>
           </mesh>
         </geometry>
         <material>
@@ -426,7 +426,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.gltf</uri>
           </mesh>
         </geometry>
         <material>

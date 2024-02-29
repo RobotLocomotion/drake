@@ -30,7 +30,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -81,7 +81,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -128,14 +128,14 @@
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.gltf"/>
         </geometry>
         <material name="Orange"/>
       </visual>
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -182,7 +182,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -243,14 +243,14 @@
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.gltf"/>
         </geometry>
         <material name="Orange"/>
       </visual>
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -297,7 +297,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
@@ -358,14 +358,14 @@
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>
       <visual>
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.gltf"/>
         </geometry>
         <material name="Orange"/>
       </visual>
@@ -414,7 +414,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.obj"/>
+          <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.gltf"/>
         </geometry>
         <material name="Grey"/>
       </visual>

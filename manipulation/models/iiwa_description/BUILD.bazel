@@ -35,27 +35,27 @@ filegroup(
         "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_6.obj",
         "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_7.obj",
         "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/band.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/kuka.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_0.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_1.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_grey.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_orange.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_3.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_grey.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_orange.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_5.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_grey.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_orange.obj",  # noqa
-        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_7.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_0.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_1.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_2.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_3.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_4.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_5.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_6.obj",
-        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_7.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/band.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/kuka.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_0.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_1.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_grey.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_orange.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_3.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_grey.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_orange.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_5.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_grey.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_orange.gltf",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_7.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_0.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_1.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_2.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_3.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_4.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_5.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_6.gltf",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_7.gltf",
     ],
 )
 
