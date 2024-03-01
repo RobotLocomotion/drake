@@ -8,6 +8,7 @@ load(
     "output_path",
 )
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
+load("@rules_license//rules:providers.bzl", "LicenseInfo")
 
 InstallInfo = provider()
 
@@ -390,6 +391,41 @@ def _java_launcher_code(action):
 #END internal helpers
 #==============================================================================
 #BEGIN rules
+
+def install_license(*, doc_dest, licenses, tags = None, **kwargs):
+    """Installs the license file texts for the `licenses` that have been
+    declared using rules_license.
+    """
+    _install_license_rule(
+        doc_dest = doc_dest,
+        licenses = licenses,
+        tags = (tags or []) + ["install"],
+        **kwargs
+    )
+
+def _install_license_impl(ctx):
+    install_actions = []
+    for license in ctx.attr.licenses:
+        file = license[LicenseInfo].license_text
+        install_actions.append(struct(
+            src = file,
+            dst = ctx.attr.doc_dest + "/" + file.basename,
+        ))
+    return [
+        InstallInfo(
+            install_actions = install_actions,
+            rename = {},
+            installed_files = {},
+        ),
+    ]
+
+_install_license_rule = rule(
+    implementation = _install_license_impl,
+    attrs = {
+        "doc_dest": attr.string(mandatory = True),
+        "licenses": attr.label_list(providers = [LicenseInfo]),
+    },
+)
 
 #------------------------------------------------------------------------------
 # Generate information to install "stuff". "Stuff" can be library or binary
