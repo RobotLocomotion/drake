@@ -18,6 +18,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -69,7 +70,7 @@ class ProximityEngineTester {
 
   template <typename T>
   static bool IsFclConvexType(const ProximityEngine<T>& engine,
-                                 GeometryId id) {
+                              GeometryId id) {
     return engine.IsFclConvexType(id);
   }
 
@@ -139,6 +140,10 @@ InternalGeometry MakeGeometry(const Shape& shape,
   InternalGeometry geometry(source_id, shape.Clone(), frame_id, id,
                             std::string("unused"), X_FG);
   geometry.SetRole(props);
+  if (engine.access().NeedsConvexHull(geometry)) {
+    geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(geometry.shape())));
+  }
   return geometry;
 }
 
@@ -512,8 +517,8 @@ void EvaluateMeshShapeAsConvex(const MeshType& mesh) {
    penetration, we'll lose a great deal of precision in the answer. Empirically,
    for this test case, even sqrt(eps) was insufficient. This value appears to
    be sufficient. In some cases, an eps as small as 2e-7 was sufficient. But
-   for the most inaccurate test (slightly seaprated with large sphere), the
-   error was as larage as 2e-5. */
+   for the most inaccurate test (slightly separated with large sphere), the
+   error was as large as 2e-5. */
   constexpr double kEps = 2e-5;
 
   for (double radius : {0.25, 0.75}) {
@@ -4884,7 +4889,7 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
   EXPECT_EQ(contact_surface.id_B(), rigid_id);
 }
 
-GTEST_TEST(ProximityEngineTests, ConvexHull) {
+GTEST_TEST(ProximityEngineTests, NeedsConvexHull) {
   ProximityEngine<double> engine;
 
   const SourceId s_id = SourceId::get_new_id();
@@ -4917,6 +4922,89 @@ GTEST_TEST(ProximityEngineTests, ConvexHull) {
       make_unique<Mesh>(
           FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), 1),
       f_id, g_id, "n", {}, 1.0)));
+}
+
+// Confirm that the convex hull is used for both Convex and Mesh and produces
+// expected answers.
+//
+// As we no longer simply trust a `Convex` shape is convex by definition (we
+// explicitly compute the convex hull), we'll specify a Convex from a file
+// we know to not be convex. We should still get all the right answers.
+// We'll repeat the tests with Mesh as well.
+//
+// TODO(SeanCurtis-TRI): It would be good to confirm that in addition to getting
+// good answers to a penetration query, we'd also be able to introspect the
+// fcl::Convexd representation -- they should all have vertices and faces.
+GTEST_TEST(ProximityEngineTests, ConvexHullRepresentation) {
+  ProximityEngine<double> engine;
+
+  // This mesh has 8 small wedges jammed into the corners of a cube 2-units on
+  // the side, centered on the origin. It is decidedly non-convex.
+  // In collision queries, it should respond like a solid cube.
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/test/cube_corners.obj");
+
+  // We'll move the sphere around to query distances.
+  // A *tiny* radius marks the difference between contact and not.
+  constexpr double r = 1e-14;
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(MakeGeometry(Sphere(r), {}, sphere_id), {});
+
+  const RigidTransformd X_WM(Vector3d(10, 0, 0));
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  engine.AddAnchoredGeometry(MakeGeometry(Mesh(obj_path, 1), X_WM, mesh_id),
+                             X_WM);
+
+  const RigidTransformd X_WC(Vector3d(-10, 0, 0));
+  const GeometryId convex_id = GeometryId::get_new_id();
+  engine.AddAnchoredGeometry(MakeGeometry(Convex(obj_path, 1), X_WC, convex_id),
+                             X_WC);
+
+  std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {sphere_id, {}},
+      {mesh_id, X_WM},
+      {convex_id, X_WC}};
+
+  struct Query {
+    std::string_view description;
+    Vector3d p_GQ;
+    bool colliding;
+  };
+
+  const vector<Query> queries{{.description = "Outside corner",
+                               .p_GQ = Vector3d{1 + r, 1 + r, 1 + r},
+                               .colliding = false},
+                              {.description = "Outside center face",
+                               .p_GQ = Vector3d(0, 0, 1 + 1.05 * r),
+                               .colliding = false},
+                              {.description = "Inside center face",
+                               .p_GQ = Vector3d(0, 0, 1 + 0.7 * r),
+                               .colliding = true}};
+
+  auto evaluate_query = [sphere_id, &X_WGs, &engine](
+      const Query& query, const RigidTransformd& X_WG, GeometryId geo_id) {
+    const Vector3d p_WQ = X_WG * query.p_GQ;
+    X_WGs[sphere_id] = RigidTransform(p_WQ);
+    engine.UpdateWorldPoses(X_WGs);
+    const auto results = engine.ComputePointPairPenetration(X_WGs);
+    EXPECT_EQ(results.size() == 1, query.colliding);
+    if (query.colliding) {
+      // We exploit insider knowledge to know the sphere is always A.
+      EXPECT_EQ(results[0].id_A, sphere_id);
+      EXPECT_EQ(results[0].id_B, geo_id);
+    }
+  };
+
+  for (const auto& query : queries) {
+    {
+      SCOPED_TRACE(fmt::format("Mesh - {}", query.description));
+      evaluate_query(query, X_WM, mesh_id);
+    }
+    {
+      SCOPED_TRACE(fmt::format("Convex - {}", query.description));
+      evaluate_query(query, X_WC, convex_id);
+    }
+  }
 }
 
 }  // namespace

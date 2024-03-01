@@ -196,18 +196,16 @@ class Convex final : public Shape {
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
 
-   * We only support an .obj file with only one polyhedron.
-   * We assume that the polyhedron is convex.
+   * The mesh file referenced can be an .obj or a volume mesh in a .vtk.
+   * The mesh need not be convex.
+      * In a proximity role, the convex hull will be computed and used.
+      * For visual (illustration or perception) roles, Convex is equivalent
+        to Mesh.
 
    @param filename     The file name; if it is not absolute, it will be
                        interpreted relative to the current working directory.
    @param scale        An optional scale to coordinates.
 
-   @throws std::exception       if the .obj file doesn't define a single object.
-                                This can happen if it is empty, if there are
-                                multiple object-name statements (e.g.,
-                                "o object_name"), or if there are faces defined
-                                outside a single object-name statement.
    @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
                                 considered valid. We want to preclude scales
                                 near zero but recognise that scale is a
@@ -349,8 +347,8 @@ class HalfSpace final : public Shape {
 // TODO(DamrongGuoy): Update documentation when mesh is fully supported (i.e.,
 // doesn't require equivocation here).
 /** Definition of a general (possibly non-convex) triangular surface mesh.
- Meshes can be used for illustration and perception roles, but have limited
- proximity support. See the documentation of QueryObject's proximity queries to
+ Meshes can be used for all three roles but currently get special treatment with
+ a proximity role. See the documentation of QueryObject's proximity queries to
  see how meshes are used in each type of proximity query.
 
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon

@@ -801,6 +801,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:hydroelastic_callback",
+        "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/proximity:make_sphere_mesh",
         "//math",
         "@fcl_internal//:fcl",

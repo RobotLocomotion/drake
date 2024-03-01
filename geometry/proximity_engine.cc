@@ -168,6 +168,7 @@ struct ReifyData {
   const GeometryId id;
   const ProximityProperties& properties;
   const RigidTransformd X_WG;
+  const PolygonSurfaceMesh<double>* convex_hull{nullptr};
 };
 
 // Helper functions to facilitate exercising FCL's broadphase code. FCL has
@@ -464,37 +465,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // obj file or a tetrahedral mesh in vtk file, from which we extract its
   // surface.
   void ImplementGeometry(const Convex& convex, void* user_data) override {
-    shared_ptr<const std::vector<Vector3d>> shared_verts;
-    shared_ptr<std::vector<int>> shared_faces;
-    int num_faces{0};
-    if (convex.extension() == ".obj") {
-      // Don't bother triangulating; Convex supports polygons.
-      std::tie(shared_verts, shared_faces, num_faces) = ReadObjFile(
-          convex.filename(), convex.scale(), false /* triangulate */);
-    } else if (convex.extension() == ".vtk") {
-      auto surface_mesh =
-          ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(convex.filename()));
-      shared_verts =
-          make_shared<const std::vector<Vector3d>>(surface_mesh.vertices());
-      shared_faces = make_shared<std::vector<int>>();
-    } else {
-      throw std::runtime_error(fmt::format(
-          "ProximityEngine: Convex shapes only support .obj or .vtk files;"
-          " got ({}) instead.",
-          convex.filename()));
-    }
-    // Create fcl::Convex.
-    auto fcl_convex =
-        make_shared<fcl::Convexd>(shared_verts, num_faces, shared_faces);
-
-    TakeShapeOwnership(fcl_convex, user_data);
-    ProcessHydroelastic(convex, user_data);
-    ProcessGeometriesForDeformableContact(convex, user_data);
-
-    // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
-    // to own vertices and face by a map from filename.  This way we won't have
-    // to read the same file again and again when we create multiple Convex
-    // objects from the same file.
+    ImplementConvexHull(convex, user_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
@@ -525,62 +496,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    const HydroelasticType type = data.properties.GetPropertyOrDefault(
-        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
-
-    // We process hydroelastic geometry first, so we have access to mesh
-    // vertices that we will pass to FCL later without reading the mesh
-    // file again.
-    ProcessHydroelastic(mesh, user_data);
-    shared_ptr<const std::vector<Vector3d>> shared_verts;
-    if (type == HydroelasticType::kSoft) {
-      shared_verts = make_shared<const std::vector<Vector3d>>(
-          ConvertVolumeToSurfaceMesh(
-              hydroelastic_geometries_.soft_geometry(data.id).mesh())
-              .vertices());
-    } else if (type == HydroelasticType::kRigid) {
-      shared_verts = make_shared<const std::vector<Vector3d>>(
-          hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
-    } else {
-      if (mesh.extension() == ".vtk") {
-        // TODO(rpoyner-tri): could take convex hull here.
-        shared_verts = make_shared<const std::vector<Vector3d>>(
-            ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(mesh.filename()))
-                .vertices());
-      } else if (mesh.extension() == ".obj") {
-        // Don't bother triangulating; we're ignoring the faces.
-        std::tie(shared_verts, std::ignore, std::ignore) =
-            ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
-      } else {
-        // TODO(SeanCurtis-TRI) Add a troubleshooting entry to give more
-        //  helpful advice.
-        throw std::runtime_error(fmt::format(
-            "ProximityEngine: Mesh shapes for non-hydroelastic "
-            "contact only support .obj or .vtk files; got ({}) instead.",
-            mesh.filename()));
-      }
-    }
-
-    // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
-    // mesh. A minimum condition for "invalid" is that the convex specification
-    // contains vertices that are not referenced by a face. Passing zero faces
-    // will accomplish that. GJK asks Convex for a "supporting vertex" in a
-    // particular direction. "Invalid" Convex instances find that vertex by
-    // doing a linear search through all vertices. "Valid" looking instances
-    // walk around an explicitly defined convex hull. We can't easily create a
-    // valid convex hull, so we create an obviously invalid one to force FCL to
-    // search all vertices as a guarantee for correctness.
-    auto fcl_convex = make_shared<fcl::Convexd>(
-        shared_verts, 0, make_shared<std::vector<int>>());
-    TakeShapeOwnership(fcl_convex, user_data);
-
-    // TODO(DamrongGuoy):  Right now ProcessGeometriesForDeformableContact()
-    //  will call deformable::Geometries::MaybeAddRigidGeometry(), which will
-    //  add the geometry only when its proximity property has
-    //  (kHydroGroup, kRezHint). We should make exception for Mesh since it
-    //  doesn't need resolution hint.
-    ProcessGeometriesForDeformableContact(mesh, user_data);
+    ImplementConvexHull(mesh, user_data);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
@@ -886,7 +802,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(geometry.proximity_properties() != nullptr);
     ReifyData data{.id = geometry.id(),
                    .properties = *geometry.proximity_properties(),
-                   .X_WG = X_WG};
+                   .X_WG = X_WG,
+                   .convex_hull = geometry.convex_hull()};
     geometry.shape().Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
@@ -930,6 +847,40 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_ASSERT(data != nullptr);
     ReifyData& reify_data = *static_cast<ReifyData*>(data);
     reify_data.fcl_object = make_unique<CollisionObjectd>(shape);
+  }
+
+  template <typename MeshType>
+  void ImplementConvexHull(const MeshType& mesh, void* user_data) {
+    if (mesh.extension() != ".obj" && mesh.extension() != ".vtk") {
+      throw std::runtime_error(fmt::format(
+          "ProximityEngine: {} shapes only support .obj or .vtk files;"
+          " got ({}) instead.",
+          mesh.type_name(), mesh.filename()));
+    }
+
+    // Create fcl::Convex. Every Convex shape should already have a convex hull
+    // calculated for it.
+    ReifyData& reify_data = *static_cast<ReifyData*>(user_data);
+    DRAKE_DEMAND(reify_data.convex_hull != nullptr);
+    const PolygonSurfaceMesh<double>& hull = *reify_data.convex_hull;
+    auto shared_verts = make_shared<std::vector<Vector3d>>();
+    for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+      shared_verts->push_back(hull.vertex(vi));
+    }
+    auto shared_faces = make_shared<std::vector<int>>(hull.face_data());
+    auto fcl_convex = make_shared<fcl::Convexd>(
+        std::move(shared_verts), hull.num_elements(), std::move(shared_faces));
+
+    TakeShapeOwnership(fcl_convex, user_data);
+    ProcessHydroelastic(mesh, user_data);
+    ProcessGeometriesForDeformableContact(mesh, user_data);
+
+    // TODO(DamrongGuoy):  Right now ProcessGeometriesForDeformableContact()
+    //  will call deformable::Geometries::MaybeAddRigidGeometry(), which will
+    //  add the geometry only when its proximity property has
+    //  (kHydroGroup, kRezHint). We should make exception for Mesh since it
+    //  doesn't need resolution hint.
+    ProcessGeometriesForDeformableContact(mesh, user_data);
   }
 
   // The BVH of all dynamic geometries; this depends on *all* inputs.
