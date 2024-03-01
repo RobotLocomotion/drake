@@ -93,7 +93,7 @@ class Joint : public MultibodyElement<T> {
   ///   The frame M attached on the child body connected by this joint.
   /// @param[in] damping
   ///   A vector of viscous damping coefficients, of size num_velocities().
-  ///   See damping_vector() for details.
+  ///   See default_damping_vector() for details.
   /// @param[in] pos_lower_limits
   ///   A vector storing the lower limit for each generalized position.
   ///   It must have the same size as `pos_upper_limit`.
@@ -511,9 +511,9 @@ class Joint : public MultibodyElement<T> {
 
   /// @}
 
-  /// Returns all damping coefficients for joints that model viscous damping, of
-  /// size num_velocities(). Joints that do not model damping return a zero
-  /// vector of size num_velocities(). If vj is the vector of generalized
+  /// Returns all default damping coefficients for joints that model viscous
+  /// damping, of size num_velocities(). Joints that do not model damping return
+  /// a zero vector of size num_velocities(). If vj is the vector of generalized
   /// velocities for this joint, of size num_velocities(), viscous damping
   /// models a generalized force at the joint of the form tau = -diag(dj)⋅vj,
   /// with dj the vector returned by this function. The units of the
@@ -521,12 +521,21 @@ class Joint : public MultibodyElement<T> {
   /// revolute joint where vj is an angular velocity with units of rad/s and tau
   /// having units of N⋅m, the coefficient of viscous damping has units of
   /// N⋅m⋅s. Refer to each joint's documentation for further details.
-  const VectorX<double>& damping_vector() const {
-    return damping_;
+  const VectorX<double>& default_damping_vector() const { return damping_; }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.")
+  const VectorX<double>& damping_vector() const { return damping_; }
+
+  /// Returns the Context dependent damping coefficients stored as parameters in
+  /// `context`. Refer to default_damping_vector() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  const VectorX<T>& GetDampingVector(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(damping_parameter_index_).value();
   }
 
   /// Sets the default value of the viscous damping coefficients for this joint.
-  /// Refer to damping_vector() for details.
+  /// Refer to default_damping_vector() for details.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
   /// @pre the MultibodyPlant must not be finalized.
@@ -535,6 +544,28 @@ class Joint : public MultibodyElement<T> {
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     damping_ = damping;
+  }
+
+  /// Sets the value of the viscous damping coefficients for this joint, stored
+  /// as parameters in `context`. Refer to default_damping_vector() for details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @param[in] damping The vector of damping values.
+  /// @throws std::exception if damping.size() != num_velocities().
+  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @note Some multi-dof joints may have specific semantics for their damping
+  /// vector that are not enforced here. For instance, QuaternionFloatingJoint
+  /// assumes identical damping values for all 3 angular velocity components and
+  /// identical damping values for all 3 translational velocity components. It
+  /// will thus use `angular_damping = damping[0]` and `translational_damping =
+  /// damping[3]`. Refer to the particular subclass for more semantic
+  /// information.
+  void SetDampingVector(systems::Context<T>* context,
+                        const VectorX<T>& damping) const {
+    DRAKE_THROW_UNLESS(damping.size() == num_velocities());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    context->get_mutable_numeric_parameter(damping_parameter_index_)
+        .set_value(damping);
   }
 
   // Hide the following section from Doxygen.
@@ -795,6 +826,22 @@ class Joint : public MultibodyElement<T> {
     implementation_ = std::move(implementation);
   }
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    // Declare a parameter for damping.
+    damping_parameter_index_ = this->DeclareNumericParameter(
+        tree_system, systems::BasicVector<T>(damping_.size()));
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    // Set default damping.
+    systems::BasicVector<T>& damping_parameter =
+        parameters->get_mutable_numeric_parameter(damping_parameter_index_);
+    damping_parameter.set_value(VectorX<T>(damping_));
+  }
+
   std::string name_;
   const Frame<T>& frame_on_parent_;
   const Frame<T>& frame_on_child_;
@@ -821,6 +868,9 @@ class Joint : public MultibodyElement<T> {
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;
+
+  // System parameter indices.
+  systems::NumericParameterIndex damping_parameter_index_;
 };
 
 }  // namespace multibody

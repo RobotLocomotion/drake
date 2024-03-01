@@ -117,12 +117,22 @@ TEST_F(PrismaticJointTest, GetJointLimits) {
 TEST_F(PrismaticJointTest, Damping) {
   std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
   auto& joint = model->GetMutableJointByName<PrismaticJoint>("Joint1");
-  EXPECT_EQ(joint.damping(), kDamping);
-  EXPECT_EQ(joint.damping_vector(), Vector1d(kDamping));
+  EXPECT_EQ(joint.default_damping(), kDamping);
+  EXPECT_EQ(joint.default_damping_vector(), Vector1d(kDamping));
   const double new_damping = 2.0 * kDamping;
   joint.set_default_damping(new_damping);
+  EXPECT_EQ(joint.default_damping(), new_damping);
+  EXPECT_EQ(joint.default_damping_vector(), Vector1d(new_damping));
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint.set_default_damping(-1), std::exception);
+
+  // Ensure the deprecated versions are correct until removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(joint.damping(), new_damping);
   EXPECT_EQ(joint.damping_vector(), Vector1d(new_damping));
+#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.
@@ -139,6 +149,24 @@ TEST_F(PrismaticJointTest, ContextDependentAccess) {
   // Joint locking.
   joint1_->Lock(context_.get());
   EXPECT_EQ(joint1_->get_translation_rate(*context_), 0.);
+
+  // Damping.
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  EXPECT_NO_THROW(
+      joint1_->SetDampingVector(context_.get(), Vector1d(some_value)));
+  EXPECT_EQ(joint1_->GetDamping(*context_), some_value);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(some_value));
+
+  EXPECT_NO_THROW(joint1_->SetDamping(context_.get(), kDamping));
+  EXPECT_EQ(joint1_->GetDamping(*context_), kDamping);
+  EXPECT_EQ(joint1_->GetDampingVector(*context_), Vector1d(kDamping));
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(joint1_->SetDamping(context_.get(), -1), std::exception);
+  EXPECT_THROW(joint1_->SetDampingVector(context_.get(), Vector1d(-1)),
+               std::exception);
 }
 
 // Tests API to apply torques to a joint.
@@ -164,6 +192,21 @@ TEST_F(PrismaticJointTest, AddInForces) {
     EXPECT_TRUE(F1.IsApprox(*F2++, kEpsilon));
 }
 
+// Tests API to add in damping forces.
+TEST_F(PrismaticJointTest, AddInDampingForces) {
+  const double translational_velocity = 0.1;
+  const double damping = 0.2 * kDamping;
+
+  const Vector1d damping_force_expected(-damping * translational_velocity);
+
+  joint1_->set_translation_rate(context_.get(), translational_velocity);
+  joint1_->SetDamping(context_.get(), damping);
+
+  MultibodyForces<double> forces(tree());
+  joint1_->AddInDamping(*context_, &forces);
+  EXPECT_EQ(forces.generalized_forces(), damping_force_expected);
+}
+
 TEST_F(PrismaticJointTest, Clone) {
   auto model_clone = tree().CloneToScalar<AutoDiffXd>();
   const auto& joint1_clone = model_clone->get_variant(*joint1_);
@@ -186,7 +229,7 @@ TEST_F(PrismaticJointTest, Clone) {
             joint1_->acceleration_lower_limits());
   EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
             joint1_->acceleration_upper_limits());
-  EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
+  EXPECT_EQ(joint1_clone.default_damping(), joint1_->default_damping());
   EXPECT_EQ(joint1_clone.get_default_translation(),
             joint1_->get_default_translation());
 }

@@ -63,7 +63,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] damping
   ///   Viscous damping coefficient, N⋅m⋅s/rad for
   ///   rotation, used to model losses within the joint. See documentation of
-  ///   damping() for details on modelling of the damping torque.
+  ///   default_damping() for details on modelling of the damping torque.
   /// @throws std::exception if damping is negative.
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
              const Frame<T>& frame_on_child, double screw_pitch,
@@ -99,7 +99,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] damping
   ///   Viscous damping coefficient, N⋅m⋅s/rad for
   ///   rotation, used to model losses within the joint. See documentation of
-  ///   damping() for details on modelling of the damping torque.
+  ///   default_damping() for details on modelling of the damping torque.
   /// @throws std::exception if the L2 norm of `axis` is less than the square
   /// root of machine epsilon.
   /// @throws std::exception if damping is negative.
@@ -121,12 +121,15 @@ class ScrewJoint final : public Joint<T> {
   /// occurring over a one full revolution.
   double screw_pitch() const { return screw_pitch_; }
 
-  /// Returns `this` joint's damping constant N⋅m⋅s for the rotational degree.
-  /// The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω` i.e.
+  /// Returns `this` joint's default damping constant N⋅m⋅s for the rotational
+  /// degree. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω` i.e.
   ///  opposing motion, with ω the angular rate for `this` joint
   ///  (see get_angular_velocity()) and τ the torque on
   /// child body B expressed in frame F as t_B_F = τ⋅Fâ_F.
-  double damping() const { return this->damping_vector()[0]; }
+  double default_damping() const { return this->default_damping_vector()[0]; }
+
+  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
+  double damping() const { return this->default_damping_vector()[0]; }
 
   /// @name Context-dependent value access
   /// @{
@@ -220,6 +223,25 @@ class ScrewJoint final : public Joint<T> {
     return *this;
   }
 
+  /// Returns the Context dependent damping coefficient stored as a parameter in
+  /// `context`. Refer to default_damping() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  const T& GetDamping(const Context<T>& context) const {
+    return this->GetDampingVector(context)[0];
+  }
+
+  /// Sets the value of the viscous damping coefficient for this joint, stored
+  /// as a parameter in `context`. Refer to default_damping() for details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @param[in] damping The damping value.
+  /// @throws std::exception if `damping` is negative.
+  void SetDamping(Context<T>* context, const T& damping) const {
+    DRAKE_THROW_UNLESS(damping >= 0);
+    this->SetDampingVector(context, Vector1<T>(damping));
+  }
+
   /// @}
 
   /// Gets the default position for `this` joint.
@@ -285,14 +307,15 @@ class ScrewJoint final : public Joint<T> {
   /*  Joint<T> override called through public NVI, Joint::AddInDamping().
     Therefore arguments were already checked to be valid.
     This method adds into `forces` a dissipative force according to the
-    viscous law `f = -d⋅v`, with d the damping coefficient (see damping()). */
+    viscous law `f = -d⋅v`, with d the damping coefficient (see
+    default_damping()). */
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> tau =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const T& v_angular = get_angular_velocity(context);
-    tau[0] -= damping() * v_angular;
+    tau[0] -= this->GetDamping(context) * v_angular;
   }
 
   int do_get_velocity_start() const final {

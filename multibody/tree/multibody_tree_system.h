@@ -150,6 +150,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VectorX<T>>(context);
   }
 
+  /* Returns a reference to the up-to-date cache of per-dof joint damping
+  in the given Context, recalculating it first if necessary. */
+  const VectorX<T>& EvalJointDampingCache(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return this->get_cache_entry(cache_indexes_.joint_damping)
+        .template Eval<VectorX<T>>(context);
+  }
+
   /* Returns a reference to the up-to-date cache of composite-body inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
@@ -394,6 +403,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcReflectedInertia(context, reflected_inertia);
   }
 
+  void CalcJointDamping(const systems::Context<T>& context,
+                        VectorX<T>* joint_damping) const {
+    internal_tree().CalcJointDamping(context, joint_damping);
+  }
+
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* composite_body_inertias) const {
@@ -510,6 +524,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
     systems::CacheIndex reflected_inertia;
+    systems::CacheIndex joint_damping;
   };
 
   // This is the one real constructor. From the public API, a null tree is

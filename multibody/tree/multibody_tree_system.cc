@@ -229,6 +229,13 @@ void MultibodyTreeSystem<T>::Finalize() {
       &MultibodyTreeSystem<T>::CalcReflectedInertia,
       {this->all_parameters_ticket()}).cache_index();
 
+  // Allocate cache entry for joint damping.
+  cache_indexes_.joint_damping = this->DeclareCacheEntry(
+      std::string("joint damping"),
+      VectorX<T>(internal_tree().num_velocities()),
+      &MultibodyTreeSystem<T>::CalcJointDamping,
+      {this->all_parameters_ticket()}).cache_index();
+
   // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world = this->DeclareCacheEntry(
       std::string("composite body inertia in world (Mc_B_W)"),

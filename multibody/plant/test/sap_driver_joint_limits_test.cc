@@ -152,20 +152,8 @@ class KukaIiwaArmTests : public ::testing::Test {
     const int nv = plant_.num_velocities();
     MatrixXd A(nv, nv);
     plant_.CalcMassMatrix(*context_, &A);
-    // Include term due to the implicit treatment of dissipation.
-    VectorXd damping = VectorXd::Zero(plant_.num_velocities());
-    for (JointIndex joint_index(0); joint_index < plant_.num_joints();
-         ++joint_index) {
-      const Joint<double>& joint = plant_.get_joint(joint_index);
-      if (joint.num_velocities() > 0) {  // skip welds.
-        const VectorXd& joint_damping = joint.damping_vector();
-        // For this model we expect 1 DOF revolute and prismatic joints only.
-        EXPECT_EQ(joint_damping.size(), 1);
-        EXPECT_EQ(joint.num_velocities(), 1);
-        damping(joint.velocity_start()) = joint_damping(0);
-      }
-    }
-    A.diagonal() += plant_.time_step() * damping;
+    A.diagonal() +=
+        plant_.time_step() * plant_.EvalJointDampingCache(*context_);
     return A;
   }
 
@@ -315,22 +303,30 @@ class KukaIiwaArmTests : public ::testing::Test {
         // Arbitrary position within position limits.
         const double ql = revolute_joint.position_lower_limit();
         const double qu = revolute_joint.position_upper_limit();
-        const double w = joint_index / kNumJoints;  // Number in (0,1).
-        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        const double w = 1. * revolute_joint.velocity_start() /
+                         kNumJoints;               // Number in [0,1).
+        const double q = w * ql + (1.0 - w) * qu;  // q in (ql, qu)
         revolute_joint.set_angle(context, q);
         // Arbitrary velocity.
         revolute_joint.set_angular_rate(context, 0.5 * joint_index);
+        // Set damping.
+        revolute_joint.SetDamping(
+            context, kJointDamping(revolute_joint.velocity_start()));
       } else if (joint.type_name() == "prismatic") {
         const PrismaticJoint<double>& prismatic_joint =
             dynamic_cast<const PrismaticJoint<double>&>(joint);
         // Arbitrary position within position limits.
         const double ql = prismatic_joint.position_lower_limit();
         const double qu = prismatic_joint.position_upper_limit();
-        const double w = joint_index / kNumJoints;  // Number in (0,1).
-        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        const double w = 1. * prismatic_joint.velocity_start() /
+                         kNumJoints;               // Number in [0,1).
+        const double q = w * ql + (1.0 - w) * qu;  // q in (ql, qu)
         prismatic_joint.set_translation(context, q);
         // Arbitrary velocity.
         prismatic_joint.set_translation_rate(context, 0.5 * joint_index);
+        // Set damping.
+        prismatic_joint.SetDamping(
+            context, kJointDamping(prismatic_joint.velocity_start()));
       }
     }
   }
@@ -340,6 +336,7 @@ class KukaIiwaArmTests : public ::testing::Test {
   const double kTimeStep{0.015};
   const VectorXd kRotorInertias{VectorXd::LinSpaced(kNumJoints, 0.1, 12.0)};
   const VectorXd kGearRatios{VectorXd::LinSpaced(kNumJoints, 1.5, 100.0)};
+  const VectorXd kJointDamping{VectorXd::LinSpaced(kNumJoints, 0.3, 30)};
   const double kCouplerGearRatio{-1.5};
   const double kCouplerOffset{3.1};
   MultibodyPlant<double> plant_{kTimeStep};
