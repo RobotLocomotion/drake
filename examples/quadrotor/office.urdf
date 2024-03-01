@@ -30,7 +30,6 @@
       <geometry>
         <box size="10 .1 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="wall2">
@@ -51,7 +50,6 @@
       <geometry>
         <box size=".1 8. 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="wall3">
@@ -72,7 +70,6 @@
       <geometry>
         <box size="10 .1 1."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="wall4">
@@ -93,7 +90,6 @@
       <geometry>
         <box size=".1 8. 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="internalWall">
@@ -114,7 +110,6 @@
       <geometry>
         <box size="7.5 .1 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="tableLegUL">
@@ -135,7 +130,6 @@
       <geometry>
         <box size=".1 .1 1."/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="wall23">
@@ -157,7 +151,6 @@
       <geometry>
         <box size="6.5 .1 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="wall34">
@@ -179,7 +172,6 @@
       <geometry>
         <box size="1.75 .1 2."/>
       </geometry>
-      <material name="Brown"/>
     </collision>
   </link>
   <link name="tableLegUR">
@@ -200,7 +192,6 @@
       <geometry>
         <box size=".1 .1 1."/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="tableLegLR">
@@ -221,7 +212,6 @@
       <geometry>
         <box size=".1 .1 1."/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="tableLegLL">
@@ -242,7 +232,6 @@
       <geometry>
         <box size=".1 .1 1."/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="TableTop">
@@ -263,7 +252,6 @@
       <geometry>
         <box size="2.1 2.1 .1"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <link name="cabinet">
@@ -284,7 +272,6 @@
       <geometry>
         <box size="2.2 1. 1.8"/>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <link name="drawer1">
@@ -305,7 +292,6 @@
       <geometry>
         <box size="2. 1. .33"/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="drawer2">
@@ -326,7 +312,6 @@
       <geometry>
         <box size="2. 1. .33"/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <link name="drawer3">
@@ -347,7 +332,6 @@
       <geometry>
         <box size="2. 1. .33"/>
       </geometry>
-      <material name="White"/>
     </collision>
   </link>
   <joint name="joint1" type="fixed">
