@@ -147,14 +147,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -320,14 +320,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf"/>
       </geometry>
       <material name="Black"/>
     </visual>
