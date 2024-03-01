@@ -1142,12 +1142,16 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
-  // x_u[0] >= sqrt(x_u[1] ** 2 + x_v[0] ** 2 + x_v[1] ** 2 + 1)
   Eigen::MatrixXd A(5, 4);
-  A.topLeftCorner(4, 4) = Eigen::MatrixXd::Identity(4, 4);
-  A.bottomLeftCorner(1, 4).setZero();
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       3, 0, 1, 0,
+       0, 3, 2, 1,
+       0, 0, 0, 0;
+  // clang-format on
   Eigen::VectorXd b(5);
-  b << 0.0, 0.0, 0.0, 0.0, 1.0;
+  b << 1, 0, 2, 0, 1;
 
   auto constraint = std::make_shared<solvers::LorentzConeConstraint>(A, b);
   e_on_->AddConstraint(
@@ -1160,19 +1164,23 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
 
   Eigen::VectorXd res(4);
   res << source_->GetSolution(result), target_->GetSolution(result);
-  const float kTol = 1e-6;
-  EXPECT_GE(res[0] + kTol, std::pow(res[1], 2) + std::pow(res[2], 2) +
-                               std::pow(res[3], 2) + 1.0);
-  EXPECT_GE(res[0], 0);
+  auto z = A * res + b;
+  EXPECT_GE(z[0], std::sqrt(std::pow(z[1], 2) + std::pow(z[2], 2) +
+                            std::pow(z[3], 2) + std::pow(z[4], 2)));
+  EXPECT_GE(z[0], 0);
 }
 
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
-  // x_u[0] * x_u[1] >= x_v[0] ** 2 + x_v[1] ** 2 + 1
   Eigen::MatrixXd A(5, 4);
-  A.topLeftCorner(4, 4) = Eigen::MatrixXd::Identity(4, 4);
-  A.bottomLeftCorner(1, 4).setZero();
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       3, 0, 1, 0,
+       0, 3, 2, 1,
+       0, 0, 0, 0;
+  // clang-format on
   Eigen::VectorXd b(5);
-  b << 0.0, 0.0, 0.0, 0.0, 1.0;
+  b << 1, 0, 2, 0, 1;
 
   auto constraint =
       std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
@@ -1186,11 +1194,11 @@ TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
 
   Eigen::VectorXd res(4);
   res << source_->GetSolution(result), target_->GetSolution(result);
-  const float kTol = 1e-6;
-  EXPECT_GE(res[0] * res[1] + kTol,
-            std::pow(res[2], 2) + std::pow(res[3], 2) + 1.0);
-  EXPECT_GE(res[0], 0);
-  EXPECT_GE(res[1], 0);
+  auto z = A * res + b;
+  EXPECT_GE(z[0] * z[1], std::sqrt(std::pow(z[2], 2) + std::pow(z[3], 2) +
+                                   std::pow(z[4], 2)));
+  EXPECT_GE(z[0], 0);
+  EXPECT_GE(z[1], 0);
 }
 
 TEST_F(ThreeBoxes, SolveConvexRestriction) {
