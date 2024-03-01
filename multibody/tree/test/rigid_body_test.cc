@@ -257,10 +257,23 @@ TEST_F(RigidBodyTest, ThrowIfSpatialInertiaSignalsHugeObject) {
   DRAKE_EXPECT_THROWS_MESSAGE(model.AddRigidBody("bodyA", M_BBcm_B),
       "[^]* corresponds to a physical object with a minimum length of [^]*");
 
-  // Create a test more like a naive URDF file, e.g., copy/paste 30 g*cm^2 from
-  // a CAD/CAE tool is vastly different than 30 kg*m^2 (10⁷ larger)! The values
-  // used here create a minimum bounding box with a 400 meter space-diagonal.
-  mass = 0.001;  // 1 gram. This value assumes a correct conversion to kg.
+  // Create a test that reflects a simple units conversion error that can enter
+  // Drake directly from C++ or Python or from an erroneous URDF, SDF, USD file.
+  // For example, a copy/paste from a CAD/CAE tool of 60 (which for CAD/CAE
+  // convenience uses units of g*cm²) into Drake or a SDF file which assumes
+  // units of kg*m², causes a 10⁷ error conversion! The test below shows how
+  // a proper conversion of mass from 1 gram to 0.001 kg without a corresponding
+  // inertia conversion from g*cm² to kg*m² results in a spatial inertia whose
+  // minimum physical dimension is preposterously huge (for robotic simulation).
+  // Equation (4) below is motivated by the related proof in spatial_inertia.cc
+  // in SpatialInertia::CalcMinimumPhysicalLength().
+  // 1. Imin = 40 kg*m²,  Imax = Imed = 60 kg*m².
+  // 2. Gmin = 40,000 m²,  Gmax = Gmed = 60,000 m².
+  // 3. lmax² + lmed² + lmin² = 0.5 * (Gmin + Gmed + Gmax) = 80,000 m².
+  // 4. space_diagonal² = (2 lmax)² + (2 lmed)² + (2 lmin)² = 320,000 m².
+  //                    = 4 (lmax² + lmed² + lmin)² = 320,000 m².
+  // 5. space_diagonal = √(320,000 m²) ≈ 565.7 m  (larger than 500 m, ½ km)!
+  mass = 0.001;  // 1 gram = 0.001 kg (mass conversion is relatively easy).
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   const double Ixx = 40, Iyy = 60, Izz = 60;
   const RotationalInertia<double> I_BBcm_B(Ixx, Iyy, Izz);
