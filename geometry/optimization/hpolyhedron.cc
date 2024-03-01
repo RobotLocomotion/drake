@@ -867,28 +867,13 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
     ++iterations;
   }
-  log()->info("{} faces saved", circumbody.b().size() - inbody.b().size());
 
-  // Volume estimations via inner ellipsoids, as calculating HPolyhedron volume
-  // is expensive.
-  const double V_circumbody_ellipsoid =
-      circumbody.MaximumVolumeInscribedEllipsoid().CalcVolume();
   const HPolyhedron inbody_before_affine_transformation =
       HPolyhedron(inbody.A(), inbody.b());
-  const double V_inbody_ellipsoid_before_affine_transformation =
-      inbody.MaximumVolumeInscribedEllipsoid().CalcVolume();
-
   // Affine transformation.
   if (do_affine_transformation) {
     inbody = inbody.MaximumVolumeInscribedAffineTransformation(circumbody);
-    log()->info("Inner ellipsoid volume ratio before affine transform: {}",
-                V_inbody_ellipsoid_before_affine_transformation /
-                    V_circumbody_ellipsoid);
   }
-  const double V_inbody_ellipsoid =
-      inbody.MaximumVolumeInscribedEllipsoid().CalcVolume();
-  log()->info("Inner ellipsoid volume ratio: {}",
-              V_inbody_ellipsoid / V_circumbody_ellipsoid);
 
   // Check if intersection and containment constraints are still satisfied after
   // affine transformation, and revert if not.  There is currently no way to
@@ -938,32 +923,32 @@ HPolyhedron HPolyhedron::MaximumVolumeInscribedAffineTransformation(
   solvers::MatrixXDecisionVariable Lambda =
       prog.NewContinuousVariables(Ny, Nx, "Lambda");
   prog.AddBoundingBoxConstraint(0, kInf, Lambda);
-  // prog.AddLinearEqualityConstraint(Lambda * this->A() - circumbody.A() * Tx,
-  //                                  MatrixXd::Zero(Ny, ambient_dimension()));
-  // Loop through elements of the constraint 
-  // Λ * `this`.A() = circumbody.A() * T.
 
-  // prog.AddLinearConstraint(
-  //     Lambda * this->b() - circumbody.b() + circumbody.A() * tx,
-  //     VectorXd::Constant(Ny, -kInf), VectorXd::Zero(Ny)); // TODO(rhjiang) don't do as expression
+  // Loop through and add the elements of the constraints
+  // Lambda * `this`.A() = circumbody.A() * Tx
+  // and
+  // Lambda * `this`.b() + circumbody.A() * tx <= circumbody.b(),
   MatrixXd left_hand_equality_matrix(1, Nx + circumbody.ambient_dimension());
-  solvers::VectorXDecisionVariable equality_variables(Nx + circumbody.ambient_dimension());
+  solvers::VectorXDecisionVariable equality_variables(
+      Nx + circumbody.ambient_dimension());
   MatrixXd left_hand_inequality_matrix(1, Nx + circumbody.ambient_dimension());
-  solvers::VectorXDecisionVariable inequality_variables(Nx + circumbody.ambient_dimension());
+  solvers::VectorXDecisionVariable inequality_variables(
+      Nx + circumbody.ambient_dimension());
   for (int i_row = 0; i_row < Ny; ++i_row) {
     for (int i_col = 0; i_col < circumbody.ambient_dimension(); ++i_col) {
-      left_hand_equality_matrix << this->A().col(i_col).transpose(), circumbody.A().row(i_row);
+      left_hand_equality_matrix << this->A().col(i_col).transpose(),
+          -circumbody.A().row(i_row);
       equality_variables << Lambda.row(i_row).transpose(), Tx.col(i_col);
-      prog.AddLinearEqualityConstraint(left_hand_equality_matrix, VectorXd::Zero(1), equality_variables);
+      prog.AddLinearEqualityConstraint(left_hand_equality_matrix,
+                                       VectorXd::Zero(1), equality_variables);
     }
-  left_hand_inequality_matrix << this->b(), circumbody.A().row(i_row);
-  inequality_variables << Lambda.row(i_row).transpose(), tx;
-  prog.AddLinearConstraint(left_hand_inequality_matrix, -kInf, circumbody.b()[i_row], inequality_variables);
+    left_hand_inequality_matrix << this->b().transpose(),
+        circumbody.A().row(i_row);
+    inequality_variables << Lambda.row(i_row).transpose(), tx;
+    prog.AddLinearConstraint(left_hand_inequality_matrix, -kInf,
+                             circumbody.b()[i_row], inequality_variables);
   }
-  
-  
-  
-  
+
   solvers::MathematicalProgramResult result = Solve(prog);
 
   if (!result.is_success()) {
