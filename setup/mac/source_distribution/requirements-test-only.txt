@@ -1,5 +1,5 @@
 flask
-jupyter
+notebook
 six
 u-msgpack-python
 websockets
