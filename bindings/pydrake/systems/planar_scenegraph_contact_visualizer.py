@@ -22,9 +22,9 @@ from pydrake.geometry import (
     Rgba,
     Role,
     Sphere,
-    ContactResults,
     optimization,
 )
+from pydrake.multibody.all import ContactResults
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 
