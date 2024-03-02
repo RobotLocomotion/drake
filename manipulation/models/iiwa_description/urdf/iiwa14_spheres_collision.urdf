@@ -59,7 +59,6 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-0.015 0 0.07"/>
@@ -95,7 +94,6 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 -0.03344534434 0.1974815417"/>
@@ -127,14 +125,12 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.gltf"/>
       </geometry>
-      <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-2.488800594e-017 0.203225991 -0.002065464272"/>
@@ -173,21 +169,18 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf"/>
       </geometry>
-      <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf"/>
       </geometry>
-      <material name="Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="7.416339176e-017 0.05241123123 0.213459395"/>
@@ -233,14 +226,12 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.gltf"/>
       </geometry>
-      <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="2.212061137e-017 0.1787589211 -0.001869578351"/>
@@ -279,21 +270,18 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf"/>
       </geometry>
-      <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf"/>
       </geometry>
-      <material name="Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="3.178830537e-017 0.0445161559 0.2150550559"/>
@@ -332,14 +320,12 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.gltf"/>
       </geometry>
-      <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-2.904627567e-018 -0.01623589495 0.00748218906"/>
@@ -371,7 +357,6 @@
       <geometry>
         <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.gltf"/>
       </geometry>
-      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-3.533832164e-019 -0.001260393754 -0.001625199191"/>
