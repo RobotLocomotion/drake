@@ -30,9 +30,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <link name="iiwa_link_1">
@@ -56,9 +53,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_1" type="revolute">
@@ -105,9 +99,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_2_visual_orange">
         <geometry>
@@ -116,9 +107,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_2" type="revolute">
@@ -167,9 +155,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_3_visual_band">
         <geometry>
@@ -178,9 +163,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.6 0.6 0.6 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_3_visual_kuka">
         <geometry>
@@ -189,9 +171,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0 0 0 1</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_3" type="revolute">
@@ -238,9 +217,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_4_visual_orange">
         <geometry>
@@ -249,9 +225,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_4" type="revolute">
@@ -298,9 +271,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_5_visual_band">
         <geometry>
@@ -309,9 +279,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.6 0.6 0.6 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_5_visual_kuka">
         <geometry>
@@ -320,9 +287,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0 0 0 1</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_5" type="revolute">
@@ -369,9 +333,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <visual name="iiwa_link_6_visual_orange">
         <geometry>
@@ -380,9 +341,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_6" type="revolute">
@@ -429,9 +387,6 @@ Later edited by hand to:
             <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
     </link>
     <joint name="iiwa_joint_7" type="revolute">
