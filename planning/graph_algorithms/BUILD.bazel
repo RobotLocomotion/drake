@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":graph_algorithms_internal",
         ":max_clique_solver_base",
         ":max_clique_solver_via_mip",
+        ":max_clique_solver_via_greedy",
     ],
 )
 
@@ -40,6 +41,16 @@ drake_cc_library(
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
+    name = "max_clique_solver_via_greedy",
+    srcs = ["max_clique_solver_via_greedy.cc"],
+    hdrs = ["max_clique_solver_via_greedy.h"],
+    deps = [
+        ":max_clique_solver_base",
+        "//common:unused"
     ],
 )
 
