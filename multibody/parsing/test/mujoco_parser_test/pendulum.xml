@@ -1,0 +1,8 @@
+<mujoco model="pendulum">
+  <worldbody>
+    <body pos="0 0 0">
+      <joint type="hinge" axis="0 1 0" damping="0.5"/>
+      <include file="pendulum_geom.xml"/>
+    </body>
+  </worldbody>
+</mujoco>

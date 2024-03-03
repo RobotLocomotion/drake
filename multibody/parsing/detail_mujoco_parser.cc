@@ -258,7 +258,6 @@ class MujocoParser {
          motor_node = motor_node->NextSiblingElement("motor")) {
       ParseMotor(motor_node);
     }
-    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "general");
     WarnUnsupportedElement(*node, "position");
     WarnUnsupportedElement(*node, "velocity");
@@ -879,7 +878,6 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "user");
 
-    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
@@ -912,7 +910,6 @@ class MujocoParser {
       }
     }
 
-    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
@@ -977,7 +974,6 @@ class MujocoParser {
       ParseDefault(default_node, class_name);
     }
 
-    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "material");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
@@ -1389,6 +1385,74 @@ class MujocoParser {
     }
   }
 
+  // Updates node by recursively replacing any <include> elements under it with
+  // the children of the named file's root element.
+  void ExpandIncludeTags(XMLElement* node,
+                         const std::filesystem::path& parent_mjcf_path) {
+    DRAKE_DEMAND(node != nullptr);
+
+    // Process the current node if it's an <include> tag.
+    if (std::string(node->Value()) == "include") {
+      std::string file;
+      if (!ParseStringAttribute(node, "file", &file)) {
+        Error(*node, "<include> tag without file attribute.");
+        return;
+      }
+
+      // From the MJCF docs: "The name of the XML file to be included. The file
+      // location is relative to the directory of the main MJCF file. If the
+      // file is not in the same directory, it should be prefixed with a
+      // relative path."
+      std::filesystem::path filename = parent_mjcf_path / file;
+      filename = std::filesystem::absolute(filename);
+      log()->debug("Processing included file: {}", filename.string());
+
+      XMLDocument include_doc;
+      if (include_doc.LoadFile(filename.c_str()) != tinyxml2::XML_SUCCESS) {
+        Error(*node, fmt::format("Failed to load <include> file at path {}.",
+                                 filename.string()));
+        return;
+      }
+
+      XMLElement* include_root = include_doc.RootElement();
+      if (!include_root) {
+        Error(*node, fmt::format("Included file {} has no root element.",
+                                 filename.string()));
+        return;
+      }
+
+      // Insert the children of the root element of the included file.
+      XMLDocument* xml_doc = node->GetDocument();
+      XMLElement* parent = node->Parent()->ToElement();
+      XMLElement* node_in_parent = node;
+
+      XMLElement* child = include_root->FirstChildElement();
+      while (child) {
+        // Insert the child node after the include node (or after the last
+        // inserted node).
+        parent->InsertAfterChild(node_in_parent, child->DeepClone(xml_doc));
+        node_in_parent = node_in_parent->NextSiblingElement();
+        child = child->NextSiblingElement();
+      }
+
+      return;
+    }
+
+    // Recurse on child elements.
+    XMLElement* child = node->FirstChildElement();
+    while (child) {
+      ExpandIncludeTags(child, parent_mjcf_path);
+      XMLElement* to_delete =
+          (std::string(child->Value()) == "include") ? child : nullptr;
+      child = child->NextSiblingElement();
+
+      if (to_delete) {
+        // Remove the include node from the main document.
+        node->GetDocument()->DeleteNode(to_delete);
+      }
+    }
+  }
+
   // Assets without an absolute path are referenced relative to the "main MJCF
   // model file" path, `main_mjcf_path`.
   std::pair<std::optional<ModelInstanceIndex>, std::string> Parse(
@@ -1403,6 +1467,9 @@ class MujocoParser {
       Error(*xml_doc, "ERROR: XML does not contain a mujoco tag.");
       return {};
     }
+
+    // Per the mjcf docs, the include tags are processed purely lexically.
+    ExpandIncludeTags(xml_doc->RootElement(), main_mjcf_path_);
 
     std::string model_name = model_name_in;
     if (model_name.empty() &&
@@ -1473,7 +1540,6 @@ class MujocoParser {
       ParseContact(contact_node);
     }
 
-    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
