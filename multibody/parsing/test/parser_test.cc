@@ -114,7 +114,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
   const std::string urdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
-      "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+      "drake/multibody/benchmarks/acrobot/acrobot.xml");
   const std::string dmd_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/process_model_directives_test/"
       "acrobot.dmd.yaml");

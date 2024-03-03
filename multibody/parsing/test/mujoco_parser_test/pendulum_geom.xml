@@ -1,0 +1,4 @@
+<mujoco model="pendulum">
+  <geom type="cylinder" fromto="0 0 0 0 0 -1" size="0.05" rgba="0 1 0 1"
+  mass="1"/>
+</mujoco>
