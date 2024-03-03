@@ -1,0 +1,17 @@
+<mujoco model="acrobot">
+  <worldbody>
+    <geom name="Link1_pivot" type="sphere" size="0.125" rgba="0 0 1 1" mass="0"/>
+    <body name="Link1" pos="0 0 0">
+      <joint name="shoulder" type="hinge" axis="0 1 0" damping="0.5"/>
+      <geom name="Link1" type="cylinder" fromto="0 0 0.05 0 0 -1.05" size="0.05" rgba="0 1 0 1" mass="1"/>
+      <body name="Link2" pos="0 0 -1">
+        <joint name="elbow" type="hinge" axis="0 1 0" damping="0.5"/>
+        <geom name="Link2" type="cylinder" fromto="0 0 0.05 0 0 -2.05" size="0.05" rgba="1 0 0 1" mass="1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="elbow" joint="elbow"/>
+  </actuator>
+</mujoco>
