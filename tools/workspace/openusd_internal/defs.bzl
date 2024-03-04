@@ -2,7 +2,6 @@ load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/workspace/openusd_internal:lock/files.bzl", "FILES")
 
 def pxr_library(
-        name,
         *,
         subdir):
     """Defines a cc_library in the spirit of OpenUSD's pxr_library CMake macro.
@@ -11,10 +10,10 @@ def pxr_library(
     Instead, they are loaded from the `lock/files.bzl` database.
 
     Args:
-        name: Matches the upstream name (the first argument in CMake).
         subdir: The subdirectory under `OpenUSD` (e.g. "pxr/base/arch").
     """
     attrs = FILES[subdir]
+    name = attrs["NAME"]
     srcs = [
         subdir + "/" + x + ".cpp"
         for x in attrs["PUBLIC_CLASSES"] + attrs["PRIVATE_CLASSES"]
