@@ -3,6 +3,9 @@
 		"generator":"Khronos glTF Blender I/O v4.0.44",
 		"version":"2.0"
 	},
+	"extensionsUsed": [
+		"KHR_texture_basisu"
+	],
 	"scene":0,
 	"scenes":[
 		{
@@ -65,19 +68,39 @@
 	"textures":[
 		{
 			"sampler":0,
-			"source":0
+			"source":0,
+			"extensions": {
+				"KHR_texture_basisu": {
+					"source": 4
+				}
+			}
 		},
 		{
 			"sampler":0,
-			"source":1
+			"source":1,
+			"extensions": {
+				"KHR_texture_basisu": {
+					"source": 5
+				}
+			}
 		},
 		{
 			"sampler":0,
-			"source":2
+			"source":2,
+			"extensions": {
+				"KHR_texture_basisu": {
+					"source": 6
+				}
+			}
 		},
 		{
 			"sampler":0,
-			"source":3
+			"source":3,
+			"extensions": {
+				"KHR_texture_basisu": {
+					"source": 7
+				}
+			}
 		}
 	],
 	"images":[
@@ -100,6 +123,26 @@
 			"mimeType":"image/png",
 			"name":"fully_textured_pyramid_base_color",
 			"uri":"fully_textured_pyramid_base_color.png"
+		},
+		{
+			"mimeType":"image/ktx2",
+			"name":"fully_textured_pyramid_emissive",
+			"uri":"fully_textured_pyramid_emissive.ktx2"
+		},
+		{
+			"mimeType":"image/ktx2",
+			"name":"fully_textured_pyramid_normal",
+			"uri":"fully_textured_pyramid_normal.ktx2"
+		},
+		{
+			"mimeType":"image/ktx2",
+			"name":"fully_textured_pyramid_omr",
+			"uri":"fully_textured_pyramid_omr.ktx2"
+		},
+		{
+			"mimeType":"image/ktx2",
+			"name":"fully_textured_pyramid_base_color",
+			"uri":"fully_textured_pyramid_base_color.ktx2"
 		}
 	],
 	"accessors":[

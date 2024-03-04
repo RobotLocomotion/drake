@@ -180,6 +180,7 @@ def vtk_internal_repository(
             ":patches/common_core_version.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
+            ":patches/gltf_quiet_image_errors.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/vtkdoubleconversion_hidden.patch",

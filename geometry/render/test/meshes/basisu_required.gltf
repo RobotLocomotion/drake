@@ -1,0 +1,17 @@
+{
+	"asset":{
+		"version":"2.0"
+	},
+	"extensionsRequired": [
+		"KHR_texture_basisu"
+	],
+	"extensionsUsed": [
+		"KHR_texture_basisu"
+	],
+	"scenes": [
+		{
+			"name":"Scene",
+			"nodes": []
+		}
+	]
+}
