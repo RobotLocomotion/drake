@@ -1035,7 +1035,6 @@ drake_cc_library(
         ":mathematical_program",
         "//math:matrix_util",
     ],
-    deps = [":semidefinite_relaxation_internal"],
 )
 
 drake_cc_library(

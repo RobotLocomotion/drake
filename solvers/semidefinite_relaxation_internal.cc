@@ -82,54 +82,51 @@ void AddMatrixIsLorentzSeparableConstraint(
   if (std::min(X.rows(), X.cols()) <= 2) {
     AddMatrixIsLorentzSeparableConstraintSimplicialCase(X, prog);
     return;
-  } else {
-    const int m = X.rows();
-    const int n = X.cols();
-    // The lower triagular part of Y ∈ S⁽ⁿ⁻¹⁾ ⊗ S⁽ᵐ⁻¹⁾
-    auto y = prog->NewContinuousVariables((n * (n - 1) * m * (m - 1)) / 4, "y");
-    Eigen::MatrixX<symbolic::Variable> Y =
-        ToSymmetricMatrixFromTensorVector(y, n - 1, m - 1);
-    prog->AddPositiveSemidefiniteConstraint(Y);
+  }
+  const int m = X.rows();
+  const int n = X.cols();
+  // The lower triagular part of Y ∈ S⁽ⁿ⁻¹⁾ ⊗ S⁽ᵐ⁻¹⁾
+  auto y = prog->NewContinuousVariables((n * (n - 1) * m * (m - 1)) / 4, "y");
+  Eigen::MatrixX<symbolic::Variable> Y =
+      ToSymmetricMatrixFromTensorVector(y, n - 1, m - 1);
+  prog->AddPositiveSemidefiniteConstraint(Y);
 
-    const Eigen::VectorX<symbolic::Variable> x =
-        Eigen::Map<const Eigen::VectorX<symbolic::Variable>>(X.data(),
-                                                             X.size());
+  const Eigen::VectorX<symbolic::Variable> x =
+      Eigen::Map<const Eigen::VectorX<symbolic::Variable>>(X.data(), X.size());
 
-    const SparseMatrix<double> W_adj_n = GetWAdjForTril(n);
-    const SparseMatrix<double> W_adj_m = GetWAdjForTril(m);
-    // [W_adj_n ⊗ W_adj_m; - I]
-    SparseMatrix<double> CoefficientMat(
-        W_adj_m.rows() * W_adj_n.rows(),
-        W_adj_m.cols() * W_adj_n.cols() + x.rows());
-    std::vector<Triplet<double>> CoefficientMat_triplets;
-    CoefficientMat_triplets.reserve(W_adj_n.nonZeros() * W_adj_m.nonZeros() +
-                                    x.rows());
-    // Set the left columns of CoefficientMat to W_adj_n ⊗ W_adj_m.
-    for (int iA = 0; iA < W_adj_n.outerSize(); ++iA) {
-      for (SparseMatrix<double>::InnerIterator itA(W_adj_n, iA); itA; ++itA) {
-        for (int iB = 0; iB < W_adj_m.outerSize(); ++iB) {
-          for (SparseMatrix<double>::InnerIterator itB(W_adj_m, iB); itB;
-               ++itB) {
-            CoefficientMat_triplets.emplace_back(
-                itA.row() * W_adj_m.rows() + itB.row(),
-                itA.col() * W_adj_m.cols() + itB.col(),
-                itA.value() * itB.value());
-          }
+  const SparseMatrix<double> W_adj_n = GetWAdjForTril(n);
+  const SparseMatrix<double> W_adj_m = GetWAdjForTril(m);
+  // [W_adj_n ⊗ W_adj_m; - I]
+  SparseMatrix<double> CoefficientMat(
+      W_adj_m.rows() * W_adj_n.rows(),
+      W_adj_m.cols() * W_adj_n.cols() + x.rows());
+  std::vector<Triplet<double>> CoefficientMat_triplets;
+  CoefficientMat_triplets.reserve(W_adj_n.nonZeros() * W_adj_m.nonZeros() +
+                                  x.rows());
+  // Set the left columns of CoefficientMat to W_adj_n ⊗ W_adj_m.
+  for (int iA = 0; iA < W_adj_n.outerSize(); ++iA) {
+    for (SparseMatrix<double>::InnerIterator itA(W_adj_n, iA); itA; ++itA) {
+      for (int iB = 0; iB < W_adj_m.outerSize(); ++iB) {
+        for (SparseMatrix<double>::InnerIterator itB(W_adj_m, iB); itB; ++itB) {
+          CoefficientMat_triplets.emplace_back(
+              itA.row() * W_adj_m.rows() + itB.row(),
+              itA.col() * W_adj_m.cols() + itB.col(),
+              itA.value() * itB.value());
         }
       }
     }
-    int col = W_adj_m.cols() * W_adj_n.cols();
-    for (int i = 0; i < x.rows(); ++i) {
-      CoefficientMat_triplets.emplace_back(i, col, -1);
-      ++col;
-    }
-    CoefficientMat.setFromTriplets(CoefficientMat_triplets.begin(),
-                                   CoefficientMat_triplets.end());
-    VectorX<symbolic::Variable> yx(y.size() + x.size());
-    yx << y, x;
-    prog->AddLinearEqualityConstraint(CoefficientMat,
-                                      Eigen::VectorXd::Zero(x.size()), yx);
   }
+  int col = W_adj_m.cols() * W_adj_n.cols();
+  for (int i = 0; i < x.rows(); ++i) {
+    CoefficientMat_triplets.emplace_back(i, col, -1);
+    ++col;
+  }
+  CoefficientMat.setFromTriplets(CoefficientMat_triplets.begin(),
+                                 CoefficientMat_triplets.end());
+  VectorX<symbolic::Variable> yx(y.size() + x.size());
+  yx << y, x;
+  prog->AddLinearEqualityConstraint(CoefficientMat,
+                                    Eigen::VectorXd::Zero(x.size()), yx);
 }
 
 }  // namespace internal
