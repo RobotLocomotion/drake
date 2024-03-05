@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <set>
 #include <vector>
 
 namespace drake {
@@ -35,9 +36,9 @@ Eigen::VectorXi ComputeDegreeOfVertices(
 // Given the vertices ordered by their degree in descending order return the
 // first that is in the list of available vertices.
 int PickBest(const std::vector<int>& degrees_sort_idx,
-             const std::vector<int>& available_nodes) {
+             const std::set<int>& available_nodes) {
   for (int d : degrees_sort_idx) {
-    auto it = std::find(available_nodes.begin(), available_nodes.end(), d);
+    auto it = available_nodes.find(d);
     if (it != available_nodes.end()) {
       return d;
     }
@@ -46,17 +47,17 @@ int PickBest(const std::vector<int>& degrees_sort_idx,
 }
 
 // Removes all nodes from available_nodes that are not adjacent to point_to_add.
-// Further removes point_to_add.
 void UpdateAvailableNodes(const Eigen::SparseMatrix<bool>* mat,
                           const int point_to_add,
-                          std::vector<int>* available_nodes) {
-  auto it = std::remove_if(
-      available_nodes->begin(), available_nodes->end(), [&](int a) {
-        bool value = !mat->coeff(a, point_to_add) || (a == point_to_add);
-        // std::cout<<fmt::format("a {} val {}", a, value)<<std::endl;
-        return value;
-      });
-  available_nodes->erase(it, available_nodes->end());
+                          std::set<int>* available_nodes) {
+  for (auto it = available_nodes->begin(); it != available_nodes->end();) {
+    int element = *it;
+    if (!mat->coeff(element, point_to_add) || (element == point_to_add)) {
+      available_nodes->erase(it++);
+    } else {
+      ++it;
+    }
+  }
 }
 
 // Sets mat(i,:) and mat(:,i) to false if i is not a neighbour of index
@@ -89,9 +90,9 @@ std::vector<int> decreasing_argsort(
 VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
   const int n = adjacency_matrix.rows();
-  std::vector<int> available_nodes(n);
+  std::set<int> available_nodes;
   for (int i = 0; i < n; ++i) {
-    available_nodes.emplace_back(i);
+    available_nodes.insert(i);
   }
 
   std::vector<int> clique_members;
