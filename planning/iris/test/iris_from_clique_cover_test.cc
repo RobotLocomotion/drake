@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include<iostream>
+
 #include "drake/common/find_resource.h"
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
@@ -254,7 +256,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
                        8.0, Rgba(0, 0, 0));
     }
 
-    builder = RobotDiagramBuilder<double>(0.0);
+    RobotDiagramBuilder<double> builder(0.0);
     params.robot_model_instances =
         builder.parser().AddModelsFromString(boxes_in_corners, "urdf");
     params.edge_step_size = 0.01;
@@ -274,8 +276,8 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
  protected:
   CollisionCheckerParams params;
   std::shared_ptr<Meshcat> meshcat;
-  RobotDiagramBuilder<double> builder;
-  SceneGraphCollisionChecker* checker;
+
+  std::unique_ptr<SceneGraphCollisionChecker> checker;
   IrisFromCliqueCoverOptions options;
   std::vector<HPolyhedron> sets;
   RandomGenerator generator;
@@ -283,6 +285,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
        BoxWithCornerObstaclesTestMip) {
+  std::cout<<"hi\n";
   // limiting the work load for ILP solver
   solvers::SolverOptions solver_options;
   // Quit after finding 25 solutions.
@@ -340,6 +343,74 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
     color.normalize();
     VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
     Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_mip{}", i),
+                    color, meshcat);
+  }
+
+  // Now check the coverage by drawing points from the manual decomposition and
+  // checking if they are inside the IrisFromCliqueCover decomposition.
+  int num_samples_per_set = 1000;
+  int num_in_automatic_decomposition = 0;
+  for (const auto& manual_set : manual_decomposition) {
+    for (int i = 0; i < num_samples_per_set; ++i) {
+      Eigen::Vector2d sample = manual_set.UniformSample(&generator);
+      for (const auto& set : sets) {
+        if (set.PointInSet(sample)) {
+          ++num_in_automatic_decomposition;
+          break;
+        }
+      }
+    }
+  }
+  double coverage_estimate =
+      static_cast<double>(num_in_automatic_decomposition) /
+      static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+  EXPECT_GE(coverage_estimate, 0.9);
+
+  MaybePauseForUser();
+}
+
+TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+       BoxWithCornerObstaclesTestGreedy) {
+  std::cout<<"hi\n";
+  //use default solver MaxCliqueSovlerViaGreedy
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+  EXPECT_EQ(ssize(sets), 6);
+
+  // A manual convex decomposition of the space.
+  std::vector<Hyperrectangle> manual_decomposition{
+      Hyperrectangle(Vector2d{-2, -2}, Vector2d{-1.7, 2}),
+      Hyperrectangle(Vector2d{-2, -2}, Vector2d{2, -1.7}),
+      Hyperrectangle(Vector2d{1.7, -2}, Vector2d{2, 2}),
+      Hyperrectangle(Vector2d{-2, 1.7}, Vector2d{2, 2}),
+      Hyperrectangle(Vector2d{-0.3, -2}, Vector2d{0.3, 2}),
+      Hyperrectangle(Vector2d{-2, -0.3}, Vector2d{2, 0.3}),
+  };
+
+  // Show the manual decomposition in the meshcat debugger.
+  Eigen::VectorXd color(3);
+  std::normal_distribution<double> gaussian;
+  for (int i = 0; i < ssize(manual_decomposition); ++i) {
+    // Choose a random color.
+    for (int j = 0; j < color.size(); ++j) {
+      color[j] = abs(gaussian(generator));
+    }
+    color.normalize();
+    VPolytope vregion = VPolytope(manual_decomposition.at(i).MakeHPolyhedron())
+                            .GetMinimalRepresentation();
+    Draw2dVPolytope(vregion, fmt::format("manual_decomposition_{}", i), color,
+                    meshcat);
+  }
+
+  // Show the IrisFromCliqueCoverDecomposition
+  for (int i = 0; i < ssize(sets); ++i) {
+    // Choose a random color.
+    for (int j = 0; j < color.size(); ++j) {
+      color[j] = abs(gaussian(generator));
+    }
+    color.normalize();
+    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+    Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_greedy{}", i),
                     color, meshcat);
   }
 
