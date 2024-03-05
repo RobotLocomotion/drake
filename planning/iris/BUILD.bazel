@@ -25,6 +25,7 @@ drake_cc_library(
         "//geometry/optimization:convex_set",
         "//geometry/optimization:iris",
         "//geometry:meshcat",
+        "//planning/graph_algorithms:max_clique_solver_via_greedy",
         "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//solvers:gurobi_solver",
