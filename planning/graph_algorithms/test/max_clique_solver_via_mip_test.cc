@@ -147,6 +147,22 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
   TestMaxCliqueViaMip(graph, 2, possible_solutions);
 }
 
+GTEST_TEST(MaxCliqueSolverViaMipTest, FullyConnectedPlusFullBipartiteGraph) {
+  // The Petersen graph has a clique number of size 2, so all edges are possible
+  // solutions.
+  Eigen::SparseMatrix<bool> graph =
+      internal::FullyConnectedPlusFullBipartiteGraph();
+  VectorX<bool> solution(9);
+
+  // The max cliuqe solutions are pairs of vertices on the bipartite graph.
+  solution << true, true, true, false, false, false, false, false, false;
+
+  std::vector<VectorX<bool>> possible_solutions;
+  possible_solutions.push_back(solution);
+
+  TestMaxCliqueViaMip(graph, 3, possible_solutions);
+}
+
 GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSquare) {
   std::vector<Triplet<bool>> triplets;
   triplets.push_back(Triplet<bool>(0, 1, 1));
