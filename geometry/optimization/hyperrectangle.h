@@ -49,7 +49,7 @@ class Hyperrectangle final : public ConvexSet {
   maximum of the lower bounds and the pointwise minimums of the upper
   bounds. Returns std::nullopt if the intersection is empty.
    @pre this and other need to have the same ambient dimension.*/
-  [[nodiscard]] std::optional<Hyperrectangle> Intersection(
+  [[nodiscard]] std::optional<Hyperrectangle> MaybeGetIntersection(
       const Hyperrectangle& other) const;
 
   /** Returns the minimum axis-aligned bounding box of a convex set, for sets

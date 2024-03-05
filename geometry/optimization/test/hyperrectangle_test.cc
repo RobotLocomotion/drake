@@ -24,9 +24,6 @@ using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
-namespace {
-const double kInf = std::numeric_limits<double>::infinity();
-}
 
 bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
                       const solvers::VectorXDecisionVariable& t_vars,
@@ -149,15 +146,17 @@ GTEST_TEST(HyperrectangleTest, IsEmptyTest) {
       Hyperrectangle(Vector3d{-1, -2, -3}, Vector3d{3, 2, 1}).IsEmpty());
 }
 
-GTEST_TEST(HyperrectangleTest, Intersection) {
+GTEST_TEST(HyperrectangleTest, MaybeGetIntersection) {
   const Vector3d lb1{-1, -2, -3};
   const Vector3d ub1{3, 2, 1};
   const Vector3d lb2{-2, 1, -2};
   const Vector3d ub2{4, 1, 0};
   const Hyperrectangle h1(lb1, ub1);
   const Hyperrectangle h2(lb2, ub2);
-  const std::optional<Hyperrectangle> intersection12 = h1.Intersection(h2);
-  const std::optional<Hyperrectangle> intersection21 = h2.Intersection(h1);
+  const std::optional<Hyperrectangle> intersection12 =
+      h1.MaybeGetIntersection(h2);
+  const std::optional<Hyperrectangle> intersection21 =
+      h2.MaybeGetIntersection(h1);
   EXPECT_TRUE(intersection12->IsBounded());
   EXPECT_FALSE(intersection12->IsEmpty());
   EXPECT_TRUE(CompareMatrices(intersection12->lb(), Vector3d{-1, 1, -2}));
@@ -168,14 +167,16 @@ GTEST_TEST(HyperrectangleTest, Intersection) {
   const Vector3d lb3{-30, -20, -10};
   const Vector3d ub3{-20, -11, -8};
   const Hyperrectangle h3(lb3, ub3);
-  const std::optional<Hyperrectangle> intersection13 = h1.Intersection(h3);
-  const std::optional<Hyperrectangle> intersection31 = h3.Intersection(h1);
+  const std::optional<Hyperrectangle> intersection13 =
+      h1.MaybeGetIntersection(h3);
+  const std::optional<Hyperrectangle> intersection31 =
+      h3.MaybeGetIntersection(h1);
   EXPECT_FALSE(intersection13.has_value());
 
   const Vector2d lb4{-1, 2};
   const Vector2d ub4{20, 11};
   const Hyperrectangle h4(lb4, ub4);
-  EXPECT_THROW(unused(h4.Intersection(h1)), std::exception);
+  EXPECT_THROW(unused(h4.MaybeGetIntersection(h1)), std::exception);
 }
 
 GTEST_TEST(HyperrectangleTest, AddPointInSetConstraints) {
