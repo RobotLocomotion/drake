@@ -261,6 +261,7 @@ drake_cc_library(
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
+        ":mesh_deformation_interpolator",
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
