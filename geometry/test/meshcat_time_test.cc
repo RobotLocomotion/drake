@@ -8,6 +8,12 @@ namespace drake {
 namespace geometry {
 namespace {
 
+// TODO(DamrongGuoy) Remove calls to MaybePauseForUser() when I don't need to
+//  test it manually. It's important to invoke it directly with
+//  bazel/bin/[PROGRAM].
+//     1. bazel build //geometry:meshcat_time_test
+//     2. bazel-bin/geometry/meshcat_time_test
+
 // Verify the transpilation algorithm without SetObject(...time...) yet.
 GTEST_TEST(MeshcatTet, TranspileManually) {
   Meshcat meshcat;
@@ -22,7 +28,6 @@ GTEST_TEST(MeshcatTet, TranspileManually) {
       // double frames_per_second = 64.0,
       // bool set_visualizations_while_recording = true
       );
-
   meshcat.SetProperty("foo/<object>", "visible", true, time_start);
 
   const double t1 = 1;
@@ -105,11 +110,6 @@ GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
   // Set untimed object
   meshcat.SetObject("morph", Box(0.2, 0.2, 0.3));
   std::cout << "SetObject Box" <<std::endl;
-
-  // TODO(DamrongGuoy) Remove this when I don't need to test it manually.
-  //  It's important to invoke it directly with bazel/bin/[PROGRAM].
-  //     1. bazel build //geometry:meshcat_time_test
-  //     2. bazel-bin/geometry/meshcat_time_test
   drake::common::MaybePauseForUser();
 
   meshcat.StartRecording();
@@ -163,11 +163,15 @@ GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
   ASSERT_TRUE(HasVisibleProperty(&meshcat, t3, path_t3));
   EXPECT_TRUE(GetVisibleProperty(&meshcat, t3, path_t3));
 
+  const double time_final = 4;
+  meshcat.SetProperty(fmt::format("morph/<animation>/{}", frame(&meshcat, t3)),
+                      "visible", true, time_final);
+  std::cout << "SetProperty time_final" << std::endl;
+  drake::common::MaybePauseForUser();
+
   meshcat.StopRecording();
   meshcat.PublishRecording();
   std::cout << "PublishRecording" <<std::endl;
-
-  // TODO(DamrongGuoy) Remove this when I don't need to test it manually.
   drake::common::MaybePauseForUser();
 }
 

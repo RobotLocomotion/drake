@@ -2391,34 +2391,30 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape,
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
                         const Rgba& rgba) {
-  const std::string path_str(path);
-  if (!already_started_.contains(path_str)) {
-    std::string path_object = fmt::format("{}/<object>", path);
-    SetProperty(path_object, "visible", false, time);
-    already_started_.insert(path_str);
+  // TODO(DamrongGuoy): Set time_start appropriately. Perhaps it should be a
+  //  member variable.
+  const double time_start = 0;
+  if (!already_started_.contains(std::string(path))) {
+    SetProperty(fmt::format("{}/<object>", path), "visible", true, time_start);
+    SetProperty(fmt::format("{}/<object>", path), "visible", false, time);
+    already_started_.insert(std::string(path));
+  }
+  if (last_frame_index_map_.contains(std::string(path))) {
+    SetProperty(fmt::format("{}/<animation>/{}", path,
+                            last_frame_index_map_[std::string(path)]),
+                "visible", false, time);
   }
 
   DRAKE_THROW_UNLESS(animation_.get() != nullptr);
-  int current_frame_index = animation_->frame(time);
-  const std::string path_animation_current =
-      fmt::format("{}/<animation>/{}", path, current_frame_index);
+  const int frame = animation_->frame(time);
+  const std::string path_animation_frame =
+      fmt::format("{}/<animation>/{}", path, frame);
 
-  // Initial condition = invisible.
-  SetProperty(path_animation_current, "visible", false);
-  SetObject(path_animation_current, shape, rgba);
+  SetProperty(path_animation_frame, "visible", false, time_start);
+  SetObject(path_animation_frame, shape, rgba);
+  SetProperty(path_animation_frame, "visible", true, time);
 
-  // If there is a previous frame, it becomes invisible.
-  if (last_frame_index_map_.contains(path_str)) {
-    int previous_frame_index = last_frame_index_map_[path_str];
-    DRAKE_THROW_UNLESS(previous_frame_index <= current_frame_index);
-    std::string path_animation_previous =
-        fmt::format("{}/<animation>/{}", path, previous_frame_index);
-    SetProperty(path_animation_previous, "visible", false, time);
-  }
-
-  SetProperty(path_animation_current, "visible", true, time);
-
-  last_frame_index_map_[path_str] = current_frame_index;
+  last_frame_index_map_[std::string(path)] = frame;
 }
 
 void Meshcat::SetObject(std::string_view path,
