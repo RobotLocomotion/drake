@@ -100,21 +100,12 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
 
   while (available_nodes.size() > 0) {
     Eigen::VectorXi degrees = ComputeDegreeOfVertices(curr_ad_matrix);
-    // std::cout<<fmt::format("{}", fmt_eigen(degrees))<<std::endl;
     std::vector<int> degrees_sort_idx = decreasing_argsort(degrees);
+
     int point_to_add = PickBest(degrees_sort_idx, available_nodes);
-    // std::cout<<fmt::format("point to add {}", point_to_add)<<std::endl;
-
     clique_members.push_back(point_to_add);
-    UpdateAvailableNodes(&curr_ad_matrix, point_to_add, &available_nodes);
-    // std::cout << "Available Nodes: ";
-    // for (const auto& element : available_nodes) {
-    //     std::cout << element << " ";
-    // }
-    // std::cout << std::endl;
 
-    // std::cout<<fmt::format("Available nodes {}",
-    // available_nodes.size())<<std::endl;
+    UpdateAvailableNodes(&curr_ad_matrix, point_to_add, &available_nodes);
     MaskNonNeighbours(&curr_ad_matrix, point_to_add);
   }
 
