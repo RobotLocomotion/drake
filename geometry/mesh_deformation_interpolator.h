@@ -96,6 +96,11 @@ class VertexSampler {
   int num_control_vertices_{};
 };
 
+// TODO(xuchenhan-tri): The name DrivenTriangleMesh is misleading; it is not
+// used as a mesh. This class maps volume vertex positions to driven mesh vertex
+// positions and normals. Its name should change to better reflect its purpose
+// and not suggest it's a mesh (thus causing confusion with adjacent classes
+// that actually are meshes).
 /* %DrivenTriangleMesh represents a triangle surface mesh that is driven
  by a control volume mesh. The control volume mesh completely encloses the
  driven surface mesh and the vertex positions of the surface mesh are

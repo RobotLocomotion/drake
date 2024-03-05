@@ -365,6 +365,25 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
   return result;
 }
 
+TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
+    const RenderMesh& render_mesh) {
+  const int num_vertices = render_mesh.positions.rows();
+  const int num_triangles = render_mesh.indices.rows();
+  std::vector<Vector3<double>> vertices;
+  vertices.reserve(num_vertices);
+  std::vector<SurfaceTriangle> triangles;
+  triangles.reserve(num_triangles);
+  for (int v = 0; v < num_vertices; ++v) {
+    vertices.emplace_back(render_mesh.positions.row(v));
+  }
+  for (int t = 0; t < num_triangles; ++t) {
+    triangles.emplace_back(render_mesh.indices(t, 0), render_mesh.indices(t, 1),
+                           render_mesh.indices(t, 2));
+  }
+  return TriangleSurfaceMesh<double>(
+      TriangleSurfaceMesh(std::move(triangles), std::move(vertices)));
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
