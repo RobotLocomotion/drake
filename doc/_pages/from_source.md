@@ -7,8 +7,8 @@ title: Source Installation
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-<!-- The operating system requirements should match those listed in both the
-     root CMakeLists.txt and tools/workspace/os.bzl. -->
+<!-- The operating system requirements should match those listed in the root
+     CMakeLists.txt. -->
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 

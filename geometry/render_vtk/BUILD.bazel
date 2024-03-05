@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -199,10 +200,35 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
+PYRAMID_RESOURCES = [
+    "fully_textured_pyramid_base_color.png",
+    "fully_textured_pyramid.bin",
+    "fully_textured_pyramid_emissive.png",
+    "fully_textured_pyramid.gltf",
+    "fully_textured_pyramid_normal.png",
+    "fully_textured_pyramid_omr.png",
+    "fully_textured_pyramid.sdf",
+]
+
+[
+    copy_file(
+        name = "_copy_" + x,
+        src = "//geometry/render:test/meshes/" + x,
+        out = "test/" + x,
+        allow_symlink = True,
+    )
+    for x in PYRAMID_RESOURCES
+]
+
 filegroup(
     name = "patch_test_models",
     testonly = 1,
-    srcs = [":gltf_pyramid_no_color_texture"],
+    srcs = [
+        ":gltf_pyramid_no_color_texture",
+    ] + [
+        ":test/" + x
+        for x in PYRAMID_RESOURCES
+    ],
 )
 
 drake_cc_googletest(

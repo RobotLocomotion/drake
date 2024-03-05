@@ -52,56 +52,29 @@ if(APPLE)
   endif()
   list(APPEND BAZELRC_IMPORTS "tools/macos-arch-${MACOS_ARCH}.bazelrc")
 else()
-  find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
-
-  if(NOT LSB_RELEASE_EXECUTABLE)
-    message(FATAL_ERROR "Could NOT find the lsb_release executable")
-  endif()
-
-  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
-
-  execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --id --short
-    RESULT_VARIABLE LSB_RELEASE_ID_SHORT_RESULT_VARIABLE
-    OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT_OUTPUT_VARIABLE
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(LSB_RELEASE_ID_SHORT_RESULT_VARIABLE EQUAL 0)
-    set(UNIX_DISTRIBUTION_ID "${LSB_RELEASE_ID_SHORT_OUTPUT_VARIABLE}")
-  endif()
-
-  if(NOT UNIX_DISTRIBUTION_ID STREQUAL Ubuntu)
-    message(WARNING
-      "Distribution ${UNIX_DISTRIBUTION_ID} is NOT supported"
-    )
-  endif()
-
-  string(TOLOWER "${UNIX_DISTRIBUTION_ID}" UNIX_DISTRIBUTION_ID)
-
-  execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
-    RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
-    OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT_OUTPUT_VARIABLE
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
-    set(UNIX_DISTRIBUTION_CODENAME
-      "${LSB_RELEASE_CODENAME_SHORT_OUTPUT_VARIABLE}"
-    )
-  endif()
-
-  # The supported releases should match those listed in both
-  # doc/_pages/from_source.md and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(jammy|noble)$")
-    message(FATAL_ERROR
-      "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 22.04 (Jammy) or Ubuntu 24.04 (Noble)."
-    )
-  endif()
-
   list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
-  list(APPEND BAZELRC_IMPORTS
-    "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
+
+  find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
+  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
+  if(NOT LSB_RELEASE_EXECUTABLE)
+    message(WARNING "Could NOT find the lsb_release executable")
+  else()
+    execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
+      RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
+      OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
+      message(WARNING "Could NOT run the lsb_release executable")
+    else()
+      set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
+      if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
+        message(WARNING "Could NOT find config file ${MAYBE_RC}")
+      else()
+        list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
+      endif()
+    endif()
+  endif()
 endif()
 
 # The version passed to find_package(Bazel) should match the
