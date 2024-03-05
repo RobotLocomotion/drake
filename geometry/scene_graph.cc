@@ -540,6 +540,8 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
   // needed and is correct.
   internal::KinematicsData<T>& kinematics_data =
       state.mutable_kinematics_data();
+  internal::DrivenMeshData<T>& driven_mesh_data =
+      state.mutable_driven_mesh_data();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.
@@ -566,7 +568,9 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
     }
   }
 
+  driven_mesh_data.SetControlMeshPositions(kinematics_data.q_WGs);
   state.FinalizeConfigurationUpdate(kinematics_data,
+                                    driven_mesh_data,
                                     &state.mutable_proximity_engine(),
                                     state.GetMutableRenderEngines());
 }

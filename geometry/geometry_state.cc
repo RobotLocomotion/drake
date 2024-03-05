@@ -16,6 +16,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render/render_engine.h"
@@ -26,11 +27,13 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::DrivenTriangleMesh;
 using internal::FrameNameSet;
 using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
+using internal::RenderMesh;
 using math::RigidTransform;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
@@ -45,6 +48,23 @@ using std::unordered_set;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
+
+namespace internal {
+
+template <typename T>
+void DrivenMeshData<T>::SetControlMeshPositions(
+    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
+  for (auto& [id, meshes] : perception_meshes) {
+    DRAKE_DEMAND(q_WGs.contains(id));
+    const VectorX<double>& q_WG =
+        geometry::internal::convert_to_double(q_WGs.at(id));
+    for (auto& mesh : meshes) {
+      mesh.SetControlMeshPositions(q_WG);
+    }
+  }
+}
+
+}  // namespace internal
 
 //-----------------------------------------------------------------------------
 
@@ -186,6 +206,7 @@ GeometryState<T>::GeometryState(const GeometryState<U>& source)
       frames_(source.frames_),
       geometries_(source.geometries_),
       frame_index_to_id_map_(source.frame_index_to_id_map_),
+      driven_mesh_data_(source.driven_mesh_data_),
       geometry_engine_(
           std::move(source.geometry_engine_->template ToScalarType<T>())),
       render_engines_(source.render_engines_),
@@ -1122,6 +1143,10 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
 
   geometry.SetRole(std::move(properties));
 
+  if (geometry.is_deformable()) {
+    RegisterDrivenPerceptionMesh(geometry_id);
+  }
+
   const bool added_to_renderer = AddToCompatibleRenderersUnchecked(geometry);
 
   if (!added_to_renderer && render_engines_.size() > 0) {
@@ -1296,9 +1321,35 @@ void GeometryState<T>::AddRenderer(
           "renderer", "accepting", set<string>{});
       if (accepting_renderers.empty() || accepting_renderers.contains(name)) {
         const GeometryId id = id_geo_pair.first;
-        accepted |= render_engine->RegisterVisual(
-            id, geometry.shape(), *properties, RigidTransformd(geometry.X_FG()),
-            geometry.is_dynamic());
+        if (geometry.is_deformable()) {
+          // Make the render mesh representation of the geometry based on its
+          // perception properties.
+          std::vector<internal::RenderMesh> render_meshes;
+          const auto default_rgba = properties->GetPropertyOrDefault(
+              "phong", "diffuse", Rgba{1.0, 1.0, 1.0, 1.0});
+          const auto render_meshes_file =
+              properties->GetPropertyOrDefault("render", "mesh", string{});
+          if (render_meshes_file.empty()) {
+            // If no render mesh is specified, use the surface triangle mesh of
+            // the driven mesh to render.
+            for (const DrivenTriangleMesh& driven_mesh :
+                 driven_mesh_data_.perception_meshes.at(id)) {
+              render_meshes.emplace_back(
+                  internal::MakeRenderMeshFromTriangleSurfaceMesh(
+                      driven_mesh.triangle_surface_mesh(), *properties,
+                      default_rgba, {}));
+            }
+          } else {
+            render_meshes = internal::LoadRenderMeshesFromObj(
+                render_meshes_file, *properties, default_rgba);
+          }
+          accepted |= render_engine->RegisterDeformableVisual(id, render_meshes,
+                                                              *properties);
+        } else {
+          accepted |= render_engine->RegisterVisual(
+              id, geometry.shape(), *properties,
+              RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
+        }
       }
     }
   }
@@ -1516,10 +1567,23 @@ void GeometryState<T>::FinalizePoseUpdate(
 template <typename T>
 void GeometryState<T>::FinalizeConfigurationUpdate(
     const internal::KinematicsData<T>& kinematics_data,
+    const internal::DrivenMeshData<T>& driven_meshes,
     internal::ProximityEngine<T>* proximity_engine,
-    std::vector<render::RenderEngine*>) const {
+    std::vector<render::RenderEngine*> render_engines) const {
   proximity_engine->UpdateDeformableVertexPositions(kinematics_data.q_WGs);
-  // TODO(xuchenhan-tri): Update render engine as necessary.
+  for (auto* render_engine : render_engines) {
+    for (const auto& [id, meshes] : driven_meshes.perception_meshes) {
+      // Vertex positions of driven meshes.
+      std::vector<VectorX<double>> q_WDs(meshes.size());
+      // Vertex normals of driven meshes.
+      std::vector<VectorX<double>> nhats_W(meshes.size());
+      for (int i = 0; i < ssize(meshes); ++i) {
+        q_WDs[i] = meshes[i].GetDrivenVertexPositions();
+        nhats_W[i] = meshes[i].GetDrivenVertexNormals();
+      }
+      render_engine->UpdateDeformableConfigurations(id, q_WDs, nhats_W);
+    }
+  }
 }
 
 template <typename T>
@@ -1735,6 +1799,15 @@ bool GeometryState<T>::RemoveFromRendererUnchecked(
 
 template <typename T>
 bool GeometryState<T>::AddToCompatibleRenderersUnchecked(
+      const internal::InternalGeometry& geometry) {
+  if (geometry.is_deformable()) {
+    return AddDeformableToCompatibleRenderersUnchecked(geometry);
+  }
+  return AddRigidToCompatibleRenderersUnchecked(geometry);
+}
+
+template <typename T>
+bool GeometryState<T>::AddRigidToCompatibleRenderersUnchecked(
     const internal::InternalGeometry& geometry) {
   const PerceptionProperties& properties = *geometry.perception_properties();
 
@@ -1760,6 +1833,94 @@ bool GeometryState<T>::AddToCompatibleRenderersUnchecked(
   }
   return added_to_renderer;
 }
+
+template <typename T>
+bool GeometryState<T>::AddDeformableToCompatibleRenderersUnchecked(
+    const internal::InternalGeometry& geometry) {
+  const GeometryId id = geometry.id();
+  const PerceptionProperties& properties = *geometry.perception_properties();
+  const auto default_rgba = properties.GetPropertyOrDefault(
+      "phong", "diffuse", Rgba{1.0, 1.0, 1.0, 1.0});
+
+  std::vector<internal::RenderMesh> render_meshes;
+  const auto render_meshes_file =
+      properties.GetPropertyOrDefault("render", "mesh", string{});
+  if (render_meshes_file.empty()) {
+    // If no render mesh is specified, use the surface triangle mesh of the
+    // driven mesh to render.
+    for (const DrivenTriangleMesh& driven_mesh :
+         driven_mesh_data_.perception_meshes.at(id)) {
+      render_meshes.emplace_back(
+          internal::MakeRenderMeshFromTriangleSurfaceMesh(
+              driven_mesh.triangle_surface_mesh(), properties, default_rgba,
+              {}));
+    }
+  } else {
+    render_meshes = internal::LoadRenderMeshesFromObj(
+        render_meshes_file, properties, default_rgba);
+  }
+
+  bool added_to_renderer{false};
+  auto accepting_renderers =
+      properties.GetPropertyOrDefault("renderer", "accepting", set<string>{});
+  for (auto& [name, engine] : render_engines_) {
+    if (accepting_renderers.empty() || accepting_renderers.contains(name)) {
+      added_to_renderer = engine->RegisterDeformableVisual(
+                              geometry.id(), render_meshes, properties) ||
+                          added_to_renderer;
+    }
+  }
+  if (added_to_renderer) {
+    // Increment version number only if some renderer picks up the role
+    // assignment.
+    geometry_version_.modify_perception();
+  }
+  return added_to_renderer;
+}
+
+template <typename T>
+void GeometryState<T>::RegisterDrivenPerceptionMesh(GeometryId geometry_id) {
+  DRAKE_DEMAND(IsDeformableGeometry(geometry_id));
+  InternalGeometry& geometry = geometries_[geometry_id];
+  DRAKE_DEMAND(geometry.has_perception_role());
+  const PerceptionProperties& properties = *geometry.perception_properties();
+  const auto default_rgba = properties.GetPropertyOrDefault(
+      "phong", "diffuse", Rgba{1.0, 1.0, 1.0, 1.0});
+
+  const VolumeMesh<double>* control_mesh_ptr = geometry.reference_mesh();
+  DRAKE_DEMAND(control_mesh_ptr != nullptr);
+  const VolumeMesh<double>& control_mesh = *control_mesh_ptr;
+
+  const auto render_meshes_file =
+      properties.GetPropertyOrDefault("render", "mesh", string{});
+  if (render_meshes_file.empty()) {
+    // If no render mesh is specified, use the surface triangle mesh of the
+    // control volume mesh as the render mesh.
+    DrivenTriangleMesh driven_mesh =
+        internal::MakeDrivenSurfaceMesh(control_mesh);
+    driven_mesh_data_.perception_meshes.emplace(
+        geometry_id, std::vector<DrivenTriangleMesh>{std::move(driven_mesh)});
+  } else {
+    std::vector<internal::RenderMesh> render_meshes =
+        internal::LoadRenderMeshesFromObj(render_meshes_file, properties,
+                                          default_rgba);
+    std::vector<DrivenTriangleMesh> driven_meshes;
+    for (const internal::RenderMesh& render_mesh : render_meshes) {
+      driven_meshes.emplace_back(MakeTriangleSurfaceMesh(render_mesh),
+                                 control_mesh);
+    }
+    driven_mesh_data_.perception_meshes.emplace(geometry_id,
+                                                std::move(driven_meshes));
+  }
+}
+
+template <typename T>
+void GeometryState<T>::RemoveDrivenPerceptionMesh(GeometryId geometry_id) {
+  if (IsDeformableGeometry(geometry_id)) {
+    driven_mesh_data_.perception_meshes.erase(geometry_id);
+  }
+}
+
 
 template <typename T>
 void GeometryState<T>::RemoveFromAllRenderersUnchecked(GeometryId id) {
@@ -1808,8 +1969,10 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
   if (!geometry->has_perception_role()) return false;
 
   // Geometry has a perception role; do the work to remove it from whichever
-  // render engines it happens to present in.
+  // render engines it happens to present in and also remove its driven
+  // perception meshes.
   RemoveFromAllRenderersUnchecked(geometry_id);
+  RemoveDrivenPerceptionMesh(geometry_id);
   geometry->RemovePerceptionRole();
   return true;
 }
@@ -1876,5 +2039,7 @@ template GeometryState<Expression>::GeometryState(const GeometryState<AutoDiffXd
 }  // namespace geometry
 }  // namespace drake
 
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::geometry::internal::DrivenMeshData)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::GeometryState)

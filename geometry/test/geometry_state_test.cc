@@ -1,6 +1,8 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -15,6 +17,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -34,6 +37,8 @@ namespace geometry {
 
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
+using internal::DrivenTriangleMesh;
 using internal::DummyRenderEngine;
 using internal::FrameNameSet;
 using internal::InternalFrame;
@@ -125,6 +130,11 @@ class GeometryStateTester {
     return state_->mutable_kinematics_data();
   }
 
+  const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+  driven_perception_meshes() const {
+    return state_->driven_mesh_data_.perception_meshes;
+  }
+
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
                      internal::KinematicsData<T>* kinematics_data) {
     state_->SetFramePoses(source_id, poses, kinematics_data);
@@ -143,9 +153,11 @@ class GeometryStateTester {
   }
 
   void FinalizeConfigurationUpdate() {
-    state_->FinalizeConfigurationUpdate(state_->kinematics_data_,
-                                        &state_->mutable_proximity_engine(),
-                                        state_->GetMutableRenderEngines());
+    state_->driven_mesh_data_.SetControlMeshPositions(
+        state_->kinematics_data_.q_WGs);
+    state_->FinalizeConfigurationUpdate(
+        state_->kinematics_data_, state_->driven_mesh_data_,
+        &state_->mutable_proximity_engine(), state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>
@@ -201,6 +213,21 @@ class ProximityEngineTester {
 }  // namespace internal
 
 namespace {
+
+namespace fs = std::filesystem;
+
+static fs::path temp_dir() {
+  static const never_destroyed<fs::path> temp_path(temp_directory());
+  return temp_path.access();
+}
+
+std::string WriteFile(std::string_view contents, std::string_view file_name) {
+  const fs::path file_path = temp_dir() / file_name;
+  std::ofstream out(file_path);
+  DRAKE_DEMAND(out.is_open());
+  out << contents;
+  return file_path;
+}
 
 // Class to aid in testing Shape introspection. Instantiated with a model
 // Shape instance, it registers a copy of that shape and confirms that the
@@ -562,14 +589,25 @@ class GeometryStateTestBase {
 
   // This function sets up a dummy GeometryState that contains both rigid
   // (non-deformable) and deformable geometries to facilitate testing.
-  SourceId SetUpWithRigidAndDeformableGeometries() {
+  SourceId SetUpWithRigidAndDeformableGeometries(
+      Assign roles_to_assign = Assign::kNone) {
     SourceId s_id = SetUpSingleSourceTree();
     const Sphere sphere(1.0);
     constexpr double kRezHint = 0.5;
     auto instance = make_unique<GeometryInstance>(
         RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
-    geometry_state_.RegisterDeformableGeometry(
+    GeometryId g_id = geometry_state_.RegisterDeformableGeometry(
         s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+    geometries_.push_back(g_id);
+    if ((roles_to_assign & Assign::kProximity) != Assign::kNone) {
+      AssignProximityToSingleSourceTree();
+    }
+    if ((roles_to_assign & Assign::kPerception) != Assign::kNone) {
+      AssignPerceptionToSingleSourceTree();
+    }
+    if ((roles_to_assign & Assign::kIllustration) != Assign::kNone) {
+      AssignIllustrationToSingleSourceTree();
+    }
     return s_id;
   }
 
@@ -3528,7 +3566,7 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   const DummyRenderEngine& other_engine = *temp_engine;
   geometry_state_.AddRenderer(other_renderer_name, std::move(temp_engine));
 
-  SetUpSingleSourceTree(Assign::kPerception);
+  SetUpWithRigidAndDeformableGeometries(Assign::kPerception);
 
   // Note: we simulate the derived engine reporting removal of geometry ids via
   // set_geometry_remove({true | false}). When we expect the id won't be removed
@@ -3697,14 +3735,18 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
 }
 
 TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
-  SetUpSingleSourceTree(Assign::kPerception);
+  SetUpWithRigidAndDeformableGeometries(Assign::kPerception);
   // Add one geometry that has no perception properties.
   const GeometryId id_no_perception = geometry_state_.RegisterGeometry(
       source_id_, frames_[0],
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(0.5), "shape"));
+  // The total number of geometries registered with the render engine should be
+  // the total number of rigid geometies with perception roles
+  // (single_tree_total_geometry_count()) + the number of deformable geometries
+  // with perception roles (1).
   EXPECT_EQ(render_engine_->num_registered(),
-            single_tree_total_geometry_count());
+            single_tree_total_geometry_count() + 1);
 
   auto new_renderer = make_unique<DummyRenderEngine>();
   DummyRenderEngine* other_renderer = new_renderer.get();
@@ -3715,7 +3757,7 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
   // The new renderer only has the geometries with perception properties
   // assigned.
   EXPECT_EQ(other_renderer->num_registered(),
-            single_tree_total_geometry_count());
+            single_tree_total_geometry_count() + 1);
 
   EXPECT_FALSE(other_renderer->has_geometry(id_no_perception));
 
@@ -3992,6 +4034,115 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   expected_ids = get_expected_ids();
   expect_poses(second_engine->updated_ids(), expected_ids);
   expect_poses(render_engine_->updated_ids(), expected_ids);
+}
+
+TEST_F(GeometryStateTest, DrivenMeshData) {
+  SourceId s_id = NewSource();
+  const Sphere sphere(1.0);
+  // Make the resolution hint large enough so we end up with an octahedron.
+  constexpr double kRezHint = 10.0;
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  GeometryId g_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+  PerceptionProperties perception_properties;
+  geometry_state_.AssignRole(s_id, g_id, perception_properties);
+  // We expect one driven geometry that's the surface mesh of the control mesh.
+  EXPECT_TRUE(gs_tester_.driven_perception_meshes().contains(g_id));
+  EXPECT_EQ(gs_tester_.driven_perception_meshes().at(g_id).size(), 1);
+  EXPECT_EQ(
+      gs_tester_.driven_perception_meshes().at(g_id)[0].num_control_vertices(),
+      7);
+  EXPECT_EQ(gs_tester_.driven_perception_meshes()
+                .at(g_id)[0]
+                .triangle_surface_mesh()
+                .num_triangles(),
+            8);
+
+  // Remove the perception role and the driven mesh is removed along with it.
+  geometry_state_.RemoveRole(s_id, g_id, Role::kPerception);
+  EXPECT_FALSE(gs_tester_.driven_perception_meshes().contains(g_id));
+
+  // Add the perception role back with a specified render geometry consisting of
+  // two distinct meshes.
+  // Note that distinct RenderMesh are made if there are more than one material
+  // when loading the obj file.
+  const char mtl_file[] = "multi.mtl";
+  WriteFile(R"""(
+    newmtl test_material_1
+    Kd 1.0 0.0 1.0
+
+    newmtl test_material_2
+    Kd 1.0 0.0 0.0
+  )""",
+            mtl_file);
+  const std::string obj_path = WriteFile(fmt::format(R"""(
+        mtllib {}
+        v 0 0 0
+        v 0.1 0.1 0.1
+        v 0.2 0.2 0.2
+        vn 0 1 0
+        usemtl test_material_1
+        f 1//1 2//1 3//1
+        usemtl test_material_2
+        f 2//1 3//1 1//1
+        f 3//1 1//1 2//1)""",
+                                                     mtl_file),
+                                         "multi_mtl.obj");
+  perception_properties.AddProperty("render", "mesh", obj_path);
+  geometry_state_.AssignRole(s_id, g_id, perception_properties);
+  EXPECT_TRUE(gs_tester_.driven_perception_meshes().contains(g_id));
+  EXPECT_EQ(gs_tester_.driven_perception_meshes().at(g_id).size(), 2);
+}
+
+// Confirms that an accepting renderer
+//  1. registers deformable geometries with perception roles,
+//  2. updates configurations of registered deformable geometries when
+// FinalizeConfigurationUpdate() is called,
+//  3. removes the geometry when the perception role of the geometry is removed.
+TEST_F(GeometryStateTest, RendererConfigurationUpdate) {
+  SourceId s_id = NewSource();
+  const Sphere sphere(1.0);
+  // Make the resolution hint large enough so we end up with an octahedron.
+  constexpr double kRezHint = 10.0;
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  GeometryId g_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+
+  PerceptionProperties properties = render_engine_->accepting_properties();
+  properties.AddProperty("phong", "diffuse",
+                         Vector4<double>{0.8, 0.8, 0.8, 1.0});
+  properties.AddProperty("label", "id", RenderLabel::kDontCare);
+  geometry_state_.AssignRole(s_id, g_id, properties);
+  // Test object 1.
+  EXPECT_TRUE(render_engine_->has_geometry(g_id));
+
+  const std::vector<VectorXd> old_q_WG =
+      render_engine_->world_configurations(g_id);
+  const std::vector<VectorXd> old_nhat_W = render_engine_->world_normals(g_id);
+
+  // We know that the deformable octahedron has 7 vertices.
+  const int kNumControlMeshVertices = 7;
+  gs_tester_.mutable_kinematics_data().q_WGs[g_id] =
+      VectorXd::LinSpaced(3 * kNumControlMeshVertices, 0.0, 1.0);
+  gs_tester_.FinalizeConfigurationUpdate();
+  const std::vector<VectorXd> new_q_WG =
+      render_engine_->world_configurations(g_id);
+  const std::vector<VectorXd> new_nhat_W = render_engine_->world_normals(g_id);
+
+  ASSERT_EQ(old_q_WG.size(), new_q_WG.size());
+  ASSERT_EQ(old_nhat_W.size(), new_nhat_W.size());
+  // Test objective 2.
+  // Test that the vertex positions and normals have been modified. The
+  // correctness of these update has been tested in the tests for
+  // DrivenTriangleMesh and RenderEngine.
+  EXPECT_FALSE(CompareMatrices(old_q_WG[0], new_q_WG[0], 0.1));
+  EXPECT_FALSE(CompareMatrices(old_nhat_W[0], new_nhat_W[0], 0.1));
+
+  // Test objective 3.
+  geometry_state_.RemoveRole(s_id, g_id, Role::kPerception);
+  EXPECT_FALSE(render_engine_->has_geometry(g_id));
 }
 
 // This tests the equivalence of versions among copies of GeometryState
