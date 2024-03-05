@@ -2400,7 +2400,7 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
 
   DRAKE_THROW_UNLESS(animation_.get() != nullptr);
   int current_frame_index = animation_->frame(time);
-  std::string path_animation_current =
+  const std::string path_animation_current =
       fmt::format("{}/<animation>/{}", path, current_frame_index);
 
   // Initial condition = invisible.
@@ -2417,18 +2417,8 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape, double time,
   }
 
   SetProperty(path_animation_current, "visible", true, time);
-  last_frame_index_map_[path_str] = current_frame_index;
 
-  // TODO(DamrongGuoy): Find final time instead of infinity and do it after
-  //  StopRecording() instead of here.
-  if (last_frame_index_map_.contains(path_str)) {
-    std::string path_animation_last =
-        fmt::format("{}/<animation>/{}", path, last_frame_index_map_[path_str]);
-    std::string path_object = fmt::format("{}/<object>", path);
-    const double time_final = std::numeric_limits<double>::infinity();
-    SetProperty(path_animation_last, "visible", false, time_final);
-    SetProperty(path_object, "visible", true, time_final);
-  }
+  last_frame_index_map_[path_str] = current_frame_index;
 }
 
 void Meshcat::SetObject(std::string_view path,
