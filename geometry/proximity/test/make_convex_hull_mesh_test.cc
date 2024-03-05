@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
@@ -21,6 +22,8 @@ namespace {
 using Eigen::Vector3d;
 using PolyMesh = PolygonSurfaceMesh<double>;
 using std::vector;
+
+namespace fs = std::filesystem;
 
 /* To compare polygon meshes we will produce "canonical" representations. The
  canonical mesh is the same manifold as the input mesh but has the following
@@ -237,7 +240,7 @@ GTEST_TEST(MakeConvexHullMeshTest, RejectBadShapes) {
   DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHull(Sphere(1)), ".* only applies .*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeConvexHull(Mesh("thing.stl", 1)),
-      ".* only applies to obj and vtk meshes.*thing.stl.*");
+      ".* only applies to obj, vtk, and gltf.*thing.stl.*");
 
   // TODO(SeanCurtis-TRI): Figure out how to trigger a qhull error that isn't
   // prevented by Drake code do kcov can be happy about that code being
@@ -330,10 +333,59 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
+/* A reality check that it also works on glTF mesh files. */
+GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
+  const double scale = 2.0;
+  /* The glTF's bin file contains a cube with a hole in the center. We'll
+   apply a transform to the glTF node so it's no longer centered so we can
+   confirm that we're handling the y-up vs z-up transformation.
+
+   However, we're also applying a Drake scale factor to it. So, the expected
+   cube is the unit cube, first offset and then scaled. So, we'll construct
+   that expected cube here. */
+  const PolyMesh bin_cube = MakeCube(1);
+  const Vector3d p_WC(1, 2, 3);
+  vector<int> face_data = bin_cube.face_data();
+  vector<Vector3d> vertices;
+  for (int vi = 0; vi < bin_cube.num_vertices(); ++vi) {
+    vertices.push_back((bin_cube.vertex(vi) + p_WC) * scale);
+  }
+  const PolyMesh expected(std::move(face_data), std::move(vertices));
+
+  /* Create a custom version of cube_with_hole.gltf that is displaced by
+   p_WC. Simply copy the .bin and write out a modified .gltf file. */
+  const fs::path dir_path(temp_directory());
+
+  const fs::path bin_source =
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.bin");
+  const fs::path bin_target = dir_path / bin_source.filename();
+  fs::copy_file(bin_source, bin_target);
+
+  const fs::path gltf_source =
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.gltf");
+  const fs::path gltf_target = dir_path / gltf_source.filename();
+  {
+    std::ifstream in_gltf(gltf_source);
+    DRAKE_DEMAND(in_gltf.is_open());
+    nlohmann::json cube = nlohmann::json::parse(in_gltf);
+    DRAKE_DEMAND(cube["nodes"].size() == 1);
+    // p_WC is expressed in Drake's z-up world. So, when we set it in the file,
+    // it needs to be glTF's y-up world.
+    cube["nodes"][0]["translation"] = {p_WC.x(), p_WC.z(), -p_WC.y()};
+    std::ofstream out_gltf(gltf_target);
+    DRAKE_DEMAND(out_gltf.is_open());
+    out_gltf << cube;
+  }
+
+  const PolyMesh dut = MakeConvexHull(Mesh(gltf_target, scale));
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
 /* Tests what happens when a mesh that is strictly a 2D surface. */
 GTEST_TEST(MakeConvexHullMeshTest, PlanarSurface) {
-  const std::filesystem::path dir_path(temp_directory());
-  const std::filesystem::path obj_path = dir_path / "one_square.obj";
+  const fs::path dir_path(temp_directory());
+  const fs::path obj_path = dir_path / "one_square.obj";
   {
     std::ofstream file(obj_path);
     DRAKE_DEMAND(file.is_open());
@@ -385,10 +437,10 @@ f 1//1 2//1 4//1 3//1
 // There are some mesh cases that we simply throw; they are and should be
 // considered degenerate.
 GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
-  const std::filesystem::path dir_path(temp_directory());
+  const fs::path dir_path(temp_directory());
   auto make_obj = [&dir_path](std::string_view name,
                               std::string_view contents) {
-    std::filesystem::path obj_path = dir_path / name;
+    fs::path obj_path = dir_path / name;
     std::ofstream file(obj_path);
     DRAKE_DEMAND(file.is_open());
     file << contents;
