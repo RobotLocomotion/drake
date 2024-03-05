@@ -482,7 +482,12 @@ drake_cc_library(
         "//common:essential",
         "//common:find_resource",
         "//geometry:read_obj",
+        "//geometry:vtk_opengl_init",
+        "//math:geometric_transform",
         "@qhull_internal//:qhull",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -1237,6 +1242,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "make_convex_hull_mesh_test",
     data = [
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
         "//geometry/render:test_models",

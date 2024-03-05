@@ -330,6 +330,17 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
+/* A reality check that it also works on glTF mesh files. */
+GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale);
+
+  const PolyMesh dut = MakeConvexHull(Mesh(
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.gltf"), scale));
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
 /* Tests what happens when a mesh that is strictly a 2D surface. */
 GTEST_TEST(MakeConvexHullMeshTest, PlanarSurface) {
   const std::filesystem::path dir_path(temp_directory());

@@ -6,10 +6,15 @@
 #include <utility>
 #include <vector>
 
+// To ease build system upkeep, we annotate VTK includes with their deps.
 #include <fmt/format.h>
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
+#include <vtkGLTFImporter.h>  // vtkIOImport
+#include <vtkMapper.h>        // vtkCommonCore
+#include <vtkPolyData.h>      // vtkCommonDataModel
+#include <vtkRenderer.h>      // vtkRenderingCore
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
@@ -18,6 +23,8 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -25,6 +32,8 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 /* Used for ordering polygon vertices according to their angular distance from
  a reference direction. See OrderPolyVertices(). */
@@ -100,8 +109,8 @@ struct VertexCloud {
   Vector3d interior_point;
 };
 
-/* Simply reads the vertices from an OBJ or VTK file referred to by either a
- Mesh or Convex shape. Supports getting the vertices for MakeConvexHull.
+/* Simply reads the vertices from an OBJ, VTK or glTF file referred to by either
+ a Mesh or Convex shape. Supports getting the vertices for MakeConvexHull.
 
  When calling reify, the user data should be an instance of VertexCloud. The
  reifier will write the results into that instance. */
@@ -129,10 +138,13 @@ class VertexReader final : public ShapeReifier {
       ReadObjVertices(filename, scale, &cloud.vertices);
     } else if (extension == ".vtk") {
       ReadVtkVertices(filename, scale, &cloud.vertices);
+    } else if (extension == ".gltf") {
+      ReadGltfVertices(filename, scale, &cloud.vertices);
     } else {
-      throw std::runtime_error(fmt::format(
-          "MakeConvexHull only applies to obj and vtk meshes; given file: {}.",
-          filename));
+      throw std::runtime_error(
+          fmt::format("MakeConvexHull only applies to obj, vtk, and gltf "
+                      "meshes; given file: {}.",
+                      filename));
     }
 
     if (cloud.vertices.size() < 3) {
@@ -178,6 +190,41 @@ class VertexReader final : public ShapeReifier {
 
     // It would be nice if we could simply steal the vertices rather than copy.
     *vertices = volume_mesh.vertices();
+  }
+
+  void ReadGltfVertices(std::string_view filename, double scale,
+                        std::vector<Vector3d>* vertices) {
+    vtkNew<vtkGLTFImporter> importer;
+    importer->SetFileName(filename.data());
+    importer->Update();
+
+    auto* renderer = importer->GetRenderer();
+    DRAKE_DEMAND(renderer != nullptr);
+
+    if (renderer->VisibleActorCount() == 0) {
+      throw std::runtime_error(fmt::format(
+          "MakeConvexHull() found no vertices in the file '{}'.", filename));
+    }
+
+    // The relative transform from the file's frame F to the geometry's frame G.
+    // (rotation from y-up to z-up). The scale is handled separately.
+    const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
+
+    auto* actors = renderer->GetActors();
+    actors->InitTraversal();
+    // For each source_actor, create a color, depth, and label actor.
+    while (vtkActor* actor = actors->GetNextActor()) {
+      // 1. Extract PolyData from actor.
+      auto* poly_data =
+          dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
+      DRAKE_DEMAND(poly_data != nullptr);
+      // 2. For each vertex scale and rotate it.
+      for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
+        const double* p_FV_data = poly_data->GetPoint(vi);
+        const Vector3d p_FV(p_FV_data);
+        vertices->emplace_back(X_GF * (p_FV * scale));
+      }
+    }
   }
 
   /* Given a set of vertices, attempts to find a plane that reliably spans

@@ -58,6 +58,7 @@ drake_cc_library(
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
+        "//geometry:vtk_opengl_init",
         "//geometry/render:render_engine",
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:render_engine_vtk_params",
