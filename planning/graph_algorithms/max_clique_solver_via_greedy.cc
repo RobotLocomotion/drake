@@ -1,8 +1,6 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
-#include "drake/common/fmt_eigen.h"
 
 #include <algorithm>
-// #include <iostream>
 #include <vector>
 #include <numeric>
 
@@ -13,12 +11,13 @@ using Eigen::SparseMatrix;
 
 namespace{
 
-Eigen::VectorXi compute_degree_of_vertices(const Eigen::SparseMatrix<bool>& adjacency_matrix) {
-    const int num_vertices = adjacency_matrix.rows();
+//Computes the degrees of all verticies in a graph given by its adjacency matrix.
+Eigen::VectorXi ComputeDegreeOfVertices(const Eigen::SparseMatrix<bool>& adjacency_matrix) {
+    const int num_vertices = adjacency_matrix.cols();
     // Initialize a vector to store the degree of each vertex
     Eigen::VectorXi degrees(num_vertices);
     // Compute the degree of each vertex
-    for (int j = 0; j < num_vertices; ++j) {
+    for (int j = 0; j < adjacency_matrix.outerSize(); ++j) {
         degrees(j) = 0;
         for (SparseMatrix<bool>::InnerIterator it(adjacency_matrix, j); it; ++it) {
             degrees(j) +=1;
@@ -27,7 +26,9 @@ Eigen::VectorXi compute_degree_of_vertices(const Eigen::SparseMatrix<bool>& adja
     return degrees;
 }
 
-int pick_best(const std::vector<int>& degrees_sort_idx, std::vector<int>& available_nodes) {
+//Given the vertices ordered by their degree in descending order return the first that is 
+//in the list of available vertices.
+int PickBest(const std::vector<int>& degrees_sort_idx, std::vector<int>& available_nodes) {
     for (int d : degrees_sort_idx) {
         auto it = std::find(available_nodes.begin(), available_nodes.end(), d);
         if (it != available_nodes.end()) {
@@ -37,19 +38,19 @@ int pick_best(const std::vector<int>& degrees_sort_idx, std::vector<int>& availa
     throw std::runtime_error("No valid element found in available_nodes.");
 }
 
-void update_available_nodes(const Eigen::SparseMatrix<bool>& mat, int point_to_add, std::vector<int>& available_nodes) {
+//Removes all nodes from available_nodes that are not adjacent to point_to_add. Further removes
+//point_to_add.
+void UpdateAvailableNodes(const Eigen::SparseMatrix<bool>& mat, int point_to_add, std::vector<int>& available_nodes) {
     auto it = std::remove_if(available_nodes.begin(), available_nodes.end(),
                              [&](int a) { 
                                 bool value = !mat.coeff(a, point_to_add) || (a == point_to_add);
                                 // std::cout<<fmt::format("a {} val {}", a, value)<<std::endl;
                                 return value;  });
-    
-    // Print the elements intended to be erased
     available_nodes.erase(it, available_nodes.end());
 }
 
 // Sets mat(i,:) and mat(:,i) to false if i is not a neighbour of index  
-void mask_non_neighbours(Eigen::SparseMatrix<bool>& mat, int index) {
+void MaskNonNeighbours(Eigen::SparseMatrix<bool>& mat, int index) {
     for (int j = 0; j < mat.outerSize(); ++j) {
         if (!(mat.coeff(index, j))&& index!=j) {
             for (Eigen::SparseMatrix<bool>::InnerIterator it(mat, j); it; ++it) {
@@ -74,8 +75,6 @@ std::vector<int> decreasing_argsort(const Eigen::Ref<Eigen::VectorXi>& values) {
 
 }//namespace
 
-MaxCliqueSolverViaGreedy::MaxCliqueSolverViaGreedy(){};
-
 VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
 
@@ -89,14 +88,14 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   SparseMatrix<bool> curr_ad_matrix = adjacency_matrix;
  
   while(true){
-    Eigen::VectorXi degrees = compute_degree_of_vertices(curr_ad_matrix);
+    Eigen::VectorXi degrees = ComputeDegreeOfVertices(curr_ad_matrix);
     // std::cout<<fmt::format("{}", fmt_eigen(degrees))<<std::endl;
     std::vector<int> degrees_sort_idx = decreasing_argsort(degrees);
-    int point_to_add = pick_best(degrees_sort_idx, available_nodes);
+    int point_to_add = PickBest(degrees_sort_idx, available_nodes);
     // std::cout<<fmt::format("point to add {}", point_to_add)<<std::endl;
     
     clique_members.push_back(point_to_add);
-    update_available_nodes(curr_ad_matrix, point_to_add, available_nodes);
+    UpdateAvailableNodes(curr_ad_matrix, point_to_add, available_nodes);
     // std::cout << "Available Nodes: ";
     // for (const auto& element : available_nodes) {
     //     std::cout << element << " ";
@@ -107,7 +106,7 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     if(!available_nodes.size()){
         break;
     }
-    mask_non_neighbours(curr_ad_matrix, point_to_add);
+    MaskNonNeighbours(curr_ad_matrix, point_to_add);
 
   }
 

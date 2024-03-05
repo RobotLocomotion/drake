@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include <Eigen/Sparse>
 
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
@@ -13,13 +11,11 @@ namespace graph_algorithms {
 /**
  * Produces approximate solution to the maximum clique problem via a greedy heuristic.
  * TODO(wernerpe): complete docs
- * @throws std::exception if the initial guess has the wrong size for the
- * provided adjacency matrix.
  */
 class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaGreedy);
-  MaxCliqueSolverViaGreedy();
+  MaxCliqueSolverViaGreedy() = default;
 
  private:
   VectorX<bool> DoSolveMaxClique(
