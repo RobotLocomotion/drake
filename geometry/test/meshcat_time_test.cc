@@ -102,8 +102,6 @@ int frame(Meshcat* meshcat, double time) {
 }
 
 // Call SetObject(Shape) with and without time works well together.
-// It's supposed to give the same result as the previous test, but we aren't
-// there yet.
 GTEST_TEST(MeshcatTet, SetObjectWithShapeTime) {
   Meshcat meshcat;
 
