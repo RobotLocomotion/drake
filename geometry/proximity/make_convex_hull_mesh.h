@@ -13,7 +13,7 @@ namespace internal {
  @param shape   The shape to bound.
 
  @throws if `shape` is not an instance of Mesh or Convex.
- @throws if `shape` references anything but an .obj or .vtk volume mesh.
+ @throws if `shape` references anything but an .obj, .vtk volume mesh, or .gltf.
  @throws if the referenced mesh data is degenerate (insufficient number of
             vertices, co-linear or coincident vertices, etc.) All of the
             vertices lying on a plane is *not* degenerate.

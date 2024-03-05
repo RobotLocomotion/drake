@@ -237,7 +237,7 @@ GTEST_TEST(MakeConvexHullMeshTest, RejectBadShapes) {
   DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHull(Sphere(1)), ".* only applies .*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeConvexHull(Mesh("thing.stl", 1)),
-      ".* only applies to obj and vtk meshes.*thing.stl.*");
+      ".* only applies to obj, vtk, and gltf.*thing.stl.*");
 
   // TODO(SeanCurtis-TRI): Figure out how to trigger a qhull error that isn't
   // prevented by Drake code do kcov can be happy about that code being
@@ -326,6 +326,17 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
 
   const PolyMesh dut = MakeConvexHull(Mesh(
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale));
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+/* A reality check that it also works on glTF mesh files. */
+GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale);
+
+  const PolyMesh dut = MakeConvexHull(Mesh(
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.gltf"), scale));
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
