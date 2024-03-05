@@ -17,7 +17,7 @@ namespace {
 
 using Eigen::Triplet;
 
-// Test maximum clique solved via MIP. Compare against the expected size of
+// Test maximum clique solved via greedy. Compare against the expected size of
 // the solution and ensure that the result is one of the true maximum cliques in
 // the graph.
 void TestMaxCliqueViaGreedy(
