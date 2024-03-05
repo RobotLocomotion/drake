@@ -15,35 +15,25 @@ namespace {
 // Computes the degrees of all verticies in a graph given by its adjacency
 // matrix.
 Eigen::VectorXi ComputeDegreeOfVertices(
-    const Eigen::SparseMatrix<bool>& adjacency_matrix) {
-  const int num_vertices = adjacency_matrix.cols();
+    const Eigen::SparseMatrix<bool>& adjacency_matrix,
+    const std::set<int>& available_nodes) {
+  // const int num_vertices = adjacency_matrix.cols();
 
   DRAKE_DEMAND(adjacency_matrix.rows() == adjacency_matrix.cols());
   DRAKE_DEMAND(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
 
   // Initialize a vector to store the degree of each vertex
-  Eigen::VectorXi degrees(num_vertices);
-  // Compute the degree of each vertex
-  for (int j = 0; j < adjacency_matrix.outerSize(); ++j) {
-    degrees(j) = 0;
-    for (SparseMatrix<bool>::InnerIterator it(adjacency_matrix, j); it; ++it) {
-      degrees(j) += 1;
+  Eigen::VectorXi degrees(available_nodes.size());
+  // Compute the degree of each candidate
+  int candidate_index{0};
+  for (auto j = available_nodes.begin(); j != available_nodes.end(); ++j) {
+    degrees(candidate_index) = 0;
+    for (SparseMatrix<bool>::InnerIterator it(adjacency_matrix, *j); it; ++it) {
+      degrees(candidate_index) += 1;
     }
+    ++candidate_index;
   }
   return degrees;
-}
-
-// Given the vertices ordered by their degree in descending order return the
-// first that is in the list of available vertices.
-int PickBest(const std::vector<int>& degrees_sort_idx,
-             const std::set<int>& available_nodes) {
-  for (int d : degrees_sort_idx) {
-    auto it = available_nodes.find(d);
-    if (it != available_nodes.end()) {
-      return d;
-    }
-  }
-  throw std::runtime_error("No valid element found in available_nodes.");
 }
 
 // Removes all nodes from available_nodes that are not adjacent to point_to_add.
@@ -99,10 +89,12 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   SparseMatrix<bool> curr_ad_matrix = adjacency_matrix;
 
   while (available_nodes.size() > 0) {
-    Eigen::VectorXi degrees = ComputeDegreeOfVertices(curr_ad_matrix);
+    Eigen::VectorXi degrees =
+        ComputeDegreeOfVertices(curr_ad_matrix, available_nodes);
     std::vector<int> degrees_sort_idx = decreasing_argsort(degrees);
-
-    int point_to_add = PickBest(degrees_sort_idx, available_nodes);
+    auto it = available_nodes.begin();
+    std::advance(it, degrees_sort_idx.at(0));
+    int point_to_add = *it;
     clique_members.push_back(point_to_add);
 
     UpdateAvailableNodes(&curr_ad_matrix, point_to_add, &available_nodes);
