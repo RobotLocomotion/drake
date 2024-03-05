@@ -14,8 +14,8 @@ drake_cc_package_library(
     deps = [
         ":graph_algorithms_internal",
         ":max_clique_solver_base",
-        ":max_clique_solver_via_mip",
         ":max_clique_solver_via_greedy",
+        ":max_clique_solver_via_mip",
     ],
 )
 

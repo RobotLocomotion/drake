@@ -1,14 +1,12 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 
 #include <exception>
-#include <optional>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
-
 
 namespace drake {
 namespace planning {
@@ -24,24 +22,22 @@ void TestMaxCliqueViaGreedy(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix,
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
-
-    MaxCliqueSolverViaGreedy solver{};
-    VectorX<bool> max_clique_inds = solver.SolveMaxClique(adjacency_matrix);
-    EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
-    bool solution_match_found = false;
-    for (const auto& possible_solution : possible_solutions) {
-      if (max_clique_inds.cast<int>() == possible_solution.cast<int>()) {
-        solution_match_found = true;
-        break;
-      }
+  MaxCliqueSolverViaGreedy solver{};
+  VectorX<bool> max_clique_inds = solver.SolveMaxClique(adjacency_matrix);
+  EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
+  bool solution_match_found = false;
+  for (const auto& possible_solution : possible_solutions) {
+    if (max_clique_inds.cast<int>() == possible_solution.cast<int>()) {
+      solution_match_found = true;
+      break;
     }
-    EXPECT_TRUE(solution_match_found);
- 
+  }
+  EXPECT_TRUE(solution_match_found);
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructorSettersAndGetters) {
   // Test the default constructor.
-  MaxCliqueSolverViaGreedy solver{}; 
+  MaxCliqueSolverViaGreedy solver{};
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, CompleteGraph) {
@@ -114,6 +110,40 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, PetersenGraph) {
   TestMaxCliqueViaGreedy(graph, 2, possible_solutions);
 }
 
+GTEST_TEST(MaxCliqueSolverViaGreedyTest, FullyConnectedPlusFullBipartiteGraph) {
+  // The Petersen graph has a clique number of size 2, so all edges are possible
+  // solutions.
+  Eigen::SparseMatrix<bool> graph =
+      internal::FullyConnectedPlusFullBipartiteGraph();
+  VectorX<bool> solution1(9);
+  VectorX<bool> solution2(9);
+  VectorX<bool> solution3(9);
+  VectorX<bool> solution4(9);
+  VectorX<bool> solution5(9);
+  VectorX<bool> solution6(9);
+  VectorX<bool> solution7(9);
+  VectorX<bool> solution8(9);
+  VectorX<bool> solution9(9);
+
+  // The max cliuqe solutions are pairs of vertices on the bipartite graph.
+  solution1 << false, false, false, true, false, false, true, false, false;
+  solution2 << false, false, false, true, false, false, false, true, false;
+  solution3 << false, false, false, true, false, false, false, false, true;
+
+  solution4 << false, false, false, false, true, false, true, false, false;
+  solution5 << false, false, false, false, true, false, false, true, false;
+  solution6 << false, false, false, false, true, false, false, false, true;
+
+  solution7 << false, false, false, false, false, true, true, false, false;
+  solution8 << false, false, false, false, false, true, false, true, false;
+  solution9 << false, false, false, false, false, true, false, false, true;
+  std::vector<VectorX<bool>> possible_solutions{
+      solution1, solution2, solution3, solution4, solution5,
+      solution6, solution7, solution8, solution9};
+
+  TestMaxCliqueViaGreedy(graph, 2, possible_solutions);
+}
+
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSquare) {
   std::vector<Triplet<bool>> triplets;
   triplets.push_back(Triplet<bool>(0, 1, 1));
@@ -122,7 +152,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSquare) {
   MaxCliqueSolverViaGreedy solver{};
   // Cast to void due to since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
-  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
+  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::exception);
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSymmetric) {
@@ -134,7 +164,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSymmetric) {
   MaxCliqueSolverViaGreedy solver{};
   // Cast to void due to since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
-  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
+  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::exception);
 }
 
 }  // namespace

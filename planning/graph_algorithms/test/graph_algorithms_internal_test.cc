@@ -164,6 +164,53 @@ GTEST_TEST(ComplementGraph, PetersenGraph) {
                       complement_graph_expected.toDense().cast<double>()));
 }
 
+GTEST_TEST(ComplementGraph, FullyConnectedPlusBipartiteGraph) {
+  Eigen::SparseMatrix<bool> graph =
+      internal::FullyConnectedPlusFullBipartiteGraph();
+  Eigen::SparseMatrix<bool> complement_graph =
+      internal::ComplementAdjacencyMatrix(graph);
+
+  std::vector<Eigen::Triplet<bool>> expected_entries;
+  // bipartite part
+  expected_entries.emplace_back(3, 4, 1);
+  expected_entries.emplace_back(3, 5, 1);
+  expected_entries.emplace_back(4, 5, 1);
+  expected_entries.emplace_back(6, 7, 1);
+  expected_entries.emplace_back(6, 8, 1);
+  expected_entries.emplace_back(7, 8, 1);
+
+  // connection fully connected to bipartite part
+  expected_entries.emplace_back(0, 3, 1);
+  expected_entries.emplace_back(0, 4, 1);
+  expected_entries.emplace_back(0, 5, 1);
+  expected_entries.emplace_back(0, 6, 1);
+  expected_entries.emplace_back(0, 7, 1);
+  expected_entries.emplace_back(0, 8, 1);
+
+  expected_entries.emplace_back(1, 3, 1);
+  expected_entries.emplace_back(1, 4, 1);
+  expected_entries.emplace_back(1, 5, 1);
+  expected_entries.emplace_back(1, 6, 1);
+  expected_entries.emplace_back(1, 7, 1);
+  expected_entries.emplace_back(1, 8, 1);
+
+  expected_entries.emplace_back(2, 3, 1);
+  expected_entries.emplace_back(2, 4, 1);
+  expected_entries.emplace_back(2, 5, 1);
+  expected_entries.emplace_back(2, 6, 1);
+  expected_entries.emplace_back(2, 7, 1);
+  expected_entries.emplace_back(2, 8, 1);
+
+  internal::SymmetrizeTripletList(&expected_entries);
+  Eigen::SparseMatrix<bool> complement_graph_expected(graph.rows(),
+                                                      graph.cols());
+  complement_graph_expected.setFromTriplets(expected_entries.begin(),
+                                            expected_entries.end());
+  EXPECT_TRUE(
+      CompareMatrices(complement_graph.toDense().cast<double>(),
+                      complement_graph_expected.toDense().cast<double>()));
+}
+
 }  // namespace
 }  // namespace graph_algorithms
 }  // namespace planning

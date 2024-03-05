@@ -9,7 +9,8 @@ namespace planning {
 namespace graph_algorithms {
 
 /**
- * Produces approximate solution to the maximum clique problem via a greedy heuristic.
+ * Produces approximate solution to the maximum clique problem via a greedy
+ * heuristic.
  * TODO(wernerpe): complete docs
  */
 class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
@@ -20,7 +21,6 @@ class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
  private:
   VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const final;
-
 };
 
 }  // namespace graph_algorithms

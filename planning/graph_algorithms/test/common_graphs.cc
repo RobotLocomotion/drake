@@ -77,6 +77,27 @@ Eigen::SparseMatrix<bool> PetersenGraph() {
   return ret;
 }
 
+Eigen::SparseMatrix<bool> FullyConnectedPlusFullBipartiteGraph() {
+  std::vector<Triplet<bool>> triplets;
+  triplets.push_back(Triplet<bool>(0, 1, 1));
+  triplets.push_back(Triplet<bool>(0, 2, 1));
+  triplets.push_back(Triplet<bool>(1, 2, 1));
+  triplets.push_back(Triplet<bool>(3, 6, 1));
+  triplets.push_back(Triplet<bool>(3, 7, 1));
+  triplets.push_back(Triplet<bool>(3, 8, 1));
+  triplets.push_back(Triplet<bool>(4, 6, 1));
+  triplets.push_back(Triplet<bool>(4, 7, 1));
+  triplets.push_back(Triplet<bool>(4, 8, 1));
+  triplets.push_back(Triplet<bool>(5, 6, 1));
+  triplets.push_back(Triplet<bool>(5, 7, 1));
+  triplets.push_back(Triplet<bool>(5, 8, 1));
+
+  internal::SymmetrizeTripletList(&triplets);
+  Eigen::SparseMatrix<bool> ret(9, 9);
+  ret.setFromTriplets(triplets.begin(), triplets.end());
+  return ret;
+}
+
 }  // namespace internal
 }  // namespace graph_algorithms
 }  // namespace planning
