@@ -5,7 +5,7 @@ we want to keep a carefully inventory of what we're using.
 
 To that end, we "vendor" the result of what rust_register_toolchains() would
 usually do and commit the information into Drake. That vendored information is
-created by the `update.sh` script and lives in the `lock/**` subdirectory tree.
+created by the `upgrade.py` script and lives in the `lock/**` subdirectory tree.
 
 In short, we pin pointers to rust-lang.org downloads for the compiler, standard
 library, etc. along with sha256 checksums and generated BUILD wrapper files.
