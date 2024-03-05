@@ -17,7 +17,7 @@ namespace graph_algorithms {
  * then the degree of connectivity of every vertex is computed and candidate
  * vertex with the highest degree is added to the clique. Afterwards, the
  * adjacency matrix and new candidate list are updated and the previous two
- * steps are repeated.
+ * steps are repeated until no candidates are left.
  */
 class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
  public:
