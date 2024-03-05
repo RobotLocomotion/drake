@@ -192,17 +192,27 @@ std::optional<string> MaybeGetEnvironmentResourceRoot() {
 std::optional<string> MaybeGetInstallResourceRoot() {
   // Ensure that we have the library loaded.
   DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
-  std::optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
-  if (libdrake_dir) {
-    const string root = *libdrake_dir + "/../share";
-    if (fs::is_directory({root})) {
-      return root;
-    } else {
-      log()->debug(
-          "FindResource ignoring CMake install candidate '{}' because it does "
-          "not exist",
-          root);
+  std::optional<string> maybe_libdrake_dir =
+      LoadedLibraryPath("libdrake_marker.so");
+  if (maybe_libdrake_dir) {
+    log()->debug("FindResource libdrake_dir='{}'", *maybe_libdrake_dir);
+    const fs::path libdrake_dir{*maybe_libdrake_dir};
+    const fs::path root = libdrake_dir / "../share";
+    if (fs::is_directory(root)) {
+      return root.string();
     }
+    const fs::path canonical_root =
+        fs::canonical(libdrake_dir / "libdrake_marker.so")
+            .parent_path()
+            .parent_path() /
+        "share";
+    if (fs::is_directory(canonical_root)) {
+      return canonical_root.string();
+    }
+    log()->debug(
+        "FindResource ignoring CMake install candidate '{}' ('{}') because it "
+        "does not exist",
+        root.string(), canonical_root.string());
   } else {
     log()->debug("FindResource has no CMake install candidate");
   }
