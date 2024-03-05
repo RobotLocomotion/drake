@@ -384,7 +384,7 @@ class TestGeometryOptimization(unittest.TestCase):
         assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
 
         rect2 = mut.Hyperrectangle(lb=-2*self.b, ub=0.5*self.b)
-        intersection = rect.Intersection(rect2)
+        intersection = rect.MaybeGetIntersection(rect2)
         np.testing.assert_array_equal(intersection.lb(), -self.b)
         np.testing.assert_array_equal(intersection.ub(), 0.5*self.b)
 
