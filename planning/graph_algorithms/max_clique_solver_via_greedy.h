@@ -12,7 +12,6 @@ namespace graph_algorithms {
 
 /**
  * Produces approximate solution to the maximum clique problem via a greedy heuristic.
- * mixed-integer program
  * TODO(wernerpe): complete docs
  * @throws std::exception if the initial guess has the wrong size for the
  * provided adjacency matrix.

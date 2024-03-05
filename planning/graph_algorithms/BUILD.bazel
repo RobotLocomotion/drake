@@ -94,6 +94,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "max_clique_solver_via_greedy_test",
+    srcs = ["test/max_clique_solver_via_greedy_test.cc"],
+    deps = [
+        ":common_graphs",
+        ":max_clique_solver_via_greedy",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "graph_algorithms_internal_test",
     srcs = ["test/graph_algorithms_internal_test.cc"],
     deps = [
