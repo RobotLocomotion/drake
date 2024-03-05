@@ -37,10 +37,12 @@ Eigen::SparseMatrix<bool> PetersenGraph();
 // Taken from
 // https://cs.stackexchange.com/questions/63784/why-doesnt-greedy-work-for-clique.
 //  0-┐  5---6
-//  | |  |   |
+//  | |  | x |
 //  1 |  4---7
-//  | |  |   |
+//  | |  | x |
 //  2-┘  3---8
+// There are additionally edges between (3,6), (5,8) which are hard to draw in
+// ascii art.
 Eigen::SparseMatrix<bool> FullyConnectedPlusFullBipartiteGraph();
 
 }  // namespace internal

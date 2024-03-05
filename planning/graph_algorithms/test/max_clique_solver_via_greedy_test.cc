@@ -111,8 +111,9 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, PetersenGraph) {
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, FullyConnectedPlusFullBipartiteGraph) {
-  // The Petersen graph has a clique number of size 2, so all edges are possible
-  // solutions.
+  // The FullyConnectedPlusFullBipartiteGraph graph has a clique number of size
+  // 3, but we expect the greedy algorithm to find 2 because the vertices in the
+  // bipartite subgraph have higher degree.
   Eigen::SparseMatrix<bool> graph =
       internal::FullyConnectedPlusFullBipartiteGraph();
   VectorX<bool> solution1(9);
@@ -150,7 +151,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSquare) {
   Eigen::SparseMatrix<bool> graph(3, 2);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaGreedy solver{};
-  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // Cast to void since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
   EXPECT_THROW((void)solver.SolveMaxClique(graph), std::exception);
 }
@@ -162,7 +163,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSymmetric) {
   Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaGreedy solver{};
-  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // Cast to void since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
   EXPECT_THROW((void)solver.SolveMaxClique(graph), std::exception);
 }

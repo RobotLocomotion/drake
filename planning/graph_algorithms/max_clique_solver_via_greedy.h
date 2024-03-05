@@ -14,10 +14,10 @@ namespace graph_algorithms {
  * connectivity to the remaining candidate vertices. Candidate vertices are
  * non-clique members that share an edge with every clique member. The algorithm
  * initializes the clique with an empty set and makes every vertex a candidate,
- * then the degree of connectivity of every vertex is computed and candidate
- * vertex with the highest degree is added to the clique. Afterwards, the
- * adjacency matrix and new candidate list are updated and the previous two
- * steps are repeated until no candidates are left.
+ * then the degree of every vertex is computed and candidate vertex with the
+ * highest degree is added to the clique. Afterwards, the adjacency matrix and
+ * new candidate list are updated and the previous two steps are repeated until
+ * no candidates are left.
  */
 class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
  public:

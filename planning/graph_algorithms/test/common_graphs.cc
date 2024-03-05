@@ -24,11 +24,11 @@ Eigen::SparseMatrix<bool> MakeCompleteGraph(const int n) {
 Eigen::SparseMatrix<bool> BullGraph() {
   std::vector<Triplet<bool>> triplets;
 
-  triplets.push_back(Triplet<bool>(0, 1, true));
-  triplets.push_back(Triplet<bool>(1, 2, true));
-  triplets.push_back(Triplet<bool>(1, 3, true));
-  triplets.push_back(Triplet<bool>(2, 3, true));
-  triplets.push_back(Triplet<bool>(3, 4, true));
+  triplets.emplace_back(0, 1, true);
+  triplets.emplace_back(1, 2, true);
+  triplets.emplace_back(1, 3, true);
+  triplets.emplace_back(2, 3, true);
+  triplets.emplace_back(3, 4, true);
 
   internal::SymmetrizeTripletList(&triplets);
   Eigen::SparseMatrix<bool> ret(5, 5);
@@ -38,12 +38,12 @@ Eigen::SparseMatrix<bool> BullGraph() {
 
 Eigen::SparseMatrix<bool> ButterflyGraph() {
   std::vector<Triplet<bool>> triplets;
-  triplets.push_back(Triplet<bool>(0, 1, 1));
-  triplets.push_back(Triplet<bool>(0, 2, 1));
-  triplets.push_back(Triplet<bool>(1, 2, 1));
-  triplets.push_back(Triplet<bool>(2, 3, 1));
-  triplets.push_back(Triplet<bool>(2, 4, 1));
-  triplets.push_back(Triplet<bool>(3, 4, 1));
+  triplets.emplace_back(0, 1, true);
+  triplets.emplace_back(0, 2, true);
+  triplets.emplace_back(1, 2, true);
+  triplets.emplace_back(2, 3, true);
+  triplets.emplace_back(2, 4, true);
+  triplets.emplace_back(3, 4, true);
 
   internal::SymmetrizeTripletList(&triplets);
   Eigen::SparseMatrix<bool> ret(5, 5);
@@ -53,23 +53,23 @@ Eigen::SparseMatrix<bool> ButterflyGraph() {
 
 Eigen::SparseMatrix<bool> PetersenGraph() {
   std::vector<Triplet<bool>> triplets;
-  triplets.push_back(Triplet<bool>(0, 2, 1));
-  triplets.push_back(Triplet<bool>(0, 3, 1));
-  triplets.push_back(Triplet<bool>(1, 3, 1));
-  triplets.push_back(Triplet<bool>(1, 4, 1));
-  triplets.push_back(Triplet<bool>(2, 4, 1));
+  triplets.emplace_back(0, 2, true);
+  triplets.emplace_back(0, 3, true);
+  triplets.emplace_back(1, 3, true);
+  triplets.emplace_back(1, 4, true);
+  triplets.emplace_back(2, 4, true);
 
-  triplets.push_back(Triplet<bool>(5, 6, 1));
-  triplets.push_back(Triplet<bool>(6, 7, 1));
-  triplets.push_back(Triplet<bool>(7, 8, 1));
-  triplets.push_back(Triplet<bool>(8, 9, 1));
-  triplets.push_back(Triplet<bool>(5, 9, 1));
+  triplets.emplace_back(5, 6, true);
+  triplets.emplace_back(6, 7, true);
+  triplets.emplace_back(7, 8, true);
+  triplets.emplace_back(8, 9, true);
+  triplets.emplace_back(5, 9, true);
 
-  triplets.push_back(Triplet<bool>(0, 5, 1));
-  triplets.push_back(Triplet<bool>(1, 6, 1));
-  triplets.push_back(Triplet<bool>(2, 7, 1));
-  triplets.push_back(Triplet<bool>(3, 8, 1));
-  triplets.push_back(Triplet<bool>(4, 9, 1));
+  triplets.emplace_back(0, 5, true);
+  triplets.emplace_back(1, 6, true);
+  triplets.emplace_back(2, 7, true);
+  triplets.emplace_back(3, 8, true);
+  triplets.emplace_back(4, 9, true);
 
   internal::SymmetrizeTripletList(&triplets);
   Eigen::SparseMatrix<bool> ret(10, 10);
@@ -79,18 +79,18 @@ Eigen::SparseMatrix<bool> PetersenGraph() {
 
 Eigen::SparseMatrix<bool> FullyConnectedPlusFullBipartiteGraph() {
   std::vector<Triplet<bool>> triplets;
-  triplets.push_back(Triplet<bool>(0, 1, 1));
-  triplets.push_back(Triplet<bool>(0, 2, 1));
-  triplets.push_back(Triplet<bool>(1, 2, 1));
-  triplets.push_back(Triplet<bool>(3, 6, 1));
-  triplets.push_back(Triplet<bool>(3, 7, 1));
-  triplets.push_back(Triplet<bool>(3, 8, 1));
-  triplets.push_back(Triplet<bool>(4, 6, 1));
-  triplets.push_back(Triplet<bool>(4, 7, 1));
-  triplets.push_back(Triplet<bool>(4, 8, 1));
-  triplets.push_back(Triplet<bool>(5, 6, 1));
-  triplets.push_back(Triplet<bool>(5, 7, 1));
-  triplets.push_back(Triplet<bool>(5, 8, 1));
+  triplets.emplace_back(0, 1, true);
+  triplets.emplace_back(0, 2, true);
+  triplets.emplace_back(1, 2, true);
+  triplets.emplace_back(3, 6, true);
+  triplets.emplace_back(3, 7, true);
+  triplets.emplace_back(3, 8, true);
+  triplets.emplace_back(4, 6, true);
+  triplets.emplace_back(4, 7, true);
+  triplets.emplace_back(4, 8, true);
+  triplets.emplace_back(5, 6, true);
+  triplets.emplace_back(5, 7, true);
+  triplets.emplace_back(5, 8, true);
 
   internal::SymmetrizeTripletList(&triplets);
   Eigen::SparseMatrix<bool> ret(9, 9);

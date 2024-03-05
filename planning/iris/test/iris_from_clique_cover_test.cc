@@ -13,6 +13,9 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solver_options.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -268,7 +271,26 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator(1);
-  planning::graph_algorithms::MaxCliqueSolverViaMip solver{};
+
+  // limiting the work load for ILP solver
+  solvers::SolverOptions solver_options;
+  // Quit after finding 25 solutions.
+  const int kFeasibleSolutionLimit = 25;
+  // Quit at a 5% optimality gap
+  const double kRelOptGap = 0.05;
+
+  solver_options.SetOption(solvers::MosekSolver().id(),
+                           "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS",
+                           kFeasibleSolutionLimit);
+  solver_options.SetOption(solvers::MosekSolver().id(),
+                           "MSK_DPAR_MIO_TOL_REL_GAP", kRelOptGap);
+  solver_options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
+                           kFeasibleSolutionLimit);
+  solver_options.SetOption(solvers::GurobiSolver().id(), "MIPGap", kRelOptGap);
+
+  planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
+                                                           solver_options};
+
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           &solver);
   EXPECT_EQ(ssize(sets), 6);
