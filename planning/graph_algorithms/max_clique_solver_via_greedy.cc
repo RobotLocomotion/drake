@@ -80,7 +80,7 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   const int n = adjacency_matrix.rows();
   std::set<int> available_nodes;
   for (int i = 0; i < n; ++i) {
-    available_nodes.insert(i);
+    available_nodes.insert(available_nodes.end(), i);
   }
 
   std::vector<int> clique_members;
