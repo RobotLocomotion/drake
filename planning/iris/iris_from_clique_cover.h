@@ -102,26 +102,19 @@ struct IrisFromCliqueCoverOptions {
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
  * @param max_clique_solver The min clique cover problem is approximatley solved
- by repeatedly
- * solving max clique on the uncovered graph and adding this largest clique to
- the cover.
- * The max clique problem is solved by this solver. If parallelism is set to
- * allow more than 1 thread, then this class **must** be implemented in C++.
+ * by repeatedly solving max clique on the uncovered graph and adding this
+ * largest clique to the cover. The max clique problem is solved by this solver.
+ * If parallelism is set to allow more than 1 thread, then this class **must**
+ * be implemented in C++.
  *
  * If nullptr is passed as the `max_clique_solver`, then max clique will be
- solved
- * using an instance of MaxCliqueSolverViaGreedy, which is a fast heuristic.
- * If higher quality cliques are desired, consider changing the solver to an
- instance of
- * MaxCliqueSolverViaMip.
-
- *"//planning/graph_algorithms:max_clique_solver_via_mip",
-
- * Currently, the padding in the collision checker is not forwarded to the
- * algorithm, and therefore the final regions do not necessarily respect this
- * padding. Effectively, this means that the regions are generated as if the
- * padding is set to 0. This behavior may be adjusted in the future at the
- * resolution of #18830.
+ * solved using an instance of MaxCliqueSolverViaGreedy, which is a fast
+ * heuristic. If higher quality cliques are desired, consider changing the
+ * solver to an instance of MaxCliqueSolverViaMip. Currently, the padding in the
+ * collision checker is not forwarded to the algorithm, and therefore the final
+ * regions do not necessarily respect this padding. Effectively, this means that
+ * the regions are generated as if the padding is set to 0. This behavior may be
+ * adjusted in the future at the resolution of #18830.
  *
  * Note that MaxCliqueSolverViaMip requires the availability of a
  * Mixed-Integer Linear Programming solver (e.g. Gurobi and/or Mosek). We
