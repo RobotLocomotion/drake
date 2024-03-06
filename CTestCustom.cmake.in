@@ -19,6 +19,7 @@ string(ASCII 27 ESC)
 list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
   "^DEBUG: "
   ": DrakeDeprecationWarning: "
+  ": SyntaxWarning: invalid escape sequence "
   "^WARNING: "
   ": warning: "
   ":[0-9]+: Failure$"
