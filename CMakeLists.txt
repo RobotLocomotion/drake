@@ -198,7 +198,7 @@ set(CMAKE_CXX_STANDARD 17)
 if(APPLE)
   # The macOS python version should match what's listed in both the
   # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
-  set(SUPPORTED_PYTHON_VERSION 3.11)
+  set(SUPPORTED_PYTHON_VERSION 3.12)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
     set(SUPPORTED_PYTHON_VERSION 3.11)
