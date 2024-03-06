@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -199,6 +200,51 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     systems::CacheIndex participating_velocities;
     systems::CacheIndex participating_free_motion_velocities;
   };
+
+  /* Struct to hold intermediate data from one of the two geometries in contact
+   when computing DiscreteContactPair. */
+  struct ContactData {
+    /* The world frame position of the relative-to point for reporting the
+     contact results. */
+    Vector3<T> p_WG;
+    /* Contact Jacobians for the kinematic tree corresponding to the object
+     participating in the contact. `jacobian[i]` stores the contact Jacobian for
+     the i-th contact point. */
+    std::vector<typename DiscreteContactPair<T>::JacobianTreeBlock> jacobian;
+    /* Velocity (in the world frame) of the point Gc affixed to the geometry
+     that is coincident with the contact point C. `v_WGc[i]` stores the
+     world-frame velocity of the i-th contact point. */
+    std::vector<Vector3<T>> v_WGc;
+    /* Name of the geometry in contact. */
+    std::string name;
+  };
+
+  /* Computes the contact data for a deformable geometry G participating in
+   contact.
+   @param[in] contact_surface  The contact surface between two geometries with
+                               one of the geometries being geometry G.
+   @param[in] is_A             True if geometry G is labeled as geometry A in
+                               the given `contact_surface`. See class
+                               documentation for
+                               geometry::internal::DeformableContactSurface for
+                               details. */
+  ContactData ComputeContactDataForDeformable(
+      const systems::Context<T>& context,
+      const geometry::internal::DeformableContactSurface<T>& contact_surface,
+      bool is_A) const;
+
+  /* Computes the contact data for a rigid geometry G participating in contact.
+   @param[in] contact_surface  The contact surface between two geometries with
+                               one of the geometries being geometry G.
+   @note Unlike ComputeContactDataForDeformable where we need to determine
+   whether the geometry of interest is labeled as geometry A or B in
+   DeformableContactSurface, by convention, a rigid geometry is always labeled
+   as rigid B if it participates in deformable contact. */
+  ContactData ComputeContactDataForRigid(
+      const systems::Context<T>& context,
+      const geometry::internal::DeformableContactSurface<T>& contact_surface)
+      const;
+
   /* Copies the state of the deformable body with `id` in the given `context`
    to the `fem_state`.
    @pre fem_state != nullptr and has size compatible with the state of the
