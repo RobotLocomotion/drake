@@ -266,8 +266,8 @@ std::optional<Eigen::VectorXd> Hyperellipsoid::DoMaybeGetFeasiblePoint() const {
   return center_;
 }
 
-bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                                  double tol) const {
+std::optional<bool> Hyperellipsoid::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
   const VectorXd v = A_ * (x - center_);
   return v.dot(v) <= 1.0 + tol;

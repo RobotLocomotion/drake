@@ -73,8 +73,8 @@ std::optional<VectorXd> Point::DoMaybeGetPoint() const {
   return x_;
 }
 
-bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                         double tol) const {
+std::optional<bool> Point::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }
 

@@ -170,8 +170,8 @@ std::optional<VectorXd> AffineBall::DoMaybeGetPoint() const {
   return std::nullopt;
 }
 
-bool AffineBall::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                              double tol) const {
+std::optional<bool> AffineBall::DoPointInSetShortcut(
+    const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const {
   // Check that x is in the column space of B_, then find a y such that By+d =
   // x, and see if y is in the unit ball.
   const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(B_);
