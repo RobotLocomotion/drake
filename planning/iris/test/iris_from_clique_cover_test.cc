@@ -264,7 +264,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     options.iris_options.meshcat = meshcat;
 
     options.num_points_per_coverage_check = 1000;
-    options.num_points_per_visibility_round = 100;
+    options.num_points_per_visibility_round = 180;
     options.coverage_termination_threshold = 0.95;
     options.minimum_clique_size = 25;
 
@@ -378,9 +378,8 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   // use default solver MaxCliqueSovlerViaGreedy
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
-  // Cliques from MaxCliqueSolverViaGreedy often lead to a slightly suboptimal
-  // cover. Here we ensure that the cover does not grow too large.
-  EXPECT_LE(ssize(sets), 10);
+
+  EXPECT_EQ(ssize(sets), 6);
 
   // Show the IrisFromCliqueCoverDecomposition
   for (int i = 0; i < ssize(sets); ++i) {
