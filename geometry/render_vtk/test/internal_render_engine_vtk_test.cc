@@ -717,6 +717,22 @@ TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
   }
 }
 
+TEST_F(RenderEngineVtkTest, GltfUnsupportedExtensionRequired) {
+  const RigidTransformd X_WC;
+  Init(X_WC);
+
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel(1));
+  const GeometryId id = GeometryId::get_new_id();
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/basisu_required.gltf");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      renderer_->RegisterVisual(id, Mesh(filename), material,
+                                RigidTransformd::Identity(),
+                                false /* needs update */),
+      ".*KHR_texture_basisu is required.*");
+}
+
 // Primitives result in a geometry with a single Part. However, we can load
 // meshes from .gltf or .obj files that will create multiple parts. The meshes
 // in this test are conceptually identical: a cube with different colors on each
