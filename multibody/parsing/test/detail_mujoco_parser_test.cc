@@ -605,6 +605,26 @@ TEST_F(MujocoParserTest, GeometryProperties) {
   EXPECT_EQ(no_collision_shape->radius(), 0.0);
 }
 
+TEST_F(MujocoParserTest, Include) {
+  EXPECT_EQ(plant_.num_model_instances(), 2);
+  // This scene.xml defines a scene with two pendula, defined using <include>
+  // (and a nested <include>).
+  AddAllModelsFromFile(
+      FindResourceOrThrow(
+          "drake/multibody/parsing/test/mujoco_parser_test/scene.xml"),
+      {});
+  FlushDiagnostics();
+  plant_.Finalize();
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+  EXPECT_EQ(plant_.num_positions(), 2);
+  EXPECT_EQ(plant_.num_velocities(), 2);
+
+  // In order for the total mass to be correct, the geom from the nested
+  // include inside pendulum.xml must have been processed.
+  auto context = plant_.CreateDefaultContext();
+  EXPECT_EQ(plant_.CalcTotalMass(*context), 2.0);
+}
+
 class BoxMeshTest : public MujocoParserTest {
  public:
   // Load and evaluate a box mesh, specified in various ways by caller-supplied
