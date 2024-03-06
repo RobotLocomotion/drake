@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include<iostream>
-
 #include "drake/common/find_resource.h"
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
@@ -218,8 +216,8 @@ const char boxes_in_corners[] = R"""(
 
 class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     : public ::testing::Test {
- public:
-  void BoxWithCornerObstaclesTestFixture() {
+ protected:
+  void SetUp() override {
     params = CollisionCheckerParams();
 
     meshcat = geometry::GetTestEnvironmentMeshcat();
@@ -271,9 +269,37 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     options.minimum_clique_size = 25;
 
     generator = RandomGenerator(1);
+
+    // A manual convex decomposition of the space.
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{-2, -2}, Vector2d{-1.7, 2}));
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{-2, -2}, Vector2d{2, -1.7}));
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{1.7, -2}, Vector2d{2, 2}));
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{-2, 1.7}, Vector2d{2, 2}));
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{-0.3, -2}, Vector2d{0.3, 2}));
+    manual_decomposition.push_back(
+        Hyperrectangle(Vector2d{-2, -0.3}, Vector2d{2, 0.3}));
+
+    color = Eigen::VectorXd::Zero(3);
+    // Show the manual decomposition in the meshcat debugger.
+    for (int i = 0; i < ssize(manual_decomposition); ++i) {
+      // Choose a random color.
+      for (int j = 0; j < color.size(); ++j) {
+        color[j] = abs(gaussian(generator));
+      }
+      color.normalize();
+      VPolytope vregion =
+          VPolytope(manual_decomposition.at(i).MakeHPolyhedron())
+              .GetMinimalRepresentation();
+      Draw2dVPolytope(vregion, fmt::format("manual_decomposition_{}", i), color,
+                      meshcat);
+    }
   }
 
- protected:
   CollisionCheckerParams params;
   std::shared_ptr<Meshcat> meshcat;
 
@@ -281,11 +307,15 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
   IrisFromCliqueCoverOptions options;
   std::vector<HPolyhedron> sets;
   RandomGenerator generator;
+  std::vector<Hyperrectangle> manual_decomposition;
+  std::normal_distribution<double> gaussian;
+  Eigen::VectorXd color;
 };
 
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
        BoxWithCornerObstaclesTestMip) {
-  std::cout<<"hi\n";
+  // Set ILP settings for MaxCliqueSolverViaMip
+
   // limiting the work load for ILP solver
   solvers::SolverOptions solver_options;
   // Quit after finding 25 solutions.
@@ -304,36 +334,9 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
 
   planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
                                                            solver_options};
-
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           &solver);
   EXPECT_EQ(ssize(sets), 6);
-
-  // A manual convex decomposition of the space.
-  std::vector<Hyperrectangle> manual_decomposition{
-      Hyperrectangle(Vector2d{-2, -2}, Vector2d{-1.7, 2}),
-      Hyperrectangle(Vector2d{-2, -2}, Vector2d{2, -1.7}),
-      Hyperrectangle(Vector2d{1.7, -2}, Vector2d{2, 2}),
-      Hyperrectangle(Vector2d{-2, 1.7}, Vector2d{2, 2}),
-      Hyperrectangle(Vector2d{-0.3, -2}, Vector2d{0.3, 2}),
-      Hyperrectangle(Vector2d{-2, -0.3}, Vector2d{2, 0.3}),
-  };
-
-  // Show the manual decomposition in the meshcat debugger.
-  Eigen::VectorXd color(3);
-  std::normal_distribution<double> gaussian;
-  for (int i = 0; i < ssize(manual_decomposition); ++i) {
-    // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
-    }
-    color.normalize();
-    VPolytope vregion = VPolytope(manual_decomposition.at(i).MakeHPolyhedron())
-                            .GetMinimalRepresentation();
-    Draw2dVPolytope(vregion, fmt::format("manual_decomposition_{}", i), color,
-                    meshcat);
-  }
-
   // Show the IrisFromCliqueCoverDecomposition
   for (int i = 0; i < ssize(sets); ++i) {
     // Choose a random color.
@@ -371,36 +374,10 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
 
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
        BoxWithCornerObstaclesTestGreedy) {
-  std::cout<<"hi\n";
-  //use default solver MaxCliqueSovlerViaGreedy
+  // use default solver MaxCliqueSovlerViaGreedy
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
   EXPECT_EQ(ssize(sets), 6);
-
-  // A manual convex decomposition of the space.
-  std::vector<Hyperrectangle> manual_decomposition{
-      Hyperrectangle(Vector2d{-2, -2}, Vector2d{-1.7, 2}),
-      Hyperrectangle(Vector2d{-2, -2}, Vector2d{2, -1.7}),
-      Hyperrectangle(Vector2d{1.7, -2}, Vector2d{2, 2}),
-      Hyperrectangle(Vector2d{-2, 1.7}, Vector2d{2, 2}),
-      Hyperrectangle(Vector2d{-0.3, -2}, Vector2d{0.3, 2}),
-      Hyperrectangle(Vector2d{-2, -0.3}, Vector2d{2, 0.3}),
-  };
-
-  // Show the manual decomposition in the meshcat debugger.
-  Eigen::VectorXd color(3);
-  std::normal_distribution<double> gaussian;
-  for (int i = 0; i < ssize(manual_decomposition); ++i) {
-    // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
-    }
-    color.normalize();
-    VPolytope vregion = VPolytope(manual_decomposition.at(i).MakeHPolyhedron())
-                            .GetMinimalRepresentation();
-    Draw2dVPolytope(vregion, fmt::format("manual_decomposition_{}", i), color,
-                    meshcat);
-  }
 
   // Show the IrisFromCliqueCoverDecomposition
   for (int i = 0; i < ssize(sets); ++i) {
