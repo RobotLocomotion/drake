@@ -284,6 +284,11 @@ class ConvexSet {
   HPolyhedron, then the exact volume cannot be computed. */
   bool has_exact_volume() const { return has_exact_volume_; }
 
+  /** Computes the distance and the nearest point in this convex set to @p
+   * point. */
+  std::pair<double, Eigen::VectorXd> ComputeProjection(
+      const Eigen::Ref<const Eigen::VectorXd> point);
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
@@ -306,6 +311,14 @@ class ConvexSet {
   /** Non-virtual interface implementation for DoIsBoundedShortcut(). Trivially
   returns std::nullopt. This allows a derived class to implement its own
   boundedness checks, to potentially avoid the more expensive base class checks.
+  @pre ambient_dimension() >= 0 */
+  virtual std::optional<bool> DoIsBoundedShortcut() const {
+    return std::nullopt;
+  }
+
+  /** Non-virtual interface implementation for DoProjectionShortcut(). Trivially
+  returns std::nullopt. This allows a derived class to implement its own
+  projection, to potentially avoid the more expensive base class checks.
   @pre ambient_dimension() >= 0 */
   virtual std::optional<bool> DoIsBoundedShortcut() const {
     return std::nullopt;
