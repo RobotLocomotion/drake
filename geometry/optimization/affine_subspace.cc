@@ -165,8 +165,8 @@ std::optional<VectorXd> AffineSubspace::DoMaybeGetFeasiblePoint() const {
   return translation_;
 }
 
-bool AffineSubspace::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                                  double tol) const {
+std::optional<bool> AffineSubspace::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   DRAKE_DEMAND(ambient_dimension() > 0);
   if (basis_.cols() == 0) {
     // In this case, it's just a point, so we directly compare

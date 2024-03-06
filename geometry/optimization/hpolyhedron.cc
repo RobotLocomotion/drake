@@ -623,6 +623,10 @@ std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   return result.is_success();
 }
 
+// std::optional<std::pair<double, Eigen::VectorXd>>
+// HPolyhedron::DoProjectionShortcut(
+//    const Eigen::Ref<const Eigen::VectorXd>& point) {}
+
 bool HPolyhedron::DoIsEmpty() const {
   if (ambient_dimension() == 0) {
     return false;
@@ -773,9 +777,8 @@ std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {
   return std::make_unique<HPolyhedron>(*this);
 }
 
-bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                               double tol) const {
-  DRAKE_DEMAND(A_.cols() == x.size());
+std::optional<bool> HPolyhedron::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   return ((A_ * x).array() <= b_.array() + tol).all();
 }
 

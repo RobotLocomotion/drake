@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solve.h"
@@ -17,8 +18,21 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::LinearCost;
 using solvers::MathematicalProgram;
+using solvers::SolutionResult;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
+
+namespace {
+
+bool SolverReturnedWithoutError(
+    const solvers::MathematicalProgramResult& result) {
+  const SolutionResult status = result.get_solution_result();
+  return status == SolutionResult::kSolutionFound ||
+         status == SolutionResult::kDualInfeasible ||
+         status == SolutionResult::kInfeasibleOrUnbounded;
+}
+
+}  // namespace
 
 ConvexSet::ConvexSet(int ambient_dimension, bool has_exact_volume)
     : ambient_dimension_(ambient_dimension),
@@ -87,6 +101,46 @@ bool ConvexSet::GenericDoIsBounded() const {
   return true;
 }
 
+std::pair<double, Eigen::VectorXd> ConvexSet::Projection(
+    const Eigen::Ref<const Eigen::VectorXd>& point) const {
+  DRAKE_THROW_UNLESS(point.rows() == ambient_dimension());
+  if (ambient_dimension() == 0) {
+    return {0, Eigen::VectorXd()};
+  }
+  const auto shortcut_result = ProjectionShortcut(point);
+  if (shortcut_result.has_value()) {
+    return shortcut_result.value();
+  }
+  return GenericDoProjection(point);
+}
+
+std::pair<double, Eigen::VectorXd> ConvexSet::GenericDoProjection(
+    const Eigen::Ref<const Eigen::VectorXd>& point) const {
+  MathematicalProgram prog;
+  VectorXDecisionVariable projected_point =
+      prog.NewContinuousVariables(ambient_dimension(), "x");
+  AddPointInSetConstraints(&prog, projected_point);
+  prog.AddQuadraticErrorCost(
+      Eigen::MatrixXd::Identity(ambient_dimension(), ambient_dimension()),
+      point, projected_point);
+  const auto result = solvers::Solve(prog);
+  // Projection should always be feasible.
+  DRAKE_THROW_UNLESS(result.is_success());
+  return {result.get_optimal_cost(), result.GetSolution(projected_point)};
+}
+
+std::optional<std::pair<double, Eigen::VectorXd>> ConvexSet::ProjectionShortcut(
+    const Eigen::Ref<const Eigen::VectorXd>& point) const {
+  // If we have a fast point in set shortcut, use it first.
+  const double kTol =
+      1e-12;  // This is below the tolerance of most convex solvers.
+  const auto point_in_set_shortcut = DoPointInSetShortcut(point, kTol);
+  if (point_in_set_shortcut.has_value() && point_in_set_shortcut.value()) {
+    return std::make_pair(0, point);
+  }
+  return DoProjectionShortcut(point);
+}
+
 bool ConvexSet::DoIsEmpty() const {
   if (ambient_dimension() == 0) {
     return false;
@@ -132,6 +186,28 @@ std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetFeasiblePoint() const {
   } else {
     return std::nullopt;
   }
+}
+
+bool ConvexSet::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+                             double tol) const {
+  const auto shorcut_result = DoPointInSetShortcut(x, tol);
+  if (shorcut_result.has_value()) {
+    return shorcut_result.value();
+  }
+  return GenericDoPointInSet(x, tol);
+}
+
+bool ConvexSet::GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                    double tol) const {
+  MathematicalProgram prog;
+  VectorXDecisionVariable point =
+      prog.NewContinuousVariables(ambient_dimension(), "x");
+  AddPointInSetConstraints(&prog, point);
+  prog.AddLinearEqualityConstraint(x == point);
+  const auto result = solvers::Solve(prog);
+  DRAKE_THROW_UNLESS(SolverReturnedWithoutError(result));
+  const VectorXd x_sol = result.GetSolution(point);
+  return is_approx_equal_abstol(x, x_sol, tol);
 }
 
 std::pair<VectorX<symbolic::Variable>,
