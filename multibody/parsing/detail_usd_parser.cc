@@ -63,11 +63,19 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  // Create a stage. This is just a simple placeholder at the moment.
-  pxr::UsdStageRefPtr stage = pxr::UsdStage::CreateInMemory();
+  if (data_source.IsFilename()) {
+    pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(data_source.GetAbsolutePath());
+    if (!stage) {
+      drake::log()->error("Failed to open stage");
+    } else {
+      drake::log()->info("Sucessfully opened stage");
+    }
+  }
 
-  unused(data_source, parent_model_name, workspace);
-  throw std::runtime_error("UsdParser::AddAllModels is not implemented");
+  unused(parent_model_name, workspace);
+  
+  // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
+  return std::vector<ModelInstanceIndex>();
 }
 
 }  // namespace internal

@@ -2,8 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
+//#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace multibody {
@@ -45,13 +46,20 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   SceneGraph<double> scene_graph_;
 };
 
-// TODO(jwnimmer-tri) This is a very basic sanity test, just to get the ball
-// rolling. It spews lots of error messages that probably indicate deeper
-// problems. But for now, it passes!
-TEST_F(UsdParserTest, Stub) {
-  const fs::path filename{"no_such_file.usda"};
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseFile(filename),
-                              ".*UsdParser.*AddAllModels.*not implemented.*");
+// Finds a file resource within 'usd_parser_test'.
+std::string FindUsdTestResourceOrThrow(const std::string& filename) {
+    const std::string resource_dir{
+      "drake/multibody/parsing/test/usd_parser_test/"};
+    return FindResourceOrThrow(resource_dir + filename);
+}
+
+TEST_F(UsdParserTest, BasicImportTest) {
+  // hong-nvidia: temporary check to ensure that this file indeed exists
+  drake::log()->info(FindUsdTestResourceOrThrow("cube_plane.usda"));
+  
+  const fs::path filename{
+    "multibody/parsing/test/usd_parser_test/cube_plane.usda"};
+  ParseFile(filename);
 }
 
 }  // namespace
