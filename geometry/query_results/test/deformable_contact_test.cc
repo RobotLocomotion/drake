@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/ssize.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -63,6 +66,7 @@ GTEST_TEST(DeformableContactSurface, EmptySurface) {
   EXPECT_EQ(dut.barycentric_coordinates_A().size(), 0);
   EXPECT_EQ(dut.contact_vertex_indexes_A().size(), 0);
   EXPECT_EQ(dut.nhats_W().size(), 0);
+  EXPECT_EQ(dut.R_WCs().size(), 0);
   EXPECT_FALSE(dut.is_B_deformable());
 }
 
@@ -98,6 +102,11 @@ GTEST_TEST(DeformableContactSurface, Getters) {
   EXPECT_EQ(dut.barycentric_coordinates_A(), barycentric_centroids_A);
   EXPECT_EQ(dut.barycentric_coordinates_B(), barycentric_centroids_B);
   EXPECT_EQ(dut.nhats_W(), nhats_W);
+  EXPECT_EQ(dut.R_WCs().size(), dut.nhats_W().size());
+  const std::vector<math::RotationMatrix<double>>& R_WCs = dut.R_WCs();
+  for (int i = 0; i < ssize(R_WCs); ++i) {
+    EXPECT_TRUE(CompareMatrices(R_WCs[i].col(2), -nhats_W[i]));
+  }
 }
 
 GTEST_TEST(DeformableContact, RegisterGeometry) {
@@ -215,6 +224,7 @@ GTEST_TEST(DeformableContact, AddDeformableDeformableContactSurface) {
   EXPECT_EQ(s.barycentric_coordinates_B(), barycentric_centroids_B);
   EXPECT_EQ(s.contact_vertex_indexes_B(), contact_vertex_indexes_B);
   EXPECT_EQ(s.nhats_W().size(), 1);
+  EXPECT_EQ(s.R_WCs().size(), 1);
   EXPECT_TRUE(s.is_B_deformable());
 
   // Verify that contact participation is as expected.
