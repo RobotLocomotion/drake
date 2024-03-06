@@ -113,8 +113,9 @@ class RigidGeometry {
 template <typename Shape>
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Shape& shape, const ProximityProperties& props) {
+  const hydroelastic::Geometries::ReifyData hydro_data{.properties = props};
   std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, props);
+      internal::hydroelastic::MakeRigidRepresentation(shape, hydro_data);
   if (!hydro_rigid_geometry) {
     static const logging::Warn log_once(
         "Rigid {} shapes are not currently supported for deformable "

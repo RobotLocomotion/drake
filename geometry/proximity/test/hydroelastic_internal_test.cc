@@ -25,6 +25,7 @@ namespace hydroelastic {
 namespace {
 
 using Eigen::Vector3d;
+using ReifyData = Geometries::ReifyData;
 using std::function;
 using std::make_unique;
 using std::pow;
@@ -504,10 +505,10 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {}
 // representation is made, and samples the representation to look for evidence
 // of it being the *right* representation.
 TEST_F(HydroelasticRigidGeometryTest, HalfSpace) {
-  ProximityProperties props = rigid_properties();
+  const ReifyData data{.properties = rigid_properties()};
 
   std::optional<RigidGeometry> half_space =
-      MakeRigidRepresentation(HalfSpace(), props);
+      MakeRigidRepresentation(HalfSpace(), data);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
 
@@ -526,9 +527,9 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   const double radius = 0.5;
   Sphere sphere_spec(radius);
 
-  ProximityProperties props = rigid_properties(0.5);
+  const ReifyData data{.properties = rigid_properties(0.5)};
   std::optional<RigidGeometry> sphere =
-      MakeRigidRepresentation(sphere_spec, props);
+      MakeRigidRepresentation(sphere_spec, data);
   ASSERT_NE(sphere, std::nullopt);
   ASSERT_FALSE(sphere->is_half_space());
 
@@ -547,10 +548,10 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   // I only get 8 vertices - one at each corner. This is merely evidence that
   // the box method is called -- we rely on tests of that functionality to
   // create more elaborate meshes with smaller edge lengths.
-  ProximityProperties props = rigid_properties(1.5 * edge_len);
+  const ReifyData data{.properties = rigid_properties(1.5 * edge_len)};
 
   std::optional<RigidGeometry> box =
-      MakeRigidRepresentation(Box(edge_len, edge_len, edge_len), props);
+      MakeRigidRepresentation(Box(edge_len, edge_len, edge_len), data);
   ASSERT_NE(box, std::nullopt);
   ASSERT_FALSE(box->is_half_space());
 
@@ -579,10 +580,10 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   // get the coarsest mesh. This is merely evidence that the mesh generator is
   // called -- we rely on tests of that functionality to create more
   // elaborate meshes with smaller edge lengths.
-  ProximityProperties props = rigid_properties(1.5 * length);
+  const ReifyData data{.properties = rigid_properties(1.5 * length)};
 
   std::optional<RigidGeometry> cylinder =
-      MakeRigidRepresentation(Cylinder(radius, length), props);
+      MakeRigidRepresentation(Cylinder(radius, length), data);
   ASSERT_NE(cylinder, std::nullopt);
   ASSERT_FALSE(cylinder->is_half_space());
 
@@ -610,12 +611,12 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   // get the coarsest mesh. This is merely evidence that the mesh generator is
   // called -- we rely on tests of that functionality to create more
   // elaborate meshes with smaller edge lengths.
-  ProximityProperties props = rigid_properties(1.5 * length);
+  const ReifyData data{.properties = rigid_properties(1.5 * length)};
 
   const Capsule& capsule_shape = Capsule(radius, length);
 
   std::optional<RigidGeometry> capsule =
-      MakeRigidRepresentation(capsule_shape, props);
+      MakeRigidRepresentation(capsule_shape, data);
   ASSERT_NE(capsule, std::nullopt);
   ASSERT_FALSE(capsule->is_half_space());
 
@@ -631,9 +632,10 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
 
   // Create rigid representation, passing a smaller resolution hint to verify
   // that the hint is being consumed downstream.
-  ProximityProperties props_fine = rigid_properties(2.0 * M_PI * radius / 6.0);
+  const ReifyData data_fine{.properties =
+                                rigid_properties(2.0 * M_PI * radius / 6.0)};
   std::optional<RigidGeometry> capsule_fine =
-      MakeRigidRepresentation(capsule_shape, props_fine);
+      MakeRigidRepresentation(capsule_shape, data_fine);
 
   const TriangleSurfaceMesh<double>& mesh_fine = capsule_fine->mesh();
   EXPECT_GT(mesh_fine.num_vertices(), mesh.num_vertices());
@@ -653,10 +655,10 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   // get the coarsest mesh. This is merely evidence that the mesh generator is
   // called -- we rely on tests of that functionality to create more
   // elaborate meshes with smaller edge lengths.
-  ProximityProperties props = rigid_properties(2.0 * b);
+  const ReifyData data{.properties = rigid_properties(2.0 * b)};
 
   std::optional<RigidGeometry> ellipsoid =
-      MakeRigidRepresentation(Ellipsoid(a, b, c), props);
+      MakeRigidRepresentation(Ellipsoid(a, b, c), data);
   ASSERT_NE(ellipsoid, std::nullopt);
   ASSERT_FALSE(ellipsoid->is_half_space());
 
@@ -677,13 +679,13 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 template <typename MeshType>
 void TestRigidMeshTypeFromObj(const std::string& file) {
   // Empty props since its contents do not matter.
-  ProximityProperties props;
+  const ReifyData data{.properties = ProximityProperties()};
 
   constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
   for (const double scale : {1.0, 5.1, 0.4}) {
     std::optional<RigidGeometry> geometry =
-        MakeRigidRepresentation(MeshType(file, scale), props);
+        MakeRigidRepresentation(MeshType(file, scale), data);
     ASSERT_NE(geometry, std::nullopt);
     ASSERT_FALSE(geometry->is_half_space());
 
@@ -742,9 +744,9 @@ TEST_F(HydroelasticRigidGeometryTest, Convex) {
     std::string file =
         FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
     // Empty props since its contents do not matter.
-    const ProximityProperties props;
+    const ReifyData data{.properties = ProximityProperties()};
     std::optional<RigidGeometry> geometry =
-        MakeRigidRepresentation(Convex(file), props);
+        MakeRigidRepresentation(Convex(file), data);
     ASSERT_NE(geometry, std::nullopt);
     const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
     EXPECT_EQ(surface_mesh.num_vertices(), 4);
@@ -764,11 +766,11 @@ TEST_F(HydroelasticRigidGeometryTest, MeshFromVtk) {
   const std::string file_upper_case = temp_directory() + "/non_convex_mesh.VTK";
   std::filesystem::copy(file_lower_case, file_upper_case);
   // Empty props since its contents do not matter.
-  const ProximityProperties props;
+  const ReifyData data{.properties = ProximityProperties()};
   for (const std::string& file_name : {file_lower_case, file_upper_case}) {
     SCOPED_TRACE(file_name);
     std::optional<RigidGeometry> geometry =
-        MakeRigidRepresentation(Mesh(file_name), props);
+        MakeRigidRepresentation(Mesh(file_name), data);
     ASSERT_NE(geometry, std::nullopt);
 
     // We only check that the vtk file was read by verifying the number of
@@ -865,25 +867,26 @@ template <typename ShapeType, typename ValueType>
 void TestPropertyErrors(
     const ShapeType& shape_spec, const char* group_name,
     const char* property_name, const char* compliance,
-    function<void(const ShapeType&, const ProximityProperties&)> maker,
-    std::optional<ValueType> bad_value, const ProximityProperties& props) {
+    function<void(const ShapeType&, const ReifyData&)> maker,
+    std::optional<ValueType> bad_value, const ReifyData& data) {
   const std::string_view shape_name = shape_spec.type_name();
 
   // Error case: missing property value.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, props),
+        maker(shape_spec, data),
         fmt::format("Cannot create {} {}.+'{}'\\) property", compliance,
                     shape_name, property_name));
   }
 
   // Error case: property value is wrong type.
   {
-    ProximityProperties wrong_value(props);
+    ProximityProperties wrong_value(data.properties);
     wrong_value.AddProperty(group_name, property_name, "10");
+    const ReifyData wrong_data{.properties = wrong_value};
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, wrong_value),
+        maker(shape_spec, wrong_data),
         fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
                     "different type.+string'",
                     group_name, property_name));
@@ -891,10 +894,11 @@ void TestPropertyErrors(
 
   // Error case: property value is not positive.
   if (bad_value.has_value()) {
-    ProximityProperties negative_value(props);
+    ProximityProperties negative_value(data.properties);
     negative_value.AddProperty(group_name, property_name, *bad_value);
+    const ReifyData negative_data{.properties = negative_value};
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, negative_value),
+        maker(shape_spec, negative_data),
         fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
                     shape_name, property_name));
   }
@@ -921,10 +925,10 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
 
   TestPropertyErrors<ShapeType, double>(
       shape_spec, kHydroGroup, kRezHint, "rigid",
-      [](const ShapeType& s, const ProximityProperties& p) {
-        MakeRigidRepresentation(s, p);
+      [](const ShapeType& s, const ReifyData& data) {
+        MakeRigidRepresentation(s, data);
       },
-      -0.2, {});
+      -0.2, ReifyData{.properties = ProximityProperties()});
 }
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
@@ -950,28 +954,30 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
 // Smoke test for shapes that are *known* to be unsupported as soft objects.
 // NOTE: This will spew warnings to the log.
 TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
-  ProximityProperties props = soft_properties();
+  const ReifyData data{.properties = soft_properties()};
 
-  EXPECT_EQ(MakeSoftRepresentation(MeshcatCone(2, 1, 1), props), std::nullopt);
+  EXPECT_EQ(MakeSoftRepresentation(MeshcatCone(2, 1, 1), data), std::nullopt);
 }
 
 TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
-  ProximityProperties properties = soft_properties();
+  // We'll mutate this.
+  ProximityProperties props = soft_properties();
+  ReifyData data{.properties = props};
 
   // Case: A half space without (hydroelastic, slab_thickness) throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeSoftRepresentation(HalfSpace(), properties),
+      MakeSoftRepresentation(HalfSpace(), data),
       "Cannot create soft HalfSpace; missing the .*slab_thickness.* property");
 
   // Case: fully specified half space.
   const double thickness = 1.3;
-  properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
+  props.AddProperty(kHydroGroup, kSlabThickness, thickness);
   std::optional<SoftGeometry> half_space =
-      MakeSoftRepresentation(HalfSpace(), properties);
+      MakeSoftRepresentation(HalfSpace(), data);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
   EXPECT_EQ(half_space->pressure_scale(),
-            properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
+            props.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(),
@@ -994,12 +1000,12 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
   // Confirm that characteristic length is being fed in properly -- i.e.,
   // if characteristic length cuts in half, It should have more tetrahedra.
-  ProximityProperties properties1 = soft_properties(kRadius);
-  ProximityProperties properties2 = soft_properties(kRadius / 2);
+  const ReifyData data1{.properties = soft_properties(kRadius)};
+  const ReifyData data2{.properties = soft_properties(kRadius / 2)};
   std::optional<SoftGeometry> sphere1 =
-      MakeSoftRepresentation(sphere_spec, properties1);
+      MakeSoftRepresentation(sphere_spec, data1);
   std::optional<SoftGeometry> sphere2 =
-      MakeSoftRepresentation(sphere_spec, properties2);
+      MakeSoftRepresentation(sphere_spec, data2);
   EXPECT_FALSE(sphere1->is_half_space());
   EXPECT_FALSE(sphere2->is_half_space());
   EXPECT_LT(sphere1->mesh().num_elements(), sphere2->mesh().num_elements());
@@ -1025,7 +1031,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   ASSERT_NEAR(max_distance, kRadius, 1e-15);
 
   // Confirm pressure field is as specified in the properties.
-  const double E = properties1.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data1.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
@@ -1060,11 +1067,12 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
     // Starting with sphere 1's properties, we'll set it to dense and observe
     // more tets.
-    ProximityProperties dense_properties(properties1);
+    ProximityProperties dense_properties(data1.properties);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kDenseInteriorVertices);
+    const ReifyData dense_data{.properties = dense_properties};
     std::optional<SoftGeometry> dense_sphere =
-        MakeSoftRepresentation(sphere_spec, dense_properties);
+        MakeSoftRepresentation(sphere_spec, dense_data);
     EXPECT_LT(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
   }
@@ -1074,11 +1082,12 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
     // Starting with sphere 1's properties, we'll explicitly set it to sparse
     // and observe the same number of tets.
-    ProximityProperties dense_properties(properties1);
+    ProximityProperties dense_properties(data1.properties);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kSingleInteriorVertex);
+    const ReifyData dense_data{.properties = dense_properties};
     std::optional<SoftGeometry> dense_sphere =
-        MakeSoftRepresentation(sphere_spec, dense_properties);
+        MakeSoftRepresentation(sphere_spec, dense_data);
     EXPECT_EQ(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
   }
@@ -1087,9 +1096,10 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // A value that isn't a TessellationStrategy throws.
     // Starting with sphere 1's properties, we'll set the property to be a
     // string. Should throw.
-    ProximityProperties dense_properties(properties1);
+    ProximityProperties dense_properties(data1.properties);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
-    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
+    const ReifyData dense_data{.properties = dense_properties};
+    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_data),
                  std::logic_error);
   }
 }
@@ -1098,15 +1108,15 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 TEST_F(HydroelasticSoftGeometryTest, Box) {
   const Box box_spec(0.2, 0.4, 0.8);
 
-  ProximityProperties properties = soft_properties();
-  std::optional<SoftGeometry> box =
-      MakeSoftRepresentation(box_spec, properties);
+  const ReifyData data{.properties = soft_properties()};
+  std::optional<SoftGeometry> box = MakeSoftRepresentation(box_spec, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1123,15 +1133,16 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the cylinder dimensions to get the
   // coarsest mesh with 15 vertices.
-  ProximityProperties properties = soft_properties(1.5 * length);
+  const ReifyData data{.properties = soft_properties(1.5 * length)};
   std::optional<SoftGeometry> cylinder =
-      MakeSoftRepresentation(cylinder_spec, properties);
+      MakeSoftRepresentation(cylinder_spec, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 9;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1148,9 +1159,9 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the capsule dimensions to get the
   // coarsest mesh with 10 vertices.
-  ProximityProperties properties = soft_properties(1.5 * length);
+  const ReifyData data{.properties = soft_properties(1.5 * length)};
   std::optional<SoftGeometry> capsule =
-      MakeSoftRepresentation(capsule_spec, properties);
+      MakeSoftRepresentation(capsule_spec, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1158,7 +1169,8 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   EXPECT_EQ(capsule->mesh().num_vertices(), expected_num_vertices);
   // TODO(joemasterjohn): Change all instances of `GetPropertyOrDefault` to
   // `GetProperty` variant.
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < capsule->mesh().num_vertices(); ++v) {
     const double pressure = capsule->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1178,15 +1190,16 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the ellipsoid dimensions to get the
   // coarsest mesh with 7 vertices.
-  ProximityProperties properties = soft_properties(0.16);
+  const ReifyData data{.properties = soft_properties(0.16)};
   std::optional<SoftGeometry> ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, properties);
+      MakeSoftRepresentation(ellipsoid_spec, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1196,20 +1209,22 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // The remaining tests confirm that it respects the
   // ("hydroelastic", "tessellation_strategy") property.
 
-  ProximityProperties basic_properties = soft_properties(0.08);
-  ProximityProperties sparse_properties(basic_properties);
+  const ReifyData basic_data{.properties = soft_properties(0.08)};
+  ProximityProperties sparse_properties(basic_data.properties);
   sparse_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                 TessellationStrategy::kSingleInteriorVertex);
-  ProximityProperties dense_properties(basic_properties);
+  const ReifyData sparse_data{.properties = sparse_properties};
+  ProximityProperties dense_properties(basic_data.properties);
   dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                TessellationStrategy::kDenseInteriorVertices);
+  const ReifyData dense_data{.properties = dense_properties};
 
   std::optional<SoftGeometry> implicit_sparse_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, basic_properties);
+      MakeSoftRepresentation(ellipsoid_spec, basic_data);
   std::optional<SoftGeometry> sparse_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, sparse_properties);
+      MakeSoftRepresentation(ellipsoid_spec, sparse_data);
   std::optional<SoftGeometry> dense_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, dense_properties);
+      MakeSoftRepresentation(ellipsoid_spec, dense_data);
 
   {
     // It defaults to kSingleInteriorVertex if nothing is defined.
@@ -1235,9 +1250,10 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 
     // Starting with the basic properties, we'll set the property to be a
     // string. Should throw.
-    ProximityProperties bad_properties(basic_properties);
+    ProximityProperties bad_properties(data.properties);
     bad_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
-    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
+    const ReifyData bad_data{.properties = bad_properties};
+    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_data),
                  std::logic_error);
   }
 }
@@ -1248,15 +1264,16 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
   std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   const Convex convex_spec(file);
 
-  ProximityProperties properties = soft_properties(0.16);
+  const ReifyData data{.properties = soft_properties(0.16)};
   std::optional<SoftGeometry> convex =
-      MakeSoftRepresentation(convex_spec, properties);
+      MakeSoftRepresentation(convex_spec, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 9;
   EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1269,15 +1286,16 @@ TEST_F(HydroelasticSoftGeometryTest, Mesh) {
   const Mesh mesh_specification(
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
 
-  ProximityProperties properties = soft_properties();
+  const ReifyData data{.properties = soft_properties()};
   std::optional<SoftGeometry> compliant_geometry =
-      MakeSoftRepresentation(mesh_specification, properties);
+      MakeSoftRepresentation(mesh_specification, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 6;
   EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E =
+      data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
     const double pressure =
         compliant_geometry->pressure_field().EvaluateAtVertex(v);
@@ -1307,10 +1325,10 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
       shape_spec.type_name() != "Box" && shape_spec.type_name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
-        [](const ShapeType& s, const ProximityProperties& p) {
-          MakeSoftRepresentation(s, p);
+        [](const ShapeType& s, const ReifyData& d) {
+          MakeSoftRepresentation(s, d);
         },
-        -0.2, {});
+        -0.2, ReifyData{.properties = ProximityProperties()});
   }
 }
 
@@ -1323,12 +1341,13 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   // hydroelastic representation can choke on elastic modulus value.
   soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
   soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
+  const ReifyData data{.properties = soft_properties};
   TestPropertyErrors<ShapeType, double>(
       shape_spec, kHydroGroup, kElastic, "soft",
-      [](const ShapeType& s, const ProximityProperties& p) {
-        MakeSoftRepresentation(s, p);
+      [](const ShapeType& s, const ReifyData& d) {
+        MakeSoftRepresentation(s, d);
       },
-      -0.2, soft_properties);
+      -0.2, data);
 }
 
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
@@ -1338,10 +1357,10 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
   if (shape_spec.type_name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kSlabThickness, "soft",
-        [](const ShapeType& s, const ProximityProperties& p) {
-          MakeSoftRepresentation(s, p);
+        [](const ShapeType& s, const ReifyData& d) {
+          MakeSoftRepresentation(s, d);
         },
-        -0.2, {});
+        -0.2, ReifyData{.properties = ProximityProperties()});
   }
 }
 

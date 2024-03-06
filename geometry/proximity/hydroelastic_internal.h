@@ -332,15 +332,15 @@ class Geometries final : public ShapeReifier {
   void MaybeAddGeometry(const Shape& shape, GeometryId id,
                         const ProximityProperties& properties);
 
- private:
-  // Data to be used during reification. It is passed as the `user_data`
-  // parameter in the ImplementGeometry API.
+  /* Data to be used during reification. It is passed as the `user_data`
+   parameter in the ImplementGeometry API. */
   struct ReifyData {
     HydroelasticType type;
     GeometryId id;
     const ProximityProperties& properties;
   };
 
+ private:
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Box& box, void* user_data) override;
@@ -391,7 +391,7 @@ class Geometries final : public ShapeReifier {
  geometries will return a std::nullopt.  */
 template <typename Shape>
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Shape& shape, const ProximityProperties&) {
+    const Shape& shape, const Geometries::ReifyData&) {
   static const logging::Warn log_once(
       "Rigid {} shapes are not currently supported for hydroelastic "
       "contact; registration is allowed, but an error will be thrown "
@@ -403,30 +403,30 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 /* Rigid sphere support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Sphere& sphere, const ProximityProperties& props);
+    const Sphere& sphere, const Geometries::ReifyData& data);
 
 /* Rigid box support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties& props);
+    const Box& box, const Geometries::ReifyData& data);
 
 /* Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Cylinder& cylinder, const ProximityProperties& props);
+    const Cylinder& cylinder, const Geometries::ReifyData& data);
 
 /* Rigid capsule support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Capsule& capsule, const ProximityProperties& props);
+    const Capsule& capsule, const Geometries::ReifyData& data);
 
 /* Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Ellipsoid& ellipsoid, const ProximityProperties& props);
+    const Ellipsoid& ellipsoid, const Geometries::ReifyData& data);
 
 /* Rigid mesh support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Mesh& mesh, const ProximityProperties& props);
+    const Mesh& mesh, const Geometries::ReifyData& data);
 
 /* Rigid convex support. It doesn't depend on any of the proximity properties.
  Note: the convexity of the mesh is *not* tested (and does not need to be).
@@ -434,17 +434,17 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
  representation and functionality is indistinguishable, whether convex or not.
  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Convex& convex, const ProximityProperties& props);
+    const Convex& convex, const Geometries::ReifyData& data);
 
 /* Rigid half space support.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const HalfSpace& half_space, const ProximityProperties& props);
+    const HalfSpace& half_space, const Geometries::ReifyData& data);
 
 /* Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
-std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
-                                                   const ProximityProperties&) {
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Shape& shape, const Geometries::ReifyData&) {
   static const logging::Warn log_once(
       "Soft {} shapes are not currently supported for hydroelastic contact; "
       "registration is allowed, but an error will be thrown during contact.",
@@ -456,49 +456,49 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Sphere& sphere, const ProximityProperties& props);
+    const Sphere& sphere, const Geometries::ReifyData& data);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'hydroelastic_modulus')
  properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Box& box, const ProximityProperties& props);
+    const Box& box, const Geometries::ReifyData& data);
 
 /* Creates a soft cylinder (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Cylinder& cylinder, const ProximityProperties& props);
+    const Cylinder& cylinder, const Geometries::ReifyData& data);
 
 /* Creates a soft capsule (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Capsule& capsule, const ProximityProperties& props);
+    const Capsule& capsule, const Geometries::ReifyData& data);
 
 /* Creates a soft ellipsoid (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Ellipsoid& ellipsoid, const ProximityProperties& props);
+    const Ellipsoid& ellipsoid, const Geometries::ReifyData& data);
 
 /* Creates a compliant half space (assuming the proximity properties have
  sufficient information). Requires the ('hydroelastic', 'slab_thickness') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const HalfSpace& half_space, const ProximityProperties& props);
+    const HalfSpace& half_space, const Geometries::ReifyData& data);
 
 /* Creates a compliant convex volume mesh (assuming the proximity properties
 have sufficient information). Requires the
 ('hydroelastic','hydroelastic_modulus') property. */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Convex& convex_spec, const ProximityProperties& props);
+    const Convex& convex_spec, const Geometries::ReifyData& data);
 
 /* Creates a compliant (generally) non-convex mesh (assuming the proximity
  properties have sufficient information). Requires the ('hydroelastic',
  'hydroelastic_modulus') properties. */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Mesh& mesh_specification, const ProximityProperties& props);
+    const Mesh& mesh_specification, const Geometries::ReifyData& data);
 
 //@}
 

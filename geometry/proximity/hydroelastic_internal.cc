@@ -148,11 +148,11 @@ template <typename ShapeType>
 void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
   switch (data.type) {
     case HydroelasticType::kRigid: {
-      auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
+      auto hydro_geometry = MakeRigidRepresentation(shape, data);
       if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
     } break;
     case HydroelasticType::kSoft: {
-      auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
+      auto hydro_geometry = MakeSoftRepresentation(shape, data);
       if (hydro_geometry) {
         if (is_primitive(shape) &&
             hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
@@ -243,23 +243,26 @@ class PositiveDouble : public Validator<double> {
   }
 };
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const HalfSpace& hs, const ProximityProperties&) {
+using ReifyData = Geometries::ReifyData;
+
+std::optional<RigidGeometry> MakeRigidRepresentation(const HalfSpace& hs,
+                                                     const ReifyData&) {
   return RigidGeometry(hs);
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Sphere& sphere, const ProximityProperties& props) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Sphere& sphere,
+                                                     const ReifyData& data) {
   PositiveDouble validator("Sphere", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length =
+      validator.Extract(data.properties, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties&) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Box& box,
+                                                     const ReifyData&) {
   PositiveDouble validator("Box", "rigid");
   // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
   // resolution-hint argument is larger than the box size, so the mesh
@@ -270,38 +273,41 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Cylinder& cylinder, const ProximityProperties& props) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Cylinder& cylinder,
+                                                     const ReifyData& data) {
   PositiveDouble validator("Cylinder", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length =
+      validator.Extract(data.properties, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Capsule& capsule, const ProximityProperties& props) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Capsule& capsule,
+                                                     const ReifyData& data) {
   PositiveDouble validator("Capsule", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length =
+      validator.Extract(data.properties, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeCapsuleSurfaceMesh<double>(capsule, edge_length));
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Ellipsoid& ellipsoid,
+                                                     const ReifyData& data) {
   PositiveDouble validator("Ellipsoid", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length =
+      validator.Extract(data.properties, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Mesh& mesh_spec, const ProximityProperties&) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Mesh& mesh_spec,
+                                                     const ReifyData&) {
   // Mesh does not use any properties.
   std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
 
@@ -322,8 +328,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Convex& convex_spec, const ProximityProperties&) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Convex& convex_spec,
+                                                     const ReifyData&) {
   // Convex does not use any properties.
   std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
 
@@ -346,9 +352,10 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Sphere& sphere, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Sphere& sphere,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Sphere", "soft");
+  const ProximityProperties& props = data.properties;
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   // If nothing is said, let's go for the *cheap* tessellation strategy.
@@ -367,15 +374,15 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Box& box, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Box& box,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Box", "soft");
   // First, create the mesh.
   auto mesh =
       make_unique<VolumeMesh<double>>(MakeBoxVolumeMeshWithMa<double>(box));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      validator.Extract(data.properties, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeBoxPressureField(box, mesh.get(), hydroelastic_modulus));
@@ -383,9 +390,10 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Cylinder& cylinder, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Cylinder& cylinder,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Cylinder", "soft");
+  const ProximityProperties& props = data.properties;
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<VolumeMesh<double>>(
@@ -400,9 +408,10 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Capsule& capsule, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Capsule& capsule,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Capsule", "soft");
+  const ProximityProperties& props = data.properties;
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<VolumeMesh<double>>(
@@ -417,9 +426,10 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Ellipsoid& ellipsoid,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Ellipsoid", "soft");
+  const ProximityProperties& props = data.properties;
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   // If nothing is said, let's go for the *cheap* tessellation strategy.
@@ -438,9 +448,10 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const HalfSpace&, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const HalfSpace&,
+                                                   const ReifyData& data) {
   PositiveDouble validator("HalfSpace", "soft");
+  const ProximityProperties& props = data.properties;
 
   const double thickness =
       validator.Extract(props, kHydroGroup, kSlabThickness);
@@ -451,8 +462,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness});
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Convex& convex_spec, const ProximityProperties& props) {
+std::optional<SoftGeometry> MakeSoftRepresentation(const Convex& convex_spec,
+                                                   const ReifyData& data) {
   PositiveDouble validator("Convex", "soft");
 
   const std::string extension = convex_spec.extension();
@@ -467,7 +478,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeConvexVolumeMesh<double>(convex_spec));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      validator.Extract(data.properties, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeConvexPressureField(mesh.get(), hydroelastic_modulus));
@@ -476,14 +487,14 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Mesh& mesh_specification, const ProximityProperties& props) {
+    const Mesh& mesh_specification, const ReifyData& data) {
   PositiveDouble validator("Mesh", "soft");
 
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeVolumeMeshFromVtk<double>(mesh_specification));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      validator.Extract(data.properties, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus));

@@ -192,8 +192,10 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
     return;
   }
   /* Forward to hydroelastics to construct the geometry. */
-  std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, data.properties);
+  const hydroelastic::Geometries::ReifyData hydro_data{.properties =
+                                                           data.properties};
+  std::optional<hydroelastic::RigidGeometry> hydro_rigid_geometry =
+      hydroelastic::MakeRigidRepresentation(shape, hydro_data);
   /* Unsupported geometries will be handle through the
    `ThrowUnsupportedGeometry()` code path. */
   DRAKE_DEMAND(hydro_rigid_geometry.has_value());
