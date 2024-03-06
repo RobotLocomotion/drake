@@ -263,6 +263,7 @@ drake_cc_library(
         ":kinematics_vector",
         ":proximity_engine",
         ":utilities",
+        "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
         "//math:gradient",
     ],
@@ -353,6 +354,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
@@ -668,6 +670,7 @@ drake_cc_library(
         ":rgba",
         ":scene_graph",
         "//common:essential",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
         "//systems/analysis:instantaneous_realtime_rate_calculator",
         "//systems/framework:context",
@@ -859,6 +862,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":geometry_state",
         "//common/test_utilities",

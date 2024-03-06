@@ -1,6 +1,7 @@
 #include "drake/geometry/internal_geometry.h"
 
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -8,6 +9,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -229,6 +231,25 @@ GTEST_TEST(InternalGeometryTest, Rename) {
     geometry.set_name(new_name);
   }
   EXPECT_EQ(geometry.name(), "new_name");
+}
+
+// Simple test for convex hull API: set, get, and clear.
+GTEST_TEST(InternalGeometryTest, ConvexHull) {
+  InternalGeometry geometry;
+
+  EXPECT_EQ(geometry.convex_hull(), nullptr);
+
+  geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
+      std::vector<int>{3, 0, 1, 2},
+      std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}}));
+
+  ASSERT_NE(geometry.convex_hull(), nullptr);
+
+  EXPECT_EQ(geometry.convex_hull()->num_vertices(), 3);
+  EXPECT_EQ(geometry.convex_hull()->num_faces(), 1);
+
+  geometry.set_convex_hull(nullptr);
+  EXPECT_EQ(geometry.convex_hull(), nullptr);
 }
 
 }  // namespace

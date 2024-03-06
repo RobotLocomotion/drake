@@ -306,6 +306,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetAllDeformableGeometryIds(). */
   std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
+  /** Implementation of SceneGraphInspector::GetConvexHull(). */
+  const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
