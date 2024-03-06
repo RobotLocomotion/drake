@@ -12,13 +12,13 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-class UsdParser final : public ParserInterface {
+class UsdParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UsdParser)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UsdParserWrapper)
 
-  UsdParser();
+  UsdParserWrapper();
 
-  ~UsdParser() final;
+  ~UsdParserWrapper() final;
 
   std::optional<ModelInstanceIndex> AddModel(
       const DataSource& data_source, const std::string& model_name,

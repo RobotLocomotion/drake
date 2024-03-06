@@ -20,18 +20,13 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
  public:
   UsdParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
-  std::vector<ModelInstanceIndex> ParseFile(const fs::path& filename) {
-    const std::string source_filename =
-        filename.is_relative()
-            ? FindResourceOrThrow("drake/multibody/parsing/test/" +
-                                  filename.string())
-            : filename.string();
-    const DataSource source{DataSource::kFilename, &source_filename};
+  std::vector<ModelInstanceIndex> ParseFile(const std::string& filename) {
+    const DataSource source{DataSource::kFilename, &filename};
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_,  &resolver,    NoSelect};
-    UsdParser dut;
+    UsdParserWrapper dut;
     auto result = dut.AddAllModels(source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -51,14 +46,20 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   CollisionFilterGroups group_output_;
 };
 
-TEST_F(UsdParserTest, NoSuchFile) {
-  ParseFile("/no/such/file");
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*Failed to open.*"));
+// Finds a file resource within 'usd_parser_test'.
+std::string FindUsdTestResourceOrThrow(const std::string& filename) {
+    const std::string resource_dir{
+      "drake/multibody/parsing/test/usd_parser_test/"};
+    return FindResourceOrThrow(resource_dir + filename);
 }
 
-TEST_F(UsdParserTest, BoxPlane) {
-  EXPECT_NO_THROW(ParseFile("usd_parser_test/box_plane.usda"));
-  // TODO(rpoyner-tri) Add real test logic.
+TEST_F(UsdParserTest, BasicImportTest) {
+  std::string filename = FindUsdTestResourceOrThrow("simple_geometries.usda");
+  ParseFile(filename);
+
+  DRAKE_ASSERT(plant_.num_bodies() == 5);
+  DRAKE_ASSERT(plant_.num_collision_geometries() == 11);
+  DRAKE_ASSERT(plant_.num_visual_geometries() == 11);
 }
 
 }  // namespace
