@@ -64,11 +64,23 @@ class InnerStruct:
 
 @dc.dataclass
 class OptionalStruct:
-    value: typing.Optional[float] = nan
+    value: float | None = nan
 
 
 @dc.dataclass
 class OptionalStructNoDefault:
+    value: float | None = None
+
+
+@dc.dataclass
+class LegacyOptionalStruct:
+    # Here we write out typing.Optional (dispreferred), instead of `| None`.
+    value: typing.Optional[float] = nan
+
+
+@dc.dataclass
+class LegacyOptionalStructNoDefault:
+    # Here we write out typing.Optional (dispreferred), instead of `| None`.
     value: typing.Optional[float] = None
 
 
@@ -345,16 +357,25 @@ class TestYamlTypedRead(unittest.TestCase,
     def test_read_optional(self, *, options):
         # The test case numbers here (1..12) reference the specification as
         # documented in the C++ unit test yaml_read_archive_test.cc.
-        for schema, data, expected in (
-                (OptionalStructNoDefault, "value: 1.0", 1.0),    # Case 1, 2
-                (OptionalStruct,          "value: 1.0", 1.0),    # Case 3, 4
-                (OptionalStructNoDefault, "value:",     None),   # Case 5, 6
-                (OptionalStruct,          "value:",     None),   # Case 7, 8
-                (OptionalStructNoDefault, "{}",         None),   # Case 9, 10
-                (OptionalStruct,          "{}", (
-                    nan if options["allow_schema_with_no_yaml"]  # Case 12
-                    else None)),                                 # Case 11
-        ):
+        cases = [
+            (OptionalStructNoDefault, "value: 1.0", 1.0),    # Case 1, 2
+            (OptionalStruct,          "value: 1.0", 1.0),    # Case 3, 4
+            (OptionalStructNoDefault, "value:",     None),   # Case 5, 6
+            (OptionalStruct,          "value:",     None),   # Case 7, 8
+            (OptionalStructNoDefault, "{}",         None),   # Case 9, 10
+            (OptionalStruct,          "{}", (
+                nan if options["allow_schema_with_no_yaml"]  # Case 12
+                else None)),                                 # Case 11
+        ]
+        respell = {
+            OptionalStruct: LegacyOptionalStruct,
+            OptionalStructNoDefault: LegacyOptionalStructNoDefault,
+        }
+        legacy_cases = [
+            (respell[schema], data, expected)
+            for schema, data, expected in cases
+        ]
+        for schema, data, expected in cases + legacy_cases:
             with self.subTest(data=data, schema=schema):
                 actual = yaml_load_typed(schema=schema, data=data, **options)
                 self.assertEqual(actual, schema(expected))
@@ -822,6 +843,9 @@ class TestYamlTypedWrite(unittest.TestCase):
         ]
         for value, expected_doc in cases:
             actual_doc = yaml_dump_typed(OptionalStruct(value=value))
+            self.assertEqual(actual_doc, expected_doc)
+        for value, expected_doc in cases:
+            actual_doc = yaml_dump_typed(LegacyOptionalStruct(value=value))
             self.assertEqual(actual_doc, expected_doc)
 
     def test_write_variant(self):
