@@ -17,8 +17,8 @@ namespace {
 Eigen::VectorXi ComputeDegreeOfVertices(
     const Eigen::SparseMatrix<bool>& adjacency_matrix,
     const std::list<int>& available_nodes) {
-  DRAKE_DEMAND(adjacency_matrix.rows() == adjacency_matrix.cols());
-  DRAKE_DEMAND(adjacency_matrix.toDense() ==
+  DRAKE_ASSERT(adjacency_matrix.rows() == adjacency_matrix.cols());
+  DRAKE_ASSERT(adjacency_matrix.toDense() ==
                adjacency_matrix.transpose().toDense());
 
   // Initialize a vector to store the degree of each vertex
