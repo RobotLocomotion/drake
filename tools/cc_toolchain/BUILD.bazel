@@ -26,10 +26,7 @@ config_setting(
 filegroup(
     name = "toolchain_deps",
     data = select({
-        ":apple": [
-            "@local_config_apple_cc//:cc_wrapper",
-            "@local_config_cc//:cc_wrapper",
-        ],
+        ":apple": ["@local_config_cc//:cc_wrapper"],
         "//conditions:default": [],
     }),
     visibility = ["//common:__pkg__"],
