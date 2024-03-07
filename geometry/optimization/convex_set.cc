@@ -124,9 +124,12 @@ std::pair<double, Eigen::VectorXd> ConvexSet::GenericDoProjection(
       Eigen::MatrixXd::Identity(ambient_dimension(), ambient_dimension()),
       point, projected_point);
   const auto result = solvers::Solve(prog);
-  // Projection should always be feasible.
+  // Projections should always be feasible.
   DRAKE_THROW_UNLESS(result.is_success());
-  return {result.get_optimal_cost(), result.GetSolution(projected_point)};
+  // The distance is lower bounded by 0, but numerical sensitivity may place us
+  // slightly negative.
+  const double clamped_cost = std::max(0.0, result.get_optimal_cost());
+  return {sqrt(clamped_cost), result.GetSolution(projected_point)};
 }
 
 std::optional<std::pair<double, Eigen::VectorXd>> ConvexSet::ProjectionShortcut(
