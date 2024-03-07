@@ -63,16 +63,6 @@ void MaskNonNeighbours(const int index, Eigen::SparseMatrix<bool>* mat) {
   *mat = mat->pruned();
 }
 
-std::vector<int> decreasing_argsort(
-    const Eigen::Ref<const Eigen::VectorXi>& values) {
-  std::vector<int> index(values.size());
-  std::iota(index.begin(), index.end(), 0);
-  std::sort(index.begin(), index.end(), [&values](uint8_t a, uint8_t b) {
-    return values(a) > values(b);
-  });
-  return index;
-}
-
 }  // namespace
 
 VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
@@ -89,9 +79,11 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   while (available_nodes.size() > 0) {
     const Eigen::VectorXi degrees =
         ComputeDegreeOfVertices(curr_ad_matrix, available_nodes);
-    const std::vector<int> degrees_sort_idx = decreasing_argsort(degrees);
+
     auto it = available_nodes.begin();
-    std::advance(it, degrees_sort_idx.at(0));
+    Eigen::VectorXi::Index index_max_degree;
+    degrees.maxCoeff(&index_max_degree);
+    std::advance(it, index_max_degree);
     int point_to_add = *it;
     clique_members.push_back(point_to_add);
 

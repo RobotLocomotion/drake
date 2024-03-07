@@ -227,25 +227,25 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     // Draw the true cspace.
     Eigen::Matrix3Xd env_points(3, 5);
     // clang-format off
-        env_points << -2, 2,  2, -2, -2,
-                        2, 2, -2, -2,  2,
-                        0, 0,  0,  0,  0;
+    env_points << -2, 2,  2, -2, -2,
+                   2, 2, -2, -2,  2,
+                   0, 0,  0,  0,  0;
     // clang-format on
     meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
     Eigen::Matrix3Xd centers(3, 4);
     double c = 1.0;
     // clang-format off
-        centers << -c, c,  c, -c,
-                    c, c, -c, -c,
-                    0, 0,  0,  0;
+    centers << -c, c,  c, -c,
+                c, c, -c, -c,
+                0, 0,  0,  0;
     // clang-format on
     Eigen::Matrix3Xd obs_points(3, 5);
     // approximating offset due to sphere radius with fixed offset
     double s = 0.7 + 0.01;
     // clang-format off
-        obs_points << -s, s,  s, -s, -s,
-                        s, s, -s, -s, s,
-                        s, 0,  0,  0,  0;
+    obs_points << -s, s,  s, -s, -s,
+                   s, s, -s, -s,  s,
+                   s, 0,  0,  0,  0;
     // clang-format on
     for (int obstacle_idx = 0; obstacle_idx < 4; ++obstacle_idx) {
       Eigen::Matrix3Xd obstacle = obs_points;
@@ -315,7 +315,6 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
        BoxWithCornerObstaclesTestMip) {
   // Set ILP settings for MaxCliqueSolverViaMip
-
   // limiting the work load for ILP solver
   solvers::SolverOptions solver_options;
   // Quit after finding 25 solutions.

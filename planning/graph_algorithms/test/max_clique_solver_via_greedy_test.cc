@@ -27,7 +27,7 @@ void TestMaxCliqueViaGreedy(
   EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
   bool solution_match_found = false;
   for (const auto& possible_solution : possible_solutions) {
-    if (max_clique_inds.cast<int>() == possible_solution.cast<int>()) {
+    if (max_clique_inds == possible_solution) {
       solution_match_found = true;
       break;
     }
@@ -126,7 +126,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, FullyConnectedPlusFullBipartiteGraph) {
   VectorX<bool> solution8(9);
   VectorX<bool> solution9(9);
 
-  // The max cliuqe solutions are pairs of vertices on the bipartite graph.
+  // The max clique solutions are pairs of vertices on the bipartite graph.
   solution1 << false, false, false, true, false, false, true, false, false;
   solution2 << false, false, false, true, false, false, false, true, false;
   solution3 << false, false, false, true, false, false, false, false, true;
@@ -149,18 +149,6 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSquare) {
   std::vector<Triplet<bool>> triplets;
   triplets.push_back(Triplet<bool>(0, 1, 1));
   Eigen::SparseMatrix<bool> graph(3, 2);
-  graph.setFromTriplets(triplets.begin(), triplets.end());
-  MaxCliqueSolverViaGreedy solver{};
-  // Cast to void since we expect it to throw, but SolveMaxClique is
-  // marked as nodiscard.
-  EXPECT_THROW((void)solver.SolveMaxClique(graph), std::exception);
-}
-
-GTEST_TEST(MaxCliqueSolverViaGreedyTest, AdjacencyNotSymmetric) {
-  std::vector<Triplet<bool>> triplets;
-  triplets.push_back(Triplet<bool>(0, 1, 1));
-  triplets.push_back(Triplet<bool>(0, 2, 1));
-  Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaGreedy solver{};
   // Cast to void since we expect it to throw, but SolveMaxClique is

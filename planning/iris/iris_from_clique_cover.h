@@ -84,6 +84,9 @@ struct IrisFromCliqueCoverOptions {
    * HPolyhedron. See @ConvexSet::PointInSet.
    */
   double point_in_set_tol{1e-6};
+
+  // TODO(AlexandreAmice): Implement a constructor/option that automatically
+  // sets up the ILP solver and selects MaxCliqueViaMip
 };
 
 /**
@@ -104,7 +107,7 @@ struct IrisFromCliqueCoverOptions {
  * @param max_clique_solver The min clique cover problem is approximatley solved
  * by repeatedly solving max clique on the uncovered graph and adding this
  * largest clique to the cover. The max clique problem is solved by this solver.
- * If parallelism is set to allow more than 1 thread, then this class **must**
+ * If parallelism is set to allow more than 1 thread, then the solver **must**
  * be implemented in C++.
  *
  * If nullptr is passed as the `max_clique_solver`, then max clique will be
@@ -128,7 +131,6 @@ void IrisInConfigurationSpaceFromCliqueCover(
     RandomGenerator* generator,
     std::vector<geometry::optimization::HPolyhedron>* sets,
     const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =
-
         nullptr);
 
 }  // namespace planning
