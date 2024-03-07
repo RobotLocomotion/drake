@@ -279,6 +279,7 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:eigen_matrix_compare"
     ],
 )
 
