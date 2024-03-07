@@ -67,14 +67,7 @@ def _impl(repository_ctx):
         executable = False,
     )
 
-    # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/cc_configure.bzl
-    if repository_ctx.os.environ.get("BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN", "0") == "1":  # noqa
-        fail("Could NOT identify C/C++ compiler because CROSSTOOL is empty.")
-
     if repository_ctx.os.name == "mac os x" and repository_ctx.os.environ.get("BAZEL_USE_CPP_ONLY_TOOLCHAIN", "0") != "1":  # noqa
-        # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/osx_cc_configure.bzl
-        cc = repository_ctx.path(Label("@local_config_cc//:wrapped_clang"))
-
         result = execute_or_fail(repository_ctx, [
             "xcode-select",
             "--print-path",
@@ -93,13 +86,11 @@ def _impl(repository_ctx):
         }
 
     else:
-        # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/unix_cc_configure.bzl
-        cc = find_cc(repository_ctx, overriden_tools = {})
         cc_environment = {}
 
     executable = repository_ctx.path("identify_compiler")
     execute_or_fail(repository_ctx, [
-        cc,
+        repository_ctx.path(Label("@local_config_cc//:cc_wrapper.sh")),
         repository_ctx.path(
             Label("@drake//tools/workspace/cc:identify_compiler.cc"),
         ),
@@ -122,7 +113,7 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         supported_compilers = {"AppleClang": (14, 0)}
     else:
-        supported_compilers = {"Clang": (12, 0), "GNU": (9, 3)}
+        supported_compilers = {"Clang": (14, 0), "GNU": (11, 0)}
 
     if compiler_id in supported_compilers:
         _check_compiler_version(
