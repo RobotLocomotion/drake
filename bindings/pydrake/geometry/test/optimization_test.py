@@ -378,6 +378,13 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
 
+        test_point = np.ones_like(self.b)
+        distance, projection = rect.Projection(test_point)
+        self.assertEqual(distance, 0.0)
+        np.testing.assert_array_equal(projection, test_point)
+
+
+
         # Methods specific to Hyperrectangle
         np.testing.assert_array_equal(rect.lb(), -self.b)
         np.testing.assert_array_equal(rect.ub(), self.b)
