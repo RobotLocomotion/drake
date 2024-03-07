@@ -256,6 +256,43 @@ GTEST_TEST(ConvexSetTest, GenericProjection) {
   }
 }
 
+// Compute the projection of a point onto a set that has projection shortcut.
+GTEST_TEST(ConvexSetTest, ShortcutProjection) {
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(2);
+  // Each column is a test point.
+  // clang-format off
+  const Eigen::Matrix2Xd test_points{{0.5, 2, -1.1, 2},
+                                     {0.5, 0, -3.0,   2}};
+  const Eigen::Matrix2Xd expected_projection{{0.5, 1, -1, 1},
+                                             {0.5, 0, -1, 1}};
+  // clang-format on
+
+  const std::vector<double> expected_distances{0, 1, sqrt(4.01), sqrt(2)};
+
+  const double kTol = 1e-7;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    auto [distance, projection] = polytope.Projection(test_points.col(i));
+    EXPECT_TRUE(CompareMatrices(projection, expected_projection.col(i), kTol));
+    EXPECT_NEAR(distance, expected_distances[i], kTol);
+  }
+}
+
+GTEST_TEST(ConvexSetTest, Projection0Dim) {
+    const HPolyhedron polytope = HPolyhedron::MakeUnitBox(0);
+    const Eigen::VectorXd test_point(0);
+
+    auto [distance, projection] = polytope.Projection(test_point);
+    EXPECT_EQ(distance, 0);
+    EXPECT_EQ(projection, test_point);
+}
+
+GTEST_TEST(ConvexSetTest, ProjectionError) {
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(2);
+  const Eigen::Vector3d test_point{0.5, 2, -1.1};
+  // Wrong dimension of the test point.
+  EXPECT_THROW(polytope.Projection(test_point), std::exception);
+}
+
 }  // namespace
 }  // namespace optimization
 }  // namespace geometry
