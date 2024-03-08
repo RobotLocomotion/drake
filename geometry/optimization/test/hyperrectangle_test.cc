@@ -164,6 +164,7 @@ GTEST_TEST(HyperrectangleTest, MaybeGetIntersection) {
   EXPECT_TRUE(CompareMatrices(intersection12->lb(), intersection21->lb()));
   EXPECT_TRUE(CompareMatrices(intersection12->ub(), intersection21->ub()));
 
+  // Empty intersection yields nullopt.
   const Vector3d lb3{-30, -20, -10};
   const Vector3d ub3{-20, -11, -8};
   const Hyperrectangle h3(lb3, ub3);
@@ -173,6 +174,7 @@ GTEST_TEST(HyperrectangleTest, MaybeGetIntersection) {
       h3.MaybeGetIntersection(h1);
   EXPECT_FALSE(intersection13.has_value());
 
+  // Error: mismatched dimension of h4 and h1.
   const Vector2d lb4{-1, 2};
   const Vector2d ub4{20, 11};
   const Hyperrectangle h4(lb4, ub4);
