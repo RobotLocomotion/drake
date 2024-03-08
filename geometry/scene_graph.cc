@@ -540,7 +540,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
   // needed and is correct.
   internal::KinematicsData<T>& kinematics_data =
       state.mutable_kinematics_data();
-  internal::DrivenMeshData<T>& driven_mesh_data =
+  internal::DrivenMeshData& driven_mesh_data =
       state.mutable_driven_mesh_data();
   // Process all sources *except*:
   //   - the internal source and
