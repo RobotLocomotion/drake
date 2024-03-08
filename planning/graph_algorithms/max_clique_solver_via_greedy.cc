@@ -15,19 +15,18 @@ namespace {
 // Computes the degrees of all verticies in a graph given by its adjacency
 // matrix.
 Eigen::VectorXi ComputeDegreeOfVertices(
-    const Eigen::SparseMatrix<bool>& adjacency_matrix,
-    const std::list<int>& available_nodes) {
+    const Eigen::SparseMatrix<bool>& adjacency_matrix) {
   DRAKE_ASSERT(adjacency_matrix.rows() == adjacency_matrix.cols());
   DRAKE_ASSERT(adjacency_matrix.toDense() ==
                adjacency_matrix.transpose().toDense());
 
   // Initialize a vector to store the degree of each vertex
-  Eigen::VectorXi degrees(available_nodes.size());
+  Eigen::VectorXi degrees(adjacency_matrix.cols());
   // Compute the degree of each candidate
   int candidate_index{0};
-  for (auto j = available_nodes.begin(); j != available_nodes.end(); ++j) {
+  for (auto j = 0; j < adjacency_matrix.cols(); ++j) {
     degrees(candidate_index) = 0;
-    for (SparseMatrix<bool>::InnerIterator it(adjacency_matrix, *j); it; ++it) {
+    for (SparseMatrix<bool>::InnerIterator it(adjacency_matrix, j); it; ++it) {
       degrees(candidate_index) += 1;
     }
     ++candidate_index;
@@ -64,16 +63,11 @@ std::list<int> DecreasingArgsort(
 VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
   const int n = adjacency_matrix.rows();
-  std::list<int> available_nodes;
-  for (int i = 0; i < n; ++i) {
-    available_nodes.insert(available_nodes.end(), i);
-  }
 
   std::vector<int> clique_members;
   SparseMatrix<bool> curr_ad_matrix = adjacency_matrix;
-  const Eigen::VectorXi degrees =
-      ComputeDegreeOfVertices(curr_ad_matrix, available_nodes);
-  available_nodes = DecreasingArgsort(degrees);
+  const Eigen::VectorXi degrees = ComputeDegreeOfVertices(curr_ad_matrix);
+  std::list<int> available_nodes = DecreasingArgsort(degrees);
 
   while (available_nodes.size() > 0) {
     int point_to_add = available_nodes.front();
