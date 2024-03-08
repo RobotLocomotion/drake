@@ -132,7 +132,7 @@ class GeometryStateTester {
 
   const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
   driven_perception_meshes() const {
-    return state_->driven_mesh_data_.perception_meshes;
+    return state_->driven_mesh_data_.driven_perception_meshes();
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
@@ -221,7 +221,7 @@ static fs::path temp_dir() {
   return temp_path.access();
 }
 
-std::string WriteFile(std::string_view contents, std::string_view file_name) {
+fs::path WriteFile(std::string_view contents, std::string_view file_name) {
   const fs::path file_path = temp_dir() / file_name;
   std::ofstream out(file_path);
   DRAKE_DEMAND(out.is_open());
@@ -584,6 +584,9 @@ class GeometryStateTestBase {
     for (GeometryId id : geometries_) {
       geometry_state_.AssignRole(source_id_, id, properties);
     }
+    for (GeometryId id : deformable_geometries_) {
+      geometry_state_.AssignRole(source_id_, id, properties);
+    }
     geometry_state_.AssignRole(source_id_, anchored_geometry_, properties);
   }
 
@@ -598,7 +601,7 @@ class GeometryStateTestBase {
         RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
     GeometryId g_id = geometry_state_.RegisterDeformableGeometry(
         s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
-    geometries_.push_back(g_id);
+    deformable_geometries_.push_back(g_id);
     if ((roles_to_assign & Assign::kProximity) != Assign::kNone) {
       AssignProximityToSingleSourceTree();
     }
@@ -617,12 +620,19 @@ class GeometryStateTestBase {
     return kFrameCount + 1;
   }
 
-  int single_tree_total_geometry_count() const {
-    return single_tree_dynamic_geometry_count() + anchored_geometry_count();
+  // Total number of rigid geometries.
+  int single_tree_rigid_geometry_count() const {
+    return single_tree_dynamic_rigid_geometry_count() +
+           anchored_geometry_count();
   }
 
-  int single_tree_dynamic_geometry_count() const {
+  // Total number of dynamic rigid geometries.
+  int single_tree_dynamic_rigid_geometry_count() const {
     return kFrameCount * kGeometryCount;
+  }
+
+  int total_geometry_count() const {
+    return single_tree_rigid_geometry_count() + ssize(deformable_geometries_);
   }
 
   int anchored_geometry_count() const { return 1; }
@@ -664,6 +674,8 @@ class GeometryStateTestBase {
   vector<string> geometry_names_;
   // The single, anchored geometry id.
   GeometryId anchored_geometry_;
+  // All deformable geometry ids.
+  vector<GeometryId> deformable_geometries_;
   // The registered name of the anchored geometry.
   const string anchored_name_{"anchored"};
   // The id of the single-source tree.
@@ -929,13 +941,13 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
       geometry_state_.NumFramesForSource(SourceId::get_new_id()),
       "Referenced geometry source .* is not registered.");
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
-            single_tree_dynamic_geometry_count());
+            single_tree_dynamic_rigid_geometry_count());
   EXPECT_EQ(geometry_state_.NumAnchoredGeometries(), anchored_geometry_count());
   EXPECT_EQ(
       geometry_state_.NumAnchoredGeometries(),
       geometry_state_.NumGeometriesForFrame(InternalFrame::world_frame_id()));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count());
+            single_tree_rigid_geometry_count());
   const SourceId false_id = SourceId::get_new_id();
   EXPECT_FALSE(geometry_state_.SourceIsRegistered(false_id));
 }
@@ -1232,9 +1244,9 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
   // The internal geometries are what and where they should be.
   {
     const auto& internal_geometries = gs_tester_.get_geometries();
-    EXPECT_EQ(internal_geometries.size(), single_tree_total_geometry_count());
+    EXPECT_EQ(internal_geometries.size(), single_tree_rigid_geometry_count());
     // NOTE: This relies on the anchored geometry being added *last*.
-    for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
+    for (int i = 0; i < single_tree_dynamic_rigid_geometry_count(); ++i) {
       const auto& geometry = internal_geometries.at(geometries_[i]);
       EXPECT_EQ(geometry.frame_id(), frames_[i / kGeometryCount]);
       EXPECT_EQ(geometry.id(), geometries_[i]);
@@ -1246,7 +1258,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
-            single_tree_total_geometry_count());
+            single_tree_rigid_geometry_count());
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), kFrameCount + 1);
 }
 
@@ -1283,7 +1295,7 @@ TEST_F(GeometryStateTest, GetGeometryIds) {
   // Configure a scene where *every* geometry has a proximity role, but other
   // geometries selectively have illustration and/or perception roles.
   SetUpSingleSourceTree(Assign::kProximity);
-  ASSERT_LE(6, single_tree_dynamic_geometry_count());
+  ASSERT_LE(6, single_tree_dynamic_rigid_geometry_count());
 
   // Frame 0 has proximity only. Frame 1 has proximity and perception.
   PerceptionProperties perception;
@@ -1366,9 +1378,9 @@ TEST_F(GeometryStateTest, GetGeometryIds) {
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpSingleSourceTree(Assign::kProximity);
-  EXPECT_EQ(single_tree_total_geometry_count(),
+  EXPECT_EQ(single_tree_rigid_geometry_count(),
             geometry_state_.get_num_geometries());
-  EXPECT_EQ(single_tree_total_geometry_count(),
+  EXPECT_EQ(single_tree_rigid_geometry_count(),
             geometry_state_.NumGeometriesWithRole(Role::kProximity));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kPerception));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kIllustration));
@@ -2109,18 +2121,18 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   // Confirm initial state.
   ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count());
+            single_tree_rigid_geometry_count());
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
-            single_tree_dynamic_geometry_count());
+            single_tree_dynamic_rigid_geometry_count());
   // We assume that role assignment works (tested below), such that the
   // geometries are registered with the appropriate engines.
 
   geometry_state_.RemoveGeometry(s_id, g_id);
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count() - 1);
+            single_tree_rigid_geometry_count() - 1);
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
-            single_tree_dynamic_geometry_count() - 1);
+            single_tree_dynamic_rigid_geometry_count() - 1);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
   EXPECT_FALSE(gs_tester_.get_geometries().contains(g_id));
@@ -2172,7 +2184,7 @@ TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "new"));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count() + 1);
+            single_tree_rigid_geometry_count() + 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RemoveGeometry(s_id, g_id),
       "Trying to remove geometry \\d+ from source \\d+.+geometry doesn't "
@@ -2381,7 +2393,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
 
   // NOTE: Don't re-order the tests; they rely on an accumulative set of changes
   // to the `frame_poses` vector of poses.
-  const int total_geom = single_tree_dynamic_geometry_count();
+  const int total_geom = single_tree_dynamic_rigid_geometry_count();
 
   // Case 1: Set all frames to identity poses. The world pose of all the
   // geometry should be that of the geometry in its frame.
@@ -2671,7 +2683,7 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
   internal::DeformableContact<double> contacts;
   geometry_state_.ComputeDeformableContact(&contacts);
   EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_total_geometry_count());
+            single_tree_rigid_geometry_count());
 
   // Attempting to filter collisions with scope omitting deformable geometries
   // should have no effect on the number of collisions.
@@ -2681,7 +2693,7 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
                           GeometrySet(geometries_)));
   geometry_state_.ComputeDeformableContact(&contacts);
   EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_total_geometry_count());
+            single_tree_rigid_geometry_count());
 
   // Filter with the kAll flag as the scope should have an effect. The collision
   // between the deformable geometry and one dynamic rigid geometry and one
@@ -2693,7 +2705,7 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
                           GeometrySet({geometries_[0], anchored_geometry_})));
   geometry_state_.ComputeDeformableContact(&contacts);
   EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_total_geometry_count() - 2);
+            single_tree_rigid_geometry_count() - 2);
 }
 
 // Test that the appropriate error messages are dispatched.
@@ -2950,7 +2962,7 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
   // We need at least 8 geometries to run through all role permutations. Add
   // geometries until we're there.
   const RigidTransformd pose = RigidTransformd::Identity();
-  for (int i = 0; i < 8 - single_tree_dynamic_geometry_count(); ++i) {
+  for (int i = 0; i < 8 - single_tree_dynamic_rigid_geometry_count(); ++i) {
     const string name = "new_geom" + std::to_string(i);
     geometries_.push_back(geometry_state_.RegisterGeometry(
         source_id_, frames_[0],
@@ -3741,12 +3753,9 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
       source_id_, frames_[0],
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(0.5), "shape"));
-  // The total number of geometries registered with the render engine should be
-  // the total number of rigid geometies with perception roles
-  // (single_tree_total_geometry_count()) + the number of deformable geometries
-  // with perception roles (1).
-  EXPECT_EQ(render_engine_->num_registered(),
-            single_tree_total_geometry_count() + 1);
+  // All geometries have perception role assigned and thus should be registered
+  // with the accepting render engine.
+  EXPECT_EQ(render_engine_->num_registered(), total_geometry_count());
 
   auto new_renderer = make_unique<DummyRenderEngine>();
   DummyRenderEngine* other_renderer = new_renderer.get();
@@ -3754,10 +3763,8 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
   EXPECT_EQ(other_renderer->num_registered(), 0);
   const string other_name = "other";
   geometry_state_.AddRenderer(other_name, std::move(new_renderer));
-  // The new renderer only has the geometries with perception properties
-  // assigned.
-  EXPECT_EQ(other_renderer->num_registered(),
-            single_tree_total_geometry_count() + 1);
+  // The new renderer also has all geometries registered.
+  EXPECT_EQ(other_renderer->num_registered(), total_geometry_count());
 
   EXPECT_FALSE(other_renderer->has_geometry(id_no_perception));
 
@@ -3970,7 +3977,7 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   SetUpSingleSourceTree(Assign::kPerception);
 
   // Reality check -- all geometries report as part of both engines.
-  for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
+  for (int i = 0; i < single_tree_dynamic_rigid_geometry_count(); ++i) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(geometries_[i]);
     EXPECT_TRUE(render_engine_->has_geometry(geometry->id()));
     EXPECT_TRUE(second_engine->has_geometry(geometry->id()));
@@ -4003,7 +4010,7 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
 
   auto get_expected_ids = [this]() {
     map<GeometryId, RigidTransformd> expected;
-    for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
+    for (int i = 0; i < single_tree_dynamic_rigid_geometry_count(); ++i) {
       const GeometryId id = geometries_[i];
       expected.insert({id, gs_tester_.get_geometry_world_poses().at(id)});
     }
@@ -4065,8 +4072,8 @@ TEST_F(GeometryStateTest, DrivenMeshData) {
 
   // Add the perception role back with a specified render geometry consisting of
   // two distinct meshes.
-  // Note that distinct RenderMesh are made if there are more than one material
-  // when loading the obj file.
+  // Note that distinct RenderMesh instances are made if there are more than one
+  // material when loading the obj file.
   const char mtl_file[] = "multi.mtl";
   WriteFile(R"""(
     newmtl test_material_1
@@ -4131,8 +4138,6 @@ TEST_F(GeometryStateTest, RendererConfigurationUpdate) {
       render_engine_->world_configurations(g_id);
   const std::vector<VectorXd> new_nhat_W = render_engine_->world_normals(g_id);
 
-  ASSERT_EQ(old_q_WG.size(), new_q_WG.size());
-  ASSERT_EQ(old_nhat_W.size(), new_nhat_W.size());
   // Test objective 2.
   // Test that the vertex positions and normals have been modified. The
   // correctness of these update has been tested in the tests for

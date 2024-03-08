@@ -99,8 +99,7 @@ inline const VectorX<double>& convert_to_double(const VectorX<double>& vec) {
 }
 
 template <class T>
-VectorX<double> convert_to_double(
-    const VectorX<T>& vec) {
+VectorX<double> convert_to_double(const VectorX<T>& vec) {
   VectorX<double> result(vec.size());
   for (int r = 0; r < vec.size(); ++r) {
     result(r) = ExtractDoubleOrThrow(vec(r));
