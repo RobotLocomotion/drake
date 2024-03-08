@@ -16,10 +16,13 @@ namespace multibody {
 namespace internal {
 
 namespace fs = std::filesystem;
+#if 0
 namespace pxr = drake_vendor_pxr;
+#endif
 
 namespace {
 void InitializeOpenUsdLibrary() {
+#if 0
   // Register all relevant plugins.
   auto& registry = pxr::PlugRegistry::PlugRegistry::GetInstance();
   std::vector<std::string> json_paths{{
@@ -38,6 +41,7 @@ void InitializeOpenUsdLibrary() {
     const fs::path info_dir = fs::path(location.abspath).parent_path();
     registry.RegisterPlugins(info_dir.string());
   }
+#endif
 }
 }  // namespace
 
@@ -63,13 +67,16 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  if (data_source.IsFilename()) {
-    pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(data_source.GetAbsolutePath());
-    if (!stage) {
-      drake::log()->error("Failed to open stage");
-    } else {
-      drake::log()->info("Sucessfully opened stage");
-    }
+  if (data_source.IsContents()) {
+    throw std::runtime_error("UsdParser::AddAllModels - Ingesting raw USD"
+      "content from DataSource is not implemented");
+  }
+
+  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(data_source.GetAbsolutePath());
+  if (!stage) {
+    drake::log()->error("Failed to open stage");
+  } else {
+    drake::log()->info("Sucessfully opened stage");
   }
 
   unused(parent_model_name, workspace);
