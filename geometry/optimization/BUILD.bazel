@@ -278,8 +278,8 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:eigen_matrix_compare"
     ],
 )
 
