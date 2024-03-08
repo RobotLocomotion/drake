@@ -32,19 +32,19 @@ namespace solvers {
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog);
 
-/** Constructs a new MathematicalProgram which represents the semidefinite
- * programming convex relaxation of the (likely nonconvex) program `prog`.
+/** A version of MakeSemidefiniteRelaxation that allows for specifying the
+ * sparsity of the relaxation.
  *
- * For each group in @p variable groups, this method will jointly relax into a
- * semidefinite program all the costs and constraints whose variables intersect
- * with the group. Each of these semidefinite relaxations are aggregated into a
- * single program, and their semidefinite variables are made to agree where they
- * overlap.
+ * For each group in @p variable group, the costs and constraints whose
+ * variables are a subset of the group will be jointly relaxed into a single,
+ * dense semidefinite program in the same manner as
+ * MakeSemidefiniteRelaxation(prog).
  *
- * If a variable group does not intersect any of the costs and constraints, a
- * semidefinite variable is not created for these variables.
+ * Each of these semidefinite relaxations are aggregated into a
+ * single program, and their semidefinite variables are made to agree where the
+ * variable groups overlap.
  *
- * Costs and constraints whose variables do not overlap with any of the groups
+ * Costs and constraints whose variables are not a subset of any of the groups
  * are not relaxed and are simply added to the aggregated program. If these
  * costs and constraints are non-convex, then this method will throw.
  *
