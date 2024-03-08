@@ -84,36 +84,47 @@ struct KinematicsData {
 };
 
 // Driven mesh data that depend on the configuration input values.
-// @tparam_default_scalar
-template <typename T>
-struct DrivenMeshData {
+class DrivenMeshData {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrivenMeshData);
 
   DrivenMeshData() = default;
-
-  template <typename U>
-  DrivenMeshData(const DrivenMeshData<U>& other) {
-    this->perception_meshes = other.perception_meshes;
-  }
-
-  template <typename U>
-  DrivenMeshData(DrivenMeshData<U>&& other) {
-    this->perception_meshes = std::move(other.perception_meshes);
-  }
 
   // Updates the control mesh vertex positions for all driven meshes.
   // @param[in] q_WGs  q_WGs.at(id) contains control mesh vertex positions as a
   //                   flat Eigen vector.
   // @pre all driven meshes in `this` has its control mesh vertex positions
   // specified in `q_WGs`.
+  // @tparam_default_scalar
+  template <typename T>
   void SetControlMeshPositions(
       const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
 
-  // The vector of driven meshes used for rendering for each deformable geometry
-  // keyed by the corresponding geometry's id.
+  const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+  driven_meshes() const {
+    return driven_meshes_;
+  }
+
+  const std::vector<RenderMesh>& render_meshes(GeometryId id) const {
+    return render_meshes_.at(id);
+  }
+
+  // Registers both driven meshes and render meshes for the deformable geometry
+  // with the given id.
+  // @pre driven_meshes and render_meshes are the same size and not empty.
+  void SetMeshes(GeometryId id, std::vector<DrivenTriangleMesh> driven_meshes,
+                 std::vector<RenderMesh> render_meshes);
+
+  // Removes all mesh representations associated with the given GeometryId.
+  void Remove(GeometryId id) {
+    driven_meshes_.erase(id);
+    render_meshes_.erase(id);
+  }
+
+ private:
   std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>
-      perception_meshes;
-  // TODO(xuchenhan-tri): Include illustration meshes in this data structure.
+      driven_meshes_;
+  std::unordered_map<GeometryId, std::vector<RenderMesh>> render_meshes_;
 };
 
 }  // namespace internal
@@ -734,7 +745,7 @@ class GeometryState {
   // `driven_mesh_data`.
   void FinalizeConfigurationUpdate(
       const internal::KinematicsData<T>& kinematics_data,
-      const internal::DrivenMeshData<T>& driven_mesh_data,
+      const internal::DrivenMeshData& driven_mesh_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
 
@@ -809,45 +820,43 @@ class GeometryState {
   bool RemoveFromRendererUnchecked(const std::string& renderer_name,
                                    GeometryId id);
 
-  // Attempts to add the given `geometry` to all compatible render engines. The
-  // only GeometryState-level data structure modified is the perception version.
-  // All other changes to GeometryState data must happen elsewhere.
+  // Attempts to add the given `geometry` to all compatible render engines.
+  // This helper function changes, at most, the state of registered render
+  // engines and this geometry state's perception version.  The caller is
+  // responsible for making sure that all other state associated with the
+  // perception role of a geometry is properly maintained for this geometry
+  // state to remain consistent.
   // @returns `true` if the geometry was added to *any* renderer.
   bool AddToCompatibleRenderersUnchecked(
       const internal::InternalGeometry& geometry);
 
-  // Attempts to add the given `geometry` to all compatible render engines. The
-  // only GeometryState-level data structure modified is the perception version.
-  // All other changes to GeometryState data must happen elsewhere.
+  // Attempts to add the given `geometry` to all `candidate_renderers`
   // @pre `geometry` is not deformable.
   // @returns `true` if the geometry was added to *any* renderer.
   bool AddRigidToCompatibleRenderersUnchecked(
-      const internal::InternalGeometry& geometry);
+      const internal::InternalGeometry& geometry,
+      std::vector<render::RenderEngine*>* candidate_renderers);
 
-  // Attempts to add the given deformable `geometry` to all compatible render
-  // engines. The only GeometryState-level data structure modified is the
-  // perception version. All other changes to GeometryState data must happen
-  // elsewhere.
+  // Attempts to add the given deformable `geometry` to all
+  // `candidate_renderers`.
   // @pre `geometry` is deformable.
   // @returns `true` if the geometry was added to *any* renderer.
   bool AddDeformableToCompatibleRenderersUnchecked(
-      const internal::InternalGeometry& geometry);
+      const internal::InternalGeometry& geometry,
+      std::vector<render::RenderEngine*>* candidate_renderers);
 
-  // Adds the driven mesh used for rendering for the deformable geometry with
-  // the given `geometry_id`. The driven mesh is the surface triangle mesh of
-  // the control volume mesh unless the "mesh" property is specified under the
-  // "render" group, pointing at a valid path to the render mesh to be used. In
-  // that case, the render mesh must be completely contained by the control
-  // volume mesh. Otherwise an exception is thrown.
+  // Adds the driven mesh used for rendering the deformable geometry with the
+  // given `geometry_id`. The driven mesh is the surface triangle mesh of the
+  // control volume mesh unless the geometry's PerceptionProperties contain the
+  // ("deformable", "embedded_mesh") property containing a valid path to a
+  // surface mesh. In that case, that user-prescribed mesh will be the driven
+  // mesh.
+  // @throws std::exception if the ("deformable", "embedded_mesh") property does
+  // not contain a path to a surface mesh that's completely contained within the
+  // control volume mesh.
   // @pre The geometry associated with `geometry_id` is a deformable geometry
   // registered with `this` GeometryState.
   void RegisterDrivenPerceptionMesh(GeometryId geometry_id);
-
-  // Removes the driven perception mesh representations of the geometry with the
-  // given `geometry_id` from `this` GeometryState.
-  // @pre The geometry associated with `geometry_id` is a deformable geometry
-  // registered with `this` GeometryState.
-  void RemoveDrivenPerceptionMesh(GeometryId geometry_id);
 
   // Attempts to remove the geometry with the given id from *all* render
   // engines. The only GeometryState-level data structure modified is the
@@ -909,10 +918,11 @@ class GeometryState {
     return mutable_state->kinematics_data_;
   }
 
-  // Returns a mutable reference to the driven mesh data in this GeometryState.
-  internal::DrivenMeshData<T>& mutable_driven_mesh_data() const {
+  // Returns a mutable reference to the driven perception meshes in this
+  // GeometryState.
+  internal::DrivenMeshData& mutable_driven_perception_meshes() const {
     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
-    return mutable_state->driven_mesh_data_;
+    return mutable_state->driven_perception_meshes_;
   }
 
   // Returns a mutable reference to the proximity engine in this GeometryState.
@@ -999,9 +1009,9 @@ class GeometryState {
   // are two invariants.
   internal::KinematicsData<T> kinematics_data_;
 
-  // Mesh representations for deformable geometries that move passively with the
-  // simulated control mesh.
-  internal::DrivenMeshData<T> driven_mesh_data_;
+  // Mesh representations for deformable geometries with perception roles that
+  // move passively with the simulated control mesh.
+  internal::DrivenMeshData driven_perception_meshes_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two
