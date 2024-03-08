@@ -72,7 +72,8 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
       "content from DataSource is not implemented");
   }
 
-  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(data_source.GetAbsolutePath());
+  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(
+    data_source.GetAbsolutePath());
   if (!stage) {
     drake::log()->error("Failed to open stage");
   } else {
@@ -80,7 +81,7 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   }
 
   unused(parent_model_name, workspace);
-  
+
   // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
   return std::vector<ModelInstanceIndex>();
 }

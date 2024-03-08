@@ -4,7 +4,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
-//#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace multibody {
@@ -56,7 +55,7 @@ std::string FindUsdTestResourceOrThrow(const std::string& filename) {
 TEST_F(UsdParserTest, BasicImportTest) {
   // hong-nvidia: temporary check to ensure that this file indeed exists
   drake::log()->info(FindUsdTestResourceOrThrow("cube_plane.usda"));
-  
+
   const fs::path filename{
     "multibody/parsing/test/usd_parser_test/cube_plane.usda"};
   ParseFile(filename);
