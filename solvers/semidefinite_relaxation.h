@@ -48,11 +48,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  * are not relaxed and are simply added to the aggregated program. If these
  * costs and constraints are non-convex, then this method will throw.
  *
- * @param prog
- * @param variable_groups
- * @throw Runtime error if there is a non-convex cost or constraint whose
+ * @throw std::exception if there is a non-convex cost or constraint whose
  * variables do not intersect with any of the variable groups.
- * @return
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,

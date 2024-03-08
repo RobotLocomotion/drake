@@ -52,7 +52,7 @@ void SetRelaxationInitialGuess(std::map<Variable, double> expected_values,
   }
 }
 
-int Nchoose2(int n) {
+int NChoose2(int n) {
   return (n * (n - 1)) / 2;
 }
 
@@ -448,7 +448,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   // The variables which get relaxed are [x(0), x(1), x(2), 1]. The remaining
   // variables that do not get relaxed are [y(0), y(1)]. So there are (5
   // choose 2) + 2 variables in the program.
-  EXPECT_EQ(relaxation_partition->num_vars(), 2 + Nchoose2(5));
+  EXPECT_EQ(relaxation_partition->num_vars(), 2 + NChoose2(5));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             1);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -471,7 +471,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   // The variables which get relaxed are [x(0), x(1), y(0), 1]. The remaining
   // variables that do not get relaxed are [x(2), y(1)]. So there are (5 choose
   // 2) + 2 variables in the program.
-  EXPECT_EQ(relaxation_overlap->num_vars(), Nchoose2(5) + 2);
+  EXPECT_EQ(relaxation_overlap->num_vars(), NChoose2(5) + 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
                 ->matrix_rows(),
@@ -494,8 +494,8 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
   // There is the remaining x(2) variable that is not relaxed.
   EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
   EXPECT_EQ(relaxation_overlap->num_vars(),
-            Nchoose2(5) + Nchoose2(6) + 1 -
-                3 /* x(0), x(1) and y(0) are double counted so subtract 3*/);
+            NChoose2(5) + NChoose2(6) + 1 -
+            3 /* x(0), x(1) and y(0) are double counted so subtract 3*/);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
@@ -541,7 +541,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
   // The variables which get relaxed are [x(0), x(1), x(2), 1]. The remaining
   // variables that do not get relaxed are [y(0), y(1)]. So there are (4
   // choose 2) + 2 variables in the program.
-  EXPECT_EQ(relaxation_partition->num_vars(), 2 + Nchoose2(5));
+  EXPECT_EQ(relaxation_partition->num_vars(), 2 + NChoose2(5));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             1);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -564,7 +564,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
   // The variables which get relaxed are [x(0), x(1), y(0), 1]. The remaining
   // variables that do not get relaxed are [x(2), y(1)]. So there are (5 choose
   // 2) + 2 variables in the program.
-  EXPECT_EQ(relaxation_overlap->num_vars(), Nchoose2(5) + 2);
+  EXPECT_EQ(relaxation_overlap->num_vars(), NChoose2(5) + 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
                 ->matrix_rows(),
@@ -586,8 +586,8 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
   // [x(0), x(1), x(2), y(0), y(1), 1].
   EXPECT_EQ(relaxation_overlap->linear_costs().size(), 2);
   EXPECT_EQ(relaxation_overlap->num_vars(),
-            Nchoose2(5) + Nchoose2(7) -
-                3 /* x(0), x(1) and y(0) are double counted so subtract 2*/);
+            NChoose2(5) + NChoose2(7) -
+            3 /* x(0), x(1) and y(0) are double counted so subtract 2*/);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints().size(), 2);
   EXPECT_EQ(relaxation_overlap->positive_semidefinite_constraints()[0]
                 .evaluator()
@@ -653,7 +653,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), 1] and
   // [y(0), y(1), 1]. So there are (5 choose 2) + (4 choose 2) variables in the
   // program.
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(5) + NChoose2(4));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -722,7 +722,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), y(1), 1] and
   // [x(0), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
   // So there are (6 choose 2) + (5 choose 2) - 2 variables in the program
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(6) + Nchoose2(5) - 2);
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(6) + NChoose2(5) - 2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -878,7 +878,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), 1] and
   // [y(0), y(1), 1]. So there are (5 choose 2) + (4 choose 2) variables in the
   // program.
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(5) + NChoose2(4));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -984,7 +984,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), y(1), 1] and
   // [x(1), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
   // So there are (6 choose 2) + (5 choose 2) - 2 variables in the program
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(6) + Nchoose2(5) - 2);
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(6) + NChoose2(5) - 2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -1145,7 +1145,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), 1] and
   // [y(0), y(1), 1]. So there are (5 choose 2) + (4 choose 2) variables in the
   // program.
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(5) + Nchoose2(4));
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(5) + NChoose2(4));
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
@@ -1241,7 +1241,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
   // The variables which get relaxed are [x(0), x(1), x(2), y(0), 1] and
   // [x(2), y(0), y(1), 1]. These two groups of variables overlap in 2 places.
   // So there are (6 choose 2) + (5 choose 2) - 2 variables in the program
-  EXPECT_EQ(relaxation_partition->num_vars(), Nchoose2(6) + Nchoose2(5) - 2);
+  EXPECT_EQ(relaxation_partition->num_vars(), NChoose2(6) + NChoose2(5) - 2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints().size(),
             2);
   EXPECT_EQ(relaxation_partition->positive_semidefinite_constraints()[0]
