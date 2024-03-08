@@ -22,3 +22,7 @@ _BAZEL_WORKSPACE_EXCLUDES = split_cmake_list("@BAZEL_WORKSPACE_EXCLUDES@")
 add_default_workspace(
     repository_excludes = ["python"] + _BAZEL_WORKSPACE_EXCLUDES,
 )
+
+load("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure")
+
+apple_cc_configure()
