@@ -1357,6 +1357,7 @@ drake_cc_googletest(
         ":make_box_mesh",
         ":mesh_field",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],
@@ -1533,6 +1534,7 @@ drake_cc_googletest(
     deps = [
         ":triangle_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],
@@ -1552,6 +1554,7 @@ drake_cc_googletest(
         ":mesh_field",
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],

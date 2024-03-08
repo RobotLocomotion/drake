@@ -22,7 +22,8 @@ class ContactResultsTest : public ::testing::Test {
     // Empty pressure field for hydroelastic contact surface
     auto field =
         std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
-            std::vector<double>{}, surface_mesh.get(), false);
+            std::vector<double>{}, surface_mesh.get(),
+            geometry::MeshGradientMode::kNone);
     contact_surface_ = std::make_unique<ContactSurface<double>>(
         GeometryId::get_new_id(), GeometryId::get_new_id(),
         std::move(surface_mesh), std::move(field));

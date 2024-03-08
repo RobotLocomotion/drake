@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 
@@ -282,7 +283,7 @@ class Geometries final : public ShapeReifier {
    following invariants should always hold:
 
      - If HydroelasticType::kUndefined is returned, there is no representation
-       for that id.
+       for that id. See also is_vanished().
      - If HydroelasticType::kRigid is returned, there is a rigid geometry
        associated with that id and calling rigid_geometry() will return a
        valid RigidGeometry.
@@ -290,6 +291,13 @@ class Geometries final : public ShapeReifier {
        associated with that id and calling soft_geometry() will return a valid
        SoftGeometry.  */
   HydroelasticType hydroelastic_type(GeometryId id) const;
+
+  /* Returns true iff the hydroelastic representation of this geometry has been
+   marked vanished. Geometries that will be marked as vanished are finite
+   primitives for which gradients could not be computed. This excludes:
+   HalfSpace (as not being finite) and Mesh and Convex (as not being
+   primitive). */
+  bool is_vanished(GeometryId id) const;
 
   /* Returns the representation of the soft geometry with the given `id`.
    @pre hydroelastic_type(id) returns HydroelasticType::kSoft.  */
@@ -364,6 +372,9 @@ class Geometries final : public ShapeReifier {
 
   // The representations of all rigid geometries.
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
+
+  // The registrations of all vanished geometries.
+  std::unordered_set<GeometryId> vanished_geometries_;
 };
 
 /* @name Creating hydroelastic representations of shapes
