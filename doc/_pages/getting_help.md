@@ -51,7 +51,6 @@ When reporting an issue, please consider providing the following information
 * If building from source:
     * Build system (Bazel or CMake)
         * Bazel version (``which bazel; bazel version``)
-        * Bazel C++ compiler (``bazel run @drake//common:print_host_settings``)
         * CMake version (``which cmake; cmake --version``)
         * CMake C++ compiler (``cmake -LA <path_to_source_dir> | grep 'CMAKE_.*_COMPILER'``)
     * Git revision (``git rev-parse --short HEAD``)
