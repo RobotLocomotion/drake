@@ -53,7 +53,7 @@ std::list<int> DecreasingArgsort(
     const Eigen::Ref<const Eigen::VectorXi>& values) {
   std::vector<int> index(values.size());
   std::iota(index.begin(), index.end(), 0);
-  std::sort(index.begin(), index.end(), [&values](uint8_t a, uint8_t b) {
+  std::sort(index.begin(), index.end(), [&values](int a, int b) {
     return values(a) > values(b);
   });
   return {index.begin(), index.end()};
