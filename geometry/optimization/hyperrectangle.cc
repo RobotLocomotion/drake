@@ -187,6 +187,16 @@ HPolyhedron Hyperrectangle::MakeHPolyhedron() const {
   return HPolyhedron::MakeBox(lb_, ub_);
 }
 
+std::optional<Hyperrectangle> Hyperrectangle::MaybeGetIntersection(
+    const Hyperrectangle& other) const {
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == other.ambient_dimension());
+  if ((lb_.array() > other.ub_.array()).any() ||
+      (ub_.array() < other.lb_.array()).any()) {
+    return std::nullopt;
+  }
+  return Hyperrectangle(lb_.cwiseMax(other.lb_), ub_.cwiseMin(other.ub_));
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 Hyperrectangle::DoToShapeWithPose() const {
   if (ambient_dimension() != 3) {
