@@ -62,8 +62,6 @@ std::list<int> DecreasingArgsort(
 
 VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
-  const int n = adjacency_matrix.rows();
-
   std::vector<int> clique_members;
   SparseMatrix<bool> curr_ad_matrix = adjacency_matrix;
   const Eigen::VectorXi degrees = ComputeDegreeOfVertices(curr_ad_matrix);
@@ -78,7 +76,7 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
 
   // fill in solution
   Eigen::VectorX<bool> is_clique_member =
-      Eigen::VectorX<bool>::Constant(n, false);
+      Eigen::VectorX<bool>::Constant(adjacency_matrix.rows(), false);
   for (const int i : clique_members) {
     is_clique_member(i) = true;
   }
