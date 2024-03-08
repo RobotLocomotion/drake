@@ -278,12 +278,12 @@ GTEST_TEST(ConvexSetTest, ShortcutProjection) {
 }
 
 GTEST_TEST(ConvexSetTest, Projection0Dim) {
-    const HPolyhedron polytope = HPolyhedron::MakeUnitBox(0);
-    const Eigen::VectorXd test_point(0);
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(0);
+  const Eigen::VectorXd test_point(0);
 
-    auto [distance, projection] = polytope.Projection(test_point);
-    EXPECT_EQ(distance, 0);
-    EXPECT_EQ(projection, test_point);
+  auto [distance, projection] = polytope.Projection(test_point);
+  EXPECT_EQ(distance, 0);
+  EXPECT_EQ(projection, test_point);
 }
 
 GTEST_TEST(ConvexSetTest, ProjectionError) {
