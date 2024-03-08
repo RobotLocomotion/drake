@@ -28,7 +28,7 @@ def Xform "World"
         double3 xformOp:translate = (0, 0, 220)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
     }
-    
+
     def Cube "mainFloorActor" (
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
