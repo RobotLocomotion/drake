@@ -49,25 +49,14 @@ void UpdateAvailableNodes(const Eigen::SparseMatrix<bool>& mat,
   }
 }
 
-std::vector<int> DecreasingArgsort(
+std::list<int> DecreasingArgsort(
     const Eigen::Ref<const Eigen::VectorXi>& values) {
   std::vector<int> index(values.size());
   std::iota(index.begin(), index.end(), 0);
   std::sort(index.begin(), index.end(), [&values](uint8_t a, uint8_t b) {
     return values(a) > values(b);
   });
-  return index;
-}
-
-int PickBest(const std::vector<int>& degrees_sort_idx,
-             const std::list<int>& available_nodes) {
-  for (int d : degrees_sort_idx) {
-    auto it = std::find(available_nodes.begin(), available_nodes.end(), d);
-    if (it != available_nodes.end()) {
-      return d;
-    }
-  }
-  throw std::runtime_error("No valid element found in available_nodes.");
+  return {index.begin(), index.end()};
 }
 
 }  // namespace
@@ -84,10 +73,11 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   SparseMatrix<bool> curr_ad_matrix = adjacency_matrix;
   const Eigen::VectorXi degrees =
       ComputeDegreeOfVertices(curr_ad_matrix, available_nodes);
-  std::vector<int> degrees_sort_idx = DecreasingArgsort(degrees);
+  available_nodes = DecreasingArgsort(degrees);
 
   while (available_nodes.size() > 0) {
-    int point_to_add = PickBest(degrees_sort_idx, available_nodes);
+    int point_to_add = available_nodes.front();
+    available_nodes.pop_front();
     clique_members.push_back(point_to_add);
     UpdateAvailableNodes(curr_ad_matrix, point_to_add, &available_nodes);
   }
