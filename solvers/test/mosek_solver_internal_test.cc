@@ -695,6 +695,164 @@ GTEST_TEST(AddQuadraticConstraint, Test) {
 
   MSK_deleteenv(&env);
 }
+
+template <typename Derived>
+Eigen::MatrixXd ToSymmetric(const Eigen::MatrixBase<Derived>& X) {
+  return (X.eval() + X.eval().transpose()) / 2;
+}
+
+GTEST_TEST(AddLinearMatrixInequalityConstraint, LMIonly) {
+  // Test a program with only LMI constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2);
+  std::vector<Eigen::MatrixXd> F;
+  F.push_back(
+      ToSymmetric((Eigen::Matrix3d() << 0, 1, 0, 1, 2, 1, 0, 2, 1).finished()));
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << 1, -1, 2, 0, 1, 1, 0, 1, -1).finished()));
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << 2, 0, 1, 0, 2, -1, 0, 2, -1).finished()));
+  auto lmi0 = prog.AddLinearMatrixInequalityConstraint(F, x.head<2>());
+  F.clear();
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << 1, 3, 1, 2, -4, 1, 0, 1, 0).finished()));
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << -1, 0, 1, 1, -2, 1, 0, 1, 0).finished()));
+  auto lmi1 = prog.AddLinearMatrixInequalityConstraint(F, x.head<1>());
+
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+  AppendFreeVariable(
+      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>
+      acc_indices;
+  auto rescode = dut.AddLinearMatrixInequalityConstraint(prog, &acc_indices);
+  EXPECT_EQ(rescode, MSK_RES_OK);
+  EXPECT_EQ(acc_indices.size(), 2);
+  EXPECT_EQ(acc_indices.at(lmi0), 0);
+  EXPECT_EQ(acc_indices.at(lmi1), 1);
+  MSKint64t num_acc;
+  MSK_getnumacc(dut.task(), &num_acc);
+  EXPECT_EQ(num_acc, 2);
+  // An LMI with 3 x 3 psd matrix has 6 affine cone constraints (the lower
+  // triangular part of the psd matrix).
+  MSKint64t accn0, accn1;
+  MSK_getaccn(dut.task(), 0, &accn0);
+  MSK_getaccn(dut.task(), 1, &accn1);
+  EXPECT_EQ(accn0, 6);
+  EXPECT_EQ(accn1, 6);
+  MSKint64t num_domain;
+  MSK_getnumdomain(dut.task(), &num_domain);
+  EXPECT_EQ(num_domain, 2);
+  // Check domain types.
+  for (MSKint64t i = 0; i < num_domain; ++i) {
+    MSKdomaintypee domain_type;
+    MSK_getdomaintype(dut.task(), i, &domain_type);
+    EXPECT_EQ(domain_type, MSK_DOMAIN_SVEC_PSD_CONE);
+  }
+  // Check the affine expressions.
+  const VectorX<symbolic::Expression> affine_expressions =
+      GetAffineExpression(prog, dut, {});
+  EXPECT_EQ(affine_expressions.rows(), 12);
+  VectorX<symbolic::Expression> affine_expressions_expected(12);
+  int affine_expression_count = 0;
+  for (int j = 0; j < 3; ++j) {
+    for (int i = j; i < 3; ++i) {
+      const double scaling_factor = i == j ? 1.0 : std::sqrt(2);
+      affine_expressions_expected(affine_expression_count++) =
+          scaling_factor *
+          (lmi0.evaluator()->F()[0](i, j) +
+           lmi0.evaluator()->F()[1](i, j) * lmi0.variables()(0) +
+           lmi0.evaluator()->F()[2](i, j) * lmi0.variables()(1));
+    }
+  }
+  for (int j = 0; j < 3; ++j) {
+    for (int i = j; i < 3; ++i) {
+      const double scaling_factor = i == j ? 1.0 : std::sqrt(2);
+      affine_expressions_expected(affine_expression_count++) =
+          scaling_factor *
+          (lmi1.evaluator()->F()[0](i, j) +
+           lmi1.evaluator()->F()[1](i, j) * lmi1.variables()(0));
+    }
+  }
+  for (int i = 0; i < 12; ++i) {
+    EXPECT_PRED2(symbolic::test::ExprEqual,
+                 affine_expressions_expected(i).Expand(),
+                 affine_expressions(i).Expand());
+  }
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(AddLinearMatrixInequalityConstraint, LMIandPSD) {
+  // Test a program with both LMI and PSD constraints. Some of the variables in
+  // the PSD matrix also show up in LMI.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2);
+  auto X = prog.NewSymmetricContinuousVariables(3);
+  prog.AddPositiveSemidefiniteConstraint(X);
+  std::vector<Eigen::MatrixXd> F;
+  F.push_back(
+      ToSymmetric((Eigen::Matrix3d() << 0, 1, 0, 1, 2, 1, 0, 2, 1).finished()));
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << 1, -1, 2, 0, 1, 1, 0, 1, -1).finished()));
+  F.push_back(ToSymmetric(
+      (Eigen::Matrix3d() << 2, 0, 1, 0, 2, -1, 0, 2, -1).finished()));
+  auto lmi0 = prog.AddLinearMatrixInequalityConstraint(
+      F, Vector2<symbolic::Variable>(X(0, 1), x(0)));
+
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+  std::vector<MSKint32t> bar_var_dimension = {3};
+  MSK_appendbarvars(dut.task(), 1, bar_var_dimension.data());
+  AppendFreeVariable(
+      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>
+      acc_indices;
+  auto rescode = dut.AddLinearMatrixInequalityConstraint(prog, &acc_indices);
+  EXPECT_EQ(rescode, MSK_RES_OK);
+
+  EXPECT_EQ(acc_indices.size(), 1);
+  EXPECT_EQ(acc_indices.at(lmi0), 0);
+  MSKint64t num_acc;
+  MSK_getnumacc(dut.task(), &num_acc);
+  EXPECT_EQ(num_acc, 1);
+  // An LMI with a 3 x 3 psd matrix has an affine cone constraints of dimension
+  // 6 (the lower triangular part of the psd matrix).
+  MSKint64t accn0;
+  MSK_getaccn(dut.task(), 0, &accn0);
+  EXPECT_EQ(accn0, 6);
+  MSKint64t num_domain;
+  MSK_getnumdomain(dut.task(), &num_domain);
+  EXPECT_EQ(num_domain, 1);
+  // Check domain types.
+  MSKdomaintypee domain_type;
+  MSK_getdomaintype(dut.task(), 0, &domain_type);
+  EXPECT_EQ(domain_type, MSK_DOMAIN_SVEC_PSD_CONE);
+
+  // Check the affine cone expression.
+  const VectorX<symbolic::Expression> affine_expressions =
+      GetAffineExpression(prog, dut, {});
+  EXPECT_EQ(affine_expressions.rows(), 6);
+  VectorX<symbolic::Expression> affine_expressions_expected(6);
+  int affine_expression_count = 0;
+  for (int j = 0; j < 3; ++j) {
+    for (int i = j; i < 3; ++i) {
+      const double scaling_factor = i == j ? 1.0 : std::sqrt(2);
+      affine_expressions_expected(affine_expression_count++) =
+          scaling_factor *
+          (lmi0.evaluator()->F()[0](i, j) +
+           lmi0.evaluator()->F()[1](i, j) * lmi0.variables()(0) +
+           lmi0.evaluator()->F()[2](i, j) * lmi0.variables()(1));
+    }
+  }
+  for (int i = 0; i < affine_expressions.rows(); ++i) {
+    EXPECT_PRED2(symbolic::test::ExprEqual, affine_expressions(i).Expand(),
+                 affine_expressions_expected(i).Expand());
+  }
+  MSK_deleteenv(&env);
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
