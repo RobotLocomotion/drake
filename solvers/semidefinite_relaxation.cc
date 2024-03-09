@@ -63,9 +63,13 @@ bool CheckProgramRequireSemidefiniteRelaxation(
 // Constructs the semidefinite relaxation of the program prog and adds it to
 // relaxation. We assume that the program attributes of prog are already
 // validated and that relaxation already contains all the variables and
-// constraints of prog. Returns the X matrix of the semidefinite relaxation.
+// constraints of prog. The variable one is already constrained to be equal to
+// one. This is passed so it can be re-used across semidefinite variables in the
+// sparse version of MakeSemidefiniteRelaxation. Returns the X matrix of the
+// semidefinite relaxation.
 MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
-    const MathematicalProgram& prog, MathematicalProgram* relaxation,
+    const MathematicalProgram& prog, const Variable& one,
+    MathematicalProgram* relaxation,
     std::optional<int> group_number = std::nullopt) {
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
@@ -106,11 +110,7 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
       };
 
   // X(-1,-1) = 1.
-  Variable one("one");
   X(prog.num_vars(), prog.num_vars()) = one;
-  relaxation->AddDecisionVariables(Vector1<Variable>(one));
-  relaxation->AddLinearEqualityConstraint(X(prog.num_vars(), prog.num_vars()),
-                                          1);
 
   // X ≽ 0.
   relaxation->AddPositiveSemidefiniteConstraint(X);
@@ -309,7 +309,10 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog) {
   ValidateProgramIsSupported(prog);
   auto relaxation = prog.Clone();
-  DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(prog,
+  const Variable one("one");
+  relaxation->AddDecisionVariables(Vector1<Variable>(one));
+  relaxation->AddLinearEqualityConstraint(one, 1);
+  DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(prog, one,
                                                          relaxation.get());
   return relaxation;
 }
@@ -318,11 +321,14 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
     const std::vector<symbolic::Variables>& variable_groups) {
   auto relaxation = prog.Clone();
+  const Variable one("one");
+  relaxation->AddDecisionVariables(Vector1<Variable>(one));
+  relaxation->AddLinearEqualityConstraint(one, 1);
+
   std::map<symbolic::Variables, solvers::MathematicalProgram>
       groups_to_container_programs;
-  std::map<symbolic::Variables, symbolic::Variables> groups_to_superset;
   std::map<symbolic::Variables, MatrixXDecisionVariable>
-      supersets_to_psd_variables;
+      groups_to_psd_variables;
 
   for (const auto& group : variable_groups) {
     groups_to_container_programs.try_emplace(group);
@@ -333,55 +339,42 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
       ++i;
     }
     groups_to_container_programs.at(group).AddDecisionVariables(group_vec);
-    groups_to_superset.emplace(group, group);
   }
 
   for (const auto& constraint : prog.GetAllConstraints()) {
     const Variables constraint_variables{constraint.variables()};
     for (const auto& group : variable_groups) {
-      if (!intersect(group, constraint_variables).empty()) {
-        groups_to_container_programs.at(group).AddDecisionVariables(
-            constraint.variables());
+      if (constraint_variables.IsSubsetOf(group)) {
+        // There is no need to add constraint_variables to the
+        // container_program, since the variables are a subset of the group and
+        // therefore already in the program.
         groups_to_container_programs.at(group).AddConstraint(constraint);
-        groups_to_superset.at(group).insert(constraint_variables);
       }
     }
   }
   for (const auto& cost : prog.GetAllCosts()) {
     const Variables cost_variables{cost.variables()};
-    // Every cost only needs to be added once. However, we still want to
-    // grow the superset group as these are the variables that the user is
-    // requesting to relax jointly.
-    bool cost_added{false};
     for (const auto& group : variable_groups) {
-      if (!intersect(group, cost_variables).empty()) {
-        groups_to_superset.at(group).insert(cost_variables);
-        groups_to_container_programs.at(group).AddDecisionVariables(
-            cost.variables());
-        if (!cost_added) {
-          groups_to_container_programs.at(group).AddCost(cost);
-          cost_added = true;
-        }
+      if (cost_variables.IsSubsetOf(group)) {
+        groups_to_container_programs.at(group).AddCost(cost);
+        // Only add the costs once.
+        break;
       }
     }
   }
 
   int group_number = 0;
   for (const auto& [group, container_program] : groups_to_container_programs) {
-    if (!container_program.GetAllConstraints().empty() ||
-        !container_program.GetAllCosts().empty()) {
-      supersets_to_psd_variables.emplace(
-          groups_to_superset.at(group),
-          DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
-              container_program, relaxation.get(), group_number));
-    }
+    groups_to_psd_variables.emplace(
+        group, DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
+                   container_program, one, relaxation.get(), group_number));
     ++group_number;
   }
 
   // Now constrain the semidefinite variables to agree where they overlap.
-  for (auto it = supersets_to_psd_variables.begin();
-       it != supersets_to_psd_variables.end(); it++) {
-    for (auto it2 = std::next(it); it2 != supersets_to_psd_variables.end();
+  for (auto it = groups_to_psd_variables.begin();
+       it != groups_to_psd_variables.end(); it++) {
+    for (auto it2 = std::next(it); it2 != groups_to_psd_variables.end();
          it2++) {
       const Variables common_variables = intersect(it->first, it2->first);
       if (!common_variables.empty()) {

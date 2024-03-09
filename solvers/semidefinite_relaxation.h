@@ -44,6 +44,9 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  * single program, and their semidefinite variables are made to agree where the
  * variable groups overlap.
  *
+ * The returned program will always have the same number of PSD variables as
+ * variable groups.
+ *
  * Costs and constraints whose variables are not a subset of any of the groups
  * are not relaxed and are simply added to the aggregated program. If these
  * costs and constraints are non-convex, then this method will throw.
