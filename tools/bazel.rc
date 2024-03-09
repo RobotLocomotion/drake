@@ -85,6 +85,3 @@ build:everything --define=WITH_MOSEK=ON
 build:snopt --define=WITH_SNOPT=ON
 build:packaging --define=WITH_SNOPT=ON
 build:everything --define=WITH_SNOPT=ON
-
-# In CI (but only in CI), we want to test the opt-in USD build support.
-build:everything --define=WITH_USD=ON
