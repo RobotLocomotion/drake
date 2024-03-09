@@ -199,8 +199,10 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // Add linear matrix inequality constraints.
+  std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>
+      lmi_acc_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = impl.AddLinearMatrixInequalityConstraint(prog);
+    rescode = impl.AddLinearMatrixInequalityConstraint(prog, &lmi_acc_indices);
   }
 
   // Add exponential cone constraints.
