@@ -23,7 +23,7 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
     const std::string source_filename = filename.string();
     const DataSource source{DataSource::kFilename, &source_filename};
     const std::optional<std::string> parent_model_name;
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_,  &resolver,    NoSelect};
     UsdParser dut;
@@ -43,6 +43,7 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.01};
   SceneGraph<double> scene_graph_;
+  CollisionFilterGroups group_output_;
 };
 
 // TODO(jwnimmer-tri) This is a very basic sanity test, just to get the ball
