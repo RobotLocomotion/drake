@@ -310,8 +310,9 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   // pieces.
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
+  auto parser = make_parser(&plant);
   ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get());
+                         nullptr, parser.get());
 
   // Make sure the plant is not finalized such that the Finalize() default
   // filtering has not taken into effect yet. This guarantees that the
@@ -337,6 +338,29 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
     {"model6::collision", "model7::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
+
+  // Verify parser-level collision filter reporting.
+  CollisionFilterGroups expected_report;
+  expected_report.AddGroup("across_models", {"model1::base", "model2::base"});
+  expected_report.AddGroup("group_45", {"model4::base", "model5::base"});
+  expected_report.AddGroup("group_4567",
+                           {"model4::base", "model5::base",
+                            "model6::base", "model7::base"});
+  expected_report.AddGroup("group_67", {"model6::base", "model7::base"});
+  expected_report.AddGroup("nested::across_sub_models",
+                           {"nested::sub_model1::base",
+                            "nested::sub_model2::base"});
+  expected_report.AddGroup("nested_group", {"model3::base"});
+  expected_report.AddGroup("nested_members",
+                           {"model1::base", "nested::sub_model2::base"});
+  expected_report.AddExclusionPair({"across_models", "across_models"});
+  expected_report.AddExclusionPair({"group_4567", "group_4567"});
+  expected_report.AddExclusionPair(
+      {"nested::across_sub_models", "nested::across_sub_models"});
+  expected_report.AddExclusionPair(
+      {"nested::across_sub_models", "nested_group"});
+  expected_report.AddExclusionPair({"nested_members", "nested_members"});
+  EXPECT_EQ(parser->collision_filter_groups(), expected_report);
 }
 
 // Test collision filter groups in ModelDirectives.
