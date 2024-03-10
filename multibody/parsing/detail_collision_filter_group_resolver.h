@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/multibody/parsing/collision_filter_groups.h"
 #include "drake/multibody/parsing/detail_strongly_connected_components.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -59,9 +60,11 @@ class CollisionFilterGroupResolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver)
 
-  // The @p plant parameter is aliased, and must outlive the resolver.
+  // Both parameters are aliased, and must outlive the resolver.
   // @pre plant is not nullptr.
-  explicit CollisionFilterGroupResolver(MultibodyPlant<double>* plant);
+  // @pre group_output is not nullptr.
+  CollisionFilterGroupResolver(MultibodyPlant<double>* plant,
+                               CollisionFilterGroups* group_output);
 
   ~CollisionFilterGroupResolver();
 
@@ -120,11 +123,16 @@ class CollisionFilterGroupResolver {
   void Resolve(const drake::internal::DiagnosticPolicy& diagnostic);
 
  private:
+  struct GroupData {
+    std::set<std::string> body_names;
+    geometry::GeometrySet geometries;
+  };
+
   std::string FullyQualify(
       const std::string& name,
       std::optional<ModelInstanceIndex> model_instance) const;
 
-  const geometry::GeometrySet* FindGroup(
+  const GroupData* FindGroup(
       const drake::internal::DiagnosticPolicy& diagnostic,
       const std::string& group_name) const;
 
@@ -132,7 +140,9 @@ class CollisionFilterGroupResolver {
                                     ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
-  std::map<std::string, geometry::GeometrySet> groups_;
+  CollisionFilterGroups* const group_output_;
+
+  std::map<std::string, GroupData> groups_;
   std::set<SortedPair<std::string>> pairs_;
 
   DirectedGraph<std::string> group_insertion_graph_;
