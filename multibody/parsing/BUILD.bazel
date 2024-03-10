@@ -47,6 +47,7 @@ drake_cc_package_library(
     name = "parsing",
     visibility = ["//visibility:public"],
     deps = [
+        ":collision_filter_groups",
         ":model_directives",
         ":model_instance_info",
         ":package_map",
@@ -98,6 +99,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "collision_filter_groups",
+    srcs = ["collision_filter_groups.cc"],
+    hdrs = ["collision_filter_groups.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:essential",
+        "//common:sorted_pair",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
 # For simplicity in dependency management (e.g., prevent exposing `sdformat`),
 # we make all `detail_*` libraries private. For more info, see #7451.
 
@@ -121,6 +133,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":collision_filter_groups",
         ":package_map",
         "//common:diagnostic_policy",
         "//common:essential",
@@ -355,6 +368,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     interface_deps = [
+        ":collision_filter_groups",
         ":package_map",
         "//common:diagnostic_policy",
         "//multibody/plant",
@@ -696,6 +710,13 @@ drake_cc_googletest(
         "//common:find_resource",
         "//multibody/parsing",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_filter_groups_test",
+    deps = [
+        ":collision_filter_groups",
     ],
 )
 
