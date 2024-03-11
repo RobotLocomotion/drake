@@ -197,11 +197,13 @@ GTEST_TEST(RigidGeometryTest, MakeRigidRepresentation) {
   ProximityProperties props;
   const double resolution_hint = 0.5;
   AddRigidHydroelasticProperties(resolution_hint, &props);
-  DRAKE_EXPECT_NO_THROW(MakeRigidRepresentation(sphere, props));
+  EXPECT_TRUE(MakeRigidRepresentation(sphere, props).has_value());
+
+  const MeshcatCone cone(1.0, 2.0, 3.0);
+  EXPECT_FALSE(MakeRigidRepresentation(cone, props).has_value());
 
   const HalfSpace half_space;
-  DRAKE_EXPECT_THROWS_MESSAGE(MakeRigidRepresentation(half_space, props),
-                              "Half space.*not.*supported.*");
+  EXPECT_FALSE(MakeRigidRepresentation(half_space, props).has_value());
 }
 
 }  // namespace
