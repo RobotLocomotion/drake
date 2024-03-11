@@ -20,6 +20,7 @@ def Xform "World"
     {
         float3[] extent = [(-12.5, -12.5, -12.5), (12.5, 12.5, 12.5)]
         vector3f physics:angularVelocity = (270, 0, 0)
+        float physics:mass = 1
         vector3f physics:velocity = (2, 1, 2)
         color3f[] primvars:displayColor = [(0.11764706, 0.23529412, 1)]
         double size = 25
