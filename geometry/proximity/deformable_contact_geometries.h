@@ -107,33 +107,21 @@ class RigidGeometry {
 
 /* Generic interface for handling rigid Shapes. By default, we support all
  shapes that are supported by rigid hydroelastic. Unsupported shapes (e.g. half
- space) can choose to opt out. Unsupported geometries will return a
- std::nullopt. The rigid mesh created upon a successful creation of
- RigidGeometry will be the same mesh as used for rigid hydroelastics. */
+ space) can choose to opt out. Geometries not supported by rigid hydroelastics
+ will return a std::nullopt. The rigid mesh created upon a successful creation
+ of RigidGeometry will be the same mesh as used for rigid hydroelastics. */
 template <typename Shape>
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Shape& shape, const ProximityProperties& props) {
   std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
       internal::hydroelastic::MakeRigidRepresentation(shape, props);
-  if (!hydro_rigid_geometry) {
-    static const logging::Warn log_once(
-        "Rigid {} shapes are not currently supported for deformable "
-        "contact; registration is allowed, but an error will be thrown "
-        "during contact.",
-        shape.type_name());
+  if (!hydro_rigid_geometry || hydro_rigid_geometry->is_half_space()) {
     return {};
   }
-  auto surface_mesh = std::make_unique<TriangleSurfaceMesh<double>>(
-      (*hydro_rigid_geometry).mesh());
-  auto rigid_mesh = std::make_unique<internal::hydroelastic::RigidMesh>(
-      std::move(surface_mesh));
-  return RigidGeometry(std::move(rigid_mesh));
+  /* RigidGeometry is documented as having a mesh or having a half space. We've
+   excluded the latter, so we know we have a mesh. */
+  return RigidGeometry(hydro_rigid_geometry->release_mesh());
 }
-
-/* Half space is not supported for deformable contact at the moment as we
- require a surface mesh. */
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const HalfSpace&, const ProximityProperties&);
 
 }  // namespace deformable
 }  // namespace internal

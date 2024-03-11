@@ -79,15 +79,6 @@ DeformableGeometry::CalcSignedDistanceField() const {
   return *signed_distance_field_;
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const HalfSpace&, const ProximityProperties&) {
-  throw std::logic_error(
-      "Half spaces are not currently supported for deformable contact; "
-      "registration is allowed, but an error will be thrown "
-      "during contact.");
-  return {};
-}
-
 }  // namespace deformable
 }  // namespace internal
 }  // namespace geometry
