@@ -89,3 +89,14 @@ class TestGraphAlgorithms(unittest.TestCase):
             max_clique = solver.SolveMaxClique(graph)
             # Butteryfly graph has a max clique of 3.
             self.assertEqual(max_clique.sum(), 3)
+
+    def test_max_clique_solver_via_greedy_methods(self):
+        graph = self._butteryfly_graph()
+
+        # Test the default constructor.
+        solver = mut.MaxCliqueSolverViaGreedy()
+
+        # Test solve max clique.
+        max_clique = solver.SolveMaxClique(graph)
+        # Butteryfly graph has a max clique of 3.
+        self.assertEqual(max_clique.sum(), 3)

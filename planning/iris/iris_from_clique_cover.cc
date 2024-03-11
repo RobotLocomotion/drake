@@ -316,21 +316,8 @@ double ApproximatelyComputeCoverage(
 
 std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>
 MakeDefaultMaxCliqueSolver() {
-  solvers::SolverOptions options;
-  // Quit after finding 25 solutions.
-  const int kFeasibleSolutionLimit = 25;
-  // Quit at a 5% optimality gap
-  const double kRelOptGap = 0.05;
-  options.SetOption(solvers::MosekSolver().id(),
-                    "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", kFeasibleSolutionLimit);
-  options.SetOption(solvers::MosekSolver().id(), "MSK_DPAR_MIO_TOL_REL_GAP",
-                    kRelOptGap);
-  options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
-                    kFeasibleSolutionLimit);
-  options.SetOption(solvers::GurobiSolver().id(), "MIPGap", kRelOptGap);
   return std::unique_ptr<planning::graph_algorithms::MaxCliqueSolverBase>(
-      new planning::graph_algorithms::MaxCliqueSolverViaMip(std::nullopt,
-                                                            options));
+      new planning::graph_algorithms::MaxCliqueSolverViaGreedy());
 }
 
 }  // namespace
@@ -372,6 +359,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
   // Only construct the default solver if max_clique_solver is null.
   if (max_clique_solver_ptr == nullptr) {
     default_max_clique_solver = MakeDefaultMaxCliqueSolver();
+    log()->info("Using default max clique solver MaxCliqueSolverViaGreedy.");
   }
 
   const planning::graph_algorithms::MaxCliqueSolverBase* max_clique_solver =

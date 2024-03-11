@@ -11,7 +11,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
-#include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
 namespace drake {
@@ -84,6 +84,9 @@ struct IrisFromCliqueCoverOptions {
    * HPolyhedron. See @ConvexSet::PointInSet.
    */
   double point_in_set_tol{1e-6};
+
+  // TODO(AlexandreAmice): Implement a constructor/option that automatically
+  // sets up the ILP solver and selects MaxCliqueViaMip
 };
 
 /**
@@ -101,28 +104,27 @@ struct IrisFromCliqueCoverOptions {
  * generator controls this source of randomness.
  * @param sets [in/out] initial sets covering the space (potentially empty).
  * The cover is written into this vector.
- * @param max_clique_solver The max clique solver used. If parallelism is set to
- * allow more than 1 thread, then this class **must** be implemented in C++. If
- * nullptr is passed as the `max_clique_solver`, then max clique will be solved
- * using an instance of MaxCliqueSolverViaMip with a conservative limit set on
- * the number of branch and bound nodes explored. This default solver will in
- * general use suboptimal cliques when constructing the greedy clique cover, but
- * is faster than solving the max clique problem to global optimality.
+ * @param max_clique_solver The min clique cover problem is approximatley solved
+ * by repeatedly solving max clique on the uncovered graph and adding this
+ * largest clique to the cover. The max clique problem is solved by this solver.
+ * If parallelism is set to allow more than 1 thread, then the solver **must**
+ * be implemented in C++.
  *
- * Currently, the padding in the collision checker is not forwarded to the
- * algorithm, and therefore the final regions do not necessarily respect this
- * padding. Effectively, this means that the regions are generated as if the
- * padding is set to 0. This behavior may be adjusted in the future at the
- * resolution of #18830.
+ * If nullptr is passed as the `max_clique_solver`, then max clique will be
+ * solved using an instance of MaxCliqueSolverViaGreedy, which is a fast
+ * heuristic. If higher quality cliques are desired, consider changing the
+ * solver to an instance of MaxCliqueSolverViaMip. Currently, the padding in the
+ * collision checker is not forwarded to the algorithm, and therefore the final
+ * regions do not necessarily respect this padding. Effectively, this means that
+ * the regions are generated as if the padding is set to 0. This behavior may be
+ * adjusted in the future at the resolution of #18830.
  *
- * Note that this method requires an implementation of a MaxCliqueSolverBase
- * which must be implemented in C++. The only solver of this kind implemented by
- * Drake is MaxCliqueSolverViaMip which requires the availability of a
+ * Note that MaxCliqueSolverViaMip requires the availability of a
  * Mixed-Integer Linear Programming solver (e.g. Gurobi and/or Mosek). We
- * recommend enabling those solvers if possible
- * (https://drake.mit.edu/bazel.html#proprietary_solvers). The method will throw
- * if MaxCliqueSolverViaMip cannot solve the max clique problem. @see
- * MaxCliqueSolverViaMip.
+ * recommend enabling those solvers if possible because they produce higher
+ * quality cliques (https://drake.mit.edu/bazel.html#proprietary_solvers). The
+ * method will throw if @p max_clique_solver cannot solve the max clique
+ * problem.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
