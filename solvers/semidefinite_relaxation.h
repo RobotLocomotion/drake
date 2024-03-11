@@ -49,7 +49,47 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  *
  * Costs and constraints whose variables are not a subset of any of the groups
  * are not relaxed and are simply added to the aggregated program. If these
- * costs and constraints are non-convex, then this method will throw.
+ * costs and constraints are non-convex, then this method will throw
+ *
+ * As an example, consider the following program.
+ * min x₂ᵀ * Q * x₂ subject to
+ * x₁ + x₂ ≤ 1
+ * x₂ + x₃ ≤ 2
+ * x₁ + x₃ ≤ 3
+ *
+ * And suppose we call
+ * MakeSemidefiniteRelaxation(prog, std::vector<Variables>{{x₁, x₂}, {x₂,x₃}}).
+ *
+ * The resulting relaxation would have two semidefinite variables, namely:
+ * [U₁,  U₂,  x₁]   [W₁,  W₂, x₂]
+ * [U₂,  U₃,  x₂],  [W₂,  W₃, x₃]
+ * [x₁ᵀ, x₂ᵀ,  1]   [x₂ᵀ, x₃ᵀ, 1]
+ * The first semidefinite variable would be associated to the semidefinite
+ * relaxation of the subprogram:
+ * min x₁ᵀ * Q * x₁ subject to
+ * x₁ + x₂ ≤ 1
+ * And the implied constraints from x₁ + x₂ ≤ 1 would be added to the first
+ * semidefinite variable.
+ *
+ * The second semidefinite variable would be associated to the semidefinite
+ * relaxation of the subprogram:
+ * min x₂ᵀ * Q * x₂ subject to
+ * x₂ + x₃ ≤ 2
+ * And the implied constraints from x₂ + x₃ ≤ 2 would be added to the second
+ * semidefinite variable.
+ *
+ * Since the constraint x₁ + x₃ ≤ 3 is not a subset of any of the variable
+ * groups, it will be added to the overall relaxation, but will not be used to
+ * generate implied constraints on any semidefinite variable.
+ *
+ * The total relaxation would also include an equality constraint that U₃ == W₃
+ * so that the quadratic relaxation of x₂ is consistent between the two
+ * semidefinite variables.
+ *
+ * Note:
+ * 1) Costs are only associated to a single variable group, so that the
+ * resulting aggregated program has a relaxed cost with the same scaling.
+ * 2) The homogenization variable "1" is re-used in every semidefinite variable.
  *
  * @throw std::exception if there is a non-convex cost or constraint whose
  * variables do not intersect with any of the variable groups.
