@@ -281,7 +281,7 @@ class ConvexSet {
                                       const int max_num_samples = 1e4) const;
 
   /** Computes the distance and the nearest point in this convex set to @p
-   * point.
+   * point in the L₂ norm.
    * @pre point.size() == ambient_dimension().
    * @throws if the internal convex optimization solver fails.*/
   std::pair<double, Eigen::VectorXd> Projection(
