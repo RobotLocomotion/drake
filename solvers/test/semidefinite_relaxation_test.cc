@@ -1108,7 +1108,6 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
   b << -lby[0], uby[1], uby[2], -lb_overlap[0], ub_overlap[0];
   A.resize(5, 3);
   // We need to reshuffle to columns of Ay, as they are out of order.
-  // NOLINTBEGIN
   // clang-format off
   A << 0,               -Ay(0,1), -Ay(0,0), // NOLINT
        0,                Ay(1,1),  Ay(1,0), // NOLINT
