@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <optional>
@@ -11,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
 namespace drake {
@@ -47,17 +49,16 @@ void ValidateProgramIsSupported(const MathematicalProgram& prog) {
 
 bool CheckProgramRequireSemidefiniteRelaxation(
     const MathematicalProgram& prog) {
-  for (const auto& cost : prog.quadratic_costs()) {
-    if (!cost.evaluator()->is_convex()) {
-      return true;
-    }
-  }
-  for (const auto& constraint : prog.quadratic_constraints()) {
-    if (!constraint.evaluator()->is_convex()) {
-      return true;
-    }
-  }
-  return false;
+  return std::any_of(prog.quadratic_costs().begin(),
+                     prog.quadratic_costs().end(),
+                     [](const auto& cost) {
+                       return !cost.evaluator()->is_convex();
+                     }) ||
+         std::any_of(prog.quadratic_constraints().begin(),
+                     prog.quadratic_constraints().end(),
+                     [](const auto& constraint) {
+                       return !constraint.evaluator()->is_convex();
+                     });
 }
 
 // Constructs the semidefinite relaxation of the program prog and adds it to
@@ -264,6 +265,11 @@ MatrixXDecisionVariable DoAddSemidefiniteVariableAndImpliedCostsAndConstraints(
     // TODO(russt): Avoid the dense matrix.
     const MatrixX<Expression> AYAT =
         A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
+    std::cout << fmt::format(
+                     "X.topLeftCorner(prog.num_vars(), prog.num_vars())=\n{}",
+                     fmt_eigen(
+                         X.topLeftCorner(prog.num_vars(), prog.num_vars())))
+              << std::endl;
     const VectorX<Variable> y = x.head(prog.num_vars());
 
     const VectorX<Expression> rhs_flat_tril =
@@ -374,6 +380,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
   // Now constrain the semidefinite variables to agree where they overlap.
   for (auto it = groups_to_psd_variables.begin();
        it != groups_to_psd_variables.end(); it++) {
+    std::cout << fmt::format("X={}\n", fmt_eigen(it->second)) << std::endl;
     for (auto it2 = std::next(it); it2 != groups_to_psd_variables.end();
          it2++) {
       const Variables common_variables = intersect(it->first, it2->first);
