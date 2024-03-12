@@ -64,12 +64,21 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  * [U₁,  U₂,  x₁]   [W₁,  W₂, x₂]
  * [U₂,  U₃,  x₂],  [W₂,  W₃, x₃]
  * [x₁ᵀ, x₂ᵀ,  1]   [x₂ᵀ, x₃ᵀ, 1]
+ *
  * The first semidefinite variable would be associated to the semidefinite
  * relaxation of the subprogram:
  * min x₁ᵀ * Q * x₁ subject to
  * x₁ + x₂ ≤ 1
  * And the implied constraints from x₁ + x₂ ≤ 1 would be added to the first
- * semidefinite variable.
+ * semidefinite variable. These implied constraints are additional constraints
+ * that can be placed on the matrix
+ * [U₁,  U₂,  x₁]
+ * [U₂,  U₃,  x₂]
+ * [x₁ᵀ, x₂ᵀ,  1]
+ * which are redundant in the non-convex program, but are not redundant in the
+ * semidefinite relaxation. See
+ * https://underactuated.mit.edu/optimization.html#sdp_relaxation for references
+ * and examples.
  *
  * The second semidefinite variable would be associated to the semidefinite
  * relaxation of the subprogram:
@@ -82,7 +91,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  * groups, it will be added to the overall relaxation, but will not be used to
  * generate implied constraints on any semidefinite variable.
  *
- * The total relaxation would also include an equality constraint that U₃ == W₃
+ * The total relaxation would also include an equality constraint that U₃ == W₁
  * so that the quadratic relaxation of x₂ is consistent between the two
  * semidefinite variables.
  *

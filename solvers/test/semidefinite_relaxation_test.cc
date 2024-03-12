@@ -443,8 +443,9 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, EmptyVariableGroup) {
       ".*non-convex.*");
 }
 
-// Checks that the number of semidefinite variables is always the same as the
-// number of variable groups.
+// Checks that the number of semidefinite matrix variables is always the same as
+// the number of variable groups and that the number of rows of each
+// semidefinite matrix variable is the size of the corresponding group + 1.
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest,
        EmptyProgramWithVariableGroups) {
   // Only relaxes the x_ variables.
