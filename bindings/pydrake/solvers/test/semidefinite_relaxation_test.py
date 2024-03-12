@@ -16,7 +16,7 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         lb = np.array([1.3, -.24, 0.25])
         ub = np.array([5.6, 0.1, 1.4])
         prog.AddLinearConstraint(A, lb, ub, y)
-        relaxation = MakeSemidefiniteRelaxation(prog)
+        relaxation = MakeSemidefiniteRelaxation(prog=prog)
 
         self.assertEqual(relaxation.num_vars(), 6)
         self.assertEqual(len(relaxation.positive_semidefinite_constraints()),
@@ -39,10 +39,14 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         ub = np.array([5.6, 0.1, 1.4])
         prog.AddLinearConstraint(A, lb, ub, x)
         prog.AddQuadraticConstraint(A@A.T, lb, 0, 5, y)
-        relaxation = MakeSemidefiniteRelaxation(prog, [x_vars, y_vars])
+        relaxation = MakeSemidefiniteRelaxation(
+            prog=prog, variable_groups=[x_vars, y_vars])
 
-        self.assertEqual(relaxation.num_vars(), 6 + 10)
+        # The semidefinite variables have 4 and 3 rows respectively,
+        # with the "1" variable double counted. Therefore, there are
+        # 5 choose 2 + 4 choose 2 - 1 variables.
+        self.assertEqual(relaxation.num_vars(), 10 + 6 - 1)
         self.assertEqual(len(relaxation.positive_semidefinite_constraints()),
                          2)
-        self.assertEqual(len(relaxation.linear_equality_constraints()), 2)
+        self.assertEqual(len(relaxation.linear_equality_constraints()), 1)
         self.assertEqual(len(relaxation.linear_constraints()), 2+1)
