@@ -12,7 +12,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/render/color_deprecated.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_label.h"

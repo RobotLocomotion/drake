@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -30,7 +31,7 @@ v0─────────────────────v3    v0──�
 v1─────────────────────v2    v1─────────────────────v2
 
  @param[in] convex
-     The Convex shape specifiation describing the triangle surface mesh.
+     The Convex shape specification describing the triangle surface mesh.
  @pre We make the assumption that `surface_mesh` is sufficiently "nice".
       That is:
         - The closure of the interior of the mesh is a convex set.
@@ -41,6 +42,12 @@ v1─────────────────────v2    v1──�
  */
 template <typename T>
 VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex);
+
+/* Also creates a tetrahedral volume mesh, but, this time, from a triangle mesh.
+ @pre `surface_mesh` is sufficiently "nice" (see above). */
+template <typename T>
+VolumeMesh<T> MakeConvexVolumeMesh(
+    const TriangleSurfaceMesh<double>& surface_mesh);
 
 }  // namespace internal
 }  // namespace geometry
