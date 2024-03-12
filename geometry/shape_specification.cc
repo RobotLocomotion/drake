@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <memory>
 
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -23,6 +25,25 @@ std::string GetExtensionLower(const std::string& filename) {
     return std::tolower(c);
   });
   return ext;
+}
+
+// Computes a convex hull and assigns it to the given shared pointer in a
+// thread-safe manner. Only does work if the shared_ptr is null (i.e., there is
+// no convex hull yet). Used by Mesh::convex_hull() and Convex::convex_hull().
+// Note: the correctness of this function is tested in
+// shape_specification_thread_test.cc.
+void ComputeConvexHullAsNecessary(
+    std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
+    std::string_view filename, double scale) {
+  std::shared_ptr<PolygonSurfaceMesh<double>> check =
+      std::atomic_load(hull_ptr);
+  if (check == nullptr) {
+    // Note: This approach means that multiple threads *may* redundantly compute
+    // the convex hull; but only the first one will set the hull.
+    auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(filename, scale));
+    std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
+  }
 }
 
 }  // namespace
@@ -88,6 +109,11 @@ Convex::Convex(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Convex::convex_hull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  return *hull_;
 }
 
 std::string Convex::do_to_string() const {
@@ -171,6 +197,11 @@ Mesh::Mesh(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Mesh::convex_hull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  return *hull_;
 }
 
 std::string Mesh::do_to_string() const {

@@ -320,16 +320,21 @@ class QueryObject {
          document, for example, an appendix in Hydroelastic User Guide
          when it's ready. -->
 
-     - ᵃ For compliant Mesh, please specify a tetrahedral mesh
-         in a VTK file in Mesh(filename). This external working
-         <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
-         document</a> provides guidance how to generate a tetrahedral mesh
-         in a VTK file from a surface mesh in an OBJ file.
+     - ᵃ The exact representation of a compliant mesh depends on the type of
+         mesh file it references:
+           - .obj: the convex hull of the mesh will be used (as if it were
+             declared to be a Convex shape).
+           - .vtk: the tetrahedral mesh will be used directly. This external
+             working
+             <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
+             document</a> provides guidance how to generate a tetrahedral mesh
+             in a VTK file from a surface mesh in an OBJ file.
      - ᵇ For rigid Mesh, please specify a surface mesh in an OBJ file in
          Mesh(filename). A tetrahedral mesh in a VTK file can also be
          specified.
-     - ᶜ For both compliant Convex and rigid Convex, please specify a surface
-         mesh in an OBJ file in Convex(filename).
+     - ᶜ The Convex shape can reference either an .obj or a .vtk tetrahedral
+         mesh. In both cases, its convex hull will be used to define the
+         hydroelastic representation.
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If
@@ -713,7 +718,7 @@ class QueryObject {
    as described, with the point being represented as a zero-radius sphere.
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
    |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
    | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |

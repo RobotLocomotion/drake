@@ -677,11 +677,46 @@ std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
   return ids;
 }
 
+namespace {
+
+// Extracts a convex hull from the two shapes that support it (returning
+// nullptr for everything else). Essentially, this merely serves as a mechanism
+// for finding a pointer to a convex hull that is stored with the corresponding
+// InternalGeometry. Therefore, the lifespan of a HullExtractor has no bearing
+// on the lifespan of the pointer returned.
+class HullExtractor final : public ShapeReifier {
+ public:
+  HullExtractor() = default;
+  ~HullExtractor() = default;
+
+  const PolygonSurfaceMesh<double>* convex_hull() const { return hull_; }
+
+ private:
+  // Don't throw for the rest, nullptr is fine.
+  void ThrowUnsupportedGeometry(const std::string&) final {}
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Mesh& mesh, void*) final {
+    hull_ = &mesh.convex_hull();
+  }
+
+  void ImplementGeometry(const Convex& convex, void*) final {
+    hull_ = &convex.convex_hull();
+  }
+
+  const PolygonSurfaceMesh<double>* hull_{nullptr};
+};
+
+}  // namespace
+
 template <typename T>
 const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
     GeometryId id) const {
   const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
-  return geometry.convex_hull();
+  HullExtractor extractor;
+  geometry.shape().Reify(&extractor);
+  return extractor.convex_hull();
 }
 
 template <typename T>
@@ -1000,15 +1035,6 @@ void GeometryState<T>::ChangeShape(SourceId source_id, GeometryId geometry_id,
     // further GeometryState checking.
     RemoveFromProximityEngineUnchecked(*geometry);
     AddToProximityEngineUnchecked(*geometry);
-
-    // A change in shape implies a (possible) change in convex hull. So, we'll
-    // clear any convex hull by default, and only replace it if the new shape
-    // requires it.
-    geometry->set_convex_hull(nullptr);
-    if (geometry_engine_->NeedsConvexHull(*geometry)) {
-      geometry->set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
-          internal::MakeConvexHull(geometry->shape())));
-    }
   }
   if (geometry->has_illustration_role()) {
     // Illustration has no "engine"; it's just the InternalGeometry. All
@@ -1078,15 +1104,6 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   RoleAssign assign) {
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
-
-  // TODO(SeanCurtis-TRI): if RoleAssign == kReplace I *may* not need to
-  // regenerate a convex hull. However, for now, we'll do it blindly.
-
-  // Add a convex hull if the proximity engine needs one.
-  if (geometry_engine_->NeedsConvexHull(geometry)) {
-    geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(geometry.shape())));
-  }
 
   geometry_version_.modify_proximity();
   switch (assign) {

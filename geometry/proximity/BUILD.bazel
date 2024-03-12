@@ -386,6 +386,7 @@ drake_cc_library(
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -1189,6 +1190,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "hydroelastic_internal_test",
     data = [
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
     ],
