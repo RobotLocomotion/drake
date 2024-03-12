@@ -42,7 +42,7 @@ drake_cc_googletest(
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     # Running with multiple threads is an essential part of our test coverage.
-    num_threads = 2,
+    num_threads = 4,
     shard_count = 8,
     # Most of these tests take an exceptionally long time under
     # instrumentation, resulting in timeouts, and so are excluded.

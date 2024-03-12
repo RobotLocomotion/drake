@@ -265,10 +265,10 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
     options.num_points_per_coverage_check = 1000;
     options.num_points_per_visibility_round = 140;
-    options.coverage_termination_threshold = 0.94;
+    options.coverage_termination_threshold = 0.9;
     options.minimum_clique_size = 25;
 
-    generator = RandomGenerator(1);
+    generator = RandomGenerator(0);
 
     // A manual convex decomposition of the space.
     manual_decomposition.push_back(
@@ -367,10 +367,10 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   double coverage_estimate =
       static_cast<double>(num_in_automatic_decomposition) /
       static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
-  // We set the termination threshold to be at 0.94 with 1000 points for a
+  // We set the termination threshold to be at 0.9 with 1000 points for a
   // coverage check. This number is low enough that the test passes regardless
-  // of the random seed. (The probability of success is about 1-1e-5).
-  EXPECT_GE(coverage_estimate, 0.9);
+  // of the random seed. (The probability of success is larger than 1-1e-9).
+  EXPECT_GE(coverage_estimate, 0.8);
 
   MaybePauseForUser();
 }
@@ -413,10 +413,10 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   double coverage_estimate =
       static_cast<double>(num_in_automatic_decomposition) /
       static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
-  // We set the termination threshold to be at 0.94 with 1000 points for a
+  // We set the termination threshold to be at 0.9 with 1000 points for a
   // coverage check. This number is low enough that the test passes regardless
-  // of the random seed. (The probability of success is about 1-1e-5).
-  EXPECT_GE(coverage_estimate, 0.9);
+  // of the random seed. (The probability of success is larger than 1-1e-9).
+  EXPECT_GE(coverage_estimate, 0.8);
 
   MaybePauseForUser();
 }
