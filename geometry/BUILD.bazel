@@ -47,6 +47,7 @@ drake_cc_package_library(
         ":read_obj",
         ":rgba",
         ":scene_graph",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
@@ -299,6 +300,16 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         "//multibody/plant:coulomb_friction",
+    ],
+)
+
+drake_cc_library(
+    name = "scene_graph_config",
+    srcs = ["scene_graph_config.cc"],
+    hdrs = ["scene_graph_config.h"],
+    deps = [
+        ":proximity_properties",
+        "//common:name_value",
     ],
 )
 
@@ -910,6 +921,15 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scene_graph_config_test",
+    deps = [
+        ":scene_graph_config",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
     ],
 )
 
