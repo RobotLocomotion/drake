@@ -534,6 +534,27 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 }
 
+// Confirms that Convex and Mesh can report their convex hull.
+GTEST_TEST(ShapeTest, ConvexHull) {
+  const std::string cube_path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  auto expect_convex_hull = [](const auto& mesh_like) {
+    SCOPED_TRACE(
+        fmt::format("Testing convex hull for {}.", mesh_like.type_name()));
+    using MeshType = decltype(mesh_like);
+    // First call should work for a valid mesh file name.
+    const PolygonSurfaceMesh<double>& hull = mesh_like.convex_hull();
+    // Subsequent calls return references to the same value.
+    EXPECT_EQ(&hull, &mesh_like.convex_hull());
+    const MeshType mesh2(mesh_like);
+    // Copies of the mesh share the same hull.
+    EXPECT_EQ(&mesh2.convex_hull(), &hull);
+  };
+  expect_convex_hull(Mesh(cube_path));
+  expect_convex_hull(Convex(cube_path));
+}
+
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
 
 // Tests default implementation of virtual functions for each shape.

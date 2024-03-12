@@ -402,12 +402,11 @@ class SceneGraphInspector {
    order is guaranteed to be stable and consistent.  */
   std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
-  /** Returns the convex hull associated with the given `geometry_id`, if it
-   exists.
-
-   The return value is guaranteed to be non-null if the geometry has proximity
-   properties and a convex representation in the ProximityEngine. No other
-   guarantees are provided. */
+  /** Returns the convex hull (a polytope) associated with the given
+   `geometry_id`, if it exists. Basic primitive shapes don't have convex hulls
+   (including, arbitrarily, Box). But Mesh and Convex shapes do. Alternatively,
+   if you already have a Mesh or Convex you can call Mesh::convex_hull() or
+   Convex::convex_hull(), respectively. */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and

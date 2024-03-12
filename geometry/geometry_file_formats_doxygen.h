@@ -25,15 +25,67 @@ namespace geometry {
    - Convex @ref file_footnote_1 "¹"
    - Mesh @ref file_footnote_1 "¹"
 
+ @section mesh_vs_convex Mesh vs Convex
+
  Both of those Shape types reference on-disk geometry files. When a role is
  assigned to a geometry with the Convex or Mesh shape, the file will be parsed
- and some portion of the data in the file will be used. To make good
- representation choices, it is important to understand what kind of files
- are supported, in what roles, and to what degree. This page aims to make the
- answers to those questions clear and provide best practices. As geometry file
- format support is in flux the contents of this page will change frequently.
+ and some portion of the data in the file will be used.
+
+ The Convex shape is a declaration that the on-disk geometry file should only
+ be used to compute a convex polytope (the convex hull of the vertices defined
+ in the geometry file). The Convex shape is fully supported across all roles
+ (illustration, perception, and proximity). For visual roles, whatever
+ materials, normals, textures, etc. which may be specified in the referenced
+ geometry file will not affect the visualized convex hull. It will always be
+ a faceted, single-color convex hull. The color is defined by assigning the
+ ("phong", "diffuse") geometry property to the geometry. When it comes to file
+ formats' compatibility with the Convex shape, the only question is if Drake
+ has implemented the convex hull computation for the given file format. In the
+ discussion below, each file format indicates whether Drake can compute its
+ convex hull and, by implication, whether the file format can be referenced by
+ Convex.
+
+ The Mesh shape is a declaration that the on-disk geometry file should be used
+ to the fullest extent that the role and geometry consumer can. For visual
+ roles, that includes materials, textures, normals, etc. The degree to which
+ the possible mesh data is used is outlined below.
+
+ Things are slightly more complex with the proximity role. Performing contact
+ and signed distance queries on general non-convex meshes is complicated. As
+ such, Drake's implementation of Mesh support is incomplete. Where full support
+ does not exist, the Mesh object is represented by its convex hull. Generally,
+ full support is limited to two cases:
+
+  - @ref QueryObject::ComputeContactSurfaces "Hydroelastic contact" where the
+    mesh has been declared "rigid".
+  - @ref QueryObject::ComputeDeformableContact "Deformable contact" (the mesh
+    serves as a rigid object which deformable objects can collide with).
+
+ In these remaining cases, the Mesh's convex hull is used:
+
+  - @ref QueryObject::ComputePointPairPenetration "Point contact"
+  - @ref QueryObject::ComputeContactSurfaces "Hydroelastic contact" where the
+    mesh has been declared "compliant".
+  - @ref QueryObject::HasCollisions "Determining if collisions exist" at all.
+  - @ref QueryObject::FindCollisionCandidates "Finding collision candidates"
+  - Signed distance queries
+    @ref QueryObject::ComputeSignedDistancePairwiseClosestPoints()
+    "between all geometry pairs",
+    @ref QueryObject::ComputeSignedDistancePairClosestPoints()
+    "between an explicit geometry pair", or
+    @ref QueryObject::ComputeSignedDistanceToPoint
+    "between a geometry and a point".
+
+ It is our *intent* that with time, more queries will move from the lower list
+ to the fully-supported list.
 
  @section supported_file_types Supported file types
+
+ To make good representation choices, it is important to understand what kind of
+ files are supported, in what roles, and to what degree. This page aims to make
+ the answers to those questions clear and provide best practices. As geometry
+ file format support is in flux the contents of this page will change
+ frequently.
 
  Drake is working towards a robust and consistent treatment of supported mesh
  types. During the transitional period, support will not be consistent. For each
@@ -60,11 +112,14 @@ namespace geometry {
  file. The standard practice is for an .obj file to reference one or more .mtl
  files.
 
- Both Mesh and Convex shapes can accept an .obj file for any role (with
+ Drake can compute the convex hull for a .obj file, so it is fully compatible
+ with Convex.
+
+ A Mesh file which references an .obj file can be used with any role (with
  limitations).
 
  - Illustration role
-    - Both Mesh and Convex can be used with this role.
+    - Most, if not all, .obj features are supported.
     - If the .obj file references an .mtl file (and that file is available) it
       will be used to define the materials.
     - Lack of surface normals may lead to unexpected rendering artifacts.
@@ -72,10 +127,12 @@ namespace geometry {
       likewise lead to unexpected rendering artifacts.
 
  - Perception role
+    - Most, if not all, .obj features are supported.
     - The following notes apply to all Drake RenderEngine implementations.
     - The mesh must have surface normals (Drake throws if they are missing).
     - Texture coordinates are not required, but texture maps are only applied
-      if an entire mesh "piece" has texture coordinates.
+      if an entire mesh "piece" (collection of triangles with a single material)
+      has texture coordinates.
     - The material associated with the mesh is that defined by the
       @ref geometry_materials "material heuristic".
     - In contrast to the Proximity role, the mesh *can* have multiple objects
@@ -85,14 +142,11 @@ namespace geometry {
 
  - Proximity role
     - The material file is ignored.
-    - Drake currently requires the faces in the mesh to comprise a single
-      object.
-    - A Convex shape can be used to create a point-contact collision geometry or
-      a hydroelastic collision geometry (either rigid or compliant).
-        - Note: using a Convex shape implies that the .obj contains a single
-          convex shape. This is currently not verified.
-    - A Mesh shape can only be used to create a rigid hydroelastic collision
-      geometry.
+    - As mentioned above, the Mesh's .obj will file will generally be replaced
+      by its convex hull except for the two cases list above (rigid hydroelastic
+      and deformable contact).
+      - In these cases, the mesh need not be a closed manifold -- it could model
+        an infinitely thin sheet.
 
  - Best practices
     - Generally, make the .obj as complete as possible. If it's being used for
@@ -120,6 +174,9 @@ namespace geometry {
  native shading model. This can produce images with higher fidelity, in both
  rasterization and path-tracing rendering algorithms.
 
+ Drake can compute the convex hull for a .gltf file, so it is fully compatible
+ with Convex.
+
  Generally, Drake provides broad support of glTF features. But there are some
  notable exceptions:
 
@@ -128,32 +185,34 @@ namespace geometry {
     file (see below).
   - Animation and skinning. If such data is present, it is ignored.
 
- As with .obj files, both Mesh and Convex shapes can accept a .gltf file.
+ A Mesh file can reference a .gltf file but only for visual roles.
 
  - Illustration roles
-     - .gltf features are well supported in meshcat-based visualizers (using
-       either MeshcatVisualizer or DrakeVisualizer in conjunction with meldis).
-     - There is generally broad support for glTF extensions.
-     - To get optimal visual appearance, Meshcat should be configured to use an
-       environment map (see Meshcat::SetEnvironmentMap()).
+    - .gltf features are well supported in meshcat-based visualizers (using
+      either MeshcatVisualizer or DrakeVisualizer in conjunction with meldis).
+    - There is generally broad support for glTF extensions.
+    - To get optimal visual appearance, Meshcat should be configured to use an
+      environment map (see Meshcat::SetEnvironmentMap()).
 
  - Perception roles
-     - RenderEngineGl does not support .gltf files. A Mesh or Convex which
-       references such a file will be silently ignored.
-     - RenderEngineVtk does support .gltf files.
-         - As VTK does not support extensions, RenderEngineVtk does not either.
-         - RenderEngineVtk does not yet support specifying an environment map.
-           This will lead to PBR materials being under illuminated.
-     - RenderEngineGltfClient does support .gltf files (as the name suggests).
-         - Geometries defined by a .gltf file are passed almost verbatim to the
-           render server (animation and morphing data is excluded).
-         - The extensions are passed along, but whether or not they are
-           supported depends on the server's implementation.
+    - RenderEngineGl does not support .gltf files. A Mesh or Convex which
+      references such a file will be silently ignored.
+    - RenderEngineVtk does support .gltf files.
+        - As VTK does not support extensions, RenderEngineVtk does not either.
+        - RenderEngineVtk does not yet support specifying an environment map.
+          This will lead to PBR materials being under illuminated.
+    - RenderEngineGltfClient does support .gltf files (as the name suggests).
+        - Geometries defined by a .gltf file are passed almost verbatim to the
+          render server (animation and morphing data is excluded).
+        - The extensions are passed along, but whether or not they are
+          supported depends on the server's implementation.
 
  - Proximity role
-     - .gltf files are not currently supported for proximity roles at all.
-       Assigning the proximity role to a Mesh with anything other than a .obj
-       file will throw an exception.
+    - .gltf files *can* be used with the Convex shape type (ad indicated
+      above).
+    - .gltf files *cannot* be used with the Mesh shape type. Assigning the
+      proximity role to a Mesh which references a .gtlf file will throw an
+      exception.
 
  As a rule of thumb, for Drake's purposes .gltf files with external assets
  (i.e., separate .bin and .png files) will load faster than .gltf files
@@ -172,25 +231,38 @@ namespace geometry {
  Drake uses tetrahedral meshes a couple of different ways: as compliant
  hydroelastic geometries (see @ref hug_title "here" for more details) and
  deformable bodies (see, e.g., multibody::DeformableModel). For some of the
- Shape types, Drake will provide a tetrahedralization of the shape at run time.
- However, Drake cannot yet do so for arbitrary surface meshes. Drake allows you
- to create your own tetrahedral mesh offline and request that Drake use it. We
- use the <a href="https://examples.vtk.org/site/VTKFileFormats/">.vtk</a> file
+ Shape types (the mathematical primitives), Drake will provide a
+ tetrahedralization of the shape at run time. However, Drake cannot yet do so
+ for arbitrary surface meshes. Drake allows you to create your own tetrahedral
+ mesh offline and request that Drake use it. We use the
+ <a href="https://examples.vtk.org/site/VTKFileFormats/">.vtk</a> file
  format.
 
  Depending on the application (hydroelastics or deformable bodies), not every
- tetrahedralization is created equal. There are best practices for each domain
+ tetrahedralization is equally valid. There are best practices for each domain
  which must be followed to get best results. More details on these best
  practices are coming.
+
+ Drake can compute the convex hull for a tetrahedral .vtk file, so it is fully
+ compatible with Convex.
 
  In addition to specifying the tetrahedral mesh for deformable or compliant
  hydroelastic geometries, the .vtk file can be used more generally:
 
-   - When specified as Convex without hydroelastic properties, it produces the
-     same representation for point contact as if you'd provided an .obj of
-     just the surface polygons.
-   - When specified as Mesh without hydroelastic properties, it is treated as
-     a non-convex surface mesh; its convex hull is used for point contact.
+ - Illustration roles
+    - A Mesh that references a tetrahedral .vtk file cannot have the
+      illustration role assigned to it.
+ - Perception roles
+    - A Mesh that references a tetrahedral .vtk file cannot have the
+      perception role assigned to it.
+ - Proximity role
+    - A Mesh that references a tetrahedral .vtk file can declared to have a
+      *rigid* hydroelastic representation. In that case, the tetrahedral mesh's
+      surface is used (as a rigid triangle mesh).
+    - When specified as Mesh without hydroelastic properties, it is treated as
+      a non-convex surface mesh; its convex hull is used as documented above.
+  <!-- TODO(xuchen-han) When deformable goes public, we should indicate that
+   we can use this file type to declare a Mesh that is a *deformable* geo. -->
 
   N.B. The .vtk file must still define a tetrahedral mesh and *not* a surface
   mesh.

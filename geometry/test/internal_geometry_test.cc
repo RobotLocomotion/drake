@@ -233,25 +233,6 @@ GTEST_TEST(InternalGeometryTest, Rename) {
   EXPECT_EQ(geometry.name(), "new_name");
 }
 
-// Simple test for convex hull API: set, get, and clear.
-GTEST_TEST(InternalGeometryTest, ConvexHull) {
-  InternalGeometry geometry;
-
-  EXPECT_EQ(geometry.convex_hull(), nullptr);
-
-  geometry.set_convex_hull(std::make_unique<PolygonSurfaceMesh<double>>(
-      std::vector<int>{3, 0, 1, 2},
-      std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}}));
-
-  ASSERT_NE(geometry.convex_hull(), nullptr);
-
-  EXPECT_EQ(geometry.convex_hull()->num_vertices(), 3);
-  EXPECT_EQ(geometry.convex_hull()->num_faces(), 1);
-
-  geometry.set_convex_hull(nullptr);
-  EXPECT_EQ(geometry.convex_hull(), nullptr);
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

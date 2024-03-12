@@ -379,12 +379,16 @@ drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+    ],
+    deps = [
         "//common:nice_type_name",
+        "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
-        "//math:geometric_transform",
     ],
 )
 
@@ -728,7 +732,6 @@ filegroup(
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",
-        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/octahedron.mtl",
@@ -743,7 +746,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/cube_as_6_squares.vtk",
-        "test/extruded_u_volume_mesh.vtk",
+        "test/cube_as_volume.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
@@ -961,6 +964,23 @@ drake_cc_googletest(
     deps = [
         ":geometry_frame",
         ":scene_graph_inspector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shape_specification_thread_test",
+    data = [
+        "//examples/hydroelastic/ball_plate:plate_files",
+        "//examples/multibody/deformable_torus:torus_tet_mesh",
+        "@drake_models",
+    ],
+    tags = [
+        "cpus:4",
+    ],
+    deps = [
+        ":shape_specification",
+        "//common:find_resource",
+        "//common:find_runfiles",
     ],
 )
 
