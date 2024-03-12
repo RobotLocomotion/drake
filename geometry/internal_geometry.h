@@ -233,17 +233,6 @@ class InternalGeometry {
     return reference_mesh_.get();
   }
 
-  /* Sets the convex hull for this geometry. Passing `nullptr` clears the
-   convex hull. */
-  void set_convex_hull(std::unique_ptr<PolygonSurfaceMesh<double>> hull) {
-    convex_hull_ = std::move(hull);
-  }
-
-  /* Returns a pointer to the geometry's convex hull. */
-  const PolygonSurfaceMesh<double>* convex_hull() const {
-    return convex_hull_.get();
-  }
-
  private:
   // The specification for this instance's shape.
   copyable_unique_ptr<Shape> shape_spec_;

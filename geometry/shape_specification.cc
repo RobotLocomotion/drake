@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -88,6 +89,14 @@ Convex::Convex(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Convex::convex_hull() const {
+  if (hull_ == nullptr) {
+    hull_ = std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(filename_, scale_));
+  }
+  return *hull_;
 }
 
 std::string Convex::do_to_string() const {
@@ -171,6 +180,14 @@ Mesh::Mesh(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Mesh::convex_hull() const {
+  if (hull_ == nullptr) {
+    hull_ = std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(filename_, scale_));
+  }
+  return *hull_;
 }
 
 std::string Mesh::do_to_string() const {
