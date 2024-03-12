@@ -188,7 +188,16 @@ class Capsule final : public Shape {
 
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
  loading it in SceneGraph it can be scaled around the origin of C by a given
- `scale` amount. */
+ `scale` amount.
+
+ The shape will *always* be the convex hull of the file specified. This is true
+ for *all* roles. Whatever materials or textures the referenced file has, it
+ will be replaced by a simple mesh representing its convex hull. Its appearance
+ in an illustration or perception role, will be defined by its assigned
+ properties (or by the geometry consumer's defaults).
+
+ No effort is required to ensure the input mesh is convex; Drake will compute
+ its convex hull when registered. */
 class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
@@ -196,11 +205,8 @@ class Convex final : public Shape {
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
 
-   * The mesh file referenced can be an .obj or a volume mesh in a .vtk.
-   * The mesh need not be convex.
-      * In a proximity role, the convex hull will be computed and used.
-      * For visual (illustration or perception) roles, Convex is equivalent
-        to Mesh.
+   The mesh file referenced can be an .obj, a volume mesh in a .vtk, or a .gltf
+   file.
 
    @param filename     The file name; if it is not absolute, it will be
                        interpreted relative to the current working directory.
@@ -347,9 +353,14 @@ class HalfSpace final : public Shape {
 // TODO(DamrongGuoy): Update documentation when mesh is fully supported (i.e.,
 // doesn't require equivocation here).
 /** Definition of a general (possibly non-convex) triangular surface mesh.
- Meshes can be used for all three roles but currently get special treatment with
- a proximity role. See the documentation of QueryObject's proximity queries to
- see how meshes are used in each type of proximity query.
+ Meshes can be used for all three roles but, currently, the mesh is replaced
+ by its convex hull when assigned a proximity role. See the documentation of
+ QueryObject's proximity queries for more details. This convex-hull substitution
+ is a regrettable stop-gap solution until we fully support general, non-convex
+ meshes.
+
+ For visual roles (illustration and perception), the specified mesh file is
+ used as directly as possible.
 
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
  loading it in SceneGraph it can be scaled around the origin of C by a given

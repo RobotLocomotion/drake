@@ -9,6 +9,7 @@
 #include "drake/geometry/proximity/deformable_field_intersection.h"
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 
 namespace drake {
@@ -107,7 +108,7 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   constexpr double kRezHint = 0.5;
   ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id, props,
-                                   default_pose());
+                                   default_pose(), /* convex_hull =*/nullptr);
 
   EXPECT_TRUE(geometries.is_rigid(rigid_id));
   EXPECT_FALSE(geometries.is_deformable(rigid_id));
@@ -117,7 +118,7 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   GeometryId g_id = GeometryId::get_new_id();
   ProximityProperties empty_props;
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), g_id, empty_props,
-                                   default_pose());
+                                   default_pose(), /* convex_hull =*/nullptr);
 
   EXPECT_FALSE(geometries.is_rigid(g_id));
   EXPECT_FALSE(geometries.is_deformable(g_id));
@@ -138,14 +139,15 @@ GTEST_TEST(GeometriesTest, UnsupportedRigidShapes) {
     const double a = 1.0;
     const double b = 1.0;
     EXPECT_NO_THROW(geometries.MaybeAddRigidGeometry(
-        MeshcatCone(height, a, b), cone_id, props, default_pose()));
+        MeshcatCone(height, a, b), cone_id, props, default_pose(),
+        /* convex_hull =*/nullptr));
     EXPECT_FALSE(geometries.is_rigid(cone_id));
   }
   /* HalfSpace */
   {
     GeometryId hs_id = GeometryId::get_new_id();
-    EXPECT_NO_THROW(geometries.MaybeAddRigidGeometry(HalfSpace(), hs_id, props,
-                                                     default_pose()));
+    EXPECT_NO_THROW(geometries.MaybeAddRigidGeometry(
+        HalfSpace(), hs_id, props, default_pose(), /* convex_hull =*/nullptr));
     EXPECT_FALSE(geometries.is_rigid(hs_id));
   }
 }
@@ -161,7 +163,7 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
   {
     GeometryId box_id = GeometryId::get_new_id();
     geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), box_id, props,
-                                     default_pose());
+                                     default_pose(), /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(box_id));
   }
   /* Sphere */
@@ -169,7 +171,7 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
     const double radius = 1.0;
     GeometryId box_id = GeometryId::get_new_id();
     geometries.MaybeAddRigidGeometry(Sphere(radius), box_id, props,
-                                     default_pose());
+                                     default_pose(), /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(box_id));
   }
   /* Cylinder */
@@ -178,7 +180,8 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
     const double radius = 1.0;
     const double length = 2.0;
     geometries.MaybeAddRigidGeometry(Cylinder(radius, length), cylinder_id,
-                                     props, default_pose());
+                                     props, default_pose(),
+                                     /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(cylinder_id));
   }
   /* Capsule */
@@ -187,7 +190,7 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
     const double radius = 1.0;
     const double length = 2.0;
     geometries.MaybeAddRigidGeometry(Capsule(radius, length), capsule_id, props,
-                                     default_pose());
+                                     default_pose(), /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(capsule_id));
   }
   /* Ellipsoid */
@@ -197,7 +200,7 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
     const double b = 0.8;
     const double c = 0.3;
     geometries.MaybeAddRigidGeometry(Ellipsoid(a, b, c), ellipsoid_id, props,
-                                     default_pose());
+                                     default_pose(), /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(ellipsoid_id));
   }
   /* Mesh */
@@ -205,15 +208,18 @@ GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
     GeometryId mesh_id = GeometryId::get_new_id();
     std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
     geometries.MaybeAddRigidGeometry(Mesh(file, 1.0), mesh_id, props,
-                                     default_pose());
+                                     default_pose(), /* convex_hull =*/nullptr);
     EXPECT_TRUE(geometries.is_rigid(mesh_id));
   }
   /* Convex */
   {
     GeometryId convex_id = GeometryId::get_new_id();
     std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-    geometries.MaybeAddRigidGeometry(Convex(file, 1.0), convex_id, props,
-                                     default_pose());
+    const Convex convex(file);
+    // Convex depends on the pre-computed convex hull, and not on the file.
+    const PolygonSurfaceMesh<double> hull = MakeConvexHull(convex);
+    geometries.MaybeAddRigidGeometry(convex, convex_id, props, default_pose(),
+                                     &hull);
     EXPECT_TRUE(geometries.is_rigid(convex_id));
   }
 }
@@ -228,7 +234,7 @@ GTEST_TEST(GeometriesTest, UpdateRigidWorldPose) {
   constexpr double kRezHint = 0.5;
   ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id, props,
-                                   default_pose());
+                                   default_pose(), /* convex_hull =*/nullptr);
 
   /* Initially the pose is the default pose. */
   {
@@ -275,9 +281,9 @@ GTEST_TEST(GeometriesTest, RemoveGeometry) {
   constexpr double kRezHint = 0.5;
   ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id0, props,
-                                   default_pose());
+                                   default_pose(), /* convex_hull =*/nullptr);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id1, props,
-                                   default_pose());
+                                   default_pose(), /* convex_hull =*/nullptr);
 
   /* Calling RemoveGeometry on an existing deformable geometry. */
   geometries.RemoveGeometry(deformable_id0);
@@ -367,7 +373,8 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   ProximityProperties rigid_properties = MakeProximityPropsWithRezHint(1.0);
   math::RigidTransform<double> X_WR(Vector3d(0, -2.0, 0));
   geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), rigid_id,
-                                   rigid_properties, X_WR);
+                                   rigid_properties, X_WR,
+                                   /* convex_hull =*/nullptr);
   collision_filter.AddGeometry(rigid_id);
 
   /* The deformable box and the rigid box are not in contact yet. */

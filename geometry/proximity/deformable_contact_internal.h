@@ -76,13 +76,16 @@ class Geometries final : public ShapeReifier {
    @param properties    The proximity properties that specifies the properties
                         of the rigid representation.
    @param X_WG          The pose of the geometry in the world frame.
+   @param convex_hull   The optional convex hull associated with `shape`.
+                        Required for Shape = Convex.
    @throws std::exception if resolution hint <= 0 for the following shapes: Box,
            Sphere, Cylinder, Capsule, and Ellipsoid. Note that Mesh and Convex
            don't restrict the range of resolution_hint.
    @pre There is no previous representation associated with id.  */
   void MaybeAddRigidGeometry(const Shape& shape, GeometryId id,
                              const ProximityProperties& props,
-                             const math::RigidTransform<double>& X_WG);
+                             const math::RigidTransform<double>& X_WG,
+                             const PolygonSurfaceMesh<double>* convex_hull);
 
   /* Updates the world pose of the rigid geometry with the given id, if it
    exists, to `X_WG`. */
@@ -118,6 +121,7 @@ class Geometries final : public ShapeReifier {
   struct ReifyData {
     GeometryId id;
     const ProximityProperties& properties;
+    const PolygonSurfaceMesh<double>* convex_hull{nullptr};
   };
 
   void ImplementGeometry(const Box& box, void* user_data) override;
@@ -143,7 +147,11 @@ class Geometries final : public ShapeReifier {
 
   // The representations of all rigid geometries. For performance, we store them
   // in 'pending' until a deformable geometry appears.
-  std::unordered_map<GeometryId, GeometryInstance> rigid_geometries_pending_;
+  struct PendingGeometry {
+    GeometryInstance instance;
+    std::optional<const PolygonSurfaceMesh<double>> convex_hull;
+  };
+  std::unordered_map<GeometryId, PendingGeometry> rigid_geometries_pending_;
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
 
   // This is always true in practice (there is no setter). Only certain unit

@@ -13,6 +13,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
@@ -326,11 +327,17 @@ class Geometries final : public ShapeReifier {
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties which will determine if a
                         hydroelastic representation is requested.
+   @param convex_hull   If provided, the convex hull mesh should be used to
+                        define the representation (as appropriate). For example,
+                        if the shape is Convex, we won't trust the mesh, but
+                        we'll use the pre-computed convex hull to guarantee
+                        uniform behavior.
    @throws std::exception if the shape is a supported type but the properties
                           are malformed.
    @pre There is no previous representation associated with id.  */
   void MaybeAddGeometry(const Shape& shape, GeometryId id,
-                        const ProximityProperties& properties);
+                        const ProximityProperties& properties,
+                        const PolygonSurfaceMesh<double>* convex_hull);
 
   /* Data to be used during reification. It is passed as the `user_data`
    parameter in the ImplementGeometry API. */
@@ -338,6 +345,7 @@ class Geometries final : public ShapeReifier {
     HydroelasticType type;
     GeometryId id;
     const ProximityProperties& properties;
+    const PolygonSurfaceMesh<double>* convex_hull;
   };
 
  private:

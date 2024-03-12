@@ -24,7 +24,8 @@ void Geometries::RemoveGeometry(GeometryId id) {
 
 void Geometries::MaybeAddRigidGeometry(
     const Shape& shape, GeometryId id, const ProximityProperties& props,
-    const math::RigidTransform<double>& X_WG) {
+    const math::RigidTransform<double>& X_WG,
+    const PolygonSurfaceMesh<double>* convex_hull) {
   // TODO(xuchenhan-tri): Right now, rigid geometries participating in
   // deformable contact share the property "kRezHint" with hydroelastics. It's
   // reasonable to use the contact mesh with the same resolution for both hydro
@@ -32,7 +33,7 @@ void Geometries::MaybeAddRigidGeometry(
   // make this sharing more explicit. We should also avoid having two copies of
   // the same rigid geometry for both hydro and deformable contact.
   if (props.HasProperty(kHydroGroup, kRezHint)) {
-    ReifyData data{id, props};
+    ReifyData data{id, props, convex_hull};
     shape.Reify(this, &data);
     UpdateRigidWorldPose(id, X_WG);
   }
@@ -42,7 +43,7 @@ void Geometries::UpdateRigidWorldPose(
     GeometryId id, const math::RigidTransform<double>& X_WG) {
   if (auto iter = rigid_geometries_pending_.find(id);
       iter != rigid_geometries_pending_.end()) {
-    iter->second.set_pose(X_WG);
+    iter->second.instance.set_pose(X_WG);
     return;
   }
   if (auto iter = rigid_geometries_.find(id); iter != rigid_geometries_.end()) {
@@ -188,12 +189,18 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
   if (enable_rigid_geometries_pending_ && deformable_geometries_.empty()) {
     GeometryInstance instance(math::RigidTransform<double>{}, shape, "pending");
     instance.set_proximity_properties(data.properties);
-    rigid_geometries_pending_.insert({data.id, std::move(instance)});
+    if (data.convex_hull != nullptr) {
+      rigid_geometries_pending_.insert(
+          {data.id, {std::move(instance), *data.convex_hull}});
+    } else {
+      rigid_geometries_pending_.insert(
+          {data.id, {std::move(instance), std::nullopt}});
+    }
     return;
   }
   /* Forward to hydroelastics to construct the geometry. */
-  const hydroelastic::Geometries::ReifyData hydro_data{.properties =
-                                                           data.properties};
+  const hydroelastic::Geometries::ReifyData hydro_data{
+      .properties = data.properties, .convex_hull = data.convex_hull};
   std::optional<hydroelastic::RigidGeometry> hydro_rigid_geometry =
       hydroelastic::MakeRigidRepresentation(shape, hydro_data);
   /* Unsupported geometries will be handle through the
@@ -207,11 +214,16 @@ void Geometries::FlushPendingRigidGeometry() {
   DRAKE_DEMAND(!deformable_geometries_.empty());
   auto worklist = std::move(rigid_geometries_pending_);
   rigid_geometries_pending_.clear();
-  for (const auto& [id, geometry_instance] : worklist) {
+  for (const auto& [id, pending_geometry] : worklist) {
+    const GeometryInstance& geometry_instance = pending_geometry.instance;
     const ProximityProperties* props = geometry_instance.proximity_properties();
     DRAKE_DEMAND(props != nullptr);
+    const PolygonSurfaceMesh<double>* convex_hull =
+        pending_geometry.convex_hull.has_value()
+            ? &pending_geometry.convex_hull.value()
+            : nullptr;
     MaybeAddRigidGeometry(geometry_instance.shape(), id, *props,
-                          geometry_instance.pose());
+                          geometry_instance.pose(), convex_hull);
   }
 }
 

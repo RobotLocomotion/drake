@@ -338,12 +338,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // deformable contact representations of rigid (non-deformable)
     // geometries.
     hydroelastic_geometries_.RemoveGeometry(id);
-    hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
-                                              new_properties);
+    hydroelastic_geometries_.MaybeAddGeometry(
+        geometry.shape(), id, new_properties, geometry.convex_hull());
     const RigidTransformd X_WG = GetX_WG(id, geometry.is_dynamic());
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
-        geometry.shape(), id, new_properties, X_WG);
+        geometry.shape(), id, new_properties, X_WG, geometry.convex_hull());
   }
 
   // Returns true if the geometry with the given Id has been registered in
@@ -431,7 +431,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   template <typename Shape>
   void ProcessHydroelastic(const Shape& shape, void* user_data) {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    hydroelastic_geometries_.MaybeAddGeometry(shape, data.id, data.properties);
+    hydroelastic_geometries_.MaybeAddGeometry(shape, data.id, data.properties,
+                                              data.convex_hull);
   }
 
   // Attempts to process the declared geometry into a rigid representation for
@@ -442,7 +443,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
 
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
-        shape, data.id, data.properties, data.X_WG);
+        shape, data.id, data.properties, data.X_WG, data.convex_hull);
   }
 
   void ImplementGeometry(const Box& box, void* user_data) override {
@@ -789,6 +790,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return iter->second->getNodeType() == fcl::GEOM_CONVEX;
   }
 
+  void* GetCollisionObject(GeometryId id) const {
+    if (auto iter = dynamic_objects_.find(id); iter != dynamic_objects_.end()) {
+      return iter->second.get();
+    }
+    if (auto iter = anchored_objects_.find(id);
+        iter != anchored_objects_.end()) {
+      return iter->second.get();
+    }
+    return nullptr;
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -851,13 +863,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   template <typename MeshType>
   void ImplementConvexHull(const MeshType& mesh, void* user_data) {
-    if (mesh.extension() != ".obj" && mesh.extension() != ".vtk") {
-      throw std::runtime_error(fmt::format(
-          "ProximityEngine: {} shapes only support .obj or .vtk files;"
-          " got ({}) instead.",
-          mesh.type_name(), mesh.filename()));
-    }
-
     // Create fcl::Convex. Every Convex shape should already have a convex hull
     // calculated for it.
     ReifyData& reify_data = *static_cast<ReifyData*>(user_data);
@@ -873,7 +878,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
-    ProcessGeometriesForDeformableContact(mesh, user_data);
 
     // TODO(DamrongGuoy):  Right now ProcessGeometriesForDeformableContact()
     //  will call deformable::Geometries::MaybeAddRigidGeometry(), which will
@@ -1148,6 +1152,11 @@ ProximityEngine<T>::deformable_contact_geometries() const {
 template <typename T>
 bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
   return impl_->IsFclConvexType(id);
+}
+
+template <typename T>
+void* ProximityEngine<T>::GetCollisionObject(GeometryId id) const {
+  return impl_->GetCollisionObject(id);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

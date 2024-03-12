@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -41,6 +42,10 @@ v1─────────────────────v2    v1──�
  */
 template <typename T>
 VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex);
+
+template <typename T>
+VolumeMesh<T> MakeConvexVolumeMesh(
+    const TriangleSurfaceMesh<double>& surface_mesh);
 
 }  // namespace internal
 }  // namespace geometry

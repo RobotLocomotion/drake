@@ -102,14 +102,17 @@ class TestScene {
   // compliance `type`.
   void MakeHydroelastic(GeometryId id, const HydroelasticType type,
                         const Shape& shape) {
+    // Note: We're not calling this with a Mesh or Convex, so we won't actually
+    // require a convex hull.
+    const PolygonSurfaceMesh<double>* hull = nullptr;
     switch (type) {
       case HydroelasticType::kSoft:
-        this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
-                                                        soft_properties());
+        this->hydroelastic_geometries_.MaybeAddGeometry(
+            shape, id, soft_properties(), hull);
         break;
       case HydroelasticType::kRigid:
-        this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
-                                                        rigid_properties());
+        this->hydroelastic_geometries_.MaybeAddGeometry(
+            shape, id, rigid_properties(), hull);
         break;
       case HydroelasticType::kUndefined:
         // Note: HydroelasticType::kUndefined will not be added.

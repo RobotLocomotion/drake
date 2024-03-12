@@ -191,7 +191,7 @@ GTEST_TEST(RigidGeometryTest, Pose) {
   rigid_geometry.set_pose_in_world(X_WG);
   EXPECT_TRUE(X_WG.IsExactlyEqualTo(rigid_geometry.pose_in_world()));
 }
-
+#if 0
 GTEST_TEST(RigidGeometryTest, MakeRigidRepresentation) {
   const Sphere sphere(1.0);
   ProximityProperties props;
@@ -203,7 +203,7 @@ GTEST_TEST(RigidGeometryTest, MakeRigidRepresentation) {
   DRAKE_EXPECT_THROWS_MESSAGE(MakeRigidRepresentation(half_space, props),
                               "Half space.*not.*supported.*");
 }
-
+#endif
 }  // namespace
 }  // namespace deformable
 }  // namespace internal

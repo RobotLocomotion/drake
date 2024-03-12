@@ -21,6 +21,7 @@
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
@@ -100,12 +101,13 @@ void Geometries::RemoveGeometry(GeometryId id) {
   rigid_geometries_.erase(id);
 }
 
-void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
-                                  const ProximityProperties& properties) {
+void Geometries::MaybeAddGeometry(
+    const Shape& shape, GeometryId id, const ProximityProperties& properties,
+    const PolygonSurfaceMesh<double>* convex_hull) {
   const HydroelasticType type = properties.GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
   if (type != HydroelasticType::kUndefined) {
-    ReifyData data{type, id, properties};
+    ReifyData data{type, id, properties, convex_hull};
     shape.Reify(this, &data);
   }
 }
@@ -328,28 +330,14 @@ std::optional<RigidGeometry> MakeRigidRepresentation(const Mesh& mesh_spec,
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
-std::optional<RigidGeometry> MakeRigidRepresentation(const Convex& convex_spec,
-                                                     const ReifyData&) {
+std::optional<RigidGeometry> MakeRigidRepresentation(const Convex&,
+                                                     const ReifyData& data) {
   // Convex does not use any properties.
-  std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
+  DRAKE_DEMAND(data.convex_hull != nullptr);
 
-  const std::string extension = convex_spec.extension();
-  if (extension == ".obj") {
-    mesh =
-        make_unique<TriangleSurfaceMesh<double>>(ReadObjToTriangleSurfaceMesh(
-            convex_spec.filename(), convex_spec.scale()));
-  } else if (extension == ".vtk") {
-    mesh = make_unique<TriangleSurfaceMesh<double>>(
-        ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(convex_spec)));
-  } else {
-    throw(std::runtime_error(
-        fmt::format("hydroelastic::MakeRigidRepresentation(): for rigid "
-                    "hydroelastic Convex "
-                    "shapes can only use .obj or .vtk files; given: {}",
-                    convex_spec.filename())));
-  }
-
-  return RigidGeometry(RigidMesh(std::move(mesh)));
+  // We've already created a valid convex hull; use that.
+  return RigidGeometry(RigidMesh(make_unique<TriangleSurfaceMesh<double>>(
+      MakeTriangleFromPolygonMesh(*data.convex_hull))));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(const Sphere& sphere,
@@ -462,20 +450,16 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const HalfSpace&,
   return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness});
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(const Convex& convex_spec,
+std::optional<SoftGeometry> MakeSoftRepresentation(const Convex&,
                                                    const ReifyData& data) {
   PositiveDouble validator("Convex", "soft");
 
-  const std::string extension = convex_spec.extension();
-  if (extension != ".obj") {
-    throw(std::runtime_error(
-        fmt::format("hydroelastic::MakeSoftRepresentation(): for compliant "
-                    "hydroelastic Convex "
-                    "shapes can only use .obj files; given: {}",
-                    convex_spec.filename())));
-  }
+  // We've already created a valid convex hull; use that.
+  DRAKE_DEMAND(data.convex_hull != nullptr);
+  const TriangleSurfaceMesh<double> surface_mesh =
+      MakeTriangleFromPolygonMesh(*data.convex_hull);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeConvexVolumeMesh<double>(convex_spec));
+      MakeConvexVolumeMesh<double>(surface_mesh));
 
   const double hydroelastic_modulus =
       validator.Extract(data.properties, kHydroGroup, kElastic);
@@ -490,14 +474,31 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Mesh& mesh_specification, const ReifyData& data) {
   PositiveDouble validator("Mesh", "soft");
 
-  auto mesh = make_unique<VolumeMesh<double>>(
-      MakeVolumeMeshFromVtk<double>(mesh_specification));
-
   const double hydroelastic_modulus =
       validator.Extract(data.properties, kHydroGroup, kElastic);
 
-  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus));
+  std::unique_ptr<VolumeMesh<double>> mesh;
+  std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure;
+
+  if (mesh_specification.extension() == ".vtk") {
+    // If they've explicitly provided a .vtk file, we'll treat it as it is a
+    // volume mesh. If that's not true, we'll get an error.
+    mesh = make_unique<VolumeMesh<double>>(
+        MakeVolumeMeshFromVtk<double>(mesh_specification));
+
+    pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+        MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus));
+  } else {
+    // Otherwise, we'll create a compliant representation of its convex hull.
+    DRAKE_DEMAND(data.convex_hull != nullptr);
+    const TriangleSurfaceMesh<double> surface_mesh =
+        MakeTriangleFromPolygonMesh(*data.convex_hull);
+    mesh = make_unique<VolumeMesh<double>>(
+        MakeConvexVolumeMesh<double>(surface_mesh));
+
+    pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+        MakeConvexPressureField(mesh.get(), hydroelastic_modulus));
+  }
 
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }

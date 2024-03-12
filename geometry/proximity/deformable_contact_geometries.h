@@ -104,7 +104,7 @@ class RigidGeometry {
   copyable_unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh_;
   math::RigidTransform<double> X_WG_;
 };
-
+#if 0
 /* Generic interface for handling rigid Shapes. By default, we support all
  shapes that are supported by rigid hydroelastic. Unsupported shapes (e.g. half
  space) can choose to opt out. Unsupported geometries will return a
@@ -135,7 +135,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
  require a surface mesh. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace&, const ProximityProperties&);
-
+#endif
 }  // namespace deformable
 }  // namespace internal
 }  // namespace geometry

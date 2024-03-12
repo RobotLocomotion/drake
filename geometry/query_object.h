@@ -320,16 +320,19 @@ class QueryObject {
          document, for example, an appendix in Hydroelastic User Guide
          when it's ready. -->
 
-     - ᵃ For compliant Mesh, please specify a tetrahedral mesh
-         in a VTK file in Mesh(filename). This external working
+     - ᵃ For compliant Mesh, there are two options. First, specify a tetrahedral
+         mesh in a VTK file in Mesh(filename). This external working
          <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
          document</a> provides guidance how to generate a tetrahedral mesh
-         in a VTK file from a surface mesh in an OBJ file.
+         in a VTK file from a surface mesh in an OBJ file. The second option is
+         to use an OBJ file directly. In this case, the mesh's convex hull will
+         be used. The result is identical to specifying it as a Convex shape.
      - ᵇ For rigid Mesh, please specify a surface mesh in an OBJ file in
          Mesh(filename). A tetrahedral mesh in a VTK file can also be
          specified.
-     - ᶜ For both compliant Convex and rigid Convex, please specify a surface
-         mesh in an OBJ file in Convex(filename).
+     - ᶜ For both compliant Convex and rigid Convex, whether you specify it as
+         an .obj or .vtk, the original mesh will be discared in favor of its
+         computed convex hull.
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If

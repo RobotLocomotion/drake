@@ -386,6 +386,7 @@ drake_cc_library(
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -491,12 +492,12 @@ drake_cc_library(
     srcs = ["make_convex_mesh.cc"],
     hdrs = ["make_convex_mesh.h"],
     interface_deps = [
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//geometry:shape_specification",
     ],
     deps = [
         ":obj_to_surface_mesh",
-        ":triangle_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -1048,6 +1049,7 @@ drake_cc_googletest(
     deps = [
         ":deformable_contact_internal",
         ":make_box_mesh",
+        ":make_convex_hull_mesh",
         ":make_sphere_mesh",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1176,6 +1178,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":hydroelastic_internal",
+        ":make_convex_hull_mesh",
         ":proximity_utilities",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",

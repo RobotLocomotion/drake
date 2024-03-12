@@ -12,6 +12,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -29,6 +30,13 @@ using ReifyData = Geometries::ReifyData;
 using std::function;
 using std::make_unique;
 using std::pow;
+
+// Creates the convex hull of a single tet.
+PolygonSurfaceMesh<double> MakeTetConvexHull() {
+  return {{3, 0, 1, 3, 3, 0, 3, 2, 3, 1, 2, 3, 3, 0, 2, 1},
+          {Vector3d{0, 0, 0}, Vector3d{1, 0, 0}, Vector3d{0, 1, 0},
+           Vector3d{0, 0, 1}}};
+}
 
 GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
@@ -356,9 +364,9 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   EXPECT_EQ(geometries.hydroelastic_type(bad_id), HydroelasticType::kUndefined);
 
   // Once added, they report the appropriate type.
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties, nullptr);
   EXPECT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
-  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties, nullptr);
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
   // Ids that report the correct type, successfully access the appropriate
@@ -367,7 +375,8 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   DRAKE_EXPECT_NO_THROW(geometries.rigid_geometry(rigid_id));
 }
 
-void DoTestVanished(const Shape& shape, bool expect_vanished) {
+void DoTestVanished(const Shape& shape, bool expect_vanished,
+                    const PolygonSurfaceMesh<double>* convex_hull = nullptr) {
   SCOPED_TRACE(fmt::format("DoTestVanished: {}, expect_vanished: {}",
                            shape.to_string(), expect_vanished));
   Geometries geometries;
@@ -378,7 +387,7 @@ void DoTestVanished(const Shape& shape, bool expect_vanished) {
   const double thickness = 1.3;
   soft_properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
 
-  geometries.MaybeAddGeometry(shape, soft_id, soft_properties);
+  geometries.MaybeAddGeometry(shape, soft_id, soft_properties, convex_hull);
   EXPECT_EQ(geometries.is_vanished(soft_id), expect_vanished);
 }
 
@@ -429,13 +438,20 @@ GTEST_TEST(HydroelasticVanished, Mesh) {
 }
 
 GTEST_TEST(HydroelasticVanished, Convex) {
+  // For convex shapes, we require the pre-computed convex hull.
   const Convex normal_convex_specification(
       FindResourceOrThrow("drake/geometry/test/octahedron.obj"), 1e-4);
-  DoTestVanished(normal_convex_specification, false);
+  const PolygonSurfaceMesh<double> valid_hull =
+      MakeConvexHull(normal_convex_specification);
+  DoTestVanished(normal_convex_specification, false, &valid_hull);
+
   const Convex tiny_convex_specification(
       FindResourceOrThrow("drake/geometry/test/octahedron.obj"), 1e-8);
-  DRAKE_EXPECT_THROWS_MESSAGE(DoTestVanished(tiny_convex_specification, false),
-                              ".*cannot compute gradient.*");
+  const PolygonSurfaceMesh<double> invalid_hull =
+      MakeConvexHull(tiny_convex_specification);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoTestVanished(tiny_convex_specification, false, &invalid_hull),
+      ".*cannot compute gradient.*");
 }
 
 GTEST_TEST(Hydroelastic, RemoveGeometry) {
@@ -445,14 +461,14 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   const GeometryId rigid_id = GeometryId::get_new_id();
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(1.0, &rigid_properties);
-  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties, nullptr);
   ASSERT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
   AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties, nullptr);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
 
   // Case 1: Remove a geometry that has no representation is a no-op.
@@ -676,8 +692,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 // on the fact that we're loading a unit cube (vertices one unit away from the
 // origin along each axis) to confirm that the correct mesh got loaded. We also
 // confirm that the scale factor is included in the rigid representation.
-template <typename MeshType>
-void TestRigidMeshTypeFromObj(const std::string& file) {
+void TestRigidMesh(const std::string& file) {
   // Empty props since its contents do not matter.
   const ReifyData data{.properties = ProximityProperties()};
 
@@ -685,7 +700,7 @@ void TestRigidMeshTypeFromObj(const std::string& file) {
 
   for (const double scale : {1.0, 5.1, 0.4}) {
     std::optional<RigidGeometry> geometry =
-        MakeRigidRepresentation(MeshType(file, scale), data);
+        MakeRigidRepresentation(Mesh(file, scale), data);
     ASSERT_NE(geometry, std::nullopt);
     ASSERT_FALSE(geometry->is_half_space());
 
@@ -715,48 +730,65 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   {
     SCOPED_TRACE("Rigid Mesh, lower-case obj extension");
-    TestRigidMeshTypeFromObj<Mesh>(file_lower_case);
+    TestRigidMesh(file_lower_case);
   }
   {
     SCOPED_TRACE("Rigid Mesh, upper-case OBJ extension");
     const std::string file_upper_case = temp_directory() + "/quad_cube.OBJ";
     std::filesystem::copy(file_lower_case, file_upper_case);
-    TestRigidMeshTypeFromObj<Mesh>(file_upper_case);
+    TestRigidMesh(file_upper_case);
   }
   {
     SCOPED_TRACE("Rigid Mesh, unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshTypeFromObj<Mesh>("invalid.stl"),
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMesh("invalid.stl"),
                                 ".*Mesh shapes can only use .*invalid.stl");
   }
 }
 
+void TestRigidConvex(const std::string& file) {
+  // We create a minimal convex hull -- two triangles sharing the same vertices,
+  // facing in opposite directions.
+  const PolygonSurfaceMesh<double> fake_hull(
+      {3, 0, 1, 2, 3, 0, 2, 1},
+      {Vector3d{0, 0, 0}, Vector3d{1, 0, 0}, Vector3d{0, 1, 0}});
+
+  const Convex convex(file, 1.0);
+  // Empty properties since its contents do not matter.
+  const ReifyData data{.properties = ProximityProperties(),
+                       .convex_hull = &fake_hull};
+  std::optional<RigidGeometry> geometry = MakeRigidRepresentation(convex, data);
+  ASSERT_NE(geometry, std::nullopt);
+  ASSERT_FALSE(geometry->is_half_space());
+
+  // The surface mesh should purely be a function of the convex hull.
+  // MakeRigidRepresentation trusts the passed convex hull completely.
+  const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+  EXPECT_EQ(surface_mesh.num_vertices(), fake_hull.num_vertices());
+  EXPECT_EQ(surface_mesh.num_triangles(), fake_hull.num_faces());
+}
+
 // Confirm support for a rigid Convex. Tests that a hydroelastic representation
-// is made.
+// is made strictly of the convex hull, and not the actual mesh.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   {
     SCOPED_TRACE("Rigid Convex from Obj file");
     std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-    TestRigidMeshTypeFromObj<Convex>(file);
+    TestRigidConvex(file);
   }
 
   {
     SCOPED_TRACE("Rigid Convex from VTK file");
     std::string file =
         FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
-    // Empty props since its contents do not matter.
-    const ReifyData data{.properties = ProximityProperties()};
-    std::optional<RigidGeometry> geometry =
-        MakeRigidRepresentation(Convex(file), data);
-    ASSERT_NE(geometry, std::nullopt);
-    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
-    EXPECT_EQ(surface_mesh.num_vertices(), 4);
-    EXPECT_EQ(surface_mesh.num_triangles(), 4);
+    TestRigidConvex(file);
   }
 
   {
-    SCOPED_TRACE("Rigid Convex, unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshTypeFromObj<Convex>("invalid.stl"),
-                                ".*Convex shapes can only use .*invalid.stl");
+    // Hydro has no sense of supported geometries for Convex; it simply uses the
+    // provided convex hull. If the hull is present, we get a rigid
+    // representation.
+    SCOPED_TRACE("Rigid Convex, extension doesn't matter");
+    TestRigidConvex("doesn_not_exist.not_a_thing");
   }
 }
 
@@ -883,7 +915,8 @@ void TestPropertyErrors(
   {
     ProximityProperties wrong_value(data.properties);
     wrong_value.AddProperty(group_name, property_name, "10");
-    const ReifyData wrong_data{.properties = wrong_value};
+    const ReifyData wrong_data{.properties = wrong_value,
+                               .convex_hull = data.convex_hull};
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_data),
@@ -896,7 +929,8 @@ void TestPropertyErrors(
   if (bad_value.has_value()) {
     ProximityProperties negative_value(data.properties);
     negative_value.AddProperty(group_name, property_name, *bad_value);
-    const ReifyData negative_data{.properties = negative_value};
+    const ReifyData negative_data{.properties = negative_value,
+                                  .convex_hull = data.convex_hull};
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, negative_data),
         fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
@@ -922,13 +956,15 @@ TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests);
 TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
+  const PolygonSurfaceMesh<double> hull = MakeTetConvexHull();
 
   TestPropertyErrors<ShapeType, double>(
       shape_spec, kHydroGroup, kRezHint, "rigid",
       [](const ShapeType& s, const ReifyData& data) {
         MakeRigidRepresentation(s, data);
       },
-      -0.2, ReifyData{.properties = ProximityProperties()});
+      -0.2,
+      ReifyData{.properties = ProximityProperties(), .convex_hull = &hull});
 }
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
@@ -938,15 +974,14 @@ typedef ::testing::Types<Sphere, Capsule, Cylinder, Ellipsoid>
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                                RigidErrorShapeTypes);
 
-class HydroelasticSoftGeometryTest : public ::testing::Test {
- protected:
-  /* Creates a simple set of properties for generating soft geometry. */
-  ProximityProperties soft_properties(double edge_length = 0.1) const {
-    ProximityProperties soft_properties;
-    AddCompliantHydroelasticProperties(edge_length, 1e8, &soft_properties);
-    return soft_properties;
-  }
-};
+/* Creates a simple set of properties for generating soft geometry. */
+ProximityProperties soft_properties(double edge_length = 0.1) {
+  ProximityProperties soft_properties;
+  AddCompliantHydroelasticProperties(edge_length, 1e8, &soft_properties);
+  return soft_properties;
+}
+
+class HydroelasticSoftGeometryTest : public ::testing::Test {};
 
 // TODO(SeanCurtis-TRI): As new shape specifications are added, they are
 //  implicitly unsupported and should be added here (and in
@@ -1258,31 +1293,51 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   }
 }
 
-// Test construction of a soft convex mesh.
-TEST_F(HydroelasticSoftGeometryTest, Convex) {
-  // Construct off of a known convex mesh.
-  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  const Convex convex_spec(file);
+// Confirm that a mesh type (convex/mesh) has a soft representation. The Convex
+// shape *must* use the convex hull. The Mesh shape *will* use the convex hull
+// until we implement specific support for tessellating general surface meshes.
+template <typename MeshType>
+void TestSoftFromConvexHull(const std::string& file) {
+  // We create a convex hull of a tet (not the cube referenced.) The file named
+  // doesn't matter; the soft representation is created from the convex hull.
+  const PolygonSurfaceMesh<double> hull = MakeTetConvexHull();
 
-  const ReifyData data{.properties = soft_properties(0.16)};
-  std::optional<SoftGeometry> convex =
-      MakeSoftRepresentation(convex_spec, data);
+  const MeshType shape(file);
+
+  const ReifyData data{.properties = soft_properties(), .convex_hull = &hull};
+  std::optional<SoftGeometry> compliant_geometry =
+      MakeSoftRepresentation(shape, data);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 9;
-  EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
+  // The hull's vertices plus one interior vertex.
+  const int expected_num_vertices = hull.num_vertices() + 1;
+  EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
   const double E =
       data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
-  for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
-    const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+  for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
+    const double pressure =
+        compliant_geometry->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
   }
 }
 
-// Test construction of a compliant (generally non-convex) tetrahedral mesh.
-TEST_F(HydroelasticSoftGeometryTest, Mesh) {
+// Test construction of a soft convex mesh.
+TEST_F(HydroelasticSoftGeometryTest, Convex) {
+  TestSoftFromConvexHull<Convex>(
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+}
+
+// Test construction of a compliant tetrahedral mesh from a general mesh. We
+// create a mesh based on the convex hull.
+TEST_F(HydroelasticSoftGeometryTest, MeshObj) {
+  TestSoftFromConvexHull<Mesh>(
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+}
+
+// Test construction of a compliant tetrahedral mesh from a volume vtk file.
+TEST_F(HydroelasticSoftGeometryTest, MeshVtk) {
   const Mesh mesh_specification(
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
 
@@ -1321,6 +1376,7 @@ TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
+  const PolygonSurfaceMesh<double> hull = MakeTetConvexHull();
   if (shape_spec.type_name() != "HalfSpace" &&
       shape_spec.type_name() != "Box" && shape_spec.type_name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
@@ -1328,7 +1384,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
         [](const ShapeType& s, const ReifyData& d) {
           MakeSoftRepresentation(s, d);
         },
-        -0.2, ReifyData{.properties = ProximityProperties()});
+        -0.2,
+        ReifyData{.properties = ProximityProperties(), .convex_hull = &hull});
   }
 }
 
@@ -1341,7 +1398,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   // hydroelastic representation can choke on elastic modulus value.
   soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
   soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
-  const ReifyData data{.properties = soft_properties};
+  const PolygonSurfaceMesh<double> hull = MakeTetConvexHull();
+  const ReifyData data{.properties = soft_properties, .convex_hull = &hull};
   TestPropertyErrors<ShapeType, double>(
       shape_spec, kHydroGroup, kElastic, "soft",
       [](const ShapeType& s, const ReifyData& d) {
@@ -1353,6 +1411,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
+  const PolygonSurfaceMesh<double> hull = MakeTetConvexHull();
   // Half space only!
   if (shape_spec.type_name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
@@ -1360,7 +1419,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
         [](const ShapeType& s, const ReifyData& d) {
           MakeSoftRepresentation(s, d);
         },
-        -0.2, ReifyData{.properties = ProximityProperties()});
+        -0.2,
+        ReifyData{.properties = ProximityProperties(), .convex_hull = &hull});
   }
 }
 

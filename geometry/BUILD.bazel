@@ -706,7 +706,6 @@ filegroup(
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",
-        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/octahedron.mtl",
@@ -721,7 +720,6 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/cube_as_6_squares.vtk",
-        "test/extruded_u_volume_mesh.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
