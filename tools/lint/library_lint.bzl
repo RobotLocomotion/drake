@@ -141,7 +141,7 @@ def library_lint(
     py_test_isolated(
         name = "library_lint",
         size = "small",
-        srcs = ["@drake//tools/lint:library_lint_reporter.py"],
+        srcs = ["@drake//tools/lint:library_lint_reporter"],
         main = "@drake//tools/lint:library_lint_reporter.py",
         args = library_lint_reporter_args,
         data = library_lint_reporter_data,
