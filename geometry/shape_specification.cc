@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <mutex>
 
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -24,6 +26,19 @@ std::string GetExtensionLower(const std::string& filename) {
   });
   return ext;
 }
+
+// This is a global mutex which serializes *all* calls to Mesh::convex_hull()
+// and Convex::convex_hull().
+//
+// We can't easily introduce the mutex into the Convex and Mesh classes because
+// std::mutex doesn't support copy assignment or move semantics. By hoisting it
+// out of the classes, we can keep those implementations simple.
+//
+// The cost is that convex_hulls cannot be computed for two shapes
+// simultaneously, but that seems an incredibly unlikely occurrence. If that
+// ever becomes a need, we can make this an instance member by writing our
+// own copy-assignment and move semantics.
+std::mutex hull_mutex;
 
 }  // namespace
 
@@ -88,6 +103,17 @@ Convex::Convex(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Convex::convex_hull() const {
+  {
+    std::lock_guard<std::mutex> lock(hull_mutex);
+    if (hull_ == nullptr) {
+      hull_ = std::make_shared<PolygonSurfaceMesh<double>>(
+          internal::MakeConvexHull(filename_, scale_));
+    }
+  }
+  return *hull_;
 }
 
 std::string Convex::do_to_string() const {
@@ -171,6 +197,17 @@ Mesh::Mesh(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Mesh::convex_hull() const {
+  {
+    std::lock_guard<std::mutex> lock(hull_mutex);
+    if (hull_ == nullptr) {
+      hull_ = std::make_shared<PolygonSurfaceMesh<double>>(
+          internal::MakeConvexHull(filename_, scale_));
+    }
+  }
+  return *hull_;
 }
 
 std::string Mesh::do_to_string() const {

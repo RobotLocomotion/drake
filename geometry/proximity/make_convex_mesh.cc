@@ -7,7 +7,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -54,10 +53,8 @@ Vector3d CalcCentroidOfEnclosedVolume(
 }  // namespace
 
 template <typename T>
-VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
-  const TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(convex.filename(), convex.scale());
-
+VolumeMesh<T> MakeConvexVolumeMesh(
+    const TriangleSurfaceMesh<double>& surface_mesh) {
   std::vector<Vector3<T>> volume_mesh_vertices(surface_mesh.vertices().begin(),
                                                surface_mesh.vertices().end());
 
@@ -80,6 +77,12 @@ VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
   //     - Closure
   //     - Non-repeated vertices
   //     - Consistently outwardly oriented face normals
+  //   Note: If this is invoked with the mesh corresponding to Drake's computed
+  //   convex hull, such tests are unnecessary. Currently, we *do* invoke it
+  //   with such a mesh, but are not signaling it (because this code wouldn't do
+  //   anything differently if we did). When we have the ability to test/check
+  //   arbitrary, meshes we should exclude testing when we know it is a valid
+  //   convex mesh by construction.
   for (const SurfaceTriangle& e : surface_mesh.triangles()) {
     // Orient the tetrahedron such that it has positive signed volume (assuming
     // outward facing normal for the surface triangle).
@@ -90,8 +93,16 @@ VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
   return {std::move(volume_mesh_elements), std::move(volume_mesh_vertices)};
 }
 
+template <typename T>
+VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
+  return MakeConvexVolumeMesh<T>(
+      ReadObjToTriangleSurfaceMesh(convex.filename(), convex.scale()));
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeConvexVolumeMesh<T>))
+    (static_cast<VolumeMesh<T> (*)(const Convex&)>(&MakeConvexVolumeMesh<T>),
+     static_cast<VolumeMesh<T> (*)(const TriangleSurfaceMesh<double>&)>(
+         &MakeConvexVolumeMesh<T>)))
 
 }  // namespace internal
 }  // namespace geometry
