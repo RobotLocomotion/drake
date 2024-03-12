@@ -14,7 +14,6 @@ drake_cc_package_library(
     deps = [
         ":graph_algorithms_internal",
         ":max_clique_solver_base",
-        ":max_clique_solver_via_greedy",
         ":max_clique_solver_via_mip",
     ],
 )
@@ -41,15 +40,6 @@ drake_cc_library(
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
         "//solvers:solve",
-    ],
-)
-
-drake_cc_library(
-    name = "max_clique_solver_via_greedy",
-    srcs = ["max_clique_solver_via_greedy.cc"],
-    hdrs = ["max_clique_solver_via_greedy.h"],
-    deps = [
-        ":max_clique_solver_base",
     ],
 )
 
@@ -89,17 +79,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
-    ],
-)
-
-drake_cc_googletest(
-    name = "max_clique_solver_via_greedy_test",
-    srcs = ["test/max_clique_solver_via_greedy_test.cc"],
-    deps = [
-        ":common_graphs",
-        ":max_clique_solver_via_greedy",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
