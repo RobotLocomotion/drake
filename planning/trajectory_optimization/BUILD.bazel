@@ -173,10 +173,10 @@ drake_cc_googletest(
     name = "gcs_trajectory_optimization_test",
     deps = [
         ":gcs_trajectory_optimization",
-        "//common/trajectories:piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//common/trajectories:piecewise_polynomial",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
     ],
