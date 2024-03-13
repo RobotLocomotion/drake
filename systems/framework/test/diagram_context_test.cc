@@ -138,8 +138,10 @@ class DiagramContextTest : public ::testing::Test {
   // Some tests below need to know which of the subsystems above have particular
   // resources. They use kNumSystems to identify the "parent" subsystem which
   // inherits all the resources of its children.
+  static std::set<int> has_continuous_state() { return {2, 3, kNumSystems}; }
   static std::set<int> has_discrete_state() { return {4, kNumSystems}; }
   static std::set<int> has_abstract_state() { return {5, kNumSystems}; }
+  static std::set<int> has_state() { return {2, 3, 4, 5, kNumSystems}; }
   static std::set<int> has_numeric_parameter() { return {6, kNumSystems}; }
   static std::set<int> has_abstract_parameter() { return {7, kNumSystems}; }
   static std::set<int> has_parameter() { return {6, 7, kNumSystems}; }
@@ -346,9 +348,9 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
 
   // Changing the whole state should affect all the substates.
   context_->get_mutable_state();  // Return value ignored.
-  VerifyNotifications("get_mutable_state: x",
+  VerifyNotifications("get_mutable_state: x", has_state(),
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("get_mutable_state: xc",
+  VerifyNotifications("get_mutable_state: xc", has_continuous_state(),
                       SystemBase::xc_ticket(), &xc_before);
   VerifyNotifications("get_mutable_state: xd", has_discrete_state(),
                       SystemBase::xd_ticket(), &xd_before);
@@ -357,10 +359,11 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
 
   // Changing continuous state should affect only x and xc.
   context_->get_mutable_continuous_state();  // Return value ignored.
-  VerifyNotifications("get_mutable_continuous_state: x",
+  VerifyNotifications("get_mutable_continuous_state: x", has_continuous_state(),
                       SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_continuous_state: xc",
-                      SystemBase::xc_ticket(), &xc_before);
+                      has_continuous_state(), SystemBase::xc_ticket(),
+                      &xc_before);
   VerifyNotifications("get_mutable_continuous_state: xd", {},  // None.
                       SystemBase::xd_ticket(), &xd_before);
   VerifyNotifications("get_mutable_continuous_state: xa", {},  // None.
@@ -368,9 +371,11 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
 
   context_->get_mutable_continuous_state_vector();  // Return value ignored.
   VerifyNotifications("get_mutable_continuous_state_vector: x",
-                      SystemBase::all_state_ticket(), &x_before);
+                      has_continuous_state(), SystemBase::all_state_ticket(),
+                      &x_before);
   VerifyNotifications("get_mutable_continuous_state_vector: xc",
-                      SystemBase::xc_ticket(), &xc_before);
+                      has_continuous_state(), SystemBase::xc_ticket(),
+                      &xc_before);
   VerifyNotifications("get_mutable_continuous_state_vector: xd", {},  // None.
                       SystemBase::xd_ticket(), &xd_before);
   VerifyNotifications("get_mutable_continuous_state_vector: xa", {},  // None.
@@ -379,9 +384,9 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
   const Eigen::Vector2d new_xc1(3.25, 5.5);
   context_->SetContinuousState(VectorX<double>(new_xc1));
   VerifyContinuousStateValue(new_xc1);
-  VerifyNotifications("SetContinuousState: x",
+  VerifyNotifications("SetContinuousState: x", has_continuous_state(),
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("SetContinuousState: xc",
+  VerifyNotifications("SetContinuousState: xc", has_continuous_state(),
                       SystemBase::xc_ticket(), &xc_before);
   VerifyNotifications("SetContinuousState: xd", {},  // None.
                       SystemBase::xd_ticket(), &xd_before);
@@ -399,9 +404,9 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
   // Make sure notifications got delivered.
   VerifyNotifications("SetTimeAndContinuousState: t",
                       SystemBase::time_ticket(), &t_before);
-  VerifyNotifications("SetTimeAndContinuousState: x",
+  VerifyNotifications("SetTimeAndContinuousState: x", has_continuous_state(),
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("SetTimeAndContinuousState: xc",
+  VerifyNotifications("SetTimeAndContinuousState: xc", has_continuous_state(),
                       SystemBase::xc_ticket(), &xc_before);
   VerifyNotifications("SetTimeAndContinuousState: xd", {},  // None.
                       SystemBase::xd_ticket(), &xd_before);
@@ -580,10 +585,11 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   VerifyNotifications("SetTimeStateAndParametersFrom: pa",
                       has_abstract_parameter(),
                       SystemBase::pa_ticket(), &pa_before);
-  VerifyNotifications("SetTimeStateAndParametersFrom: x",
+  VerifyNotifications("SetTimeStateAndParametersFrom: x", has_state(),
                       SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xc",
-                      SystemBase::xc_ticket(), &xc_before);
+                      has_continuous_state(), SystemBase::xc_ticket(),
+                      &xc_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xd", has_discrete_state(),
                       SystemBase::xd_ticket(), &xd_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xa", has_abstract_state(),
