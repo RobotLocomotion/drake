@@ -396,7 +396,9 @@ class JointActuator final : public MultibodyElement<T> {
   systems::NumericParameterIndex gear_ratio_parameter_index_;
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
-  internal::JointActuatorTopology topology_;
+  internal::JointActuatorTopology topology_{.index = JointActuatorIndex{0},
+                                            .actuator_index_start = -1,
+                                            .num_dofs = -1};
 
   std::optional<PdControllerGains> pd_controller_gains_{std::nullopt};
 };
