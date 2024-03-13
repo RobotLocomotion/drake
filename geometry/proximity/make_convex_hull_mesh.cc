@@ -226,9 +226,9 @@ class VertexReader final : public ShapeReifier {
       auto* poly_data =
           dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
       DRAKE_DEMAND(poly_data != nullptr);
-      // 2. For each vertex, transform it to the file frame (based on the actors
-      // user transform), and then into the geometry frame using the scale and
-      // rotation.
+      // 2. For each vertex, transform it to the file frame (based on the
+      // actor's user transform), and then into the geometry frame using the
+      // scale and rotation.
       vtkMatrix4x4* T_FA = actor->GetUserMatrix();
       for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
         const Vector3d p_AV(poly_data->GetPoint(vi));
