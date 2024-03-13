@@ -1158,11 +1158,92 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
       start_time += 1.0;
     } else {
       throw std::runtime_error(
-          "All segments in the gcs trajectory must be of type "
-          "BezierCurve<double>.");
+          "All segments must be of type BezierCurve<double>.");
     }
   }
   return CompositeTrajectory<double>(normalized_bezier_curves);
+}
+
+namespace {
+bool IsMultipleOf2Pi(double value) {
+  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < 1e-10;
+}
+
+// Unwrap the angle to the range [2π * round, 2π * (round+1)).
+double UnWrapAngle(const double angle, const int round) {
+  return (round - std::floor(angle / (2 * M_PI))) * 2 * M_PI + angle;
+}
+}  // namespace
+
+trajectories::CompositeTrajectory<double>
+GcsTrajectoryOptimization::UnWrapToContinousTrajectory(
+    const trajectories::CompositeTrajectory<double>& gcs_trajectory,
+    std::vector<int> continuous_revolute_joints,
+    std::optional<std::vector<int>> starting_rounds) {
+  DRAKE_THROW_UNLESS(gcs_trajectory.get_number_of_segments() > 0);
+  if (starting_rounds.has_value()) {
+    DRAKE_THROW_UNLESS(starting_rounds->size() ==
+                       continuous_revolute_joints.size());
+  }
+  std::vector<copyable_unique_ptr<Trajectory<double>>> unwrapped_trajectories;
+  Eigen::VectorXd last_segment_finish;
+  for (int i = 0; i < gcs_trajectory.get_number_of_segments(); ++i) {
+    const auto& traj_segment = gcs_trajectory.segment(i);
+    const auto* bezier_segment =
+        dynamic_cast<const BezierCurve<double>*>(&traj_segment);
+    if (bezier_segment == nullptr) {
+      throw std::runtime_error(
+          "All segments in the gcs_trajectory must be of type "
+          "BezierCurve<double>.");
+    }
+    Eigen::MatrixXd new_control_points = bezier_segment->control_points();
+    const Eigen::MatrixXd& old_control_points =
+        bezier_segment->control_points();
+    const Eigen::VectorXd& old_start = old_control_points.col(0);
+    std::vector<double> shift;
+    if (i == 0) {
+      // there is no shift from previous segment.
+      if (starting_rounds.has_value()) {
+        for (int j = 0; j < ssize(continuous_revolute_joints); ++j) {
+          const int joint_index = continuous_revolute_joints.at(j);
+          const int start_round = starting_rounds->at(j);
+          // This value will be subtracted from the old_start to get the shift.
+          const double joint_shift =
+              old_start(joint_index) -
+              UnWrapAngle(old_start(joint_index), start_round);
+          DRAKE_DEMAND(IsMultipleOf2Pi(joint_shift));
+          shift.push_back(joint_shift);
+        }
+      } else {
+        shift.push_back(0.0);
+      }
+    } else {
+      DRAKE_DEMAND(last_segment_finish.rows() == gcs_trajectory.rows());
+      // see how much shift is needed to match the previous new segment.
+      for (const int joint_index : continuous_revolute_joints) {
+        const double joint_shift =
+            old_start(joint_index) - last_segment_finish(joint_index);
+        if (!IsMultipleOf2Pi(joint_shift)) {
+          throw std::runtime_error(
+              fmt::format("The shift from previous segment is not a multiple "
+                          "of 2π at segment {}, joint {}.",
+                          i, joint_index));
+        }
+        shift.push_back(joint_shift);
+      }
+    }
+    for (int j = 0; j < ssize(continuous_revolute_joints); ++j) {
+      const int joint_index = continuous_revolute_joints[j];
+      // Shift all the columns of the control points by the shift.
+      new_control_points.row(joint_index) -=
+          Eigen::VectorXd::Constant(old_control_points.cols(), shift[j]);
+    }
+    last_segment_finish = new_control_points.rightCols(1);
+    unwrapped_trajectories.emplace_back(std::make_unique<BezierCurve<double>>(
+        bezier_segment->start_time(), bezier_segment->end_time(),
+        new_control_points));
+  }
+  return CompositeTrajectory<double>(unwrapped_trajectories);
 }
 
 std::vector<int> GetContinuousRevoluteJointIndices(

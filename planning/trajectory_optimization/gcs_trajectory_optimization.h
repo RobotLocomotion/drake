@@ -607,6 +607,37 @@ class GcsTrajectoryOptimization final {
   static trajectories::CompositeTrajectory<double> NormalizeSegmentTimes(
       const trajectories::CompositeTrajectory<double>& trajectory);
 
+  /** Unwraps a trajectory with continuous revolute joints into a continuous
+   trajectory in the Euclidean space. It gets rid of the integer multiples of 2π
+   on the continuous revolute joints between the segments that correspond to the
+   edge offsets between gcs regions. This is useful in finding a trajectory that
+   can be commanded to a robot with continuous revolute joints.
+   @param gcs_trajectory The trajectory to unwrap.
+   @param continuous_revolute_joints The indices of the continuous revolute
+   joints.
+   @param starting_rounds A vector of integers that sets the starting rounds for
+   each continuous revolute joint. Given integer k, the initial position of the
+   corresponding joint will be wrapped into [2kπ, 2(k+1)π). If the starting
+   rounds are not set, the unwrapping will start from the initial position of
+   the @p trajectory.
+
+   @returns an unwrapped (continous in Euclidean space) CompositeTrajectory.
+
+   @throws std::exception if
+   starting_rounds.size()!=continuous_revolute_joints.size().
+   @throws std::exception if the gcs_trajectory is not continous on the manifold
+   defined by the continuous_revolute_joints, i.e., the shift between two
+   consecutive segments is not an integer multiple of 2π.
+   @throws std::exception if all the segments are not of type BezierCurve.
+   Other types are not supported yet. Note that currently the output of
+   GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
+   BezierCurves.
+    */
+  static trajectories::CompositeTrajectory<double> UnWrapToContinousTrajectory(
+      const trajectories::CompositeTrajectory<double>& gcs_trajectory,
+      std::vector<int> continuous_revolute_joints,
+      std::optional<std::vector<int>> starting_rounds = std::nullopt);
+
  private:
   const int num_positions_;
   const std::vector<int> continuous_revolute_joints_;
