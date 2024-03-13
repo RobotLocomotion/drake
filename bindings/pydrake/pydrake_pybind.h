@@ -145,8 +145,27 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
     }                                                                     \
   }
 
+/* XXX comment me */
+struct npy_format_descriptor_object {
+ public:
+  enum { value = py::detail::npy_api::NPY_OBJECT_ };
+  static py::dtype dtype() {
+    if (auto ptr = py::detail::npy_api::get().PyArray_DescrFromType_(value)) {
+      return py::reinterpret_borrow<py::dtype>(ptr);
+    }
+    py::pybind11_fail("Unsupported buffer format!");
+  }
+  static constexpr auto name = py::detail::_("object");
+};
+
 }  // namespace pydrake
 }  // namespace drake
 
-#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
-  PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type)                   \
+  namespace pybind11 {                                            \
+  namespace detail {                                              \
+  template <>                                                     \
+  struct npy_format_descriptor<Type>                              \
+      : public ::drake::pydrake::npy_format_descriptor_object {}; \
+  }  /* namespace pybind11 */                                     \
+  }  // namespace pydrake

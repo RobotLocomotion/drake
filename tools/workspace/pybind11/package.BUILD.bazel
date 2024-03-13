@@ -57,6 +57,7 @@ cc_library(
     name = "pybind11",
     hdrs = _HDRS,
     includes = ["include"],
+    defines = ["PYBIND11_NAMESPACE=pybind11"],
     deps = [
         "@eigen",
         "@python",
