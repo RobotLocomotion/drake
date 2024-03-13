@@ -7,15 +7,46 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/test/dummy_model.h"
+#include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 namespace drake {
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  // Use private constructor to create an MBP from an MBT.
+  template <typename T>
+  static internal::DiscreteUpdateManager<T>* discrete_update_manager(
+      const MultibodyPlant<T>& plant) {
+    return plant.discrete_update_manager_.get();
+  }
+};
+
 namespace internal {
+
+class DiscreteUpdateManagerTester {
+ public:
+  DiscreteUpdateManagerTester() = delete;
+
+  template <typename T>
+  static void CalcJointActuationForces(const DiscreteUpdateManager<T>& manager,
+                                       const systems::Context<T>& context,
+                                       VectorX<T>* actuation_w_pd,
+                                       VectorX<T>* actuation_wo_pd) {
+    manager.CalcJointActuationForces(context, actuation_w_pd, actuation_wo_pd);
+  }
+};
+
 namespace test {
 using contact_solvers::internal::ContactSolverResults;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::Context;
@@ -474,6 +505,27 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   /* The velocity update in this time step should reflect the change in
    actuation. */
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
+}
+
+/* Tests that */
+TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+  FinalizeAndBuild();
+
+  const systems::InputPort<double>& u_input =
+      plant_->get_actuation_input_port();
+  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+
+  DiscreteUpdateManager<double>* manager =
+      MultibodyPlantTester::discrete_update_manager(*plant_);
+
+  VectorXd actuation_wo_pd(3);
+  VectorXd actuation_w_pd(3);
+  DiscreteUpdateManagerTester::CalcJointActuationForces(
+      *manager, *plant_context_, &actuation_w_pd, &actuation_wo_pd);
+
+  const VectorXd expected_actuation_wo_pd =
+      (VectorXd(3) << 1.0, 0.0, 3.0).finished();
+  EXPECT_TRUE(CompareMatrices(actuation_wo_pd, expected_actuation_wo_pd));
 }
 
 }  // namespace

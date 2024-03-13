@@ -267,7 +267,11 @@ class TestPlant(unittest.TestCase):
             plant.EvalBodyPoseInWorld(context, body)
 
     @numpy_compare.check_all_types
-    def test_multibody_plant_remove_joint_actuator(self, T):
+    def test_joint_actuator_remodeling(self, T):
+        """
+        Tests joint actuator APIs related to remodeling: `RemoveJointActuator`,
+        `has_joint_actuator` and the 0 argument `GetJointActuatorIndices()`.
+        """
         plant = MultibodyPlant_[T](0)
         instance = plant.AddModelInstance("instance")
         body = plant.AddRigidBody(
