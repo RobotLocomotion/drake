@@ -933,7 +933,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, NotBezierCurveError) {
   std::vector<copyable_unique_ptr<trajectories::Trajectory<double>>> segments;
-  auto empty_traj = trajectories::CompositeTrajectory<double>(segments);
   auto traj_1 = trajectories::PiecewisePolynomial<double>::FirstOrderHold(
       std::vector<double>{0, 1},
       std::vector<Eigen::MatrixXd>{Eigen::MatrixXd::Zero(1, 2),
