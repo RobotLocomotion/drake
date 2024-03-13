@@ -336,7 +336,10 @@ _Notes_
    variables and numeric/abstract parameters.
 3. Until issue [#9171](https://github.com/RobotLocomotion/drake/issues/9171)
    is resolved we don't know which non-`v` state variables or which parameters
-   may affect kinematics, so we have to depend on all of them.
+   may affect kinematics, so we have to depend on all of them. However,
+   we do not propagate downstream notifications from state variable trackers
+   if a LeafContext does not have any of those state variables (see next section
+   for more information).
 4. Input ports are dependent on the source that provides their values. That
    may be the output port of a peer subsystem, the input port of the parent
    diagram, or a locally-stored fixed input port value.
@@ -362,18 +365,23 @@ discrete state variables, and subscribes to each of the individual discrete
 state trackers. That way if a q is modified, xc gets notified automatically.
 Similarly a change to a single discrete state variable notifies xd. Once those
 subscriptions are set up, no additional code is required in Drake to propagate
-the notifications. Let's call this the "up" direction, where a low-level entity
-notifies its "parent" composite entity.
+the notifications. As an optimization, we do not propagate notifications from
+a state variable source tracker (q, v, z, xd, xa) in LeafContexts that do not
+have any of that particular kind of state variable -- see issue
+[#21133](https://github.com/RobotLocomotion/drake/issues/21133) for
+why this is an important optimization.
 
-More subtly, we also have to issue notifications in the "down" direction. That's
-because the Context provides methods like SetContinuousState() and
+Let's call the above the "forward" direction,where a source entity notifies a
+subscribing composite entity.
+More subtly, we also have to issue notifications in the "backward" direction.
+That's because the Context provides methods like SetContinuousState() and
 get_mutable_state() which effectively change a group of source objects. That
 _could_ be handled with more subscriptions, at the cost of introducing cycles
 into the dependency DAG (the "change event" would serve to break those cycles
 during notification sweeps). Instead, since we always know the constituents at
 the time a high-level modification request is made, we simply have bespoke code
-that notifies the lowest-level constituents, then depend on the "up" direction
-subscriptions to get the composite trackers notified. See the
+that notifies the lowest-level constituents, then depend on the "forward"
+direction subscriptions to get the composite trackers notified. See the
 @ref context_base_change_notification_methods "notifications methods" in
 ContextBase.
 
