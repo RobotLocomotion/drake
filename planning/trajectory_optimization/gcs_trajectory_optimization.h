@@ -608,10 +608,14 @@ class GcsTrajectoryOptimization final {
       const trajectories::CompositeTrajectory<double>& trajectory);
 
   /** Unwraps a trajectory with continuous revolute joints into a continuous
-   trajectory in the Euclidean space. It gets rid of the integer multiples of 2π
-   on the continuous revolute joints between the segments that correspond to the
-   edge offsets between gcs regions. This is useful in finding a trajectory that
-   can be commanded to a robot with continuous revolute joints.
+   trajectory in the Euclidean space. Trajectories produced by
+   GcsTrajectoryOptimization for robotic systems with continuous revolute joints
+   may include apparent discontinuities, where a multiple of 2π is
+   instantaneously added to a joint value at the boundary between two adjacent
+   segments of the trajectory. This function removes such discontinuities by
+   adding or subtracting the appropriate multiple of 2π, "unwrapping" the
+   trajectory into a continuous representation suitable for downstream tasks
+   that do not take the joint wraparound into account.
    @param gcs_trajectory The trajectory to unwrap.
    @param continuous_revolute_joints The indices of the continuous revolute
    joints.
@@ -625,6 +629,8 @@ class GcsTrajectoryOptimization final {
 
    @throws std::exception if
    starting_rounds.size()!=continuous_revolute_joints.size().
+   @throws std::exception if continuous_revolute_joints contain repeated indices
+   and/or indices outside the range [0, gcs_trajectory.rows()).
    @throws std::exception if the gcs_trajectory is not continous on the manifold
    defined by the continuous_revolute_joints, i.e., the shift between two
    consecutive segments is not an integer multiple of 2π.
@@ -633,7 +639,7 @@ class GcsTrajectoryOptimization final {
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
    BezierCurves.
     */
-  static trajectories::CompositeTrajectory<double> UnWrapToContinousTrajectory(
+  static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
       const trajectories::CompositeTrajectory<double>& gcs_trajectory,
       std::vector<int> continuous_revolute_joints,
       std::optional<std::vector<int>> starting_rounds = std::nullopt);
