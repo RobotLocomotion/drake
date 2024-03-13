@@ -274,11 +274,6 @@ class ActuatedIiwaArmTest : public ::testing::Test {
                         u, tolerance, MatrixCompareType::relative));
   }
 
-  // Helper to test RemoveJointActuator. Must be called before SetUpModel.
-  void test_remove_joint_actuators(bool val) {
-    test_remove_joint_actuators_ = val;
-  }
-
  protected:
   const int kKukaNumPositions_{7};
   const int kGripperNumPositions_{2};
@@ -682,7 +677,6 @@ TEST_F(ActuatedIiwaArmTest,
 // Call the same methods as the RemoveJointActuator test to confirm the values
 // _without_ the actuators removed.
 TEST_F(ActuatedIiwaArmTest, DontRemoveJointActuator) {
-  test_remove_joint_actuators(false);
   SetUpModel();
 
   EXPECT_EQ(plant_->num_actuators(), 7 + 2 + 2);
@@ -719,7 +713,7 @@ TEST_F(ActuatedIiwaArmTest, DontRemoveJointActuator) {
 
 TEST_F(ActuatedIiwaArmTest, RemoveJointActuator) {
   // Remove iiwa_joint_3 and ElbowJoint from the model.
-  test_remove_joint_actuators(true);
+  test_remove_joint_actuators_ = true;
   SetUpModel();
 
   EXPECT_EQ(plant_->num_actuators(), 6 + 1 + 2);

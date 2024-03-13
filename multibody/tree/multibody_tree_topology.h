@@ -252,19 +252,6 @@ struct MobilizerTopology {
 // Data structure to store the topological information associated with a
 // JointActuator.
 struct JointActuatorTopology {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JointActuatorTopology);
-
-  // Default construction to an invalid configuration.
-  JointActuatorTopology() {}
-
-  // Constructs a joint actuator topology with index `joint_actuator_index`.
-  JointActuatorTopology(
-      JointActuatorIndex joint_actuator_index,
-      int start_index, int ndofs) :
-      index(joint_actuator_index),
-      actuator_index_start(start_index),
-      num_dofs(ndofs) {}
-
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
   bool operator==(const JointActuatorTopology& other) const {
@@ -699,9 +686,10 @@ class MultibodyTreeTopology {
     }
     const int actuator_index_start = num_actuated_dofs();
     const JointActuatorIndex actuator_index(ssize(joint_actuators_));
-    joint_actuators_.emplace_back(std::nullopt);
-    joint_actuators_.back().emplace(actuator_index, actuator_index_start,
-                                    num_dofs);
+    joint_actuators_.push_back(std::optional<JointActuatorTopology>{
+        JointActuatorTopology{.index = actuator_index,
+                              .actuator_index_start = actuator_index_start,
+                              .num_dofs = num_dofs}});
     num_actuated_dofs_ += num_dofs;
     return actuator_index;
   }
@@ -725,11 +713,9 @@ class MultibodyTreeTopology {
                       actuator_index));
     }
 
-    DRAKE_ASSERT(num_actuated_dofs_ >=
-                 (*joint_actuators_[actuator_index]).num_dofs);
-
     // Reduce the total number of actuated dofs.
-    int num_dofs = (*joint_actuators_[actuator_index]).num_dofs;
+    const int num_dofs = (*joint_actuators_[actuator_index]).num_dofs;
+    DRAKE_ASSERT(num_actuated_dofs_ >= num_dofs);
     num_actuated_dofs_ -= num_dofs;
 
     // Mark the actuator as "removed".
