@@ -6,10 +6,15 @@
 #include <vector>
 
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
+#include <fmt/format.h>
 
 #include "drake/common/find_runfiles.h"
 #include "drake/common/unused.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/detail_common.h"
 
 namespace drake {
 namespace multibody {
@@ -55,6 +60,41 @@ UsdParser::UsdParser() {
 
 UsdParser::~UsdParser() = default;
 
+void ProcessPrim(const pxr::UsdPrim& prim, MultibodyPlant<double>* plant) {
+  drake::log()->info("Processing " + prim.GetPath().GetString());
+
+  if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
+    pxr::TfToken prim_type = prim.GetTypeName();
+    if (prim_type == "Cube") {
+      drake::log()->info("Cube");
+
+      math::RigidTransform<double> transform;
+      CoulombFriction<double> friction = default_friction();
+      const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
+      double scale_x = 1;
+      double scale_y = 1;
+      double scale_z = 1;
+
+      plant->RegisterCollisionGeometry(
+        plant->world_body(),
+        transform,
+        geometry::Box(scale_x, scale_y, scale_z),
+        fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+        friction);
+      plant->RegisterVisualGeometry(
+        plant->world_body(),
+        transform,
+        geometry::Box(scale_x, scale_y, scale_z),
+        fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+        color_white);
+    } else {
+      throw std::runtime_error(
+        fmt::format("Unsupported Prim type for PhysicsCollisionAPI: {}",
+        prim_type));
+    }
+  }
+}
+
 std::optional<ModelInstanceIndex> UsdParser::AddModel(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
@@ -67,20 +107,22 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
+  unused(parent_model_name);
+
   if (data_source.IsContents()) {
-    throw std::runtime_error("UsdParser::AddAllModels - Ingesting raw USD"
-      "content from DataSource is not implemented");
+    throw std::runtime_error(
+      "Ingesting raw USD content from DataSource is not implemented");
   }
 
   pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(
     data_source.GetAbsolutePath());
   if (!stage) {
-    drake::log()->error("Failed to open stage");
-  } else {
-    drake::log()->info("Sucessfully opened stage");
+    throw std::runtime_error("Failed to open USD stage");
   }
 
-  unused(parent_model_name, workspace);
+  for (pxr::UsdPrim prim : stage->Traverse()) {
+    ProcessPrim(prim, workspace.plant);
+  }
 
   // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
   return std::vector<ModelInstanceIndex>();
