@@ -132,7 +132,9 @@ class UnivariateNonnegative1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateNonnegative1)
 
-  UnivariateNonnegative1();
+  // @param small_gram_as_lorentz_cone Refer to
+  // MathematicalProgram::NewSosPolynomial for more details.
+  explicit UnivariateNonnegative1(bool small_gram_as_lorentz_cone = true);
 
   const MathematicalProgram& prog() const { return prog_; }
 
