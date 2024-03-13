@@ -154,16 +154,34 @@ std::unique_ptr<Context<T>> Context<T>::CloneWithoutPointers(
 
 template <typename T>
 void Context<T>::init_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
+  // Don't propagate notifications through variables we don't have.
+  if (xc->num_q() == 0)
+    get_mutable_tracker(DependencyTicket(internal::kQTicket)).disable();
+  if (xc->num_v() == 0)
+    get_mutable_tracker(DependencyTicket(internal::kVTicket)).disable();
+  if (xc->num_z() == 0)
+    get_mutable_tracker(DependencyTicket(internal::kZTicket)).disable();
+  if (xc->size() == 0)  // i.e. nq+nv+nz
+    get_mutable_tracker(DependencyTicket(internal::kXcTicket)).disable();
+
   do_access_mutable_state().set_continuous_state(std::move(xc));
 }
 
 template <typename T>
 void Context<T>::init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
+  // Don't propagate notifications through variables we don't have.
+  if (xd->num_groups() == 0)
+    get_mutable_tracker(DependencyTicket(internal::kXdTicket)).disable();
+
   do_access_mutable_state().set_discrete_state(std::move(xd));
 }
 
 template <typename T>
 void Context<T>::init_abstract_state(std::unique_ptr<AbstractValues> xa) {
+  // Don't propagate notifications through variables we don't have.
+  if (xa->size() == 0)
+    get_mutable_tracker(DependencyTicket(internal::kXaTicket)).disable();
+
   do_access_mutable_state().set_abstract_state(std::move(xa));
 }
 

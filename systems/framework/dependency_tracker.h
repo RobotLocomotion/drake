@@ -176,6 +176,19 @@ class DependencyTracker {
     return cache_value_;
   }
 
+  /** (Internal use only) Disables this tracker to prevent notifications to
+  downstream subscribers. This can be used by the framework during Context
+  allocation to disable built-in trackers that have nothing to track. For
+  example, if there are no q's we can improve performance and avoid spurious
+  notifications to q-subscribers like configuration_tracker by disabling q's
+  tracker. */
+  void disable() {
+    is_disabled_ = true;
+  }
+
+  /** Returns true if disable() has been called on this tracker. */
+  bool is_disabled() const { return is_disabled_; }
+
   /** Notifies `this` %DependencyTracker that its managed value was directly
   modified or made available for mutable access. That is, this is the
   _initiating_ event of a value modification. All of our downstream
@@ -353,6 +366,7 @@ class DependencyTracker {
       clone->cache_value_ = nullptr;
     clone->subscribers_.resize(num_subscribers(), nullptr);
     clone->prerequisites_.resize(num_prerequisites(), nullptr);
+    clone->is_disabled_ = is_disabled_;
     return clone;
   }
 
@@ -409,6 +423,8 @@ class DependencyTracker {
 
   std::vector<const DependencyTracker*> subscribers_;
   std::vector<const DependencyTracker*> prerequisites_;
+
+  bool is_disabled_{false};
 
   // Used for short-circuiting repeated notifications. Does not otherwise change
   // the result; hence mutable is OK. All legitimate change events must be
