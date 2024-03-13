@@ -9,6 +9,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include <fmt/format.h>
 
 #include "drake/common/find_runfiles.h"
@@ -60,37 +62,64 @@ UsdParser::UsdParser() {
 
 UsdParser::~UsdParser() = default;
 
+void ProcessStaticCollider(
+  const pxr::UsdPrim& prim, MultibodyPlant<double>* plant) {
+  DRAKE_ASSERT(prim.IsA<pxr::UsdGeomXformable>());
+  if (prim.IsA<pxr::UsdGeomCube>()) {
+    pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
+
+    CoulombFriction<double> friction = default_friction();
+    const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
+
+    // pxr::VtVec3fArray extent;
+    // pxr::GfVec3f scale;
+    // pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+    // DRAKE_ASSERT(cube.GetExtentAttr().Get(&extent));
+    // DRAKE_ASSERT(xformable.GetScaleOp().Get(&scale));
+
+    // pxr::GfMatrix4d transform_matrix;
+    // bool resets_xform_stack = false; // TODO(hong-nvidia): Figure out whether
+    // // there's a scenario where we need to reset the xform stack
+
+    // DRAKE_ASSERT(xformable.GetLocalTransformation(
+    //   &transform_matrix, &resets_xform_stack,
+    //   xformable.GetOrderedXformOps(&resets_xform_stack)));
+    // drake::log()->info(transform_matrix);
+
+    double scale_x = 1;
+    double scale_y = 1;
+    double scale_z = 1;
+    math::RigidTransform<double> transform;
+
+    plant->RegisterCollisionGeometry(
+      plant->world_body(),
+      transform,
+      geometry::Box(scale_x, scale_y, scale_z),
+      fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+      friction);
+    plant->RegisterVisualGeometry(
+      plant->world_body(),
+      transform,
+      geometry::Box(scale_x, scale_y, scale_z),
+      fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+      color_white);
+  } else {
+    pxr::TfToken prim_type = prim.GetTypeName();
+    throw std::runtime_error(
+      fmt::format("Unsupported Prim type: {}",
+      prim_type));
+  }
+}
+
 void ProcessPrim(const pxr::UsdPrim& prim, MultibodyPlant<double>* plant) {
   drake::log()->info("Processing " + prim.GetPath().GetString());
 
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
-    pxr::TfToken prim_type = prim.GetTypeName();
-    if (prim_type == "Cube") {
-      drake::log()->info("Cube");
-
-      math::RigidTransform<double> transform;
-      CoulombFriction<double> friction = default_friction();
-      const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
-      double scale_x = 1;
-      double scale_y = 1;
-      double scale_z = 1;
-
-      plant->RegisterCollisionGeometry(
-        plant->world_body(),
-        transform,
-        geometry::Box(scale_x, scale_y, scale_z),
-        fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-        friction);
-      plant->RegisterVisualGeometry(
-        plant->world_body(),
-        transform,
-        geometry::Box(scale_x, scale_y, scale_z),
-        fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-        color_white);
+    if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
+      // TODO(hong-nvidia): Process rigid body collider
+      // ProcessRigidBody(prim, plant);
     } else {
-      throw std::runtime_error(
-        fmt::format("Unsupported Prim type for PhysicsCollisionAPI: {}",
-        prim_type));
+      ProcessStaticCollider(prim, plant);
     }
   }
 }
