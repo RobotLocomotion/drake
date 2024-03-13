@@ -413,6 +413,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
+  // Provide private access for unit testing only.
+  friend class DiscreteUpdateManagerTester;
+
   /* Due to issue #12786, we cannot mark the calculation of non-contact forces
    (and the acceleration it induces) dependent on the discrete
    MultibodyPlant's inputs, as it should. However, by removing this
