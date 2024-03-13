@@ -302,7 +302,6 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
   CollisionCheckerParams params;
   std::shared_ptr<Meshcat> meshcat;
-
   std::unique_ptr<SceneGraphCollisionChecker> checker;
   IrisFromCliqueCoverOptions options;
   std::vector<HPolyhedron> sets;
@@ -314,65 +313,72 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
        BoxWithCornerObstaclesTestMip) {
-  // Set ILP settings for MaxCliqueSolverViaMip
-  // limiting the work load for ILP solver
-  solvers::SolverOptions solver_options;
-  // Quit after finding 25 solutions.
-  const int kFeasibleSolutionLimit = 25;
-  // Quit at a 5% optimality gap
-  const double kRelOptGap = 0.05;
+  // Only run this test if a MIP solver is available.
+  if ((solvers::MosekSolver::is_available() &&
+       solvers::MosekSolver::is_enabled()) ||
+      (solvers::GurobiSolver::is_available() &&
+       solvers::GurobiSolver::is_enabled())) {
+    // Set ILP settings for MaxCliqueSolverViaMip
+    // limiting the work load for ILP solver
+    solvers::SolverOptions solver_options;
+    // Quit after finding 25 solutions.
+    const int kFeasibleSolutionLimit = 25;
+    // Quit at a 5% optimality gap
+    const double kRelOptGap = 0.05;
 
-  solver_options.SetOption(solvers::MosekSolver().id(),
-                           "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS",
-                           kFeasibleSolutionLimit);
-  solver_options.SetOption(solvers::MosekSolver().id(),
-                           "MSK_DPAR_MIO_TOL_REL_GAP", kRelOptGap);
-  solver_options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
-                           kFeasibleSolutionLimit);
-  solver_options.SetOption(solvers::GurobiSolver().id(), "MIPGap", kRelOptGap);
+    solver_options.SetOption(solvers::MosekSolver().id(),
+                             "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS",
+                             kFeasibleSolutionLimit);
+    solver_options.SetOption(solvers::MosekSolver().id(),
+                             "MSK_DPAR_MIO_TOL_REL_GAP", kRelOptGap);
+    solver_options.SetOption(solvers::GurobiSolver().id(), "SolutionLimit",
+                             kFeasibleSolutionLimit);
+    solver_options.SetOption(solvers::GurobiSolver().id(), "MIPGap",
+                             kRelOptGap);
 
-  planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
-                                                           solver_options};
+    planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
+                                                             solver_options};
 
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
-                                          &solver);
-  EXPECT_EQ(ssize(sets), 6);
-  // Show the IrisFromCliqueCoverDecomposition
-  for (int i = 0; i < ssize(sets); ++i) {
-    // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
+    IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                            &sets, &solver);
+    EXPECT_EQ(ssize(sets), 6);
+    // Show the IrisFromCliqueCoverDecomposition
+    for (int i = 0; i < ssize(sets); ++i) {
+      // Choose a random color.
+      for (int j = 0; j < color.size(); ++j) {
+        color[j] = abs(gaussian(generator));
+      }
+      color.normalize();
+      VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+      Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_mip{}", i),
+                      color, meshcat);
     }
-    color.normalize();
-    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
-    Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_mip{}", i),
-                    color, meshcat);
-  }
 
-  // Now check the coverage by drawing points from the manual decomposition and
-  // checking if they are inside the IrisFromCliqueCover decomposition.
-  int num_samples_per_set = 1000;
-  int num_in_automatic_decomposition = 0;
-  for (const auto& manual_set : manual_decomposition) {
-    for (int i = 0; i < num_samples_per_set; ++i) {
-      Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-      for (const auto& set : sets) {
-        if (set.PointInSet(sample)) {
-          ++num_in_automatic_decomposition;
-          break;
+    // Now check the coverage by drawing points from the manual decomposition
+    // and checking if they are inside the IrisFromCliqueCover decomposition.
+    int num_samples_per_set = 1000;
+    int num_in_automatic_decomposition = 0;
+    for (const auto& manual_set : manual_decomposition) {
+      for (int i = 0; i < num_samples_per_set; ++i) {
+        Eigen::Vector2d sample = manual_set.UniformSample(&generator);
+        for (const auto& set : sets) {
+          if (set.PointInSet(sample)) {
+            ++num_in_automatic_decomposition;
+            break;
+          }
         }
       }
     }
-  }
-  double coverage_estimate =
-      static_cast<double>(num_in_automatic_decomposition) /
-      static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
-  // We set the termination threshold to be at 0.9 with 1000 points for a
-  // coverage check. This number is low enough that the test passes regardless
-  // of the random seed. (The probability of success is larger than 1-1e-9).
-  EXPECT_GE(coverage_estimate, 0.8);
+    double coverage_estimate =
+        static_cast<double>(num_in_automatic_decomposition) /
+        static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+    // We set the termination threshold to be at 0.9 with 1000 points for a
+    // coverage check. This number is low enough that the test passes regardless
+    // of the random seed. (The probability of success is larger than 1-1e-9).
+    EXPECT_GE(coverage_estimate, 0.8);
 
-  MaybePauseForUser();
+    MaybePauseForUser();
+  }
 }
 
 TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
