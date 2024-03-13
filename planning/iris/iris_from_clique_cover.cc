@@ -217,7 +217,7 @@ std::queue<HPolyhedron> IrisWorker(
       continue;
     }
 
-    if (checker.CheckConfigCollisionFree(clique_ellipse.center())) {
+    if (checker.CheckConfigCollisionFree(clique_ellipse.center(), builder_id)) {
       iris_options.starting_ellipse = clique_ellipse;
     } else {
       // Find the nearest clique member to the center that is not in collision.
