@@ -241,21 +241,39 @@ double AffineSubspace::DoCalcVolume() const {
 
 Eigen::MatrixXd AffineSubspace::Project(
     const Eigen::Ref<const Eigen::MatrixXd>& x) const {
-  DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
+  const auto [_, projected_points] = DoProjectionShortcut(x);
+  return projected_points;
+}
+
+std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+AffineSubspace::DoProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
   // If the set is a point, the projection is just that point. This also
   // directly handles the zero-dimensional case.
   const auto maybe_point = DoMaybeGetPoint();
   if (maybe_point) {
-    if (x.cols() == 1) {
-      return maybe_point.value();
+    const Eigen::VectorXd eigen_dists =
+        (points - maybe_point.value()).colwise().norm();
+    std::vector<std::optional<double>> distances(
+        eigen_dists.data(), eigen_dists.data() + eigen_dists.size());
+    if (points.cols() == 1) {
+      return {distances, maybe_point.value()};
     } else {
-      // Outer product, which will return x.cols() copies of the feasible point.
-      return maybe_point.value() * Eigen::RowVectorXd::Ones(x.cols());
+      // Outer product, which will return x.cols() copies of the feasible
+      // point.
+      return {distances,
+              maybe_point.value() * Eigen::RowVectorXd::Ones(points.cols())};
     }
   }
   const Eigen::MatrixXd least_squares =
-      basis_decomp_->solve(x.colwise() - translation_);
-  return (basis_ * least_squares).colwise() + translation_;
+      basis_decomp_->solve(points.colwise() - translation_);
+  const Eigen::MatrixXd projected_points =
+      (basis_ * least_squares).colwise() + translation_;
+  const Eigen::VectorXd eigen_dists =
+      (points - projected_points).colwise().norm();
+  std::vector<std::optional<double>> distances(
+      eigen_dists.data(), eigen_dists.data() + eigen_dists.size());
+  return {distances, projected_points};
 }
 
 Eigen::MatrixXd AffineSubspace::ToLocalCoordinates(

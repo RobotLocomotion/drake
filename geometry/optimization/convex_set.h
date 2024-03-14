@@ -280,12 +280,19 @@ class ConvexSet {
                                       const double desired_rel_accuracy = 1e-2,
                                       const int max_num_samples = 1e4) const;
 
-  /** Computes the distance and the nearest point in this convex set to @p
-   * point in the L₂ norm.
-   * @pre point.size() == ambient_dimension().
-   * @throws if the internal convex optimization solver fails.*/
-  std::pair<double, Eigen::VectorXd> Projection(
-      const Eigen::Ref<const Eigen::VectorXd>& point) const;
+  /** Computes in the L₂ norm the distance and the nearest point in this convex
+   set to every column of @p points. If this set is empty, we return nullopt.
+   @pre point.size() == ambient_dimension().
+   @throws if the internal convex optimization solver fails. */
+  std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>> Projection(
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const;
+
+  /** Computes in the L₂ norm the distance and the nearest point in this convex
+   set to @p point
+   @pre point.size() == ambient_dimension().
+   @throws if the internal convex optimization solver fails. */
+  //  std::pair<double, Eigen::VectorXd> Projection(
+  //      const Eigen::Ref<const Eigen::VectorXd>& point) const;
 
   /** Returns true if the exact volume can be computed for this convex set
   instance.
@@ -322,14 +329,18 @@ class ConvexSet {
     return std::nullopt;
   }
 
-  /** Non-virtual interface implementation for DoProjectionShortcut(). Trivially
-  returns std::nullopt. This allows a derived class to implement its own
-  projection, to potentially avoid the more expensive base class implmentation.
+  /** Provides an implementation for DoProjectionShortcut(). Trivially
+  returns std::nullopt for all the distances. This allows a derived class to
+  implement its own projection, to potentially avoid the more expensive base
+  class implementation.
   @pre ambient_dimension() >= 0 */
-  virtual std::optional<std::pair<double, Eigen::VectorXd>>
-  DoProjectionShortcut(const Eigen::Ref<const Eigen::VectorXd>& point) const {
-    unused(point);
-    return std::nullopt;
+  virtual std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+  DoProjectionShortcut(const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+    std::vector<std::optional<double>> distances(points.cols(), std::nullopt);
+    // There is no need to initialize the values in this matrix since we don't
+    // promise that they are sensible.
+    Eigen::MatrixXd nearest_points(points.rows(), points.cols());
+    return {distances, nearest_points};
   }
 
   /** Non-virtual interface implementation for IsEmpty(). The default
@@ -440,14 +451,25 @@ class ConvexSet {
   bool GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                            double tol) const;
 
-  std::optional<std::pair<double, Eigen::VectorXd>> ProjectionShortcut(
-      const Eigen::Ref<const Eigen::VectorXd>& point) const;
+  /** This method tries to shortcut the number of convex programs needed to
+  compute the projection. First, it attempts to rapidily check if any of the
+  points are already in the set. Then, it will attempt to do a further
+  shortcutting method for computing the projection. Returns a vector `distances`
+  which is the same size as @p points.cols() and a matrix `projected_points` of
+  the same size as @p points. If distances[i] is nullopt, then the value of
+  `projected_points.col(i)` is meaningless and may be uninitialized. If
+  `distances[i]` has a value, the `projected_points.col(i)` will be the
+  projection of @p points.col(i) onto the convex set.
+   @pre ambient_dimension() >= 0
+   **/
+  std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+  ProjectionShortcut(const Eigen::Ref<const Eigen::MatrixXd>& points) const;
 
   /** Generic implementation for Projection() -- applicable for all convex sets.
-   * @pre ambient_dimension() >= 0
+   @pre ambient_dimension() >= 0
    */
-  std::pair<double, Eigen::VectorXd> GenericDoProjection(
-      const Eigen::Ref<const Eigen::VectorXd>& point) const;
+  std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>>
+  GenericDoProjection(const Eigen::Ref<const Eigen::MatrixXd>& point) const;
 
   // The reset_after_move wrapper adjusts ConvexSet's default move constructor
   // and move assignment operator to set the ambient dimension of a moved-from
