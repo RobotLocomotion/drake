@@ -623,10 +623,6 @@ std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   return result.is_success();
 }
 
-// std::optional<std::pair<double, Eigen::VectorXd>>
-// HPolyhedron::DoProjectionShortcut(
-//    const Eigen::Ref<const Eigen::VectorXd>& point) {}
-
 bool HPolyhedron::DoIsEmpty() const {
   if (ambient_dimension() == 0) {
     return false;
