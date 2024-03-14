@@ -542,7 +542,9 @@ class Context : public ContextBase {
   _all_ state-dependent computations so requiring out of date notifications
   to be made for all such computations. If you don't mean to change the
   whole state, use more focused methods to modify only a portion of the
-  state. See class documentation for more information. */
+  state. See class documentation for more information.
+  @warning You _must not_ use the returned reference to modify the size,
+  number, or types of state variables. */
   State<T>& get_mutable_state();
 
   /** Returns a mutable reference to the continuous component of the state,
@@ -559,7 +561,9 @@ class Context : public ContextBase {
 
   /** Returns a mutable reference to the discrete component of the state,
   which may be of size zero. Sends out of date notifications for all
-  discrete-state-dependent computations. */
+  discrete-state-dependent computations.
+  @warning You _must not_ use the returned reference to modify the size or
+  number of discrete state variables. */
   DiscreteValues<T>& get_mutable_discrete_state();
 
   /** Returns a mutable reference to the _only_ discrete state vector.
@@ -585,7 +589,9 @@ class Context : public ContextBase {
 
   /** Returns a mutable reference to the abstract component of the state,
   which may be of size zero. Sends out of date notifications for all
-  abstract-state-dependent computations. */
+  abstract-state-dependent computations.
+  @warning You _must not_ use the returned reference to modify the size,
+  number, or types of abstract state variables. */
   AbstractValues& get_mutable_abstract_state();
 
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
@@ -606,7 +612,9 @@ class Context : public ContextBase {
   date notifications for all parameter-dependent computations. If you don't
   mean to change all the parameters, use the indexed methods to modify only
   some of the parameters so that fewer computations are invalidated and
-  fewer notifications need be sent. */
+  fewer notifications need be sent.
+  @warning You _must not_ use the returned reference to modify the size,
+  number, or types of parameters. */
   Parameters<T>& get_mutable_parameters();
 
   // TODO(sherm1) Invalidate only dependents of this one parameter.
