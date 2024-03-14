@@ -47,6 +47,11 @@ class LinkJointGraph::Link {
     return joints_as_child_;
   }
 
+  /** Returns indexes of all the LoopConstraints that connect to this %Link. */
+  const std::vector<LoopConstraintIndex>& loop_constraints() const {
+    return loop_constraints_;
+  }
+
   /** Returns `true` only if this is the World %Link. Static Links and Links
   in the World Composite are not included; see is_anchored() if you want to
   include everything that is fixed with respect to World. */
@@ -139,7 +144,12 @@ class LinkJointGraph::Link {
     joints_.push_back(joint);
   }
 
+  void add_loop_constraint(LoopConstraintIndex constraint) {
+    loop_constraints_.push_back(constraint);
+  }
+
   void clear_model(int num_user_joints) {
+    loop_constraints_.clear();
     mobod_ = {};
     joint_ = {};
     primary_link_ = {};
@@ -170,6 +180,8 @@ class LinkJointGraph::Link {
   std::vector<JointIndex> joints_as_parent_;
   std::vector<JointIndex> joints_as_child_;
   std::vector<JointIndex> joints_;  // All joints whether as parent or child.
+
+  std::vector<LoopConstraintIndex> loop_constraints_;
 
   MobodIndex mobod_;  // Which Mobod mobilizes this Link?
   JointIndex joint_;  // Which Joint connected us to the Mobod?

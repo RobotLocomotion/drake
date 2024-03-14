@@ -52,6 +52,13 @@ void SpanningForest::Clear() {
 // TODO(sherm1) Just a stub for now.
 void SpanningForest::BuildForest() {
   Clear();  // In case we're reusing this forest.
+
+  // Model the World (Link 0) with mobilized body 0. This also starts the
+  // 0th Link Composite in the graph.
+  // TODO(sherm1) No Mobods here yet.
+  data_.graph->set_primary_mobod_for_link(BodyIndex(0), MobodIndex(0),
+                                          JointIndex{});
+  data_.graph->CreateWorldLinkComposite();
 }
 
 SpanningForest::Data::Data() = default;

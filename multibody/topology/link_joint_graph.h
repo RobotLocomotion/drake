@@ -86,6 +86,7 @@ class LinkJointGraph {
  public:
   class Link;  // Defined in separate headers.
   class Joint;
+  class LoopConstraint;
 
   struct JointType;  // Defined below.
 
@@ -220,7 +221,7 @@ class LinkJointGraph {
   @param[in] model_instance
     The model instance to which this Link belongs.
   @param[in] flags
-    Any special handling required for this Link.
+    Optional LinkFlags requesting special handling for this Link.
   @note The World Link is always predefined with name "world" (case sensitive),
     model instance world_model_instance(), and index 0.
   @returns The unique BodyIndex for the added Link in the graph.
@@ -231,13 +232,49 @@ class LinkJointGraph {
   BodyIndex AddLink(const std::string& name, ModelInstanceIndex model_instance,
                     LinkFlags flags = LinkFlags::kDefault);
 
+  /** Adds a new Joint to the graph.
+  @param[in] name
+    A unique name for the new Joint in the given `model_instance`. Several
+    Joints can have the same name within a %LinkJointGraph as long as they are
+    unique within their model instances.
+  @param[in] model_instance_index
+    The index of the model instance to which this Joint belongs, see
+    @ref model_instance.
+  @param[in] type
+    A string designating the type of this Joint, such as "revolute" or
+    "ball". This must be chosen from the set of Joint types previously
+    registered with calls to RegisterJointType().
+  @param[in] parent_link_index
+    The index of a Link previously obtained with a call to AddLink(), or
+    BodyIndex(0) for the World Link.
+  @param[in] child_link_index
+    The index of a Link previously obtained with a call to AddLink(), or
+    BodyIndex(0) for the World Link.
+  @param[in] flags
+    Optional JointFlags requesting special handling for this Joint.
+  @returns The unique JointIndex for the added Joint in the graph.
+  @throws std::exception if `name` is duplicated within `model_instance`.
+  @throws std::exception if `type` has not been registered with
+      RegisterJointType().
+  @throws std::exception if `parent_link_index` or `child_link_index` are
+      not valid Link indices for this graph, if they are the same index,
+      or if there is already a Joint between them.
+  @throws std::exception if a static Link is connected to World by anything
+      other than a "weld" Joint. */
+  JointIndex AddJoint(const std::string& name,
+                      ModelInstanceIndex model_instance,
+                      const std::string& type, BodyIndex parent_link_index,
+                      BodyIndex child_link_index,
+                      JointFlags flags = JointFlags::kDefault);
+
   /** Returns the Link that corresponds to World (always predefined). */
   const Link& world_link() const;
 
   /** Registers a joint type by name.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "revolute" or
-    "prismatic".
+    "prismatic". Should match the MultibodyPlant name for the Joint it
+    represents.
   @param[in] nq
     Number of generalized position coordinates q needed for implementation
     of this type of Joint.
@@ -248,7 +285,7 @@ class LinkJointGraph {
     Whether the first four q values represent a quaternion (in w[xyz] order).
   @retval joint_type_index
     Unique index assigned to the new joint type.
-  @throws std::exception if `joint_type_name` already identifies a
+  @throws std::exception if `joint_type_name` was already used for a
     previously registered joint type.
   @pre 0 ≤ nq ≤ 7, 0 ≤ nv ≤ 6, nv ≤ nq, !has_quaternion or nq ≥ 4.
 
@@ -257,38 +294,104 @@ class LinkJointGraph {
   JointTypeIndex RegisterJointType(const std::string& joint_type_name, int nq,
                                    int nv, bool has_quaternion = false);
 
-  /** Returns a reference to the vector of known and registered joint types. */
+  /** Returns `true` if the given `joint_type_name` was previously registered
+  via a call to RegisterJointType(), or is one of the pre-registered names. */
+  bool IsJointTypeRegistered(const std::string& joint_type_name) const;
+
+  /** Returns a reference to the vector of known and registered Joint types. */
   const std::vector<JointType>& joint_types() const {
     return data_.joint_types;
   }
 
   /** Returns a reference to a particular JointType using one of the
-  predefined indices or an index returned by RegisterJointType(). */
+  predefined indices or an index returned by RegisterJointType(). Requires a
+  JointTypeIndex, not a plain integer.*/
   const JointType& joint_types(JointTypeIndex index) const {
-    return joint_types()[index];
+    return joint_types().at(index);
   }
 
   /** Returns a reference to the vector of Link objects. World is always the
   first entry and is always present. */
   const std::vector<Link>& links() const { return data_.links; }
 
-  /** Returns a reference to a particular Link. The World Link is index 0,
-  others use the index returned by AddLink(). Links added by BuildForest()
-  are indexed last. */
+  /** Returns a reference to a particular Link. The World Link is BodyIndex(0),
+  others use the index returned by AddLink(). Ephemeral links added by
+  BuildForest() are indexed last. Requires a BodyIndex, not a plain integer. */
   inline const Link& links(BodyIndex link_index) const;
 
   /** Returns a reference to the vector of Joint objects. */
   const std::vector<Joint>& joints() const { return data_.joints; }
 
   /** Returns a reference to a particular Joint using the index returned by
-  AddJoint(). Joints added by BuildForest() are indexed last. */
+  AddJoint(). Joints added by BuildForest() are indexed last. Requires a
+  JointIndex, not a plain integer. */
   inline const Joint& joints(JointIndex joint_index) const;
+
+  /** Returns a reference to the vector of LoopConstraint objects. */
+  const std::vector<LoopConstraint>& loop_constraints() const {
+    return data_.loop_constraints;
+  }
+
+  /** Returns a reference to a particular LoopConstraint. Requires a
+  LoopConstraintIndex, not a plain integer.*/
+  inline const LoopConstraint& loop_constraints(
+      LoopConstraintIndex constraint_index) const;
+
+  /** Links with this index or higher were added during modeling. */
+  int num_user_links() const { return data_.num_user_links; }
+
+  /** Joints with this index or higher were added during modeling. */
+  int num_user_joints() const { return data_.num_user_joints; }
+
+  /** After the Forest has been built, returns the mobilized body (Mobod)
+  followed by this Link. If the Link is part of a composite, this will be the
+  mobilized body for the whole composite. If the Link was split into a primary
+  and shadows, this is the mobilized body followed by the primary. */
+  MobodIndex link_to_mobod(BodyIndex index) const;  // See below
+
+  /** After the SpanningForest has been built, returns groups of Links that are
+  welded together, which we call "Link Composites". Each group may be modeled
+  in the Forest with a single mobilized body or multiple mobilized bodies
+  depending on modeling options, but that doesn't change anything here. The
+  first entry in each Link Composite is the "active link", the one whose
+  (non-weld) Joint moves the whole Link Composite due to its modeling in the
+  Spanning Forest. The rest of the Links in the composite are listed in no
+  particular order.
+
+  The 0th Link Composite is always present and its first entry is World
+  (Link 0), even if nothing else is welded to World. Otherwise, composites
+  are present here if they contain two or more welded Links; Links that aren't
+  welded to any other Links are not included here at all. Link Composites
+  are discovered as a side effect of Forest-building; there is no cost to
+  accessing them here. */
+  const std::vector<std::vector<BodyIndex>>& link_composites() const {
+    return data_.link_composites;
+  }
+  const std::vector<BodyIndex>& link_composites(
+      LinkCompositeIndex composite_link_index) const {
+    return link_composites().at(composite_link_index);
+  }
 
   /** @returns `true` if a Link named `name` was added to `model_instance`.
   @see AddLink().
   @throws std::exception if `model_instance` is not a valid index. */
   bool HasLinkNamed(const std::string& name,
                     ModelInstanceIndex model_instance) const;
+
+  /** @returns `true` if a Joint named `name` was added to `model_instance`.
+  @see AddJoint().
+  @throws std::exception if `model_instance` is not a valid index. */
+  bool HasJointNamed(const std::string& name,
+                     ModelInstanceIndex model_instance) const;
+
+  /** If there is a Joint connecting the given Links, returns its index.
+  Otherwise the returned index will be invalid. You can call this any time and
+  it will work with whatever Joints have been defined. But note that Links may
+  be split and additional Joints added during Forest building, so you may get a
+  different answer before and after modeling. Cost is O(j) where j=min(j₁,j₂)
+  with jᵢ the number of Joints attached to linkᵢ. */
+  JointIndex MaybeGetJointBetween(BodyIndex link1_index,
+                                  BodyIndex link2_index) const;
 
   // Forest building requires these joint types so they are predefined.
 
@@ -307,7 +410,7 @@ class LinkJointGraph {
 
   /** This is all we need to know about joint types for topological purposes. */
   struct JointType {
-    std::string type_name;
+    std::string name;
     int nq{-1};
     int nv{-1};
     bool has_quaternion;  // If so, the first 4 qs are wxyz.
@@ -316,6 +419,20 @@ class LinkJointGraph {
  private:
   friend class SpanningForest;
   friend class LinkJointGraphTester;
+
+  inline Link& mutable_link(BodyIndex link_index);
+
+  // For use by SpanningForest.
+  void set_primary_mobod_for_link(BodyIndex link_index,
+                                  MobodIndex primary_mobod_index,
+                                  JointIndex primary_joint_index);
+
+  // The World Link must already be in the graph but there are no Link
+  // Composites yet. This creates the 0th Link Composite and puts World in it.
+  void CreateWorldLinkComposite();
+
+  LoopConstraintIndex AddLoopClosingWeldConstraint(BodyIndex primary_link_index,
+                                                   BodyIndex shadow_link_index);
 
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
@@ -349,7 +466,8 @@ class LinkJointGraph {
     std::vector<JointType> joint_types;
 
     // The first entry in links is the World Link with BodyIndex(0) and name
-    // world_link().name().
+    // world_link().name(). Ephemeral "as-built" links and joints are placed
+    // at the end of these lists, following the user-supplied ones.
     std::vector<Link> links;
     std::vector<Joint> joints;
 
@@ -357,6 +475,11 @@ class LinkJointGraph {
     // added during modeling.
     int num_user_links{0};
     int num_user_joints{0};
+
+    // Loop Weld Constraints are only added during forest building; we don't
+    // record any user constraints in the LinkJointGraph because they don't
+    // affect how we build the forest.
+    std::vector<LoopConstraint> loop_constraints;
 
     std::vector<BodyIndex> static_links;
     std::vector<BodyIndex> non_static_must_be_base_body_links;
