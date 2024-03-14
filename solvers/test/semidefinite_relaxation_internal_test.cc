@@ -11,6 +11,9 @@
 namespace drake {
 namespace solvers {
 namespace internal {
+using symbolic::Expression;
+using symbolic::Variable;
+using symbolic::Variables;
 
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSparseKron) {
   Eigen::MatrixXd A(3, 3);
@@ -160,158 +163,791 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
   }
 }
 
-GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-           AddMatrixIsLorentzSeparableConstraint3by4) {
-  MathematicalProgram prog;
-  const int m = 3;
-  const int n = 4;
+namespace {
+// Makes a random unitary matrix of size r.
+// Eigen::MatrixXd GenerateRandomUnitary(const int r) {
+//  std::default_random_engine generator;
+//  std::normal_distribution<double> distribution(0.0, 1.0);
+//  Eigen::MatrixXd T = Eigen::MatrixXd::NullaryExpr(r, r, [&]() {
+//    return distribution(generator);
+//  });
+//  Eigen::HouseholderQR<Eigen::MatrixXd> qr(T);
+//  Eigen::MatrixXd Q = qr.householderQ();
+//  return Q;
+//};
 
-  auto X = prog.NewContinuousVariables(m, n, "X");
-  AddMatrixIsLorentzSeparableConstraint(X, &prog);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
-  EXPECT_EQ(ssize(prog.GetAllConstraints()), 2);
-
-  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
-      prog.positive_semidefinite_constraints()[0];
-  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
-
-  // A vector in the Lorentz cone of size m.
-  Eigen::VectorXd xm_lorentz(m);
-  xm_lorentz << 4, -1.7, 0.1;
-  // A vector in the Lorentz cone of size n.
-  Eigen::VectorXd xn_lorentz(n);
-  xn_lorentz << 13, -0.1, 5, -2.3;
-  Eigen::MatrixXd X_tensor_lorentz = xm_lorentz * xn_lorentz.transpose();
-  auto X_equal_lorentz_tensor_constraint =
-      prog.AddLinearEqualityConstraint(X == X_tensor_lorentz);
-  auto result = Solve(prog);
-  // X is required to be equal to a simple lorentz separable tensor therefore
-  // this program should be feasible.
-  EXPECT_TRUE(result.is_success());
-
-  prog.RemoveConstraint(X_equal_lorentz_tensor_constraint);
-  Eigen::VectorXd ym_lorentz(m);
-  ym_lorentz << 9.1, 1.3, 4.2;
-  Eigen::VectorXd yn_lorentz(n);
-  yn_lorentz << 2, -0.1, 0.5, -0.3;
-  // The tensor product of cones is another cone. Hence, a conic combination of
-  // two elements in the cone of Lorentz separable matrices must also be Lorentz
-  // separable.
-  Eigen::MatrixXd Y_tensor_lorentz = 2 * xm_lorentz * xn_lorentz.transpose() +
-                                     4 * ym_lorentz * yn_lorentz.transpose();
-  auto Y_equal_lorentz_tensor_constraint =
-      prog.AddLinearEqualityConstraint(X == Y_tensor_lorentz);
-  result = Solve(prog);
-  // X is required to be equal to a lorentz separable tensor therefore this
-  // program should be feasible.
-  EXPECT_TRUE(result.is_success());
-
-  // Two non-lorent vectors.
-  Eigen::VectorXd zm(m);
-  zm << -1.1, 2.3, 7.9;
-  Eigen::VectorXd zn(n);
-  zn << 0.1, 10.3, -0.2, 7.7;
-
-  prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
-  auto bad_constraint =
-      prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint =
-      prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint =
-      prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
+// Makes a random vector with all positive entries that is not in the Lorentz
+// cone.
+Eigen::VectorXd MakeRandomPositiveOrthantVector(const int r,
+                                                const double scale) {
+  Eigen::VectorXd ret =
+      scale * (Eigen::VectorXd::Random(r) + Eigen::VectorXd::Ones(r));
+  while (r > 1 && ret(0) > ret.tail(r - 1).norm()) {
+    // This ensures we are not in the Loretnz cone by scaling the first entry to
+    // be too small.
+    ret(0) = 1 / (0.5 * ret.tail(r - 1).norm()) *
+             (Eigen::VectorXd::Random(1)(0) + 1);
+  }
+  return ret;
 }
 
-GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
-           AddMatrixIsLorentzSeparableConstraint4by3) {
-  MathematicalProgram prog;
-  const int m = 4;
-  const int n = 3;
-
-  auto X = prog.NewContinuousVariables(m, n, "X");
-  AddMatrixIsLorentzSeparableConstraint(X, &prog);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
-  EXPECT_EQ(ssize(prog.GetAllConstraints()), 2);
-
-  const Binding<PositiveSemidefiniteConstraint> psd_constraint =
-      prog.positive_semidefinite_constraints()[0];
-  EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (m - 1) * (n - 1));
-
-  Eigen::VectorXd xm_lorentz(m);
-  xm_lorentz << 5.1, 0.1, 2.3, -0.99;
-  Eigen::VectorXd xn_lorentz(n);
-  xn_lorentz << 4.7, -0.2, 3.7;
-  Eigen::MatrixXd X_tensor_lorentz = xm_lorentz * xn_lorentz.transpose();
-  auto X_equal_lorentz_tensor_constraint =
-      prog.AddLinearEqualityConstraint(X == X_tensor_lorentz);
-  auto result = Solve(prog);
-  // X is required to be equal to a simple lorentz separable tensor therefore
-  // this program should be feasible.
-  EXPECT_TRUE(result.is_success());
-
-  prog.RemoveConstraint(X_equal_lorentz_tensor_constraint);
-  Eigen::VectorXd ym_lorentz(m);
-  ym_lorentz << 1.7, 0.1, 0.3, -0.99;
-  Eigen::VectorXd yn_lorentz(n);
-  yn_lorentz << 2.9, -1.1, 0.25;
-  Eigen::MatrixXd Y_tensor_lorentz = 2.6 * xm_lorentz * yn_lorentz.transpose() +
-                                     7.9 * ym_lorentz * xn_lorentz.transpose();
-  auto Y_equal_lorentz_tensor_constraint =
-      prog.AddLinearEqualityConstraint(X == Y_tensor_lorentz);
-  result = Solve(prog);
-  // X is required to be equal to a lorentz separable tensor therefore this
-  // program should be feasible.
-  EXPECT_TRUE(result.is_success());
-
-  // Two non-lorent vectors.
-  Eigen::VectorXd zm(m);
-  zm << 1.09, -1.44, 1.58, -0.63;
-  Eigen::VectorXd zn(n);
-  zn << -2.04, -0.23, -3.87;
-
-  prog.RemoveConstraint(Y_equal_lorentz_tensor_constraint);
-  auto bad_constraint =
-      prog.AddLinearEqualityConstraint(X == zm * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint =
-      prog.AddLinearEqualityConstraint(X == zm * xn_lorentz.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
-
-  prog.RemoveConstraint(bad_constraint);
-  bad_constraint =
-      prog.AddLinearEqualityConstraint(X == ym_lorentz * zn.transpose());
-  result = Solve(prog);
-  // X is required to be equal to something not that is not lorentz separable
-  // therefore this should be infeasible.
-  EXPECT_FALSE(result.is_success());
+// Returns true if the vector x has all entries which are positive
+bool CheckIsPositiveOrthantVector(const Eigen::Ref<const Eigen::VectorXd>& x) {
+  return (x.array() >= 0).all();
 }
+
+// Construct a random matrix A that is guaranteed to map a positive vector in m
+// dimensions to another positive vector in r dimensions. This method does not
+// sample uniformly over all such maps.
+Eigen::MatrixXd MakeRandomPositivePositiveOrthantMap(const int r, const int m,
+                                                     const double scale) {
+  Eigen::MatrixXd A(r, m);
+  for (int i = 0; i < m; i++) {
+    A.col(i) = MakeRandomPositiveOrthantVector(r, scale);
+  }
+  return A;
+}
+
+// Constructs a random vector that is in the Lorentz cone, but is not in the
+// positive orthant.
+Eigen::VectorXd MakeRandomLorentzVector(const int r, const double scale) {
+  Eigen::VectorXd ret(r);
+  if (r > 1) {
+    ret.tail(r - 1) = scale * Eigen::VectorXd::Random(r - 1);
+    // Ensures that ret(0) ≥ norm(ret(r-1)) and that ret(0) ≥ 0.
+    do {
+      ret(0) = 2 * scale * (Eigen::VectorXd::Random(1)(0) + 1);
+    } while (ret(0) < ret.tail(r - 1).norm() || ret(0) < 0);
+    // Ensure that ret has at least 1 negative entry so that it is not in the
+    // positive orthant.
+    if (ret(1) > 0) {
+      ret(1) *= -1;
+    }
+
+  } else {
+    ret(0) = scale * (Eigen::VectorXd::Random(1)(0) + 1);
+  }
+  return ret;
+}
+
+// Returns true if the vector x is in the lorentz cone
+bool CheckIsLorentzVector(const Eigen::Ref<const Eigen::VectorXd>& x) {
+  if (x.rows() == 1) {
+    return x(0) >= 0;
+  }
+  return x(0) >= x.tail(x.rows() - 1).norm();
+}
+
+// Construct a random matrix A that is guaranteed to map a lorentz vector in m
+// dimensions to another lorentz vector in r. This method does not sample
+// uniformly over all such maps.
+Eigen::MatrixXd MakeRandomLorentzPositiveMap(const int r, const int m,
+                                             const double scale) {
+  // Create a map A: (t; x) ↦ (st; A₁x) where s is some positive scaling of t,
+  // and A₁ has induced matrix norm less than s. This ensures that A is a
+  // Lorentz positive map, the norm |A₁x| ≤ 1/s and therefore |A₁x| ≤ st
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(r, m);
+  // Choose a random, positive scaling larger than 1/2 for the first entry.
+  A(0, 0) = scale * (Eigen::VectorXd::Random(1)(0) + 1.5);
+
+  if (r > 1 && m > 1) {
+    Eigen::MatrixXd T = Eigen::MatrixXd::Random(r - 1, m - 1);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(
+        T, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    const double svd_scaling = A(0, 0) * svd.singularValues().maxCoeff();
+    Eigen::VectorXd regularized_singular_values =
+        (1 / svd_scaling) * svd.singularValues();
+
+    A.bottomRightCorner(r - 1, m - 1) =
+        svd.matrixU() * regularized_singular_values.asDiagonal() *
+        svd.matrixV().transpose();
+  }
+  return A;
+}
+
+bool ProgramSolvedWithoutError(const SolutionResult& result) {
+  return result == kSolutionFound || result == kInfeasibleConstraints ||
+         result == kUnbounded || result == kInfeasibleOrUnbounded ||
+         result == kDualInfeasible;
+}
+
+}  // namespace
+
+class PositiveOrthantByLorentzSeparabilityTest
+    : public ::testing::TestWithParam<std::tuple<int, int>> {
+ public:
+  PositiveOrthantByLorentzSeparabilityTest() : prog_() {
+    // Seed the random generator used by Eigen.
+    std::srand(99);
+    int m, n;
+    std::tie(m, n) = GetParam();
+    X_ = prog_.NewContinuousVariables(m, n, "X");
+  }
+
+  // Test the methods AddMatrixIsPositiveOrthantByLorentzSeparableConstraint by
+  // checking that the matrix A * X_ * B is Positive Orthant, Lorentz separable.
+  // The matrix A should be a positive orthant, positive map (i.e. all positive
+  // entries) and B should be Lorentz positive maps for these tests to be
+  // correct. If A and B are not passed, then they are set to the identity.
+  void DoPositiveOrthantByLorentzSeparableTest(
+      const std::optional<Eigen::MatrixXd>& A_opt = std::nullopt,
+      const std::optional<Eigen::MatrixXd>& B_opt = std::nullopt) {
+    MatrixX<Expression> Y;
+    Eigen::MatrixXd A =
+        A_opt.value_or(Eigen::MatrixXd::Identity(X_.rows(), X_.rows()));
+    Eigen::MatrixXd B =
+        B_opt.value_or(Eigen::MatrixXd::Identity(X_.cols(), X_.cols()));
+    if (!A_opt.has_value() && !B_opt.has_value()) {
+      Y = X_.template cast<Expression>();
+      AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(X_, &prog_);
+
+    } else {
+      Y = A * X_ * B;
+      AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(Y, &prog_);
+    }
+    // Check that the right number of constraints are added.
+    EXPECT_EQ(ssize(prog_.lorentz_cone_constraints()), A.rows());
+    EXPECT_EQ(ssize(prog_.GetAllConstraints()), A.rows());
+
+    MakeTestVectors(A, B);
+
+    if (!CheckIsPositiveOrthantVector(xr_positive_) ||
+        !CheckIsPositiveOrthantVector(yr_positive_)) {
+      throw std::logic_error("A is not a positive orthant positive map.");
+    }
+    if (!CheckIsLorentzVector(xc_lorentz_) ||
+        !CheckIsLorentzVector(yc_lorentz_)) {
+      throw std::logic_error("B is not a lorentz positive map.");
+    }
+
+    // Y is required to be equal to a simple Positive Orthant, Lorentz separable
+    // tensor therefore this program should be feasible.
+    Eigen::MatrixXd test_matrix = xr_positive_ * xc_lorentz_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), true);
+
+    // Y is required to be equal to a Positive Orthant, Lorentz separable tensor
+    // therefore this program should be feasible.
+    test_matrix = (2 * xr_positive_ * yc_lorentz_.transpose() +
+                   3 * yr_positive_ * xc_lorentz_.transpose());
+    EXPECT_EQ(DoTestCase(Y, test_matrix), true);
+
+    // Y is required to be equal to something not that is not Positive Orthant,
+    // Lorentz separable, therefore this should be infeasible.
+    test_matrix = zr_not_conic_ * zc_not_conic_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor of positve orthant and non-lorentz vector.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    test_matrix = yr_positive_ * zc_not_conic_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor of non-positve orthant vector and non-lorentz vector.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    test_matrix = zr_not_conic_ * xc_lorentz_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is Positive Orthant separable, but not Positive Orthant,
+    // Lorentz separable.
+    test_matrix = yr_positive_ * wc_positive_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is Lorentz separable, but not Positive Orthant,
+    // Lorentz separable.
+    test_matrix = wr_lorentz_ * xc_lorentz_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is non-conic combination of simple Positive Orthant,
+    // Lorentz separable tensors.
+    test_matrix = 2 * yr_positive_ * xc_lorentz_.transpose() -
+                  10 * xr_positive_ * yc_lorentz_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // Now clear out the constraints, so that we can repeatedly call this
+    // method.
+    for (const auto& constraints : prog_.GetAllConstraints()) {
+      prog_.RemoveConstraint(constraints);
+    }
+    ASSERT_EQ(prog_.GetAllConstraints().size(), 0);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixX<Variable> X_;
+
+  // A positive orthant vector guaranteed to be in the range A.
+  Eigen::VectorXd xr_positive_;
+  // A positive orthant vector guaranteed to be in the range A.
+  Eigen::VectorXd yr_positive_;
+  // A positive orthant vector that is NOT guaranteed to be in the range A.
+  Eigen::VectorXd wr_positive_;
+  // A positive orthant vector that is NOT guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd wc_positive_;
+
+  // A lorentz vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd xc_lorentz_;
+  // A lorentz vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd yc_lorentz_;
+  // A lorentz vector guaranteed that is NOT guaranteed to be in the range A.
+  Eigen::VectorXd wr_lorentz_;
+  // A lorentz vector that is NOT guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd wc_lorentz_;
+
+  // Two vectors in neither the positive orthant nor the lorentz cone.
+  Eigen::VectorXd zr_not_conic_;
+  Eigen::VectorXd zc_not_conic_;
+
+ private:
+  void MakeTestVectors(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                       const Eigen::Ref<const Eigen::MatrixXd>& B) {
+    const double scale = 2;
+    // Notice that if A is not a lorentz positive map, then xr_lorentz_ and
+    // yr_lorentz_ will not necessarily be in the lorentz cone. Ditto for all
+    // the other cases.
+    xc_lorentz_ = B.transpose() * MakeRandomLorentzVector(B.rows(), scale);
+    yc_lorentz_ = B.transpose() * MakeRandomLorentzVector(B.rows(), scale);
+
+    // Vectors guaranteed to be in the Lorentz cone, but not necessarily in the
+    // image of A (resp. B).
+    wr_lorentz_ = MakeRandomLorentzVector(A.rows(), scale);
+    wc_lorentz_ = MakeRandomLorentzVector(B.cols(), scale);
+
+    // Notice that if A is not a positive orthant positive map, then
+    // xr_positive_ and yr_positive_ will not necessarily be in the lorentz
+    // cone. Ditto for all the other cases.
+    xr_positive_ = A * MakeRandomPositiveOrthantVector(A.cols(), scale);
+    yr_positive_ = A * MakeRandomPositiveOrthantVector(A.cols(), scale);
+
+    // Vectors guaranteed to be in the positive orthant, but not necessarily in
+    // the image of A (resp. B).
+    wr_positive_ = MakeRandomPositiveOrthantVector(A.rows(), scale);
+    wc_positive_ = MakeRandomPositiveOrthantVector(B.cols(), scale);
+
+    zr_not_conic_ = Eigen::VectorXd::Random(A.rows());
+    if (zr_not_conic_(0) > 0) {
+      zr_not_conic_(0) *= -1;
+    }
+    zc_not_conic_ = Eigen::VectorXd::Random(B.cols());
+    if (zc_not_conic_(0) > 0) {
+      zc_not_conic_(0) *= -1;
+    }
+  }
+
+  bool DoTestCase(const Eigen::Ref<const MatrixX<Expression>>& Y,
+                  const Eigen::Ref<const Eigen::MatrixXd>& test_mat) {
+    auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
+    auto result = Solve(prog_);
+    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, true);
+      result = Solve(prog_, std::nullopt, options);
+      std::cout << "PROG SOLVED WITH " << result.get_solution_result()
+                << std::endl;
+    }
+    prog_.RemoveConstraint(constraint);
+    assert(ProgramSolvedWithoutError(result.get_solution_result()));
+    return result.is_success();
+  }
+};
+
+TEST_P(PositiveOrthantByLorentzSeparabilityTest,
+       AddMatrixIsPositiveOrthantByLorentzSeparableConstraintVariable) {
+  this->DoPositiveOrthantByLorentzSeparableTest();
+}
+
+TEST_P(
+    PositiveOrthantByLorentzSeparabilityTest,
+    AddMatrixIsPositiveOrthantByLorentzSeparableConstraintExpressionKeepSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+
+  const double scale = 3;
+  // This maps need to be a positive, positive orthant maps.
+  Eigen::MatrixXd A = MakeRandomPositivePositiveOrthantMap(m, m, scale);
+  // This maps need to be a positive loretnz maps.
+  Eigen::MatrixXd B = MakeRandomLorentzPositiveMap(n, n, scale);
+  this->DoPositiveOrthantByLorentzSeparableTest(A, B);
+}
+
+TEST_P(PositiveOrthantByLorentzSeparabilityTest,
+       AddMatrixIsPositiveOrthantByLorentzSeparableConstraintChangeSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+  const int r1 = m + 5;
+  const int r2 = m - 1;
+  const int c1 = n + 3;
+  const int c2 = n - 2;
+
+  const double scale = 3;
+  // These maps need to be a positive, positive orthant maps.
+  Eigen::MatrixXd A1 = MakeRandomPositivePositiveOrthantMap(r1, m, scale);
+  Eigen::MatrixXd A2 = MakeRandomPositivePositiveOrthantMap(r2, m, scale);
+  // These maps need to be a positive lorentz maps.
+  Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
+  Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
+
+  this->DoPositiveOrthantByLorentzSeparableTest(A1, B1);
+  this->DoPositiveOrthantByLorentzSeparableTest(A1, B2);
+  this->DoPositiveOrthantByLorentzSeparableTest(A2, B1);
+  this->DoPositiveOrthantByLorentzSeparableTest(A2, B2);
+}
+
+INSTANTIATE_TEST_SUITE_P(test, PositiveOrthantByLorentzSeparabilityTest,
+                         ::testing::Values(std::pair<int, int>{4, 5},  // m < n
+                                           std::pair<int, int>{5, 4},  // m > n
+                                           std::pair<int, int>{6, 6}   // m == n
+                                           // There are no special cases
+                                           ));
+
+class LorentzByPositiveOrthantSeparabilityTest
+    : public ::testing::TestWithParam<std::tuple<int, int>> {
+ public:
+  LorentzByPositiveOrthantSeparabilityTest() : prog_() {
+    // Seed the random generator used by Eigen.
+    std::srand(91);
+    int m, n;
+    std::tie(m, n) = GetParam();
+    X_ = prog_.NewContinuousVariables(m, n, "X");
+  }
+
+  // Test the methods AddMatrixIsLorentzByPositiveOrthantSeparableConstraint by
+  // checking that the matrix A * X_ * B is Lorentz, Positive Orthant separable.
+  // The matrix A should be a Lorentz positive maps, and B should be
+  // positive-orthant positive map (i.e. all positive entries) for these tests
+  // to be correct. If A and B are not passed, then they are set to the
+  // identity.
+  void DoLorentzByPositiveOrthantSeparableTest(
+      const std::optional<Eigen::MatrixXd>& A_opt = std::nullopt,
+      const std::optional<Eigen::MatrixXd>& B_opt = std::nullopt) {
+    MatrixX<Expression> Y;
+    Eigen::MatrixXd A =
+        A_opt.value_or(Eigen::MatrixXd::Identity(X_.rows(), X_.rows()));
+    Eigen::MatrixXd B =
+        B_opt.value_or(Eigen::MatrixXd::Identity(X_.cols(), X_.cols()));
+    if (!A_opt.has_value() && !B_opt.has_value()) {
+      Y = X_.template cast<Expression>();
+      AddMatrixIsLorentzByPositiveOrthantSeparableConstraint(X_, &prog_);
+
+    } else {
+      Y = A * X_ * B;
+      AddMatrixIsLorentzByPositiveOrthantSeparableConstraint(Y, &prog_);
+    }
+    // Check that the right number of constraints are added.
+    EXPECT_EQ(ssize(prog_.lorentz_cone_constraints()), B.cols());
+    EXPECT_EQ(ssize(prog_.GetAllConstraints()), B.cols());
+
+    MakeTestVectors(A, B);
+    if (!CheckIsLorentzVector(xr_lorentz_) ||
+        !CheckIsLorentzVector(yr_lorentz_)) {
+      throw std::logic_error("A is not a lorentz positive map.");
+    }
+    if (!CheckIsPositiveOrthantVector(xc_positive_) ||
+        !CheckIsPositiveOrthantVector(yc_positive_)) {
+      throw std::logic_error("B is not a positive orthant positive map.");
+    }
+
+    // Y is required to be equal to a simple Lorentz, Positive Orthant separable
+    // tensor therefore this program should be feasible.
+    Eigen::MatrixXd test_matrix = xr_lorentz_ * xc_positive_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), true);
+
+    // Y is required to be equal to a Lorentz, Positive Orthant,  separable
+    // tensor therefore this program should be feasible.
+    test_matrix = (2 * xr_lorentz_ * yc_positive_.transpose() +
+                   3 * yr_lorentz_ * xc_positive_.transpose());
+    EXPECT_EQ(DoTestCase(Y, test_matrix), true);
+
+    // Y is required to be equal to something not that is not Lorentz,Positive
+    // Orthant separable, therefore this should be infeasible.
+    test_matrix = zr_not_conic_ * zc_not_conic_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor of lorentz and non-lorentz vector.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    test_matrix = yr_lorentz_ * zc_not_conic_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor of non-positive orthant vector and positive orthant vector.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    test_matrix = zr_not_conic_ * yc_positive_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is Positive Orthant separable, but not Positive Orthant,
+    // Lorentz separable.
+    test_matrix = wr_positive_ * xc_positive_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is Lorentz separable, but not Positive Orthant,
+    // Lorentz separable.
+    test_matrix = xr_lorentz_ * wc_lorentz_.transpose();
+    //    std::cout << fmt::format("wc_lorentz = {}", fmt_eigen(wc_lorentz_))
+    //              << std::endl;
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // A tensor that is non-conic combination of simple Lorentz, Positive
+    // Orthant separable tensors.
+    test_matrix = 2 * yr_lorentz_ * xc_positive_.transpose() -
+                  10 * xr_lorentz_ * yc_positive_.transpose();
+    EXPECT_EQ(DoTestCase(Y, test_matrix), false);
+
+    // Now clear out the constraints, so that we can repeatedly call this
+    // method.
+    for (const auto& constraints : prog_.GetAllConstraints()) {
+      prog_.RemoveConstraint(constraints);
+    }
+    ASSERT_EQ(prog_.GetAllConstraints().size(), 0);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixX<Variable> X_;
+
+  // A positive orthant vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd xc_positive_;
+  // A positive orthant vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd yc_positive_;
+  // A positive orthant vector that is NOT guaranteed to be in the range A.
+  Eigen::VectorXd wr_positive_;
+  // A positive orthant vector that is NOT guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd wc_positive_;
+
+  // A lorentz vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd xr_lorentz_;
+  // A lorentz vector guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd yr_lorentz_;
+  // A lorentz vector guaranteed that is NOT guaranteed to be in the range A.
+  Eigen::VectorXd wr_lorentz_;
+  // A lorentz vector that is NOT guaranteed to be in the range Bᵀ.
+  Eigen::VectorXd wc_lorentz_;
+
+  // Two vectors in neither the positive orthant nor the lorentz cone.
+  Eigen::VectorXd zr_not_conic_;
+  Eigen::VectorXd zc_not_conic_;
+
+ private:
+  void MakeTestVectors(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                       const Eigen::Ref<const Eigen::MatrixXd>& B) {
+    const double scale = 2.1;
+    // Notice that if A is not a lorentz positive map, then xr_lorentz_ and
+    // yr_lorentz_ will not necessarily be in the lorentz cone. Ditto for all
+    // the other cases.
+    xr_lorentz_ = A * MakeRandomLorentzVector(A.cols(), scale);
+    yr_lorentz_ = A * MakeRandomLorentzVector(A.cols(), scale);
+
+    // Vectors guaranteed to be in the Lorentz cone, but not necessarily in the
+    // image of A (resp. B).
+    wr_lorentz_ = MakeRandomLorentzVector(A.rows(), scale);
+    wc_lorentz_ = MakeRandomLorentzVector(B.cols(), scale);
+
+    // Notice that if A is not a positive orthant positive map, then
+    // xr_positive_ and yr_positive_ will not necessarily be in the lorentz
+    // cone. Ditto for all the other cases.
+    xc_positive_ =
+        B.transpose() * MakeRandomPositiveOrthantVector(B.rows(), scale);
+    yc_positive_ =
+        B.transpose() * MakeRandomPositiveOrthantVector(B.rows(), scale);
+
+    // Vectors guaranteed to be in the positive orthant, but not necessarily in
+    // the image of A (resp. B).
+    wr_positive_ = MakeRandomPositiveOrthantVector(A.rows(), scale);
+    wc_positive_ = MakeRandomPositiveOrthantVector(B.cols(), scale);
+
+    zr_not_conic_ = Eigen::VectorXd::Random(A.rows());
+    if (zr_not_conic_(0) > 0) {
+      zr_not_conic_(0) *= -1;
+    }
+    zc_not_conic_ = Eigen::VectorXd::Random(B.cols());
+    if (zc_not_conic_(0) > 0) {
+      zc_not_conic_(0) *= -1;
+    }
+  }
+
+  bool DoTestCase(const Eigen::Ref<const MatrixX<Expression>>& Y,
+                  const Eigen::Ref<const Eigen::MatrixXd>& test_mat) {
+    auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
+    auto result = Solve(prog_);
+    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, true);
+      result = Solve(prog_, std::nullopt, options);
+      std::cout << "PROG SOLVED WITH " << result.get_solution_result()
+                << std::endl;
+    }
+    prog_.RemoveConstraint(constraint);
+    assert(ProgramSolvedWithoutError(result.get_solution_result()));
+    return result.is_success();
+  }
+};
+
+TEST_P(LorentzByPositiveOrthantSeparabilityTest,
+       AddMatrixIsLorentzByPositiveOrthantSeparableConstraintVariable) {
+  this->DoLorentzByPositiveOrthantSeparableTest();
+}
+
+TEST_P(
+    LorentzByPositiveOrthantSeparabilityTest,
+    AddMatrixIsLorentzByPositiveOrthantSeparableConstraintExpressionKeepSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+
+  const double scale = 3;
+  // This maps need to be a positive, positive orthant maps.
+  Eigen::MatrixXd A = MakeRandomLorentzPositiveMap(m, m, scale);
+  // This maps need to be a positive lorentz maps.
+  Eigen::MatrixXd B = MakeRandomPositivePositiveOrthantMap(n, n, scale);
+  this->DoLorentzByPositiveOrthantSeparableTest(A, B);
+}
+
+TEST_P(LorentzByPositiveOrthantSeparabilityTest,
+       AddMatrixIsLorentzByPositiveOrthantSeparableConstraintChangeSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+  const int r1 = m + 5;
+  const int r2 = m - 1;
+  const int c1 = n + 3;
+  const int c2 = n - 2;
+
+  const double scale = 3;
+  // These maps need to be a positive, positive orthant maps.
+  Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
+  Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
+  // These maps need to be a positive lorentz maps.
+  Eigen::MatrixXd B1 = MakeRandomPositivePositiveOrthantMap(n, c1, scale);
+  Eigen::MatrixXd B2 = MakeRandomPositivePositiveOrthantMap(n, c2, scale);
+
+  this->DoLorentzByPositiveOrthantSeparableTest(A1, B1);
+  this->DoLorentzByPositiveOrthantSeparableTest(A1, B2);
+  this->DoLorentzByPositiveOrthantSeparableTest(A2, B1);
+  this->DoLorentzByPositiveOrthantSeparableTest(A2, B2);
+}
+
+INSTANTIATE_TEST_SUITE_P(test, LorentzByPositiveOrthantSeparabilityTest,
+                         ::testing::Values(std::pair<int, int>{4, 5},  // m < n
+                                           std::pair<int, int>{5, 4},  // m > n
+                                           std::pair<int, int>{6, 6}   // m == n
+                                           // There are no special cases
+                                           ));
+
+class LorentzLorentzSeparabilityTest
+    : public ::testing::TestWithParam<std::tuple<int, int>> {
+ public:
+  LorentzLorentzSeparabilityTest() : prog_() {
+    // Seed the random generator used by Eigen.
+    std::srand(99);
+    int m, n;
+    std::tie(m, n) = GetParam();
+    X_ = prog_.NewContinuousVariables(m, n, "X");
+  }
+
+  // Tests the function AddMatrixIsLorentzByLorentzSeparableConstraint by
+  // checking whether A * X_ * B is Lorentz separable. The matrices A and B
+  // should be Lorentz positive maps for these tests to be correct. If A and B
+  // are not passed, then they are set to the identity.
+  void DoTest(const std::optional<Eigen::MatrixXd>& A = std::nullopt,
+              const std::optional<Eigen::MatrixXd>& B = std::nullopt) {
+    MatrixX<Expression> Y;
+    if (!A.has_value() && !B.has_value()) {
+      Y = X_.template cast<Expression>();
+      AddMatrixIsLorentzByLorentzSeparableConstraint(X_, &prog_);
+    } else {
+      Y = A.value() * X_ * B.value();
+      AddMatrixIsLorentzByLorentzSeparableConstraint(Y, &prog_);
+    }
+    int m, n;
+    std::tie(m, n) = GetParam();
+    int r = Y.rows();
+    int c = Y.cols();
+
+    MakeTestVectors(A, B);
+
+    if (r >= 3 && c >= 3) {
+      EXPECT_EQ(ssize(prog_.positive_semidefinite_constraints()), 1);
+      EXPECT_EQ(ssize(prog_.linear_equality_constraints()), 1);
+      EXPECT_EQ(ssize(prog_.GetAllConstraints()), 2);
+
+      const Binding<PositiveSemidefiniteConstraint> psd_constraint =
+          prog_.positive_semidefinite_constraints()[0];
+      EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (r - 1) * (c - 1));
+    } else if (r == 1 && c == 1) {
+      std::cout << "testing constraint size 1x1" << std::endl;
+      EXPECT_EQ(ssize(prog_.bounding_box_constraints()), 1);
+      EXPECT_EQ(ssize(prog_.GetAllConstraints()), 1);
+    } else if (r <= 2 && c <= 2) {
+      EXPECT_EQ(ssize(prog_.linear_constraints()), 1);
+      EXPECT_EQ(ssize(prog_.GetAllConstraints()), 1);
+    } else if (r > 2) {
+      EXPECT_EQ(ssize(prog_.lorentz_cone_constraints()), c);
+      EXPECT_EQ(ssize(prog_.GetAllConstraints()), c);
+    } else {
+      EXPECT_EQ(ssize(prog_.lorentz_cone_constraints()), r);
+      EXPECT_EQ(ssize(prog_.GetAllConstraints()), r);
+    }
+
+    // Y is required to be equal to a simple Lorentz separable tensor
+    // therefore this program should be feasible.
+    DoTestCase(Y, xr_lorentz_ * xc_lorentz_.transpose(), true);
+    // Y is required to be equal to a lorentz separable tensor therefore
+    //  this program should be feasible.
+    DoTestCase(Y,
+               (2 * xr_lorentz_ * yc_lorentz_.transpose() +
+                3 * yr_lorentz_ * xc_lorentz_.transpose()),
+               true);
+
+    // If r = 1 or c = 1, then zr_not_lorentz_ *
+    // zc_not_lorentz_.transpose() will generate positive number in the
+    // first entry and therefore zr_not_lorentz_ * zc_not_lorentz_.transpose()
+    // will be a Lorentz separable tensor. We exclude this example by changing
+    // the sign. A tensor of two non-lorentz vectors.
+    double coeff = ((c == 1) ? -1 : 1) * ((r == 1) ? -1 : 1) *
+                   (((r == 1 && c == 1)) ? -1 : 1);
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    DoTestCase(Y, coeff * zr_not_lorentz_ * zc_not_lorentz_.transpose(), false);
+
+    // A tensor of lorentz and non-lorentz vectors.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    DoTestCase(Y, yr_lorentz_ * zc_not_lorentz_.transpose(), false);
+
+    // A non-conic combination lorentz separable tensors.
+    // Y is required to be equal to something not that is not lorentz
+    // separable therefore this should be infeasible.
+    DoTestCase(Y,
+               (2 * xr_lorentz_ * yc_lorentz_.transpose() -
+                10 * yr_lorentz_ * xc_lorentz_.transpose()),
+               false);
+
+    // Now clear out the constraints, so that we can repeatedly call this
+    // method.
+    for (const auto& constraints : prog_.GetAllConstraints()) {
+      prog_.RemoveConstraint(constraints);
+    }
+    ASSERT_EQ(prog_.GetAllConstraints().size(), 0);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixX<Variable> X_;
+
+  Eigen::VectorXd xr_lorentz_;
+  Eigen::VectorXd xc_lorentz_;
+  Eigen::VectorXd yr_lorentz_;
+  Eigen::VectorXd yc_lorentz_;
+
+  Eigen::VectorXd zr_not_lorentz_;
+  Eigen::VectorXd zc_not_lorentz_;
+
+ private:
+  void MakeTestVectors(const std::optional<Eigen::MatrixXd>& A_optional,
+                       const std::optional<Eigen::MatrixXd>& B_optional) {
+    Eigen::MatrixXd A =
+        A_optional.value_or(Eigen::MatrixXd::Identity(X_.rows(), X_.rows()));
+    Eigen::MatrixXd B =
+        B_optional.value_or(Eigen::MatrixXd::Identity(X_.cols(), X_.cols()));
+    const double scale = 5;
+    const int r = A.rows();
+    const int c = B.cols();
+    xr_lorentz_ = A * MakeRandomLorentzVector(A.cols(), scale);
+    xc_lorentz_ = B.transpose() * MakeRandomLorentzVector(B.rows(), scale);
+    yr_lorentz_ = A * MakeRandomLorentzVector(A.cols(), scale);
+    yc_lorentz_ = B.transpose() * MakeRandomLorentzVector(B.rows(), scale);
+
+    if (r == 1) {
+      // A small negative number, since the Lorentz cone in 1D is the
+      // non-negative numbers.
+      zr_not_lorentz_.resize(1);
+      zr_not_lorentz_(0) = -0.07;
+    } else {
+      // A positive vector that is not in the Lorentz Cone.
+      zr_not_lorentz_ = MakeRandomPositiveOrthantVector(r, scale);
+      zr_not_lorentz_(0) = zr_not_lorentz_.norm() / 10;
+    }
+    if (c == 1) {
+      // A negative number, since the Lorentz cone in 1D is the non-negative
+      // numbers.
+      zc_not_lorentz_.resize(1);
+      zc_not_lorentz_(0) = -11;
+    }
+    if (c >= 2) {
+      // This is not in the Lorentz cone because the first entry is negative.
+      zc_not_lorentz_ = MakeRandomPositiveOrthantVector(c, scale);
+      zc_not_lorentz_(0) = -10 * zc_not_lorentz_(0);
+    }
+  }
+
+  bool DoTestCase(const Eigen::Ref<const MatrixX<Expression>>& Y,
+                  const Eigen::Ref<const Eigen::MatrixXd>& test_mat,
+                  bool expected_outcome) {
+    auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
+    auto result = Solve(prog_);
+    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, true);
+      result = Solve(prog_, std::nullopt, options);
+    }
+    prog_.RemoveConstraint(constraint);
+    assert(ProgramSolvedWithoutError(result.get_solution_result()));
+
+    return result.is_success();
+  }
+};
+
+TEST_P(LorentzLorentzSeparabilityTest,
+       AddMatrixIsLorentzByLorentzSeparableConstraintVariable) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+  this->DoTest();
+}
+
+TEST_P(LorentzLorentzSeparabilityTest,
+       AddMatrixIsLorentzByLorentzSeparableConstraintExpressionKeepSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+  double scale = 3;
+  // These maps need to be Lorentz-positive maps.
+  Eigen::MatrixXd A = MakeRandomLorentzPositiveMap(m, m, scale);
+  Eigen::MatrixXd B = MakeRandomLorentzPositiveMap(n, n, scale);
+  this->DoTest(A, B);
+}
+
+TEST_P(LorentzLorentzSeparabilityTest,
+       AddMatrixIsLorentzByLorentzSeparableConstraintExpressionChangeSize) {
+  int m, n;
+  std::tie(m, n) = GetParam();
+  const int r1 = m + 5;
+  const int r2 = std::max(m - 1, 1);
+  const int c1 = n + 3;
+  const int c2 = std::max(n - 2, 1);
+
+  const double scale = 3;
+  // These maps need to be a positive lorentz maps.
+  Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
+  Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
+  Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
+  Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
+  this->DoTest(A1, B1);
+  this->DoTest(A2, B1);
+  this->DoTest(A1, B2);
+  this->DoTest(A2, B2);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    test, LorentzLorentzSeparabilityTest,
+    ::testing::Values(std::pair<int, int>{3, 4},  // m < n
+                      std::pair<int, int>{4, 3},  // m > n
+                      std::pair<int, int>{5, 5},  // m == n
+                      std::pair<int, int>{1, 1},  // special case m = n = 1
+                      std::pair<int, int>{2, 1},  // special case m = 2, n = 1
+                      std::pair<int, int>{1, 2},  // special case m = 1, m = 1
+                      std::pair<int, int>{2, 2},  // special case m = 2, m = 2
+                      std::pair<int, int>{1, 4},  // special case m = 1, n ≥ 3
+                      std::pair<int, int>{2, 5},  // special case m = 2, n ≥ 3
+                      std::pair<int, int>{3, 1},  // special case m ≥ 3, n = 1
+                      std::pair<int, int>{7, 2}   // special case m ≥ 3, n = 2
+                      ));
 
 }  // namespace internal
 }  // namespace solvers
