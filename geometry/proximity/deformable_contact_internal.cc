@@ -191,14 +191,11 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
     rigid_geometries_pending_.insert({data.id, std::move(instance)});
     return;
   }
-  /* Forward to hydroelastics to construct the geometry. */
-  std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, data.properties);
-  /* Unsupported geometries will be handle through the
-   `ThrowUnsupportedGeometry()` code path. */
-  DRAKE_DEMAND(hydro_rigid_geometry.has_value());
-  rigid_geometries_.insert(
-      {data.id, RigidGeometry(hydro_rigid_geometry->release_mesh())});
+  std::optional<RigidGeometry> rigid_geometry =
+      internal::deformable::MakeRigidRepresentation(shape, data.properties);
+  if (rigid_geometry) {
+    rigid_geometries_.insert({data.id, std::move(*rigid_geometry)});
+  }
 }
 
 void Geometries::FlushPendingRigidGeometry() {
