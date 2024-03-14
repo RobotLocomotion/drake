@@ -15,11 +15,35 @@ inline auto LinkJointGraph::links(BodyIndex link_index) const -> const Link& {
   return links().at(link_index);
 }
 
+inline auto LinkJointGraph::mutable_link(BodyIndex link_index) -> Link& {
+  return data_.links[link_index];
+}
+
+inline MobodIndex LinkJointGraph::link_to_mobod(BodyIndex index) const {
+  return links(index).mobod_;
+}
+
+inline void LinkJointGraph::set_primary_mobod_for_link(
+    BodyIndex link_index, MobodIndex primary_mobod_index,
+    JointIndex primary_joint_index) {
+  Link& link = data_.links[link_index];
+  DRAKE_DEMAND(!link.mobod_.is_valid());
+  link.mobod_ = primary_mobod_index;
+  link.joint_ = primary_joint_index;
+}
+
 // LinkJointGraph definitions deferred until Joint defined.
 
 inline auto LinkJointGraph::joints(JointIndex joint_index) const
     -> const Joint& {
   return joints().at(joint_index);
+}
+
+// LinkJointGraph definitions deferred until LoopConstraint defined.
+
+inline auto LinkJointGraph::loop_constraints(
+    LoopConstraintIndex loop_constraint_index) const -> const LoopConstraint& {
+  return loop_constraints().at(loop_constraint_index);
 }
 
 }  // namespace internal
