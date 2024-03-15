@@ -1223,9 +1223,20 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   //  inertias for locked floating bodies.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    const RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
+    if (topology_.IsBodyAnchored(body_index)) {
+      // Bodies that are anchored to the world are allowed to have invalid
+      // inertia; if we try to shift and express it, we will crash. Instead,
+      // we'll zero it out.
+      (*M_B_W_all)[body.mobod_index()] = SpatialInertia<T>(
+          /* mass = */ 0,
+          /* p_PScm_E = */ Vector3<T>::Zero(),
+          /* G_SP_E = */ UnitInertia<T>(0, 0, 0),
+          /* skip_validity_check = */ true);
+      continue;
+    }
 
     // Orientation of B in W.
+    const RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
     const RotationMatrix<T>& R_WB = X_WB.rotation();
 
     // Spatial inertia of body B about Bo and expressed in the body frame B.
