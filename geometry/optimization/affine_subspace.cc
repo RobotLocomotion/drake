@@ -241,6 +241,7 @@ double AffineSubspace::DoCalcVolume() const {
 
 Eigen::MatrixXd AffineSubspace::Project(
     const Eigen::Ref<const Eigen::MatrixXd>& x) const {
+  DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
   const auto [_, projected_points] = DoProjectionShortcut(x);
   return projected_points;
 }
