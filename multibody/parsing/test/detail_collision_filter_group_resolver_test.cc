@@ -117,6 +117,14 @@ TEST_F(CollisionFilterGroupResolverTest, DuplicateGroupDefinitions) {
 TEST_F(CollisionFilterGroupResolverTest, OutOfParseBodyGlobal) {
   // The world body and bodies in the default model are always outside of any
   // parse operation.
+
+  // The resolver knows (by the minimum model index rule) that these models are
+  // out of bounds.
+  ASSERT_LT(plant_.GetModelInstanceByName("DefaultModelInstance"),
+            resolver_.minimum_model_instance_index());
+  ASSERT_LT(plant_.GetModelInstanceByName("WorldModelInstance"),
+            resolver_.minimum_model_instance_index());
+
   AddBody("stuff", {});
   resolver_.AddGroup(diagnostic_policy_, "a", {
       "DefaultModelInstance::stuff",
