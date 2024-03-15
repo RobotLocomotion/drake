@@ -857,8 +857,7 @@ GTEST_TEST(TestMathematicalProgram, TestBadBindingVariable) {
   f.setConstant(2);
   lb.setConstant(0);
   ub.setConstant(1);
-  Eigen::Matrix3d twiceA = 2 * A;
-  vector<Eigen::Ref<const MatrixXd>> F{A, twiceA};
+  vector<MatrixXd> F{A, 2 * A};
   shared_ptr<EvaluatorBase> func = MakeFunctionEvaluator(Movable());
 
   // Test each constraint type.
@@ -1155,7 +1154,7 @@ GTEST_TEST(TestMathematicalProgram, AddEmptyConstraint) {
 
   auto binding7 =
       prog.AddConstraint(std::make_shared<LinearMatrixInequalityConstraint>(
-                             std::vector<Eigen::Ref<const Eigen::MatrixXd>>(
+                             std::vector<Eigen::MatrixXd>(
                                  {Eigen::MatrixXd(0, 0), Eigen::MatrixXd(0, 0),
                                   Eigen::MatrixXd(0, 0)})),
                          x);
