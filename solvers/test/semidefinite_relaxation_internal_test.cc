@@ -164,18 +164,6 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
 }
 
 namespace {
-// Makes a random unitary matrix of size r.
-// Eigen::MatrixXd GenerateRandomUnitary(const int r) {
-//  std::default_random_engine generator;
-//  std::normal_distribution<double> distribution(0.0, 1.0);
-//  Eigen::MatrixXd T = Eigen::MatrixXd::NullaryExpr(r, r, [&]() {
-//    return distribution(generator);
-//  });
-//  Eigen::HouseholderQR<Eigen::MatrixXd> qr(T);
-//  Eigen::MatrixXd Q = qr.householderQ();
-//  return Q;
-//};
-
 // Makes a random vector with all positive entries that is not in the Lorentz
 // cone.
 Eigen::VectorXd MakeRandomPositiveOrthantVector(const int r,
@@ -442,8 +430,6 @@ class PositiveOrthantByLorentzSeparabilityTest
       SolverOptions options;
       options.SetOption(CommonSolverOption::kPrintToConsole, true);
       result = Solve(prog_, std::nullopt, options);
-      std::cout << "PROG SOLVED WITH " << result.get_solution_result()
-                << std::endl;
     }
     prog_.RemoveConstraint(constraint);
     assert(ProgramSolvedWithoutError(result.get_solution_result()));
@@ -498,7 +484,7 @@ INSTANTIATE_TEST_SUITE_P(test, PositiveOrthantByLorentzSeparabilityTest,
                                            std::pair<int, int>{5, 4},  // m > n
                                            std::pair<int, int>{6, 6}   // m == n
                                            // There are no special cases
-                                           ));
+                                           ));  // NOLINT
 
 class LorentzByPositiveOrthantSeparabilityTest
     : public ::testing::TestWithParam<std::tuple<int, int>> {
@@ -583,8 +569,6 @@ class LorentzByPositiveOrthantSeparabilityTest
     // A tensor that is Lorentz separable, but not Positive Orthant,
     // Lorentz separable.
     test_matrix = xr_lorentz_ * wc_lorentz_.transpose();
-    //    std::cout << fmt::format("wc_lorentz = {}", fmt_eigen(wc_lorentz_))
-    //              << std::endl;
     EXPECT_EQ(DoTestCase(Y, test_matrix), false);
 
     // A tensor that is non-conic combination of simple Lorentz, Positive
@@ -673,8 +657,6 @@ class LorentzByPositiveOrthantSeparabilityTest
       SolverOptions options;
       options.SetOption(CommonSolverOption::kPrintToConsole, true);
       result = Solve(prog_, std::nullopt, options);
-      std::cout << "PROG SOLVED WITH " << result.get_solution_result()
-                << std::endl;
     }
     prog_.RemoveConstraint(constraint);
     assert(ProgramSolvedWithoutError(result.get_solution_result()));
@@ -729,7 +711,7 @@ INSTANTIATE_TEST_SUITE_P(test, LorentzByPositiveOrthantSeparabilityTest,
                                            std::pair<int, int>{5, 4},  // m > n
                                            std::pair<int, int>{6, 6}   // m == n
                                            // There are no special cases
-                                           ));
+                                           ));  // NOLINT
 
 class LorentzLorentzSeparabilityTest
     : public ::testing::TestWithParam<std::tuple<int, int>> {
@@ -772,8 +754,11 @@ class LorentzLorentzSeparabilityTest
           prog_.positive_semidefinite_constraints()[0];
       EXPECT_EQ(psd_constraint.evaluator()->matrix_rows(), (r - 1) * (c - 1));
     } else if (r == 1 && c == 1) {
-      std::cout << "testing constraint size 1x1" << std::endl;
-      EXPECT_EQ(ssize(prog_.bounding_box_constraints()), 1);
+      // This linear constraints gets parsed as either a bounding box or linear
+      // constraint, but not both.
+      EXPECT_EQ(ssize(prog_.bounding_box_constraints()) +
+                    ssize(prog_.linear_constraints()),
+                1);
       EXPECT_EQ(ssize(prog_.GetAllConstraints()), 1);
     } else if (r <= 2 && c <= 2) {
       EXPECT_EQ(ssize(prog_.linear_constraints()), 1);
@@ -785,7 +770,6 @@ class LorentzLorentzSeparabilityTest
       EXPECT_EQ(ssize(prog_.lorentz_cone_constraints()), r);
       EXPECT_EQ(ssize(prog_.GetAllConstraints()), r);
     }
-
     // Y is required to be equal to a simple Lorentz separable tensor
     // therefore this program should be feasible.
     DoTestCase(Y, xr_lorentz_ * xc_lorentz_.transpose(), true);
@@ -923,11 +907,20 @@ TEST_P(LorentzLorentzSeparabilityTest,
   const int c2 = std::max(n - 2, 1);
 
   const double scale = 3;
-  // These maps need to be a positive lorentz maps.
-  Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
-  Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
-  Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
-  Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
+  // These maps need to be a positive lorentz maps. When the domain dimension is
+  // less than or equal to 2, positive lorentz maps are positive orthant maps.
+  Eigen::MatrixXd A1 = m > 2
+                           ? MakeRandomLorentzPositiveMap(r1, m, scale)
+                           : MakeRandomPositivePositiveOrthantMap(r1, m, scale);
+  Eigen::MatrixXd A2 = m > 2
+                           ? MakeRandomLorentzPositiveMap(r2, m, scale)
+                           : MakeRandomPositivePositiveOrthantMap(r2, m, scale);
+  Eigen::MatrixXd B1 = n > 2
+                           ? MakeRandomLorentzPositiveMap(n, c1, scale)
+                           : MakeRandomPositivePositiveOrthantMap(n, c1, scale);
+  Eigen::MatrixXd B2 = n > 2
+                           ? MakeRandomLorentzPositiveMap(n, c2, scale)
+                           : MakeRandomPositivePositiveOrthantMap(n, c2, scale);
   this->DoTest(A1, B1);
   this->DoTest(A2, B1);
   this->DoTest(A1, B2);
@@ -947,7 +940,7 @@ INSTANTIATE_TEST_SUITE_P(
                       std::pair<int, int>{2, 5},  // special case m = 2, n ≥ 3
                       std::pair<int, int>{3, 1},  // special case m ≥ 3, n = 1
                       std::pair<int, int>{7, 2}   // special case m ≥ 3, n = 2
-                      ));
+                      ));                         // NOLINT
 
 }  // namespace internal
 }  // namespace solvers

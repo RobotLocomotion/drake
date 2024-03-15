@@ -1,10 +1,10 @@
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "drake/common/fmt_eigen.h"
-#include <iostream>
 #include "drake/common/symbolic/decompose.h"
 #include "drake/math/matrix_util.h"
 
