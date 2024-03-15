@@ -3015,10 +3015,10 @@ class TestPlant(unittest.TestCase):
         # Test SceneGraphInspector
         inspector = query_object.inspector()
 
-        self.assertEqual(inspector.num_geometries(), 2)
+        self.assertEqual(inspector.num_geometries(), 4)
         self.assertEqual(inspector.num_geometries(),
                          len(inspector.GetAllGeometryIds()))
-        for geometry_id in inspector.GetAllGeometryIds():
+        for geometry_id in inspector.GetAllGeometryIds(Role.kProximity):
             frame_id = inspector.GetFrameId(geometry_id)
             self.assertEqual(
                 inspector.GetGeometryIdByName(
@@ -3042,6 +3042,10 @@ class TestPlant(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+        id_, = plant.GetVisualGeometriesForBody(
+            body=plant.GetBodyByName("body1"))
+        self.assertIsInstance(id_, GeometryId)
 
         id_, = plant.GetCollisionGeometriesForBody(
             body=plant.GetBodyByName("body1"))
