@@ -656,6 +656,31 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   EXPECT_THROW(cnstr.CheckSatisfied(x_sym), std::logic_error);
 }
 
+template <typename Derived>
+Eigen::MatrixXd SymmetricMatrix(const Eigen::MatrixBase<Derived>& X) {
+  return (X + X.transpose()) / 2;
+}
+
+GTEST_TEST(testConstraint, LinearMatrixInequalityConstraintConstructor) {
+  std::vector<MatrixXd> F;
+  F.push_back(SymmetricMatrix(
+      (Eigen::Matrix3d() << 0, 1, 0, 1, 2, 3, 3, 3, 4).finished()));
+  F.push_back(SymmetricMatrix(
+      (Eigen::Matrix3d() << 2, -1, 0, -1, 2, 2, 2, 2, 4).finished()));
+  F.push_back(SymmetricMatrix(
+      (Eigen::Matrix3d() << 3, -1, 4, -1, 2, 2, 4, 2, 4).finished()));
+  LinearMatrixInequalityConstraint dut(F);
+  EXPECT_TRUE(CompareMatrices(
+      dut.F()[0],
+      (Eigen::Matrix3d() << 0, 1, 1.5, 1, 2, 3, 1.5, 3, 4).finished()));
+  EXPECT_TRUE(CompareMatrices(
+      dut.F()[1],
+      (Eigen::Matrix3d() << 2, -1, 1, -1, 2, 2, 1, 2, 4).finished()));
+  EXPECT_TRUE(CompareMatrices(
+      dut.F()[2],
+      (Eigen::Matrix3d() << 3, -1, 4, -1, 2, 2, 4, 2, 4).finished()));
+}
+
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   Eigen::Matrix2d F0 = 2 * Eigen::Matrix2d::Identity();
   Eigen::Matrix2d F1;

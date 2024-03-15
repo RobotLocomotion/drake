@@ -1144,8 +1144,7 @@ void BindMathematicalProgram(py::module m) {
               .doc_2args_e_minor_indices)
       .def(
           "AddLinearMatrixInequalityConstraint",
-          [](MathematicalProgram* self,
-              const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+          [](MathematicalProgram* self, const std::vector<Eigen::MatrixXd>& F,
               const Eigen::Ref<const VectorXDecisionVariable>& vars) {
             return self->AddLinearMatrixInequalityConstraint(F, vars);
           },
