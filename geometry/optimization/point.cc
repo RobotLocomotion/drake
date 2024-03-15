@@ -129,6 +129,18 @@ Point::DoToShapeWithPose() const {
                         math::RigidTransformd(x_));
 }
 
+std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+Point::DoProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+  Eigen::MatrixXd projected_points =
+      x_ * Eigen::MatrixXd::Ones(1, points.cols());
+  Eigen::VectorXd distances_eigen =
+      (points - projected_points).colwise().norm();
+  std::vector<std::optional<double>> distances(
+      distances_eigen.data(), distances_eigen.data() + distances_eigen.size());
+  return {distances, projected_points};
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

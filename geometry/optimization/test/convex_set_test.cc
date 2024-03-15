@@ -1,7 +1,5 @@
 #include "drake/geometry/optimization/convex_set.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
