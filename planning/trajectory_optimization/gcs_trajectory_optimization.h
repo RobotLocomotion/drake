@@ -620,10 +620,10 @@ class GcsTrajectoryOptimization final {
    @param continuous_revolute_joints The indices of the continuous revolute
    joints.
    @param starting_rounds A vector of integers that sets the starting rounds for
-   each continuous revolute joint. Given integer k, the initial position of the
-   corresponding joint will be wrapped into [2kπ, 2(k+1)π). If the starting
-   rounds are not set, the unwrapping will start from the initial position of
-   the @p trajectory.
+   each continuous revolute joint. Given integer k for the starting_round of a
+   joint, its initial position will be wrapped into [2πk , 2π(k+1)). If the
+   starting rounds are not provided, the initial position of @p trajectory will
+   be unchanged.
 
    @returns an unwrapped (continous in Euclidean space) CompositeTrajectory.
 
@@ -631,9 +631,10 @@ class GcsTrajectoryOptimization final {
    starting_rounds.size()!=continuous_revolute_joints.size().
    @throws std::exception if continuous_revolute_joints contain repeated indices
    and/or indices outside the range [0, gcs_trajectory.rows()).
-   @throws std::exception if the gcs_trajectory is not continous on the manifold
-   defined by the continuous_revolute_joints, i.e., the shift between two
-   consecutive segments is not an integer multiple of 2π.
+   @throws std::exception if the gcs_trajectory is not continuous on the
+   manifold defined by the continuous_revolute_joints, i.e., the shift between
+   two consecutive segments is not an integer multiple of 2π (within a tolerance
+   of 1e-10 radians).
    @throws std::exception if all the segments are not of type BezierCurve.
    Other types are not supported yet. Note that currently the output of
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of

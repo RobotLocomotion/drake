@@ -886,29 +886,37 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   const auto unwrapped_traj =
       GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
           traj, continuous_revolute_joints);
-  const double eps = 1e-8;
+  // Small number to shift time around discontinuity points.
+  const double time_eps = 1e-7;
+  // Small number to compare position around discontinuity points.
+  // A rough upper bound for the largest derivative of the Bezier curve is about
+  // 10, therefore the error upper bound is expected to be around 10 * time_eps.
+  const double pos_eps = 1e-6;
   double middle_time_1 = unwrapped_traj.get_segment_times()[1];
   double middle_time_2 = unwrapped_traj.get_segment_times()[2];
-  EXPECT_NEAR(middle_time_1, 1.0, eps);
-  EXPECT_NEAR(middle_time_2, 4.0, eps);
+  EXPECT_NEAR(middle_time_1, 1.0, time_eps);
+  EXPECT_NEAR(middle_time_2, 4.0, time_eps);
   // Verify the unwrapped trajectory is continous at the middle times.
-  EXPECT_TRUE(CompareMatrices(unwrapped_traj.value(middle_time_1 - eps),
-                              unwrapped_traj.value(middle_time_1 + eps), 1e-6));
-  EXPECT_TRUE(CompareMatrices(unwrapped_traj.value(middle_time_2 - eps),
-                              unwrapped_traj.value(middle_time_2 + eps), 1e-6));
-  std::vector<int> start_rounds = {-1, 0};
+  EXPECT_TRUE(CompareMatrices(unwrapped_traj.value(middle_time_1 - time_eps),
+                              unwrapped_traj.value(middle_time_1 + time_eps),
+                              pos_eps));
+  EXPECT_TRUE(CompareMatrices(unwrapped_traj.value(middle_time_2 - time_eps),
+                              unwrapped_traj.value(middle_time_2 + time_eps),
+                              pos_eps));
+  std::vector<int> starting_rounds = {-1, 0};
   const auto unwrapped_traj_with_start =
       GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
-          traj, continuous_revolute_joints, start_rounds);
+          traj, continuous_revolute_joints, starting_rounds);
   // Check if the start is unwrapped to the correct value.
   EXPECT_TRUE(CompareMatrices(unwrapped_traj_with_start.value(0.0),
-                              Eigen::Vector3d{0.0, 1.0 - 2 * M_PI, 2.0}, eps));
+                              Eigen::Vector3d{0.0, 1.0 - 2 * M_PI, 2.0},
+                              pos_eps));
   EXPECT_TRUE(CompareMatrices(
-      unwrapped_traj_with_start.value(middle_time_1 - eps),
-      unwrapped_traj_with_start.value(middle_time_1 + eps), 1e-6));
+      unwrapped_traj_with_start.value(middle_time_1 - time_eps),
+      unwrapped_traj_with_start.value(middle_time_1 + time_eps), pos_eps));
   EXPECT_TRUE(CompareMatrices(
-      unwrapped_traj_with_start.value(middle_time_2 - eps),
-      unwrapped_traj_with_start.value(middle_time_2 + eps), 1e-6));
+      unwrapped_traj_with_start.value(middle_time_2 - time_eps),
+      unwrapped_traj_with_start.value(middle_time_2 + time_eps), pos_eps));
   // Check for invalid start_rounds
   const std::vector<int> invalid_start_rounds = {-1, 0, 1};
   EXPECT_THROW(GcsTrajectoryOptimization::UnwrapToContinousTrajectory(

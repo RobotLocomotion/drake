@@ -1167,12 +1167,17 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
 
 namespace {
 bool IsMultipleOf2Pi(double value) {
-  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < 1e-10;
+  // We allow some tolerance for trajectories coming out of GCS.
+  // TODO(sadra): find out what tolerance is appropriate.
+  double kTol = 1e-10;  // To match what is provided in the docs.
+  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < kTol;
 }
 
 // Unwrap the angle to the range [2π * round, 2π * (round+1)).
 double UnwrapAngle(const double angle, const int round) {
-  return (round - std::floor(angle / (2 * M_PI))) * 2 * M_PI + angle;
+  const int twopi_factors_to_remove =
+      static_cast<int>(std::floor(angle / (2 * M_PI))) - round;
+  return angle - 2 * M_PI * twopi_factors_to_remove;
 }
 }  // namespace
 
@@ -1185,6 +1190,7 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
     DRAKE_THROW_UNLESS(starting_rounds->size() ==
                        continuous_revolute_joints.size());
   }
+  // TODO(@anyone): make this a unique_ptr and use std::move to avoid copying.
   std::vector<copyable_unique_ptr<Trajectory<double>>> unwrapped_trajectories;
   int dim = gcs_trajectory.rows();
   geometry::optimization::internal::ThrowsForInvalidContinuousJointsList(
@@ -1223,15 +1229,16 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
       }
     } else {
       DRAKE_DEMAND(last_segment_finish.rows() == gcs_trajectory.rows());
-      // see how much shift is needed to match the previous new segment.
+      // See how much shift is needed to match the previous new segment.
       for (const int joint_index : continuous_revolute_joints) {
         const double joint_shift =
             old_start(joint_index) - last_segment_finish(joint_index);
         if (!IsMultipleOf2Pi(joint_shift)) {
           throw std::runtime_error(
-              fmt::format("The shift from previous segment is not a multiple "
+              fmt::format("UnwrapToContinuousTrajectory: The shift from "
+                          "previous segment: {} is not a multiple "
                           "of 2π at segment {}, joint {}.",
-                          i, joint_index));
+                          joint_shift, i, joint_index));
         }
         shift.push_back(joint_shift);
       }
