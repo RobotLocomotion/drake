@@ -1,6 +1,5 @@
 #include <Eigen/Dense>
 
-#include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -28,13 +27,6 @@ PYBIND11_MODULE(eigen_geometry_test_util, m) {
   m.def("create_isometry", []() { return Isometry3<T>::Identity(); });
   m.def("check_isometry", [max_abs](const Isometry3d& X) {
     const T error = max_abs(X.matrix() - Isometry3<T>::Identity().matrix());
-    DRAKE_THROW_UNLESS(error < kTolerance);
-  });
-
-  m.def("create_translation",
-      []() { return Eigen::Translation<T, 3>(Vector3<T>::Zero()); });
-  m.def("check_translation", [max_abs](const Eigen::Translation<T, 3>& p) {
-    const T error = max_abs(p.vector());
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 
