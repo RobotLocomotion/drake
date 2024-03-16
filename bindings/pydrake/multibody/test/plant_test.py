@@ -838,10 +838,8 @@ class TestPlant(unittest.TestCase):
         # work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsPhysicallyValid())
-        (
-            semi_diameters,
-            transform
-        ) = spatial_inertia.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid()  # noqa
+        (semi_diameters, transform) = spatial_inertia \
+            .CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid()
         self.assertIsInstance(semi_diameters, np.ndarray)
         self.assertIsInstance(transform, RigidTransform)
         self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
