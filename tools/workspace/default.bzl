@@ -218,7 +218,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
     if "mosek" not in excludes:
-        mosek_repository(name = "mosek")
+        mosek_repository(name = "mosek", mirrors = mirrors)
     if "mpmath_py_internal" not in excludes:
         mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     if "msgpack_internal" not in excludes:

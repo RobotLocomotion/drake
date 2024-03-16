@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/install:install.bzl", "install", "install_files")
+
 cc_library(
     name = "tbb",
     hdrs = glob([
@@ -12,10 +14,16 @@ cc_library(
         "include/oneapi",
     ],
     deps = [
-        # TODO(jwnimmer-tri) This should just be the TBB runtime, not the
-        # entirety of MOSEK. We'll need to clean that up before we enable
-        # WITH_USD in Drake's installed packages.
-        "@mosek",
+        "@mosek//:tbb",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE.txt"],
+    deps = [
+        "@mosek//:install_tbb_libraries",
     ],
     visibility = ["//visibility:public"],
 )
