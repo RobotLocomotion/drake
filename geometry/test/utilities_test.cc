@@ -123,6 +123,22 @@ GTEST_TEST(GeometryUtilities, Vector3Conversion) {
   EXPECT_TRUE(CompareMatrices(p_AB, X_AB_ad_converted));
 }
 
+GTEST_TEST(GeometryUtilities, VectorXConversion) {
+  VectorX<double> q_WG(4);
+  q_WG << 1, 2, 3, 4;
+
+  VectorX<double> q_WG_converted = convert_to_double(q_WG);
+  EXPECT_TRUE(CompareMatrices(q_WG, q_WG_converted));
+  // Double to double conversion is just a pass through without copying, so
+  // we'll compare addresses.
+  const VectorX<double>& q_WG_converted_ref = convert_to_double(q_WG);
+  EXPECT_EQ(&q_WG, &q_WG_converted_ref);
+
+  VectorX<AutoDiffXd> q_WG_ad(q_WG);
+  VectorX<double> q_WG_ad_converted = convert_to_double(q_WG_ad);
+  EXPECT_TRUE(CompareMatrices(q_WG, q_WG_ad_converted));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

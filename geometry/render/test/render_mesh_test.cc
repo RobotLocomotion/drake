@@ -972,6 +972,26 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, AreaWeightedNormals) {
                               Vector3d::UnitZ()));
 }
 
+GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, RoundTrip) {
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+  PerceptionProperties empty_props;
+  const RenderMesh render_mesh =
+      LoadRenderMeshesFromObj(filename, empty_props, kDefaultDiffuse)[0];
+  const TriangleSurfaceMesh tri_mesh = MakeTriangleSurfaceMesh(render_mesh);
+  const RenderMesh roundtrip_render_mesh =
+      MakeRenderMeshFromTriangleSurfaceMesh(tri_mesh, empty_props,
+                                            kDefaultDiffuse);
+  EXPECT_EQ(render_mesh.positions, roundtrip_render_mesh.positions);
+  EXPECT_EQ(render_mesh.normals, roundtrip_render_mesh.normals);
+  EXPECT_EQ(render_mesh.indices, roundtrip_render_mesh.indices);
+  // uv, uv_state, and material are not preserved in the roundtrip.
+
+  const TriangleSurfaceMesh roundtrip_tri_mesh =
+      MakeTriangleSurfaceMesh(roundtrip_render_mesh);
+  EXPECT_TRUE(roundtrip_tri_mesh.Equal(tri_mesh));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
