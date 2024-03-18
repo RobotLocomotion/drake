@@ -80,39 +80,13 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
   return sorted_vertices;
 }
 
-MatrixXd GetConvexHullFromObjFile(const std::string& filename,
-                                  const std::string& extension, double scale,
-                                  std::string_view prefix) {
-  if (extension != ".obj") {
-    throw std::runtime_error(fmt::format(
-        "{} can only use mesh shapes (i.e.., Convex, Mesh) with a .obj file "
-        "type; given '{}'.",
-        prefix, filename));
-  }
-  const auto [tinyobj_vertices, faces, num_faces] =
-      internal::ReadObjFile(filename, scale, /* triangulate = */ false);
-  unused(faces);
-  unused(num_faces);
-  orgQhull::Qhull qhull;
-  const int dim = 3;
-  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
-  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
-    for (int j = 0; j < dim; ++j) {
-      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
-    }
-  }
-  qhull.runQhull("", dim, tinyobj_vertices->size(),
-                 tinyobj_vertices_flat.data(), "");
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-  Matrix3Xd vertices(3, qhull.vertexCount());
-  int vertex_count = 0;
-  for (const auto& qhull_vertex : qhull.vertexList()) {
-    vertices.col(vertex_count++) =
-        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
+// Extract the vertices from a convex hull. The result is a (3, V) matrix where
+// `hull` has V vertices. The hull should come from an invocation of either
+// Mesh::convex_hull() or Convex::convex_hull().
+MatrixXd GetConvexHullVertices(const PolygonSurfaceMesh<double>& hull) {
+  Matrix3Xd vertices(3, hull.num_vertices());
+  for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+    vertices.col(vi) = hull.vertex(vi);
   }
   return vertices;
 }
@@ -650,20 +624,17 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.extension(),
-                                          convex.scale(), "VPolytope");
+  *vertex_data = GetConvexHullVertices(convex.convex_hull());
 }
 
 void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.extension(),
-                                          mesh.scale(), "VPolytope");
+  *vertex_data = GetConvexHullVertices(mesh.convex_hull());
 }
 
 MatrixXd GetVertices(const Convex& convex) {
-  return GetConvexHullFromObjFile(convex.filename(), convex.extension(),
-                                  convex.scale(), "GetVertices()");
+  return GetConvexHullVertices(convex.convex_hull());
 }
 
 }  // namespace optimization

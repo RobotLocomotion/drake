@@ -295,31 +295,6 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 }
 
-// Confirm that VPolytope will complain about non-obj mesh/convex shapes even
-// if SceneGraph stops complaining. Likewise confirm that GetVertices complains.
-GTEST_TEST(VPolytopeTest, UnsupportedMeshTypes) {
-  const Convex convex("bad_extension.stl");
-  const Mesh mesh("bad_extension.stl");
-
-  for (const auto* shape : std::vector<const Shape*>{&convex, &mesh}) {
-    const RigidTransformd X_WG;
-    // We can't add proximity properties; ProximityEngine would reject it.
-    const bool add_proximity_properties = false;
-    auto [scene_graph, geom_id] =
-        MakeSceneGraphWithShape(*shape, X_WG, add_proximity_properties);
-    auto context = scene_graph->CreateDefaultContext();
-    auto query = scene_graph->get_query_output_port().Eval<QueryObject<double>>(
-        *context);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        VPolytope(query, geom_id),
-        "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
-  }
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      GetVertices(convex),
-      "GetVertices\\(\\) can only use mesh shapes .* '.*bad_extension.stl'.");
-}
-
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
   VPolytope V = VPolytope::MakeUnitBox(6);
   EXPECT_EQ(V.ambient_dimension(), 6);
@@ -821,7 +796,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
 }
 
 // Confirm that WriteObj generates an Obj file that can be read back in to
-// obtain the same VPolytope. All of the geometry work is done by qhull; this
+// obtain the same VPolytope. All of the geometry work is done by Convex; this
 // test simply covers the data flow.
 GTEST_TEST(VPolytopeTest, WriteObjTest) {
   VPolytope V = VPolytope::MakeUnitBox(3);
