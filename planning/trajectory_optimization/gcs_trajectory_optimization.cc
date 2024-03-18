@@ -1158,7 +1158,8 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
       start_time += 1.0;
     } else {
       throw std::runtime_error(
-          "All segments in the gcs trajectory must be of type "
+          "NormalizeSegmentTimes: All segments in the gcs trajectory "
+          "must be of type "
           "BezierCurve<double>.");
     }
   }
@@ -1202,7 +1203,8 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
         dynamic_cast<const BezierCurve<double>*>(&traj_segment);
     if (bezier_segment == nullptr) {
       throw std::runtime_error(
-          "All segments in the gcs_trajectory must be of type "
+          "UnwrapToContinuousTrajectory: All segments in the gcs_trajectory "
+          "must be of type "
           "BezierCurve<double>.");
     }
     Eigen::MatrixXd new_control_points = bezier_segment->control_points();
