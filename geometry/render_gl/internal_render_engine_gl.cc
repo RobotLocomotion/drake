@@ -14,6 +14,7 @@
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -659,7 +660,7 @@ void main() {
 
 // Given a filename (e.g., of a mesh), this produces a string that we use in
 // our maps to guarantee we only load the file once.
-std::string GetPathKey(const std::string& filename) {
+std::string GetPathKey(const std::string& filename, bool is_convex) {
   std::error_code path_error;
   const fs::path path = fs::canonical(filename, path_error);
   if (path_error) {
@@ -667,7 +668,9 @@ std::string GetPathKey(const std::string& filename) {
         fmt::format("RenderEngineGl: unable to access the file {}; {}",
                     filename, path_error.message()));
   }
-  return path.string();
+  // Note: We're using "?". It isn't valid for filenames, so using it in the
+  // key guarantees we won't collide with potential file names.
+  return path.string() + (is_convex ? "?convex" : "");
 }
 
 // We want to make sure the lights are as clean as possible. So, we'll
@@ -778,11 +781,10 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  GetMeshes(convex.filename(), data);
-  if (data->accepted) {
-    ImplementMeshesForFile(user_data, kUnitScale * convex.scale(),
-                           convex.filename());
-  }
+  CacheConvexHullMesh(convex, *data);
+  // Note: CacheConvexHullMesh() either succeeds or throws.
+  ImplementMeshesForFile(user_data, kUnitScale * convex.scale(),
+                         convex.filename(), /* is_convex=*/true);
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -807,10 +809,10 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  GetMeshes(mesh.filename(), data);
+  CacheFileMeshesMaybe(mesh.filename(), data);
   if (data->accepted) {
     ImplementMeshesForFile(user_data, kUnitScale * mesh.scale(),
-                           mesh.filename());
+                           mesh.filename(), /* is_convex=*/false);
   }
 }
 
@@ -838,10 +840,12 @@ void RenderEngineGl::InitGlState() {
 
 void RenderEngineGl::ImplementMeshesForFile(void* user_data,
                                             const Vector3<double>& scale,
-                                            const std::string& filename) {
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  const std::string file_key = GetPathKey(filename);
+                                            const std::string& filename,
+                                            bool is_convex) {
+  const std::string file_key = GetPathKey(filename, is_convex);
+  DRAKE_DEMAND(meshes_.contains(file_key));
   for (const auto& gl_mesh : meshes_.at(file_key)) {
+    const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
     PerceptionProperties temp_props(data.properties);
 
     RenderMaterial material;
@@ -1240,57 +1244,75 @@ int RenderEngineGl::GetBox() {
   return box_;
 }
 
-vector<int> RenderEngineGl::GetMeshes(const string& filename_in,
-                                      RegistrationData* data) {
-  vector<int> mesh_indices;
+void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
+                                         const RegistrationData& data) {
+  const std::string file_key =
+      GetPathKey(convex.filename(), /*is_convex=*/true);
 
-  // We're checking the input filename in case the user specified name has the
-  // desired extension but is a symlink to some arbitrarily named cached file.
-  if (Mesh(filename_in).extension() != ".obj") {
+  if (!meshes_.contains(file_key)) {
+    const Convex unit_convex(convex.filename(), 1.0);
+    const PolygonSurfaceMesh<double>& hull = convex.scale() == 1.0
+                                                 ? convex.GetConvexHull()
+                                                 : unit_convex.GetConvexHull();
+    const TriangleSurfaceMesh<double> tri_hull =
+        geometry::internal::MakeTriangleFromPolygonMesh(hull);
+    RenderMesh render_mesh =
+        geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+            tri_hull, data.properties, parameters_.default_diffuse);
+
+    const int mesh_index = CreateGlGeometry(render_mesh);
+    DRAKE_DEMAND(mesh_index >= 0);
+    // Note: the material is left as std::nullopt, so that the instance of this
+    // geometry must define its own material.
+    meshes_[file_key] = vector<RenderGlMesh>{
+        {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state}};
+  }
+}
+
+void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
+                                          RegistrationData* data) {
+  if (Mesh(filename).extension() != ".obj") {
     static const logging::Warn one_time(
         "RenderEngineGl only supports Mesh/Convex specifications which use "
         ".obj files. Mesh specifications using other mesh types (e.g., "
         ".gltf, .stl, .dae, etc.) will be ignored.");
     data->accepted = false;
-    return mesh_indices;
+    return;
   }
 
-  const std::string file_key = GetPathKey(filename_in);
+  const std::string file_key = GetPathKey(filename, /*is_convex=*/false);
 
   if (!meshes_.contains(file_key)) {
+    // Note: either the obj has defined its own material or it hasn't. If it
+    // has, that material will be defined in the RenderMesh and that material
+    // will be saved in the cache, forcing every instance to use that material.
+    // If it hasn't defined its own material, then every instance must define
+    // its own material. Either way, we don't require whatever properties were
+    // available when we triggered this cache update. That's why we simply pass
+    // a set of empty properties -- to emphasize its independence.
     const vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-        filename_in, PerceptionProperties(), parameters_.default_diffuse,
+        filename, PerceptionProperties(), parameters_.default_diffuse,
         drake::internal::DiagnosticPolicy());
     vector<RenderGlMesh> file_meshes;
     for (const auto& render_mesh : meshes) {
       int mesh_index = CreateGlGeometry(render_mesh);
       DRAKE_DEMAND(mesh_index >= 0);
-      const RenderMaterial& material = render_mesh.material;
+
+      geometries_[mesh_index].throw_if_undefined(
+          fmt::format("Error creating object for mesh {}", filename).c_str());
 
       file_meshes.push_back(
           {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
-      // If the material in render_mesh was defined by the file, we store it
-      // with the RenderGlMesh (so it's used for every instance). Otherwise, we
-      // leave it undefined so instance properties will define the material
-      // instead.
+
+      // Only store materials defined by the obj file; otherwise let instances
+      // define their own (see ImplementMeshesForFile()).
+      const RenderMaterial& material = render_mesh.material;
       if (material.from_mesh_file) {
         file_meshes.back().mesh_material = material;
       }
-      mesh_indices.push_back(mesh_index);
     }
     meshes_[file_key] = std::move(file_meshes);
-  } else {
-    for (const auto& gl_mesh : meshes_[file_key]) {
-      mesh_indices.push_back(gl_mesh.mesh_index);
-    }
   }
-
-  for (const auto& index : mesh_indices) {
-    geometries_[index].throw_if_undefined(
-        fmt::format("Error creating object for mesh {}", filename_in).c_str());
-  }
-
-  return mesh_indices;
 }
 
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(

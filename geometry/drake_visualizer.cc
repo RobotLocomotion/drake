@@ -10,6 +10,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/value.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_object.h"
@@ -44,8 +45,7 @@ using systems::lcm::internal::LcmSystemGraphviz;
 
 namespace {
 
-/* Create an lcm message for a hydroelastic mesh representation of the geometry
- indicated by `geometry_id`.
+/* Populates the given lcm message data with the given faceted mesh.
 
  The geometry data message is marked as a MESH, but rather than having a
  path to a parseable file stored in it, the actual mesh data is stored.
@@ -56,26 +56,13 @@ namespace {
  ShapeToLcm and it will more fully share that class's code for handling pose
  and color.
 
- @param geometry_id   The id of the geometry to draw.
- @param inspector     The SceneGraphInspector from which the mesh will be drawn.
+ @param surface_mesh  The mesh to encode.
  @param X_PG          The pose of the geometry in the parent frame.
  @param in_color      The color to apply to the mesh.
  @pre The geometry actually has a hydroelastic mesh. */
-template <typename T>
-lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
-                                        const SceneGraphInspector<T>& inspector,
-                                        const RigidTransformd& X_PG,
-                                        const Rgba& in_color) {
-  auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(geometry_id);
-  DRAKE_DEMAND(!std::holds_alternative<std::monostate>(hydro_mesh));
-  // SceneGraphInspector guarantees whichever pointer is "held" in the variant
-  // is non-null.
-  const TriangleSurfaceMesh<double>& surface_mesh =
-      std::holds_alternative<const TriangleSurfaceMesh<double>*>(hydro_mesh)
-          ? *std::get<const TriangleSurfaceMesh<double>*>(hydro_mesh)
-          : ConvertVolumeToSurfaceMesh(
-                *std::get<const VolumeMesh<double>*>(hydro_mesh));
-
+lcmt_viewer_geometry_data SetFacetedMeshData(
+    const TriangleSurfaceMesh<double>& surface_mesh,
+    const RigidTransformd& X_PG, const Rgba& in_color) {
   lcmt_viewer_geometry_data geometry_data;
 
   // Saves the location and orientation of the visualization geometry in the
@@ -103,6 +90,10 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   //   N: 3V, the number of floating point values for the V vertices.
   //   M: 3T, the number of vertex indices for the T triangles.
   geometry_data.type = geometry_data.MESH;
+
+  // TODO(SeanCurtis-TRI): It would be better if we could simply broadcast the
+  // mesh and have meldis determine that it should be faceted. We'd be moving
+  // a lot less data.
 
   // We want a *faceted* mesh. We can achieve this by duplicating the vertices
   // so DrakeVisualizer can't smooth over vertices. So, that means for T
@@ -145,7 +136,43 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   // should have walked up to the total number of floats.
   DRAKE_DEMAND(header_floats + 3 * num_verts == (v_index + 1));
   DRAKE_DEMAND(geometry_data.num_float_data == (t_index + 1));
+
   return geometry_data;
+}
+
+/* Creates an lcm message for a hydroelastic mesh representation of the geometry
+ indicated by `geometry_id`.
+
+ The geometry data message is marked as a MESH, but rather than having a
+ path to a parseable file stored in it, the actual mesh data is stored.
+
+ This function shares implementation details with the ShapeToLcm reifier (in
+ terms of handling pose and color). Ultimately, when the Mesh shape
+ specification supports in-memory mesh definitions, this can be rolled into
+ ShapeToLcm and it will more fully share that class's code for handling pose
+ and color.
+
+ @param geometry_id   The id of the geometry to draw.
+ @param inspector     The SceneGraphInspector from which the mesh will be drawn.
+ @param X_PG          The pose of the geometry in the parent frame.
+ @param in_color      The color to apply to the mesh.
+ @pre The geometry actually has a hydroelastic mesh. */
+template <typename T>
+lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
+                                        const SceneGraphInspector<T>& inspector,
+                                        const RigidTransformd& X_PG,
+                                        const Rgba& in_color) {
+  auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(geometry_id);
+  DRAKE_DEMAND(!std::holds_alternative<std::monostate>(hydro_mesh));
+  // SceneGraphInspector guarantees whichever pointer is "held" in the variant
+  // is non-null.
+  const TriangleSurfaceMesh<double>& surface_mesh =
+      std::holds_alternative<const TriangleSurfaceMesh<double>*>(hydro_mesh)
+          ? *std::get<const TriangleSurfaceMesh<double>*>(hydro_mesh)
+          : ConvertVolumeToSurfaceMesh(
+                *std::get<const VolumeMesh<double>*>(hydro_mesh));
+
+  return SetFacetedMeshData(surface_mesh, X_PG, in_color);
 }
 
 /* Create an lcm message for a deformable mesh representation of the geometry
@@ -393,13 +420,14 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   // For visualization, Convex is the same as Mesh.
-  void ImplementGeometry(const Convex& mesh, void*) override {
-    geometry_data_.type = geometry_data_.MESH;
-    geometry_data_.num_float_data = 3;
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.string_data = mesh.filename();
+  void ImplementGeometry(const Convex& convex, void*) override {
+    const TriangleSurfaceMesh<double> tri_mesh =
+        internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
+    // Note: the transform X_PG and color are dummy values; ShapeToLcm will set
+    // them when we return from this Convex-specific callback.
+    // We can ignore the convex.scale() because it is already incorporated in
+    // the convex hull.
+    geometry_data_ = SetFacetedMeshData(tri_mesh, RigidTransformd{}, Rgba());
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) override {
