@@ -2,11 +2,17 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/csdp_solver.h"
+#include "drake/solvers/scs_solver.h"
+#include "drake/solvers/clarabel_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -389,7 +395,7 @@ class PositiveOrthantByLorentzSeparabilityTest
  private:
   void MakeTestVectors(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::MatrixXd>& B) {
-    const double scale = 2;
+    const double scale = 2.0;
     // Notice that if A is not a lorentz positive map, then xr_lorentz_ and
     // yr_lorentz_ will not necessarily be in the lorentz cone. Ditto for all
     // the other cases.
@@ -429,9 +435,14 @@ class PositiveOrthantByLorentzSeparabilityTest
     if (!ProgramSolvedWithoutError(result.get_solution_result())) {
       SolverOptions options;
       options.SetOption(CommonSolverOption::kPrintToConsole, true);
-      result = Solve(prog_, std::nullopt, options);
+      ClarabelSolver solver{};
+      result = solver.Solve(prog_, std::nullopt, options);
     }
     prog_.RemoveConstraint(constraint);
+    if(!ProgramSolvedWithoutError(result.get_solution_result())) {
+        std::cout << prog_ << std::endl;
+        std::cout << fmt::format("test_mat=\n{}",fmt_eigen(test_mat)) << std::endl;
+    }
     assert(ProgramSolvedWithoutError(result.get_solution_result()));
     return result.is_success();
   }
@@ -465,7 +476,7 @@ TEST_P(PositiveOrthantByLorentzSeparabilityTest,
   const int c1 = n + 3;
   const int c2 = n - 2;
 
-  const double scale = 3;
+  const double scale = 0.75;
   // These maps need to be a positive, positive orthant maps.
   Eigen::MatrixXd A1 = MakeRandomPositivePositiveOrthantMap(r1, m, scale);
   Eigen::MatrixXd A2 = MakeRandomPositivePositiveOrthantMap(r2, m, scale);
