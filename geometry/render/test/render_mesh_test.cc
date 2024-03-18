@@ -992,6 +992,62 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, RoundTrip) {
   EXPECT_TRUE(roundtrip_tri_mesh.Equal(tri_mesh));
 }
 
+// Exploiting the fact that MakeFacetedRenderMeshFromTriangleSurfaceMesh()
+// simply invokes MakeRenderMeshFromTriangleSurfaceMesh(), we just need to
+// confirm that the result is as faceted as we expect.
+GTEST_TEST(MakeFacetedRenderMeshFromTriangleSurfaceMeshTest, Simple) {
+  /* Make a mesh with two triangles with a shared edge. The first face will
+   have a normal in the -Fx direction, the second in the -Fy direction.
+                +Fz   -Fx
+                  |   /
+                  v3 /
+                  | /
+                  |/
+   -Fy-----------v0+------v2---+ Fy
+                 /| Fo
+                / |
+              v1  |
+              /   |
+            +Fx   |
+                -Fz                  */
+  std::vector<Vector3d> vertices;
+  vertices.emplace_back(0, 0, 0);
+  vertices.emplace_back(1, 0, 0);
+  vertices.emplace_back(0, 1, 0);
+  vertices.emplace_back(0, 0, 1);
+  std::vector<SurfaceTriangle> triangles;
+  triangles.emplace_back(0, 2, 3);  // normal (-1, 0, 0)
+  triangles.emplace_back(0, 1, 3);  // normal (0, -1, 0)
+  const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
+
+  const RenderMesh render_mesh = MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+      tri_mesh, PerceptionProperties(), Rgba(0.1, 0.2, 0.3, 0.4));
+
+  ASSERT_EQ(render_mesh.indices.rows(), 2);
+  // Three unique vertices per triangle.
+  ASSERT_EQ(render_mesh.positions.rows(), 2 * 3);
+
+  // Each triple of vertices constitute a single triangle. The normal implied
+  // by the vertices should be shared for all vertices.
+  for (int ti = 0; ti < render_mesh.indices.rows(); ++ti) {
+    const auto tri = render_mesh.indices.row(ti);
+    EXPECT_EQ(tri[0], ti * 3);
+    EXPECT_EQ(tri[1], tri[0] + 1);
+    EXPECT_EQ(tri[2], tri[0] + 2);
+
+    const auto p_MA = render_mesh.positions.row(tri[0]);
+    const auto p_MB = render_mesh.positions.row(tri[1]);
+    const auto p_MC = render_mesh.positions.row(tri[2]);
+    const Vector3d n_M = (p_MB - p_MA).cross(p_MC - p_MA).normalized();
+    EXPECT_TRUE(
+        CompareMatrices(Vector3d(render_mesh.normals.row(tri[0])), n_M));
+    EXPECT_TRUE(
+        CompareMatrices(Vector3d(render_mesh.normals.row(tri[1])), n_M));
+    EXPECT_TRUE(
+        CompareMatrices(Vector3d(render_mesh.normals.row(tri[2])), n_M));
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

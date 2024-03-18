@@ -33,6 +33,7 @@
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -251,13 +252,61 @@ class SceneTreeElement {
   std::map<std::string, std::unique_ptr<SceneTreeElement>> children_;
 };
 
+int ToMeshcatColor(const Rgba& rgba) {
+  // Note: The returned color discards the alpha value, which is handled
+  // separately (e.g. by the opacity field in the material properties).
+  return (static_cast<int>(255 * rgba.r()) << 16) +
+         (static_cast<int>(255 * rgba.g()) << 8) +
+         static_cast<int>(255 * rgba.b());
+}
+
+// Sets the lumped object's geometry, material, and object type based on the
+// mesh data and its material properties.
+void SetLumpedObjectFromTriangleMesh(
+    internal::LumpedObjectData* object,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
+    bool wireframe, double wireframe_line_width,
+    Meshcat::SideOfFaceToRender side, internal::UuidGenerator* uuid_generator) {
+  DRAKE_DEMAND(object != nullptr);
+  DRAKE_DEMAND(uuid_generator != nullptr);
+
+  auto geometry = std::make_unique<internal::BufferGeometryData>();
+  geometry->uuid = uuid_generator->GenerateRandom();
+  geometry->position = vertices.cast<float>();
+  geometry->faces = faces.cast<uint32_t>();
+  object->geometry = std::move(geometry);
+
+  auto material = std::make_unique<internal::MaterialData>();
+  material->uuid = uuid_generator->GenerateRandom();
+  material->type = "MeshPhongMaterial";
+  material->color = ToMeshcatColor(rgba);
+  material->transparent = (rgba.a() != 1.0);
+  material->opacity = rgba.a();
+  material->wireframe = wireframe;
+  material->wireframeLineWidth = wireframe_line_width;
+  material->vertexColors = false;
+  material->side = side;
+  material->flatShading = true;
+  object->material = std::move(material);
+
+  internal::MeshData mesh;
+  mesh.uuid = uuid_generator->GenerateRandom();
+  mesh.type = "Mesh";
+  mesh.geometry = object->geometry->uuid;
+  mesh.material = object->material->uuid;
+  object->object = std::move(mesh);
+}
+
 class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
   MeshcatShapeReifier(internal::UuidGenerator* uuid_generator,
-                      FileStorage* file_storage)
-      : uuid_generator_(*uuid_generator), file_storage_(*file_storage) {
+                      FileStorage* file_storage, Rgba rgba)
+      : uuid_generator_(*uuid_generator),
+        file_storage_(*file_storage),
+        rgba_(rgba) {
     DRAKE_DEMAND(uuid_generator != nullptr);
     DRAKE_DEMAND(file_storage != nullptr);
   }
@@ -463,7 +512,28 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& mesh, void* data) override {
-    ImplementMesh(mesh.filename(), mesh.extension(), mesh.scale(), data);
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+
+    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+    const TriangleSurfaceMesh<double> tri_hull =
+        internal::MakeTriangleFromPolygonMesh(hull);
+
+    Eigen::Matrix3Xd vertices(3, tri_hull.num_vertices());
+    for (int i = 0; i < tri_hull.num_vertices(); ++i) {
+      vertices.col(i) = tri_hull.vertex(i);
+    }
+    Eigen::Matrix3Xi faces(3, tri_hull.num_triangles());
+    for (int i = 0; i < tri_hull.num_triangles(); ++i) {
+      const auto& e = tri_hull.element(i);
+      for (int j = 0; j < 3; ++j) {
+        faces(j, i) = e.vertex(j);
+      }
+    }
+    SetLumpedObjectFromTriangleMesh(&output.lumped, vertices, faces, rgba_,
+                                    /* wireframe =*/false, 1.0,
+                                    Meshcat::SideOfFaceToRender::kDoubleSide,
+                                    &uuid_generator_);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) override {
@@ -551,15 +621,8 @@ class MeshcatShapeReifier : public ShapeReifier {
  private:
   internal::UuidGenerator& uuid_generator_;
   FileStorage& file_storage_;
+  Rgba rgba_;
 };
-
-int ToMeshcatColor(const Rgba& rgba) {
-  // Note: The returned color discards the alpha value, which is handled
-  // separately (e.g. by the opacity field in the material properties).
-  return (static_cast<int>(255 * rgba.r()) << 16) +
-         (static_cast<int>(255 * rgba.g()) << 8) +
-         static_cast<int>(255 * rgba.b());
-}
 
 // Meshcat inherits three.js's y-up world and it is applied to camera and
 // camera target positions. To simply set the object's position property, we
@@ -818,7 +881,7 @@ class Meshcat::Impl {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_);
+    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
     std::vector<std::shared_ptr<const FileStorage::Handle>> assets;
     MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
                                                .assets = assets};
@@ -1011,31 +1074,9 @@ class Meshcat::Impl {
     internal::SetObjectData data;
     data.path = FullPath(path);
 
-    auto geometry = std::make_unique<internal::BufferGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->position = vertices.cast<float>();
-    geometry->faces = faces.cast<uint32_t>();
-    data.object.geometry = std::move(geometry);
-
-    auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuid_generator_.GenerateRandom();
-    material->type = "MeshPhongMaterial";
-    material->color = ToMeshcatColor(rgba);
-    material->transparent = (rgba.a() != 1.0);
-    material->opacity = rgba.a();
-    material->wireframe = wireframe;
-    material->wireframeLineWidth = wireframe_line_width;
-    material->vertexColors = false;
-    material->side = side;
-    material->flatShading = true;
-    data.object.material = std::move(material);
-
-    internal::MeshData mesh;
-    mesh.uuid = uuid_generator_.GenerateRandom();
-    mesh.type = "Mesh";
-    mesh.geometry = data.object.geometry->uuid;
-    mesh.material = data.object.material->uuid;
-    data.object.object = std::move(mesh);
+    SetLumpedObjectFromTriangleMesh(&data.object, vertices, faces, rgba,
+                                    wireframe, wireframe_line_width, side,
+                                    &uuid_generator_);
 
     Defer([this, data = std::move(data)]() {
       std::stringstream message_stream;
