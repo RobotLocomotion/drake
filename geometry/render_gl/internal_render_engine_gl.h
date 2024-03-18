@@ -146,9 +146,10 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // mesh data has no intrinsic material, then considers the geometry properties
   // or existence of an identically named png file.
   //
-  // @pre GetMeshes() has already been invoked on `filename`.
+  // @pre The file key implied by filename and is_convex is in the meshes_
+  // cache.
   void ImplementMeshesForFile(void* user_data, const Vector3<double>& scale,
-                              const std::string& filename);
+                              const std::string& filename, bool is_convex);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -227,12 +228,25 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   int GetCylinder();
   int GetHalfSpace();
   int GetBox();
-  // For the given mesh filename, returns the indices of the OpenGlGeometries
-  // defined in the file.
-  // If the filename represents an unsupported file type, no geometry is added,
-  // data->accepted is set to false, and the returned vector is empty.
-  std::vector<int> GetMeshes(const std::string& filename,
-                             RegistrationData* data);
+
+  // For the given convex shape, caches a render mesh based on its convex hull
+  // in the geometry cache.
+  //
+  // What gets cached is the unscaled convex hull of the file. The scale factor
+  // gets applied when the mesh is instantiated (i.e., OpenGlInstance).
+  //
+  // @throws if `convex.GetConvexHull()` throws (e.g., no one else has asked for
+  // the hull yet, and it references an unsupported file type or the file data
+  // is degenerate).
+  void CacheConvexHullMesh(const Convex& convex, const RegistrationData& data);
+
+  // For the given mesh filename, parses the file and attempts to place the
+  // resulting render meshes in the geometry cache.
+  //
+  // If the file is an unsupported file type, no geometry is cached, and
+  // data->accepted is set to false.
+  void CacheFileMeshesMaybe(const std::string& filename,
+                            RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render

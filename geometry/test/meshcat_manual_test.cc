@@ -46,10 +46,10 @@ const char* ltrim(const char* message) {
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
-  // For every two items we add to the initial array, decrement start_x by one
+  // For every items we add to the initial array, decrement start_x by one half
   // to keep things centered.
   // Use ++x as the x-position of new items.
-  const double start_x = -8;
+  const double start_x = -8.5;
   double x = start_x;
 
   Vector3d sphere_home{++x, 0, 0};
@@ -73,6 +73,16 @@ int do_main() {
   Vector3d box_home{++x, 0, 0};
   meshcat->SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
   meshcat->SetTransform("box", RigidTransformd(box_home));
+
+  const std::string polytope_with_hole = FindResourceOrThrow(
+      "drake/examples/scene_graph/cuboctahedron_with_hole.obj");
+  meshcat->SetObject("obj_as_convex", Convex(polytope_with_hole, 0.25),
+                     Rgba(0.8, 0.4, 0.1, 1.0));
+  meshcat->SetTransform("obj_as_convex", RigidTransformd(Vector3d{++x, 0, 0}));
+
+  meshcat->SetObject("obj_as_mesh", Mesh(polytope_with_hole, 0.25),
+                     Rgba(0.8, 0.4, 0.1, 1.0));
+  meshcat->SetTransform("obj_as_mesh", RigidTransformd(Vector3d{x, 1, 0}));
 
   meshcat->SetObject("capsule", Capsule(0.25, 0.5), Rgba(0, 1, 1, 1));
   meshcat->SetTransform("capsule", RigidTransformd(Vector3d{++x, 0, 0}));
@@ -240,6 +250,9 @@ Ignore those for now; we'll need to circle back and fix them later.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
+  - an orange polytopes (with a similary shaped texture polytope behind it).
+    The textured shape has a hole through. The orange polytope is its convex
+    hull.
   - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
   - a shiny, green, dented cube (created with a PBR material)
