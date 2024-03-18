@@ -44,7 +44,7 @@
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/render_mesh.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
@@ -218,7 +218,15 @@ void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
 }
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
-  ImplementMesh(convex.filename(), convex.scale(), user_data);
+  auto& data = *static_cast<RegistrationData*>(user_data);
+  const TriangleSurfaceMesh<double> tri_hull =
+      geometry::internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
+  RenderMesh render_mesh =
+      geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+          tri_hull, data.properties, default_diffuse_);
+  // We don't use convex.scale() because it's already built in to the convex
+  // hull.
+  ImplementRenderMesh(std::move(render_mesh), /* scale =*/1.0, data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -246,7 +254,20 @@ void RenderEngineVtk::ImplementGeometry(const HalfSpace&, void* user_data) {
 }
 
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  ImplementMesh(mesh.filename(), mesh.scale(), user_data);
+  auto& data = *static_cast<RegistrationData*>(user_data);
+
+  const std::string extension = mesh.extension();
+  if (extension == ".obj") {
+    data.accepted = ImplementObj(mesh.filename(), mesh.scale(), data);
+  } else if (extension == ".gltf") {
+    data.accepted = ImplementGltf(mesh.filename(), mesh.scale(), data);
+  } else {
+    static const logging::Warn one_time(
+        "RenderEngineVtk only supports Mesh specifications which use "
+        ".obj and .gltf files. Mesh specifications using other mesh types "
+        "(e.g., .stl, .dae, etc.) will be ignored.");
+    data.accepted = false;
+  }
 }
 
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
@@ -507,22 +528,27 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   }
 }
 
-void RenderEngineVtk::ImplementMesh(const std::string& file_name, double scale,
-                                    void* user_data) {
-  auto& data = *static_cast<RegistrationData*>(user_data);
+void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
+                                          const RegistrationData& data) {
+  const RenderMaterial material = mesh.material;
 
-  const std::string extension = Mesh(file_name).extension();
-  if (extension == ".obj") {
-    data.accepted = ImplementObj(file_name, scale, data);
-  } else if (extension == ".gltf") {
-    data.accepted = ImplementGltf(file_name, scale, data);
-  } else {
-    static const logging::Warn one_time(
-        "RenderEngineVtk only supports Mesh/Convex specifications which use "
-        ".obj and .gltf files. Mesh specifications using other mesh types "
-        "(e.g., .stl, .dae, etc.) will be ignored.");
-    data.accepted = false;
+  vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
+      CreateVtkMesh(std::move(mesh));
+
+  if (scale == 1) {
+    ImplementPolyData(mesh_source.GetPointer(), material, data);
+    return;
   }
+
+  vtkNew<vtkTransform> transform;
+  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
+  transform->Scale(scale, scale, scale);
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  transform_filter->SetInputConnection(mesh_source->GetOutputPort());
+  transform_filter->SetTransform(transform.GetPointer());
+  transform_filter->Update();
+
+  ImplementPolyData(transform_filter.GetPointer(), material, data);
 }
 
 bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
@@ -530,25 +556,7 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
       file_name, data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
-    const RenderMaterial material = render_mesh.material;
-
-    vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
-        CreateVtkMesh(std::move(render_mesh));
-
-    if (scale == 1) {
-      ImplementPolyData(mesh_source.GetPointer(), material, data);
-      continue;
-    }
-
-    vtkNew<vtkTransform> transform;
-    // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-    transform->Scale(scale, scale, scale);
-    vtkNew<vtkTransformPolyDataFilter> transform_filter;
-    transform_filter->SetInputConnection(mesh_source->GetOutputPort());
-    transform_filter->SetTransform(transform.GetPointer());
-    transform_filter->Update();
-
-    ImplementPolyData(transform_filter.GetPointer(), material, data);
+    ImplementRenderMesh(std::move(render_mesh), scale, data);
   }
   return true;
 }

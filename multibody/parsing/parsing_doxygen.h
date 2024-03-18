@@ -505,9 +505,9 @@ URDF Note: The comparable feature in URDF is the standard
 
 @subsubsection tag_drake_declare_convex_semantics Semantics
 
-If present, this element causes Drake to treat the parent mesh geometry as
-convex, without any further validation. The resulting geometry in memory will
-be drake::geometry::Convex, rather than drake::geometry::Mesh.
+If present, this element causes Drake to use the convex hull of the named mesh
+geometry. The resulting geometry in memory will be drake::geometry::Convex,
+rather than drake::geometry::Mesh.
 
 @see drake::geometry::Convex, drake::geometry::Mesh
 
