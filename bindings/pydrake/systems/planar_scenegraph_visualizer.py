@@ -11,6 +11,7 @@ import os
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
+    _MakeConvexHull,
     Box,
     Convex,
     Cylinder,
@@ -244,9 +245,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif isinstance(shape, (Mesh, Convex)):
+                    # Legacy behavior for looking for a .obj when the extension
+                    # is not recognized.
                     filename = shape.filename()
                     base, ext = os.path.splitext(filename)
-                    if (ext.lower() != ".obj"
+                    if (ext.lower() not in [".obj", ".vtk", ".gltf"]
                             and substitute_collocated_mesh_files):
                         # Check for a co-located .obj file (case insensitive).
                         for f in glob.glob(base + '.*'):
@@ -261,17 +264,14 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    # Get mesh scaling.
-                    scale = shape.scale()
-                    mesh = ReadObjToTriangleSurfaceMesh(filename, scale)
-                    patch_G = np.vstack(mesh.vertices())
-
-                    # Only store the vertices of the (3D) convex hull of the
-                    # mesh, as any interior vertices will still be interior
-                    # vertices after projection, and will therefore be removed
-                    # in _update_body_fill_verts().
-                    vpoly = optimization.VPolytope(patch_G.T)
-                    patch_G = vpoly.GetMinimalRepresentation().vertices()
+                    temp_mesh = Mesh(filename, shape.scale())
+                    # TODO(21125): When Convex shape *always* has a
+                    # convex hull available, use it instead of recomputing it
+                    # here.
+                    convex_hull = _MakeConvexHull(temp_mesh)
+                    patch_G = np.empty((3, convex_hull.num_vertices()))
+                    for i in range(convex_hull.num_vertices()):
+                        patch_G[:, i] = convex_hull.vertex(i)
 
                 elif isinstance(shape, HalfSpace):
                     # For a half space, we'll simply create a large box with

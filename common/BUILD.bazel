@@ -772,42 +772,6 @@ drake_cc_googletest(
     ],
 )
 
-# Functional test of DRAKE_ASSERT at compile time.
-drake_cc_test(
-    name = "drake_assert_test_compile",
-    deps = [
-        ":essential",
-        ":unused",
-    ],
-)
-
-# Functional test that mistyped DRAKE_ASSERTs will fail to compile.
-sh_test(
-    name = "drake_assert_test_compile_variants",
-    size = "small",
-    srcs = ["test/drake_assert_test_compile_variants.sh"],
-    args = [
-        "$(location //tools/cc_toolchain:capture_cc.env)",
-        "$(location :test/drake_assert_test_compile.cc)",
-    ],
-    data = [
-        "drake_assert.h",
-        "test/drake_assert_test_compile.cc",
-        "unused.h",
-        "//tools/cc_toolchain:capture_cc.env",
-        "//tools/cc_toolchain:toolchain_deps",
-    ],
-    # Fails when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
-)
-
-# TODO(eric.cousineau): Remove this alias and update `issue_template.md` to
-# use the actual target name after 2018/10/31.
-alias(
-    name = "print_host_settings",
-    actual = "//tools/cc_toolchain:print_host_settings",
-)
-
 drake_cc_googletest(
     name = "drake_copyable_test",
     deps = [

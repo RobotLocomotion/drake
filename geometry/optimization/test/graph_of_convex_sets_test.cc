@@ -1141,6 +1141,66 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
   CheckConvexRestriction(result);
 }
 
+TEST_F(ThreeBoxes, LorentzConeConstraint) {
+  Eigen::MatrixXd A(5, 4);
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       3, 0, 1, 0,
+       0, 3, 2, 1,
+       0, 0, 0, 0;
+  // clang-format on
+  Eigen::VectorXd b(5);
+  b << 1, 0, 2, 0, 1;
+
+  auto constraint = std::make_shared<solvers::LorentzConeConstraint>(A, b);
+  e_on_->AddConstraint(
+      solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddConstraint(
+      solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Eigen::VectorXd res(4);
+  res << source_->GetSolution(result), target_->GetSolution(result);
+  auto z = A * res + b;
+  EXPECT_GE(z[0], std::sqrt(std::pow(z[1], 2) + std::pow(z[2], 2) +
+                            std::pow(z[3], 2) + std::pow(z[4], 2)));
+  EXPECT_GE(z[0], 0);
+}
+
+TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
+  Eigen::MatrixXd A(5, 4);
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       3, 0, 1, 0,
+       0, 3, 2, 1,
+       0, 0, 0, 0;
+  // clang-format on
+  Eigen::VectorXd b(5);
+  b << 1, 0, 2, 0, 1;
+
+  auto constraint =
+      std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
+  e_on_->AddConstraint(
+      solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddConstraint(
+      solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Eigen::VectorXd res(4);
+  res << source_->GetSolution(result), target_->GetSolution(result);
+  auto z = A * res + b;
+  EXPECT_GE(z[0] * z[1], std::sqrt(std::pow(z[2], 2) + std::pow(z[3], 2) +
+                                   std::pow(z[4], 2)));
+  EXPECT_GE(z[0], 0);
+  EXPECT_GE(z[1], 0);
+}
+
 TEST_F(ThreeBoxes, SolveConvexRestriction) {
   const Vector2d b{.5, .3};
 

@@ -19,13 +19,20 @@
           <izz>16.6666666</izz>
         </inertia>
       </inertial>
-      <visual name="box">
+      <visual name="visual">
         <geometry>
           <mesh>
             <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
           </mesh>
         </geometry>
       </visual>
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </collision>
     </link>
     <static>1</static>
   </model>

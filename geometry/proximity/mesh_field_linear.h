@@ -4,6 +4,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,6 +20,18 @@
 
 namespace drake {
 namespace geometry {
+
+/** Specify whether to generate gradients, and how to handle numerical
+ failures. */
+enum class MeshGradientMode {
+  /** Don't compute gradients at all. */
+  kNone,
+  /** If gradient computation fails, mark it degenerate. See
+   MeshFieldLinear::is_gradient_field_degenerate(). */
+  kOkOrMarkDegenerate,
+  /** If gradient computation fails, throw an exception. */
+  kOkOrThrow,
+};
 
 /**
  %MeshFieldLinear represents a continuous piecewise-linear scalar field `f`
@@ -124,62 +137,66 @@ class MeshFieldLinear {
   /** Constructs a MeshFieldLinear.
    @param values  The field value at each vertex of the mesh.
    @param mesh    The mesh M to which this field refers.
-   @param calculate_gradient Calculate gradient field when true, default is
-                  true. Calculating gradient allows EvaluateCartesian() to
-                  evaluate the field directly instead of converting
-                  Cartesian coordinates to barycentric coordinates first.
-                  If calculate_gradient is false, EvaluateCartesian() will be
-                  slower. On the other hand, calculating gradient requires
-                  certain quality from mesh elements. If the mesh quality is
-                  very poor, calculating gradient may throw.
+   @param gradient_mode  Whether to calculate gradient field, and how to report
+                  failures. Calculating gradient allows EvaluateCartesian() to
+                  evaluate the field directly instead of converting Cartesian
+                  coordinates to barycentric coordinates first.  If no gradient
+                  is calculated, EvaluateCartesian() will be slower. On the
+                  other hand, calculating gradient requires certain quality
+                  from mesh elements. If the mesh quality is very poor,
+                  calculating gradient may either throw or mark the gradient
+                  field as degenerate. See is_gradient_field_degenerate(). The
+                  default is to succeed or throw.
 
-   You can use the parameter `calculate_gradient` to trade time and space
-   of this constructor for speed of EvaluateCartesian().
-   For `calculate_gradient` = true (by default), this constructor will take
-   longer time to compute and will store one field-gradient vector for each
-   element in the mesh, but the interpolation by EvaluateCartesian() will be
-   faster because we will use a dot product with the Cartesian coordinates
-   directly, instead of solving a linear system to convert Cartesian
-   coordinates to barycentric coordinates first. For `calculate_gradient` =
-   false, this constructor will be faster and use less memory, but
-   EvaluateCartesian() will be slower.
+   You can use the parameter `gradient_mode` to trade time and space of this
+   constructor for speed of EvaluateCartesian().  For `gradient_mode` !=
+   `kNone` (`kOkOrThrow` by default, or `kOkOrMarkDegenerate` similarly) and
+   good mesh quality, this constructor will take longer time to compute and
+   will store one field-gradient vector for each element in the mesh, but the
+   interpolation by EvaluateCartesian() will be faster because we will use a
+   dot product with the Cartesian coordinates directly, instead of solving a
+   linear system to convert Cartesian coordinates to barycentric coordinates
+   first.
 
-   When `calculate_gradient` = true, EvaluateGradient() on a mesh element
-   will be available. Otherwise, EvaluateGradient() will `throw`.
+   When `gradient_mode` != `kNone` and gradient calculation succeeds,
+   EvaluateGradient() on a mesh element will be available. Otherwise,
+   EvaluateGradient() will `throw`.
 
-   The following features are independent of the choice of `calculate_gradient`.
+   The following features are independent of the choice of `gradient_mode`.
 
    - Evaluating the field at a vertex.
    - Evaluating the field at a user-given barycentric coordinate.
 
-   @note When `calculate_gradient` = true, a poor quality element can cause
-   `throw` due to numerical errors in calculating field gradients. A poor
-   quality element is defined as having an extremely large aspect ratio
-   R=E/h, where E is the longest edge length and h is the shortest height.
-   A height of a triangular element is the distance between a vertex and its
-   opposite edge. A height of a tetrahedral element is the distance between a
-   vertex and its opposite triangular face. For example, an extremely skinny
-   triangle has poor quality, and a tetrahedron with four vertices almost
-   co-planar also has poor quality. The exact threshold of the acceptable aspect
-   ratio depends on many factors including the underlying scalar type and the
-   exact shape and size of the element; however, a rough conservative
-   estimation is 1e12.
+   @note When `gradient_mode` != `kNone`, a poor quality element can cause
+   numerical errors in calculating field gradients. A poor quality element is
+   defined as having an extremely large aspect ratio R=E/h, where E is the
+   longest edge length and h is the shortest height.  A height of a triangular
+   element is the distance between a vertex and its opposite edge. A height of
+   a tetrahedral element is the distance between a vertex and its opposite
+   triangular face. For example, an extremely skinny triangle has poor quality,
+   and a tetrahedron with four vertices almost co-planar also has poor
+   quality. The exact threshold of the acceptable aspect ratio depends on many
+   factors including the underlying scalar type and the exact shape and size of
+   the element; however, a rough conservative estimation is 1e12.
 
    @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::vector<T>&& values, const MeshType* mesh,
-                  bool calculate_gradient = true)
+                  MeshGradientMode gradient_mode = MeshGradientMode::kOkOrThrow)
       : mesh_(mesh), values_(std::move(values)) {
     DRAKE_DEMAND(mesh_ != nullptr);
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
                  this->mesh().num_vertices());
-    if (calculate_gradient) {
-      CalcGradientField();
-      CalcValueAtMeshOriginForAllElements();
-      DRAKE_DEMAND(mesh->num_elements() == static_cast<int>(gradients_.size()));
-      DRAKE_DEMAND(mesh->num_elements() ==
-                   static_cast<int>(values_at_Mo_.size()));
+    if (gradient_mode != MeshGradientMode::kNone) {
+      CalcGradientField(gradient_mode);
+      if (!is_gradient_field_degenerate_) {
+        CalcValueAtMeshOriginForAllElements();
+        DRAKE_DEMAND(mesh->num_elements() ==
+                     static_cast<int>(gradients_.size()));
+        DRAKE_DEMAND(mesh->num_elements() ==
+                     static_cast<int>(values_at_Mo_.size()));
+      }
     }
   }
 
@@ -207,6 +224,13 @@ class MeshFieldLinear {
     DRAKE_DEMAND(static_cast<int>(gradients_.size()) == mesh_->num_elements());
 
     CalcValueAtMeshOriginForAllElements();
+  }
+
+  /** @returns true iff the gradient field could not be computed, and the mesh
+   was constructed with MeshGradientMode::kOkOrMarkDegenerate.
+   */
+  bool is_gradient_field_degenerate() const {
+    return is_gradient_field_degenerate_;
   }
 
   /** Evaluates the field value at a vertex.
@@ -278,6 +302,9 @@ class MeshFieldLinear {
   template <typename C>
   promoted_numerical_t<C, T> EvaluateCartesian(int e,
                                                const Vector3<C>& p_MQ) const {
+    if (is_gradient_field_degenerate_) {
+      throw std::runtime_error("Gradient field is degenerate.");
+    }
     if (gradients_.size() == 0) {
       return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
     } else {
@@ -291,8 +318,12 @@ class MeshFieldLinear {
   The gradient is a vector in R³ expressed in frame M. For surface meshes, it
   will particularly lie parallel to the plane of the corresponding triangle.
   @throws std::exception if the gradient vector was not calculated.
+  @throws std::exception if the gradient field is marked degenerate.
   */
   Vector3<T> EvaluateGradient(int e) const {
+    if (is_gradient_field_degenerate_) {
+      throw std::runtime_error("Gradient field is degenerate.");
+    }
     if (gradients_.size() == 0) {
       throw std::runtime_error("Gradient vector was not calculated.");
     }
@@ -364,15 +395,28 @@ class MeshFieldLinear {
     return std::unique_ptr<MeshFieldLinear>(new MeshFieldLinear(*this));
   }
 
-  void CalcGradientField() {
+  void CalcGradientField(MeshGradientMode gradient_mode) {
     gradients_.clear();
     gradients_.reserve(this->mesh().num_elements());
     for (int e = 0; e < this->mesh().num_elements(); ++e) {
-      gradients_.push_back(CalcGradientVector(e));
+      std::optional<Vector3<T>> grad = MaybeCalcGradientVector(e);
+      if (!grad.has_value()) {
+        if (gradient_mode == MeshGradientMode::kOkOrThrow) {
+          throw std::runtime_error(
+              "A mesh field element was degenerate;"
+              " cannot compute gradient.");
+        } else {
+          DRAKE_DEMAND(gradient_mode == MeshGradientMode::kOkOrMarkDegenerate);
+          is_gradient_field_degenerate_ = true;
+          gradients_.clear();
+          return;
+        }
+      }
+      gradients_.push_back(*grad);
     }
   }
 
-  Vector3<T> CalcGradientVector(int e) const {
+  std::optional<Vector3<T>> MaybeCalcGradientVector(int e) const {
     // In the case of the PolygonSurfaceMesh, where kVertexPerElement is marked
     // as "indeterminate" (aka -1), we'll simply use the first three vertices.
     // If we were to have a PolytopeVolumeMesh (i.e., a volume mesh that is
@@ -383,7 +427,7 @@ class MeshFieldLinear {
     for (int i = 0; i < kVCount; ++i) {
       u[i] = values_[this->mesh().element(e).vertex(i)];
     }
-    return this->mesh().CalcGradientVectorOfLinearField(u, e);
+    return this->mesh().MaybeCalcGradientVectorOfLinearField(u, e);
   }
 
   void CalcValueAtMeshOriginForAllElements() {
@@ -418,6 +462,8 @@ class MeshFieldLinear {
   // piecewise linear field on the mesh elements_[i] at Mo the origin of
   // frame M of the mesh. Notice that Mo may or may not lie inside elements_[i].
   std::vector<T> values_at_Mo_;
+
+  bool is_gradient_field_degenerate_{false};
 };
 
 }  // namespace geometry

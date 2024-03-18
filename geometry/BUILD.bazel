@@ -263,6 +263,7 @@ drake_cc_library(
         ":kinematics_vector",
         ":proximity_engine",
         ":utilities",
+        "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
         "//math:gradient",
     ],
@@ -353,6 +354,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
@@ -668,12 +670,25 @@ drake_cc_library(
         ":rgba",
         ":scene_graph",
         "//common:essential",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
         "//systems/analysis:instantaneous_realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
     ],
+)
+
+drake_cc_library(
+    name = "vtk_opengl_init",
+    srcs = ["vtk_opengl_init.cc"],
+    internal = True,
+    visibility = ["//geometry:__subpackages__"],
+    deps = [
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+    alwayslink = True,
 )
 
 drake_cc_googletest(
@@ -695,6 +710,15 @@ drake_cc_googletest(
 )
 
 # -----------------------------------------------------
+
+filegroup(
+    name = "test_gltf_files",
+    testonly = 1,
+    srcs = [
+        "test/cube_with_hole.bin",
+        "test/cube_with_hole.gltf",
+    ],
+)
 
 filegroup(
     name = "test_obj_files",
@@ -859,6 +883,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":geometry_state",
         "//common/test_utilities",

@@ -11,6 +11,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/meshcat_graphviz.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
 
@@ -201,7 +202,13 @@ void MeshcatVisualizer<T>::SetObjects(
           fmt::format("{}/{}", frame_path, geom_id.get_value());
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
-      bool used_hydroelastic = false;
+
+      // The "object" will typically be the geometry's shape. But, for the
+      // proximity role, we prefer, first, the hydroelastic surface if
+      // available, or, second, the convex hull. Record if we've used one of
+      // those proxies.
+      bool geometry_already_set = false;
+
       if constexpr (std::is_same_v<T, double>) {
         if (params_.show_hydroelastic) {
           auto maybe_mesh = inspector.maybe_get_hydroelastic_mesh(geom_id);
@@ -210,20 +217,34 @@ void MeshcatVisualizer<T>::SetObjects(
                          [&](const TriangleSurfaceMesh<double>* mesh) {
                            DRAKE_DEMAND(mesh != nullptr);
                            meshcat_->SetObject(path, *mesh, rgba);
-                           used_hydroelastic = true;
+                           geometry_already_set = true;
                          },
                          [&](const VolumeMesh<double>* mesh) {
                            DRAKE_DEMAND(mesh != nullptr);
                            meshcat_->SetObject(
                                path, ConvertVolumeToSurfaceMesh(*mesh), rgba);
-                           used_hydroelastic = true;
+                           geometry_already_set = true;
                          }},
               maybe_mesh);
         }
       }
-      if (!used_hydroelastic) {
+
+      // Proximity role favors convex hulls if available.
+      if (const PolygonSurfaceMesh<double>* hull = nullptr;
+          (!geometry_already_set) &&
+          (params_.role == Role::kProximity) &&
+          (hull = inspector.GetConvexHull(geom_id))) {
+        // Convert polygonal surface mesh to triangle surface mesh.
+        const TriangleSurfaceMesh<double> tri_hull =
+            internal::MakeTriangleFromPolygonMesh(*hull);
+        meshcat_->SetObject(path, tri_hull, rgba);
+        geometry_already_set = true;
+      }
+
+      if (!geometry_already_set) {
         meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
       }
+
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
       geometries_[geom_id] = path;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.

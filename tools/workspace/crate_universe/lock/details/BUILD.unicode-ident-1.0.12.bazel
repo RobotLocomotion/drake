@@ -7,25 +7,43 @@
 ###############################################################################
 
 load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_license//rules:license.bzl", "license")
+load("@rules_license//rules:package_info.bzl", "package_info")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_package_metadata = [
+        ":license",
+        ":package_info",
+    ],
+    default_visibility = ["//visibility:public"],
+)
 
-# licenses([
-#     "TODO",  # (MIT OR Apache-2.0) AND Unicode-DFS-2016
-# ])
-filegroup(
-    name = "license_glob",
-    srcs = glob(
-        ["LICENSE*"],
-        allow_empty = False,
-    ),
+package_info(
+    name = "package_info",
+    package_name = "unicode-ident",
+    package_url = "https://github.com/dtolnay/unicode-ident",
+    package_version = "1.0.12",
+)
+
+license(
+    name = "license",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+        "@rules_license//licenses/spdx:MIT",
+        "@rules_license//licenses/spdx:Unicode-DFS-2016",
+    ],
+    license_text = "LICENSE-APACHE",
 )
 
 rust_library(
     name = "unicode_ident",
-    srcs = glob(["**/*.rs"]),
+    srcs = glob(
+        include = ["**/*.rs"],
+        allow_empty = False,
+    ),
     compile_data = glob(
         include = ["**"],
+        allow_empty = True,
         exclude = [
             "**/* *",
             ".tmp_git_root/**/*",

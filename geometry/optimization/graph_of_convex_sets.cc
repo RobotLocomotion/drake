@@ -44,6 +44,7 @@ using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
+using solvers::LorentzConeConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
@@ -750,6 +751,28 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
         }
       }
     }
+  } else if (LorentzConeConstraint* lcc =
+                 dynamic_cast<LorentzConeConstraint*>(constraint)) {
+    // z ∈ K for z = Ax + b becomes
+    // z ∈ K for z = Ax + bϕ = [b A] [ϕ; x]
+    // (Notice that this is the same as for a RotatedLorentzConeConstraint,
+    // as it does not depend on whether the cone is rotated or not).
+    MatrixXd A_cone = MatrixXd::Zero(lcc->A().rows(), vars.size());
+    A_cone.block(0, 0, lcc->A().rows(), 1) = lcc->b();
+    A_cone.block(0, 1, lcc->A().rows(), lcc->A().cols()) = lcc->A_dense();
+    prog->AddLorentzConeConstraint(A_cone, VectorXd::Zero(lcc->A().rows()),
+                                   vars);
+  } else if (RotatedLorentzConeConstraint* rc =
+                 dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
+    // z ∈ K for z = Ax + b becomes
+    // z ∈ K for z = Ax + bϕ = [b A] [ϕ; x]
+    // (Notice that this is the same as for a LorentzConeConstraint,
+    // as it does not depend on whether the cone is rotated or not).
+    MatrixXd A_cone = MatrixXd::Zero(rc->A().rows(), vars.size());
+    A_cone.block(0, 0, rc->A().rows(), 1) = rc->b();
+    A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
+    prog->AddRotatedLorentzConeConstraint(A_cone,
+                                          VectorXd::Zero(rc->A().rows()), vars);
   } else {
     throw std::runtime_error(
         fmt::format("ShortestPathProblem::Edge does not support this "

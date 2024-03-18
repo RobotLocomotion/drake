@@ -248,3 +248,8 @@ class TestGeometryHydro(unittest.TestCase):
         ]
         for i, expected in enumerate(expected_vertices):
             self.assertListEqual(list(vertices[i]), expected)
+
+    def test_make_convex_hull(self):
+        mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
+        hull = mut._MakeConvexHull(mut.Convex(mesh_path))
+        self.assertIsInstance(hull, mut.PolygonSurfaceMesh)

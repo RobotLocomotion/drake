@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":posed_half_space",
         ":sorted_triplet",
         ":tessellation_strategy",
@@ -481,7 +482,12 @@ drake_cc_library(
         "//common:essential",
         "//common:find_resource",
         "//geometry:read_obj",
+        "//geometry:vtk_opengl_init",
+        "//math:geometric_transform",
         "@qhull_internal//:qhull",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -760,6 +766,16 @@ drake_cc_library(
     deps = [
         ":mesh_traits",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygon_to_triangle_mesh",
+    srcs = ["polygon_to_triangle_mesh.cc"],
+    hdrs = ["polygon_to_triangle_mesh.h"],
+    deps = [
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
     ],
 )
 
@@ -1226,6 +1242,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "make_convex_hull_mesh_test",
     data = [
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
         "//geometry/render:test_models",
@@ -1235,6 +1252,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -1346,6 +1364,7 @@ drake_cc_googletest(
         ":make_box_mesh",
         ":mesh_field",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],
@@ -1488,6 +1507,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "polygon_to_triangle_mesh_test",
+    deps = [
+        ":polygon_to_triangle_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "posed_half_space_test",
     deps = [
         ":posed_half_space",
@@ -1514,6 +1541,7 @@ drake_cc_googletest(
     deps = [
         ":triangle_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],
@@ -1533,6 +1561,7 @@ drake_cc_googletest(
         ":mesh_field",
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
     ],

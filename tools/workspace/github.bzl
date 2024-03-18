@@ -533,11 +533,18 @@ def setup_github_release_attachments(repository_ctx):
             for pattern in patterns
         ]
         if filename in extract:
-            repository_ctx.download_and_extract(
-                urls,
-                stripPrefix = strip_prefix.get(filename, None),
-                sha256 = _sha256(sha256),
-            )
+            maybe_strip_prefix = strip_prefix.get(filename, None)
+            if maybe_strip_prefix != None:
+                repository_ctx.download_and_extract(
+                    urls,
+                    stripPrefix = maybe_strip_prefix,
+                    sha256 = _sha256(sha256),
+                )
+            else:
+                repository_ctx.download_and_extract(
+                    urls,
+                    sha256 = _sha256(sha256),
+                )
         else:
             repository_ctx.download(
                 urls,

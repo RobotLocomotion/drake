@@ -14,6 +14,7 @@ def _python_lint(name_prefix, files, ignore, disallow_executable):
         name = name_prefix + "_pycodestyle",
         size = "small",
         srcs = ["@pycodestyle//:pycodestyle"],
+        deps = ["@drake//tools/lint:module_py"],
         data = files,
         args = ignore_args + locations,
         main = "@pycodestyle//:pycodestyle.py",

@@ -112,8 +112,8 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   EXPECT_TRUE(geometries.is_rigid(rigid_id));
   EXPECT_FALSE(geometries.is_deformable(rigid_id));
 
-  /* Trying to a rigid geometry without the resolution hint property is a no-op.
-   */
+  /* Trying to add a rigid geometry without the resolution hint property is a
+   no-op. */
   GeometryId g_id = GeometryId::get_new_id();
   ProximityProperties empty_props;
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), g_id, empty_props,
@@ -121,6 +121,13 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
 
   EXPECT_FALSE(geometries.is_rigid(g_id));
   EXPECT_FALSE(geometries.is_deformable(g_id));
+
+  /* Trying to add an unsupported rigid geometry is a no-op. */
+  GeometryId half_space_id = GeometryId::get_new_id();
+  geometries.MaybeAddRigidGeometry(HalfSpace{}, half_space_id, props,
+                                   default_pose());
+  EXPECT_FALSE(geometries.is_rigid(half_space_id));
+  EXPECT_FALSE(geometries.is_deformable(half_space_id));
 }
 
 /* Test coverage for all unsupported shapes as rigid geometries: MeshcatCone and

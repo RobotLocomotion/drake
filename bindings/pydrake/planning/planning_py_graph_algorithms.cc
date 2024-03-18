@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
+#include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
 
 namespace drake {
@@ -47,6 +48,12 @@ void DefinePlanningGraphAlgorithms(py::module m) {
             py::arg("initial_guess"), cls_doc.SetInitialGuess.doc)
         .def("GetInitialGuess", &MaxCliqueSolverViaMip::GetInitialGuess,
             cls_doc.GetInitialGuess.doc);
+  }
+  {
+    const auto& cls_doc = doc.MaxCliqueSolverViaGreedy;
+    py::class_<MaxCliqueSolverViaGreedy, MaxCliqueSolverBase>(
+        m, "MaxCliqueSolverViaGreedy", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc);
   }
 }
 

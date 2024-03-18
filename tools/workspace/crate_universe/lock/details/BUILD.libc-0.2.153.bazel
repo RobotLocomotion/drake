@@ -8,25 +8,42 @@
 
 load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_license//rules:license.bzl", "license")
+load("@rules_license//rules:package_info.bzl", "package_info")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_package_metadata = [
+        ":license",
+        ":package_info",
+    ],
+    default_visibility = ["//visibility:public"],
+)
 
-# licenses([
-#     "TODO",  # MIT OR Apache-2.0
-# ])
-filegroup(
-    name = "license_glob",
-    srcs = glob(
-        ["LICENSE*"],
-        allow_empty = False,
-    ),
+package_info(
+    name = "package_info",
+    package_name = "libc",
+    package_url = "https://github.com/rust-lang/libc",
+    package_version = "0.2.153",
+)
+
+license(
+    name = "license",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+        "@rules_license//licenses/spdx:MIT",
+    ],
+    license_text = "LICENSE-APACHE",
 )
 
 rust_library(
     name = "libc",
-    srcs = glob(["**/*.rs"]),
+    srcs = glob(
+        include = ["**/*.rs"],
+        allow_empty = False,
+    ),
     compile_data = glob(
         include = ["**"],
+        allow_empty = True,
         exclude = [
             "**/* *",
             ".tmp_git_root/**/*",
@@ -96,8 +113,11 @@ rust_library(
 )
 
 cargo_build_script(
-    name = "libc_build_script",
-    srcs = glob(["**/*.rs"]),
+    name = "libc_bs",
+    srcs = glob(
+        include = ["**/*.rs"],
+        allow_empty = False,
+    ),
     crate_features = [
         "default",
         "std",
@@ -106,6 +126,7 @@ cargo_build_script(
     crate_root = "build.rs",
     data = glob(
         include = ["**"],
+        allow_empty = True,
         exclude = [
             "**/* *",
             ".tmp_git_root/**/*",
@@ -132,6 +153,6 @@ cargo_build_script(
 
 alias(
     name = "build_script_build",
-    actual = ":libc_build_script",
+    actual = ":libc_bs",
     tags = ["manual"],
 )

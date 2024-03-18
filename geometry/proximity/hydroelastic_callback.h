@@ -183,6 +183,13 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
 
+  // One or two objects have vanished. We can report that we're done
+  // calculating the contact (no contact).
+  if (data->geometries.is_vanished(encoding_a.id()) ||
+      data->geometries.is_vanished(encoding_b.id())) {
+    return CalcContactSurfaceResult::kCalculated;
+  }
+
   const HydroelasticType type_A =
       data->geometries.hydroelastic_type(encoding_a.id());
   const HydroelasticType type_B =

@@ -37,6 +37,24 @@ class TestResourceTool(unittest.TestCase):
         self.assertTrue(Path(absolute_path).is_file(),
                         f"Path does not exist: {absolute_path}")
 
+    @unittest.skipIf(
+        sys.platform == "darwin",
+        "Our scaffolding uses LD_LIBRARY_PATH, which is not a thing on macOS")
+    def test_symlinked_finding(self):
+        # Prepare a copy of resource_tool that loads its library via a symlink.
+        special_bin = self._install_dir / "foo/bar/baz/quux/bin"
+        special_bin.mkdir(parents=True)
+        (special_bin / "libdrake_marker.so").symlink_to(
+            self._install_dir / "lib/libdrake_marker.so")
+        env = {"LD_LIBRARY_PATH": str(special_bin)}
+        special_tool = special_bin / "resource_tool"
+        special_tool.hardlink_to(self._resource_tool)
+        absolute_path = install_test_helper.check_output(
+            [special_tool, "--print_resource_path", self._resource],
+            env=env, stderr=subprocess.STDOUT).strip()
+        self.assertTrue(Path(absolute_path).is_file(),
+                        f"Path does not exist: {absolute_path}")
+
     def test_ignores_runfiles(self):
         """The installed resource_tool ignores non-Drake runfiles."""
         tool_env = dict(os.environ)

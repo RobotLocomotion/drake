@@ -3,6 +3,7 @@ import copy
 import dataclasses
 import math
 import functools
+import types
 import typing
 
 import numpy as np
@@ -215,12 +216,19 @@ def _enumerate_field_types(schema):
         f"Schema objects of type {schema} are not yet supported")
 
 
+def _is_union(generic_base):
+    """Given a generic_base type (from typing.get_origin), returns True iff it
+    is a sum type (i.e., a Union).
+    """
+    return generic_base in [typing.Union, types.UnionType]
+
+
 def _get_nested_optional_type(schema):
     """If the given schema (i.e., type) is equivalent to an Optional[Foo], then
     returns Foo. Otherwise, returns None.
     """
     generic_base = typing.get_origin(schema)
-    if generic_base == typing.Union:
+    if _is_union(generic_base):
         generic_args = typing.get_args(schema)
         NoneType = type(None)
         if len(generic_args) == 2 and generic_args[-1] == NoneType:
@@ -239,7 +247,7 @@ def _create_from_schema(*, schema, forthcoming_value):
     When schema is a numpy type, returns a 1-d ndarray with the same size as
     the ``forthcoming_value`` if provided, otherwise an empty array.
     """
-    if typing.get_origin(schema) == typing.Union:
+    if _is_union(typing.get_origin(schema)):
         return None
     if schema == np.ndarray:
         size = len(forthcoming_value)
@@ -356,7 +364,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         return
 
     # Handle schema sum types (std::variant<...> or typing.Union[...]).
-    if generic_base == typing.Union:
+    if _is_union(generic_base):
         # The YAML data might be a scalar value (as opposed to a mapping).
         yaml_value_type = type(yaml_value)
         if yaml_value_type in list(_PRIMITIVE_YAML_TYPES) + [type(None)]:
@@ -608,7 +616,7 @@ def _yaml_dump_typed_item(*, obj, schema):
         return _yaml_dump_typed_item(obj=obj, schema=optional_schema)
 
     # Handle schema sum types (std::variant<...> or typing.Union[...]).
-    if generic_base == typing.Union:
+    if _is_union(generic_base):
         if obj is None:
             if type(None) in generic_args:
                 return None

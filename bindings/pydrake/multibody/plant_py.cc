@@ -910,6 +910,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
             py::arg("body_index"), py_rvp::reference_internal,
             cls_doc.GetBodyFrameIdIfExists.doc)
+        .def("GetVisualGeometriesForBody", &Class::GetVisualGeometriesForBody,
+            py::arg("body"), py_rvp::reference_internal,
+            cls_doc.GetVisualGeometriesForBody.doc)
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
             py_rvp::reference_internal,

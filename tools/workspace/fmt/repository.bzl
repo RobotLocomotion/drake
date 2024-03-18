@@ -1,12 +1,9 @@
-load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:os.bzl", "is_wheel_build")
 load("//tools/workspace:github.bzl", "setup_github_repository")
 load("//tools/workspace:pkg_config.bzl", "setup_pkg_config_repository")
 
 def _impl(repo_ctx):
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-    if os_result.is_manylinux or os_result.is_macos_wheel:
+    if is_wheel_build(repo_ctx):
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
     else:

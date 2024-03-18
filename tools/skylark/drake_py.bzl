@@ -56,6 +56,7 @@ def _py_target_isolated(
         main = None,
         isolate = True,
         visibility = None,
+        legacy_create_init = False,
         **kwargs):
     # See #8041 for more details.
     # TODO(eric.cousineau): See if we can remove these shims once we stop
@@ -81,6 +82,7 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
+            legacy_create_init = legacy_create_init,
             **kwargs
         )
 
@@ -104,6 +106,7 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
+            legacy_create_init = legacy_create_init,
             **kwargs
         )
 

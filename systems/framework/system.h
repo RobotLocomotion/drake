@@ -313,6 +313,8 @@ class System : public SystemBase {
 
   @retval xcdot Time derivatives ẋ꜀ of x꜀ returned as a reference to an object
                 of the same type and size as `context`'s continuous state.
+
+  @see BatchEvalTimeDerivatives() for a batch version of this method.
   @see CalcTimeDerivatives(), CalcImplicitTimeDerivativesResidual(),
        get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
@@ -789,9 +791,9 @@ class System : public SystemBase {
     context.SetDiscreteState(updated);
   @endcode
   You can write the updated values to a different %Context than the one you
-  used to calculate the update; the requirement is only that the discrete
-  state in the destination has the same structure (number of groups and size of
-  each group).
+  used to calculate the update; the requirement is only that the discrete state
+  in the destination has the same structure (number of groups and size of each
+  group).
 
   You can use GetUniquePeriodicDiscreteUpdateAttribute() to check whether you
   can call %EvalUniquePeriodicDiscreteUpdate() safely, and to find the unique
@@ -800,24 +802,24 @@ class System : public SystemBase {
   @warning Even if we find a unique discrete update timing as described above,
   there may also be unrestricted updates performed with that timing or other
   timings. (Unrestricted updates can modify any state variables _including_
-  discrete variables.) Also, there may be trigger types other than periodic that
-  can modify discrete variables. This function does not attempt to look for any
-  of those; they are simply ignored. If you are concerned with those, you can
-  use GetPerStepEvents(), GetInitializationEvents(), and GetPeriodicEvents() to
-  get a more comprehensive picture of the event landscape.
+  discrete variables.) Also, there may be trigger types other than periodic
+  that can modify discrete variables. This function does not attempt to look
+  for any of those; they are simply ignored. If you are concerned with those,
+  you can use GetPerStepEvents(), GetInitializationEvents(), and
+  GetPeriodicEvents() to get a more comprehensive picture of the event
+  landscape.
 
-  @param[in] context
-      The Context containing the current %System state and the mutable cache
-      space into which the result is written. The current state is _not_
-      modified, though the cache entry may be updated.
+  @param[in] context The Context containing the current %System state and the
+      mutable cache space into which the result is written. The current state
+      is _not_ modified, though the cache entry may be updated.
   @returns
       A reference to the DiscreteValues cache space in `context` containing
       the result of applying the discrete update event handlers to the current
       discrete variable values.
 
-  @note The referenced cache entry is recalculated if anything in the
-      given Context has changed since last calculation. Subsequent calls just
-      return the already-calculated value.
+  @note The referenced cache entry is recalculated if anything in the given
+      Context has changed since last calculation. Subsequent calls just return
+      the already-calculated value.
 
   @throws std::exception if there is not exactly one periodic timing in this
   %System (which may be a Diagram) that triggers discrete update events.
@@ -825,12 +827,13 @@ class System : public SystemBase {
   @throws std::exception if it invokes an event handler that returns status
   indicating failure.
 
-  @par Implementation
-  If recalculation is needed, copies the current discrete state values into
-  preallocated `context` cache space. Applies the discrete update event handlers
-  (in an unspecified order) to the cache copy, possibly updating it. Returns a
-  reference to the possibly-updated cache space.
+  @par Implementation If recalculation is needed, copies the current discrete
+  state values into preallocated `context` cache space. Applies the discrete
+  update event handlers (in an unspecified order) to the cache copy, possibly
+  updating it. Returns a reference to the possibly-updated cache space.
 
+  @see BatchEvalUniquePeriodicDiscreteUpdate() for a batch version of this
+  method.
   @see GetUniquePeriodicDiscreteUpdateAttribute(), GetPeriodicEvents() */
   const DiscreteValues<T>& EvalUniquePeriodicDiscreteUpdate(
       const Context<T>& context) const;

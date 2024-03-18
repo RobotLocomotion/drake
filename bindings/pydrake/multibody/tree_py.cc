@@ -1460,6 +1460,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.CalcRotationalInertia.doc)
         .def("IsPhysicallyValid", &Class::IsPhysicallyValid,
             cls_doc.IsPhysicallyValid.doc)
+        .def("CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid",
+            &Class::CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid,
+            cls_doc.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid.doc)
         .def("CopyToFullMatrix6", &Class::CopyToFullMatrix6,
             cls_doc.CopyToFullMatrix6.doc)
         .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
