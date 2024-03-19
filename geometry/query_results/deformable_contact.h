@@ -122,7 +122,9 @@ class ContactParticipation {
  polygonal surface mesh. We call the centroids of the polygonal elements in this
  mesh "contact points". DeformableContactSurface stores this polygonal mesh as
  well as information about each contact point. We maintain the convention that
- geometry A is always deformable and geometry B may be deformable.
+ geometry A is always deformable and geometry B may be deformable. When both
+ geometries are deformable, we maintain the convention that the GeometryId of
+ geometry A is less than the GeometryId of geometry B.
  @tparam_double_only */
 template <typename T>
 class DeformableContactSurface {
@@ -172,8 +174,12 @@ class DeformableContactSurface {
       std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
       std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B);
 
+  /* Returns the GeometryId of geometry A. If `is_B_deformable()` is true, this
+   is guaranteed to be less than id_B(). */
   GeometryId id_A() const { return id_A_; }
 
+  /* Returns the GeometryId of geometry B. If `is_B_deformable()` is true, this
+   is guaranteed to be greater than id_A(). */
   GeometryId id_B() const { return id_B_; }
 
   const PolygonSurfaceMesh<T>& contact_mesh_W() const {
