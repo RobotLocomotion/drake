@@ -151,7 +151,8 @@ class TestControllers(unittest.TestCase):
 
         controller = InverseDynamics(
             plant=plant,
-            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
+            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation,
+            plant_context=plant.CreateDefaultContext())
         self.assertIsInstance(controller.get_input_port_estimated_state(),
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
@@ -187,7 +188,9 @@ class TestControllers(unittest.TestCase):
                                                kp=kp,
                                                ki=ki,
                                                kd=kd,
-                                               has_reference_acceleration=True)
+                                               has_reference_acceleration=True,
+                                               plant_context=
+                                                plant.CreateDefaultContext())
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 

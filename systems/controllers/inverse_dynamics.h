@@ -74,16 +74,21 @@ class InverseDynamics final : public LeafSystem<T> {
   /**
    * Constructs the InverseDynamics system.
    *
-   * @param plant Pointer to the multibody plant model. The life span of @p
-   * plant must be longer than that of this instance.
+   * @param plant Pointer to the multibody plant model. The life span of
+   * `plant` must be longer than that of this instance.
    * @param mode If set to kGravityCompensation, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
+   * @param plant_context A specific context of `plant` to use for computing
+   * inverse dynamics. For example, you can use this to pass in a context with
+   * modified mass parameters. The constructor takes ownership of this context.
+   * If `nullptr`, a default context will be created.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
-   * `true`).
+   * `true`). Also, `plant` and `plant_context` must be compatible.
    */
   explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           std::unique_ptr<Context<T>> plant_context = nullptr);
 
   /**
    * Constructs the InverseDynamics system and takes the ownership of the
@@ -92,7 +97,8 @@ class InverseDynamics final : public LeafSystem<T> {
    * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           std::unique_ptr<Context<T>> plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -132,13 +138,13 @@ class InverseDynamics final : public LeafSystem<T> {
   // Other constructors delegate to this private constructor.
   InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
                   const multibody::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode);
+                  InverseDynamicsMode mode, std::unique_ptr<Context<T>> plant_context);
 
-  template <typename> friend class InverseDynamics;
+  template <typename>
+  friend class InverseDynamics;
 
   // This is the calculator method for the output port.
-  void CalcOutputForce(const Context<T>& context,
-                       BasicVector<T>* force) const;
+  void CalcOutputForce(const Context<T>& context, BasicVector<T>* force) const;
 
   // Methods for updating cache entries.
   void SetMultibodyContext(const Context<T>&, Context<T>*) const;
