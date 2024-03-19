@@ -34,9 +34,9 @@ enum class ProgramAttribute {
 
   kL2NormCost,  ///< An L2 norm |Ax+b|
 
-  kBinaryVariable,  ///< variable taking binary value {0, 1}.
+  kBinaryVariable,  ///< Variable taking binary value {0, 1}.
 
-  kCallback,  ///< support callback during solving the problem.
+  kCallback,  ///< Supports callback during solving the problem.
 };
 
 using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
