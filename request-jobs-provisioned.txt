@@ -74,5 +74,3 @@
 @drake-jenkins-bot mac-arm-ventura-clang-bazel-experimental-release please
 @drake-jenkins-bot mac-arm-ventura-clang-cmake-experimental-everything-release please
 @drake-jenkins-bot mac-arm-ventura-clang-cmake-experimental-release please
-@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-release please
