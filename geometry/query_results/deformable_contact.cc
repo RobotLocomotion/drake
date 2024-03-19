@@ -108,6 +108,7 @@ DeformableContactSurface<T>::DeformableContactSurface(
                  static_cast<int>(barycentric_coordinates_B_->size()));
     DRAKE_DEMAND(num_contact_points ==
                  static_cast<int>(contact_vertex_indexes_B_->size()));
+    DRAKE_DEMAND(id_A < id_B);
   }
   nhats_W_.reserve(num_contact_points);
   contact_points_W_.reserve(num_contact_points);
