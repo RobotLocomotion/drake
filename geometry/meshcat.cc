@@ -33,6 +33,7 @@
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -420,6 +421,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // Set the scale.
     std::visit<void>(
         overloaded{[](std::monostate) {},
+                   [](internal::TriangleSurfaceData) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
                      matrix(0, 0) = scale;
@@ -463,7 +465,26 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& mesh, void* data) override {
-    ImplementMesh(mesh.filename(), mesh.extension(), mesh.scale(), data);
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    auto& mesh_data = lumped.object.emplace<internal::TriangleSurfaceData>();
+
+    const PolygonSurfaceMesh<double>& hull = mesh.convex_hull();
+    const TriangleSurfaceMesh<double> tri_hull =
+        internal::MakeTriangleFromPolygonMesh(hull);
+
+    mesh_data.vertices = Eigen::Matrix3Xd(3, tri_hull.num_vertices());
+    for (int i = 0; i < tri_hull.num_vertices(); ++i) {
+      mesh_data.vertices.col(i) = tri_hull.vertex(i);
+    }
+    mesh_data.faces = Eigen::Matrix3Xi(3, tri_hull.num_triangles());
+    for (int i = 0; i < tri_hull.num_triangles(); ++i) {
+      const auto& e = tri_hull.element(i);
+      for (int j = 0; j < 3; ++j) {
+        mesh_data.faces(j, i) = e.vertex(j);
+      }
+    }
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) override {
@@ -856,6 +877,16 @@ class Meshcat::Impl {
       meshfile_object.uuid = uuid_generator_.GenerateRandom();
       meshfile_object.material = material->uuid;
       data.object.material = std::move(material);
+    } else if (std::holds_alternative<internal::TriangleSurfaceData>(
+                   data.object.object)) {
+      // If the shape reified into an explicit triangle surface mesh, we'll
+      // pass it along to SetTriangleMesh() instead of handling it here.
+      auto& mesh_data =
+          std::get<internal::TriangleSurfaceData>(data.object.object);
+      SetTriangleMesh(path, mesh_data.vertices, mesh_data.faces, rgba,
+                      /* wireframe =*/false, 1.0,
+                      SideOfFaceToRender::kDoubleSide);
+      return;
     }
 
     Defer([this, data = std::move(data), assets = std::move(assets)]() {
