@@ -516,6 +516,7 @@ drake_cc_library(
         "//common:network_policy",
         "//common:scope_exit",
         "//common:sha256",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@nlohmann_internal//:nlohmann",
@@ -531,6 +532,7 @@ drake_cc_binary(
     data = [
         ":environment_maps",
         "//examples/kuka_iiwa_arm:models",
+        "//examples/scene_graph:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",

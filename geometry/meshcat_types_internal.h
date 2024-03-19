@@ -336,13 +336,22 @@ struct MeshfileObjectData {
   MSGPACK_DEFINE_MAP(uuid, type, format, data, mtl_library, resources, matrix);
 };
 
+// This doesn't get broadcast. It allows shape reification to define a triangle
+// mesh that needs to be further processed.
+struct TriangleSurfaceData {
+  Eigen::Matrix3Xd vertices;
+  Eigen::Matrix3Xi faces;
+};
+
 struct LumpedObjectData {
   ObjectData metadata{};
   // We deviate from the msgpack names (geometries, materials) here since we
   // currently only support zero or one geometry/material.
   std::unique_ptr<GeometryData> geometry;
   std::unique_ptr<MaterialData> material;
-  std::variant<std::monostate, MeshData, MeshfileObjectData> object;
+  std::variant<std::monostate, MeshData, MeshfileObjectData,
+               TriangleSurfaceData>
+      object;
 
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
@@ -365,8 +374,11 @@ struct LumpedObjectData {
     o.pack("object");
     if (std::holds_alternative<MeshData>(object)) {
       o.pack(std::get<MeshData>(object));
-    } else {
+    } else if (std::holds_alternative<MeshfileObjectData>(object)) {
       o.pack(std::get<MeshfileObjectData>(object));
+    } else {
+      // The possible TriangleSurfaceData should be resolved before we get here.
+      DRAKE_UNREACHABLE();
     }
   }
   // This method must be defined, but the implementation is not needed in the
