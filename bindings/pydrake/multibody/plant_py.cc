@@ -486,6 +486,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodyPoseInWorld.doc)
         .def(
+            "EvalBodySpatialAccelerationInWorld",
+            [](const Class* self, const Context<T>& context,
+                const RigidBody<T>& body_B) {
+              return self->EvalBodySpatialAccelerationInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body"),
+            cls_doc.EvalBodySpatialAccelerationInWorld.doc)
+        .def(
             "EvalBodySpatialVelocityInWorld",
             [](const Class* self, const Context<T>& context,
                 const RigidBody<T>& body_B) {
