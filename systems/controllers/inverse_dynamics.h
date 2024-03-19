@@ -74,16 +74,20 @@ class InverseDynamics final : public LeafSystem<T> {
   /**
    * Constructs the InverseDynamics system.
    *
-   * @param plant Pointer to the multibody plant model. The life span of @p
-   * plant must be longer than that of this instance.
+   * @param plant Pointer to the multibody plant model. The life span of
+   * `plant` must be longer than that of this instance.
    * @param mode If set to kGravityCompensation, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
+   * @param plant_context The context of the `plant` that can be used to
+   * override the plant's default parameters. Note that this will be copied at
+   * time of construction, so there are no lifetime constraints.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
   explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           Context<T>* plant_context = nullptr);
 
   /**
    * Constructs the InverseDynamics system and takes the ownership of the
@@ -92,7 +96,8 @@ class InverseDynamics final : public LeafSystem<T> {
    * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           Context<T>* plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -132,13 +137,13 @@ class InverseDynamics final : public LeafSystem<T> {
   // Other constructors delegate to this private constructor.
   InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
                   const multibody::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode);
+                  InverseDynamicsMode mode, Context<T>* plant_context);
 
-  template <typename> friend class InverseDynamics;
+  template <typename>
+  friend class InverseDynamics;
 
   // This is the calculator method for the output port.
-  void CalcOutputForce(const Context<T>& context,
-                       BasicVector<T>* force) const;
+  void CalcOutputForce(const Context<T>& context, BasicVector<T>* force) const;
 
   // Methods for updating cache entries.
   void SetMultibodyContext(const Context<T>&, Context<T>*) const;
@@ -150,6 +155,8 @@ class InverseDynamics final : public LeafSystem<T> {
 
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
+
+  Context<T>* plant_context_;
 
   InputPortIndex estimated_state_;
   InputPortIndex desired_acceleration_;
