@@ -73,7 +73,8 @@ class InverseDynamicsController final
    * Constructs an inverse dynamics controller for the given `plant` model.
    * The %InverseDynamicsController holds an internal, non-owned reference to
    * the MultibodyPlant object so you must ensure that `plant` has a longer
-   * lifetime than `this` %InverseDynamicsController.
+   * lifetime than `this` %InverseDynamicsController. The same is true for
+   * `plant_context`.
    * @param plant The model of the plant for control.
    * @param kp Position gain.
    * @param ki Integral gain.
@@ -81,6 +82,8 @@ class InverseDynamicsController final
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd_d`. If false, `vd_d` is treated as zero, and no extra
    * input port is declared.
+   * @param plant_context The context of the `plant` that can be used to
+   * override the plant's default parameters.
    * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
    * @throws std::exception if
    *  - The plant is not finalized (see MultibodyPlant::Finalize()).
@@ -95,7 +98,8 @@ class InverseDynamicsController final
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
-      bool has_reference_acceleration);
+      bool has_reference_acceleration,
+      Context<T>* plant_context = nullptr);
 
   /**
    * Constructs an inverse dynamics controller and takes the ownership of the
@@ -162,7 +166,7 @@ class InverseDynamicsController final
  private:
   void SetUp(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
              const VectorX<double>& kp, const VectorX<double>& ki,
-             const VectorX<double>& kd);
+             const VectorX<double>& kd, Context<T>* plant_context);
 
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};

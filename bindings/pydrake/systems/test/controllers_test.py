@@ -151,7 +151,8 @@ class TestControllers(unittest.TestCase):
 
         controller = InverseDynamics(
             plant=plant,
-            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
+            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation,
+            plant_context=plant.CreateDefaultContext())
         self.assertIsInstance(controller.get_input_port_estimated_state(),
                               InputPort)
         self.assertIsInstance(controller.get_output_port_generalized_force(),
@@ -183,11 +184,13 @@ class TestControllers(unittest.TestCase):
         ki = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
         kd = np.array([.5, 1., 1.5, 2., 2.5, 3., 3.5])
 
+        plant_context = plant.CreateDefaultContext()
         controller = InverseDynamicsController(robot=plant,
                                                kp=kp,
                                                ki=ki,
                                                kd=kd,
-                                               has_reference_acceleration=True)
+                                               has_reference_acceleration=True,
+                                               plant_context=plant_context)
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 
@@ -224,7 +227,6 @@ class TestControllers(unittest.TestCase):
         controller.set_integral_value(context, integral_term)
 
         # Set the plant's context.
-        plant_context = plant.CreateDefaultContext()
         plant.SetPositionsAndVelocities(plant_context, x)
 
         # Compute the expected value of the generalized forces using

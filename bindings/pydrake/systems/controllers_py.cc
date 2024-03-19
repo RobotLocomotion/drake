@@ -88,10 +88,12 @@ PYBIND11_MODULE(controllers, m) {
           .export_values();
     }
     cls  // BR
-        .def(py::init<const MultibodyPlant<double>*,
-                 Class::InverseDynamicsMode>(),
+        .def(py::init<const MultibodyPlant<double>*, Class::InverseDynamicsMode,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("mode") = Class::kInverseDynamics,
-            cls_doc.ctor.doc)
+            py::arg("plant_context") = nullptr,
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc)
         .def("is_pure_gravity_compensation",
             &Class::is_pure_gravity_compensation,
             cls_doc.is_pure_gravity_compensation.doc)
@@ -116,11 +118,15 @@ PYBIND11_MODULE(controllers, m) {
     py::class_<Class, Diagram<double>>(
         m, "InverseDynamicsController", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
-                 const VectorX<double>&, const VectorX<double>&, bool>(),
+                 const VectorX<double>&, const VectorX<double>&, bool,
+                 systems::Context<double>*>(),
             py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("has_reference_acceleration"),
+            py::arg("plant_context") = nullptr,
             // Keep alive, reference: `self` keeps `robot` alive.
-            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 7>(), cls_doc.ctor.doc)
         .def("set_integral_value", &Class::set_integral_value,
             cls_doc.set_integral_value.doc)
         .def("get_input_port_desired_acceleration",

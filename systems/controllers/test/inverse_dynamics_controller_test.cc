@@ -26,7 +26,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
 
   void ConfigTestAndCheck(InverseDynamicsController<double>* test_sys,
                           const VectorX<double>& kp, const VectorX<double>& ki,
-                          const VectorX<double>& kd) {
+                          const VectorX<double>& kd,
+                          Context<double>* robot_context = nullptr) {
     EXPECT_EQ(test_sys->get_output_port().get_index(), 0);
 
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
@@ -76,9 +77,10 @@ class InverseDynamicsControllerTest : public ::testing::Test {
                            (kd.array() * (v_r - v).array()).matrix() +
                            (ki.array() * q_int.array()).matrix() + vd_r;
 
-    auto robot_context = robot_plant.CreateDefaultContext();
     VectorX<double> expected_torque = controllers_test::ComputeTorque(
-        robot_plant, q, v, vd_d, robot_context.get());
+        robot_plant, q, v, vd_d,
+        robot_context ? robot_context
+                      : robot_plant.CreateDefaultContext().get());
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output->get_vector_data(0);
@@ -106,8 +108,15 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(
       *robot, kp, ki, kd, true /* expose reference acceleration port */);
-
   ConfigTestAndCheck(dut.get(), kp, ki, kd);
+
+  // Test with custom context.
+  auto custom_context = robot->CreateDefaultContext();
+  const auto& iiwa_link_7 = robot->GetBodyByName("iiwa_link_7");
+  iiwa_link_7.SetMass(custom_context.get(), 10.0);
+  dut = std::make_unique<InverseDynamicsController<double>>(
+      *robot, kp, ki, kd, true, custom_context.get());
+  ConfigTestAndCheck(dut.get(), kp, ki, kd, custom_context.get());
 }
 
 // Tests the computed torque. This test is similar to the previous test. The
