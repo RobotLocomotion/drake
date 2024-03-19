@@ -365,6 +365,31 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
   return result;
 }
 
+RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+    const TriangleSurfaceMesh<double>& mesh,
+    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const DiagnosticPolicy& policy) {
+  // The simple solution is to create a *new* mesh where every triangle has its
+  // own vertices and then pass to MakeRenderMeshFromTriangleSurfaceMesh().
+  // If this ever becomes an onerous burden, we can do that directly into the
+  // RenderMesh.
+  std::vector<Vector3d> vertices;
+  vertices.reserve(mesh.num_triangles() * 3);
+  std::vector<SurfaceTriangle> triangles;
+  vertices.reserve(mesh.num_triangles());
+  for (const SurfaceTriangle& t_in : mesh.triangles()) {
+    const int v_index = ssize(vertices);
+    triangles.emplace_back(v_index, v_index + 1, v_index + 2);
+    vertices.push_back(mesh.vertex(t_in.vertex(0)));
+    vertices.push_back(mesh.vertex(t_in.vertex(1)));
+    vertices.push_back(mesh.vertex(t_in.vertex(2)));
+  }
+  const TriangleSurfaceMesh<double> faceted(std::move(triangles),
+                                            std::move(vertices));
+  return MakeRenderMeshFromTriangleSurfaceMesh(faceted, properties,
+                                               default_diffuse, policy);
+}
+
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
     const RenderMesh& render_mesh) {
   const int num_vertices = render_mesh.positions.rows();
