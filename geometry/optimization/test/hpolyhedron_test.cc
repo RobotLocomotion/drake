@@ -1227,12 +1227,12 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
   const double kConstraintTol = 1e-6;
   Eigen::Matrix<double, 6, 2> A;
   // clang-format off
-  A << 1, 0, // x <= 2
-       -1, 0, // -x <= 2
-       0, 1, // y <= 2
-       0, -1, // -y <= 2
-       1, 1, // x + y <= 3.5
-       -1, -1; // -x - y <= 3.5
+  A << 1, 0,  // x <= 2
+       -1, 0,  // -x <= 2
+       0, 1,  // y <= 2
+       0, -1,  // -y <= 2
+       1, 1,  // x + y <= 3.5
+       -1, -1;  // -x - y <= 3.5
   // clang-format on
   Eigen::VectorXd b(6);
   b << 2, 2, 2, 2, 3.5, 3.5;
