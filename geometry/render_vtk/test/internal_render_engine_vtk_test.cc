@@ -93,6 +93,7 @@ using std::unordered_map;
 using std::vector;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageFileFormat;
 using systems::sensors::ImageGrey8U;
 using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
@@ -232,6 +233,28 @@ bool IsColorNear(const TestColor& expected, const TestColor& tested,
          << " with tolerance: " << tolerance;
 }
 
+// Save the specified `image` in `$TEST_UNDECLARED_OUTPUTS_DIRECTORY/filename`.
+// If the environment variable is not defined, this function does nothing.
+template <class Image>
+void PersistImage(const Image& image, const std::string& filename,
+                  ImageFileFormat file_format) {
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const std::filesystem::path out_dir(dir);
+    ImageIo{}.Save(image, out_dir / filename, file_format);
+  }
+}
+
+// Return a string safe to use as a filename.  Helper method for tests that
+// have parameterized `config.description`s.
+std::string SafeFilename(const std::string& description) {
+  std::string filename{description};
+  std::replace(filename.begin(), filename.end(), ' ', '_');
+  filename = std::regex_replace(filename, std::regex(";"), "");
+  filename = std::regex_replace(filename, std::regex(","), "");
+  filename = std::regex_replace(filename, std::regex(R"(\+)"), "Positive");
+  return filename;
+}
+
 // This test suite facilitates a test with a ground plane and floating shape.
 // The camera is positioned above the shape looking straight down. All
 // of the images produced from these tests should have the following properties:
@@ -264,7 +287,9 @@ class RenderEngineVtkTest : public ::testing::Test {
   // Method to allow the normal case (render with the built-in renderer against
   // the default camera) to the member images with default window visibility.
   // This interface allows that to be completely reconfigured by the calling
-  // test.
+  // test.  Test images are persisted to $TEST_UNDECLARED_OUTPUTS_DIR, the
+  // results can be found in a file named `outputs.zip` in the `bazel-testlogs`
+  // (geometry/render_vtk/internal_render_engine_vtk_test/test.outputs/).
   void Render(RenderEngineVtk* renderer = nullptr,
               const DepthRenderCamera* camera_in = nullptr,
               ImageRgba8U* color_out = nullptr,
@@ -281,6 +306,19 @@ class RenderEngineVtkTest : public ::testing::Test {
     EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
     EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
+
+    // Persist test images for every test for offline inspection.
+    const std::string filename_prefix = fmt::format(
+        "{0}_{1:0>4}",
+        ::testing::UnitTest::GetInstance()->current_test_info()->name(),
+        save_counter_++);
+    PersistImage(*depth, fmt::format("{0}_depth.tiff", filename_prefix),
+                 ImageFileFormat::kTiff);
+    PersistImage(*label, fmt::format("{0}_label.png", filename_prefix),
+                 ImageFileFormat::kPng);
+    PersistImage(*color, fmt::format("{0}_color.png", filename_prefix),
+                 ImageFileFormat::kPng);
+
     if (FLAGS_sleep > 0) sleep(FLAGS_sleep);
   }
 
@@ -549,6 +587,12 @@ class RenderEngineVtkTest : public ::testing::Test {
   RigidTransformd X_WC_;
   GeometryId geometry_id_;
 
+  // Used to create unique identifiers per-test to persist test renders to
+  // $TEST_UNDECLARED_OUTPUTS_DIRECTORY.  The Render() method will save images
+  // and increase the save counter, tests not using Render() should manually
+  // increase this variable as well.
+  int save_counter_{0};
+
   // The pose of the sphere created in PopulateSphereTest().
   unordered_map<GeometryId, RigidTransformd> X_WV_;
 
@@ -646,6 +690,7 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   const ColorRenderCamera camera(
       {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
   renderer_->RenderColorImage(camera, &image);
+  PersistImage(image, "GltfTextureSupport.png", ImageFileFormat::kPng);
 
   ImageRgba8U expected_image;
   const std::string ref_filename = FindResourceOrThrow(
@@ -705,15 +750,6 @@ TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
 
     // Reset for the next cube.
     renderer_->RemoveGeometry(id);
-  }
-
-  // Save the images for offline inspection.
-  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
-    const std::filesystem::path out_dir(dir);
-    for (int i = 0; i < ssize(images); ++i) {
-      ImageIo{}.Save(images[i],
-                     out_dir / fmt::format("gltf_asset_formats_{}.png", i));
-    }
   }
 }
 
@@ -939,6 +975,9 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
     PerceptionProperties props = simple_material(true);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uchar_texture);
+    PersistImage(color_uchar_texture,
+                 "NonUcharChannelTextures_color_uchar_texture.png",
+                 ImageFileFormat::kPng);
   }
 
   // Render a box with an uint16-channel PNG texture.
@@ -952,6 +991,9 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
     props.UpdateProperty("phong", "diffuse_map", file_path);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uint16_texture);
+    PersistImage(color_uint16_texture,
+                 "NonUcharChannelTextures_color_uint16_texture.png",
+                 ImageFileFormat::kPng);
   }
 
   EXPECT_EQ(color_uchar_texture, color_uint16_texture);
@@ -1372,6 +1414,12 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
       renderer_ptr->UpdateViewpoint(config.X_WR);
 
       EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
+      PersistImage(
+          image,
+          fmt::format("FallbackLight_{}_{}.png",
+                      SafeFilename(config.description),
+                      renderer_ptr == clone_vtk ? "Cloned" : "Original"),
+          ImageFileFormat::kPng);
 
       // We test the images by looking at the colors along a row on the bottom
       // of the image and near the middle of the image. We won't do the top
@@ -1517,6 +1565,12 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
       for (const RenderEngineVtk* renderer_ptr : {&renderer, clone_vtk}) {
         SCOPED_TRACE(renderer_ptr == clone_vtk ? "Cloned" : "Original");
         EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
+        PersistImage(
+            image,
+            fmt::format("SingleLight_{}_{}.png",
+                        SafeFilename(config.description),
+                        renderer_ptr == clone_vtk ? "Cloned" : "Original"),
+            ImageFileFormat::kPng);
 
         const TestColor test_color(image.at(cx, cy));
         EXPECT_TRUE(IsColorNear(test_color, config.expected_color))
@@ -1555,6 +1609,7 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
   InitializeRenderer(X_WR, true /* add terrain */, &renderer);
 
   EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
+  PersistImage(image, "MultiLights.png", ImageFileFormat::kPng);
 
   const TestColor test_color(image.at(cx, cy));
   const TestColor expected_color = kTerrainColor.ToRgba().scale_rgb(0.75);
@@ -1702,6 +1757,10 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
       renderer_ptr = clone.get();
     }
     EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
+    PersistImage(
+        image,
+        fmt::format("EnvironmentMap_{}.png", SafeFilename(config.description)),
+        ImageFileFormat::kPng);
 
     // We're using a rather loose pixel tolerance to accommodate vagaries
     // of CI. The value of 20 is required by focal; we can shrink it when we
@@ -1746,6 +1805,9 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     const int cy = image.height() / 2;
 
     renderer->RenderColorImage(camera, &image);
+    PersistImage(image,
+                 fmt::format("PbrMaterialPromotion_{}.png", save_counter_++),
+                 ImageFileFormat::kPng);
 
     const TestColor sampled_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(sampled_color, expected_color))
@@ -1925,6 +1987,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
   renderer_->RenderColorImage(ref_color_camera, &ref_color);
   renderer_->RenderDepthImage(ref_depth_camera, &ref_depth);
   renderer_->RenderLabelImage(ref_color_camera, &ref_label);
+  PersistImage(ref_color, "IntrinsicsAndRenderProperties_reference_color.png",
+               ImageFileFormat::kPng);
+  PersistImage(ref_depth, "IntrinsicsAndRenderProperties_reference_depth.tiff",
+               ImageFileFormat::kTiff);
+  PersistImage(ref_label, "IntrinsicsAndRenderProperties_reference_label.png",
+               ImageFileFormat::kPng);
 
   // Confirm all edges were found, the box is square and centered in the
   // image.
@@ -1975,6 +2043,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderColorImage(color_camera, &color);
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
+    PersistImage(color, "IntrinsicsAndRenderProperties_stretched_color.png",
+                 ImageFileFormat::kPng);
+    PersistImage(depth, "IntrinsicsAndRenderProperties_stretched_depth.tiff",
+                 ImageFileFormat::kTiff);
+    PersistImage(label, "IntrinsicsAndRenderProperties_stretched_label.png",
+                 ImageFileFormat::kPng);
 
     // We expect the following effects based on the change in intrinsics.
     //
@@ -2033,6 +2107,15 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderColorImage(color_camera, &color);
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
+    PersistImage(color,
+                 "IntrinsicsAndRenderProperties_far_plane_front_color.png",
+                 ImageFileFormat::kPng);
+    PersistImage(depth,
+                 "IntrinsicsAndRenderProperties_far_plane_front_depth.tiff",
+                 ImageFileFormat::kTiff);
+    PersistImage(label,
+                 "IntrinsicsAndRenderProperties_far_plane_front_label.png",
+                 ImageFileFormat::kPng);
 
     SCOPED_TRACE("Far plane in front of scene");
     VerifyUniformColor(kBgColor, &color);
@@ -2057,6 +2140,15 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderColorImage(color_camera, &color);
     renderer_->RenderDepthImage(depth_camera, &depth);
     renderer_->RenderLabelImage(color_camera, &label);
+    PersistImage(color,
+                 "IntrinsicsAndRenderProperties_near_plane_too_far_color.png",
+                 ImageFileFormat::kPng);
+    PersistImage(depth,
+                 "IntrinsicsAndRenderProperties_near_plane_too_far_depth.tiff",
+                 ImageFileFormat::kTiff);
+    PersistImage(label,
+                 "IntrinsicsAndRenderProperties_near_plane_too_far_label.png",
+                 ImageFileFormat::kPng);
 
     SCOPED_TRACE("Near plane beyond scene");
     VerifyUniformColor(kBgColor, &color);
@@ -2074,6 +2166,10 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+    PersistImage(depth,
+                 // TODO(svenevs): better name?
+                 "IntrinsicsAndRenderProperties_box_too_close_depth.tiff",
+                 ImageFileFormat::kTiff);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
@@ -2093,6 +2189,9 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+    PersistImage(depth,
+                 "IntrinsicsAndRenderProperties_range_too_far_depth.tiff",
+                 ImageFileFormat::kTiff);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
@@ -2115,6 +2214,9 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
         {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
     ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
     renderer_->RenderDepthImage(depth_camera, &depth);
+    PersistImage(depth,
+                 "IntrinsicsAndRenderProperties_range_too_close_depth.tiff",
+                 ImageFileFormat::kTiff);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
     EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
@@ -2358,12 +2460,10 @@ void CompareImages(const ImageType& test_image, const std::string& ref_filename,
   }
 
   const std::filesystem::path ref_path = FindResourceOrThrow(ref_filename);
-  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
-    const std::filesystem::path out_dir(dir);
-    ImageIo{}.Save(compare_image,
-                   out_dir / fmt::format("{}{}_test.png",
-                                         ref_path.stem().string(), log_suffix));
-  }
+  PersistImage(
+      compare_image,
+      fmt::format("{}{}_test.png", ref_path.stem().string(), log_suffix),
+      ImageFileFormat::kPng);
 
   CompareType expected_image;
   ASSERT_TRUE(systems::sensors::LoadImage(ref_path, &expected_image));
