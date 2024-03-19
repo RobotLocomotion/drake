@@ -13,7 +13,8 @@ namespace controllers {
 template <typename T>
 InverseDynamics<T>::InverseDynamics(
     std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
-    const MultibodyPlant<T>* plant, const InverseDynamicsMode mode)
+    const MultibodyPlant<T>* plant, const InverseDynamicsMode mode,
+    std::unique_ptr<Context<T>> plant_context)
     : LeafSystem<T>(SystemTypeTag<InverseDynamics>{}),
       owned_plant_(std::move(owned_plant)),
       plant_(owned_plant_ ? owned_plant_.get() : plant),
@@ -24,6 +25,13 @@ InverseDynamics<T>::InverseDynamics(
   DRAKE_DEMAND(owned_plant_ == nullptr || plant == nullptr);
   DRAKE_DEMAND(plant_ != nullptr);
   DRAKE_THROW_UNLESS(plant_->is_finalized());
+
+  if (plant_context == nullptr) {
+    plant_context = plant_->CreateDefaultContext();
+  } else {
+    // Validate that `plant` and `plant_context` are compatible.
+    plant_->ValidateContext(plant_context.get());
+  }
 
   estimated_state_ =
       this->DeclareInputPort("estimated_state", kVectorValued, q_dim_ + v_dim_)
@@ -36,7 +44,6 @@ InverseDynamics<T>::InverseDynamics(
                                     {this->all_input_ports_ticket()})
           .get_index();
 
-  auto plant_context = plant_->CreateDefaultContext();
   // Gravity compensation mode requires velocities to be zero.
   if (this->is_pure_gravity_compensation()) {
     plant_->SetVelocities(plant_context.get(),
@@ -45,10 +52,9 @@ InverseDynamics<T>::InverseDynamics(
 
   // Declare cache entry for the multibody plant context.
   plant_context_cache_index_ =
-      this->DeclareCacheEntry(
-              "plant_context_cache", *plant_context,
-              &InverseDynamics<T>::SetMultibodyContext,
-              {this->input_port_ticket(estimated_state_)})
+      this->DeclareCacheEntry("plant_context_cache", *plant_context,
+                              &InverseDynamics<T>::SetMultibodyContext,
+                              {this->input_port_ticket(estimated_state_)})
           .cache_index();
 
   // Declare external forces cache entry and desired acceleration input port if
@@ -69,14 +75,16 @@ InverseDynamics<T>::InverseDynamics(
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
-                                    const InverseDynamicsMode mode)
-    : InverseDynamics(nullptr, plant, mode) {}
+                                    const InverseDynamicsMode mode,
+                                    std::unique_ptr<Context<T>> plant_context)
+    : InverseDynamics(nullptr, plant, mode, std::move(plant_context)) {}
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(
     std::unique_ptr<multibody::MultibodyPlant<T>> plant,
-    const InverseDynamicsMode mode)
-    : InverseDynamics(std::move(plant), nullptr, mode) {}
+    const InverseDynamicsMode mode, std::unique_ptr<Context<T>> plant_context)
+    : InverseDynamics(std::move(plant), nullptr, mode,
+                      std::move(plant_context)) {}
 
 template <typename T>
 template <typename U>
@@ -84,7 +92,28 @@ InverseDynamics<T>::InverseDynamics(const InverseDynamics<U>& other)
     : InverseDynamics(
           systems::System<U>::template ToScalarType<T>(*other.plant_),
           other.is_pure_gravity_compensation() ? kGravityCompensation
-                                               : kInverseDynamics) {}
+                                               : kInverseDynamics) {
+  // Convert plant.
+  auto T_plant = systems::System<U>::template ToScalarType<T>(*other.plant_);
+  auto T_plant_context = T_plant->CreateDefaultContext();
+
+  // Create context and connect required port.
+  auto U_context = other.CreateDefaultContext();
+  const int num_states = other.get_input_port_estimated_state().size();
+  other.get_input_port_estimated_state().FixValue(U_context.get(),
+      Eigen::Matrix<U, Eigen::Dynamic, 1>::Zero(num_states));
+
+  // Convert plant context.
+  const auto& U_plant_context =
+      other.get_cache_entry(other.plant_context_cache_index_)
+      .template Eval<Context<U>>(*U_context);
+  T_plant_context->SetStateAndParametersFrom(U_plant_context);
+
+  InverseDynamics(std::move(T_plant),
+                  other.is_pure_gravity_compensation() ? kGravityCompensation
+                                                        : kInverseDynamics,
+                  std::move(T_plant_context));
+}
 
 template <typename T>
 InverseDynamics<T>::~InverseDynamics() = default;
@@ -130,7 +159,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
 
     // Compute inverse dynamics.
     const VectorX<T>& desired_vd =
-            get_input_port_desired_acceleration().Eval(context);
+        get_input_port_desired_acceleration().Eval(context);
 
     output->get_mutable_value() =
         plant_->CalcInverseDynamics(plant_context, desired_vd, external_forces);
