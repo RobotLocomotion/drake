@@ -1220,6 +1220,11 @@ class TestPlant(unittest.TestCase):
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
 
+        # Compute spatial accelerations for base.
+        A_base = plant.EvalBodySpatialAccelerationInWorld(context, base)
+        self.assert_sane(A_base.rotational(), nonzero=False)
+        self.assert_sane(A_base.translational(), nonzero=False)
+
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
         plant.SetFreeBodySpatialVelocity(
