@@ -23,7 +23,6 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | TBD ⁽⁵⁾      | TBD ⁽⁵⁾    | March 2028      |
-| macOS Monterey (12)                | x86_64       | 3.12       | October 2023    |
 | macOS Ventura (13)                 | arm64        | 3.12       | October 2024    |
 | macOS Sonoma (14)                  | arm64        | 3.12       | October 2025    |
 
