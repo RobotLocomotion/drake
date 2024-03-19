@@ -1221,27 +1221,30 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
-  // Test simplification of `circumbody`.
-  const int kNumFaces = 20;
+  // Test a case where the number of faces that should be removed is known:
+  // The circumbody is a square with the top-right and bottom-left corners cut
+  // off (6 faces).  The inbody should remove the two diagonal faces.
   const double kConstraintTol = 1e-6;
-
-  // Create a polygon in 2D with `kNumFaces` faces from unit circle tangents.
-  MatrixXd A(kNumFaces, 2);
-  for (int row = 0; row < kNumFaces; ++row) {
-    A.row(row) << std::cos(2 * M_PI * row / kNumFaces),
-        std::sin(2 * M_PI * row / kNumFaces);
-  }
-  const VectorXd b = VectorXd::Ones(kNumFaces);
+  Eigen::Matrix<double, 6, 2> A;
+  // clang-format off
+  A << 1, 0, // x <= 2
+       -1, 0, // -x <= 2
+       0, 1, // y <= 2
+       0, -1, // -y <= 2
+       1, 1, // x + y <= 3.5
+       -1, -1; // -x - y <= 3.5
+  // clang-format on
+  Eigen::VectorXd b(6);
+  b << 2, 2, 2, 2, 3.5, 3.5;
   const HPolyhedron circumbody = HPolyhedron(A, b);
-  const VPolytope circumbody_V(circumbody);  // For volume calculations.
   const double min_v_ratio = 0.1;
 
   const HPolyhedron inbody =
-      circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio, false);
+      circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio);
   EXPECT_TRUE(inbody.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
+  EXPECT_GE(VPolytope(inbody).CalcVolume() / VPolytope(circumbody).CalcVolume(),
             min_v_ratio);
-  EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
+  EXPECT_EQ(inbody.b().rows(), circumbody.b().rows() - 2);
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation2) {
