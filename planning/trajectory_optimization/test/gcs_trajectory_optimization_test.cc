@@ -17,8 +17,6 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace planning {
@@ -48,13 +46,6 @@ using multibody::RevoluteJoint;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
 using solvers::MathematicalProgram;
-
-bool GurobiOrMosekSolverAvailable() {
-  return (solvers::MosekSolver::is_available() &&
-          solvers::MosekSolver::is_enabled()) ||
-         (solvers::GurobiSolver::is_available() &&
-          solvers::GurobiSolver::is_enabled());
-}
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   const int kDimension = 2;
@@ -251,10 +242,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LE(gcs.EstimateComplexity(), 160);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   auto [shortest_path_traj, shortest_path_result] =
       gcs.SolvePath(source, target);
@@ -470,10 +457,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 125);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   auto [traj, result] = gcs.SolvePath(source, target);
 
@@ -715,10 +698,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
       gcs.AddRegions(MakeConvexSets(Point(start1), Point(start2)), 0);
 
   auto& target = gcs.AddRegions(MakeConvexSets(Point(goal1), Point(goal2)), 0);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1108,10 +1087,6 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 1e3);
 
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
-
   // Define solver options.
   GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 3;
@@ -1147,10 +1122,6 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 2.5e3);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1226,10 +1197,6 @@ TEST_F(SimpleEnv2D, DurationDelay) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 1e3);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1312,10 +1279,6 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 1e3);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1423,10 +1386,6 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
   EXPECT_LT(gcs.EstimateComplexity(), 1100);
-
-  if (!GurobiOrMosekSolverAvailable()) {
-    return;
-  }
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1601,10 +1560,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
-  if (!GurobiOrMosekSolverAvailable()) {
-    // These test cases are too large for free solvers such as CSDP.
-    return;
-  }
   const double tol = 1e-7;
 
   ConvexSets sets;

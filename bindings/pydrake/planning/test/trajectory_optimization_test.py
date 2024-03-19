@@ -38,10 +38,6 @@ from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
 
 
-def GurobiOrMosekSolverAvailable():
-    return (mp.MosekSolver().available() and mp.MosekSolver().enabled()) or (
-        mp.GurobiSolver().available() and mp.GurobiSolver().enabled())
-
 
 class TestTrajectoryOptimization(unittest.TestCase):
     def test_direct_collocation(self):
@@ -261,8 +257,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
     def test_gcs_trajectory_optimization_basic(self):
         """This based on the C++ GcsTrajectoryOptimizationTest.Basic test. It's
-        a simple test of the bindings that does not require MOSEK. It uses a
-        single region (the unit box), and plans a line segment inside that box.
+        a simple test of the bindings. It uses a single region (the unit box),
+        and plans a line segment inside that box.
         """
         gcs = GcsTrajectoryOptimization(num_positions=2)
         start = [-0.5, -0.5]
@@ -564,9 +560,6 @@ class TestTrajectoryOptimization(unittest.TestCase):
         options = GraphOfConvexSetsOptions()
         options.convex_relaxation = True
         options.max_rounded_paths = 5
-
-        if not GurobiOrMosekSolverAvailable():
-            return
 
         traj, result = gcs.SolvePath(source=source,
                                      target=target,
