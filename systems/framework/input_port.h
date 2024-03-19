@@ -58,6 +58,11 @@ class InputPort final : public InputPortBase {
   return type is `const ValueType&`; if a ValueType is omitted, the return type
   is `const VectorX<T>&`.
 
+  @warning It is not sufficient for `context` to be a Context of this System:
+  If the value is not up-to-date it must also be a subcontext of a Diagram
+  that contains the corresponding output port so that that port can be
+  evaluated.
+
   @throw std::exception if the port is not connected.  (Use HasValue() to check
   first, if necessary.)
 
