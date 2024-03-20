@@ -2159,7 +2159,7 @@ class TestPlant(unittest.TestCase):
                     self.assertIn("2024-06-01", str(w[0].message))
                 joint.get_quaternion(context=context)
                 joint.get_translation(context=context)
-                # Warn on deprecated QuaternionFloatingJoint.set_position().
+                # Warn on deprecated QuaternionFloatingJoint.get_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.get_position(context=context)
                 joint.get_pose(context=context)
