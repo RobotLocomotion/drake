@@ -678,8 +678,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.default_translational_damping.doc)
         .def("get_quaternion", &Class::get_quaternion, py::arg("context"),
             cls_doc.get_quaternion.doc)
-        .def("get_position", &Class::get_position, py::arg("context"),
-            cls_doc.get_position.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_position",
+            WrapDeprecated(
+                cls_doc.get_position.doc_deprecated, &Class::get_position),
+            py::arg("context"), cls_doc.get_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declaration
+    cls                     // BR
         .def("get_pose", &Class::get_pose, py::arg("context"),
             cls_doc.get_pose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
@@ -691,8 +700,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFromRotationMatrix", &Class::SetFromRotationMatrix,
             py::arg("context"), py::arg("R_FM"),
             cls_doc.SetFromRotationMatrix.doc)
-        .def("set_position", &Class::set_position, py::arg("context"),
-            py::arg("p_FM"), cls_doc.set_position.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("translation"), cls_doc.set_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_position",
+            WrapDeprecated(
+                cls_doc.set_position.doc_deprecated, &Class::set_position),
+            py::arg("context"), py::arg("p_FM"),
+            cls_doc.set_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("set_pose", &Class::set_pose, py::arg("context"), py::arg("X_FM"),
             cls_doc.set_pose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,

@@ -2158,14 +2158,20 @@ class TestPlant(unittest.TestCase):
                     self.assertEqual(joint.translational_damping(), damping)
                     self.assertIn("2024-06-01", str(w[0].message))
                 joint.get_quaternion(context=context)
-                joint.get_position(context=context)
+                joint.get_translation(context=context)
+                # Warn on deprecated QuaternionFloatingJoint.set_position().
+                with catch_drake_warnings(expected_count=1):
+                    joint.get_position(context=context)
                 joint.get_pose(context=context)
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
                 joint.set_quaternion(context=context, q_FM=Quaternion_[T]())
                 joint.SetFromRotationMatrix(context=context,
                                             R_FM=RotationMatrix_[T]())
-                joint.set_position(context=context, p_FM=[0, 0, 0])
+                joint.set_translation(context=context, position=[0, 0, 0])
+                # Warn on deprecated QuaternionFloatingJoint.set_position().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_position(context=context, p_FM=[0, 0, 0])
                 joint.set_pose(context=context, X_FM=RigidTransform_[T]())
                 joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
                 joint.set_translational_velocity(context=context,
