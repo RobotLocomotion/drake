@@ -162,10 +162,16 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   EXPECT_TRUE(math::AreQuaternionsEqualForOrientation(
       joint_->get_quaternion(*context_), quaternion_B, kTolerance));
 
+  joint_->set_translation(context_.get(), position);
+  EXPECT_EQ(joint_->get_translation(*context_), position);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   joint_->set_position(context_.get(), position);
   EXPECT_EQ(joint_->get_position(*context_), position);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
-  joint_->set_position(context_.get(), Vector3d::Zero());  // Zero out pose.
+  joint_->set_translation(context_.get(), Vector3d::Zero());  // Zero out pose.
   joint_->set_pose(context_.get(), transform_A);
   // We expect a bit of roundoff error due to transforming between quaternion
   // and rotation matrix representations.
