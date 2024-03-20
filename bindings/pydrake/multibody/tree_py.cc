@@ -706,8 +706,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
         .def("set_position",
-            WrapDeprecated(
-                cls_doc.set_position.doc_deprecated, &Class::set_position),
+            WrapDeprecated(cls_doc.set_position.doc_deprecated,
+                &Class::set_position),
             py::arg("context"), py::arg("p_FM"),
             cls_doc.set_position.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
