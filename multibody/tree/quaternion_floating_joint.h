@@ -246,6 +246,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::set_translation()")
   const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
                                                  const Vector3<T>& p_FM) const {
     return set_translation(context, p_FM);
