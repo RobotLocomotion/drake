@@ -171,6 +171,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "gcs_trajectory_optimization_test",
+    shard_count = 8,
     deps = [
         ":gcs_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",
