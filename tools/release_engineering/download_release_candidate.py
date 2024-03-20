@@ -145,7 +145,6 @@ def _download_binaries(*, timestamp, staging, version):
                 f"drake-{version[1:]}-jammy.tar.gz",
                 # TODO(jwnimmer-tri) This package is not yet available.
                 # f"drake-{version[1:]}-noble.tar.gz",
-                f"drake-{version[1:]}-mac.tar.gz",
                 f"drake-{version[1:]}-mac-arm64.tar.gz",
             ],
         }
@@ -158,7 +157,6 @@ def _download_binaries(*, timestamp, staging, version):
                 f"drake-{timestamp}-jammy.tar.gz",
                 # TODO(jwnimmer-tri) This package is not yet available.
                 # f"drake-{timestamp}-noble.tar.gz",
-                f"drake-{timestamp}-mac.tar.gz",
                 f"drake-{timestamp}-mac-arm64.tar.gz",
             ],
         }
