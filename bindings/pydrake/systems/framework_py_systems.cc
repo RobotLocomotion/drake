@@ -59,9 +59,9 @@ class SystemBasePublic : public SystemBase {
 // Provides a templated 'namespace'.
 template <typename T>
 struct Impl {
-  class PySystem : public py::wrapper<System<T>> {
+  class PySystem : public wrapper<System<T>> {
    public:
-    using Base = py::wrapper<System<T>>;
+    using Base = wrapper<System<T>>;
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
@@ -116,9 +116,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename LeafSystemBase = LeafSystemPublic>
-  class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
+  class PyLeafSystemBase : public wrapper<LeafSystemBase> {
    public:
-    using Base = py::wrapper<LeafSystemBase>;
+    using Base = wrapper<LeafSystemBase>;
     using Base::Base;
 
     // Trampoline virtual methods.
@@ -185,9 +185,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename DiagramBase = DiagramPublic>
-  class PyDiagramBase : public py::wrapper<DiagramBase> {
+  class PyDiagramBase : public wrapper<DiagramBase> {
    public:
-    using Base = py::wrapper<DiagramBase>;
+    using Base = wrapper<DiagramBase>;
     using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -216,9 +216,9 @@ struct Impl {
     using Base::DoCalcVectorTimeDerivatives;
   };
 
-  class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
+  class PyVectorSystem : public wrapper<VectorSystemPublic> {
    public:
-    using Base = py::wrapper<VectorSystemPublic>;
+    using Base = wrapper<VectorSystemPublic>;
     using Base::Base;
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -267,7 +267,7 @@ struct Impl {
     }
   };
 
-  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+  class PySystemVisitor : public wrapper<SystemVisitor<T>> {
    public:
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
@@ -561,8 +561,10 @@ Note: The above is for the C++ documentation. For Python, use
     };
     type_visit(def_to_scalar_type_maybe, CommonScalarPack{});
 
+#if 0
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
     using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
+#endif
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
     auto leaf_system_cls =
@@ -591,6 +593,7 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
+#if 0
         .def("DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               AllocCallback arg1, CalcCallback arg2,
@@ -604,6 +607,7 @@ Note: The above is for the C++ documentation. For Python, use
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
+#endif
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -1223,6 +1227,7 @@ void DoScalarIndependentDefinitions(py::module m) {
           &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>(),
           cls_doc.IsConvertible.doc);
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
+#if 0
       using ConverterFunction =
           std::function<std::unique_ptr<System<T>>(const System<U>&)>;
       AddTemplateMethod(converter, "_Add",
@@ -1235,6 +1240,7 @@ void DoScalarIndependentDefinitions(py::module m) {
                 AddPydrakeConverterFunction(self, bare_func);
               }),
           GetPyParam<T, U>());
+#endif
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of

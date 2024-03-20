@@ -286,6 +286,7 @@ void DefinePlanningCollisionChecker(py::module m) {
         m, "SceneGraphCollisionChecker", cls_doc.doc);
     // TODO(jwnimmer-tri) Bind the __init__(params=...) constructor here once
     // we've solved the unique_ptr vs shared_ptr binding lifetime issue.
+#if 0
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
         .def(py::init([params_ctor](std::unique_ptr<RobotDiagram<double>> model,
@@ -309,8 +310,10 @@ void DefinePlanningCollisionChecker(py::module m) {
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
                 .c_str());
+#endif
   }
 
+#if 0
   {
     using Class = UnimplementedCollisionChecker;
     constexpr auto& cls_doc = doc.UnimplementedCollisionChecker;
@@ -344,6 +347,7 @@ void DefinePlanningCollisionChecker(py::module m) {
                 "list of properties available here as kwargs.")
                 .c_str());
   }
+#endif
 }
 
 }  // namespace internal

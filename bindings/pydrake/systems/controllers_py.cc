@@ -170,6 +170,7 @@ PYBIND11_MODULE(controllers, m) {
     using Class = PidControlledSystem<double>;
     constexpr auto& cls_doc = doc.PidControlledSystem;
     py::class_<Class, Diagram<double>>(m, "PidControlledSystem", cls_doc.doc)
+#if 0
         .def(py::init<std::unique_ptr<System<double>>, double, double, double,
                  int, int>(),
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
@@ -201,6 +202,7 @@ PYBIND11_MODULE(controllers, m) {
             py::arg("plant_input_port_index") = 0,
             // Keep alive, ownership: `plant` keeps `self` alive.
             py::keep_alive<2, 1>(), cls_doc.ctor.doc_7args_vector_gains)
+#endif
         .def("get_control_input_port", &Class::get_control_input_port,
             py_rvp::reference_internal, cls_doc.get_control_input_port.doc)
         .def("get_state_input_port", &Class::get_state_input_port,
