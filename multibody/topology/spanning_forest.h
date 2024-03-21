@@ -21,8 +21,7 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-using WeldedMobodsIndex = TypeSafeIndex<class CompositeMobodTag>;
-using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
+using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 
 /** SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. */
