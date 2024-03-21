@@ -7,6 +7,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 /** @file
@@ -186,6 +187,15 @@ class Capsule final : public Shape {
 
 /** Definition of a *convex* surface mesh.
 
+ This shape is *not* the mesh contained in the file named by `filename`. It is
+ the convex hull of that mesh. As such, the only contents of the mesh file that
+ matter are the vertex positions. All other data is ignored. This includes
+ materials, textures, normals etc. This is true for *all* roles. Its appearance
+ in an illustration or perception role, will be a faceted polytope whose color
+ is defined by its assigned properties (or by the geometry consumer's defaults).
+
+ Because Drake computes the convex hull, the named mesh file need not be convex.
+
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
  loading it in SceneGraph it can be scaled around the origin of C by a given
  `scale` amount. */
@@ -196,18 +206,12 @@ class Convex final : public Shape {
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
 
-   * We only support an .obj file with only one polyhedron.
-   * We assume that the polyhedron is convex.
+   The mesh file referenced can be an .obj, .gltf, or a tetrahedral .vtk.
 
    @param filename     The file name; if it is not absolute, it will be
                        interpreted relative to the current working directory.
    @param scale        An optional scale to coordinates.
 
-   @throws std::exception       if the .obj file doesn't define a single object.
-                                This can happen if it is empty, if there are
-                                multiple object-name statements (e.g.,
-                                "o object_name"), or if there are faces defined
-                                outside a single object-name statement.
    @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
                                 considered valid. We want to preclude scales
                                 near zero but recognise that scale is a
@@ -226,6 +230,17 @@ class Convex final : public Shape {
   const std::string& extension() const { return extension_; }
   double scale() const { return scale_; }
 
+  /** Reports the convex hull of the named mesh.
+
+   Note: the convex hull is computed on demand on the first invocation. All
+   subsequent invocations should have an O(1) cost.
+
+   @throws if the referenced mesh data cannot be read or is degenerate
+           (insufficient number of vertices, co-linear or coincident vertices,
+           etc.) All of the vertices lying on a plane is *not* considered
+           degenerate. */
+  const PolygonSurfaceMesh<double>& convex_hull() const;
+
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -235,6 +250,8 @@ class Convex final : public Shape {
   std::string filename_;
   std::string extension_;
   double scale_{};
+  // Allows the deferred computation of the hull on an otherwise const Convex.
+  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -348,10 +365,28 @@ class HalfSpace final : public Shape {
 
 // TODO(DamrongGuoy): Update documentation when mesh is fully supported (i.e.,
 // doesn't require equivocation here).
-/** Definition of a general (possibly non-convex) triangular surface mesh.
- Meshes can be used for illustration and perception roles, but have limited
- proximity support. See the documentation of QueryObject's proximity queries to
- see how meshes are used in each type of proximity query.
+/** Definition of a general (possibly non-convex) mesh.
+
+ The mesh may be a triangular surface mesh or a tetrahedral volume mesh,
+ depending on how it used.
+
+ Meshes can be used with all three roles but, currently, the support for the
+ proximity role is limited. Where a general mesh is not supported, the mesh is
+ replaced by its convex hull. See the documentation of QueryObject's proximity
+ queries for more details. The notable cases where the actual mesh topology is
+ used includes:
+
+   - Specifying the %Mesh as rigid hydroelastic.
+   - Specifying the %Mesh as compliant hydroelastic (when it references a
+     tetrahedral .vtk file).
+   - Specifying the %Mesh as deformable (when it references a tetrahedral .vtk
+     file).
+
+ This convex-hull substitution is a regrettable stop-gap solution until we fully
+ support general, non-convex meshes throughout proximity queries.
+
+ For visual roles (illustration and perception), the specified mesh file is
+ used as directly as possible.
 
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
  loading it in SceneGraph it can be scaled around the origin of C by a given
@@ -360,14 +395,23 @@ class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
 
-  /** Constructs a mesh specification from the mesh file located at the given
-   file path; if the path is not absolute, it will be interpreted relative to
-   the current working directory.
-   Optionally uniformly scaled by the given scale factor.
-   @throws std::exception if |scale| < 1e-8. Note that a negative scale is
-   considered valid. We want to preclude scales near zero but recognise that
-   scale is a convenience tool for "tweaking" models. 8 orders of magnitude
-   should be plenty without considering revisiting the model itself. */
+  /** Constructs a mesh shape specification from the mesh file located at the
+   given file path. Optionally uniformly scaled by the given scale factor.
+
+   The mesh file referenced can be an .obj, a volume mesh in a .vtk, or a .gltf
+   file. However, not all file formats are appropriate for all roles. (E.g.,
+   a tetrahedral .vtk file should not be assigned a perception role.)
+
+   @param filename     The file name; if it is not absolute, it will be
+                       interpreted relative to the current working directory.
+   @param scale        An optional scale to coordinates.
+
+   @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
+                                considered valid. We want to preclude scales
+                                near zero but recognise that scale is a
+                                convenience tool for "tweaking" models. 8 orders
+                                of magnitude should be plenty without
+                                considering revisiting the model itself. */
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
   ~Mesh() final;
@@ -380,6 +424,17 @@ class Mesh final : public Shape {
   const std::string& extension() const { return extension_; }
   double scale() const { return scale_; }
 
+  /** Reports the convex hull of the named mesh.
+
+   Note: the convex hull is computed on demand on the first invocation. All
+   subsequent invocations should have an O(1) cost.
+
+   @throws if the referenced mesh data cannot be read or is degenerate
+           (insufficient number of vertices, co-linear or coincident vertices,
+           etc.) All of the vertices lying on a plane is *not* considered
+           degenerate. */
+  const PolygonSurfaceMesh<double>& convex_hull() const;
+
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -390,6 +445,8 @@ class Mesh final : public Shape {
   std::string filename_;
   std::string extension_;
   double scale_{};
+  // Allows the deferred computation of the hull on an otherwise const Mesh.
+  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
