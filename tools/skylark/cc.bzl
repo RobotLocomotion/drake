@@ -14,7 +14,7 @@ def cc_binary(**kwargs):
     native.cc_binary(**kwargs)
 
 def cc_import(**kwargs):
-    native.cc_input(**kwargs)
+    native.cc_import(**kwargs)
 
 def cc_library(**kwargs):
     native.cc_library(**kwargs)
