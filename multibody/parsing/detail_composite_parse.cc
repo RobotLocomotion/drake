@@ -14,7 +14,7 @@ std::unique_ptr<CompositeParse> CompositeParse::MakeCompositeParse(
 }
 
 CompositeParse::CompositeParse(Parser* parser)
-    : resolver_(&parser->plant()),
+    : resolver_(&parser->plant(), &parser->collision_filter_groups_),
       options_({parser->GetAutoRenaming()}),
       workspace_(options_, parser->package_map(), parser->diagnostic_policy_,
                  &parser->plant(), &resolver_, SelectParser) {}

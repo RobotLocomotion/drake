@@ -28,7 +28,6 @@ class CompositeParse {
   // details.
   const ParsingWorkspace& workspace() const { return workspace_; }
 
-
  private:
   explicit CompositeParse(Parser* parser);
 

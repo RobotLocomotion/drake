@@ -47,7 +47,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddModel(
@@ -59,7 +59,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromString(
       const std::string& file_contents,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddModel(
@@ -71,7 +71,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name,
       const std::optional<std::string>& parent_model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddAllModels(
@@ -83,7 +83,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceIndex> AddAllModelsFromString(
       const std::string& file_contents,
       const std::optional<std::string>& parent_model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, & group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddAllModels(
@@ -103,6 +103,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
+  CollisionFilterGroups group_output_;
   MujocoParserWrapper wrapper_;
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
@@ -149,7 +150,8 @@ GTEST_TEST(MujocoParserExtraTest, Visualize) {
   ParsingOptions options;
   PackageMap package_map;
   MujocoParserWrapper wrapper;
-  internal::CollisionFilterGroupResolver resolver{&plant};
+  CollisionFilterGroups group_output_;
+  internal::CollisionFilterGroupResolver resolver{&plant, &group_output_};
   internal::DiagnosticPolicy diagnostic_policy;
   ParsingWorkspace w{
       options,

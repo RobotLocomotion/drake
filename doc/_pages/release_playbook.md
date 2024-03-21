@@ -111,8 +111,7 @@ the main body of the document:
       ignore)
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-monterey-unprovisioned-clang-bazel-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-bazel-nightly-packaging/>
+      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-bazel-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
@@ -125,13 +124,12 @@ the main body of the document:
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
-   1. Open the following seven Jenkins jobs (e.g., each in its own
+   1. Open the following Jenkins jobs (e.g., each in its own
       new browser tab):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-wheel-staging-release/)
       - [macOS x86 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-packaging/)
-      - [macOS x86 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-bazel-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-bazel-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
@@ -174,10 +172,10 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the 39 release files from
+      them." and then choose for upload the **30** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 12: 4 `.tar.gz` + 8 checksums
-      - 6: 2 `.deb` + 4 checksums
+      - 6: 2 `.tar.gz` + 4 checksums
+      - 3: 1 `.deb` + 2 checksums
       - 9: 3 linux `.whl` + 6 checksums
       - 6: 2 macOS x86 `.whl` + 4 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums

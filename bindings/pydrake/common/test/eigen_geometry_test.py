@@ -234,12 +234,6 @@ class TestEigenGeometry(unittest.TestCase):
 
         assert_pickle(self, X_AB, Isometry3.matrix, T=T)
 
-    def test_translation(self):
-        # Test `type_caster`s.
-        value = test_util.create_translation()
-        self.assertEqual(value.shape, (3,))
-        test_util.check_translation(value)
-
     @numpy_compare.check_all_types
     def test_angle_axis(self, T):
         AngleAxis = mut.AngleAxis_[T]

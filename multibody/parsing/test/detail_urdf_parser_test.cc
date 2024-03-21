@@ -57,7 +57,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
@@ -69,7 +69,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfString(
       const std::string& file_contents,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_};
+    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
@@ -91,6 +91,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   // Sap-specific features like the joint 'mimic' element.
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
+  CollisionFilterGroups group_output_;
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -1861,6 +1862,9 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   // Spot check that the two sets are separate.
   EXPECT_FALSE(inspector.CollisionFiltered(ids[1], ids[10]));
   EXPECT_FALSE(inspector.CollisionFiltered(ids[6], ids[7]));
+
+  // Spot check that the filter groups are reported.
+  EXPECT_FALSE(group_output_.empty());
 
   // Make sure we can add the model a second time.
   AddModelFromUrdfFile(full_name, "model2");
