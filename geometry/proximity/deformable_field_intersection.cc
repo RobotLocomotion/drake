@@ -50,6 +50,7 @@ void AddDeformableDeformableContactSurface(
     const DeformableVolumeMeshWithBvh<double>& deformable1_mesh_W,
     GeometryId deformable1_id, DeformableContact<double>* deformable_contact) {
   DRAKE_DEMAND(deformable_contact != nullptr);
+  DRAKE_DEMAND(deformable1_id < deformable0_id);
 
   std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W;
   std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>
