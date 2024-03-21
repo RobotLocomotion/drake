@@ -15,12 +15,13 @@ inline auto LinkJointGraph::links(BodyIndex link_index) const -> const Link& {
   return links().at(link_index);
 }
 
-inline auto LinkJointGraph::mutable_link(BodyIndex link_index) -> Link& {
-  return data_.links.at(link_index);
-}
-
 inline MobodIndex LinkJointGraph::link_to_mobod(BodyIndex index) const {
   return links(index).mobod_;
+}
+
+inline auto LinkJointGraph::mutable_link(BodyIndex link_index) -> Link& {
+  DRAKE_ASSERT(link_index.is_valid() && link_index < ssize(links()));
+  return data_.links[link_index];
 }
 
 inline void LinkJointGraph::set_primary_mobod_for_link(
