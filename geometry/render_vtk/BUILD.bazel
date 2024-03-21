@@ -119,11 +119,10 @@ drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
     args = select({
-        # Most test cases do not render correctly on macOS arm64 CI. Instead of
-        # trying to select the few that randomly happen to pass, we'll skip all
-        # of them. TODO(#19424) Re-enable the tests.
+        # Most test cases do not render correctly on macOS arm64 CI.
+        # TODO(#19424) Re-enable the tests if the cause of failure is found.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=-*",
+            "--gtest_filter=-MultiMaterialObjects:FallbackLight:WholeImageDefaultParams",  # noqa
         ],
         "//conditions:default": [],
     }),
