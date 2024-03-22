@@ -28,7 +28,7 @@ using symbolic::Variables;
 namespace {
 
 const double kInf = std::numeric_limits<double>::infinity();
-// TODO(Alexandre.Amice) Move all these methods to
+// TODO(AlexandreAmice) Move all these methods to
 // semidefinite_relaxation_internal
 
 // Validate that we can compute the semidefinite relaxation of prog.
@@ -67,7 +67,7 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog) {
 // Given a mapping from decision variables in a program to indices, return all
 // the indices corresponding to the variable vars. This method is useful as in
 // DoMakeSemidefiniteRelaxation, we sort the decision variables in the
-// semidefinite variables (and hence the implied constraints).s
+// semidefinite variables (and hence the implied constraints).
 std::vector<int> FindDecisionVariableIndices(
     const std::map<Variable, int>& variables_to_sorted_indices,
     const VectorXDecisionVariable& vars) {
@@ -359,6 +359,11 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
   relaxation->AddDecisionVariables(Vector1<Variable>(one));
   relaxation->AddLinearEqualityConstraint(one, 1);
 
+  // The semidefinite relaxation of each variable group will be computed
+  // individually and any variables which overlap in the programs will later be
+  // made to agree using equality constraints. The container programs in this
+  // map are used to store all the costs and constraints needed to compute the
+  // semidefinite relaxation of each variable group.
   std::map<symbolic::Variables, solvers::MathematicalProgram>
       groups_to_container_programs;
   std::map<symbolic::Variables, MatrixXDecisionVariable>
@@ -391,7 +396,10 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     for (const auto& group : variable_groups) {
       if (cost_variables.IsSubsetOf(group)) {
         groups_to_container_programs.at(group).AddCost(cost);
-        // Only add the costs once.
+        // If the variables in this cost are a subset of multiple variable
+        // groups, then these variables will correspond to submatrices of the
+        // relaxed PSD variables. Since later, we will enforce that all these
+        // submatrices be equal, we only need to add the cost exactly once.
         break;
       }
     }
