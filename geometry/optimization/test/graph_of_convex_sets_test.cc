@@ -21,6 +21,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -52,6 +53,7 @@ using Edge = GraphOfConvexSets::Edge;
 using EdgeId = GraphOfConvexSets::EdgeId;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
+using Transcription = GraphOfConvexSets::Transcription;
 
 using ::testing::AllOf;
 using ::testing::HasSubstr;
@@ -79,7 +81,9 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   solvers::MosekSolver mosek_solver;
   options.solver = &mosek_solver;
   options.solver_options = solvers::SolverOptions();
-  options.rounding_solver_options = solvers::SolverOptions();
+  solvers::SnoptSolver snopt_solver;
+  options.restriction_solver = &snopt_solver;
+  options.restriction_solver_options = solvers::SolverOptions();
   const std::string serialized = yaml::SaveYamlString(options);
   const auto deserialized =
       yaml::LoadYamlString<GraphOfConvexSetsOptions>(serialized);
@@ -91,8 +95,9 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   EXPECT_EQ(deserialized.rounding_seed, options.rounding_seed);
   // The non-built-in types are not serialized.
   EXPECT_EQ(deserialized.solver, nullptr);
+  EXPECT_EQ(deserialized.restriction_solver, nullptr);
   EXPECT_EQ(deserialized.solver_options, solvers::SolverOptions());
-  EXPECT_FALSE(deserialized.rounding_solver_options.has_value());
+  EXPECT_FALSE(deserialized.restriction_solver_options.has_value());
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
@@ -310,6 +315,14 @@ TEST_F(TwoPoints, AddConstraint) {
   auto b1 = e_->AddConstraint(Binding(constraint, e_->xu()));
   auto u_b0 = u_->AddConstraint(u_->x() == pu_.x());
   auto u_b1 = u_->AddConstraint(Binding(constraint, u_->x()));
+  // If no transcription is specified, the constraint won't be added.
+  EXPECT_THROW(e_->AddConstraint(e_->xv().head<2>() == e_->xu(), {}),
+               std::exception);
+  EXPECT_THROW(e_->AddConstraint(Binding(constraint, e_->xu()), {}),
+               std::exception);
+  EXPECT_THROW(u_->AddConstraint(u_->x() == pu_.x(), {}), std::exception);
+  EXPECT_THROW(u_->AddConstraint(Binding(constraint, u_->x()), {}),
+               std::exception);
 
   // Confirm that they are down-castable.
   auto linear_equality =
@@ -324,12 +337,28 @@ TEST_F(TwoPoints, AddConstraint) {
   EXPECT_TRUE(linear != nullptr);
 
   // Confirm that they are all accessible.
-  const auto& edge_constraints = e_->GetConstraints();
-  EXPECT_EQ(edge_constraints[0], b0);
-  EXPECT_EQ(edge_constraints[1], b1);
-  const auto& vertex_constraints = u_->GetConstraints();
-  EXPECT_EQ(vertex_constraints[0], u_b0);
-  EXPECT_EQ(vertex_constraints[1], u_b1);
+  const auto& all_edge_constraints = e_->GetConstraints();
+  EXPECT_EQ(all_edge_constraints[0], b0);
+  EXPECT_EQ(all_edge_constraints[1], b1);
+  const auto& all_vertex_constraints = u_->GetConstraints();
+  EXPECT_EQ(all_vertex_constraints[0], u_b0);
+  EXPECT_EQ(all_vertex_constraints[1], u_b1);
+
+  // By default Edge::AddConstraint or Vertex::AddConstraint is adding the
+  // binding to all transcriptions.
+  for (const auto& transcription :
+       {Transcription::kMIP, Transcription::kRelaxation,
+        Transcription::kRestriction}) {
+    const auto& edge_constraints = e_->GetConstraints({transcription});
+    EXPECT_EQ(edge_constraints[0], b0);
+    EXPECT_EQ(edge_constraints[1], b1);
+    const auto& vertex_constraints = u_->GetConstraints({transcription});
+    EXPECT_EQ(vertex_constraints[0], u_b0);
+    EXPECT_EQ(vertex_constraints[1], u_b1);
+  }
+  // If no transcription is specified, nothing will be returned.
+  EXPECT_THROW(e_->GetConstraints({}), std::exception);
+  EXPECT_THROW(u_->GetConstraints({}), std::exception);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddConstraint(other_var == 1),
@@ -1013,6 +1042,236 @@ TEST_F(ThreeBoxes, IpoptTest) {
   ASSERT_TRUE(result.is_success());
 }
 
+TEST_F(ThreeBoxes, NonConvexRounding) {
+  /* Consider the following problem:
+  - Each of the sets source, target and sink are unit boxes in 2D.
+  - They further constrain the feasible set to be in between the border of the
+    unit box and the exterior of the unit circle.
+  - In addition, the point in the source region must be in the upper left.
+    quadrant, the point in the target region must be in the upper right quadrant
+    and the point in the sink region must be in the lower left quadrant.
+    The quadrants are padded by 0.1 to exclude 0.0 from the feasible set.
+  - We wish to minimize the squared L2 norm of the difference between the
+    points. We expect that source to target will be the shortest path since the
+    optimal difference is zero, while the distance between source and sink will
+    be greater than one.
+
+        Source                            Target
+  ┌────────────┐                     ┌────────────┐
+  │xxxxx___    │                     │    ___xxxxx│
+  │xxx/    \   │        e_on         │   /    \xxx│
+  │xx|      |  │  ────────────────►  │  |      |xx│
+  │  |      |  │                     │  |      |  │
+  │   \____/   │                     │   \____/   │
+  │            │                     │            │
+  └────────────┘                     └────────────┘
+
+        │
+        │  e_off
+        │
+        │
+        │
+        ▼
+      Sink
+  ┌────────────┐
+  │    ____    │
+  │   /    \   │
+  │  |      |  │
+  │  |      |xx│
+  │   \____/xxx│
+  │       xxxxx│
+  └────────────┘
+
+  We will approach this by formulating a convex surrogate of the problem and
+  solving the non-convex problem in the rounding stage.
+  */
+
+  // Add minimum distance cost.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  /* Source: The relaxation of the problem simply requires the point to be
+  strictly in the top left corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │xxx         │   │xxxxx___    │
+  │xxx         │   │xxx/    \   │
+  │            │   │xx|      |  │
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_relaxation;
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_restriction;
+
+  constraints_relaxation.push_back(source_->AddConstraint(
+      source_->x()[0] <= -0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(source_->AddConstraint(
+      source_->x()[1] >= 0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(source_->AddConstraint(
+      pow(source_->x()[0], 2) + pow(source_->x()[1], 2) >= 1.0,
+      {Transcription::kRestriction}));
+  constraints_restriction.push_back(source_->AddConstraint(
+      source_->x()[0] <= -0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(source_->AddConstraint(
+      source_->x()[1] >= 0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the resctriction constraints.
+  for (const auto& constraint :
+       source_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       source_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  /* Target: The relaxation of the problem simply requires the point to be
+  strictly in the top right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │         xxx│   │    ___xxxxx│
+  │         xxx│   │   /    \xxx│
+  │            │   │  |      |xx│
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  constraints_relaxation.push_back(target_->AddConstraint(
+      target_->x()[0] >= 0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(target_->AddConstraint(
+      target_->x()[1] >= 0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(target_->AddConstraint(
+      pow(target_->x()[0], 2) + pow(target_->x()[1], 2) >= 1.0,
+      {Transcription::kRestriction}));
+  constraints_restriction.push_back(target_->AddConstraint(
+      target_->x()[0] >= 0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(target_->AddConstraint(
+      target_->x()[1] >= 0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the restriction constraints.
+  for (const auto& constraint :
+       target_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       target_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  /* Sink: The relaxation of the problem simply requires the point to be
+  strictly in the bottom right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │            │   │    ____    │
+  │            │   │   /    \   │
+  │            │   │  |      |  │
+  │            │   │  |      |xx│
+  │         xxx│   │   \____/xxx│
+  │         xxx│   │       xxxxx│
+  └────────────┘   └────────────┘
+  */
+
+  constraints_relaxation.push_back(
+      sink_->AddConstraint(sink_->x()[0] >= 0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(sink_->AddConstraint(
+      sink_->x()[1] <= -0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(
+      sink_->AddConstraint(pow(sink_->x()[0], 2) + pow(sink_->x()[1], 2) >= 1.0,
+                           {Transcription::kRestriction}));
+  constraints_restriction.push_back(sink_->AddConstraint(
+      sink_->x()[0] >= 0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(sink_->AddConstraint(
+      sink_->x()[1] <= -0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the restriction constraints.
+  for (const auto& constraint :
+       sink_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       sink_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  // Since all constraints were added to the relaxation and restriction
+  // transcription, we expect kMIP to be empty.
+  EXPECT_EQ(source_->GetConstraints({Transcription::kMIP}).size(), 0);
+  EXPECT_EQ(target_->GetConstraints({Transcription::kMIP}).size(), 0);
+  EXPECT_EQ(sink_->GetConstraints({Transcription::kMIP}).size(), 0);
+
+  if (!(solvers::SnoptSolver::is_available() &&
+        solvers::SnoptSolver::is_enabled())) {
+    return;
+  }
+  solvers::SnoptSolver snopt;
+  options_.restriction_solver = &snopt;
+  options_.convex_relaxation = true;
+  options_.max_rounded_paths = 2;
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  // Make sure it used the correct solver.
+  EXPECT_EQ(result.get_solver_id(), solvers::SnoptSolver::id());
+
+  const double kExpectedDistance = 0.2;
+  const double distance =
+      (source_->GetSolution(result) - target_->GetSolution(result)).norm();
+  EXPECT_DOUBLE_EQ(distance, kExpectedDistance);
+
+  // Verify that the solution includes source to target.
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
 TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   const Vector2d b{.5, .3};
   e_on_->AddConstraint(e_on_->xv() == b);
@@ -1692,7 +1951,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
 
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {
-    // Test rounding_solver_options by setting the maximum iterations to 0,
+    // Test restriction_solver_options by setting the maximum iterations to 0,
     // which is equivalent to not solving the rounding problem. Thus it should
     // fail.
     solvers::MosekSolver mosek_solver;
@@ -1701,15 +1960,15 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.preprocessing = false;
     options.max_rounded_paths = 10;
 
-    options.rounding_solver_options = SolverOptions();
-    options.rounding_solver_options->SetOption(
+    options.restriction_solver_options = SolverOptions();
+    options.restriction_solver_options->SetOption(
         solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
 
     auto failed_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_FALSE(failed_result.is_success());
 
     // Without the convex relaxation, the solver should ignore the
-    // rounding_solver_options and succeed.
+    // restriction_solver_options and succeed.
     options.convex_relaxation = false;
     auto successful_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result.is_success());
