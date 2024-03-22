@@ -9,6 +9,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include <fmt/format.h>
@@ -62,64 +63,76 @@ UsdParser::UsdParser() {
 
 UsdParser::~UsdParser() = default;
 
+Eigen::Matrix3d UsdMat3dToEigenMat3d(pxr::GfMatrix3d m) {
+  Eigen::Matrix3d ret;
+  // TODO(hong-nvidia): check if we need to transpose the matrix
+  ret << m[0][0], m[0][1], m[0][2],
+         m[1][0], m[1][1], m[1][2],
+         m[2][0], m[2][1], m[2][2];
+  return ret;
+}
+
+Eigen::Vector3d UsdVec3dtoEigenVec3d(pxr::GfVec3d v) {
+  return Eigen::Vector3d{ v[0], v[1], v[2] };
+}
+
 void ProcessStaticCollider(
-  const pxr::UsdPrim& prim, MultibodyPlant<double>* plant) {
+  const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
+  MultibodyPlant<double>* plant = workspace.plant;
+  auto diag = workspace.diagnostic;
+
   DRAKE_ASSERT(prim.IsA<pxr::UsdGeomXformable>());
   if (prim.IsA<pxr::UsdGeomCube>()) {
     pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
 
+    pxr::GfVec3f scale;
+    pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+    if (!xformable.GetScaleOp().Get(&scale)) {
+      workspace.diagnostic.Error(fmt::format(
+        "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
+    }
+    // Reset the scale to 1 so that ComputeLocalToWorldTransform below does not
+    // include scaling
+    xformable.GetScaleOp().Set(pxr::GfVec3f(1.f));
+
+    pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
+      pxr::UsdTimeCode::Default());
+    pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix();
+    pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
+
+    math::RigidTransform<double> transform(
+      math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
+      UsdVec3dtoEigenVec3d(translation));
+
     CoulombFriction<double> friction = default_friction();
-    const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
-
-    // pxr::VtVec3fArray extent;
-    // pxr::GfVec3f scale;
-    // pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
-    // DRAKE_ASSERT(cube.GetExtentAttr().Get(&extent));
-    // DRAKE_ASSERT(xformable.GetScaleOp().Get(&scale));
-
-    // pxr::GfMatrix4d transform_matrix;
-    // bool resets_xform_stack = false; // TODO(hong-nvidia): Figure out whether
-    // // there's a scenario where we need to reset the xform stack
-
-    // DRAKE_ASSERT(xformable.GetLocalTransformation(
-    //   &transform_matrix, &resets_xform_stack,
-    //   xformable.GetOrderedXformOps(&resets_xform_stack)));
-    // drake::log()->info(transform_matrix);
-
-    double scale_x = 1;
-    double scale_y = 1;
-    double scale_z = 1;
-    math::RigidTransform<double> transform;
-
     plant->RegisterCollisionGeometry(
       plant->world_body(),
       transform,
-      geometry::Box(scale_x, scale_y, scale_z),
+      geometry::Box(scale[0], scale[1], scale[2]),
       fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
       friction);
+
+    const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
     plant->RegisterVisualGeometry(
       plant->world_body(),
       transform,
-      geometry::Box(scale_x, scale_y, scale_z),
+      geometry::Box(scale[0], scale[1], scale[2]),
       fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
       color_white);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
-    throw std::runtime_error(
-      fmt::format("Unsupported Prim type: {}",
-      prim_type));
+    diag.Error(fmt::format("Unsupported Prim type: {}", prim_type));
   }
 }
 
-void ProcessPrim(const pxr::UsdPrim& prim, MultibodyPlant<double>* plant) {
+void ProcessPrim(const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
   drake::log()->info("Processing " + prim.GetPath().GetString());
 
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
     if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
-      // TODO(hong-nvidia): Process rigid body collider
       // ProcessRigidBody(prim, plant);
     } else {
-      ProcessStaticCollider(prim, plant);
+      ProcessStaticCollider(prim, workspace);
     }
   }
 }
@@ -146,11 +159,12 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(
     data_source.GetAbsolutePath());
   if (!stage) {
-    throw std::runtime_error("Failed to open USD stage");
+    workspace.diagnostic.Error(fmt::format("Failed to open USD stage",
+      data_source.filename()));
   }
 
   for (pxr::UsdPrim prim : stage->Traverse()) {
-    ProcessPrim(prim, workspace.plant);
+    ProcessPrim(prim, workspace);
   }
 
   // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
