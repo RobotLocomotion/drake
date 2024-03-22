@@ -148,6 +148,38 @@ Binding<Constraint> Vertex::AddConstraint(const Binding<Constraint>& binding) {
   DRAKE_THROW_UNLESS(
       Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
   constraints_.emplace_back(binding);
+  relaxation_constraints_.emplace_back(binding);
+  rounding_constraints_.emplace_back(binding);
+  return binding;
+}
+
+Binding<Constraint> Vertex::AddConstraintToRelaxation(
+    const symbolic::Formula& f) {
+  return AddConstraintToRelaxation(solvers::internal::ParseConstraint(f));
+}
+
+Binding<Constraint> Vertex::AddConstraintToRelaxation(
+    const Binding<Constraint>& binding) {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
+  DRAKE_THROW_UNLESS(
+      Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
+  relaxation_constraints_.emplace_back(binding);
+  constraints_.emplace_back(binding);
+  return binding;
+}
+
+Binding<Constraint> Vertex::AddConstraintToRounding(
+    const symbolic::Formula& f) {
+  return AddConstraintToRounding(solvers::internal::ParseConstraint(f));
+}
+
+Binding<Constraint> Vertex::AddConstraintToRounding(
+    const Binding<Constraint>& binding) {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
+  DRAKE_THROW_UNLESS(
+      Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
+  rounding_constraints_.emplace_back(binding);
+  constraints_.emplace_back(binding);
   return binding;
 }
 
@@ -224,6 +256,37 @@ Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   const int total_ambient_dimension = allowed_vars_.size();
   DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
+  constraints_.emplace_back(binding);
+  relaxation_constraints_.emplace_back(binding);
+  rounding_constraints_.emplace_back(binding);
+  return binding;
+}
+
+Binding<Constraint> Edge::AddConstraintToRelaxation(
+    const symbolic::Formula& f) {
+  return AddConstraintToRelaxation(solvers::internal::ParseConstraint(f));
+}
+
+Binding<Constraint> Edge::AddConstraintToRelaxation(
+    const Binding<Constraint>& binding) {
+  const int total_ambient_dimension = allowed_vars_.size();
+  DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
+  DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
+  relaxation_constraints_.emplace_back(binding);
+  constraints_.emplace_back(binding);
+  return binding;
+}
+
+Binding<Constraint> Edge::AddConstraintToRounding(const symbolic::Formula& f) {
+  return AddConstraintToRounding(solvers::internal::ParseConstraint(f));
+}
+
+Binding<Constraint> Edge::AddConstraintToRounding(
+    const Binding<Constraint>& binding) {
+  const int total_ambient_dimension = allowed_vars_.size();
+  DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
+  DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
+  rounding_constraints_.emplace_back(binding);
   constraints_.emplace_back(binding);
   return binding;
 }
@@ -895,7 +958,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
 
     // Edge constraints.
-    for (const Binding<Constraint>& b : e->constraints_) {
+    for (const Binding<Constraint>& b : options.convex_relaxation
+                                            ? e->relaxation_constraints_
+                                            : e->constraints_) {
       const VectorXDecisionVariable& old_vars = b.variables();
       VectorXDecisionVariable vars(old_vars.size() + 1);
       // vars = [phi; yz_vars]
@@ -913,13 +978,15 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   }
   if (!has_edges_out_of_source) {
     MathematicalProgramResult result;
-    log()->info("Source vertex {} has no outgoing edges.", source_id);
+    log()->info("Source vertex {} ({}) has no outgoing edges.", source.name(),
+                source_id);
     result.set_solution_result(SolutionResult::kInfeasibleConstraints);
     return result;
   }
   if (!has_edges_into_target) {
     MathematicalProgramResult result;
-    log()->info("Target vertex {} has no incoming edges.", target_id);
+    log()->info("Target vertex {} ({}) has no incoming edges.", target.name(),
+                target_id);
     result.set_solution_result(SolutionResult::kInfeasibleConstraints);
     return result;
   }
@@ -1058,7 +1125,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
 
     // Vertex constraints.
-    for (const Binding<Constraint>& b : v->constraints_) {
+    for (const Binding<Constraint>& b : options.convex_relaxation
+                                            ? v->relaxation_constraints_
+                                            : v->constraints_) {
       const VectorXDecisionVariable& old_vars = b.variables();
 
       for (const Edge* e : cost_edges) {
@@ -1088,7 +1157,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       "preprocessing={}{}.",
       result.get_solver_id().name(), *options.convex_relaxation,
       *options.preprocessing,
-      *options.max_rounded_paths > 0 ? " and rounding" : " and no rounding");
+      *options.convex_relaxation && *options.max_rounded_paths > 0
+          ? " and rounding"
+          : " and no rounding");
 
   bool found_rounded_result = false;
   // Implements the rounding scheme put forth in Section 4.2 of
@@ -1101,6 +1172,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (rounding_options.rounding_solver_options) {
       rounding_options.solver_options =
           *rounding_options.rounding_solver_options;
+    }
+    if (rounding_options.rounding_solver) {
+      rounding_options.solver = rounding_options.rounding_solver;
     }
 
     RandomGenerator generator(options.rounding_seed);
@@ -1177,6 +1251,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
            rounded_result.get_optimal_cost() <
                best_rounded_result.get_optimal_cost())) {
         best_rounded_result = rounded_result;
+      } else {
+        // In the event that all rounded results are infeasible, we still want
+        // to propagate the solver id for logging.
+        best_rounded_result.set_solver_id(rounded_result.get_solver_id());
       }
     }
     if (best_rounded_result.is_success()) {
@@ -1184,8 +1262,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       found_rounded_result = true;
     } else {
       result.set_solution_result(SolutionResult::kIterationLimit);
+      result.set_solver_id(best_rounded_result.get_solver_id());
     }
-    log()->info("Finished {} rounding trials.", num_trials);
+    log()->info("Finished {} rounding trials with {}.", num_trials,
+                result.get_solver_id().name());
   }
   if (!found_rounded_result) {
     // Push the placeholder variables and excluded edge variables into the
@@ -1465,7 +1545,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       prog.AddCost(b);
     }
     // Vertex constraints.
-    for (const Binding<Constraint>& b : v->constraints_) {
+    for (const Binding<Constraint>& b : v->rounding_constraints_) {
       prog.AddConstraint(b);
     }
   }
@@ -1476,12 +1556,14 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       prog.AddCost(b);
     }
     // Edge constraints.
-    for (const Binding<Constraint>& b : e->constraints_) {
+    for (const Binding<Constraint>& b : e->rounding_constraints_) {
       prog.AddConstraint(b);
     }
   }
 
-  RewriteForConvexSolver(&prog);
+  if (GetProgramType(prog) != solvers::ProgramType::kNLP) {
+    RewriteForConvexSolver(&prog);
+  }
 
   MathematicalProgramResult result = Solve(prog, options);
 

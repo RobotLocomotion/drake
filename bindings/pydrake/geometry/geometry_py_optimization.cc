@@ -654,17 +654,22 @@ void DefineGeometryOptimization(py::module m) {
               "flow_tolerance={}, "
               "rounding_seed={}, "
               "solver={}, "
+              "rounding_solver={}, "
               "solver_options={}, "
               "rounding_solver_options={}, "
               ")")
               .format(self.convex_relaxation, self.preprocessing,
                   self.max_rounded_paths, self.max_rounding_trials,
                   self.flow_tolerance, self.rounding_seed, self.solver,
-                  self.solver_options, self.rounding_solver_options);
+                  self.rounding_solver, self.solver_options,
+                  self.rounding_solver_options);
         });
 
     DefReadWriteKeepAlive(&gcs_options, "solver",
         &GraphOfConvexSetsOptions::solver, cls_doc.solver.doc);
+    DefReadWriteKeepAlive(&gcs_options, "rounding_solver",
+        &GraphOfConvexSetsOptions::rounding_solver,
+        cls_doc.rounding_solver.doc);
   }
 
   // GraphOfConvexSets
@@ -713,11 +718,38 @@ void DefineGeometryOptimization(py::module m) {
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
                 const solvers::Binding<solvers::Constraint>&>(
                 &GraphOfConvexSets::Vertex::AddConstraint),
-            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+            py::arg("binding"), vertex_doc.AddConstraint.doc_binding)
+        .def("AddConstraintToRelaxation",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Vertex::AddConstraintToRelaxation),
+            py::arg("f"), vertex_doc.AddConstraintToRelaxation.doc_formula)
+        .def("AddConstraintToRelaxation",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Vertex::AddConstraintToRelaxation),
+            py::arg("binding"),
+            vertex_doc.AddConstraintToRelaxation.doc_binding)
+        .def("AddConstraintToRounding",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Vertex::AddConstraintToRounding),
+            py::arg("f"), vertex_doc.AddConstraintToRounding.doc_formula)
+        .def("AddConstraintToRounding",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Vertex::AddConstraintToRounding),
+            py::arg("binding"), vertex_doc.AddConstraintToRounding.doc_binding)
         .def("GetCosts", &GraphOfConvexSets::Vertex::GetCosts,
             vertex_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
             vertex_doc.GetConstraints.doc)
+        .def("GetConstraintsFromRelaxation",
+            &GraphOfConvexSets::Vertex::GetConstraintsFromRelaxation,
+            vertex_doc.GetConstraintsFromRelaxation.doc)
+        .def("GetConstraintsFromRounding",
+            &GraphOfConvexSets::Vertex::GetConstraintsFromRounding,
+            vertex_doc.GetConstraintsFromRounding.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
             py::arg("result"), vertex_doc.GetSolutionCost.doc)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
@@ -770,7 +802,27 @@ void DefineGeometryOptimization(py::module m) {
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
                 const solvers::Binding<solvers::Constraint>&>(
                 &GraphOfConvexSets::Edge::AddConstraint),
-            py::arg("binding"), edge_doc.AddCost.doc_binding)
+            py::arg("binding"), edge_doc.AddConstraint.doc_binding)
+        .def("AddConstraintToRelaxation",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Edge::AddConstraintToRelaxation),
+            py::arg("f"), edge_doc.AddConstraintToRelaxation.doc_formula)
+        .def("AddConstraintToRelaxation",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Edge::AddConstraintToRelaxation),
+            py::arg("binding"), edge_doc.AddConstraintToRelaxation.doc_binding)
+        .def("AddConstraintToRounding",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Edge::AddConstraintToRounding),
+            py::arg("f"), edge_doc.AddConstraintToRounding.doc_formula)
+        .def("AddConstraintToRounding",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Edge::AddConstraintToRounding),
+            py::arg("binding"), edge_doc.AddConstraintToRounding.doc_binding)
         .def("AddPhiConstraint", &GraphOfConvexSets::Edge::AddPhiConstraint,
             py::arg("phi_value"), edge_doc.AddPhiConstraint.doc)
         .def("ClearPhiConstraints",
@@ -780,6 +832,12 @@ void DefineGeometryOptimization(py::module m) {
             edge_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
             edge_doc.GetConstraints.doc)
+        .def("GetConstraintsFromRelaxation",
+            &GraphOfConvexSets::Edge::GetConstraintsFromRelaxation,
+            edge_doc.GetConstraintsFromRelaxation.doc)
+        .def("GetConstraintsFromRounding",
+            &GraphOfConvexSets::Edge::GetConstraintsFromRounding,
+            edge_doc.GetConstraintsFromRounding.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
             py::arg("result"), edge_doc.GetSolutionCost.doc)
         .def("GetSolutionPhiXu", &GraphOfConvexSets::Edge::GetSolutionPhiXu,
