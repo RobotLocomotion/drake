@@ -33,6 +33,15 @@ bool MathematicalProgramResult::is_success() const {
   return solution_result_ == SolutionResult::kSolutionFound;
 }
 
+bool MathematicalProgramResult::solved_without_errors() const {
+  return solution_result_ == SolutionResult::kSolutionFound ||
+  solution_result_ == SolutionResult::kInfeasibleConstraints ||
+  solution_result_ == SolutionResult::kInfeasibleConstraints ||
+  solution_result_ == SolutionResult::kUnbounded ||
+  solution_result_ == SolutionResult::kInfeasibleOrUnbounded ||
+  solution_result_ == SolutionResult::kDualInfeasible;
+}
+
 void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
   DRAKE_DEMAND(decision_variable_index_.has_value());
   if (x_val.size() != static_cast<int>(decision_variable_index_->size())) {
