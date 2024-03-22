@@ -736,6 +736,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.flow_tolerance = 1e-6
         options.rounding_seed = 1
         options.solver = ClpSolver()
+        options.rounding_solver = ClpSolver()
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
         options.rounding_solver_options = SolverOptions()
@@ -792,9 +793,52 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(source.GetCosts()), 2)
         binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = source.AddConstraint(binding=binding)
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP,
+                mut.GraphOfConvexSets.Transcription.kRelaxation,
+                mut.GraphOfConvexSets.Transcription.kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(source.GetConstraints()), 2)
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(len(source.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})), 4)
+        self.assertEqual(len(source.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})), 4)
+        self.assertEqual(len(source.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})), 4)
         self.assertEqual(len(source.incoming_edges()), 0)
         self.assertEqual(len(source.outgoing_edges()), 2)
         self.assertEqual(len(target.incoming_edges()), 2)
@@ -822,9 +866,52 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(edge0.GetCosts()), 2)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = edge0.AddConstraint(binding=binding)
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP,
+                mut.GraphOfConvexSets.Transcription.kRelaxation,
+                mut.GraphOfConvexSets.Transcription.kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(edge0.GetConstraints()), 2)
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(len(edge0.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kMIP})), 4)
+        self.assertEqual(len(edge0.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRelaxation})), 4)
+        self.assertEqual(len(edge0.GetConstraints(
+            used_in_transcription={
+                mut.GraphOfConvexSets.Transcription.kRestriction})), 4)
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
         edge1.AddPhiConstraint(phi_value=True)

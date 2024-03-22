@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -59,8 +60,15 @@ struct GraphOfConvexSetsOptions {
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
   solver cannot handle the type of optimization problem generated, the calling
-  solve method will throw. */
+  solvers::SolverInterface::Solve()  method will throw. */
   const solvers::SolverInterface* solver{nullptr};
+
+  /** Optimizer to be used to solve the rounding of the shortest path
+  optimization problem. If not set, the best solver for the given problem is
+  selected. Note that if the solver cannot handle the type of optimization
+  problem generated, the calling the solvers::SolverInterface::Solve() method
+  will throw. */
+  const solvers::SolverInterface* rounding_solver{nullptr};
 
   /** Options passed to the solver when solving the generated problem.*/
   solvers::SolverOptions solver_options{};
@@ -83,7 +91,8 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
-    // N.B. We skip the DRAKE_NVP(solver), because it cannot be serialized.
+    // N.B. We skip the DRAKE_NVP(solver) and DRAKE_NVP(rounding_solver),
+    // because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
     // TODO(#20967) Serialize the DRAKE_NVP(rounding_solver_options).
   }
@@ -105,6 +114,10 @@ graph, such as the shortest path problem where each visit to a vertex also
 corresponds to selecting an element from the convex set subject to the costs
 and constraints.  Behind the scenes, we construct efficient mixed-integer
 convex transcriptions of the graph problem using MathematicalProgram.
+However, we provide the option to solve an often tight convex relaxation of the
+problem with GraphOfConvexSetsOptions::convex_relaxation and employ a cheap
+rounding stage which solves the convex restriction along potential paths to
+find a feasible solution to the original problem.
 
 Design note: This class avoids providing any direct access to the
 MathematicalProgram that it constructs nor to the decision variables /
@@ -112,11 +125,42 @@ constraints.  The users should be able to write constraints against
 "placeholder" decision variables on the vertices and edges, but these get
 translated in non-trivial ways to the underlying program.
 
+**Advanced Usage: Guiding Non-convex Optimization with the GraphOfConvexSets**
+Solving a GCS problem using convex relaxation involves two components:
+- Convex Relaxation: The relaxation of the binary variables (edge activations)
+  and perspective operations on the convex cost/constraints leads to a
+  convex problem that considers the graph as a whole.
+- Rounding: After solving the relaxation, a randomized rounding scheme is
+  applied to obtain a feasible solution for the original problem. We interpret
+  the relaxed flow variables as edge probabilities to guide the maximum
+  likelyhood depth first search from the source to target vertices.
+  Each rounding is calling SolveConvexRestriction.
+
+To handle non-convex constraints, one can provide convex surrogates to the
+relaxation and the true non-convex constraints to the rounding problem.
+These surrogates approximate the non-convex constraints, making the relaxation
+solvable as a convex optimization to guide the non-convex rounding. This can be
+controlled by the Transcription enum in the AddConstraint method. We
+encourage users to provide a strong convex surrogate, when possible, to better
+approximate the original non-convex problem.
+
 @ingroup geometry_optimization
 */
 class GraphOfConvexSets {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GraphOfConvexSets)
+
+  /** Specify the transcription of the optimization problem to which a
+  constraint or cost should be added, or from which they should be retrieved.*/
+  enum class Transcription {
+    kMIP,          //< The mixed integer formulation of the GCS problem.
+                   //< Used when adding or retrieving constraints or costs.
+    kRelaxation,   //< The relaxation of the GCS problem. Used when
+                   //< adding or retrieving constraints or costs.
+    kRestriction,  //< The restrction of the GCS problem where the path is
+                   // fixed. < Used when adding or retrieving constraints or
+                   // costs.
+  };
 
   /** Constructs an empty graph. */
   GraphOfConvexSets() = default;
@@ -187,34 +231,49 @@ class GraphOfConvexSets {
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const solvers::Binding<solvers::Cost>& binding);
 
-    /** Adds a constraint to this vertex, described by a symbolic::Formula @p f
-    containing *only* elements of x() as variables.
+    /** Adds a constraint to this vertex.
+    @param f must contain *only* elements of x() as variables.
+    @param use_in_transcription specifies the component of the problem to which
+    the constraint should be added.
     @throws std::exception if f.GetFreeVariables() is not a subset of x().
     @throws std::exception if ambient_dimension() == 0.
     @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
-        const symbolic::Formula& f);
+        const symbolic::Formula& f,
+        std::unordered_set<Transcription> use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
-    /** Adds a constraint to this vertex.  @p binding must contain *only*
-    elements of x() as variables.
+    /** Adds a constraint to this vertex.
+
+    @param bindings must contain *only* elements of x() as variables.
+    @param use_in_transcription specifies the component of the problem to which
+    the constraint should be added.
     @throws std::exception if binding.variables() is not a subset of x().
     @throws std::exception if ambient_dimension() == 0.
     @pydrake_mkdoc_identifier{binding}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
-        const solvers::Binding<solvers::Constraint>& binding);
+        const solvers::Binding<solvers::Constraint>& binding,
+        std::unordered_set<Transcription> use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Returns all costs on this vertex. */
     const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
       return costs_;
     }
 
-    /** Returns all constraints on this vertex. */
-    const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
-        const {
-      return constraints_;
-    }
+    /** Returns constraints on this vertex.
+
+    @param used_in_transcription specifies the component of the problem from
+    which the constraint should be retrieved.
+    */
+    std::vector<solvers::Binding<solvers::Constraint>> GetConstraints(
+        std::unordered_set<Transcription> used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns the sum of the costs associated with this vertex in a
     solvers::MathematicalProgramResult. */
@@ -249,7 +308,11 @@ class GraphOfConvexSets {
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
-    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> mip_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        relaxation_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        restriction_constraints_{};
 
     std::vector<Edge*> incoming_edges_{};
     std::vector<Edge*> outgoing_edges_{};
@@ -349,8 +412,11 @@ class GraphOfConvexSets {
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const solvers::Binding<solvers::Cost>& binding);
 
-    /** Adds a constraint to this edge, described by a symbolic::Formula @p f
-    containing *only* elements of xu() and xv() as variables.
+    /** Adds a constraint to this edge.
+    @param f must contain *only* elements of xu() and xv() as variables.
+    @param use_in_transcription specifies the component of the problem to which
+    the constraint should be added.
+
     @throws std::exception if f.GetFreeVariables() is not a subset of xu() ∪
     xv().
     @throws std::exception if xu() ∪ xv() is empty, i.e., when both vertices
@@ -358,10 +424,17 @@ class GraphOfConvexSets {
     @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
-        const symbolic::Formula& f);
+        const symbolic::Formula& f,
+        std::unordered_set<Transcription> use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
-    /** Adds a constraint to this edge.  @p binding must contain *only*
-    elements of xu() and xv() as variables.
+    /** Adds a constraint to this edge.
+
+    @param bindings must contain *only* elements of xu() and xv() as variables.
+    @param use_in_transcription specifies the component of the problem to which
+    the constraint should be added.
+
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().
     @throws std::exception if xu() ∪ xv() is empty, i.e., when both vertices
@@ -369,7 +442,10 @@ class GraphOfConvexSets {
     @pydrake_mkdoc_identifier{binding}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
-        const solvers::Binding<solvers::Constraint>& binding);
+        const solvers::Binding<solvers::Constraint>& binding,
+        std::unordered_set<Transcription> use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a constraint on the binary variable associated with this edge.
     @note We intentionally do not return a binding to the constraint created by
@@ -385,11 +461,15 @@ class GraphOfConvexSets {
       return costs_;
     }
 
-    /** Returns all constraints on this edge. */
-    const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
-        const {
-      return constraints_;
-    }
+    /** Returns constraints on this edge.
+     *
+    @param used_in_transcription specifies the component of the problem from
+    which the constraint should be retrieved.
+    */
+    std::vector<solvers::Binding<solvers::Constraint>> GetConstraints(
+        std::unordered_set<Transcription> used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns the sum of the costs associated with this edge in a
     solvers::MathematicalProgramResult. */
@@ -431,7 +511,11 @@ class GraphOfConvexSets {
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
-    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> mip_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        relaxation_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        restriction_constraints_{};
     std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
