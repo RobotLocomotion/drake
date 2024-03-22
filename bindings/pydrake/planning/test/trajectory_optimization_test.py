@@ -529,9 +529,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
                               GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
         self.assertIn(main2_to_target, gcs.GetEdgesBetweenSubgraphs())
 
-        # Add final zero velocity constraints.
-        main2_to_target.AddVelocityBounds(lb=np.zeros(dimension),
-                                          ub=np.zeros(dimension))
+        # Add final zero velocity and acceleration.
+        main2_to_target.AddZeroDerivativeConstraints(1)
+        main2_to_target.AddZeroDerivativeConstraints(2)
 
         # This weight matrix penalizes movement in the y direction three
         # times more than in the x direction only for the main2 subgraph.

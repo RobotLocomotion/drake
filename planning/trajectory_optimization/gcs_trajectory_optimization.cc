@@ -624,6 +624,77 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
   }
 }
 
+void EdgesBetweenSubgraphs::AddZeroDerivativeConstraints(int derivative_order) {
+  if (derivative_order < 1) {
+    throw std::runtime_error("Derivative order must be greater than 1.");
+  }
+
+  if (from_subgraph_.order() < derivative_order &&
+      to_subgraph_.order() < derivative_order) {
+    throw std::runtime_error(
+        "Cannot add derivative bounds to a subgraph edges where both subgraphs "
+        "have less than derivative order.");
+  }
+  if (from_subgraph_.order() < derivative_order &&
+      to_subgraph_.order() < derivative_order) {
+    throw std::runtime_error(fmt::format(
+        "Cannot add derivative bounds to a subgraph edges where "
+        "both subgraphs have less than derivative order.\n From "
+        "subgraph order: {}\n To subgraph order: {}\n Derivative "
+        "order: {}",
+        from_subgraph_.order(), to_subgraph_.order(), derivative_order));
+  }
+
+  // We have d^Nq(t)/dt^N = d^Nr(s)/(ds^N * h^N) and h >= 0, which is nonlinear.
+  // To constraint zero velocity we can set the numerator to zero, which is
+  // convex:
+  // d^Nr(s)/ds^N = 0.
+
+  const Vector1d kVecZero = Vector1d::Zero();
+
+  if (from_subgraph_.order() >= derivative_order) {
+    // Add derivative bounds to the last control point of the u set.
+    // See BezierCurve::AsLinearInControlPoints().
+    SparseMatrix<double> M_transpose =
+        ur_trajectory_.AsLinearInControlPoints(derivative_order)
+            .col(from_subgraph_.order() - derivative_order)
+            .transpose();
+
+    // Equality constraint.
+    // (d^Nr(s)/ds^N).row(i) = 0.
+    const auto zero_derivative_constraint =
+        std::make_shared<LinearEqualityConstraint>(M_transpose, kVecZero);
+    for (int i = 0; i < num_positions(); ++i) {
+      for (Edge* edge : edges_) {
+        edge->AddConstraint(Binding<LinearEqualityConstraint>(
+            zero_derivative_constraint,
+            GetControlPointsU(*edge).row(i).transpose()));
+      }
+    }
+  }
+
+  if (to_subgraph_.order() >= derivative_order) {
+    // Add derivative bounds to the first control point of the v set.
+    // See BezierCurve::AsLinearInControlPoints().
+    SparseMatrix<double> M_transpose =
+        vr_trajectory_.AsLinearInControlPoints(derivative_order)
+            .col(0)
+            .transpose();
+    // Equality constraint:
+    // (d^Nr(s)/ds^N).row(i) = 0.
+    const auto zero_derivative_constraint =
+        std::make_shared<LinearEqualityConstraint>(M_transpose, kVecZero);
+
+    for (int i = 0; i < num_positions(); ++i) {
+      for (Edge* edge : edges_) {
+        edge->AddConstraint(Binding<LinearEqualityConstraint>(
+            zero_derivative_constraint,
+            GetControlPointsV(*edge).row(i).transpose()));
+      }
+    }
+  }
+}
+
 void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
   if (continuity_order == 0) {
     throw std::runtime_error(

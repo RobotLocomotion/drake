@@ -393,6 +393,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc)
+        .def("AddZeroDerivativeConstraints",
+            &Class::EdgesBetweenSubgraphs::AddZeroDerivativeConstraints,
+            py::arg("derivative_order"),
+            subgraph_edges_doc.AddZeroDerivativeConstraints.doc)
         .def("AddPathContinuityConstraints",
             &Class::EdgesBetweenSubgraphs::AddPathContinuityConstraints,
             py::arg("continuity_order"),
