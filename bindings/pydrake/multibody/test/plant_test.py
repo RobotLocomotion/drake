@@ -1221,7 +1221,9 @@ class TestPlant(unittest.TestCase):
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
 
         # Compute spatial accelerations for base.
-        if T == Expression:
+        if T == Expression and plant.time_step() != 0:
+            # N.B. Discrete time dynamics are not supported for symbolic
+            # scalars.
             with self.assertRaises(ValueError) as cm:
                 A_base = plant.EvalBodySpatialAccelerationInWorld(
                     context, base)
