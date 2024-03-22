@@ -21,6 +21,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -330,6 +331,23 @@ TEST_F(TwoPoints, AddConstraint) {
   const auto& vertex_constraints = u_->GetConstraints();
   EXPECT_EQ(vertex_constraints[0], u_b0);
   EXPECT_EQ(vertex_constraints[1], u_b1);
+
+  // When Edge::AddConstraint or Vertex::AddConstraint is called, the binding
+  // should appear in both the constraints to the rounded and relaxed problem.
+  const auto& edge_constraints_relaxation = e_->GetConstraintsFromRelaxation();
+  EXPECT_EQ(edge_constraints_relaxation[0], b0);
+  EXPECT_EQ(edge_constraints_relaxation[1], b1);
+  const auto& vertex_constraints_relaxation =
+      u_->GetConstraintsFromRelaxation();
+  EXPECT_EQ(vertex_constraints_relaxation[0], u_b0);
+  EXPECT_EQ(vertex_constraints_relaxation[1], u_b1);
+
+  const auto& edge_constraints_rounding = e_->GetConstraintsFromRounding();
+  EXPECT_EQ(edge_constraints_rounding[0], b0);
+  EXPECT_EQ(edge_constraints_rounding[1], b1);
+  const auto& vertex_constraints_rounding = u_->GetConstraintsFromRounding();
+  EXPECT_EQ(vertex_constraints_rounding[0], u_b0);
+  EXPECT_EQ(vertex_constraints_rounding[1], u_b1);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddConstraint(other_var == 1),
@@ -1011,6 +1029,241 @@ TEST_F(ThreeBoxes, IpoptTest) {
   options_.convex_relaxation = true;
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
+}
+
+TEST_F(ThreeBoxes, NonConvexRounding) {
+  /* Consider the following problem:
+  - Each of the sets source, target and sink are unit boxes in 2D.
+  - They further constraint the feasible set to be in between the border of the
+    unit box and the exterior of the unit circle.
+  - In addition, the point in the source region must bet in the upper left.
+    quadrant, the point in the target region must be in the upper right quadrant
+    and the point in the sink region must be in the lower left quadrant.
+    The quadrants are padded by 0.1 to exclude 0.0 from the feasible set.
+  - We wish to minimize the squared norm of the difference between the points.
+    We expect that source to target will be the shortest path since the optimal
+    difference is zero, while the distance between source and sink will be
+    greater than one.
+
+        Source                            Target
+  ┌────────────┐                     ┌────────────┐
+  │xxxxx___    │                     │    ___xxxxx│
+  │xxx/    \   │        e_on         │   /    \xxx│
+  │xx|      |  │  ────────────────►  │  |      |xx│
+  │  |      |  │                     │  |      |  │
+  │   \____/   │                     │   \____/   │
+  │            │                     │            │
+  └────────────┘                     └────────────┘
+
+        │
+        │  e_off
+        │
+        │
+        │
+        ▼
+      Sink
+  ┌────────────┐
+  │    ____    │
+  │   /    \   │
+  │  |      |  │
+  │  |      |xx│
+  │   \____/xxx│
+  │       xxxxx│
+  └────────────┘
+
+  We will approach this by formulating a convex surrogate of the problem and
+  solving the non-convex problem in the rounding stage.
+  */
+
+  // Add minimum distance cost.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  /* Source: The relaxation of the problem simply requires the point to be
+  strictly in the top left corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │xxx         │   │xxxxx___    │
+  │xxx         │   │xxx/    \   │
+  │            │   │xx|      |  │
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_relaxation;
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_rounding;
+
+  constraints_relaxation.push_back(
+      source_->AddConstraintToRelaxation(source_->x()[0] <= -0.5));
+  constraints_relaxation.push_back(
+      source_->AddConstraintToRelaxation(source_->x()[1] >= 0.5));
+
+  constraints_rounding.push_back(source_->AddConstraintToRounding(
+      pow(source_->x()[0], 2) + pow(source_->x()[1], 2) >= 1.0));
+  constraints_rounding.push_back(
+      source_->AddConstraintToRounding(source_->x()[0] <= -0.1));
+  constraints_rounding.push_back(
+      source_->AddConstraintToRounding(source_->x()[1] >= 0.1));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the rounding constraints.
+  for (const auto& constraint : source_->GetConstraintsFromRelaxation()) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_rounding.begin(),
+                           constraints_rounding.end(),
+                           constraint) != constraints_rounding.end());
+  }
+
+  // Verify the constraints in the rounding only contain the rounded
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint : source_->GetConstraintsFromRounding()) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_rounding.begin(),
+                          constraints_rounding.end(),
+                          constraint) != constraints_rounding.end());
+  }
+
+  /* Target: The relaxation of the problem simply requires the point to be
+  strictly in the top right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │         xxx│   │    ___xxxxx│
+  │         xxx│   │   /    \xxx│
+  │            │   │  |      |xx│
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  constraints_relaxation.push_back(
+      target_->AddConstraintToRelaxation(target_->x()[0] >= 0.5));
+  constraints_relaxation.push_back(
+      target_->AddConstraintToRelaxation(target_->x()[1] >= 0.5));
+
+  constraints_rounding.push_back(target_->AddConstraintToRounding(
+      pow(target_->x()[0], 2) + pow(target_->x()[1], 2) >= 1.0));
+  constraints_rounding.push_back(
+      target_->AddConstraintToRounding(target_->x()[0] >= 0.1));
+  constraints_rounding.push_back(
+      target_->AddConstraintToRounding(target_->x()[1] >= 0.1));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the rounding constraints.
+  for (const auto& constraint : target_->GetConstraintsFromRelaxation()) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_rounding.begin(),
+                           constraints_rounding.end(),
+                           constraint) != constraints_rounding.end());
+  }
+
+  // Verify the constraints in the rounding only contain the rounded
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint : target_->GetConstraintsFromRounding()) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_rounding.begin(),
+                          constraints_rounding.end(),
+                          constraint) != constraints_rounding.end());
+  }
+
+  /* Sink: The relaxation of the problem simply requires the point to be
+  strictly in the bottom right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │            │   │    ____    │
+  │            │   │   /    \   │
+  │            │   │  |      |  │
+  │            │   │  |      |xx│
+  │         xxx│   │   \____/xxx│
+  │         xxx│   │       xxxxx│
+  └────────────┘   └────────────┘
+  */
+
+  constraints_relaxation.push_back(
+      sink_->AddConstraintToRelaxation(sink_->x()[0] >= 0.5));
+  constraints_relaxation.push_back(
+      sink_->AddConstraintToRelaxation(sink_->x()[1] <= -0.5));
+
+  constraints_rounding.push_back(sink_->AddConstraintToRounding(
+      pow(sink_->x()[0], 2) + pow(sink_->x()[1], 2) >= 1.0));
+  constraints_rounding.push_back(
+      sink_->AddConstraintToRounding(sink_->x()[0] >= 0.1));
+  constraints_rounding.push_back(
+      sink_->AddConstraintToRounding(sink_->x()[1] <= -0.1));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the rounding constraints.
+  for (const auto& constraint : sink_->GetConstraintsFromRelaxation()) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_rounding.begin(),
+                           constraints_rounding.end(),
+                           constraint) != constraints_rounding.end());
+  }
+
+  // Verify the constraints in the rounding only contain the rounded
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint : sink_->GetConstraintsFromRounding()) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_rounding.begin(),
+                          constraints_rounding.end(),
+                          constraint) != constraints_rounding.end());
+  }
+
+  // The relaxed and rounded constraints should be contained in all constraints.
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_all;
+  constraints_all.insert(constraints_all.end(),
+                         source_->GetConstraints().begin(),
+                         source_->GetConstraints().end());
+  constraints_all.insert(constraints_all.end(),
+                         target_->GetConstraints().begin(),
+                         target_->GetConstraints().end());
+  constraints_all.insert(constraints_all.end(), sink_->GetConstraints().begin(),
+                         sink_->GetConstraints().end());
+
+  for (const auto& constraint : constraints_relaxation) {
+    EXPECT_TRUE(std::find(constraints_all.begin(), constraints_all.end(),
+                          constraint) != constraints_all.end());
+  }
+  for (const auto& constraint : constraints_rounding) {
+    EXPECT_TRUE(std::find(constraints_all.begin(), constraints_all.end(),
+                          constraint) != constraints_all.end());
+  }
+
+  if (!(solvers::SnoptSolver::is_available() &&
+        solvers::SnoptSolver::is_enabled())) {
+    return;
+  }
+  solvers::SnoptSolver snopt;
+  options_.rounding_solver = &snopt;
+  options_.convex_relaxation = true;
+  options_.max_rounded_paths = 2;
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  // Make sure it used the correct solver.
+  EXPECT_EQ(result.get_solver_id(), solvers::SnoptSolver::id());
+
+  const double kExpectedDistance = 0.2;
+  const double distance =
+      (source_->GetSolution(result) - target_->GetSolution(result)).norm();
+  EXPECT_DOUBLE_EQ(distance, kExpectedDistance);
+
+  // Verify that the solution includes source to target.
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
 TEST_F(ThreeBoxes, LinearEqualityConstraint) {

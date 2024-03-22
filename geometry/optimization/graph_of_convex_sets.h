@@ -62,6 +62,12 @@ struct GraphOfConvexSetsOptions {
   solve method will throw. */
   const solvers::SolverInterface* solver{nullptr};
 
+  /** Optimizer to be used to solve the rounding of the shortest path
+  optimization problem. If not set, the best solver for the given problem is
+  selected. Note that if the solver cannot handle the type of optimization
+  problem generated, the calling solve method will throw. */
+  const solvers::SolverInterface* rounding_solver{nullptr};
+
   /** Options passed to the solver when solving the generated problem.*/
   solvers::SolverOptions solver_options{};
 
@@ -83,7 +89,8 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
-    // N.B. We skip the DRAKE_NVP(solver), because it cannot be serialized.
+    // N.B. We skip the DRAKE_NVP(solver) and DRAKE_NVP(rounding_solver),
+    // because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
     // TODO(#20967) Serialize the DRAKE_NVP(rounding_solver_options).
   }
@@ -205,6 +212,72 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
+    /** Adds a vertex constraint to the relaxation only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the relaxation of the problem, but
+    not in the rounding. However, if GraphOfConvexSetsOptions::convex_relaxation
+    is false, then this constraint will still be added to the mathematical
+    program.
+
+    @param f is the formula to be added to the relaxation, containing *only*
+    elements of x() as variables.
+    @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{formula}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRelaxation(
+        const symbolic::Formula& f);
+
+    /** Adds a vertex constraint to the relaxation only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the relaxation of the problem, but
+    not in the rounding. However, if GraphOfConvexSetsOptions::convex_relaxation
+    is false, then this constraint will still be added to the mathematical
+    program.
+
+    @param bindings is the constraint to be added to the relaxation, containing
+    *only* elements of x() as variables.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{binding}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRelaxation(
+        const solvers::Binding<solvers::Constraint>& binding);
+
+    /** Adds a vertex constraint to the rounding only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the rounding stage, but not in the
+    relaxation. However, if GraphOfConvexSetsOptions::convex_relaxation is
+    false, then this constraint will still be added to the mathematical program.
+
+    @param f is the formula to be added to the rounding, containing *only*
+    elements of x() as variables.
+    @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{formula}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRounding(
+        const symbolic::Formula& f);
+
+    /** Adds a vertex constraint to the rounding only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the rounding stage, but not in the
+    relaxation. However, if GraphOfConvexSetsOptions::convex_relaxation is
+    false, then this constraint will still be added to the mathematical program.
+
+    @param bindings is the constraint to be added to the rounding, containing
+    *only* elements of x() as variables.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{binding}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRounding(
+        const solvers::Binding<solvers::Constraint>& binding);
+
     /** Returns all costs on this vertex. */
     const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
       return costs_;
@@ -214,6 +287,18 @@ class GraphOfConvexSets {
     const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
         const {
       return constraints_;
+    }
+
+    /** Returns all constraints from the rounded problem on this vertex. */
+    const std::vector<solvers::Binding<solvers::Constraint>>&
+    GetConstraintsFromRounding() const {
+      return rounding_constraints_;
+    }
+
+    /** Returns all constraints from the relaxed problem on this vertex. */
+    const std::vector<solvers::Binding<solvers::Constraint>>&
+    GetConstraintsFromRelaxation() const {
+      return relaxation_constraints_;
     }
 
     /** Returns the sum of the costs associated with this vertex in a
@@ -250,6 +335,9 @@ class GraphOfConvexSets {
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        relaxation_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> rounding_constraints_{};
 
     std::vector<Edge*> incoming_edges_{};
     std::vector<Edge*> outgoing_edges_{};
@@ -371,6 +459,72 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
+    /** Adds an edge constraint to the relaxation only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the relaxation of the problem, but
+    not in the rounding. However, if GraphOfConvexSetsOptions::convex_relaxation
+    is false, then this constraint will still be added to the mathematical
+    program.
+
+    @param f is the formula to be added to the relaxation, containing *only*
+    elements of x() as variables.
+    @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{formula}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRelaxation(
+        const symbolic::Formula& f);
+
+    /** Adds an edge constraint to the relaxation only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the relaxation of the problem, but
+    not in the rounding. However, if GraphOfConvexSetsOptions::convex_relaxation
+    is false, then this constraint will still be added to the mathematical
+    program.
+
+    @param bindings is the constraint to be added to the relaxation, containing
+    *only* elements of x() as variables.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{binding}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRelaxation(
+        const solvers::Binding<solvers::Constraint>& binding);
+
+    /** Adds an edge constraint to the rounding only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the rounding stage, but not in the
+    relaxation. However, if GraphOfConvexSetsOptions::convex_relaxation is
+    false, then this constraint will still be added to the mathematical program.
+
+    @param f is the formula to be added to the rounding, containing *only*
+    elements of x() as variables.
+    @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{formula}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRounding(
+        const symbolic::Formula& f);
+
+    /** Adds an edge constraint to the rounding only.
+
+    If the GraphOfConvexSetsOptions::convex_relaxation is true, then this
+    constraint will only be considered in the rounding stage, but not in the
+    relaxation. However, if GraphOfConvexSetsOptions::convex_relaxation is
+    false, then this constraint will still be added to the mathematical program.
+
+    @param bindings is the constraint to be added to the rounding, containing
+    *only* elements of x() as variables.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
+    @pydrake_mkdoc_identifier{binding}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraintToRounding(
+        const solvers::Binding<solvers::Constraint>& binding);
+
     /** Adds a constraint on the binary variable associated with this edge.
     @note We intentionally do not return a binding to the constraint created by
     this call, as that would allow the caller to make nonsensical modifications
@@ -389,6 +543,18 @@ class GraphOfConvexSets {
     const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
         const {
       return constraints_;
+    }
+
+    /** Returns all constraints from the rounded problem on this edge. */
+    const std::vector<solvers::Binding<solvers::Constraint>>&
+    GetConstraintsFromRounding() const {
+      return rounding_constraints_;
+    }
+
+    /** Returns all constraints from the relaxed problem on this edge. */
+    const std::vector<solvers::Binding<solvers::Constraint>>&
+    GetConstraintsFromRelaxation() const {
+      return relaxation_constraints_;
     }
 
     /** Returns the sum of the costs associated with this edge in a
@@ -432,6 +598,9 @@ class GraphOfConvexSets {
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>>
+        relaxation_constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> rounding_constraints_{};
     std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
