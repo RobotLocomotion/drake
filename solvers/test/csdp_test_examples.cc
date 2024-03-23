@@ -105,10 +105,9 @@ TrivialSDP2::TrivialSDP2()
   F1 << 1, 2, 2, 3;
   Eigen::Matrix2d F2;
   F2 << 2, 0, 0, 4;
-  prog_->AddConstraint(
-      std::make_shared<LinearMatrixInequalityConstraint>(
-          std::vector<Eigen::Ref<const Eigen::MatrixXd>>{F0, F1, F2}),
-      Vector2<symbolic::Variable>(y_, X1_(0, 0)));
+  prog_->AddConstraint(std::make_shared<LinearMatrixInequalityConstraint>(
+                           std::vector<Eigen::MatrixXd>{F0, F1, F2}),
+                       Vector2<symbolic::Variable>(y_, X1_(0, 0)));
   prog_->AddLinearEqualityConstraint(X1_(0, 0) + 2 * X1_(1, 1) + 3 * y_, 1);
   prog_->AddLinearCost(-y_);
 }

@@ -664,6 +664,10 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   F2 << 1, 2, 2, 1;
   LinearMatrixInequalityConstraint cnstr({F0, F1, F2});
 
+  EXPECT_TRUE(CompareMatrices(cnstr.F()[0], F0));
+  EXPECT_TRUE(CompareMatrices(cnstr.F()[1], F1));
+  EXPECT_TRUE(CompareMatrices(cnstr.F()[2], F2));
+
   // [4, 3]
   // [3, 4] is positive semidefinite
   Eigen::VectorXd y;
