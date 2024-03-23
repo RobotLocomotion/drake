@@ -23,9 +23,8 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | TBD ⁽⁵⁾      | TBD ⁽⁵⁾    | March 2028      |
-| macOS Monterey (12)                | x86_64       | 3.11       | October 2023    |
-| macOS Ventura (13)                 | arm64        | 3.11       | October 2024    |
-| macOS Sonoma (14)                  | arm64        | 3.11       | October 2025    |
+| macOS Ventura (13)                 | arm64 ⁽⁶⁾    | 3.12       | October 2024    |
+| macOS Sonoma (14)                  | arm64 ⁽⁶⁾    | 3.12       | October 2025    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -56,6 +55,9 @@ timeline for changing which Python versions are supported.
 Refer to [OS Support](/stable.html#os-support) for details.
 
 ⁽⁵⁾ We aim to support Ubuntu 24.04 within two months of its release.
+
+⁽⁶⁾ For the stable release pip wheel builds only, we also support the x86_64
+architecture for macOS.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same

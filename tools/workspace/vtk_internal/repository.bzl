@@ -172,14 +172,15 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "04fb139f1dccaf0c538553e1b494bd21f71fd663",
-        sha256 = "eb8696d2622a79603055279ead20674772ce351565794cd7ce9c5f6bc1b44426",  # noqa
+        commit = "1375016aeb6f91b9c7a7157f23da5f1e581bfccc",
+        sha256 = "714d9d9f253cd8178ecf5e30c25a39c9866c5d71fac9b9e5fd83b2138d28d9e5",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/camera_copy.patch",
             ":patches/common_core_version.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
+            ":patches/gltf_quiet_image_errors.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/vtkdoubleconversion_hidden.patch",

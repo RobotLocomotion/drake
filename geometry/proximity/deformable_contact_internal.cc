@@ -127,11 +127,19 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
       const GeometryId deformable1_id = it1->first;
       DRAKE_ASSERT(collision_filter.HasGeometry(deformable1_id));
       if (collision_filter.CanCollideWith(deformable0_id, deformable1_id)) {
-        AddDeformableDeformableContactSurface(
-            *signed_distance_fields.at(deformable0_id),
-            it0->second.deformable_mesh(), deformable0_id,
-            *signed_distance_fields.at(deformable1_id),
-            it1->second.deformable_mesh(), deformable1_id, &result);
+        if (deformable1_id < deformable0_id) {
+          AddDeformableDeformableContactSurface(
+              *signed_distance_fields.at(deformable0_id),
+              it0->second.deformable_mesh(), deformable0_id,
+              *signed_distance_fields.at(deformable1_id),
+              it1->second.deformable_mesh(), deformable1_id, &result);
+        } else {
+          AddDeformableDeformableContactSurface(
+              *signed_distance_fields.at(deformable1_id),
+              it1->second.deformable_mesh(), deformable1_id,
+              *signed_distance_fields.at(deformable0_id),
+              it0->second.deformable_mesh(), deformable0_id, &result);
+        }
       }
     }
   }
@@ -191,14 +199,11 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
     rigid_geometries_pending_.insert({data.id, std::move(instance)});
     return;
   }
-  /* Forward to hydroelastics to construct the geometry. */
-  std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, data.properties);
-  /* Unsupported geometries will be handle through the
-   `ThrowUnsupportedGeometry()` code path. */
-  DRAKE_DEMAND(hydro_rigid_geometry.has_value());
-  rigid_geometries_.insert(
-      {data.id, RigidGeometry(hydro_rigid_geometry->release_mesh())});
+  std::optional<RigidGeometry> rigid_geometry =
+      internal::deformable::MakeRigidRepresentation(shape, data.properties);
+  if (rigid_geometry) {
+    rigid_geometries_.insert({data.id, std::move(*rigid_geometry)});
+  }
 }
 
 void Geometries::FlushPendingRigidGeometry() {

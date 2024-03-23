@@ -118,6 +118,9 @@ class ProximityEngine {
                   belongs. */
   void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id);
 
+  /* Reports if the engine requires a convex hull for the given geometry. */
+  bool NeedsConvexHull(const InternalGeometry& geometry) const;
+
   /* Possibly updates the proximity representation of the given `geometry`
    based on the relationship between its _current_ proximity properties and the
    given _new_ proximity properties. The underlying representation may not
@@ -335,6 +338,12 @@ class ProximityEngine {
   // underlying shape is *mathematically* convex, just that it is implemented
   // as fcl::Convex.
   bool IsFclConvexType(GeometryId id) const;
+
+  // Returns the fcl::CollisionObjectd associated with the geometry id. In order
+  // to keep the fcl dependency in the implementation only, we type erase the
+  // pointer type. But if the return value is not null, it can be safely cast to
+  // fcl::CollisionObjectd*. This is for testing only.
+  void* GetCollisionObject(GeometryId id) const;
 };
 
 }  // namespace internal

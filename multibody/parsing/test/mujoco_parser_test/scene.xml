@@ -1,0 +1,4 @@
+<mujoco model="scene">
+  <include file="pendulum.xml"/>
+  <include file="nested.xml"/>
+</mujoco>

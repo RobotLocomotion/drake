@@ -7,25 +7,42 @@
 ###############################################################################
 
 load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
+load("@rules_license//rules:license.bzl", "license")
+load("@rules_license//rules:package_info.bzl", "package_info")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_package_metadata = [
+        ":license",
+        ":package_info",
+    ],
+    default_visibility = ["//visibility:public"],
+)
 
-# licenses([
-#     "TODO",  # MIT OR Apache-2.0
-# ])
-filegroup(
-    name = "license_glob",
-    srcs = glob(
-        ["LICENSE*"],
-        allow_empty = False,
-    ),
+package_info(
+    name = "package_info",
+    package_name = "enum_dispatch",
+    package_url = "https://gitlab.com/antonok/enum_dispatch",
+    package_version = "0.3.12",
+)
+
+license(
+    name = "license",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+        "@rules_license//licenses/spdx:MIT",
+    ],
+    license_text = "LICENSE",
 )
 
 rust_proc_macro(
     name = "enum_dispatch",
-    srcs = glob(["**/*.rs"]),
+    srcs = glob(
+        include = ["**/*.rs"],
+        allow_empty = False,
+    ),
     compile_data = glob(
         include = ["**"],
+        allow_empty = True,
         exclude = [
             "**/* *",
             ".tmp_git_root/**/*",
@@ -89,6 +106,6 @@ rust_proc_macro(
         "@crate__once_cell-1.19.0//:once_cell",
         "@crate__proc-macro2-1.0.78//:proc_macro2",
         "@crate__quote-1.0.35//:quote",
-        "@crate__syn-2.0.48//:syn",
+        "@crate__syn-2.0.52//:syn",
     ],
 )

@@ -1,5 +1,4 @@
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
-load("//tools/workspace:os.bzl", "os_repository")
 load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
 load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
 load("//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
@@ -162,10 +161,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         doxygen_repository(name = "doxygen", mirrors = mirrors)
     if "dm_control_internal" not in excludes:
         dm_control_internal_repository(name = "dm_control_internal", mirrors = mirrors)  # noqa
-    if "drake_detected_os" not in excludes:
-        # The @drake_detected_os external is deprecated in Drake's WORKSPACE
-        # and will be removed on 2024-03-01.
-        os_repository(name = "drake_detected_os")
     if "drake_models" not in excludes:
         drake_models_repository(name = "drake_models", mirrors = mirrors)
     if "eigen" not in excludes:
@@ -223,7 +218,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
     if "mosek" not in excludes:
-        mosek_repository(name = "mosek")
+        mosek_repository(name = "mosek", mirrors = mirrors)
     if "mpmath_py_internal" not in excludes:
         mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     if "msgpack_internal" not in excludes:

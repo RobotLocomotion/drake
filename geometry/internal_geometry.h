@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -266,6 +267,10 @@ class InternalGeometry {
   // configuration. The vertex positions are expressed in the geometry's
   // frame, G. It's a nullptr if the geometry is rigid.
   copyable_unique_ptr<VolumeMesh<double>> reference_mesh_;
+
+  // An optional representation of the convex hull associated with this
+  // geometry.
+  copyable_unique_ptr<PolygonSurfaceMesh<double>> convex_hull_;
 };
 
 }  // namespace internal

@@ -261,8 +261,10 @@ drake_cc_library(
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
+        ":mesh_deformation_interpolator",
         ":proximity_engine",
         ":utilities",
+        "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
         "//math:gradient",
     ],
@@ -353,6 +355,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
@@ -376,12 +379,16 @@ drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+    ],
+    deps = [
         "//common:nice_type_name",
+        "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
-        "//math:geometric_transform",
     ],
 )
 
@@ -668,12 +675,25 @@ drake_cc_library(
         ":rgba",
         ":scene_graph",
         "//common:essential",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
         "//systems/analysis:instantaneous_realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
     ],
+)
+
+drake_cc_library(
+    name = "vtk_opengl_init",
+    srcs = ["vtk_opengl_init.cc"],
+    internal = True,
+    visibility = ["//geometry:__subpackages__"],
+    deps = [
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+    alwayslink = True,
 )
 
 drake_cc_googletest(
@@ -697,13 +717,21 @@ drake_cc_googletest(
 # -----------------------------------------------------
 
 filegroup(
+    name = "test_gltf_files",
+    testonly = 1,
+    srcs = [
+        "test/cube_with_hole.bin",
+        "test/cube_with_hole.gltf",
+    ],
+)
+
+filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",
-        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/octahedron.mtl",
@@ -718,7 +746,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/cube_as_6_squares.vtk",
-        "test/extruded_u_volume_mesh.vtk",
+        "test/cube_as_volume.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
@@ -859,6 +887,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":geometry_state",
         "//common/test_utilities",
@@ -935,6 +964,23 @@ drake_cc_googletest(
     deps = [
         ":geometry_frame",
         ":scene_graph_inspector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shape_specification_thread_test",
+    data = [
+        "//examples/hydroelastic/ball_plate:plate_files",
+        "//examples/multibody/deformable_torus:torus_tet_mesh",
+        "@drake_models",
+    ],
+    tags = [
+        "cpus:4",
+    ],
+    deps = [
+        ":shape_specification",
+        "//common:find_resource",
+        "//common:find_runfiles",
     ],
 )
 

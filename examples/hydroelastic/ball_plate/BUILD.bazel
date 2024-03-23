@@ -56,7 +56,10 @@ filegroup(
         "plate_8in_col.mtl",
         "plate_8in_col.obj",
     ],
-    visibility = ["//:__pkg__"],
+    visibility = [
+        "//:__pkg__",
+        "//geometry:__subpackages__",
+    ],
 )
 
 filegroup(

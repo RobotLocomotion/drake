@@ -13,6 +13,7 @@ reasonable. */
 // clang-format off
 #include "drake/multibody/topology/link_joint_graph.h"
 #include "drake/multibody/topology/link_joint_graph_link.h"
+#include "drake/multibody/topology/link_joint_graph_loop_constraint.h"
 #include "drake/multibody/topology/link_joint_graph_joint.h"
 #include "drake/multibody/topology/link_joint_graph_inlines.h"
 // clang-format on

@@ -1,7 +1,12 @@
-load("//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_vendor")
+load(
+    "@rules_rust//crate_universe:defs.bzl",
+    "crate",
+    "crates_vendor",
+    "render_config",
+)
 
 exports_files(glob(["lock/**"]))
 
@@ -21,6 +26,9 @@ crates_vendor(
         "@clarabel_cpp_internal//:rust_wrapper/Cargo.toml",
     ],
     mode = "remote",
+    render_config = render_config(
+        generate_rules_license_metadata = True,
+    ),
     tags = ["manual"],
     vendor_path = "lock/details",
 )
@@ -29,14 +37,11 @@ crates_vendor(
 ARCHIVE_NAMES = [archive["name"] for archive in ARCHIVES]
 
 [
-    install(
+    install_license(
         name = "install_{}".format(name),
-        docs = [
-            "@{}//:license_glob".format(name),
-        ],
         doc_dest = "share/doc/{}".format(name),
-        allowed_externals = [
-            "@{}//:license_glob".format(name),
+        licenses = [
+            "@{}//:license".format(name),
         ],
     )
     for name in ARCHIVE_NAMES

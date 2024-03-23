@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+print("DRAKE DEPRECATED: The repo.bzl file is deprecated and will be removed on or after 2024-07-01. In the meantime, is is no longer covered by CI so might break without notice.")  # noqa
+
 # * # Comment lines beginning with a "# * #" are stripped out as part of the
 # * # conversion from repo_template.bzl to repo.bzl via the repo_gen tool.
 

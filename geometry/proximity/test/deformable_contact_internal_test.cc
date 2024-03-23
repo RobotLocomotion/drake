@@ -112,8 +112,8 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   EXPECT_TRUE(geometries.is_rigid(rigid_id));
   EXPECT_FALSE(geometries.is_deformable(rigid_id));
 
-  /* Trying to a rigid geometry without the resolution hint property is a no-op.
-   */
+  /* Trying to add a rigid geometry without the resolution hint property is a
+   no-op. */
   GeometryId g_id = GeometryId::get_new_id();
   ProximityProperties empty_props;
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), g_id, empty_props,
@@ -121,6 +121,13 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
 
   EXPECT_FALSE(geometries.is_rigid(g_id));
   EXPECT_FALSE(geometries.is_deformable(g_id));
+
+  /* Trying to add an unsupported rigid geometry is a no-op. */
+  GeometryId half_space_id = GeometryId::get_new_id();
+  geometries.MaybeAddRigidGeometry(HalfSpace{}, half_space_id, props,
+                                   default_pose());
+  EXPECT_FALSE(geometries.is_rigid(half_space_id));
+  EXPECT_FALSE(geometries.is_deformable(half_space_id));
 }
 
 /* Test coverage for all unsupported shapes as rigid geometries: MeshcatCone and
@@ -489,71 +496,37 @@ TEST_F(DeformableDeformableContactTest, OneContactPair) {
       geometries_.ComputeDeformableContact(collision_filter_);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
 
-  // Set up the expected contact data by calling
-  // AddDeformableDeformableContactSurface() directly, as opposed to
-  // calling it through ComputeDeformableContact(). There are two possibilities
-  // of the ordering of id_A() and id_B() in the contact data.
-  // Here we set up both and choose later.
-  DeformableContact<double> expect01, expect10;
+  DeformableContact<double> expected;
   const DeformableGeometry& deformable0_geometry =
       GeometriesTester::get_deformable_geometry(geometries_, deformable0_id_);
   const DeformableGeometry& deformable1_geometry =
       GeometriesTester::get_deformable_geometry(geometries_, deformable1_id_);
-  // Set up expect01
-  {
-    expect01.RegisterDeformableGeometry(
-        deformable0_id_,
-        deformable0_geometry.deformable_mesh().mesh().num_vertices());
-    expect01.RegisterDeformableGeometry(
-        deformable1_id_,
-        deformable1_geometry.deformable_mesh().mesh().num_vertices());
-    AddDeformableDeformableContactSurface(
-        deformable0_geometry.CalcSignedDistanceField(),
-        deformable0_geometry.deformable_mesh(), deformable0_id_,
-        deformable1_geometry.CalcSignedDistanceField(),
-        deformable1_geometry.deformable_mesh(), deformable1_id_, &expect01);
-    ASSERT_EQ(expect01.contact_surfaces().size(), 1);
-  }
-  // Set up expect10
-  {
-    expect10.RegisterDeformableGeometry(
-        deformable1_id_,
-        deformable1_geometry.deformable_mesh().mesh().num_vertices());
-    expect10.RegisterDeformableGeometry(
-        deformable0_id_,
-        deformable0_geometry.deformable_mesh().mesh().num_vertices());
-    AddDeformableDeformableContactSurface(
-        deformable1_geometry.CalcSignedDistanceField(),
-        deformable1_geometry.deformable_mesh(), deformable1_id_,
-        deformable0_geometry.CalcSignedDistanceField(),
-        deformable0_geometry.deformable_mesh(), deformable0_id_, &expect10);
-    ASSERT_EQ(expect10.contact_surfaces().size(), 1);
-  }
+  expected.RegisterDeformableGeometry(
+      deformable0_id_,
+      deformable0_geometry.deformable_mesh().mesh().num_vertices());
+  expected.RegisterDeformableGeometry(
+      deformable1_id_,
+      deformable1_geometry.deformable_mesh().mesh().num_vertices());
+  AddDeformableDeformableContactSurface(
+      deformable1_geometry.CalcSignedDistanceField(),
+      deformable1_geometry.deformable_mesh(), deformable1_id_,
+      deformable0_geometry.CalcSignedDistanceField(),
+      deformable0_geometry.deformable_mesh(), deformable0_id_, &expected);
+  ASSERT_EQ(expected.contact_surfaces().size(), 1);
 
-  ASSERT_TRUE(
-      (contact_data.contact_surfaces().at(0).id_A() == deformable0_id_ &&
-       contact_data.contact_surfaces().at(0).id_B() == deformable1_id_) ||
-      (contact_data.contact_surfaces().at(0).id_A() == deformable1_id_ &&
-       contact_data.contact_surfaces().at(0).id_B() == deformable0_id_));
-
-  const DeformableContact<double>& expect =
-      (contact_data.contact_surfaces().at(0).id_A() ==
-           expect01.contact_surfaces().at(0).id_A() &&
-       contact_data.contact_surfaces().at(0).id_B() ==
-           expect01.contact_surfaces().at(0).id_B())
-          ? expect01
-          : expect10;
+  ASSERT_TRUE(contact_data.contact_surfaces().at(0).id_A() == deformable0_id_ &&
+              contact_data.contact_surfaces().at(0).id_B() == deformable1_id_);
 
   ASSERT_EQ(contact_data.contact_surfaces().size(),
-            expect.contact_surfaces().size());
+            expected.contact_surfaces().size());
   EXPECT_EQ(contact_data.contact_surfaces().at(0).id_A(),
-            expect.contact_surfaces().at(0).id_A());
+            expected.contact_surfaces().at(0).id_A());
   EXPECT_EQ(contact_data.contact_surfaces().at(0).id_B(),
-            expect.contact_surfaces().at(0).id_B());
+            expected.contact_surfaces().at(0).id_B());
   EXPECT_EQ(contact_data.contact_surfaces().at(0).num_contact_points(),
-            expect.contact_surfaces().at(0).num_contact_points());
+            expected.contact_surfaces().at(0).num_contact_points());
   EXPECT_TRUE(contact_data.contact_surfaces().at(0).contact_mesh_W().Equal(
-      expect.contact_surfaces().at(0).contact_mesh_W()));
+      expected.contact_surfaces().at(0).contact_mesh_W()));
 }
 
 // For n deformable geometries, ComputeDeformableContact() gives

@@ -127,7 +127,6 @@ class LinkJointGraph::Joint {
   // Meaning of the variants:
   // - monostate: not yet processed
   // - MobodIndex: modeled directly by a mobilizer
-  // - ConstraintIndex: modeled as a constraint (TBD)
   // - LinkCompositeIndex: not modeled because this is a weld interior to
   //     the indicated composite and we are combining so that one Mobod serves
   //     the whole composite.

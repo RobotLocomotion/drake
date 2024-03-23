@@ -255,6 +255,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.ctor.doc_3args_query_object_geometry_id_reference_frame)
         .def(py::init<const VPolytope&, double>(), py::arg("vpoly"),
             py::arg("tol") = 1E-9, cls_doc.ctor.doc_2args_vpoly_tol)
+        .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
+            cls_doc.ctor.doc_1args_prog)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
         .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
@@ -356,6 +358,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("UniformSample", &Hyperrectangle::UniformSample,
             py::arg("generator"), cls_doc.UniformSample.doc)
         .def("Center", &Hyperrectangle::Center, cls_doc.Center.doc)
+        .def("MaybeGetIntersection", &Hyperrectangle::MaybeGetIntersection,
+            cls_doc.MaybeGetIntersection.doc)
         .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
             cls_doc.MakeHPolyhedron.doc)
         .def(py::pickle(

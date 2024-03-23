@@ -147,6 +147,22 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
   TestMaxCliqueViaMip(graph, 2, possible_solutions);
 }
 
+GTEST_TEST(MaxCliqueSolverViaMipTest, FullyConnectedPlusFullBipartiteGraph) {
+  // The FullyConnectedPlusFullBipartiteGraph graph has a clique number of size
+  // 3.
+  Eigen::SparseMatrix<bool> graph =
+      internal::FullyConnectedPlusFullBipartiteGraph();
+  VectorX<bool> solution(9);
+
+  // The max cliuqe solutions are pairs of vertices on the bipartite graph.
+  solution << true, true, true, false, false, false, false, false, false;
+
+  std::vector<VectorX<bool>> possible_solutions;
+  possible_solutions.push_back(solution);
+
+  TestMaxCliqueViaMip(graph, 3, possible_solutions);
+}
+
 GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSquare) {
   std::vector<Triplet<bool>> triplets;
   triplets.push_back(Triplet<bool>(0, 1, 1));
@@ -165,7 +181,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSymmetric) {
   Eigen::SparseMatrix<bool> graph(3, 3);
   graph.setFromTriplets(triplets.begin(), triplets.end());
   MaxCliqueSolverViaMip solver{};
-  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // Cast to void since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
   EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
 }
@@ -177,7 +193,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, InitialGuessWrongSize) {
   MaxCliqueSolverViaMip solver{};
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
   solver.SetInitialGuess(initial_guess);
-  // Cast to void due to since we expect it to throw, but SolveMaxClique is
+  // Cast to void since we expect it to throw, but SolveMaxClique is
   // marked as nodiscard.
   EXPECT_THROW((void)solver.SolveMaxClique(graph), std::runtime_error);
 }

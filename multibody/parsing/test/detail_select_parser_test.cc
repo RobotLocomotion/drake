@@ -15,7 +15,8 @@ using testing::MatchesRegex;
 class SelectParserTest : public test::DiagnosticPolicyTestBase {
  protected:
   MultibodyPlant<double> plant_{0.0};
-  CollisionFilterGroupResolver resolver_{&plant_};
+  CollisionFilterGroups group_output_;
+  CollisionFilterGroupResolver resolver_{&plant_, &group_output_};
   ParsingOptions options_;
   ParsingWorkspace w_{options_, {}, diagnostic_policy_, &plant_,
                       &resolver_, SelectParser};

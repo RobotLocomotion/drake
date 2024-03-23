@@ -20,9 +20,9 @@ namespace systems {
 ///
 /// A %State `x` contains three types of state variables:
 ///
-/// - ContinuousState `xc`
-/// - DiscreteState   `xd`
-/// - AbstractState   `xa`
+/// - Continuous state `xc`
+/// - Discrete state   `xd`
+/// - Abstract state   `xa`
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -34,6 +34,13 @@ class State {
   State();
   virtual ~State();
 
+  // TODO(sherm1) Consider making set_{continuous,discrete,abstract}_state()
+  //  functions private with attorney access only to make it impossible for
+  //  users to attempt resizing State within an existing Context.
+
+  /// (Advanced) Defines the continuous state variables for this %State.
+  /// @warning Do not use this function to resize continuous state in a
+  /// %State that is owned by an existing Context.
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     DRAKE_DEMAND(xc != nullptr);
     continuous_state_ = std::move(xc);
@@ -49,6 +56,9 @@ class State {
     return *continuous_state_.get();
   }
 
+  /// (Advanced) Defines the discrete state variables for this %State.
+  /// @warning Do not use this function to resize discrete state in a
+  /// %State that is owned by an existing Context.
   void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     DRAKE_DEMAND(xd != nullptr);
     discrete_state_ = std::move(xd);
@@ -74,6 +84,9 @@ class State {
     return xd.get_mutable_vector(index);
   }
 
+  /// (Advanced) Defines the abstract state variables for this %State.
+  /// @warning Do not use this function to resize or change types of abstract
+  /// state variables in a %State that is owned by an existing Context.
   void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
     DRAKE_DEMAND(xa != nullptr);
     abstract_state_ = std::move(xa);

@@ -36,10 +36,11 @@ class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
 
  protected:
   MultibodyPlant<double> plant_{0.0};
+  CollisionFilterGroups group_output_;
   SceneGraph<double> scene_graph_;
   const geometry::SceneGraphInspector<double>& inspector_{
       scene_graph_.model_inspector()};
-  internal::CollisionFilterGroupResolver resolver_{&plant_};
+  internal::CollisionFilterGroupResolver resolver_{&plant_, &group_output_};
 };
 
 // These tests concentrate on name resolution details and responses to errors
@@ -117,6 +118,14 @@ TEST_F(CollisionFilterGroupResolverTest, DuplicateGroupDefinitions) {
 TEST_F(CollisionFilterGroupResolverTest, OutOfParseBodyGlobal) {
   // The world body and bodies in the default model are always outside of any
   // parse operation.
+
+  // The resolver knows (by the minimum model index rule) that these models are
+  // out of bounds.
+  ASSERT_LT(plant_.GetModelInstanceByName("DefaultModelInstance"),
+            resolver_.minimum_model_instance_index());
+  ASSERT_LT(plant_.GetModelInstanceByName("WorldModelInstance"),
+            resolver_.minimum_model_instance_index());
+
   AddBody("stuff", {});
   resolver_.AddGroup(diagnostic_policy_, "a", {
       "DefaultModelInstance::stuff",
@@ -167,6 +176,12 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalBodies) {
   resolver_.AddGroup(diagnostic_policy_, "b", {"r2::body2"}, {}, {});
   resolver_.AddPair(diagnostic_policy_, "a", "b", {});
   resolver_.Resolve(diagnostic_policy_);
+
+  CollisionFilterGroups expected_group_output;
+  expected_group_output.AddGroup("a", {"r1::body1"});
+  expected_group_output.AddGroup("b", {"r2::body2"});
+  expected_group_output.AddExclusionPair({"a", "b"});
+  EXPECT_EQ(group_output_, expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(b1, b2));
 }
 
@@ -185,6 +200,14 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalMemberGroups) {
   resolver_.AddGroup(diagnostic_policy_, "b", {}, {"r2::rb"}, {});
   resolver_.AddPair(diagnostic_policy_, "a", "b", {});
   resolver_.Resolve(diagnostic_policy_);
+
+  CollisionFilterGroups expected_group_output;
+  expected_group_output.AddGroup("a", {"r1::body1"});
+  expected_group_output.AddGroup("b", {"r2::body2"});
+  expected_group_output.AddGroup("r1::ra", {"r1::body1"});
+  expected_group_output.AddGroup("r2::rb", {"r2::body2"});
+  expected_group_output.AddExclusionPair({"a", "b"});
+  EXPECT_EQ(group_output_, expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(b1, b2));
 }
 
@@ -199,7 +222,10 @@ TEST_F(CollisionFilterGroupResolverTest, LinkScoped) {
   resolver_.AddPair(diagnostic_policy_, "a", "a", r1);
   resolver_.Resolve(diagnostic_policy_);
 
-  // The expected filter gets created on the plant/scene_graph.
+  CollisionFilterGroups expected_group_output;
+  expected_group_output.AddGroup("r1::a", {"r1::abody", "r1::sub::abody"});
+  expected_group_output.AddExclusionPair({"r1::a", "r1::a"});
+  EXPECT_EQ(group_output_, expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(ra, rsa));
 }
 
@@ -225,6 +251,21 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupCycle) {
   std::string test_pair_name = body_of(length - 1);
   resolver_.AddPair(diagnostic_policy_, test_pair_name, test_pair_name, r1);
   resolver_.Resolve(diagnostic_policy_);
+
+  // Do an exhaustive check of the group output.
+  CollisionFilterGroups expected_group_output;
+  std::set<std::string> all_bodies;
+  for (int k = 0; k < length; ++k) {
+    all_bodies.insert(fmt::format("r1::{}", body_of(k)));
+  }
+  for (int k = 0; k < length; ++k) {
+    expected_group_output.AddGroup(fmt::format("r1::{}", body_of(k)),
+                                   all_bodies);
+  }
+  expected_group_output.AddExclusionPair({"r1::body99", "r1::body99"});
+  EXPECT_EQ(group_output_, expected_group_output);
+
+  // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));
   EXPECT_TRUE(inspector_.CollisionFiltered(
       geoms.front(), geoms[geoms.size() / 2]));
@@ -251,6 +292,20 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupDeepNest) {
   // "top", and will contain all of the bodies and geometries.
   resolver_.AddPair(diagnostic_policy_, body_of(0), body_of(0), r1);
   resolver_.Resolve(diagnostic_policy_);
+
+  // Do an exhaustive check of the group output.
+  CollisionFilterGroups expected_group_output;
+  for (int k = 0; k < depth; ++k) {
+    std::set<std::string> bodies;
+    for (int m = k; m < depth; ++m) {
+      bodies.insert(fmt::format("r1::{}", body_of(m)));
+    }
+    expected_group_output.AddGroup(fmt::format("r1::{}", body_of(k)), bodies);
+  }
+  expected_group_output.AddExclusionPair({"r1::body0", "r1::body0"});
+  EXPECT_EQ(group_output_, expected_group_output);
+
+  // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));
 }
 

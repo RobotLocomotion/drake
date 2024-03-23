@@ -46,4 +46,9 @@ DEFAULT_MIRRORS = {
         # N.B. ibiblio doesn't offer https.
         "http://maven.ibiblio.org/maven2/{fulljar}",
     ],
+    "mosek": [
+        "https://download.mosek.com/{path}",
+        "https://drake-mirror.csail.mit.edu/mosek/{path}",
+        "https://s3.amazonaws.com/drake-mirror/mosek/{path}",
+    ],
 }

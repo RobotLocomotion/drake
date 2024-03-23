@@ -111,10 +111,74 @@ GTEST_TEST(HyperrectangleTest, Sampling) {
       CompareMatrices(variance, Eigen::Vector2d{16.0 / 12, 16.0 / 12}, 1e-1));
 }
 
-GTEST_TEST(HyperrectangleTest, InfinityTest) {
-  const auto lb = Vector3d::Constant(-std::numeric_limits<double>::infinity());
-  const auto ub = Vector3d::Constant(1);
-  EXPECT_THROW(Hyperrectangle(lb, ub), std::exception);
+GTEST_TEST(HyperrectangleTest, InvariantTest) {
+  // Cannot make a hyperrectangle with nan.
+  EXPECT_THROW(
+      Hyperrectangle(Vector3d{1, 2, 3},
+                     Vector3d{1, 2, std::numeric_limits<double>::quiet_NaN()}),
+      std::exception);
+  EXPECT_THROW(
+      Hyperrectangle(Vector3d{std::numeric_limits<double>::quiet_NaN(), 2, 3},
+                     Vector3d{1, 2, 3}),
+      std::exception);
+  // Cannot make an empty hyperrectangle
+  EXPECT_THROW(Hyperrectangle(Vector3d{1, 2, 3}, Vector3d{1, 2, -1}),
+               std::exception);
+
+  // Cannot make an unbounded hyperrectangle
+  EXPECT_THROW(Hyperrectangle(
+                   Vector3d::Constant(-std::numeric_limits<double>::infinity()),
+                   Vector3d::Constant(1)),
+               std::exception);
+  EXPECT_THROW(Hyperrectangle(
+                   -Vector3d::Constant(1),
+                   Vector3d::Constant(std::numeric_limits<double>::infinity())),
+               std::exception);
+}
+
+GTEST_TEST(HyperrectangleTest, IsBoundedTest) {
+  EXPECT_TRUE(
+      Hyperrectangle(Vector3d{-1, -2, -3}, Vector3d{3, 2, 1}).IsBounded());
+}
+
+GTEST_TEST(HyperrectangleTest, IsEmptyTest) {
+  EXPECT_FALSE(
+      Hyperrectangle(Vector3d{-1, -2, -3}, Vector3d{3, 2, 1}).IsEmpty());
+}
+
+GTEST_TEST(HyperrectangleTest, MaybeGetIntersection) {
+  const Vector3d lb1{-1, -2, -3};
+  const Vector3d ub1{3, 2, 1};
+  const Vector3d lb2{-2, 1, -2};
+  const Vector3d ub2{4, 1, 0};
+  const Hyperrectangle h1(lb1, ub1);
+  const Hyperrectangle h2(lb2, ub2);
+  const std::optional<Hyperrectangle> intersection12 =
+      h1.MaybeGetIntersection(h2);
+  const std::optional<Hyperrectangle> intersection21 =
+      h2.MaybeGetIntersection(h1);
+  EXPECT_TRUE(intersection12->IsBounded());
+  EXPECT_FALSE(intersection12->IsEmpty());
+  EXPECT_TRUE(CompareMatrices(intersection12->lb(), Vector3d{-1, 1, -2}));
+  EXPECT_TRUE(CompareMatrices(intersection12->ub(), Vector3d{3, 1, 0}));
+  EXPECT_TRUE(CompareMatrices(intersection12->lb(), intersection21->lb()));
+  EXPECT_TRUE(CompareMatrices(intersection12->ub(), intersection21->ub()));
+
+  // Empty intersection yields nullopt.
+  const Vector3d lb3{-30, -20, -10};
+  const Vector3d ub3{-20, -11, -8};
+  const Hyperrectangle h3(lb3, ub3);
+  const std::optional<Hyperrectangle> intersection13 =
+      h1.MaybeGetIntersection(h3);
+  const std::optional<Hyperrectangle> intersection31 =
+      h3.MaybeGetIntersection(h1);
+  EXPECT_FALSE(intersection13.has_value());
+
+  // Error: mismatched dimension of h4 and h1.
+  const Vector2d lb4{-1, 2};
+  const Vector2d ub4{20, 11};
+  const Hyperrectangle h4(lb4, ub4);
+  EXPECT_THROW(unused(h4.MaybeGetIntersection(h1)), std::exception);
 }
 
 GTEST_TEST(HyperrectangleTest, AddPointInSetConstraints) {

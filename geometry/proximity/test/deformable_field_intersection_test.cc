@@ -97,8 +97,8 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, NoContact) {
   VolumeMeshFieldLinear<double, double> sdf1_W{{0, 0, 0, -1},
                                                &deform1_W_.mesh()};
 
-  AddDeformableDeformableContactSurface(signed_distance0_W_, deform0_W_, id0_,
-                                        sdf1_W, deform1_W_, id1_,
+  AddDeformableDeformableContactSurface(sdf1_W, deform1_W_, id1_,
+                                        signed_distance0_W_, deform0_W_, id0_,
                                         &deformable_contact_W_);
 
   EXPECT_EQ(deformable_contact_W_.contact_surfaces().size(), 0);
@@ -114,9 +114,9 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, HaveContact) {
   // the interior volume.
   VolumeMeshFieldLinear<double, double> sdf1_W{{0, 0, 0, -1},
                                                &deform1_W_.mesh()};
-
-  AddDeformableDeformableContactSurface(signed_distance0_W_, deform0_W_, id0_,
-                                        sdf1_W, deform1_W_, id1_,
+  ASSERT_TRUE(id0_ < id1_);
+  AddDeformableDeformableContactSurface(sdf1_W, deform1_W_, id1_,
+                                        signed_distance0_W_, deform0_W_, id0_,
                                         &deformable_contact_W_);
 
   // Check ContactParticipation. It corresponds to the identity permutation
@@ -137,8 +137,8 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, HaveContact) {
     ASSERT_EQ(deformable_contact_W_.contact_surfaces().size(), 1);
     const DeformableContactSurface<double>& contact_surface =
         deformable_contact_W_.contact_surfaces().at(0);
-    ASSERT_EQ(contact_surface.id_A(), id1_);
-    ASSERT_EQ(contact_surface.id_B(), id0_);
+    ASSERT_EQ(contact_surface.id_A(), id0_);
+    ASSERT_EQ(contact_surface.id_B(), id1_);
     EXPECT_EQ(contact_surface.num_contact_points(), 1);
     // We can use contact_mesh_W() without verification because
     // AddDeformableDeformableContactSurface() uses VolumeIntersector
@@ -147,22 +147,22 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, HaveContact) {
     // is already tested in VolumeIntersector.
     EXPECT_EQ(contact_surface.contact_points_W().at(0),
               contact_surface.contact_mesh_W().element_centroid(0));
-    EXPECT_EQ(contact_surface.signed_distances().at(0),
-              signed_distance0_W_.EvaluateCartesian(
-                  0, contact_surface.contact_points_W().at(0)));
+    EXPECT_EQ(
+        contact_surface.signed_distances().at(0),
+        sdf1_W.EvaluateCartesian(0, contact_surface.contact_points_W().at(0)));
     EXPECT_EQ(contact_surface.barycentric_coordinates_A().at(0),
-              deform1_W_.mesh().CalcBarycentric(
-                  contact_surface.contact_points_W().at(0), 0));
-    EXPECT_EQ(contact_surface.contact_vertex_indexes_A().at(0),
-              Vector4<int>(1, 0, 2, 3));
-    EXPECT_EQ(contact_surface.barycentric_coordinates_B().at(0),
               deform0_W_.mesh().CalcBarycentric(
                   contact_surface.contact_points_W().at(0), 0));
-    EXPECT_EQ(contact_surface.contact_vertex_indexes_B().at(0),
+    EXPECT_EQ(contact_surface.contact_vertex_indexes_A().at(0),
               Vector4<int>(0, 1, 2, 3));
-    // Contact normal points downward *out of* geometry B (id0_) *into*
-    // geometry A (id1_).
-    EXPECT_EQ(contact_surface.nhats_W().at(0), -Vector3d::UnitZ());
+    EXPECT_EQ(contact_surface.barycentric_coordinates_B().at(0),
+              deform1_W_.mesh().CalcBarycentric(
+                  contact_surface.contact_points_W().at(0), 0));
+    EXPECT_EQ(contact_surface.contact_vertex_indexes_B().at(0),
+              Vector4<int>(1, 0, 2, 3));
+    // Contact normal points downward *out of* geometry B (id1_) *into*
+    // geometry A (id0_).
+    EXPECT_EQ(contact_surface.nhats_W().at(0), Vector3d::UnitZ());
     EXPECT_TRUE(contact_surface.is_B_deformable());
   }
 }

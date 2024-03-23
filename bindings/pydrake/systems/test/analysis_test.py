@@ -1,6 +1,8 @@
 import copy
+import numpy as np
 import unittest
 
+from pydrake.common import Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
 from pydrake.symbolic import Variable, Expression
@@ -9,12 +11,15 @@ from pydrake.systems.primitives import (
     ConstantVectorSource,
     ConstantVectorSource_,
     FirstOrderLowPassFilter_,
+    LinearSystem_,
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
 )
 from pydrake.systems.framework import Context_, EventStatus
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
+    BatchEvalUniquePeriodicDiscreteUpdate,
+    BatchEvalTimeDerivatives,
     ExtractSimulatorConfig,
     InitializeParams,
     IntegratorBase_,
@@ -58,6 +63,44 @@ class TestAnalysis(unittest.TestCase):
             system=system, max_step_size=0.01, context=context)
         RungeKutta3Integrator(system=system)
         RungeKutta3Integrator(system=system, context=context)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_batch_eval(self, T):
+        A = np.matrix("[0.1, 0.2; 0.3, 0.4]")
+        B = np.matrix("[0.5, 0.6; 0.7, 0.8]")
+        dt_system = LinearSystem_[T](A, B, time_period=0.1)
+        dt_context = dt_system.CreateDefaultContext()
+
+        times = np.matrix("[1, 2, 3]")
+        states = np.matrix("[1.2, 1.3, 1.4; 2.1, 2.2, 2.3]")
+        inputs = np.matrix("[3.1, 3.2, 3.6; 4.6, 4.5, 4.2]")
+
+        next_state = BatchEvalUniquePeriodicDiscreteUpdate(
+            system=dt_system,
+            context=dt_context,
+            times=times,
+            states=states,
+            inputs=inputs,
+            num_time_steps=1,
+            input_port_index=dt_system.get_input_port().get_index(),
+            parallelize=Parallelism(num_threads=2),
+        )
+        numpy_compare.assert_float_allclose(
+            next_state, A @ states + B @ inputs)
+
+        ct_system = LinearSystem_[T](A, B)
+        ct_context = ct_system.CreateDefaultContext()
+        derivatives = BatchEvalTimeDerivatives(
+            system=ct_system,
+            context=ct_context,
+            times=times,
+            states=states,
+            inputs=inputs,
+            input_port_index=ct_system.get_input_port().get_index(),
+            parallelize=Parallelism(num_threads=2),
+        )
+        numpy_compare.assert_float_allclose(
+            derivatives, A @ states + B @ inputs)
 
     @numpy_compare.check_nonsymbolic_types
     def test_integrator_api(self, T):

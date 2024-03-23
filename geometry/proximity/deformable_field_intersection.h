@@ -34,7 +34,8 @@ namespace internal {
 
  @pre deformable0_sdf_W.mesh() refers to deformable0_mesh_W.mesh().
  @pre deformable1_sdf_W.mesh() refers to deformable1_mesh_W.mesh().
- @pre deformable_contact != nullptr.  */
+ @pre deformable_contact != nullptr.
+ @pre deformable1_id < deformable0_id  */
 void AddDeformableDeformableContactSurface(
     const VolumeMeshFieldLinear<double, double>& deformable0_sdf_W,
     const DeformableVolumeMeshWithBvh<double>& deformable0_mesh_W,

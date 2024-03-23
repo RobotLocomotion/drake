@@ -285,6 +285,13 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(hpoly.ambient_dimension(), 3)
         self.assertEqual(hpoly.A().shape, (4, 3))
 
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+        prog.AddLinearConstraint(x[0] >= 0)
+        hpoly = mut.HPolyhedron(prog=prog)
+        self.assertEqual(hpoly.ambient_dimension(), 1)
+        self.assertEqual(hpoly.A().shape, (1, 1))
+
     def test_hyper_ellipsoid(self):
         mut.Hyperellipsoid()
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
@@ -382,6 +389,11 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.A(), box.A())
         np.testing.assert_array_equal(hpoly.b(), box.b())
         assert_pickle(self, rect, lambda S: np.vstack((S.lb(), S.ub())))
+
+        rect2 = mut.Hyperrectangle(lb=-2*self.b, ub=0.5*self.b)
+        intersection = rect.MaybeGetIntersection(rect2)
+        np.testing.assert_array_equal(intersection.lb(), -self.b)
+        np.testing.assert_array_equal(intersection.ub(), 0.5*self.b)
 
         other = mut.VPolytope(np.eye(2))
         bbox = mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(set=other)
@@ -842,15 +854,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
                      <collision>
                        <geometry><box size="0.1 0.1 0.1"/></geometry>
                      </collision>
-                      <geometry>
-                          <cylinder length="0.1" radius="0.2"/>
-                     </geometry>
-                     <geometry>
-                          <capsule length="0.1" radius="0.2"/>
-                     </geometry>
-                     <geometry>
-                          <sphere radius="0.2"/>
-                     </geometry>
                    </link>
                    <link name="unmovable">
                      <collision>

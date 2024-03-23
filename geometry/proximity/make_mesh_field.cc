@@ -86,7 +86,7 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
     p = hydroelastic_modulus * p / max_value;
   }
 
-  return {std::move(pressure_values), mesh_M, true};
+  return {std::move(pressure_values), mesh_M, MeshGradientMode::kOkOrThrow};
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

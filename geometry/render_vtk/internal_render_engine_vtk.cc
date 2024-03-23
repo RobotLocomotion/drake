@@ -9,7 +9,6 @@
 #include <utility>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkAutoInit.h>                 // vtkCommonCore
 #include <vtkCamera.h>                   // vtkRenderingCore
 #include <vtkCameraPass.h>               // vtkRenderingOpenGL2
 #include <vtkCylinderSource.h>           // vtkFiltersSources
@@ -49,9 +48,6 @@
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
-
-// This enables VTK's OpenGL2 infrastructure.
-VTK_MODULE_INIT(vtkRenderingOpenGL2)
 
 namespace drake {
 namespace geometry {
@@ -552,9 +548,17 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
 
 bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                     const RegistrationData& data) {
+  vtkNew<VtkDiagnosticEventObserver> observer;
+  observer->set_diagnostic(&diagnostic_);
+  auto observe = [&observer](const auto& vtk_object) {
+    vtk_object->AddObserver(vtkCommand::ErrorEvent, observer);
+    vtk_object->AddObserver(vtkCommand::WarningEvent, observer);
+  };
+
   // TODO(SeanCurtis-TRI): introduce VtkDiagnosticEventObserver on the gltf
   // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
+  observe(importer);
   importer->SetFileName(file_name.c_str());
   importer->Update();
 

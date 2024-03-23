@@ -7,25 +7,39 @@
 ###############################################################################
 
 load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_license//rules:license.bzl", "license")
+load("@rules_license//rules:package_info.bzl", "package_info")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_package_metadata = [
+        ":license",
+        ":package_info",
+    ],
+    default_visibility = ["//visibility:public"],
+)
 
-# licenses([
-#     "TODO",  # BSD-3-Clause
-# ])
-filegroup(
-    name = "license_glob",
-    srcs = glob(
-        ["LICENSE*"],
-        allow_empty = False,
-    ),
+package_info(
+    name = "package_info",
+    package_name = "amd",
+    package_url = "https://github.com/rwl/amd_order/",
+    package_version = "0.2.2",
+)
+
+license(
+    name = "license",
+    license_kinds = ["@rules_license//licenses/spdx:BSD-3-Clause"],
+    license_text = "LICENSE",
 )
 
 rust_library(
     name = "amd",
-    srcs = glob(["**/*.rs"]),
+    srcs = glob(
+        include = ["**/*.rs"],
+        allow_empty = False,
+    ),
     compile_data = glob(
         include = ["**"],
+        allow_empty = True,
         exclude = [
             "**/* *",
             ".tmp_git_root/**/*",
@@ -86,6 +100,6 @@ rust_library(
     }),
     version = "0.2.2",
     deps = [
-        "@crate__num-traits-0.2.17//:num_traits",
+        "@crate__num-traits-0.2.18//:num_traits",
     ],
 )

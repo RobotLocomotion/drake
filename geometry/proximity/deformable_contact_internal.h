@@ -61,6 +61,12 @@ class Geometries final : public ShapeReifier {
    provided id. */
   void RemoveGeometry(GeometryId id);
 
+  // TODO(xuchenhan-tri): Currently we rely on the resolution_hint property to
+  // determine whether a rigid geometry participates in deformable contact. This
+  // is very much an ad-hoc measure to quickly enable deformable contact of some
+  // sort. In the future, we need to decouple the ability of a rigid geometry to
+  // participate in *deformable contact* from its *hydroelastic* properties.
+
   /* Examines the given shape and properties, adding a rigid geometry
    representation if
    1. `props` specifies the resolution hint for the mesh representation of the
@@ -69,7 +75,8 @@ class Geometries final : public ShapeReifier {
       contact. The set of supported geometries is the set of all supported hydro
       rigid geometries minus half space. We use the same implementation that the
       hydro-rigid reifier is using for supported shapes.
-   This function is a no-op if the resolution_hint property is not specified.
+   This function is a no-op if the resolution_hint property is not specified and
+   logs a one-time warning if the shape is not supported for deformable contact.
 
    @param shape         The shape to possibly represent.
    @param id            The unique identifier for the geometry.
@@ -131,7 +138,7 @@ class Geometries final : public ShapeReifier {
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
 
   /* Makes a rigid (non-deformable) geometry from a supported shape type using
-   the given `data`. */
+   the given `data`. Unsupported geometries are silently ignored. */
   template <typename ShapeType>
   void AddRigidGeometry(const ShapeType& shape, const ReifyData& data);
 

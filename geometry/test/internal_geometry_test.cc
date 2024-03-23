@@ -1,6 +1,7 @@
 #include "drake/geometry/internal_geometry.h"
 
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -8,6 +9,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
 namespace geometry {

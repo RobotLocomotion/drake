@@ -1,11 +1,12 @@
-# Use C++20 by default.
-build --cxxopt=-std=c++20
-build --host_cxxopt=-std=c++20
-
 # Options for explicitly using Clang.
+# Keep this in sync with doc/_pages/from_source.md.
 common:clang --repo_env=CC=clang-14
 common:clang --repo_env=CXX=clang++-14
 build:clang --action_env=CC=clang-14
 build:clang --action_env=CXX=clang++-14
 build:clang --host_action_env=CC=clang-14
 build:clang --host_action_env=CXX=clang++-14
+
+# In CI (but only in CI), we want to test the opt-in USD build support.
+# TODO(jwnimmer-tri) We should try to enable USD by default on all platforms.
+build:everything --define=WITH_USD=ON

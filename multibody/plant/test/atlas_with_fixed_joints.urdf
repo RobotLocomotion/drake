@@ -1018,9 +1018,6 @@
       <geometry>
         <mesh filename="package://drake_models/atlas/meshes/head_chull.obj"/>
       </geometry>
-      <material name="">
-        <color rgba="0.9098 0.44314 0.031373 1"/>
-      </material>
     </collision>
   </link>
   <link name="pre_spindle"/>
@@ -1134,9 +1131,6 @@
       <geometry>
         <mesh filename="package://drake_models/atlas/meshes/head_camera_chull.obj"/>
       </geometry>
-      <material name="">
-        <color rgba="0.72941 0.35686 0.023529 1"/>
-      </material>
     </collision>
   </link>
   <joint name="head_hokuyo_fixed_joint" type="fixed">

@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh_field.h"
@@ -265,6 +266,13 @@ void DoScalarIndependentDefinitions(py::module m) {
         // TODO(SeanCurtis-TRI): Bind constructor that takes array of ints.
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
     DefCopyAndDeepCopy(&cls);
+  }
+
+  // MakeConvexHull
+  {
+    constexpr char internal_doc[] = "(internal use only)";
+    m.def("_MakeConvexHull", &drake::geometry::internal::MakeConvexHull,
+        py::arg("shape"), internal_doc);
   }
 
   m.def(

@@ -1,0 +1,14 @@
+[openusd_internal] Add missing usd/usd private header file
+
+We should upstream this patch.
+
+--- pxr/usd/usd/CMakeLists.txt
++++ pxr/usd/usd/CMakeLists.txt
+@@ -100,6 +100,7 @@ pxr_library(usd
+         crateDataTypes.h
+         crateValueInliners.h
+         listEditImpl.h
++        shared.h
+         wrapUtils.h
+         testenv/TestUsdResolverChangedResolver.h
+ 

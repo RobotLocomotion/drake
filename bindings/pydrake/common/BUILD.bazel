@@ -52,7 +52,6 @@ drake_pybind_library(
     cc_deps = [
         ":cpp_template_pybind",
         ":default_scalars_pybind",
-        ":eigen_geometry_pybind",
         ":eigen_pybind",
         ":serialize_pybind",
         ":type_pack",
@@ -170,18 +169,6 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":wrap_function",
-        "//bindings/pydrake:pydrake_pybind",
-    ],
-)
-
-drake_cc_library(
-    name = "eigen_geometry_pybind",
-    hdrs = ["eigen_geometry_pybind.h"],
-    declare_installed_headers = False,
-    visibility = ["//visibility:public"],
-    deps = [
-        ":wrap_pybind",
-        "//:drake_shared_library",
         "//bindings/pydrake:pydrake_pybind",
     ],
 )
@@ -375,7 +362,6 @@ drake_pybind_library(
     name = "eigen_geometry_test_util_py",
     testonly = True,
     add_install = False,
-    cc_deps = [":eigen_geometry_pybind"],
     cc_so_name = "test/eigen_geometry_test_util",
     cc_srcs = ["test/eigen_geometry_test_util_py.cc"],
     package_info = PACKAGE_INFO,

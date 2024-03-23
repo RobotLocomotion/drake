@@ -284,7 +284,6 @@
           <drake:declare_convex/>
         </mesh>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <joint name="left_iiwa_joint_ee" type="fixed">
@@ -693,7 +692,6 @@
           <drake:declare_convex/>
         </mesh>
       </geometry>
-      <material name="Grey"/>
     </collision>
   </link>
   <joint name="right_iiwa_joint_ee" type="fixed">

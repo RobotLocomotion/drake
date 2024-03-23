@@ -577,6 +577,52 @@ TEST_F(HandBuiltDependencies, Clone) {
   ExpectStatsMatch(&e0_tracker, entry0_stats);
 }
 
+// Check that we can make a DependencyTracker suppress notifications to
+// its subscribers, and that the suppress_notifications flag is copied
+// when a Context is cloned.
+TEST_F(HandBuiltDependencies, SuppressNotifications) {
+  // Refer to diagram above to see the interconnections.
+
+  EXPECT_FALSE(middle1_->notifications_are_suppressed());
+  ExpectAllStatsMatch();  // Everything is zero here.
+
+  // This should notify downstream1 and middle1. Then middle1
+  // notifies downstream1 again, downstream2, and entry0.
+  upstream1_->NoteValueChange(1LL);
+  EXPECT_EQ(upstream1_->num_notifications_sent(), 2);
+  EXPECT_EQ(middle1_->num_prerequisite_change_events(), 1);
+  EXPECT_EQ(middle1_->num_ignored_notifications(), 0);
+  EXPECT_EQ(middle1_->num_notifications_sent(), 3);
+  EXPECT_EQ(downstream1_->num_prerequisite_change_events(), 2);
+  EXPECT_EQ(downstream2_->num_prerequisite_change_events(), 1);
+  EXPECT_EQ(downstream2_->num_notifications_sent(), 1);
+  EXPECT_EQ(entry0_tracker_->num_prerequisite_change_events(), 2);
+
+  // Now suppress notifications from middle1 and repeat the above. Make
+  // sure no one downstream of middle1 gets notified.
+  middle1_->suppress_notifications();
+  EXPECT_TRUE(middle1_->notifications_are_suppressed());
+  upstream1_->NoteValueChange(2LL);
+  EXPECT_EQ(upstream1_->num_notifications_sent(), 4);  // +2
+  EXPECT_EQ(middle1_->num_prerequisite_change_events(), 2);  // +1
+  EXPECT_EQ(middle1_->num_ignored_notifications(), 1);  // should ignore now
+  EXPECT_EQ(middle1_->num_notifications_sent(), 3);  // +0
+  EXPECT_EQ(downstream1_->num_prerequisite_change_events(), 3);  // +1
+  EXPECT_EQ(downstream2_->num_prerequisite_change_events(), 1);  // +0
+  EXPECT_EQ(downstream2_->num_notifications_sent(), 1);  // +0
+  EXPECT_EQ(entry0_tracker_->num_prerequisite_change_events(), 2);  // +0
+
+  // Check that the clone preserves the suppress_notifications flag.
+  auto clone_context = context_.Clone();
+  const DependencyTracker& clone_middle1_ =
+      clone_context->get_dependency_graph().get_tracker(middle1_->ticket());
+  EXPECT_TRUE(clone_middle1_.notifications_are_suppressed());
+  // Check a random one to make sure they didn't all get suppressed!
+  const DependencyTracker& clone_upstream1_ =
+      clone_context->get_dependency_graph().get_tracker(upstream1_->ticket());
+  EXPECT_FALSE(clone_upstream1_.notifications_are_suppressed());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
