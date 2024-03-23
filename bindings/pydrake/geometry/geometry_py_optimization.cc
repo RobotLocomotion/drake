@@ -514,6 +514,8 @@ void DefineGeometryOptimization(py::module m) {
             "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
         .def_readwrite("mixing_steps", &IrisOptions::mixing_steps,
             cls_doc.mixing_steps.doc)
+        .def_readwrite("solver_options", &IrisOptions::solver_options,
+            cls_doc.solver_options.doc)
         .def("__repr__", [](const IrisOptions& self) {
           return py::str(
               "IrisOptions("
