@@ -166,7 +166,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         scene_graph = scene_graph_with_mesh(mesh_name)
         PlanarSceneGraphVisualizer(scene_graph)
 
-        # This should load correctly, too, by substituting the .obj.
+        # This should load correctly, too, by substituting the .gltf.
         mesh_name_wrong_ext = os.path.splitext(mesh_name)[0] + ".STL"
         scene_graph = scene_graph_with_mesh(mesh_name_wrong_ext)
         PlanarSceneGraphVisualizer(scene_graph)
