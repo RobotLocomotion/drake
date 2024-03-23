@@ -505,6 +505,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+  name = "iris_internal_test",
+  deps = [
+    ":iris_internal",
+    "//common/test_utilities:eigen_matrix_compare",
+    "//solvers:ipopt_solver",
+    "//systems/framework:diagram_builder",
+  ],
+)
+
+drake_cc_googletest(
     name = "iris_test",
     deps = [
         ":iris",
@@ -527,6 +537,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":iris",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",

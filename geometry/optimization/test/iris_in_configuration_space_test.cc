@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/meshcat.h"
@@ -10,6 +11,8 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -234,6 +237,29 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
     EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
     EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
     EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+    // Test solver options
+    // First change the counterexample solver options. We should get a different
+    // IRIS region.
+    options.counterexample_solver_options.emplace(solvers::SolverOptions());
+    options.counterexample_solver_options->SetOption(solvers::IpoptSolver::id(),
+                                                     "max_iter", 0);
+    options.counterexample_solver_options->SetOption(
+        solvers::SnoptSolver::id(), "Major Iterations Limit", 0);
+    const HPolyhedron region_no_counterexample =
+        IrisFromUrdf(boxes_urdf, sample, options);
+    EXPECT_FALSE(CompareMatrices(region.A(), region_no_counterexample.A()));
+    options.counterexample_solver_options = std::nullopt;
+    // Now change the closest_collision_solver_options.
+    options.closest_collision_solver_options.emplace(solvers::SolverOptions());
+    options.closest_collision_solver_options->SetOption(
+        solvers::IpoptSolver::id(), "max_iter", 0);
+    options.closest_collision_solver_options->SetOption(
+        solvers::SnoptSolver::id(), "Major Iterations Limit", 0);
+    const HPolyhedron region_no_closest_collision =
+        IrisFromUrdf(boxes_urdf, sample, options);
+    EXPECT_FALSE(CompareMatrices(region.A(), region_no_closest_collision.A()));
+    options.closest_collision_solver_options = std::nullopt;
   }
 
   // Configuration space obstacles align with task space obstacle.
