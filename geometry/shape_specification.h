@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -76,6 +77,30 @@ class Shape {
   /** Returns a string representation of this shape. */
   std::string to_string() const { return do_to_string(); }
 
+  /** Calls the given `visitor` function with `*this` as the sole argument, but
+  with `*this` downcast to be the shape's concrete subclass. For example, if
+  this shape is a %Box then calls `visitor(static_cast<const Box&>(*this))`.
+  @tparam ReturnType The return type to coerce return values into. When not
+  `void`, anything returned by the visitor must be implicitly convertible to
+  this type. When `void`, the return type will be whatever the Vistor's call
+  operator returns by default. */
+  template <typename ReturnType = void, typename Visitor>
+  decltype(auto) Visit(Visitor&& visitor) const {
+    if constexpr (std::is_same_v<ReturnType, void>) {
+      return std::visit(
+          [&visitor](auto* shape) {
+            return visitor(*shape);
+          },
+          get_variant_this());
+    } else {
+      return std::visit(
+          [&visitor](auto* shape) -> ReturnType {
+            return visitor(*shape);
+          },
+          get_variant_this());
+    }
+  }
+
  protected:
   /** (Internal use only) Constructor for use by derived classes.
   All subclasses of Shape must be marked `final`. */
@@ -102,6 +127,21 @@ class Shape {
 
   /** (Internal use only) NVI for to_string(). */
   virtual std::string do_to_string() const = 0;
+
+  /** (Internal use only) All concrete subclasses, as const pointers. */
+  using VariantShapeConstPtr = std::variant<  //
+      const Box*,                             //
+      const Capsule*,                         //
+      const Convex*,                          //
+      const Cylinder*,                        //
+      const Ellipsoid*,                       //
+      const HalfSpace*,                       //
+      const Mesh*,                            //
+      const MeshcatCone*,                     //
+      const Sphere*>;
+
+  /** (Internal use only) NVI-like helper function for Visit(). */
+  virtual VariantShapeConstPtr get_variant_this() const = 0;
 };
 
 /** Definition of a box. The box is centered on the origin of its canonical
@@ -146,6 +186,7 @@ class Box final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   Vector3<double> size_;
 };
@@ -180,6 +221,7 @@ class Capsule final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   double radius_{};
   double length_{};
@@ -246,6 +288,7 @@ class Convex final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   std::string filename_;
   std::string extension_;
@@ -279,6 +322,7 @@ class Cylinder final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   double radius_{};
   double length_{};
@@ -321,6 +365,7 @@ class Ellipsoid final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   Vector3<double> radii_;
 };
@@ -361,6 +406,7 @@ class HalfSpace final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 };
 
 // TODO(DamrongGuoy): Update documentation when mesh is fully supported (i.e.,
@@ -440,6 +486,7 @@ class Mesh final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
   std::string filename_;
@@ -488,6 +535,7 @@ class MeshcatCone final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   double height_{};
   double a_{};
@@ -514,6 +562,7 @@ class Sphere final : public Shape {
   std::unique_ptr<Shape> DoClone() const final;
   std::string_view do_type_name() const final;
   std::string do_to_string() const final;
+  VariantShapeConstPtr get_variant_this() const final;
 
   double radius_{};
 };

@@ -7,6 +7,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -251,6 +252,49 @@ TEST_F(ReifierTest, CloningShapes) {
   ASSERT_FALSE(ellipsoid_made_);
   EXPECT_FALSE(mesh_made_);
   ASSERT_TRUE(sphere_made_);
+}
+
+GTEST_TEST(VisitTest, ReturnTypeVoid) {
+  const Box box(1.0, 2.0, 3.0);
+  box.Visit(overloaded{
+      [&](const Box& arg) {
+        EXPECT_EQ(&arg, &box);
+      },
+      [](const auto&) {
+        GTEST_FAIL();
+      },
+  });
+
+  const Sphere sphere(1.0);
+  sphere.Visit(overloaded{
+      [&](const Sphere& arg) {
+        EXPECT_EQ(&arg, &sphere);
+      },
+      [](const auto&) {
+        GTEST_FAIL();
+      },
+  });
+}
+
+GTEST_TEST(VisitTest, ReturnTypeConversion) {
+  const Box box(1.0, 2.0, 3.0);
+  const Sphere sphere(1.0);
+
+  auto get_size = overloaded{
+      [](const Box& arg) {
+        return arg.size();
+      },
+      [](const Sphere& arg) {
+        return Vector1d(arg.radius());
+      },
+      [](const auto&) -> Eigen::VectorXd {
+        DRAKE_UNREACHABLE();
+      },
+  };
+
+  Eigen::VectorXd dims;
+  dims = box.Visit<Eigen::VectorXd>(get_size);
+  dims = sphere.Visit<Eigen::VectorXd>(get_size);
 }
 
 // Given the pose of a plane and its expected translation and z-axis, confirms
