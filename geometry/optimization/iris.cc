@@ -369,10 +369,11 @@ class CounterExampleProgram {
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
              const Eigen::Ref<const Eigen::VectorXd>& q_guess,
+             const std::optional<solvers::SolverOptions>& solver_options,
              VectorXd* closest) {
     prog_.SetInitialGuess(q_, q_guess);
     solvers::MathematicalProgramResult result;
-    solver.Solve(prog_, std::nullopt, std::nullopt, &result);
+    solver.Solve(prog_, std::nullopt, solver_options, &result);
     if (result.is_success()) {
       *closest = result.GetSolution(q_);
       return true;
@@ -855,7 +856,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                             falsify_lower_bound);
             while (consecutive_failures <
                    options.num_additional_constraint_infeasible_samples) {
-              if (counter_example_prog->Solve(*solver, guess, &closest)) {
+              if (counter_example_prog->Solve(
+                      *solver, guess, options.counterexample_solver_options,
+                      &closest)) {
                 consecutive_failures = 0;
                 AddTangentToPolytope(E, closest,
                                      options.configuration_space_margin, &A, &b,
