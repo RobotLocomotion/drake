@@ -1031,9 +1031,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
    * @param symmetry_tolerance  The precision to determine if the input matrices
    * Fi are all symmetric. @see math::IsSymmetric().
    */
-  LinearMatrixInequalityConstraint(
-      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
-      double symmetry_tolerance = 1E-10);
+  LinearMatrixInequalityConstraint(std::vector<Eigen::MatrixXd> F,
+                                   double symmetry_tolerance = 1E-10);
 
   ~LinearMatrixInequalityConstraint() override {}
 

@@ -2630,17 +2630,16 @@ class MathematicalProgram {
    * Adds a linear matrix inequality constraint to the program.
    */
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
-      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
-      const VariableRefList& vars) {
+      std::vector<Eigen::MatrixXd> F, const VariableRefList& vars) {
     return AddLinearMatrixInequalityConstraint(
-        F, ConcatenateVariableRefList(vars));
+        std::move(F), ConcatenateVariableRefList(vars));
   }
 
   /**
    * Adds a linear matrix inequality constraint to the program.
    */
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
-      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      std::vector<Eigen::MatrixXd> F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**

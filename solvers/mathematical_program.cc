@@ -1181,9 +1181,9 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
 
 Binding<LinearMatrixInequalityConstraint>
 MathematicalProgram::AddLinearMatrixInequalityConstraint(
-    const vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+    vector<Eigen::MatrixXd> F,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto constraint = make_shared<LinearMatrixInequalityConstraint>(F);
+  auto constraint = make_shared<LinearMatrixInequalityConstraint>(std::move(F));
   return AddConstraint(constraint, vars);
 }
 
