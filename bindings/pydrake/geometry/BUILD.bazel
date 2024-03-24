@@ -121,6 +121,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "render_test",
     allow_network = ["render_gltf_client"],
+    data = [
+        "//geometry/render:test_models",
+    ],
     deps = [
         ":geometry",
         "//bindings/pydrake/common/test_utilities",

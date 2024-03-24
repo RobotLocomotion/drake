@@ -5,6 +5,7 @@
 #include <fstream>
 #include <limits>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <utility>
 
@@ -41,6 +42,7 @@
 #include <vtkTranslucentPass.h>          // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
@@ -54,6 +56,8 @@ namespace geometry {
 namespace render_vtk {
 namespace internal {
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -183,6 +187,10 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     default_diffuse_.set(*parameters.default_diffuse);
   }
   default_clear_color_.set(parameters.default_clear_color);
+
+  diagnostic_.SetActionForWarnings([this](const DiagnosticDetail& detail) {
+    this->HandleWarning(detail);
+  });
 
   InitializePipelines();
 }
@@ -519,9 +527,8 @@ void RenderEngineVtk::ImplementMesh(const std::string& file_name, double scale,
 
 bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    const RegistrationData& data) {
-  std::vector<RenderMesh> meshes =
-      LoadRenderMeshesFromObj(file_name, data.properties, default_diffuse_,
-                              drake::internal::DiagnosticPolicy());
+  std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
+      file_name, data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
     const RenderMaterial material = render_mesh.material;
 
@@ -718,6 +725,26 @@ vtkSmartPointer<vtkLight> MakeVtkLight(const LightParameter& light_param) {
 }
 
 }  // namespace
+
+void RenderEngineVtk::HandleWarning(const DiagnosticDetail& detail) const {
+  static const never_destroyed<std::regex> gltf_ext_regex{
+      R"""(glTF extension ([^ ]*) .* will be ignored.)"""};
+  std::smatch match;
+  if (std::regex_search(detail.message, match, gltf_ext_regex.access())) {
+    const auto& ext = match[1];
+    auto iter = parameters_.gltf_extensions.find(ext);
+    if (iter != parameters_.gltf_extensions.end()) {
+      if (!iter->second.warn_unimplemented) {
+        // N.B. This code is tested via pydrake (not our C++ unit test),
+        // because it offers nice built-in tooling for "self.assertLogs(...)".
+        log()->debug("Silenced: {}", detail.message);
+        return;
+      }
+    }
+  }
+
+  DiagnosticPolicy::WarningDefaultAction(detail);
+}
 
 void RenderEngineVtk::InitializePipelines() {
   const vtkSmartPointer<vtkTransform> vtk_identity =

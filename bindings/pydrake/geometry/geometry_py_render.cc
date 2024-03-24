@@ -381,6 +381,17 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
+    using Class = geometry::GltfExtension;
+    constexpr auto& cls_doc = doc_geometry.GltfExtension;
+    py::class_<Class> cls(m, "GltfExtension", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     using Class = geometry::render::LightParameter;
     constexpr auto& cls_doc = doc.LightParameter;
     py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
