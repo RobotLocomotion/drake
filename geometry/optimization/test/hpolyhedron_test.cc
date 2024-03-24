@@ -1240,11 +1240,27 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
   const double min_v_ratio = 0.1;
 
   const HPolyhedron inbody =
-      circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio);
+      circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio, false);
   EXPECT_TRUE(inbody.ContainedIn(circumbody, kConstraintTol));
   EXPECT_GE(VPolytope(inbody).CalcVolume() / VPolytope(circumbody).CalcVolume(),
             min_v_ratio);
   EXPECT_EQ(inbody.b().rows(), circumbody.b().rows() - 2);
+
+  // Check that the two diagonal faces are no longer present.
+  // Also check that the four non-diagonal faces are still present.
+  std::vector<bool> row_found(circumbody.b().rows() - 2, false);
+  for (int i = 0; i < inbody.A().rows(); ++i) {
+    EXPECT_FALSE(inbody.A().row(i) == A.row(4));
+    EXPECT_FALSE(inbody.A().row(i) == A.row(5));
+    for (int j = 0; j < circumbody.b().rows() - 2; ++j) {
+      if (inbody.A().row(i) == A.row(j)) {
+        row_found[j] = true;
+      }
+    }
+  }
+  for (int j = 0; j < circumbody.b().rows() - 2; ++j) {
+    EXPECT_TRUE(row_found[j]);
+  }
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation2) {
