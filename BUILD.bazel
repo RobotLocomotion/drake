@@ -40,6 +40,7 @@ filegroup(
     data = [
         "//bindings/pydrake/multibody:models",
         "//examples/acrobot:models",
+        "//examples/allegro_hand:models",
         "//examples/atlas:models",
         "//examples/hardware_sim:demo_data",
         "//examples/hydroelastic/ball_plate:floor_files",
@@ -57,7 +58,6 @@ filegroup(
         "//examples/quadrotor:models",
         "//examples/scene_graph:models",
         "//examples/simple_gripper:simple_gripper_models",
-        "//manipulation/models/allegro_hand_description:models",
         "//manipulation/models/franka_description:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/jaco_description:models",
