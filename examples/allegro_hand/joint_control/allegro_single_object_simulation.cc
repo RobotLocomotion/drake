@@ -90,11 +90,11 @@ void DoMain() {
   std::string hand_model_url;
   if (FLAGS_use_right_hand) {
     hand_model_url =
-        "package://drake/manipulation/models/"
+        "package://drake_models/"
         "allegro_hand_description/sdf/allegro_hand_description_right.sdf";
   } else {
     hand_model_url =
-        "package://drake/manipulation/models/"
+        "package://drake_models/"
         "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
   }
 
