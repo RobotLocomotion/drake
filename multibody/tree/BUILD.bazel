@@ -257,6 +257,7 @@ drake_cc_library(
     hdrs = ["geometry_spatial_inertia.h"],
     deps = [
         ":spatial_inertia",
+        "//common:overloaded",
         "//geometry:shape_specification",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:obj_to_surface_mesh",

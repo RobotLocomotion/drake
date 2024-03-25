@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
@@ -17,98 +18,68 @@ namespace {
 
 using Eigen::Vector3d;
 using geometry::Shape;
-using geometry::ShapeReifier;
-using std::pow;
 
-// SpatialInertia semantics and notation are documented in spatial_inertia.h.
-class SpatialInertiaCalculator final : public ShapeReifier {
- public:
-  SpatialInertia<double> Calculate(const Shape& shape, double density) {
-    density_ = density;
-    shape.Reify(this);
-    return spatial_inertia_;
+// @tparam MeshType must be either geometry::Mesh or geometry::Convex
+template <typename MeshType>
+SpatialInertia<double> CalcMeshSpatialInertia(const MeshType& mesh,
+                                              double density) {
+  const auto& extension = mesh.extension();
+  if (extension == ".obj") {
+    return CalcSpatialInertia(
+        geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale()),
+        density);
   }
-
-  SpatialInertia<double> spatial_inertia() const { return spatial_inertia_; }
-
- private:
-  void ImplementGeometry(const geometry::Box& box, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidBoxWithDensity(
-        density_, box.width(), box.depth(), box.height());
+  if (extension == ".vtk") {
+    return CalcSpatialInertia(
+        geometry::ConvertVolumeToSurfaceMesh(
+            geometry::internal::MakeVolumeMeshFromVtk<double>(mesh)),
+        density);
   }
-
-  void ImplementGeometry(const geometry::Capsule& capsule, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidCapsuleWithDensity(
-        density_, capsule.radius(), capsule.length(), Vector3d::UnitZ());
-  }
-
-  void ImplementGeometry(const geometry::Convex& convex, void*) final {
-    ImplementMesh(convex);
-  }
-
-  void ImplementGeometry(const geometry::Cylinder& cylinder, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidCylinderWithDensity(
-        density_, cylinder.radius(), cylinder.length(), Vector3d::UnitZ());
-  }
-
-  void ImplementGeometry(const geometry::Ellipsoid& ellipsoid, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidEllipsoidWithDensity(
-        density_, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-  }
-
-  void ImplementGeometry(const geometry::HalfSpace&, void*) final {
-    throw std::logic_error(
-        "Cannot compute mass properties for an infinite volume: HalfSpace");
-  }
-
-  void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
-    ImplementMesh(mesh);
-  }
-
-  void ImplementGeometry(const geometry::MeshcatCone&, void*) final {
-    throw std::logic_error(
-        "Cannot compute mass properties for the visualization-only "
-        "MeshcatCone");
-  }
-
-  void ImplementGeometry(const geometry::Sphere& sphere, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidSphereWithDensity(
-        density_, sphere.radius());
-  }
-
-  template <typename MeshType>
-  void ImplementMesh(const MeshType& mesh) {
-    const auto& extension = mesh.extension();
-    std::unique_ptr<geometry::TriangleSurfaceMesh<double>> surface_mesh;
-    if (extension == ".obj") {
-      surface_mesh = std::make_unique<geometry::TriangleSurfaceMesh<double>>(
-          geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(),
-                                                 mesh.scale()));
-    } else if (extension == ".vtk") {
-      surface_mesh = std::make_unique<geometry::TriangleSurfaceMesh<double>>(
-          geometry::ConvertVolumeToSurfaceMesh(
-              geometry::internal::MakeVolumeMeshFromVtk<double>(mesh)));
-    } else {
-      throw std::runtime_error(fmt::format(
-          "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
-          " .vtk files for mesh geometries but was given '{}'.",
-          mesh.filename()));
-    }
-
-    spatial_inertia_ = CalcSpatialInertia(*surface_mesh, density_);
-  }
-
-  double density_{};
-  SpatialInertia<double> spatial_inertia_;
-};
+  throw std::runtime_error(fmt::format(
+      "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
+      " .vtk files for mesh geometries but was given '{}'.",
+      mesh.filename()));
+}
 
 }  // namespace
 
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density) {
-  SpatialInertiaCalculator calculator;
-  calculator.Calculate(shape, density);
-  return calculator.spatial_inertia();
+  return shape.Visit<SpatialInertia<double>>(overloaded{
+      [density](const geometry::Box& box) {
+        return SpatialInertia<double>::SolidBoxWithDensity(
+            density, box.width(), box.depth(), box.height());
+      },
+      [density](const geometry::Capsule& capsule) {
+        return SpatialInertia<double>::SolidCapsuleWithDensity(
+            density, capsule.radius(), capsule.length(), Vector3d::UnitZ());
+      },
+      [density](const geometry::Convex& convex) {
+        return CalcMeshSpatialInertia(convex, density);
+      },
+      [density](const geometry::Cylinder& cylinder) {
+        return SpatialInertia<double>::SolidCylinderWithDensity(
+            density, cylinder.radius(), cylinder.length(), Vector3d::UnitZ());
+      },
+      [density](const geometry::Ellipsoid& ellipsoid) {
+        return SpatialInertia<double>::SolidEllipsoidWithDensity(
+            density, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
+      },
+      [](const geometry::HalfSpace&) -> SpatialInertia<double> {
+        throw std::logic_error(
+            "CalcSpatialInertia: Cannot compute mass of a HalfSpace");
+      },
+      [density](const geometry::Mesh& mesh) {
+        return CalcMeshSpatialInertia(mesh, density);
+      },
+      [](const geometry::MeshcatCone&) -> SpatialInertia<double> {
+        throw std::logic_error(
+            "CalcSpatialInertia: MeshcatCone is not yet supported");
+      },
+      [density](const geometry::Sphere& sphere) {
+        return SpatialInertia<double>::SolidSphereWithDensity(density,
+                                                              sphere.radius());
+      }});
 }
 
 SpatialInertia<double> CalcSpatialInertia(
