@@ -53,7 +53,6 @@ filegroup(
         "//examples/multibody/four_bar:models",
         "//examples/pendulum:models",
         "//examples/planar_gripper:models",
-        "//examples/pr2:models",
         "//examples/quadrotor:models",
         "//examples/scene_graph:models",
         "//examples/simple_gripper:simple_gripper_models",
