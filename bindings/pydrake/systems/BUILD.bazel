@@ -353,7 +353,7 @@ drake_jupyter_py_binary(
     name = "jupyter_widgets_examples",
     add_test_rule = 1,
     data = [
-        "//manipulation/models/ycb:models",
+        "@drake_models",
     ],
     deps = [
         ":analysis_py",

@@ -62,7 +62,6 @@ filegroup(
         "//manipulation/models/realsense2_description:models",
         "//manipulation/models/ur3e:models",
         "//manipulation/models/wsg_50_description:models",
-        "//manipulation/models/ycb:models",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models",
     ],
