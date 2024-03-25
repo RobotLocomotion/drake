@@ -84,15 +84,17 @@ math::RigidTransform<double> CalculatePrimRigidTransform(
   pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
   pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
-  pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix();
+  pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix()
+    .GetOrthonormalized(); // The extracted matrix contains scaling so we have
+    // to orthonormalize it
   
   return math::RigidTransform<double>(
     math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
     UsdVec3dtoEigenVec3d(translation));
 }
 
-Eigen::Vector3d CalculateCubeDimension(const ParsingWorkspace& workspace,
-  const pxr::UsdPrim& prim) {
+Eigen::Vector3d CalculateCubeDimension(
+  const ParsingWorkspace& workspace, const pxr::UsdPrim& prim) {
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
 
   double cube_size = 0;
@@ -107,7 +109,6 @@ Eigen::Vector3d CalculateCubeDimension(const ParsingWorkspace& workspace,
     workspace.diagnostic.Error(fmt::format(
       "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
   }
-  xformable.GetScaleOp().Set(pxr::GfVec3f(1.f)); // TODO: delete
 
   return Eigen::Vector3d(
     prim_scale[0] * cube_size,
