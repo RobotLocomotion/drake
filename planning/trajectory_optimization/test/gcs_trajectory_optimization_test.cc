@@ -400,15 +400,16 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   }
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
-  /* This simple 2D example will test the velocity bound constraints on edges,
+GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
+  /* This simple 2D example will test the derivative bound constraints on edges,
   and illustrate and example with delays. Bob is a drag racer who wants to beat
   the world record for the 305m strip. No rolling start is allowed, so the car
-  has to have zero velocity in the beginning. However, he can drive as fast as
-  his car allows through the finish line (50 m/s). There is only one problem,
-  this drag strip is known to get crossed by ducks, so Bob has to be careful not
-  to hit any ducks. It takes the ducks about 10 seconds to cross the track, and
-  Bob has to wait for them.
+  has to have zero velocity and acceleration in the beginning. However, he can
+  drive as fast as his car allows through the finish line (50 m/s). His car is
+  electric and deliver infinite torque, thus there are no acceleration limits.
+  There is only one problem, this drag strip is known to get crossed by ducks,
+  so Bob has to be careful not to hit any ducks. It takes the ducks about 10
+  seconds to cross the track, and Bob has to wait for them.
   */
   // clang-format off
   /*    305m                                        75m             🚥
@@ -431,16 +432,16 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   // We need to duplicate the race track regions to sandwich the duck regions.
   auto& race_track_1 = gcs.AddRegions(
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(0, -5), Vector2d(305, 5))),
-      3);
+      5);
   auto& race_track_2 = gcs.AddRegions(
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(0, -5), Vector2d(305, 5))),
-      3);
+      5);
   // Bob's car can only drive straight. So he can drive at 50 m/s forward in x,
   // but not in y.
   race_track_1.AddVelocityBounds(Vector2d(0, 0), Vector2d(kMaxSpeed, 0));
   race_track_2.AddVelocityBounds(Vector2d(0, 0), Vector2d(kMaxSpeed, 0));
 
-  // The ducks are cross the track at the 75m mark and they need at least 10
+  // The ducks are crossing the track at the 75m mark and they need at least 10
   // seconds.
   auto& ducks = gcs.AddRegions(
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(75, -5), Vector2d(75, 5))),
@@ -454,19 +455,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   auto& ducks_to_race_track_2 = gcs.AddEdges(ducks, race_track_2);
   gcs.AddEdges(race_track_2, target);
 
-  // Bob's car has to start with zero velocity.
-  source_to_race_track_1.AddVelocityBounds(Vector2d(0, 0), Vector2d(0, 0));
+  // Bob's car has to start with zero velocity and acceleration.
+  source_to_race_track_1.AddZeroDerivativeConstraints(1);
+  source_to_race_track_1.AddZeroDerivativeConstraints(2);
 
   // Bob doesn't want to run the ducks over, so he has to stop before the ducks.
-  // Hence the car will be at zero velocity.
+  // Hence the car will be at zero velocity. Another way to add the constraint
+  // is by setting the velocity bounds to zero.
   race_track_1_to_ducks.AddVelocityBounds(Vector2d(0, 0), Vector2d(0, 0));
   ducks_to_race_track_2.AddVelocityBounds(Vector2d(0, 0), Vector2d(0, 0));
+  // However, to limit acceleration constraints we need the
+  // ZeroDerivativeConstraints, which handled differently and are convex.
+  race_track_1_to_ducks.AddZeroDerivativeConstraints(2);
+  ducks_to_race_track_2.AddZeroDerivativeConstraints(2);
 
   // Bob wants to beat the time record!
   gcs.AddTimeCost();
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
-  EXPECT_LT(gcs.EstimateComplexity(), 125);
+  EXPECT_LT(gcs.EstimateComplexity(), 185);
 
   auto [traj, result] = gcs.SolvePath(source, target);
 
@@ -483,12 +490,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
 
   // The initial velocity should be zero and the final velocity should be at the
   // maximum.
-  auto traj_vel = traj.MakeDerivative();
-  EXPECT_TRUE(CompareMatrices(traj_vel->value(traj.start_time()),
+  EXPECT_TRUE(CompareMatrices(traj.EvalDerivative(traj.start_time(), 1),
                               Vector2d(0, 0), 1e-6));
-  EXPECT_TRUE(CompareMatrices(traj_vel->value(traj.end_time()),
+  EXPECT_TRUE(CompareMatrices(traj.EvalDerivative(traj.end_time(), 1),
                               Vector2d(kMaxSpeed, 0), 1e-6));
 
+  // We also said the car starts with zero acceleration.
+  EXPECT_TRUE(CompareMatrices(traj.EvalDerivative(traj.start_time(), 2),
+                              Vector2d(0, 0), 1e-6));
   // The total duration should be at least the duck delay and the minimum time
   // it would take to drive the track down at maximum speed.
   // kDuckDelay + 305m /kMaxSpeed.
@@ -505,12 +514,17 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   }
 
   // The car should be stopped at the ducks for kDuckDelay seconds.
-  EXPECT_TRUE(CompareMatrices(traj_vel->value(stopped_at_ducks_time),
+  EXPECT_TRUE(CompareMatrices(traj.EvalDerivative(stopped_at_ducks_time, 1),
+                              Vector2d(0, 0), 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj.EvalDerivative(stopped_at_ducks_time, 2),
                               Vector2d(0, 0), 1e-6));
 
-  EXPECT_TRUE(
-      CompareMatrices(traj_vel->value(stopped_at_ducks_time + kDuckDelay),
-                      Vector2d(0, 0), 1e-6));
+  EXPECT_TRUE(CompareMatrices(
+      traj.EvalDerivative(stopped_at_ducks_time + kDuckDelay, 1),
+      Vector2d(0, 0), 1e-6));
+  EXPECT_TRUE(CompareMatrices(
+      traj.EvalDerivative(stopped_at_ducks_time + kDuckDelay, 2),
+      Vector2d(0, 0), 1e-6));
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, RemoveSubgraph) {
@@ -597,7 +611,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroOrderPathLengthCost) {
   DRAKE_EXPECT_NO_THROW(gcs.AddPathLengthCost());
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidVelocityBounds) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidDerivativeBounds) {
   /* The velocity of a curve is not defined for a subgraph of order 0.*/
   const int kDimension = 2;
   GcsTrajectoryOptimization gcs(kDimension);
@@ -635,6 +649,23 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidVelocityBounds) {
                                   Vector2d::Zero(), Vector2d::Zero()),
                               "Cannot add velocity bounds to a subgraph edges "
                               "where both subgraphs have zero order.");
+
+  // The derivative order must be greater than 1.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddZeroDerivativeConstraints(0),
+      "Derivative order must be greater than 1.");
+
+  // Can't enforce zero derivatives to an edge if both regions have order 0.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddZeroDerivativeConstraints(1),
+      "Cannot add derivative bounds to subgraph edges where both subgraphs "
+      "have less than derivative order.\n From subgraph order: 0\n To subgraph "
+      "order: 0\n Derivative order: 1");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddZeroDerivativeConstraints(2),
+      "Cannot add derivative bounds to subgraph edges where both subgraphs "
+      "have less than derivative order.\n From subgraph order: 0\n To subgraph "
+      "order: 0\n Derivative order: 2");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
