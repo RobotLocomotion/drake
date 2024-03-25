@@ -11,6 +11,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include <fmt/format.h>
@@ -116,16 +117,22 @@ Eigen::Vector3d CalculateCubeDimension(
     prim_scale[2] * cube_size);
 }
 
-CoulombFriction<double> ReadPrimFriction(const pxr::UsdPrim& prim) {
+CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
   // TODO(hong-nvidia): Use the prim's friction attributes if has those
   // For now, we just use default friction
   return default_friction();
 }
 
-Vector4<double> ReadGeomPrimColor(const pxr::UsdPrim& prim) {
-  // TODO(hong-nvidia): Use the Geom prim's display color if it has one
-  // If not, use default color
-  return Vector4<double>(0.9, 0.9, 0.9, 1.0);
+Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
+  pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
+  pxr::VtArray<pxr::GfVec3f> colors;
+  if (gprim.GetDisplayColorAttr().Get(&colors)) {
+    pxr::GfVec3f color = colors[0];
+    return Vector4<double>(color[0], color[1], color[2], 1.0);
+  } else {
+    // Prim does not contain color attribute, use default color instead
+    return Vector4<double>(0.5, 0.5, 0.5, 1.0);
+  }
 }
 
 void ProcessStaticColliderCube(
@@ -139,19 +146,18 @@ void ProcessStaticColliderCube(
     transform,
     geometry::Box(cube_dimension),
     fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-    ReadPrimFriction(prim));
+    GetPrimFriction(prim));
 
   plant->RegisterVisualGeometry(
     plant->world_body(),
     transform,
     geometry::Box(cube_dimension),
     fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    ReadGeomPrimColor(prim));
+    GetGeomPrimColor(prim));
 }
 
 void ProcessStaticCollider(
   const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
-  DRAKE_ASSERT(prim.IsA<pxr::UsdGeomXformable>());
   if (prim.IsA<pxr::UsdGeomCube>()) {
     ProcessStaticColliderCube(prim, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {

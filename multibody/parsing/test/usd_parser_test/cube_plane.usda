@@ -35,7 +35,7 @@ def Xform "World"
     )
     {
         float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
-        color3f[] primvars:displayColor = [(0.5, 0.75, 1.25)]
+        color3f[] primvars:displayColor = [(0.5, 0.75, 1.0)]
         double size = 1
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (720, 720, 10)
