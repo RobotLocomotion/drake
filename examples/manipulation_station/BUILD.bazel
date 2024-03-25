@@ -57,7 +57,7 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/realsense2_description:models",
         "//manipulation/models/wsg_50_description:models",
-        "//manipulation/models/ycb:models",
+        "@drake_models",
     ],
     visibility = ["//visibility:public"],
     deps = [

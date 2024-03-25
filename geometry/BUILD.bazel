@@ -544,8 +544,8 @@ drake_cc_binary(
         "//examples/kuka_iiwa_arm:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/ycb:models",
         "//multibody/meshcat:models",
+        "@drake_models",
     ],
     visibility = ["//visibility:private"],
     deps = [
