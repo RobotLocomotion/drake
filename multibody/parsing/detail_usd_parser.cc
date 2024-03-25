@@ -77,7 +77,7 @@ Eigen::Vector3d UsdVec3dtoEigenVec3d(pxr::GfVec3d v) {
   return Eigen::Vector3d{ v[0], v[1], v[2] };
 }
 
-math::RigidTransform<double> CalculatePrimRigidTransform(
+math::RigidTransform<double> GetPrimRigidTransform(
   const pxr::UsdPrim& prim) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
 
@@ -85,9 +85,9 @@ math::RigidTransform<double> CalculatePrimRigidTransform(
     pxr::UsdTimeCode::Default());
   pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
   pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix()
-    .GetOrthonormalized(); // The extracted matrix contains scaling so we have
-    // to orthonormalize it
-  
+    .GetOrthonormalized();  // The extracted matrix contains scaling so
+    // we have to orthonormalize it
+
   return math::RigidTransform<double>(
     math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
     UsdVec3dtoEigenVec3d(translation));
@@ -113,8 +113,7 @@ Eigen::Vector3d CalculateCubeDimension(
   return Eigen::Vector3d(
     prim_scale[0] * cube_size,
     prim_scale[1] * cube_size,
-    prim_scale[2] * cube_size
-  );
+    prim_scale[2] * cube_size);
 }
 
 CoulombFriction<double> ReadPrimFriction(const pxr::UsdPrim& prim) {
@@ -133,7 +132,7 @@ void ProcessStaticColliderCube(
   const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
   MultibodyPlant<double>* plant = workspace.plant;
   Eigen::Vector3d cube_dimension = CalculateCubeDimension(workspace, prim);
-  math::RigidTransform<double> transform = CalculatePrimRigidTransform(prim);
+  math::RigidTransform<double> transform = GetPrimRigidTransform(prim);
 
   plant->RegisterCollisionGeometry(
     plant->world_body(),
