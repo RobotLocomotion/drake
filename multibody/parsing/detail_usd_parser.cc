@@ -11,6 +11,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include <fmt/format.h>
 
@@ -76,52 +77,90 @@ Eigen::Vector3d UsdVec3dtoEigenVec3d(pxr::GfVec3d v) {
   return Eigen::Vector3d{ v[0], v[1], v[2] };
 }
 
-void ProcessStaticCollider(
+math::RigidTransform<double> CalculatePrimRigidTransform(
+  const pxr::UsdPrim& prim) {
+  pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+
+  pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
+    pxr::UsdTimeCode::Default());
+  pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
+  pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix();
+  
+  return math::RigidTransform<double>(
+    math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
+    UsdVec3dtoEigenVec3d(translation));
+}
+
+Eigen::Vector3d CalculateCubeDimension(const ParsingWorkspace& workspace,
+  const pxr::UsdPrim& prim) {
+  pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
+
+  double cube_size = 0;
+  if (!cube.GetSizeAttr().Get(&cube_size)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the size of cube at {}", prim.GetPath().GetString()));
+  }
+
+  pxr::GfVec3f prim_scale;
+  pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+  if (!xformable.GetScaleOp().Get(&prim_scale)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
+  }
+  xformable.GetScaleOp().Set(pxr::GfVec3f(1.f)); // TODO: delete
+
+  return Eigen::Vector3d(
+    prim_scale[0] * cube_size,
+    prim_scale[1] * cube_size,
+    prim_scale[2] * cube_size
+  );
+}
+
+CoulombFriction<double> ReadPrimFriction(const pxr::UsdPrim& prim) {
+  // TODO(hong-nvidia): Use the prim's friction attributes if has those
+  // For now, we just use default friction
+  return default_friction();
+}
+
+Vector4<double> ReadGeomPrimColor(const pxr::UsdPrim& prim) {
+  // TODO(hong-nvidia): Use the Geom prim's display color if it has one
+  // If not, use default color
+  return Vector4<double>(0.9, 0.9, 0.9, 1.0);
+}
+
+void ProcessStaticColliderCube(
   const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
   MultibodyPlant<double>* plant = workspace.plant;
-  auto diag = workspace.diagnostic;
+  Eigen::Vector3d cube_dimension = CalculateCubeDimension(workspace, prim);
+  math::RigidTransform<double> transform = CalculatePrimRigidTransform(prim);
 
+  plant->RegisterCollisionGeometry(
+    plant->world_body(),
+    transform,
+    geometry::Box(cube_dimension),
+    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+    ReadPrimFriction(prim));
+
+  plant->RegisterVisualGeometry(
+    plant->world_body(),
+    transform,
+    geometry::Box(cube_dimension),
+    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+    ReadGeomPrimColor(prim));
+}
+
+void ProcessStaticCollider(
+  const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
   DRAKE_ASSERT(prim.IsA<pxr::UsdGeomXformable>());
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
-
-    pxr::GfVec3f scale;
-    pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
-    if (!xformable.GetScaleOp().Get(&scale)) {
-      workspace.diagnostic.Error(fmt::format(
-        "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
-    }
-    // Reset the scale to 1 so that ComputeLocalToWorldTransform below does not
-    // include scaling
-    xformable.GetScaleOp().Set(pxr::GfVec3f(1.f));
-
-    pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
-      pxr::UsdTimeCode::Default());
-    pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix();
-    pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
-
-    math::RigidTransform<double> transform(
-      math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
-      UsdVec3dtoEigenVec3d(translation));
-
-    CoulombFriction<double> friction = default_friction();
-    plant->RegisterCollisionGeometry(
-      plant->world_body(),
-      transform,
-      geometry::Box(scale[0], scale[1], scale[2]),
-      fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-      friction);
-
-    const Vector4<double> color_white(0.9, 0.9, 0.9, 1.0);
-    plant->RegisterVisualGeometry(
-      plant->world_body(),
-      transform,
-      geometry::Box(scale[0], scale[1], scale[2]),
-      fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-      color_white);
+    ProcessStaticColliderCube(prim, workspace);
+  } else if (prim.IsA<pxr::UsdGeomSphere>()) {
+    // ProcessStaticColliderSphere(prim, workspace);
+    throw std::runtime_error("UsdGeomSphere parsing is not yet implemented");
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
-    diag.Error(fmt::format("Unsupported Prim type: {}", prim_type));
+    workspace.diagnostic.Error(
+      fmt::format("Unsupported Prim type: {}", prim_type));
   }
 }
 
