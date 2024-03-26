@@ -58,8 +58,8 @@ class Point final : public ConvexSet, private ShapeReifier {
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
@@ -86,6 +86,10 @@ class Point final : public ConvexSet, private ShapeReifier {
       const final;
 
   double DoCalcVolume() const final { return 0.0; }
+
+  std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+  DoProjectionShortcut(
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const final;
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;

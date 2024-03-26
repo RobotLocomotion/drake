@@ -86,6 +86,7 @@ class AffineSubspace final : public ConvexSet {
   should be a vector in the ambient space, and the corresponding column of the
   output will be its projection onto the affine subspace.
   @pre x.rows() == ambient_dimension() */
+  // TODO(Alexandre.Amice) Put deprecation.
   Eigen::MatrixXd Project(const Eigen::Ref<const Eigen::MatrixXd>& x) const;
 
   /** Given a point x in the standard basis of the ambient space, returns the
@@ -141,8 +142,8 @@ class AffineSubspace final : public ConvexSet {
 
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
@@ -169,6 +170,10 @@ class AffineSubspace final : public ConvexSet {
       const final;
 
   double DoCalcVolume() const final;
+
+  std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+  DoProjectionShortcut(
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const final;
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

@@ -91,8 +91,8 @@ std::optional<bool> Spectrahedron::DoIsBoundedShortcut() const {
   return std::nullopt;
 }
 
-bool Spectrahedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                                 double tol) const {
+std::optional<bool> Spectrahedron::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   return sdp_->CheckSatisfied(sdp_->GetAllConstraints(), x, tol);
 }
 

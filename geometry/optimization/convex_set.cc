@@ -4,7 +4,9 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solve.h"
 
@@ -17,8 +19,21 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::LinearCost;
 using solvers::MathematicalProgram;
+using solvers::SolutionResult;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
+
+namespace {
+
+bool SolverReturnedWithoutError(
+    const solvers::MathematicalProgramResult& result) {
+  const SolutionResult status = result.get_solution_result();
+  return status == SolutionResult::kSolutionFound ||
+         status == SolutionResult::kDualInfeasible ||
+         status == SolutionResult::kInfeasibleOrUnbounded;
+}
+
+}  // namespace
 
 ConvexSet::ConvexSet(int ambient_dimension, bool has_exact_volume)
     : ambient_dimension_(ambient_dimension),
@@ -87,6 +102,121 @@ bool ConvexSet::GenericDoIsBounded() const {
   return true;
 }
 
+std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>>
+ConvexSet::Projection(const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+  DRAKE_THROW_UNLESS(points.rows() == ambient_dimension());
+  if (ambient_dimension() == 0) {
+    if (this->IsEmpty()) {
+      return std::nullopt;
+    }
+    std::vector<double> distances(points.cols(), 0.0);
+    return std::make_pair(distances, points);
+  }
+  std::vector<double> distances(points.cols(), 0.0);
+  Eigen::MatrixXd projected_points(points.rows(), points.cols());
+  std::vector<Eigen::VectorXd> unprojected_points_vect;
+  std::vector<int> unprojected_inds;
+  unprojected_points_vect.reserve(points.cols());
+
+  const auto [shortcut_distances, shortcut_projected_points] =
+      ProjectionShortcut(points);
+  for (int i = 0; i < points.cols(); ++i) {
+    if (shortcut_distances[i].has_value()) {
+      distances[i] = shortcut_distances[i].value();
+      projected_points.col(i) = shortcut_projected_points.col(i);
+    } else {
+      unprojected_inds.emplace_back(i);
+      unprojected_points_vect.push_back(points.col(i));
+    }
+  }
+  Eigen::MatrixXd unprojected_points(projected_points.rows(),
+                                     ssize(unprojected_inds));
+  for (int i = 0; i < ssize(unprojected_points_vect); ++i) {
+    unprojected_points.col(i) = unprojected_points_vect[i];
+  }
+  const auto maybe_project = GenericDoProjection(unprojected_points);
+  if (!maybe_project.has_value()) {
+    return std::nullopt;
+  }
+  const auto [remaining_distances, remaining_projected_points] =
+      maybe_project.value();
+  for (int i = 0; i < ssize(unprojected_inds); ++i) {
+    distances[unprojected_inds[i]] = remaining_distances[i];
+    projected_points.col(unprojected_inds[i]) =
+        remaining_projected_points.col(i);
+  }
+  return std::make_pair(distances, projected_points);
+}
+
+std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>>
+ConvexSet::GenericDoProjection(
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+  MathematicalProgram prog;
+  MatrixX<symbolic::Variable> projected_points_vars(points.rows(),
+                                                    points.cols());
+  std::vector<solvers::Binding<solvers::Cost>> distances_bindings;
+  for (int i = 0; i < points.cols(); ++i) {
+    projected_points_vars.col(i) =
+        prog.NewContinuousVariables(ambient_dimension(), fmt::format("x{}", i));
+    AddPointInSetConstraints(&prog, projected_points_vars.col(i));
+    distances_bindings.emplace_back(prog.AddQuadraticErrorCost(
+        Eigen::MatrixXd::Identity(ambient_dimension(), ambient_dimension()),
+        points.col(i), projected_points_vars.col(i)));
+  }
+  const auto result = solvers::Solve(prog);
+  if (!result.is_success()) {
+    return std::nullopt;
+  }
+  const Eigen::MatrixXd projected_points =
+      result.GetSolution(projected_points_vars);
+  std::vector<double> distances(points.cols(), 0.0);
+  for (int i = 0; i < points.cols(); ++i) {
+    const double binding_cost = result.EvalBinding(distances_bindings[i])[0];
+    // The distance is lower bounded by 0, but numerical sensitivity may place
+    // us slightly negative.
+    distances[i] = sqrt(std::max(0.0, binding_cost));
+  }
+  return std::make_pair(distances, projected_points);
+}
+
+std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+ConvexSet::ProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+  // If we have a fast point in set shortcut, use it first.
+  const double kTol =
+      1e-12;  // This is below the tolerance of most convex solvers.
+  std::vector<std::optional<double>> distances(points.cols(), std::nullopt);
+  Eigen::MatrixXd projected_points(points.rows(), points.cols());
+  std::vector<Eigen::VectorXd> unprojected_points_vect;
+  std::vector<int> unprojected_inds;
+  unprojected_points_vect.reserve(points.cols());
+  for (int i = 0; i < points.cols(); ++i) {
+    const auto point_in_set_shortcut =
+        DoPointInSetShortcut(points.col(i), kTol);
+    if (point_in_set_shortcut.has_value() && point_in_set_shortcut.value()) {
+      distances[i] = 0;
+      projected_points.col(i) = points.col(i);
+    } else {
+      unprojected_inds.push_back(i);
+      unprojected_points_vect.push_back(points.col(i));
+    }
+  }
+
+  Eigen::MatrixXd unprojected_points(projected_points.rows(),
+                                     ssize(unprojected_inds));
+  for (int i = 0; i < ssize(unprojected_points_vect); ++i) {
+    unprojected_points.col(i) = unprojected_points_vect[i];
+  }
+  const auto [distances_shortcut, projected_points_shortcut] =
+      DoProjectionShortcut(unprojected_points);
+  for (int i = 0; i < ssize(unprojected_inds); ++i) {
+    distances[unprojected_inds[i]] = distances_shortcut[i];
+    projected_points.col(unprojected_inds[i]) =
+        projected_points_shortcut.col(i);
+  }
+  return {distances, projected_points};
+}
+
 bool ConvexSet::DoIsEmpty() const {
   if (ambient_dimension() == 0) {
     return false;
@@ -132,6 +262,31 @@ std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetFeasiblePoint() const {
   } else {
     return std::nullopt;
   }
+}
+
+bool ConvexSet::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+                             double tol) const {
+  const auto shorcut_result = DoPointInSetShortcut(x, tol);
+  if (shorcut_result.has_value()) {
+    return shorcut_result.value();
+  }
+  return GenericDoPointInSet(x, tol);
+}
+
+bool ConvexSet::GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                    double tol) const {
+  MathematicalProgram prog;
+  VectorXDecisionVariable point =
+      prog.NewContinuousVariables(ambient_dimension(), "x");
+  AddPointInSetConstraints(&prog, point);
+  prog.AddLinearEqualityConstraint(x == point);
+  const auto result = solvers::Solve(prog);
+  DRAKE_THROW_UNLESS(SolverReturnedWithoutError(result));
+  if (result.is_success()) {
+    const VectorXd x_sol = result.GetSolution(point);
+    return is_approx_equal_abstol(x, x_sol, tol);
+  }
+  return false;
 }
 
 std::pair<VectorX<symbolic::Variable>,

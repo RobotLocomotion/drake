@@ -69,8 +69,8 @@ std::optional<VectorXd> Point::DoMaybeGetPoint() const {
   return x_;
 }
 
-bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                         double tol) const {
+std::optional<bool> Point::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }
 
@@ -123,6 +123,18 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 Point::DoToShapeWithPose() const {
   return std::make_pair(std::make_unique<Sphere>(0.0),
                         math::RigidTransformd(x_));
+}
+
+std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
+Point::DoProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+  Eigen::MatrixXd projected_points =
+      x_ * Eigen::MatrixXd::Ones(1, points.cols());
+  Eigen::VectorXd distances_eigen =
+      (points - projected_points).colwise().norm();
+  std::vector<std::optional<double>> distances(
+      distances_eigen.data(), distances_eigen.data() + distances_eigen.size());
+  return {distances, projected_points};
 }
 
 void Point::ImplementGeometry(const Sphere& sphere, void* data) {
