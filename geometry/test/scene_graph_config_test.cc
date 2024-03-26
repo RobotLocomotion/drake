@@ -15,7 +15,6 @@ using yaml::SaveYamlString;
 const char* const kExampleConfig = R"""(
 default_proximity_properties:
   compliance_type: compliant
-  compliance_type_rigid_fallback: false
   hydroelastic_modulus: 2.0
   resolution_hint: 3.0
   slab_thickness: 4.0
@@ -30,7 +29,6 @@ GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   const auto config = LoadYamlString<SceneGraphConfig>(kExampleConfig);
   const auto& props = config.default_proximity_properties;
   EXPECT_EQ(props.compliance_type, "compliant");
-  EXPECT_FALSE(props.compliance_type_rigid_fallback);
   EXPECT_EQ(props.hydroelastic_modulus, 2);
   EXPECT_EQ(props.resolution_hint, 3);
   EXPECT_EQ(props.slab_thickness, 4);

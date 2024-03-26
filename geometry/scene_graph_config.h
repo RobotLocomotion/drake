@@ -21,7 +21,6 @@ struct DefaultProximityProperties {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(compliance_type));
-    a->Visit(DRAKE_NVP(compliance_type_rigid_fallback));
     a->Visit(DRAKE_NVP(hydroelastic_modulus));
     a->Visit(DRAKE_NVP(resolution_hint));
     a->Visit(DRAKE_NVP(slab_thickness));
@@ -48,15 +47,8 @@ struct DefaultProximityProperties {
      rigid-rigid contact is not supported by the hydroelastic contact model,
      but is supported by point contact (multibody::ContactModel::kPoint or
      multibody::ContactModel::kHydroelasticWithFallback).
-  - "compliant": the default hydroelastic compliance type will be compliant;
-    note that `compliance_type_rigid_fallback` offers a caveat for shapes
-    that do not currently have compliant hydroelastic representations. */
+  - "compliant": the default hydroelastic compliance type will be compliant. */
   std::string compliance_type{"undefined"};
-
-  /** If default compliance_type is "compliant" but the shape does not have a
-  compliant hydroelastic representation (currently only for non-convex surface
-  meshes), then the compliance type will fall back to "rigid". */
-  bool compliance_type_rigid_fallback{true};
 
   /** A measure of material stiffness, in units of Pascals. */
   std::optional<double> hydroelastic_modulus{1e7};
