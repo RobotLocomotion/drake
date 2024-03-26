@@ -37,7 +37,6 @@ load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
-load("//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
 load("//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("//tools/workspace/ipopt_internal_fromsource:repository.bzl", "ipopt_internal_fromsource_repository")  # noqa
 load("//tools/workspace/ipopt_internal_pkgconfig:repository.bzl", "ipopt_internal_pkgconfig_repository")  # noqa
@@ -191,8 +190,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
     if "gymnasium_py" not in excludes:
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors)
-    if "intel_realsense_ros_internal" not in excludes:
-        intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "ipopt_internal_fromsource" not in excludes:
