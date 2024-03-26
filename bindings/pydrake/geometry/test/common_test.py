@@ -443,6 +443,11 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn(junk_path, convex.filename())
         self.assertEqual(".ext", convex.extension())
         self.assertEqual(convex.scale(), 1.0)
+        with self.assertRaisesRegex(RuntimeError,
+                                    "MakeConvexHull .* obj, vtk, and gltf.*"):
+            # We just need evidence that it invokes convex hull machinery; the
+            # exception for a bad extension suffices.
+            convex.convex_hull()
         assert_pickle(
             self, convex, lambda shape: [shape.filename(), shape.scale()])
 
@@ -471,6 +476,11 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn(junk_path, mesh.filename())
         self.assertEqual(".ext", mesh.extension())
         self.assertEqual(mesh.scale(), 1.0)
+        with self.assertRaisesRegex(RuntimeError,
+                                    "MakeConvexHull .* obj, vtk, and gltf.*"):
+            # We just need evidence that it invokes convex hull machinery; the
+            # exception for a bad extension suffices.
+            mesh.convex_hull()
         assert_pickle(
             self, mesh, lambda shape: [shape.filename(), shape.scale()])
 

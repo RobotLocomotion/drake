@@ -12,14 +12,12 @@ from pathlib import Path
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
-    _MakeConvexHull,
     Box,
     Convex,
     Cylinder,
     HalfSpace,
     Mesh,
     QueryObject,
-    ReadObjToTriangleSurfaceMesh,
     Rgba,
     Role,
     Sphere,
@@ -264,11 +262,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not filename.exists():
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
+                    # Note: If shape's convex hull had already been computed
+                    # *and* filename == shape.filename(), then this redundantly
+                    # recomputes the convex hull.
                     temp_mesh = Mesh(str(filename), shape.scale())
-                    # TODO(21125): When Convex shape *always* has a
-                    # convex hull available, use it instead of recomputing it
-                    # here.
-                    convex_hull = _MakeConvexHull(temp_mesh)
+                    convex_hull = temp_mesh.convex_hull()
                     patch_G = np.empty((3, convex_hull.num_vertices()))
                     for i in range(convex_hull.num_vertices()):
                         patch_G[:, i] = convex_hull.vertex(i)
