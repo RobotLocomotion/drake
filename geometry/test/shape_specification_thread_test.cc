@@ -32,7 +32,7 @@ constexpr int kNumThreads = 4;
 
 void EvaluateConvexHullInParallel(const Mesh& mesh) {
   auto get_convex_hull = [&mesh]() {
-    return &mesh.convex_hull();
+    return &mesh.GetConvexHull();
   };
 
   std::vector<std::future<const PolygonSurfaceMesh<double>*>> futures;

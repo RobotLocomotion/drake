@@ -30,8 +30,8 @@ std::string GetExtensionLower(const std::string& filename) {
 
 // Computes a convex hull and assigns it to the given shared pointer in a
 // thread-safe manner. Only does work if the shared_ptr is null (i.e., there is
-// no convex hull yet). Used by Mesh::convex_hull() and Convex::convex_hull().
-// Note: the correctness of this function is tested in
+// no convex hull yet). Used by Mesh::GetConvexHull() and
+// Convex::GetConvexHull(). Note: the correctness of this function is tested in
 // shape_specification_thread_test.cc.
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
@@ -112,7 +112,7 @@ Convex::Convex(const std::string& filename, double scale)
   }
 }
 
-const PolygonSurfaceMesh<double>& Convex::convex_hull() const {
+const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
   return *hull_;
 }
@@ -200,7 +200,7 @@ Mesh::Mesh(const std::string& filename, double scale)
   }
 }
 
-const PolygonSurfaceMesh<double>& Mesh::convex_hull() const {
+const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
   return *hull_;
 }

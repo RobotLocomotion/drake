@@ -325,9 +325,9 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Convex& convex_spec, const ProximityProperties&) {
-  // Simply use the Convex's convex_hull.
+  // Simply use the Convex's GetConvexHull().
   return RigidGeometry(RigidMesh(make_unique<TriangleSurfaceMesh<double>>(
-      MakeTriangleFromPolygonMesh(convex_spec.convex_hull()))));
+      MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull()))));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
@@ -441,7 +441,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   // Use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> surface_mesh =
-      MakeTriangleFromPolygonMesh(convex_spec.convex_hull());
+      MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull());
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeConvexVolumeMesh<double>(surface_mesh));
 
@@ -475,7 +475,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   } else {
     // Otherwise, we'll create a compliant representation of its convex hull.
     const TriangleSurfaceMesh<double> surface_mesh =
-        MakeTriangleFromPolygonMesh(mesh_specification.convex_hull());
+        MakeTriangleFromPolygonMesh(mesh_specification.GetConvexHull());
     mesh = make_unique<VolumeMesh<double>>(
         MakeConvexVolumeMesh<double>(surface_mesh));
 

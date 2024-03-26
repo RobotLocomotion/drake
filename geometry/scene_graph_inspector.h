@@ -405,8 +405,8 @@ class SceneGraphInspector {
   /** Returns the convex hull (a polytope) associated with the given
    `geometry_id`, if it exists. Basic primitive shapes don't have convex hulls
    (including, arbitrarily, Box). But Mesh and Convex shapes do. Alternatively,
-   if you already have a Mesh or Convex you can call Mesh::convex_hull() or
-   Convex::convex_hull(), respectively. */
+   if you already have a Mesh or Convex you can call Mesh::GetConvexHull() or
+   Convex::GetConvexHull(), respectively. */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and

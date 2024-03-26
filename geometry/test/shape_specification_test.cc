@@ -588,12 +588,12 @@ GTEST_TEST(ShapeTest, ConvexHull) {
         fmt::format("Testing convex hull for {}.", mesh_like.type_name()));
     using MeshType = decltype(mesh_like);
     // First call should work for a valid mesh file name.
-    const PolygonSurfaceMesh<double>& hull = mesh_like.convex_hull();
+    const PolygonSurfaceMesh<double>& hull = mesh_like.GetConvexHull();
     // Subsequent calls return references to the same value.
-    EXPECT_EQ(&hull, &mesh_like.convex_hull());
+    EXPECT_EQ(&hull, &mesh_like.GetConvexHull());
     const MeshType mesh2(mesh_like);
     // Copies of the mesh share the same hull.
-    EXPECT_EQ(&mesh2.convex_hull(), &hull);
+    EXPECT_EQ(&mesh2.GetConvexHull(), &hull);
   };
   expect_convex_hull(Mesh(cube_path));
   expect_convex_hull(Convex(cube_path));

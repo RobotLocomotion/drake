@@ -865,7 +865,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   template <typename MeshType>
   void ImplementFromConvexHull(const MeshType& mesh, void* user_data) {
     // Create fcl::Convex for the fcl bounding volume hierarchy.
-    const PolygonSurfaceMesh<double>& hull = mesh.convex_hull();
+    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
     auto shared_verts = make_shared<std::vector<Vector3d>>();
     for (int vi = 0; vi < hull.num_vertices(); ++vi) {
       shared_verts->push_back(hull.vertex(vi));

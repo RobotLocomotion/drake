@@ -689,7 +689,7 @@ class HullExtractor final : public ShapeReifier {
   HullExtractor() = default;
   ~HullExtractor() = default;
 
-  const PolygonSurfaceMesh<double>* convex_hull() const { return hull_; }
+  const PolygonSurfaceMesh<double>* GetConvexHull() const { return hull_; }
 
  private:
   // Don't throw for the rest, nullptr is fine.
@@ -698,11 +698,11 @@ class HullExtractor final : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Mesh& mesh, void*) final {
-    hull_ = &mesh.convex_hull();
+    hull_ = &mesh.GetConvexHull();
   }
 
   void ImplementGeometry(const Convex& convex, void*) final {
-    hull_ = &convex.convex_hull();
+    hull_ = &convex.GetConvexHull();
   }
 
   const PolygonSurfaceMesh<double>* hull_{nullptr};
@@ -716,7 +716,7 @@ const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
   const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
   HullExtractor extractor;
   geometry.shape().Reify(&extractor);
-  return extractor.convex_hull();
+  return extractor.GetConvexHull();
 }
 
 template <typename T>

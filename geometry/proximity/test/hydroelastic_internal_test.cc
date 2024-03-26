@@ -760,7 +760,7 @@ TEST_F(HydroelasticRigidGeometryTest, Convex) {
 
   // TODO(SeanCurtis-TRI): Create cube_with_hole.vtk to complete the set. It's
   // not urgent, because, ultimately, support for glTF implies that the
-  // underlying code is using Convex::convex_hull() and *that* has already
+  // underlying code is using Convex::GetConvexHull() and *that* has already
   // been unit tested with tetrahedral .vtk.
 
   // No need to test *this* API against unsupported file types; that will be
