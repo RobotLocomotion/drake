@@ -1066,8 +1066,7 @@ void ManipulationStation<T>::RegisterRgbdSensor(
   camera_information_[name] = info;
 
   const std::string urdf_url =
-      "package://drake/manipulation/models/realsense2_description/urdf/"
-      "d415.urdf";
+      "package://drake_models/realsense2_description/urdf/d415.urdf";
   multibody::ModelInstanceIndex model_index = internal::AddAndWeldModelFrom(
       urdf_url, name, parent_frame, "base_link", X_PC, plant_);
 
