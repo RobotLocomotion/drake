@@ -132,7 +132,8 @@ ModelInstanceIndex AddParallelGripper(
   // station instead.
   Parser parser(plant);
   ModelInstanceIndex model_instance = parser.AddModelsFromUrl(
-      "package://drake/examples/multibody/deformable/simple_gripper.sdf")[0];
+      "package://drake/examples/multibody/deformable/models/simple_gripper.sdf")
+                                          [0];
   /* Add collision geometries. */
   const RigidTransformd X_BG =
       RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
@@ -207,8 +208,8 @@ int do_main() {
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
 
-  const std::string torus_vtk =
-      FindResourceOrThrow("drake/examples/multibody/deformable/torus.vtk");
+  const std::string torus_vtk = FindResourceOrThrow(
+      "drake/examples/multibody/deformable/models/torus.vtk");
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
   const double scale = 0.65;
