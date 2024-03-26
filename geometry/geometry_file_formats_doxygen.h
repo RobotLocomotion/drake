@@ -185,8 +185,9 @@ namespace geometry {
  notable exceptions:
 
   - .glb "container" files are not supported.
-  - Support for glTF extensions depends on the ultimate consumer of the glTF
-    file (see below).
+  - Support for glTF
+    <a href="https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions">extensions</a>
+    depends on the ultimate consumer of the glTF file (see below).
   - Animation and skinning. If such data is present, it is ignored.
 
  A Mesh file can reference a .gltf file but only for visual roles.
@@ -194,7 +195,9 @@ namespace geometry {
  - Illustration roles
     - .gltf features are well supported in meshcat-based visualizers (using
       either MeshcatVisualizer or DrakeVisualizer in conjunction with meldis).
-    - There is generally broad support for glTF extensions.
+    - There is generally
+      <a href="https://threejs.org/docs/?q=loader#examples/en/loaders/GLTFLoader">broad support</a>
+      for glTF extensions.
     - To get optimal visual appearance, Meshcat should be configured to use an
       environment map (see Meshcat::SetEnvironmentMap()).
 
@@ -202,9 +205,11 @@ namespace geometry {
     - RenderEngineGl does not support .gltf files. A Mesh or Convex which
       references such a file will be silently ignored.
     - RenderEngineVtk does support .gltf files.
-        - As VTK does not support extensions, RenderEngineVtk does not either.
-        - RenderEngineVtk does not yet support specifying an environment map.
-          This will lead to PBR materials being under illuminated.
+        - The glTF extensions supported are whatever VTK's glTF loader
+          implements, which at the time of this writing are KHR_lights_punctual
+          and KHR_materials_unlit.
+        - To get optimal visual appearance, RenderEngineVtk should be configured
+          to use an environment map (see RenderEngineVtkParams::environment_map).
     - RenderEngineGltfClient does support .gltf files (as the name suggests).
         - Geometries defined by a .gltf file are passed almost verbatim to the
           render server (animation and morphing data is excluded).
@@ -220,7 +225,22 @@ namespace geometry {
 
  As a rule of thumb, for Drake's purposes .gltf files with external assets
  (i.e., separate .bin and .png files) will load faster than .gltf files
- with assets embedded as base64-encoded `data:` URIs.
+ with assets embedded as base64-encoded data URIs.
+
+ For best performance, we recommend that meshes destined for the Illustration
+ role use the
+ <a href="https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_texture_basisu/README.md">KHR_texture_basisu</a>
+ extension, where textures are stored using the .ktx2 file format. Loading .ktx2
+ textures in a web browser is substantially faster than .png textures. In the
+ common case where the same mesh will also be used by the Perception role, be
+ aware that many render engines do not support the KHR_texture_basisu extension
+ so it should be listed in "extensionsUsed" but not "extensionsRequired" in the
+ .gltf file for widest compatibility. (The mesh will have both .png and .ktx2
+ textures available.) Refer to the
+ <a href="https://github.com/RobotLocomotion/models">Drake models repository</a>
+ for examples. To convert .png files to .ktx2 files, refer to the
+ <a href="https://github.com/KhronosGroup/KTX-Software">KTX-Software</a>
+ repository.
 
  <!-- TODO(SeanCurtis-TRI): Flesh this out. Technically, Meshcat will consume
   the .dae file. But it will probably cause chaos if passed anywhere else.
