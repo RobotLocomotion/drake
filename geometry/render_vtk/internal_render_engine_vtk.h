@@ -210,6 +210,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
  private:
   friend class RenderEngineVtkTester;
 
+  // Our diagnostic_ object's warning callback calls this function.
+  void HandleWarning(const drake::internal::DiagnosticDetail& detail) const;
+
   // Initializes the VTK pipelines.
   void InitializePipelines();
 
