@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 using drake::systems::BasicVector;
 using drake::systems::Context;
@@ -48,6 +48,6 @@ void ParallelGripperController::CalcDesiredState(
   output->get_mutable_value() << desired_positions, desired_velocities;
 }
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake

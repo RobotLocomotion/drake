@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 /* We create a leaf system that outputs the desire state of a suction cup
  gripper mounted on a prismatic joint to the world. This control is a time-based
@@ -68,6 +68,6 @@ class SuctionCupController : public systems::LeafSystem<double> {
   int maximum_force_density_port_index_{};
 };
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake
