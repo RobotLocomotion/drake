@@ -689,6 +689,7 @@ def drake_cc_binary(
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = 0,
+        linux_only = False,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -704,6 +705,9 @@ def drake_cc_binary(
     this, you should consider suppressing that urge, and instead writing real
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
+    
+    Set linux_only to True if you only want the binary to build on Linux
+    platforms.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
@@ -714,12 +718,28 @@ def drake_cc_binary(
         testonly = testonly,
         **kwargs
     )
+    if "@gtest//:main" in deps:
+        fail("Use drake_cc_googletest to declare %s as a test" % name)
 
+    new_deps = deps + add_deps
+
+    # Null out srcs and deps on platforms other than Linux if we linux_only
+    # flag is on.
+    if linux_only:
+        new_srcs = select({
+            "@drake//tools/skylark:linux": new_srcs,
+            "//conditions:default": [],
+        })
+        new_deps = select({
+            "@drake//tools/skylark:linux": new_deps,
+            "//conditions:default": [],
+        })
+    
     cc_binary(
         name = name,
         srcs = new_srcs,
         data = data,
-        deps = deps + add_deps,
+        deps = new_deps,
         copts = new_copts,
         testonly = testonly,
         linkshared = linkshared,
@@ -746,15 +766,12 @@ def drake_cc_binary(
         cmd = _dsym_command(name),
     )
 
-    if "@gtest//:main" in deps:
-        fail("Use drake_cc_googletest to declare %s as a test" % name)
-
     if add_test_rule:
         drake_cc_test(
             name = name + "_test",
             srcs = new_srcs,
             data = data + test_rule_data,
-            deps = deps + add_deps,
+            deps = new_deps,
             copts = copts,
             gcc_copts = gcc_copts,
             size = test_rule_size,

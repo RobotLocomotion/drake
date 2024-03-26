@@ -6,6 +6,20 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+filegroup(
+    name = "torus_tet_mesh",
+    data = ["models/torus.vtk"],
+    visibility = ["//geometry:__subpackages__"],
+)
+
+filegroup(
+    name = "models",
+    srcs = glob(["models/**"]) + [
+        "@drake_models//:wsg_50_description",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_library(
     name = "parallel_gripper_controller",
     srcs = [
@@ -45,12 +59,6 @@ drake_cc_library(
     ],
 )
 
-filegroup(
-    name = "torus_tet_mesh",
-    data = ["torus.vtk"],
-    visibility = ["//geometry:__subpackages__"],
-)
-
 drake_cc_binary(
     name = "deformable_torus",
     srcs = [
@@ -58,8 +66,7 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     data = [
-        "simple_gripper.sdf",
-        ":torus_tet_mesh",
+        ":models",
     ],
     test_rule_args = [
         "-simulation_time=0.1",
@@ -75,6 +82,36 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
+# Currently, we only build this example on Linux because it depends on
+# RenderEngineGl which we only build on Linux.
+drake_cc_binary(
+    name = "bubble_gripper",
+    srcs = [
+        "bubble_gripper.cc",
+    ],
+    add_test_rule = 1,
+    data = [
+        ":models",
+    ],
+    linux_only = True,
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
+    deps = [
+        ":parallel_gripper_controller",
+        "//geometry",
+        "//geometry/proximity",
+        "//geometry/render_gl",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/sensors:camera_config_functions",
         "@gflags",
     ],
 )
