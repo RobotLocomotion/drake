@@ -48,10 +48,14 @@ class TestCost(unittest.TestCase):
         A = np.array([[1., 2.], [-.4, .7]])
         b = np.array([0.5, -.4])
         cost = mp.L2NormCost(A=A, b=b)
-        np.testing.assert_allclose(cost.A(), A)
+        with catch_drake_warnings(expected_count=1) as w:
+            np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.get_sparse_A().todense(), A)
+        np.testing.assert_allclose(cost.GetDenseA(), A)
         np.testing.assert_allclose(cost.b(), b)
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
-        np.testing.assert_allclose(cost.A(), 2*A)
+        with catch_drake_warnings(expected_count=1) as w:
+            np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
 
     def test_linfnorm_cost(self):
