@@ -29,7 +29,7 @@ Otherwise, if any set in the cartesian product is empty, the whole product
 is empty.
 
 @ingroup geometry_optimization */
-class CartesianProduct final : public ConvexSet, private ShapeReifier {
+class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
@@ -126,10 +126,6 @@ class CartesianProduct final : public ConvexSet, private ShapeReifier {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Cylinder& cylinder, void* data) final;
 
   // The member variables are not const in order to support move semantics.
   ConvexSets sets_{};

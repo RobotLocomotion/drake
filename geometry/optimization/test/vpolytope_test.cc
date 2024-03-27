@@ -157,11 +157,8 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   }
 
   // Test SceneGraph constructor.
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Box(2.0, 2.0, 2.0), RigidTransformd::Identity());
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   VPolytope V_scene_graph(query, geom_id);
   EXPECT_EQ(V.ambient_dimension(), 3);
@@ -173,11 +170,8 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
 GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   const RigidTransformd X_WG(math::RollPitchYawd(.1, .2, 3),
                              Vector3d(-4.0, -5.0, -6.0));
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Box(1.0, 2.0, 3.0), X_WG);
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   VPolytope V(query, geom_id);
 
   EXPECT_EQ(V.ambient_dimension(), 3);
@@ -245,11 +239,8 @@ void CheckVertices(const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
 GTEST_TEST(VPolytopeTest, OctahedronTest) {
   const RigidTransformd X_WG(math::RollPitchYawd(.1, .2, 3),
                              Vector3d(-4.0, -5.0, -6.0));
-  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+  auto [scene_graph, geom_id, context, query] = MakeSceneGraphWithShape(
       Convex(FindResourceOrThrow("drake/geometry/test/octahedron.obj")), X_WG);
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   VPolytope V(query, geom_id);
   EXPECT_EQ(V.vertices().cols(), 6);
 
@@ -268,12 +259,9 @@ GTEST_TEST(VPolytopeTest, OctahedronTest) {
 }
 
 GTEST_TEST(VPolytopeTest, NonconvexMesh) {
-  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+  auto [scene_graph, geom_id, context, query] = MakeSceneGraphWithShape(
       Mesh(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj")),
       RigidTransformd{});
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   VPolytope V(query, geom_id);
 
   // The non-convex mesh contains 5 vertices, but the convex hull contains only
@@ -305,11 +293,8 @@ GTEST_TEST(VPolytopeTest, UnsupportedMeshTypes) {
     const RigidTransformd X_WG;
     // We can't add proximity properties; ProximityEngine would reject it.
     const bool add_proximity_properties = false;
-    auto [scene_graph, geom_id] =
+    auto [scene_graph, geom_id, context, query] =
         MakeSceneGraphWithShape(*shape, X_WG, add_proximity_properties);
-    auto context = scene_graph->CreateDefaultContext();
-    auto query = scene_graph->get_query_output_port().Eval<QueryObject<double>>(
-        *context);
     DRAKE_EXPECT_THROWS_MESSAGE(
         VPolytope(query, geom_id),
         "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
@@ -829,11 +814,8 @@ GTEST_TEST(VPolytopeTest, WriteObjTest) {
   const std::string filename = temp_directory() + "/vpolytope.obj";
   V.WriteObj(filename);
 
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Convex(filename, 1), RigidTransformd::Identity());
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   VPolytope V_scene_graph(query, geom_id);
   CheckVertices(V.vertices(), V_scene_graph.vertices(), 1e-6);

@@ -90,8 +90,14 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
-  Cylinder cylinder(1., 1.);
-  query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
+  const Shape& shape = query_object.inspector().GetShape(geometry_id);
+  if (shape.type_name() != "Cylinder") {
+    throw std::logic_error(fmt::format(
+        "CartesianProduct(geometry_id={}, ...) cannot convert a {}, only a "
+        "Cylinder",
+        geometry_id, shape));
+  }
+  const Cylinder& cylinder = dynamic_cast<const Cylinder&>(shape);
 
   // Make the cylinder out of a circle (2D sphere) and a line segment (1D box).
   sets_.emplace_back(
@@ -372,11 +378,6 @@ double CartesianProduct::DoCalcVolume() const {
     }
   }
   return volume;
-}
-
-void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {
-  Cylinder* c = static_cast<Cylinder*>(data);
-  *c = cylinder;
 }
 
 }  // namespace optimization

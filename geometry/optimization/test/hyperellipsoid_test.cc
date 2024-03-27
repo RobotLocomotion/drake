@@ -49,11 +49,8 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(center, E.center()));
 
   // Test SceneGraph constructor.
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Sphere(1.0), RigidTransformd::Identity());
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
@@ -136,11 +133,8 @@ GTEST_TEST(HyperellipsoidTest, Move) {
 
 GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Sphere(radius), RigidTransformd::Identity());
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   Hyperellipsoid E(query, geom_id);
   EXPECT_TRUE(
@@ -170,12 +164,9 @@ GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_TRUE(CompareMatrices(center, E.center()));
 
   // Test SceneGraph constructor.
-  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+  auto [scene_graph, geom_id, context, query] = MakeSceneGraphWithShape(
       Ellipsoid(1.0 / D(0, 0), 1.0 / D(1, 1), 1.0 / D(2, 2)),
       RigidTransformd{R.inverse(), center});
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
@@ -417,11 +408,8 @@ GTEST_TEST(HyperellipsoidTest, MakeAxisAlignedTest) {
   Hyperellipsoid E = Hyperellipsoid::MakeAxisAligned(Vector3d{a, b, c}, center);
   EXPECT_EQ(E.ambient_dimension(), 3);
 
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Ellipsoid(a, b, c), RigidTransformd{center});
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(E.A(), E_scene_graph.A(), 1e-16));
