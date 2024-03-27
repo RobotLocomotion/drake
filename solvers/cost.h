@@ -10,8 +10,10 @@
 
 #include <Eigen/SparseCore>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
+#include "drake/solvers/sparse_and_dense_matrix.h"
 
 namespace drake {
 namespace solvers {
@@ -303,13 +305,28 @@ class L2NormCost : public Cost {
    * Construct a cost of the form ‖Ax + b‖₂.
    * @param A Linear term.
    * @param b Constant term.
+   * @pydrake_mkdoc_identifier{dense_A}
    */
   L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
              const Eigen::Ref<const Eigen::VectorXd>& b);
 
+  /**
+   * Overloads constructor with a sparse A matrix.
+   * @pydrake_mkdoc_identifier{sparse_A}
+   */
+  L2NormCost(const Eigen::SparseMatrix<double>& A,
+             const Eigen::Ref<const Eigen::VectorXd>& b);
+
   ~L2NormCost() override {}
 
-  const Eigen::MatrixXd& A() const { return A_; }
+  DRAKE_DEPRECATED("2024-08-01", "Use A_dense function instead.")
+  const Eigen::MatrixXd& A() const { return GetDenseA(); }
+
+  const Eigen::SparseMatrix<double>& get_sparse_A() const {
+    return A_.get_as_sparse();
+  }
+
+  const Eigen::MatrixXd& GetDenseA() const { return A_.GetAsDense(); }
 
   const Eigen::VectorXd& b() const { return b_; }
 
@@ -318,8 +335,16 @@ class L2NormCost : public Cost {
    * Note that the number of variables (columns of A) cannot change.
    * @param new_A New linear term.
    * @param new_b New constant term.
+   * @pydrake_mkdoc_identifier{dense_A}
    */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
+  /**
+   * Overloads UpdateCoefficients but with a sparse A matrix.
+   * @pydrake_mkdoc_identifier{sparse_A}
+   */
+  void UpdateCoefficients(const Eigen::SparseMatrix<double>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_b);
 
  protected:
@@ -338,7 +363,7 @@ class L2NormCost : public Cost {
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
  private:
-  Eigen::MatrixXd A_;
+  internal::SparseAndDenseMatrix A_;
   Eigen::VectorXd b_;
 };
 
