@@ -54,7 +54,7 @@ class DummyBody : public RigidBody<double> {
  public:
   DummyBody(std::string name, BodyIndex index)
       : RigidBody<double>(std::move(name), ModelInstanceIndex(0),
-                          SpatialInertia<double>()) {
+                          SpatialInertia<double>::NaN()) {
     // We need a body index for the body node test to be happy.
     MultibodyElementTester::set_index(this, index);
   }

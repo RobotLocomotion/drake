@@ -26,7 +26,7 @@ class MobilizerTester : public ::testing::Test {
   MobilizerTester() {
     // Spatial inertia for adding a body. The actual value is not important for
     // these tests since they are all kinematic.
-    const SpatialInertia<double> M_B;
+    const auto M_B = SpatialInertia<double>::NaN();
 
     // Create an empty model.
     owned_tree_ = std::make_unique<MultibodyTree<double>>();
