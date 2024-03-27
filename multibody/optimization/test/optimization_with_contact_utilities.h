@@ -23,7 +23,7 @@ struct SphereSpecification {
                                      UnitInertia<double>(I, I, I));
   }
   double radius;
-  SpatialInertia<double> inertia;
+  SpatialInertia<double> inertia{SpatialInertia<double>::NaN()};
   CoulombFriction<double> friction;
 };
 
@@ -43,7 +43,7 @@ struct BoxSpecification {
   }
   // Full dimensions of a box (not the half dimensions).
   Eigen::Vector3d size;
-  SpatialInertia<double> inertia;
+  SpatialInertia<double> inertia{SpatialInertia<double>::NaN()};
   CoulombFriction<double> friction;
   std::optional<math::RigidTransform<double>> X_WB;
 };

@@ -51,7 +51,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
   const std::string kLinkName = "LinkName";
   // For this test the numerical values of the spatial inertia are not
   // important and therefore it is left uninitialized.
-  const SpatialInertia<double> M_Bo_B;
+  const auto M_Bo_B = SpatialInertia<double>::NaN();
   const RigidBody<double> B("LinkName", M_Bo_B);
   EXPECT_EQ(B.name(), kLinkName);
 }
@@ -62,7 +62,7 @@ class RigidBodyTest : public ::testing::Test {
   void SetUp() override {
     // Create an empty model and then add a rigid body.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    const SpatialInertia<double> M_BBo_B;  // Default constructor is OK here
+    const auto M_BBo_B = SpatialInertia<double>::NaN();
     rigid_body_ = &model->AddRigidBody("rigidBody_B", M_BBo_B);
 
     // Finalize the model and create a default context for this system.
