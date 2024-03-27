@@ -40,10 +40,17 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   const SpanningForest& forest = graph.forest();
   EXPECT_EQ(&forest.graph(), &graph);
   EXPECT_TRUE(forest.is_valid());
+  const MobodIndex world_mobod_index = forest.world_mobod().index();
+  EXPECT_EQ(world_mobod_index, MobodIndex(0));
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.link_composites()), 1);
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
+
+  // Check that the World-only forest makes sense.
+  EXPECT_EQ(ssize(forest.mobods()), 1);
+  EXPECT_TRUE(forest.trees().empty());  // World isn't part of a tree.
+  EXPECT_EQ(forest.height(), 1);
 }
 
 }  // namespace
