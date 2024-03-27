@@ -106,7 +106,11 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
     ],
-    cc_srcs = ["tree_py.cc"],
+    cc_srcs = [
+        "tree_py.cc",
+        "tree_py.h",
+        "tree_py_inertia.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":math_py",
