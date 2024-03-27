@@ -666,22 +666,43 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b") = 0,
           doc.L1NormCost.UpdateCoefficients.doc);
 
-  py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>>(
-      m, "L2NormCost", doc.L2NormCost.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-        return std::make_unique<L2NormCost>(A, b);
-      }),
-          py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc)
-      .def("A", &L2NormCost::A, doc.L2NormCost.A.doc)
-      .def("b", &L2NormCost::b, doc.L2NormCost.b.doc)
-      .def(
-          "UpdateCoefficients",
-          [](L2NormCost& self, const Eigen::MatrixXd& new_A,
-              const Eigen::VectorXd& new_b) {
-            self.UpdateCoefficients(new_A, new_b);
-          },
-          py::arg("new_A"), py::arg("new_b") = 0,
-          doc.L2NormCost.UpdateCoefficients.doc);
+  {
+    py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>> cls(
+        m, "L2NormCost", doc.L2NormCost.doc);
+    cls.def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+         return std::make_unique<L2NormCost>(A, b);
+       }),
+           py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
+        .def(py::init([](const Eigen::SparseMatrix<double>& A,
+                          const Eigen::VectorXd& b) {
+          return std::make_unique<L2NormCost>(A, b);
+        }),
+            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
+        .def("A_sparse", &L2NormCost::A_sparse, doc.L2NormCost.A_sparse.doc)
+        .def("A_dense", &L2NormCost::A_dense, doc.L2NormCost.A_dense.doc)
+        .def("b", &L2NormCost::b, doc.L2NormCost.b.doc)
+        .def(
+            "UpdateCoefficients",
+            [](L2NormCost& self, const Eigen::MatrixXd& new_A,
+                const Eigen::VectorXd& new_b) {
+              self.UpdateCoefficients(new_A, new_b);
+            },
+            py::arg("new_A"), py::arg("new_b") = 0,
+            doc.L2NormCost.UpdateCoefficients.doc_dense_A)
+        .def(
+            "UpdateCoefficients",
+            [](L2NormCost& self, const Eigen::SparseMatrix<double>& new_A,
+                const Eigen::VectorXd& new_b) {
+              self.UpdateCoefficients(new_A, new_b);
+            },
+            py::arg("new_A"), py::arg("new_b") = 0,
+            doc.L2NormCost.UpdateCoefficients.doc_sparse_A);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // To be removed on 2024-08-01.
+    cls.def("A", &L2NormCost::A);
+#pragma GCC diagnostic pop
+  }
 
   py::class_<LInfNormCost, Cost, std::shared_ptr<LInfNormCost>>(
       m, "LInfNormCost", doc.LInfNormCost.doc)

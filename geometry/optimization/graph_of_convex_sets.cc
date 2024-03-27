@@ -643,10 +643,11 @@ void GraphOfConvexSets::AddPerspectiveCost(
                               VectorXd::Zero(A_linear.rows()), cost_vars);
   } else if (L2NormCost* l2c = dynamic_cast<L2NormCost*>(cost)) {
     // |Ax + b|₂ becomes ℓ ≥ |Ax+bϕ|₂.
-    MatrixXd A_cone = MatrixXd::Zero(l2c->A().rows() + 1, vars.size());
-    A_cone(0, 1) = 1.0;                                 // z₀ = ℓ.
-    A_cone.block(1, 0, l2c->A().rows(), 1) = l2c->b();  // bϕ.
-    A_cone.block(1, 2, l2c->A().rows(), l2c->A().cols()) = l2c->A();  // Ax.
+    MatrixXd A_cone = MatrixXd::Zero(l2c->A_sparse().rows() + 1, vars.size());
+    A_cone(0, 1) = 1.0;                                       // z₀ = ℓ.
+    A_cone.block(1, 0, l2c->A_sparse().rows(), 1) = l2c->b();  // bϕ.
+    A_cone.block(1, 2, l2c->A_sparse().rows(), l2c->A_sparse().cols()) =
+        l2c->A_dense();  // Ax.
     prog->AddLorentzConeConstraint(A_cone, VectorXd::Zero(A_cone.rows()), vars);
   } else if (LInfNormCost* linfc = dynamic_cast<LInfNormCost*>(cost)) {
     // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
@@ -1363,14 +1364,14 @@ void RewriteForConvexSolver(MathematicalProgram* prog) {
   std::unordered_set<Binding<Cost>> to_remove;
 
   for (const auto& binding : prog->l2norm_costs()) {
-    const int m = binding.evaluator()->A().rows();
-    const int n = binding.evaluator()->A().cols();
+    const int m = binding.evaluator()->A_sparse().rows();
+    const int n = binding.evaluator()->A_sparse().cols();
     auto slack = prog->NewContinuousVariables<1>("slack");
     prog->AddLinearCost(Vector1d::Ones(), slack);
     // |Ax+b|² ≤ slack, written as a Lorentz cone with z = [slack; Ax+b].
     MatrixXd A = MatrixXd::Zero(m + 1, n + 1);
     A(0, 0) = 1;
-    A.bottomRightCorner(m, n) = binding.evaluator()->A();
+    A.bottomRightCorner(m, n) = binding.evaluator()->A_dense();
     VectorXd b(m + 1);
     b << 0, binding.evaluator()->b();
     prog->AddLorentzConeConstraint(A, b, {slack, binding.variables()});
