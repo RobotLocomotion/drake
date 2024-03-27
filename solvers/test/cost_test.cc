@@ -444,7 +444,8 @@ GTEST_TEST(TestL2NormCost, Eval) {
   const Vector2d b{.42, -3.2};
 
   L2NormCost cost(A, b);
-  EXPECT_TRUE(CompareMatrices(A, cost.A()));
+  EXPECT_TRUE(CompareMatrices(A, cost.GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(A, cost.get_sparse_A().toDense()));
   EXPECT_TRUE(CompareMatrices(b, cost.b()));
 
   const Vector4d x0{5.2, 3.4, -1.3, 2.1};
@@ -478,13 +479,35 @@ GTEST_TEST(TestL2NormCost, Eval) {
     env.insert(x, x0);
     EXPECT_NEAR(z.norm(), y[0].Evaluate(env), 1e-14);
   }
+
+  {
+    // Test constructor with sparse A.
+    L2NormCost cost_sparse(A.sparseView(), b);
+    EXPECT_TRUE(CompareMatrices(cost_sparse.GetDenseA(), A));
+    EXPECT_TRUE(CompareMatrices(cost_sparse.get_sparse_A().toDense(), A));
+    EXPECT_TRUE(CompareMatrices(cost_sparse.b(), b));
+  }
 }
 
 GTEST_TEST(TestL2NormCost, UpdateCoefficients) {
   L2NormCost cost(Matrix2d::Identity(), Vector2d::Zero());
 
-  cost.UpdateCoefficients(Matrix<double, 4, 2>::Identity(), Vector4d::Zero());
-  EXPECT_EQ(cost.A().rows(), 4);
+  Matrix<double, 4, 2> new_A = Matrix<double, 4, 2>::Identity();
+  // Call UpdateCoefficients with a dense A.
+  cost.UpdateCoefficients(new_A, Vector4d::Zero());
+  EXPECT_TRUE(CompareMatrices(cost.get_sparse_A().toDense(), new_A));
+  EXPECT_TRUE(CompareMatrices(cost.GetDenseA(), new_A));
+  EXPECT_EQ(cost.b().rows(), 4);
+
+  // Call UpdateCoefficients with a sparse A.
+  new_A << 1, 2, 3, 0, 1, 3, 5, 0;
+  cost.UpdateCoefficients(new_A.sparseView(), Vector4d::Zero());
+  EXPECT_TRUE(CompareMatrices(cost.get_sparse_A().toDense(), new_A));
+  EXPECT_TRUE(CompareMatrices(cost.GetDenseA(), new_A));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(CompareMatrices(cost.A(), new_A));
+#pragma GCC diagnostic pop
   EXPECT_EQ(cost.b().rows(), 4);
 
   // Can't change the number of variables.
