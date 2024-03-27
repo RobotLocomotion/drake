@@ -58,8 +58,13 @@ MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
                            GeometryId geometry_id,
                            std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
-  Capsule capsule(1., 1.);
-  query_object.inspector().GetShape(geometry_id).Reify(this, &capsule);
+  const Shape& shape = query_object.inspector().GetShape(geometry_id);
+  if (shape.type_name() != "Capsule") {
+    throw std::logic_error(fmt::format(
+        "MinkowskiSum(geometry_id={}, ...) cannot convert a {}, only a Capsule",
+        geometry_id, shape));
+  }
+  const Capsule& capsule = dynamic_cast<const Capsule&>(shape);
 
   // Sphere at zero.
   sets_.emplace_back(
@@ -284,11 +289,6 @@ MinkowskiSum::DoToShapeWithPose() const {
   // TODO(russt): Consider handling Capsule as a (very) special case.
   throw std::runtime_error(
       "ToShapeWithPose is not implemented yet for MinkowskiSum.");
-}
-
-void MinkowskiSum::ImplementGeometry(const Capsule& capsule, void* data) {
-  Capsule* c = static_cast<Capsule*>(data);
-  *c = capsule;
 }
 
 }  // namespace optimization
