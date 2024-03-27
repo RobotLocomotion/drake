@@ -1159,12 +1159,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
-  ///   in the body frame B.
+  ///   in the body frame B. When not provided, defaults to a nominal non-zero
+  ///   value.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
-  const RigidBody<T>& AddRigidBody(const std::string& name,
-                                   ModelInstanceIndex model_instance,
-                                   const SpatialInertia<double>& M_BBo_B) {
+  const RigidBody<T>& AddRigidBody(
+      const std::string& name, ModelInstanceIndex model_instance,
+      const SpatialInertia<double>& M_BBo_B =
+          RigidBody<T>::MakeNominalSpatialInertiaForConstructor()) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     // Add the actual rigid body to the model.
     const RigidBody<T>& body =
@@ -1204,13 +1206,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
-  ///   in the body frame B.
+  ///   in the body frame B. When not provided, defaults to a nominal non-zero
+  ///   value.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   /// @throws std::exception if additional model instances have been created
   ///                        beyond the world and default instances.
-  const RigidBody<T>& AddRigidBody(const std::string& name,
-                                   const SpatialInertia<double>& M_BBo_B) {
+  const RigidBody<T>& AddRigidBody(
+      const std::string& name,
+      const SpatialInertia<double>& M_BBo_B =
+          RigidBody<T>::MakeNominalSpatialInertiaForConstructor()) {
     if (num_model_instances() != 2) {
       throw std::logic_error(
           "This model has more model instances than the default.  Please "

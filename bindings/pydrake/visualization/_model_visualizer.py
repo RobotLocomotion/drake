@@ -293,8 +293,7 @@ class ModelVisualizer:
                     model_instance=default_model_instance()))
             sensor_body = self._builder.plant().AddRigidBody(
                 name="$rgbd_sensor_body",
-                model_instance=default_model_instance(),
-                M_BBo_B=SpatialInertia())
+                model_instance=default_model_instance())
             self._builder.plant().WeldFrames(
                 frame_on_parent_F=sensor_offset_frame,
                 frame_on_child_M=sensor_body.body_frame())

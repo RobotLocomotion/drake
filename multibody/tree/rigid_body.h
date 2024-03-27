@@ -197,11 +197,13 @@ class RigidBody : public MultibodyElement<T> {
   ///   A name associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B.
+  ///   expressed in the body frame B. When not provided, defaults to a nominal
+  ///   non-zero value.
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
-  RigidBody(const std::string& body_name,
-            const SpatialInertia<double>& M_BBo_B);
+  explicit RigidBody(const std::string& body_name,
+                     const SpatialInertia<double>& M_BBo_B =
+                         MakeNominalSpatialInertiaForConstructor());
 
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
@@ -212,12 +214,13 @@ class RigidBody : public MultibodyElement<T> {
   ///   The model instance associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B.
+  ///   expressed in the body frame B. When not provided, defaults to a nominal
+  ///   non-zero value.
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
-  RigidBody(const std::string& body_name,
-            ModelInstanceIndex model_instance,
-            const SpatialInertia<double>& M_BBo_B);
+  RigidBody(const std::string& body_name, ModelInstanceIndex model_instance,
+            const SpatialInertia<double>& M_BBo_B =
+                MakeNominalSpatialInertiaForConstructor());
 
   /// Returns this element's unique index.
   BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
@@ -734,6 +737,13 @@ class RigidBody : public MultibodyElement<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const {
     return TemplatedDoCloneToScalar(tree_clone);
   }
+
+  /// Returns Drake's default SpatialInertia for programatically constructing a
+  /// RigidBody when nothing more specific has been provided by the user.
+  /// Currently, it is a 1 kg sphere with a 6.25cm radius (i.e., approximately
+  /// the density of water), but that is subject to change without notice. The
+  /// only guarantee is that it will be non-zero.
+  static SpatialInertia<double> MakeNominalSpatialInertiaForConstructor();
 
  private:
   // Only friends of RigidBodyAttorney (i.e. MultibodyTree) have access to a

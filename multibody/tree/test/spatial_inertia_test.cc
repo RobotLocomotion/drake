@@ -48,8 +48,8 @@ SpatialInertia<double> MakeArbitrarySpatialInertia() {
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of uninitialized values.
-GTEST_TEST(SpatialInertia, DefaultConstructor) {
-  SpatialInertia<double> I;
+GTEST_TEST(SpatialInertia, NaNFactory) {
+  auto I = SpatialInertia<double>::NaN();
   ASSERT_TRUE(I.IsNaN());
 }
 
@@ -1427,7 +1427,7 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   const double mass = 1.0;
   double a = 180, b = 0, c = 0;  // rod's ½-length is 180 meters.
-  SpatialInertia<double> M_BBcm_B;
+  auto M_BBcm_B = SpatialInertia<double>::NaN();
   M_BBcm_B = SpatialInertia<double>::PointMass(mass, Vector3d(a, 0, 0));
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, 0, 0));
   auto [abc, X_BA] =

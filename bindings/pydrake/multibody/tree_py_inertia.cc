@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/tree/geometry_spatial_inertia.h"
@@ -254,11 +255,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("HollowSphereWithMass", &Class::HollowSphereWithMass,
             py::arg("mass"), py::arg("radius"),
             cls_doc.HollowSphereWithMass.doc)
-        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def_static("NaN", &Class::NaN, cls_doc.NaN.doc)
+        // TODO(jwnimmer-tri) Remove this on 2024-10-01.
+        .def(py::init(WrapDeprecated(cls_doc.ctor.doc_deprecated,
+                 []() { return std::make_unique<Class>(Class::NaN()); })),
+            cls_doc.ctor.doc_deprecated)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
-            py::arg("skip_validity_check") = false, cls_doc.ctor.doc_4args)
+            py::arg("skip_validity_check") = false, cls_doc.ctor.doc)
         // TODO(jwnimmer-tri) Need to bind cast<>.
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)

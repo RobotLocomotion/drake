@@ -29,7 +29,7 @@ class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
                      std::optional<ModelInstanceIndex> model_instance) {
     auto model = model_instance.value_or(default_model_instance());
     return plant_.RegisterCollisionGeometry(
-        plant_.AddRigidBody(name, model, SpatialInertia<double>()),
+        plant_.AddRigidBody(name, model, SpatialInertia<double>::NaN()),
         RigidTransformd::Identity(), geometry::Sphere(1.0), name,
         CoulombFriction<double>());
   }

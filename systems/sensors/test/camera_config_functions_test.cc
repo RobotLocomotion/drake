@@ -95,8 +95,7 @@ class CameraConfigFunctionsTest : public ::testing::Test {
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder_, 0);
 
     // Populate builder with sufficient stuff.
-    const auto& body = plant_->AddRigidBody(
-        "test_body", SpatialInertia<double>::MakeUnitary());
+    const auto& body = plant_->AddRigidBody("test_body");
     body_frame_id_ = plant_->GetBodyFrameIdOrThrow(body.index());
     plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
         "test_frame", body, RigidTransformd()));

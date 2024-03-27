@@ -1843,14 +1843,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   MultibodyPlant<double> plant(0.0);
-  const RigidBody<double>& first_body =
-      plant.AddRigidBody("first_body", SpatialInertia<double>());
-  const RigidBody<double>& second_body =
-      plant.AddRigidBody("second_body", SpatialInertia<double>());
-  const RigidBody<double>& third_body =
-      plant.AddRigidBody("third_body", SpatialInertia<double>());
-  const RigidBody<double>& fourth_body =
-      plant.AddRigidBody("fourth_body", SpatialInertia<double>());
+  const RigidBody<double>& first_body = plant.AddRigidBody("first_body");
+  const RigidBody<double>& second_body = plant.AddRigidBody("second_body");
+  const RigidBody<double>& third_body = plant.AddRigidBody("third_body");
+  const RigidBody<double>& fourth_body = plant.AddRigidBody("fourth_body");
 
   // Add a planar joint without limits
   plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
