@@ -132,7 +132,8 @@ class LinkJointGraph::Joint {
   //     the whole composite.
   // - IgnoredLoopJoint: not modeled because we intentionally ignored the Joint
   //     (used with the IgnoreLoopJoints modeling option)
-  std::variant<std::monostate, MobodIndex, LinkCompositeIndex, IgnoredLoopJoint>
+  std::variant<std::monostate, MobodIndex, LoopConstraintIndex,
+               LinkCompositeIndex, IgnoredLoopJoint>
       how_modeled_;
 };
 
