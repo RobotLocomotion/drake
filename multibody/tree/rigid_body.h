@@ -197,8 +197,7 @@ class RigidBody : public MultibodyElement<T> {
   ///   A name associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B. When not provided, defaults to a nominal
-  ///   non-zero value.
+  ///   expressed in the body frame B. When not provided, defaults to ...
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
   explicit RigidBody(const std::string& body_name,
@@ -214,8 +213,7 @@ class RigidBody : public MultibodyElement<T> {
   ///   The model instance associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B. When not provided, defaults to a nominal
-  ///   non-zero value.
+  ///   expressed in the body frame B. When not provided, defaults to ...
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
   RigidBody(const std::string& body_name, ModelInstanceIndex model_instance,

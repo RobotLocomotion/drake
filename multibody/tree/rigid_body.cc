@@ -65,9 +65,7 @@ RigidBody<T>::RigidBody(const std::string& body_name,
 
 template <typename T>
 SpatialInertia<double> RigidBody<T>::MakeNominalSpatialInertiaForConstructor() {
-  const double mass = 1.0;
-  const double radius = 0.0625;
-  return SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+  return SpatialInertia<double>::Zero();
 }
 
 template <typename T>

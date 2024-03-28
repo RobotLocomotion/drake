@@ -1159,8 +1159,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
-  ///   in the body frame B. When not provided, defaults to a nominal non-zero
-  ///   value.
+  ///   in the body frame B. When not provided, defaults to ...
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
@@ -1206,8 +1205,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
-  ///   in the body frame B. When not provided, defaults to a nominal non-zero
-  ///   value.
+  ///   in the body frame B. When not provided, defaults to ...
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   /// @throws std::exception if additional model instances have been created
