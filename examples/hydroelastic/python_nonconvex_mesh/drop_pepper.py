@@ -9,7 +9,9 @@ non-convex meshes. It reads SDFormat files of:
 """
 import argparse
 import numpy as np
+import time
 
+from pydrake.geometry import StartMeshcat
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlant
@@ -52,7 +54,7 @@ def make_pepper_bowl_table(contact_model, time_step):
             X_FM=p_WTable_fixed)
     plant.Finalize()
 
-    AddDefaultVisualization(builder=builder)
+    AddDefaultVisualization(builder=builder, meshcat=meshcat)
     diagram = builder.Build()
     return diagram, plant
 
@@ -118,10 +120,23 @@ if __name__ == "__main__":
              "Default %(default)s.")
     args = parser.parse_args()
 
+    meshcat = StartMeshcat()
+    # If users have not already opened MeshCat window, wait for users to
+    # open MeshCat window before starting simulation. Timeout after 5 seconds.
+    for count in range(50):
+        time.sleep(0.1)
+        if meshcat.GetNumActiveConnections() > 0:
+            break
+
     diagram, plant = make_pepper_bowl_table(args.contact_model, args.time_step)
+    meshcat.StartRecording()
     simulate_diagram(diagram, plant,
                      np.array(args.pepper_position),
                      args.pepper_wz,
                      np.array(args.bowl_position),
                      args.simulation_time,
                      args.target_realtime_rate)
+
+    meshcat.StopRecording()
+    meshcat.PublishRecording()
+    meshcat.Flush()
