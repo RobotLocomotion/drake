@@ -2169,7 +2169,7 @@ class TestPlant(unittest.TestCase):
                 joint.SetFromRotationMatrix(context=context,
                                             R_FM=RotationMatrix_[T]())
                 joint.set_translation(context=context, translation=[0, 0, 0])
-                # Warn on deprecated QuaternionFloatingJoint.set_position().
+                # Warn deprecated QuaternionFloatingJoint.set_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.set_position(context=context, p_FM=[0, 0, 0])
                 joint.set_pose(context=context, X_FM=RigidTransform_[T]())
@@ -2181,10 +2181,16 @@ class TestPlant(unittest.TestCase):
                     q_FM=Quaternion_[Expression]())
                 joint.set_random_quaternion_distribution_to_uniform()
                 joint.get_default_quaternion()
-                joint.get_default_position()
+                joint.get_default_translation()
+                # Deprecated QuaternionFloatingJoint.get_default_position().
+                with catch_drake_warnings(expected_count=1):
+                    joint.get_default_position()
                 joint.get_default_pose()
                 joint.set_default_quaternion(q_FM=Quaternion_[float]())
-                joint.set_default_position(p_FM=[0, 0, 0])
+                joint.set_default_translation(translation=[0, 0, 0])
+                # Deprecated QuaternionFloatingJoint.set_default_position().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_default_position(p_FM=[0, 0, 0])
                 # Check that the base class supports these for this joint.
                 joint.SetDefaultPose(X_FM=RigidTransform_[float]())
                 joint.SetDefaultPosePair(q_FM=Quaternion_[float](),

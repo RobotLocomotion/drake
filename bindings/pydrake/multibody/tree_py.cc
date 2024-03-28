@@ -731,14 +731,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_quaternion_distribution_to_uniform.doc)
         .def("get_default_quaternion", &Class::get_default_quaternion,
             cls_doc.get_default_quaternion.doc)
-        .def("get_default_position", &Class::get_default_position,
-            cls_doc.get_default_position.doc)
+        .def("get_default_translation", &Class::get_default_translation,
+            cls_doc.get_default_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_default_position",
+            WrapDeprecated(cls_doc.get_default_position.doc_deprecated,
+                &Class::get_default_position),
+            cls_doc.get_default_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("get_default_pose", &Class::get_default_pose,
             cls_doc.get_default_pose.doc)
         .def("set_default_quaternion", &Class::set_default_quaternion,
             py::arg("q_FM"), cls_doc.set_default_quaternion.doc)
-        .def("set_default_position", &Class::set_default_position,
-            py::arg("p_FM"), cls_doc.set_default_position.doc);
+        .def("set_default_translation", &Class::set_default_translation,
+            py::arg("translation"), cls_doc.set_default_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_default_position",
+            WrapDeprecated(cls_doc.set_default_position.doc_deprecated,
+                &Class::set_default_position),
+            py::arg("p_FM"),
+            cls_doc.set_default_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   // RevoluteJoint

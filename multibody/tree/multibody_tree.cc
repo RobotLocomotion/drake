@@ -1022,7 +1022,7 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
   DRAKE_DEMAND(quaternion_floating_joint != nullptr);
   quaternion_floating_joint->set_default_quaternion(
       X_WB.rotation().ToQuaternion());
-  quaternion_floating_joint->set_default_position(X_WB.translation());
+  quaternion_floating_joint->set_default_translation(X_WB.translation());
 }
 
 template <typename T>
