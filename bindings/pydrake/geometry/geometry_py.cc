@@ -23,6 +23,7 @@ PYBIND11_MODULE(geometry, m) {
 
   /* The order of execution matters -- a module may rely on the definition
    of bindings executed prior to it. */
+  DefineGeometryMeshes(m);
   DefineGeometryCommon(m);
   DefineGeometryHydro(m);
   DefineGeometryRender(m);
