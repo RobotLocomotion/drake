@@ -78,7 +78,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   // not performing any numerical computations. This is only to test API.
   // M_Bo_B is the spatial inertia about the body frame's origin Bo and
   // expressed in the body frame B.
-  SpatialInertia<double> M_Bo_B;
+  const auto M_Bo_B = SpatialInertia<double>::NaN();
 
   // Adds a new body to the world.
   const RigidBody<double>& pendulum =
@@ -146,7 +146,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();
   const RigidBody<double>& world_body = model->world_body();
-  SpatialInertia<double> M_Bo_B;
+  const auto M_Bo_B = SpatialInertia<double>::NaN();
   const RigidBody<double>& pendulum =
       model->AddRigidBody("pendulum", M_Bo_B);
   model->AddJoint<RevoluteJoint>(
@@ -184,7 +184,7 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   // not performing any numerical computations. This is only to test API.
   // M_Bo_B is the spatial inertia about the body frame's origin Bo and
   // expressed in the body frame B.
-  SpatialInertia<double> M_Bo_B;
+  const auto M_Bo_B = SpatialInertia<double>::NaN();
 
   const RigidBody<double>& body1 = model1->AddRigidBody("body1", M_Bo_B);
   const RigidBody<double>& body2 = model2->AddRigidBody("body2", M_Bo_B);
@@ -297,7 +297,7 @@ class TreeTopologyTests : public ::testing::Test {
   const RigidBody<double>* AddTestBody(int i) {
     // NaN SpatialInertia to instantiate the RigidBody objects.
     // It is safe here since this tests only focus on topological information.
-    const SpatialInertia<double> M_Bo_B;
+    const auto M_Bo_B = SpatialInertia<double>::NaN();
     const RigidBody<double>* body = &model_->AddRigidBody(
        fmt::format("TestBody_{}", i), M_Bo_B);
     bodies_.push_back(body);
@@ -777,7 +777,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   // inertia is not relevant and therefore we leave it un-initialized.
   auto AddRigidBody =
       [&model](const std::string& name) -> const RigidBody<double>& {
-    return model.AddRigidBody(name, SpatialInertia<double>());
+    return model.AddRigidBody(name, SpatialInertia<double>::NaN());
   };
 
   // Helper to add a joint between two bodies. For this test the actual type of

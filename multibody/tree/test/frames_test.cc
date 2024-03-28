@@ -43,7 +43,7 @@ class FrameTests : public ::testing::Test {
     // Using a NaN spatial inertia is ok in this unit test since all
     // computations only relate to frame kinematics (and therefore mass
     // properties do not play any role.)
-    SpatialInertia<double> M_Bo_B;
+    const auto M_Bo_B = SpatialInertia<double>::NaN();
 
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();

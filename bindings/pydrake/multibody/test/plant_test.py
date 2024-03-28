@@ -201,7 +201,7 @@ class TestPlant(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         self.assertEqual(plant.time_step(), 0.0)
-        spatial_inertia = SpatialInertia()
+        spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
         body_mass = body.default_mass()
@@ -786,7 +786,9 @@ class TestPlant(unittest.TestCase):
         SpatialForce = SpatialForce_[T]
         SpatialVelocity = SpatialVelocity_[T]
         SpatialMomentum = SpatialMomentum_[T]
-        SpatialInertia()
+        with catch_drake_warnings(expected_count=1) as w:
+            SpatialInertia()
+        SpatialInertia.NaN()
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
@@ -897,8 +899,10 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_rigid_body_api(self, T):
         TemplatedRigidBody = RigidBody_[T]
-        M = SpatialInertia_[float]()
+        M = SpatialInertia_[float].NaN()
         i = ModelInstanceIndex(0)
+        TemplatedRigidBody(body_name="body_name")
+        TemplatedRigidBody(body_name="body_name", model_instance=i)
         TemplatedRigidBody(body_name="body_name", M_BBo_B=M)
         TemplatedRigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
         # Make sure the default (float) version also works.
@@ -1378,7 +1382,7 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_default_free_body_pose(self, T):
         plant = MultibodyPlant_[T](0.0)
-        body = plant.AddRigidBody("body", SpatialInertia_[float]())
+        body = plant.AddRigidBody("body")
         plant.Finalize()
         # Test existence of default free body pose setting.
         X_WB_default = RigidTransform_[float]()
@@ -1975,7 +1979,7 @@ class TestPlant(unittest.TestCase):
 
         def loop_body(make_joint, time_step):
             plant = MultibodyPlant_[T](time_step)
-            child = plant.AddRigidBody("Child", SpatialInertia_[float]())
+            child = plant.AddRigidBody("Child")
             joint = make_joint(
                 plant=plant, P=plant.world_frame(), C=child.body_frame())
             joint_out = plant.AddJoint(joint)
@@ -2344,12 +2348,8 @@ class TestPlant(unittest.TestCase):
 
     def test_deprecated_weld_joint_api(self):
         plant = MultibodyPlant_[float](0.01)
-        body1 = plant.AddRigidBody(
-            name="body1",
-            M_BBo_B=SpatialInertia_[float]())
-        body2 = plant.AddRigidBody(
-            name="body2",
-            M_BBo_B=SpatialInertia_[float]())
+        body1 = plant.AddRigidBody(name="body1")
+        body2 = plant.AddRigidBody(name="body2")
 
         # No keywords defaults to the first constructor defined in the binding.
         # No warning.
@@ -2361,12 +2361,8 @@ class TestPlant(unittest.TestCase):
 
     def test_deprecated_weld_frames_api(self):
         plant = MultibodyPlant_[float](0.01)
-        body1 = plant.AddRigidBody(
-            name="body1",
-            M_BBo_B=SpatialInertia_[float]())
-        body2 = plant.AddRigidBody(
-            name="body2",
-            M_BBo_B=SpatialInertia_[float]())
+        body1 = plant.AddRigidBody(name="body1")
+        body2 = plant.AddRigidBody(name="body2")
 
         # No keywords defaults to the first function named `WeldFrames` defined
         # in the binding. No warning.
@@ -2478,7 +2474,7 @@ class TestPlant(unittest.TestCase):
     def test_fixed_offset_frame_api(self, T):
         FixedOffsetFrame = FixedOffsetFrame_[T]
         P = MultibodyPlant_[T](0.0).world_frame()
-        B = RigidBody_[T]("body", SpatialInertia_[float]())
+        B = RigidBody_[T]("body")
         X = RigidTransform_[float].Identity()
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
@@ -2513,9 +2509,8 @@ class TestPlant(unittest.TestCase):
 
         # Add a distance constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
-        M_BBo_B = SpatialInertia_[float]()
-        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
-        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
         plant.AddDistanceConstraint(
@@ -2535,9 +2530,8 @@ class TestPlant(unittest.TestCase):
 
         # Add ball constraint. Since we won't be performing dynamics
         # computations, using garbage inertia is ok for this test.
-        M_BBo_B = SpatialInertia_[float]()
-        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
-        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
         plant.AddBallConstraint(
@@ -2554,11 +2548,8 @@ class TestPlant(unittest.TestCase):
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
 
-        # Since we won't be performing dynamics computations,
-        # using garbage inertia is ok for this test.
-        M_BBo_B = SpatialInertia_[float]()
-        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
-        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
 
         # Add ball and distance constraints.
         p_AP = [0.0, 0.0, 0.0]
@@ -2645,11 +2636,9 @@ class TestPlant(unittest.TestCase):
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
 
-        # Add weld constraint. Since we won't be performing dynamics
-        # computations, using garbage inertia is ok for this test.
-        M = SpatialInertia_[float]()
-        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
-        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        # Add weld constraint.
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
         X_AP = RigidTransform_[float]()
         X_BQ = RigidTransform_[float]()
         plant.AddWeldConstraint(
@@ -2667,11 +2656,9 @@ class TestPlant(unittest.TestCase):
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
 
-        # Add weld constraint. Since we won't be performing dynamics
-        # computations, using garbage inertia is ok for this test.
-        M = SpatialInertia_[float]()
-        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
-        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        # Add weld constraint.
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
         X_AP = RigidTransform_[float]()
         X_BQ = RigidTransform_[float]()
         id = plant.AddWeldConstraint(
@@ -3203,8 +3190,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[float](time_step=0.01)
         model_instance = plant.AddModelInstance("new instance")
         added_body = plant.AddRigidBody(
-            name="body", model_instance=model_instance,
-            M_BBo_B=SpatialInertia_[float]())
+            name="body", model_instance=model_instance)
         plant.Finalize()
         self.assertTrue(plant.HasBodyNamed("body", model_instance))
         self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))

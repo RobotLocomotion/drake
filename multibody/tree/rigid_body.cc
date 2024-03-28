@@ -64,6 +64,13 @@ RigidBody<T>::RigidBody(const std::string& body_name,
       body_frame_(*this), default_spatial_inertia_(M) {}
 
 template <typename T>
+SpatialInertia<double> RigidBody<T>::MakeNominalSpatialInertiaForConstructor() {
+  const double mass = 1.0;
+  const double radius = 0.0625;
+  return SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+}
+
+template <typename T>
 void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
     systems::Context<T>* context,
     const Vector3<T>& center_of_mass_position) const {

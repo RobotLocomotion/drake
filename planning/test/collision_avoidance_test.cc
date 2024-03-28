@@ -16,7 +16,6 @@ namespace {
 
 using drake::multibody::BodyIndex;
 using drake::multibody::default_model_instance;
-using drake::multibody::SpatialInertia;
 using Eigen::VectorXd;
 using std::unique_ptr;
 
@@ -29,8 +28,7 @@ double ZeroDistanceFunc(const VectorXd&, const VectorXd&) {
 unique_ptr<RobotDiagram<double>> MakeRobot() {
   RobotDiagramBuilder<double> builder;
   const auto model_instance = drake::multibody::default_model_instance();
-  builder.plant().AddRigidBody("floater", model_instance,
-                               SpatialInertia<double>::MakeUnitary());
+  builder.plant().AddRigidBody("floater", model_instance);
   return builder.Build();
 }
 
