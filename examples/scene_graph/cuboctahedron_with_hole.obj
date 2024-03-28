@@ -1,0 +1,60 @@
+# Blender 4.0.2
+# www.blender.org
+# A shape whose convex hull is a cuboctahedron but with a hole punched through
+# it. It has intentionally been given a texture material so that we can observe
+# that when this is used as a Convex that:
+#
+#    1. The whole is filled in.
+#    2. The material is rejected.
+#
+# Note: This *intentionally* doesn't have normals. Using this as Mesh with
+# a perception role should cause our parser to be angry about the lack of
+# normals.
+
+mtllib cuboctahedron_with_hole.mtl
+o cuboctahedron_with_hole
+v 0.000000 -1.000000 -1.000000
+v 0.000000 -1.000000 1.000000
+v 0.000000 1.000000 -1.000000
+v 0.000000 1.000000 1.000000
+v -1.000000 0.000000 -1.000000
+v -1.000000 0.000000 1.000000
+v 1.000000 0.000000 -1.000000
+v 1.000000 0.000000 1.000000
+v -1.000000 -1.000000 0.000000
+v -1.000000 1.000000 0.000000
+v 1.000000 -1.000000 0.000000
+v 1.000000 1.000000 0.000000
+vt 0.066861 0.142822
+vt 0.008706 0.631991
+vt 0.153915 0.863395
+vt 0.211084 0.374226
+vt 0.574781 0.136605
+vt 0.631950 0.625774
+vt 0.487727 0.857178
+vt 0.429573 0.368009
+vt 0.318211 0.010832
+vt 0.321026 0.731404
+vt 0.741892 0.268596
+vt 0.739077 0.989168
+vt 0.850439 0.631991
+vt 0.995647 0.863395
+vt 0.908594 0.142822
+s 0
+usemtl checkered_mat
+f 5/1 9/2 6/3 10/4
+f 7/5 12/6 8/7 11/8
+f 1/9 11/8 2/10 9/2
+f 3/11 10/12 4/13 12/6
+f 4/13 3/11 7/5 8/7
+f 6/14 5/15 3/11 4/13
+f 1/9 9/2 5/1
+f 2/10 6/3 9/2
+f 3/11 5/15 10/12
+f 4/13 10/12 6/14
+f 1/9 7/5 11/8
+f 2/10 11/8 8/7
+f 3/11 12/6 7/5
+f 4/13 8/7 12/6
+f 8/7 7/5 1/9 2/10
+f 2/10 1/9 5/1 6/3
