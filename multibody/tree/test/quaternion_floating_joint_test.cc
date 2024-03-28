@@ -269,7 +269,12 @@ TEST_F(QuaternionFloatingJointTest, Clone) {
             joint_->default_translational_damping());
   EXPECT_EQ(joint_clone.get_default_quaternion().coeffs(),
             joint_->get_default_quaternion().coeffs());
+  EXPECT_EQ(joint_clone.get_default_translation(),
+            joint_->get_default_translation());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(joint_clone.get_default_position(), joint_->get_default_position());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 TEST_F(QuaternionFloatingJointTest, SetVelocityAndAccelerationLimits) {
