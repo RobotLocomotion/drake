@@ -18,7 +18,6 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
-using multibody::SpatialInertia;
 using multibody::parsing::ModelDirectives;
 using multibody::parsing::ProcessModelDirectives;
 
@@ -60,9 +59,7 @@ ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n, int num_geo) {
   ModelInstanceIndex instance = plant->AddModelInstance(fmt::format("m{}", n));
   std::vector<const RigidBody<double>*> bodies;
   for (int k = 0; k < n; ++k) {
-    bodies.push_back(
-        &plant->AddRigidBody(fmt::format("b{}", k), instance,
-                             SpatialInertia<double>::MakeUnitary()));
+    bodies.push_back(&plant->AddRigidBody(fmt::format("b{}", k), instance));
     DRAKE_DEMAND(plant->geometry_source_is_registered());
     for (int i = 0; i < num_geo; ++i) {
       plant->RegisterCollisionGeometry(

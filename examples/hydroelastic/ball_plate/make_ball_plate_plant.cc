@@ -20,7 +20,6 @@ using multibody::CoulombFriction;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
-using multibody::UnitInertia;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using Eigen::Vector3d;

@@ -93,8 +93,10 @@ class SpringDamperTester : public ::testing::Test {
 
 GTEST_TEST(LinearSpringDamper, BadParameters) {
   MultibodyPlant<double> plant{0.};
-  const auto& bodyA = plant.AddRigidBody("BodyA", SpatialInertia<double>());
-  const auto& bodyB = plant.AddRigidBody("BodyB", SpatialInertia<double>());
+  const auto& bodyA =
+      plant.AddRigidBody("BodyA", SpatialInertia<double>::NaN());
+  const auto& bodyB =
+      plant.AddRigidBody("BodyB", SpatialInertia<double>::NaN());
 
   // These are reasonable parameters.
   const double free_length{1.5};  // [m]

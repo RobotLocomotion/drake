@@ -25,7 +25,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   // Spatial inertia for adding body. The actual value is not important for
   // these tests and therefore we do not initialize it.
-  const SpatialInertia<double> M_B;  // Default construction is ok for this.
+  const auto M_B = SpatialInertia<double>::NaN();
 
   // Add bodies so we can add joints to them.
   const auto body1 = &tree.AddRigidBody("body1", M_B);

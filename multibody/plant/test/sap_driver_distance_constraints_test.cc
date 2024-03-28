@@ -242,9 +242,9 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   const Vector3d p_AP(1, 2, 3);
   const Vector3d p_BQ(4, 5, 6);
   const double distance = 1.2;
@@ -289,9 +289,9 @@ GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
   plant.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                                   Vector3d{0, 0, 0}, 1 /* distance */),
@@ -301,9 +301,9 @@ GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
 GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                                   Vector3d{0, 0, 0}, 1 /* distance */),
@@ -315,9 +315,9 @@ GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
@@ -330,9 +330,9 @@ GTEST_TEST(DistanceConstraintTests, FailOnInvalidSpecs) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   // Fail on same body.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyA,

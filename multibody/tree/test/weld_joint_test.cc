@@ -24,7 +24,7 @@ class WeldJointTest : public ::testing::Test {
   void SetUp() override {
     // Spatial inertia for adding body. The actual value is not important for
     // these tests and therefore we do not initialize it.
-    const SpatialInertia<double> M_B;
+    const auto M_B = SpatialInertia<double>::NaN();
 
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();

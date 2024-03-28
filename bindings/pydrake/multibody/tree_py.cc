@@ -319,10 +319,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
         .def(py::init<const std::string&, const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
+            py::arg("body_name"),
+            py::arg("M_BBo_B") = SpatialInertia<double>::Zero(),
+            cls_doc.ctor.doc_2args)
         .def(py::init<const std::string&, ModelInstanceIndex,
                  const SpatialInertia<double>&>(),
-            py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
+            py::arg("body_name"), py::arg("model_instance"),
+            py::arg("M_BBo_B") = SpatialInertia<double>::Zero(),
             cls_doc.ctor.doc_3args)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)

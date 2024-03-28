@@ -409,7 +409,7 @@ class MujocoParser {
    private:
     const std::map<std::string, SpatialInertia<double>>& mesh_inertia_;
     std::string name_;
-    SpatialInertia<double> M_GG_G_;
+    SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
   };
 
   SpatialInertia<double> ParseInertial(XMLElement* node) {
@@ -419,7 +419,7 @@ class MujocoParser {
     double mass;
     if (!ParseScalarAttribute(node, "mass", &mass)) {
       Error(*node, "The inertial tag must include the mass attribute.");
-      return {};
+      return SpatialInertia<double>::NaN();
     }
 
     // We interpret the MuJoCo XML documentation as saying that if a
@@ -441,7 +441,7 @@ class MujocoParser {
         Error(*node,
               "The inertial tag must include either the diaginertia or "
               "fullinertia attribute.");
-        return {};
+        return SpatialInertia<double>::NaN();
       }
     }
 
@@ -457,7 +457,7 @@ class MujocoParser {
     std::unique_ptr<geometry::Shape> shape{};
     Vector4d rgba{.5, .5, .5, 1};
     CoulombFriction<double> friction{1.0, 1.0};
-    SpatialInertia<double> M_GBo_B{};
+    SpatialInertia<double> M_GBo_B{SpatialInertia<double>::NaN()};
     bool register_collision{true};
     bool register_visual{true};
   };
@@ -844,7 +844,7 @@ class MujocoParser {
         if (joint_node->NextSiblingElement("joint")) {
           const RigidBody<double>& dummy_body = plant_->AddRigidBody(
               fmt::format("{}{}", body_name, dummy_bodies++), model_instance_,
-              SpatialInertia<double>(0, {0, 0, 0}, {0, 0, 0}));
+              SpatialInertia<double>::Zero());
           ParseJoint(joint_node, *last_body, dummy_body, X_WP,
                      RigidTransformd(), child_class);
           last_body = &dummy_body;
@@ -1080,7 +1080,8 @@ class MujocoParser {
 
         if (std::filesystem::exists(filename)) {
           mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
-          mesh_inertia_[name] = CalcSpatialInertia(*mesh_[name], 1);
+          mesh_inertia_.insert_or_assign(name,
+                                         CalcSpatialInertia(*mesh_[name], 1));
         } else if (std::filesystem::exists(original_filename)) {
           Warning(
               *node,

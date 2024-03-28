@@ -241,12 +241,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const SpatialInertia<double>& s) -> auto& {
               return self->AddRigidBody(name, s);
             },
-            py::arg("name"), py::arg("M_BBo_B"), py_rvp::reference_internal,
-            cls_doc.AddRigidBody.doc_2args)
+            py::arg("name"),
+            py::arg("M_BBo_B") = SpatialInertia<double>::Zero(),
+            py_rvp::reference_internal, cls_doc.AddRigidBody.doc_2args)
         .def("AddRigidBody",
             py::overload_cast<const std::string&, ModelInstanceIndex,
                 const SpatialInertia<double>&>(&Class::AddRigidBody),
-            py::arg("name"), py::arg("model_instance"), py::arg("M_BBo_B"),
+            py::arg("name"), py::arg("model_instance"),
+            py::arg("M_BBo_B") = SpatialInertia<double>::Zero(),
             py_rvp::reference_internal, cls_doc.AddRigidBody.doc_3args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("frame_on_parent_F"),
             py::arg("frame_on_child_M"),

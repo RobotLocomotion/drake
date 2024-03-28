@@ -422,7 +422,7 @@ TEST_F(PendulumTests, Finalize) {
   EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
 
   // Asserts that no more multibody elements can be added after finalize.
-  SpatialInertia<double> M_Bo_B;
+  const auto M_Bo_B = SpatialInertia<double>::NaN();
   EXPECT_THROW(model_->AddRigidBody("B", M_Bo_B), std::logic_error);
   EXPECT_THROW(
       model_->AddFrame<FixedOffsetFrame>("F", *lower_link_, X_LEo_),

@@ -16,12 +16,10 @@ namespace test {
 struct SphereSpecification {
   SphereSpecification(double radius_in, double density,
                       CoulombFriction<double> friction_in)
-      : radius{radius_in}, friction{std::move(friction_in)} {
-    const double mass = 4.0 / 3 * M_PI * std::pow(radius, 3) * density;
-    const double I = 2.0 / 5.0 * mass * std::pow(radius, 2);  // inertia
-    inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(),
-                                     UnitInertia<double>(I, I, I));
-  }
+      : radius{radius_in},
+        inertia{
+            SpatialInertia<double>::SolidSphereWithDensity(density, radius_in)},
+        friction{std::move(friction_in)} {}
   double radius;
   SpatialInertia<double> inertia;
   CoulombFriction<double> friction;
@@ -32,15 +30,10 @@ struct BoxSpecification {
                    CoulombFriction<double> friction_in,
                    std::optional<math::RigidTransformd> X_WB_in)
       : size(std::move(size_in)),
+        inertia{SpatialInertia<double>::SolidBoxWithDensity(density, size[0],
+                                                            size[1], size[2])},
         friction{std::move(friction_in)},
-        X_WB(std::move(X_WB_in)) {
-    const double mass = size(0) * size(1) * size(2) * density;
-    const UnitInertia<double> I(
-        1.0 / 12 * (size(1) * size(1) + size(2) * size(2)),
-        1.0 / 12 * (size(0) * size(0) + size(2) * size(2)),
-        1.0 / 12 * (size(0) * size(0) + size(1) * size(1)));
-    inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(), I);
-  }
+        X_WB(std::move(X_WB_in)) {}
   // Full dimensions of a box (not the half dimensions).
   Eigen::Vector3d size;
   SpatialInertia<double> inertia;

@@ -231,7 +231,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddRigidBody("iiwa_link_5", default_model_instance(),
-                          SpatialInertia<double>()),
+                          SpatialInertia<double>::NaN()),
       ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
 
@@ -314,7 +314,7 @@ GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
   const std::string link_name = "iiwa_link_5";
   EXPECT_NO_THROW(
       model->AddRigidBody(link_name, other_model_instance,
-                          SpatialInertia<double>()));
+                          SpatialInertia<double>::NaN()));
   EXPECT_NO_THROW(model->Finalize());
 
   // Link name is ambiguous, there are more than one bodies that use the name.
@@ -341,7 +341,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
  public:
   explicit BadDerivedMBSystem(bool double_finalize)
       : MultibodyTreeSystem<double>() {
-    mutable_tree().AddRigidBody("body", SpatialInertia<double>());
+    mutable_tree().AddRigidBody("body", SpatialInertia<double>::NaN());
     Finalize();
     if (double_finalize) {
       Finalize();
@@ -1332,7 +1332,7 @@ class WeldMobilizerTest : public ::testing::Test {
   void SetUp() override {
     // Spatial inertia for each body. The actual value is not important for
     // these tests since they are all kinematic.
-    const SpatialInertia<double> M_B;
+    const auto M_B = SpatialInertia<double>::NaN();
 
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();

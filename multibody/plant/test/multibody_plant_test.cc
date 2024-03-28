@@ -350,7 +350,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Therefore no more modeling elements can be added. Verify this.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddRigidBody("AnotherBody", default_model_instance(),
-                          SpatialInertia<double>()),
+                          SpatialInertia<double>::NaN()),
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -392,7 +392,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
   MultibodyPlant<double> plant(0.0);
   ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
-  const SpatialInertia<double> M_B;  // Default construction is ok for this.
+  const auto M_B = SpatialInertia<double>::NaN();
   auto body = &plant.AddRigidBody("body", model_instance, M_B);
   const Joint<double>& planar_joint =
       plant.AddJoint(std::make_unique<PlanarJoint<double>>(
@@ -1412,7 +1412,7 @@ class SphereChainScenario {
 GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body1 =
-      plant.AddRigidBody("body1", SpatialInertia<double>());
+      plant.AddRigidBody("body1", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetBodyFrameIdOrThrow(body1.index()),
       "Body 'body1' does not have geometry registered with it.");
@@ -1427,7 +1427,7 @@ GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
 
   // And new bodies have FrameIds immediately upon creation.
   const RigidBody<double>& body2 =
-      plant.AddRigidBody("body2", SpatialInertia<double>());
+      plant.AddRigidBody("body2", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_NO_THROW(plant.GetBodyFrameIdOrThrow(body2.index()));
 }
 
@@ -1622,7 +1622,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   // Add a new body, and weld it using `WeldFrames` (to ensure that topology is
   // updated via this API).
   const RigidBody<double>& extra = plant.AddRigidBody(
-      "extra", default_model_instance(), SpatialInertia<double>());
+      "extra", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
   // Verify we can call GetBodiesWeldedTo() pre-finalize.
@@ -1668,7 +1668,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
   const JointIndex elbow = plant.GetJointByName("weld").index();
   // Add a new body, and weld it to the world body.
   const RigidBody<double>& extra = plant.AddRigidBody(
-      "extra", default_model_instance(), SpatialInertia<double>());
+      "extra", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
   const std::vector<JointIndex> joints1{shoulder};
@@ -1704,7 +1704,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
 
   // Add a new body, and weld it in the wrong direction using `WeldFrames`.
   const RigidBody<double>& extra = plant.AddRigidBody(
-      "extra", default_model_instance(), SpatialInertia<double>());
+      "extra", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(extra.body_frame(), plant.world_frame());
 
   // The important property of this message is that it reports some identifier
@@ -2320,7 +2320,7 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
       rigid_body =
-          &mutable_tree().AddRigidBody("Body", SpatialInertia<double>());
+          &mutable_tree().AddRigidBody("Body", SpatialInertia<double>::NaN());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};
@@ -3588,6 +3588,12 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   const RigidBody<double>& cube = plant.AddRigidBody(
       "cube", SpatialInertia<double>(cube_mass, cube_com, cube_unit_inertia));
 
+  // These rigid bodies test the AddRigidBody overloads that do not specify any
+  // inertia.
+  const RigidBody<double>& simple_1 = plant.AddRigidBody("simple_1");
+  const RigidBody<double>& simple_2 =
+      plant.AddRigidBody("simple_2", default_model_instance());
+
   plant.Finalize();
 
   // Create a default context.
@@ -3627,6 +3633,13 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   EXPECT_TRUE(
       CompareMatrices(cube_inertia_in_context.get_unit_inertia().get_products(),
                       cube_unit_inertia.get_products()));
+
+  // The default inertia should be zero.
+  for (const auto* simple : {&simple_1, &simple_2}) {
+    EXPECT_GE(simple->get_mass(*context), 0.0);
+    EXPECT_TRUE(
+        simple->CalcSpatialInertiaInBodyFrame(*context).IsPhysicallyValid());
+  }
 
   // Change parameters.
   const double new_sphere_radius = 1.5;
@@ -3875,9 +3888,9 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   // arbitrarily choose one model approximation that uses the SAP solver.
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>{});
+      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
   const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>{});
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
   const RevoluteJoint<double>& world_A =
       plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
                                     body_A, std::nullopt, Vector3d::UnitZ());
@@ -3944,9 +3957,9 @@ GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
   // arbitrarily choose one model approximation that uses the SAP solver.
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const Body<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>{});
+      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
   const Body<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>{});
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
   const RevoluteJoint<double>& world_A =
       plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
                                     body_A, std::nullopt, Vector3d::UnitZ());
@@ -3992,7 +4005,7 @@ GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>{});
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
 
   // Weld body B to the world W which creates a fixed offset frame Wp fixed to
   // the world and a fixed offset frame P fixed to body B.

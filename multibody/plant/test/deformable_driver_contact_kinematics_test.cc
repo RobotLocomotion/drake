@@ -118,7 +118,7 @@ class DeformableDriverContactKinematicsTest
        Fz and the contact normal is defined to point into the rigid body (in the
        -Fz direction), so Cz = -Fz. */
       const RigidBody<double>& rigid_body =
-          plant_->AddRigidBody("rigid_body", SpatialInertia<double>());
+          plant_->AddRigidBody("rigid_body", SpatialInertia<double>::NaN());
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
           rigid_body, X_BR, geometry::Box(10, 10, 1),
           "dynamic_collision_geometry", rigid_proximity_props);

@@ -240,9 +240,9 @@ GTEST_TEST(BallConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   const Vector3d p_AP(1, 2, 3);
   const Vector3d p_BQ(4, 5, 6);
   MultibodyConstraintId ball_id =
@@ -283,9 +283,9 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   plant.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0},
                                                       bodyB, Vector3d{0, 0, 0}),
                               ".*TAMSI does not support ball constraints.*");
@@ -294,9 +294,9 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
 GTEST_TEST(BallConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                               Vector3d{0, 0, 0}),
@@ -308,9 +308,9 @@ GTEST_TEST(BallConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
@@ -322,7 +322,7 @@ GTEST_TEST(BallConstraintTests, FailOnSameBody) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyA,
                               Vector3d{0, 0, 0}),

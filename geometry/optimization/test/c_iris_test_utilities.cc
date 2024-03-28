@@ -39,15 +39,8 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       math::RigidTransform(Eigen::Vector3d(-0.1, -0.1, 0.2)),
       Cylinder(0.02, 0.1), "world_cylinder", proximity_properties);
 
-  // C-IRIS only considers robot kinematics, not dynamics. So we use an
-  // arbitrary inertia.
-  const multibody::SpatialInertia<double> spatial_inertia(
-      1, Eigen::Vector3d::Zero(),
-      multibody::UnitInertia<double>(0.01, 0.01, 0.01));
-
   // body0
-  body_indices_.push_back(
-      plant_->AddRigidBody("body0", spatial_inertia).index());
+  body_indices_.push_back(plant_->AddRigidBody("body0").index());
   const multibody::RigidBody<double>& body0 =
       plant_->get_body(body_indices_[0]);
   plant_->AddJoint<multibody::WeldJoint>(
@@ -64,8 +57,7 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       Sphere(0.08), "body0_sphere", proximity_properties);
 
   // body1
-  body_indices_.push_back(
-      plant_->AddRigidBody("body1", spatial_inertia).index());
+  body_indices_.push_back(plant_->AddRigidBody("body1").index());
   const multibody::RigidBody<double>& body1 =
       plant_->get_body(body_indices_[1]);
   const auto& joint1 = plant_->AddJoint<multibody::RevoluteJoint>(
@@ -88,8 +80,7 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       Convex(convex_obj), "body1_convex", proximity_properties);
 
   // body2
-  body_indices_.push_back(
-      plant_->AddRigidBody("body2", spatial_inertia).index());
+  body_indices_.push_back(plant_->AddRigidBody("body2").index());
   const auto& body2 = plant_->get_body(body_indices_[2]);
   const auto& joint2 = plant_->AddJoint<multibody::PrismaticJoint>(
       "joint2", body1, math::RigidTransformd(Eigen::Vector3d(0.2, 0, 0)), body2,
@@ -106,8 +97,7 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       Sphere(0.07), "body2_sphere", proximity_properties);
 
   // body3
-  body_indices_.push_back(
-      plant_->AddRigidBody("body3", spatial_inertia).index());
+  body_indices_.push_back(plant_->AddRigidBody("body3").index());
   const auto& body3 = plant_->get_body(body_indices_[3]);
   const auto& joint3 = plant_->AddJoint<multibody::RevoluteJoint>(
       "joint3", body0, math::RigidTransformd(Eigen::Vector3d(0, 0.05, 0.1)),
@@ -168,13 +158,7 @@ CIrisRobotPolytopicGeometryTest::CIrisRobotPolytopicGeometryTest() {
       math::RigidTransform(Eigen::Vector3d(-0.1, -0.5, 0.2)),
       Convex(convex_obj), "world_convex", proximity_properties);
 
-  // C-IRIS only considers robot kinematics, not dynamics. So we use an
-  // arbitrary inertia.
-  const multibody::SpatialInertia<double> spatial_inertia(
-      1, Eigen::Vector3d::Zero(),
-      multibody::UnitInertia<double>(0.01, 0.01, 0.01, 0, 0, 0));
-
-  auto add_body = [this, &spatial_inertia, &proximity_properties](
+  auto add_body = [this, &proximity_properties](
                       const math::RigidTransformd& X_PF,
                       const math::RigidTransformd& X_BM,
                       const Eigen::Vector3d& axis, double theta_lower,
@@ -186,8 +170,7 @@ CIrisRobotPolytopicGeometryTest::CIrisRobotPolytopicGeometryTest() {
             ? this->plant_->world_body()
             : this->plant_->get_body(this->body_indices_.back());
     this->body_indices_.push_back(
-        this->plant_
-            ->AddRigidBody("body" + std::to_string(body_index), spatial_inertia)
+        this->plant_->AddRigidBody("body" + std::to_string(body_index))
             .index());
 
     const auto& body = this->plant_->get_body(this->body_indices_.back());

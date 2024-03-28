@@ -11,6 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/text_logging.h"
@@ -463,10 +464,28 @@ class SpatialInertia {
       const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
       const Vector3<T>& p3);
 
-  /// Default SpatialInertia constructor initializes mass, center of mass and
-  /// rotational inertia to invalid NaN's for a quick detection of
-  /// uninitialized values.
-  SpatialInertia() {}
+  /// Initializes mass, center of mass and rotational inertia to zero.
+  static SpatialInertia Zero() {
+    return SpatialInertia(0, Vector3<T>::Zero(), UnitInertia<T>(0, 0, 0));
+  }
+
+  /// Initializes mass, center of mass and rotational inertia to invalid NaN's
+  /// for a quick detection of uninitialized values.
+  static SpatialInertia NaN() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return SpatialInertia();
+#pragma GCC diagnostic pop
+  }
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "The default constructor is deprecated. If you really want NaNs, then "
+      "call the SpatialInertia<T>::NaN() factory function. If you were were "
+      "only calling this constructor as part of adding a RigidBody to "
+      "MultibodyPlant, then instead you should omit the SpatialInertia "
+      "argument from MultibodyPlant::AddRigidBody(); it now defaults to zero.")
+  SpatialInertia() = default;
 
   /// Constructs a spatial inertia for a physical body or composite body S about
   /// a point P from a given mass, center of mass and rotational inertia. The

@@ -167,7 +167,7 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   plant.AddRigidBody("free_body", default_model_instance(),
                      SpatialInertia<double>::MakeUnitary());
   const RigidBody<double>& fixed_body = plant.AddRigidBody(
-      "fixed_body", default_model_instance(), SpatialInertia<double>());
+      "fixed_body", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());
   plant.Finalize();
   // Even though there is only one free body, the base body is not unique.
