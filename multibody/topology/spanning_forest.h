@@ -27,55 +27,70 @@ using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 loop-closing constraints. This is a directed forest, with edges ordered from
 inboard (closer to World) to outboard. The nodes are mobilized bodies (Mobods)
 representing a body and its inboard mobilizer. While building the Forest we also
-study the original LinkJointGraph and update it to reflect how each of its
-elements was modeled, any new elements that needed to be added for the model,
-and which Links are welded together into composites with no relative
-motion possible. Those should be excluded from mutual collision computations
-and can (optionally) be modeled with a single mobilized body.
+study the original LinkJointGraph and update it to reflect:
+  - how each of its elements was modeled,
+  - any new elements that needed to be added for the model, and
+  - which Links are welded together into composites.
+
+Welded-together Links have no relative motion so should be excluded from mutual
+collision computations and can (optionally) be modeled with a single mobilized
+body.
 
 Problem statement
 
-We're given a collection of directed, possibly cyclic, graphs. Some have edges
-to World, others are free-floating. Nodes (links) and edges (joints) are
-annotated with properties that may affect modeling. For example, a joint may be
-fixed (a weld) indicating that its connected links can be combined. Links may
-be massless in which case they can't be terminal nodes of a tree unless they
-are also welded to something massful. Users may also have modeling preferences,
-such as which nodes should be used to connect free-floating input graphs to
-World, and how they should be connected (e.g. fixed or floating base).
-
-The task here is to efficiently convert the input graph collection into a single
-directed _acyclic_ graph considered as a forest of directed trees each rooted
-at World, plus additional edges to restore cycles. The resulting forest is to
-be optimized for computation speed and numerical accuracy, consistent with user
+We're given a disjoint collection of directed, possibly cyclic, graphs whose
+nodes represent links and whose parent->child directed edges represent joints.
+Some graphs contain edges to World, others are free-floating. The task here is
+to efficiently convert the input graph collection into a single directed
+_acyclic_ graph considered as a forest of directed trees. The nodes of the trees
+are _mobilized bodies_ (Mobods), each of which has a unique edge ("mobilizer")
+connecting it to its _inboard_ (closer to World) mobilized body, and directed
+inboard->outboard. Each tree spans one of the input graphs and is given an edge
+to World if there wasn't one already. Additional edges representing weld
+constraints are added as needed to restore cycles. The resulting forest is to be
+optimized for computation speed and numerical accuracy, consistent with user
 preferences.
 
+Input links and joints can be annotated with properties that may affect how we
+build the forest. For example, a joint may be fixed (a weld) indicating that its
+connected links can be combined. Links may be massless in which case they can't
+be terminal nodes of a tree unless they are also welded to something massful.
+Users may also have modeling preferences, such as which nodes should be used to
+connect free-floating input graphs to World, and how they should be connected
+(e.g. fixed or floating base).
+
 These are the properties we want in the resulting forest:
-  - All nodes have a path to World
+  - All nodes (Mobods) have a path from World
   - The maximum branch length is minimized when breaking cycles
-  - Welded-together nodes are combined (optionally)
-  - Input parent/child edge directions are preserved when possible
+  - Welded-together links are combined into a single Mobod (optionally)
+  - Input parent->child edge directions are preserved as inboard->outboard
+    directions when possible
   - Specific user modeling instructions are obeyed
   - Massless bodies never appear as terminal nodes in the forest
-  - Each tree comprises contiguous nodes ordered depth first
+  - Mobod nodes are numbered depth-first
+  - Position and velocity coordinates q and v are assigned to the edges
+    (mobilizers) with the same depth-first ordering
+  - The trees partition the Mobods and each tree contains a consecutively-
+    numbered subset of Mobods and their coordinates.
 
 Discussion
 
 A LinkJointGraph consists of Links (user-defined rigid bodies) and Joints in a
 directed, possibly cyclic graph. Link 0 is designated as the World and is
 modeled by Mobod 0 in the Forest. Each Joint connects a "parent" Link to a
-"child" Link. The parent/child ordering is arbitrary but sets the user's
+"child" Link. The parent->child ordering is arbitrary but sets the user's
 expected sign conventions for the Joint coordinates. Those must be preserved,
-even though inboard/outboard ordering may differ from parent/child. (That can
-happen even in the absence of loops.) We distinguish "moving" (or
-"articulated") Joints from "weld" (0 dof) Joints; every moving Joint is
-modeled by a mobilizer or constraint but welds may be eliminated by creating
-Link Composites that require only a single mobilizer for a group of Links.
+even though inboard->outboard ordering may differ from parent->child (even if
+there are no loops). We distinguish "moving" (or "articulated") Joints from
+"weld" (0 dof) Joints; every moving Joint is modeled by a mobilizer or
+constraint, but welds may be eliminated by creating Link Composites that require
+only a single mobilizer for a group of Links.
 
 The SpanningForest contains a Mobod node corresponding to each Link or Link
 Composite (group of welded-together Links). A mobilizer connects each Mobod to
-an inboard Mobod (except for World). Additional "shadow" Links and their Mobods
-are created for a Link when loops are broken by cutting that Link. Every moving
+an inboard Mobod (except for World). An additional "shadow" Link and its Mobod
+is created whenever a loop is broken by cutting a Link, and a LoopConstraint
+is added to reconnect the primary Link to its shadow. Every moving
 Joint will map to a Mobod and there will likely be additional Mobods connecting
 tree root nodes (a.k.a. "base bodies") to World via floating or weld mobilizers.
 
@@ -96,8 +111,8 @@ Things we get for free (O(1)) here as a side effect of building the Forest:
       to a given Tree and what range of coordinates belongs to each Tree or
       subtree
   - ask a Mobod which Tree it is in, and which coordinates it uses
-  - find out which groups of Mobods are welded together so have no relative
-      motion
+  - find out which groups of Mobods are welded together (so have no relative
+    motion)
   - ask a Mobod which WeldedMobods grouping it belongs to, if any
   - ask a coordinate (q or v) which Mobod or Tree it belongs to
   - ask for the max height of a Tree or the level of a particular Mobod
@@ -138,7 +153,7 @@ class SpanningForest {
 
   /** Provides convenient access to a particular Mobod.
   @pre mobod_index is in range */
-  inline const Mobod& mobods(MobodIndex mobod_index) const;  // Defined below.
+  inline const Mobod& mobods(MobodIndex mobod_index) const;
 
   /** The mobilized body (Mobod) corresponding to the World Link. */
   const Mobod& world_mobod() const { return mobods(MobodIndex(0)); }
@@ -156,13 +171,16 @@ class SpanningForest {
   Mobod (which may represent a Link Composite). World is not considered to
   be part of any Tree; it is the root of the Forest. */
   const std::vector<Tree>& trees() const { return data_.trees; }
+
   /** Provides convenient access to a particular Tree.
   @pre tree_index is in range */
-  inline const Tree& trees(TreeIndex tree_index) const;  // Defined below.
+  inline const Tree& trees(TreeIndex tree_index) const;
 
-  /** Returns the height of the Forest, defined as the height of the tallest
-  Tree in the Forest, plus 1 for World. This is always at least 1 since World
-  is always present. */
+  /** When this %SpanningForest is valid (i.e., after BuildForest() returns)
+  this is the height of the forest, defined as the height of the tallest
+  Tree, plus 1 for World. Returns zero for an invalid forest. */
+  // Internal use only: During BuildForest() this will track the largest
+  // height seen so far.
   int height() const { return data_.forest_height; }
 
  private:
@@ -210,7 +228,8 @@ class SpanningForest {
   // Produce the optimal forest, but with suboptimal node ordering.
   void ChooseForestTopology();
 
-  // Determine proposed depth-first reordering.
+  // Determine proposed depth-first reordering. Index the `old_to_new` result
+  // using the original MobodIndex to obtain the new MobodIndex.
   // @retval old_to_new
   std::vector<MobodIndex> CreateDepthFirstReordering() const;
 
@@ -242,8 +261,10 @@ class SpanningForest {
     // How the forest is partitioned into trees.
     std::vector<Tree> trees;
 
-    // The height of the tallest tree in the forest. Always at least 1 when
-    // valid since World is always present in a forest.
+    // This is zero for an invalid forest, starts at 1 during BuildForest()
+    // to count World, then adds in the height of the tallest tree seen so
+    // far. Upon return from BuildForest() the forest is marked valid and
+    // this contains the height of the tallest tree, plus 1.
     int forest_height{0};
 
     // Welded Mobod groups. These are disjoint sets of Mobods that have no
@@ -254,11 +275,11 @@ class SpanningForest {
     // The indexes here must be renumbered by FixupForestToUseNewNumbering().
     std::vector<std::vector<MobodIndex>> welded_mobods;
 
-    // Map from coordinates to their associated mobilized bodies. These are
-    // filled in late with the post-renumbered MobodIndex values so should
-    // NOT be renumbered by FixupForestToUseNewNumbering().
-    std::vector<MobodIndex> q_to_mobod;  // size is nq
-    std::vector<MobodIndex> v_to_mobod;  // size is nv
+    // Map from mobilizer coordinates to their associated mobilized bodies.
+    // These are filled in late with the post-renumbered MobodIndex values so
+    // should NOT be renumbered by FixupForestToUseNewNumbering().
+    std::vector<MobodIndex> q_to_mobod;  // size is nq (total number of q's)
+    std::vector<MobodIndex> v_to_mobod;  // size is nv (total number of v's)
 
     // This policy is expressed as a "less than" comparator of the type used by
     // std::priority_queue. It should return true if the left argument is a
