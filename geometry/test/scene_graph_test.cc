@@ -345,7 +345,7 @@ TEST_F(SceneGraphTest, RegisterUnsupportedDeformableGeometry) {
       scene_graph_.RegisterDeformableGeometry(
           s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
           kRezHint),
-      ".*don't yet generate deformable meshes.+ Cylinder.");
+      ".*don't yet generate deformable meshes.+ Cylinder.*");
 }
 
 template <typename T>

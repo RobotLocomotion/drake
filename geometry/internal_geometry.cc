@@ -35,9 +35,8 @@ InternalGeometry::InternalGeometry(SourceId source_id,
       source_id_(source_id),
       frame_id_(frame_id),
       X_FG_(std::move(X_FG)) {
-  MeshBuilderForDeformable mesh_builder;
-  // The mesh_builder builds the mesh in frame G.
-  reference_mesh_ = mesh_builder.Build(*shape_spec_, resolution_hint);
+  // The function creates the mesh in frame G.
+  reference_mesh_ = MakeMeshForDeformable(*shape_spec_, resolution_hint);
 }
 
 bool InternalGeometry::has_role(Role role) const {
