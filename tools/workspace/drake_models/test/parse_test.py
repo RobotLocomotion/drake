@@ -60,8 +60,6 @@ class TestDrakeModels(unittest.TestCase):
             # TODO(#19992) for tracking these warnings.
             "package://drake_models/atlas/atlas_convex_hull.urdf",
             "package://drake_models/atlas/atlas_minimal_contact.urdf",
-            "package://drake_models/atlas/robotiq.urdf",
-            "package://drake_models/atlas/robotiq_simple.urdf",
             # We don't have any tracking issue for fixing the allegro models,
             # because we don't use them for anything we care about. If someone
             # wants to fix the warnings, be our guest.
@@ -72,8 +70,6 @@ class TestDrakeModels(unittest.TestCase):
 
         # Allow errors on these models until they are repaired.
         models_with_errors = [
-            # TODO(#19992) for tracking these errors.
-            "package://drake_models/atlas/robotiq_tendons.urdf",
             # This file is not designed to be loaded independently from its
             # parent file `homecart.dmd.yaml`; it will always error out.
             "package://drake_models/tri_homecart/homecart_grippers.dmd.yaml",
