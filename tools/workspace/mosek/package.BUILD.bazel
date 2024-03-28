@@ -11,7 +11,11 @@ package(default_visibility = ["//visibility:private"])
 # Find the TBB shared library with the major.minor-style version number.
 # This will be the spelling with the actual object code.
 _TBB_MAJMIN_GLOB = glob([
+    # This is the spelling for linux64x86.
     "bin/libtbb.so.*.*",
+    # This is the spelling for linuxaarch64.
+    "bin/libtbb_debug.so.*.*",
+    # This is the spelling for osxaarch64 and osx64x86.
     "bin/libtbb.*.*.dylib",
 ])
 
@@ -20,7 +24,11 @@ len(_TBB_MAJMIN_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
 # Find the TBB shared library with the major-only-style version number.
 # This will be the spelling that's a symlink to the major.minor spelling.
 _TBB_MAJ_GLOB = glob([
+    # This is the spelling for linux64x86.
     "bin/libtbb.so.*",
+    # This is the spelling for linuxaarch64.
+    "bin/libtbb_debug.so.*",
+    # This is the spelling for osxaarch64 and osx64x86.
     "bin/libtbb.*.dylib",
 ], exclude = _TBB_MAJMIN_GLOB)
 
