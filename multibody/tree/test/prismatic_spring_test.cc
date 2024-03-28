@@ -31,8 +31,8 @@ class SpringTester : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    bodyA_ = &model->AddRigidBody("BodyA", SpatialInertia<double>());
-    bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>());
+    bodyA_ = &model->AddRigidBody("BodyA", SpatialInertia<double>::NaN());
+    bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>::NaN());
 
     model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
                                *bodyA_, {},
