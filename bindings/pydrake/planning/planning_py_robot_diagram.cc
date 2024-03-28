@@ -55,7 +55,8 @@ void DefinePlanningRobotDiagram(py::module m) {
       auto cls = DefineTemplateClassWithDefault<Class>(
           m, "RobotDiagramBuilder", GetPyParam<T>(), cls_doc.doc);
       cls  // BR
-          .def(py::init<double>(), py::arg("time_step") = 0.0, cls_doc.ctor.doc)
+          .def(py::init<double>(), py::arg("time_step") = 0.001,
+              cls_doc.ctor.doc)
           .def("builder",
               overload_cast_explicit<systems::DiagramBuilder<T>&>(
                   &Class::builder),

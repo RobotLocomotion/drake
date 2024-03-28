@@ -18,6 +18,7 @@ namespace {
 
 using geometry::SceneGraph;
 using multibody::MultibodyPlant;
+using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using symbolic::Expression;
 using systems::Context;
@@ -33,7 +34,13 @@ std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   return builder;
 }
 
-GTEST_TEST(RobotDiagramBuilderTest, TimeStep) {
+GTEST_TEST(RobotDiagramBuilderTest, TimeStepDefault) {
+  const MultibodyPlantConfig default_plant_config;
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  EXPECT_EQ(builder->plant().time_step(), default_plant_config.time_step);
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, TimeStepExplicit) {
   const double time_step = 0.01;
   auto builder = std::make_unique<RobotDiagramBuilder<double>>(time_step);
   EXPECT_EQ(builder->plant().time_step(), time_step);
