@@ -180,6 +180,9 @@ def build(options):
     sdk_path = subprocess.check_output(['xcrun', '--show-sdk-path'], text=True)
     environment['SDKROOT'] = sdk_path.strip()
 
+    # Inject the build version into the environment.
+    environment['DRAKE_VERSION'] = options.version
+
     # Build the wheel dependencies.
     if options.dependencies:
         build_deps_script = os.path.join(resource_root, 'macos',

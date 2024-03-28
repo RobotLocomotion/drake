@@ -85,6 +85,16 @@ def _cleanup():
         _docker('image', 'rm', *_images_to_remove)
 
 
+def _git_sha(path):
+    """
+    Determines the git SHA of the repository which contains or is rooted at the
+    specified `path`.
+    """
+    command = ['git', 'rev-parse', 'HEAD']
+    raw = subprocess.check_output(command, cwd=path)
+    return raw.decode(sys.stdout.encoding).strip()
+
+
 def _git_root(path):
     """
     Determines the canonical repository root of the working tree which includes
@@ -213,6 +223,7 @@ def _build_image(target, identifier, options):
     args = [
         '--ssh', 'default',
         '--build-arg', f'DRAKE_VERSION={options.version}',
+        '--build-arg', f'DRAKE_GIT_SHA={_git_sha(resource_root)}',
     ] + _target_args(target, BUILD)
     if not options.keep_containers:
         args.append('--force-rm')
