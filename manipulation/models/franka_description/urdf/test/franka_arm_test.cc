@@ -101,12 +101,12 @@ GTEST_TEST(FrankaArmTest, TestReflectedInertia) {
   parser.AddModels(kPath);
   plant.Finalize();
 
-  for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
+  for (multibody::JointActuatorIndex index :
+       canonical_plant.GetJointActuatorIndices()) {
     const multibody::JointActuator<double>& canonical_joint_actuator =
-        canonical_plant.get_joint_actuator(
-            drake::multibody::JointActuatorIndex(i));
+        canonical_plant.get_joint_actuator(index);
     const multibody::JointActuator<double>& joint_actuator =
-        plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
+        plant.get_joint_actuator(index);
 
     CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
   }

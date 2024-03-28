@@ -41,7 +41,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "multibody_tree_topology",
-    srcs = [],
+    srcs = [
+        "multibody_tree_topology.cc",
+    ],
     hdrs = [
         "multibody_tree_topology.h",
     ],

@@ -719,15 +719,15 @@ void SapDriver<T>::AddPdControllerConstraints(
   if (plant().num_actuators() == 0) return;
 
   // Desired positions & velocities.
-  const int num_actuators = plant().num_actuators();
+  const int num_actuated_dofs = plant().num_actuated_dofs();
+
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
   const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     if (actuator.has_controller()) {
@@ -737,9 +737,9 @@ void SapDriver<T>::AddPdControllerConstraints(
       // controllers on locked joints is considered to be zero.
       if (!joint.is_locked(context)) {
         const double effort_limit = actuator.effort_limit();
-        const T& qd = desired_state[actuator.index()];
-        const T& vd = desired_state[num_actuators + actuator.index()];
-        const T& u0 = feed_forward_actuation[actuator.index()];
+        const T& qd = desired_state[actuator.input_start()];
+        const T& vd = desired_state[num_actuated_dofs + actuator.input_start()];
+        const T& u0 = feed_forward_actuation[actuator.input_start()];
 
         const T& q0 = joint.GetOnePosition(context);
         const int dof = joint.velocity_start();
@@ -1102,8 +1102,7 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
 
   // Map generalized forces to actuation indexing.
   int constraint_index = start;
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();

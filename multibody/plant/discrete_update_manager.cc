@@ -440,8 +440,8 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
     const VectorX<T> u = AssembleActuationInput(context);
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < plant().num_actuators(); ++actuator_index) {
+    for (JointActuatorIndex actuator_index :
+         plant().GetJointActuatorIndices()) {
       const JointActuator<T>& actuator =
           plant().get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
@@ -450,7 +450,7 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
       const int v_index = joint.velocity_start();
       VectorX<T>& actuation =
           actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
-      actuation[v_index] = u[actuator_index];
+      actuation[v_index] = u[actuator.input_start()];
     }
   }
 }
