@@ -56,10 +56,54 @@ drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
   return symmetric_matrix;
 }
 
-// Add the constraint that the matrix is Lorentz separable.
-// TODO(Alexandre.Amice) Move this to mathematical_program.h
-void AddMatrixIsLorentzSeparableConstraint(
-    const Eigen::Ref<const Eigen::MatrixX<symbolic::Variable>>& X,
+// TODO(Alexandre.Amice) Move these to mathematical_program.h
+// Adds the constraint that the matrix X is a conic combination of
+// Lorentz-positive orthant tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ is
+// in the Lorentz cone of size X.rows() and y ≥ 0 componentwise and has the same
+// size as the number of columns as X. This condition is equivalent to each
+// column of X being in the Lorentz cone.
+void AddMatrixIsLorentzByPositiveOrthantSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X,
+    MathematicalProgram* prog);
+
+// Adds the constraint that the matrix of expressions X is a conic combination
+// of Lorentz-positive orthant tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ
+// is in the Lorentz cone of size X.rows() and y ≥ 0 componentwise and has the
+// same size as the number of columns as X. This condition is equivalent to each
+// column of X being in the Lorentz cone.
+void AddMatrixIsLorentzByPositiveOrthantSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+    MathematicalProgram* prog);
+
+// Adds the constraint that the matrix X is a conic combination of
+// Lorentz-positive orthant tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ is
+// in the Lorentz cone of size X.rows() and y ≥ 0 componentwise. This condition
+// is equivalent to each row of X being in the Lorentz cone.
+void AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X,
+    MathematicalProgram* prog);
+
+// Adds the constraint that the matrix of expressions X is a conic combination
+// of Lorentz-positive orthant tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ
+// is in the Lorentz cone of size X.rows() and y ≥ 0 componentwise and has the
+// same size as the number of columns as X. This condition is equivalent to each
+// row of X being in the Lorentz cone.
+void AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+    MathematicalProgram* prog);
+
+// Add the constraint that the matrix X is a conic combination of
+// Lorentz separable tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ is in the
+// Lorentz cone of size X.rows() and y is in the Lorentz cone of size X.cols().
+void AddMatrixIsLorentzByLorentzSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X,
+    MathematicalProgram* prog);
+
+// Add the constraint that the matrix of expressions X is a conic combination of
+// Lorentz separable tensors. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ is in the
+// Lorentz cone of size X.rows() and y is in the Lorentz cone of size X.cols().
+void AddMatrixIsLorentzByLorentzSeparableConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
     MathematicalProgram* prog);
 
 }  // namespace internal
