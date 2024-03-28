@@ -135,6 +135,9 @@
                         0.3);
     viewer.set_property(["Lights", "FillLight", "<object>"], "intensity", 0.5);
 
+    // The "/drake" tree should start out open in the GUI.
+    viewer.scene_tree.find(["drake"]).folder.open();
+
     <!-- CONNECTION BLOCK BEGIN -->
     // The lifespan of the server may be much shorter than this visualizer
     // client. We'd like the user to not have to explicitly reload when they
