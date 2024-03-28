@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# Install Bazel as /usr/bin/bazel on Ubuntu.
+# On Ubuntu, installs either Bazel or Bazelisk at /usr/bin/bazel.
+#
 # This script does not accept any command line arguments.
 
 set -euo pipefail
@@ -54,17 +55,20 @@ EOF
 )
 
 # Install bazel.
-# Keep this version number in sync with the drake/.bazeliskrc version number.
 if [[ $(arch) = "aarch64" ]]; then
   # Check if bazel is already installed.
   if [[ "$(which bazel)" ]]; then
-    echo "Bazel is already installed." >&2
+    echo "Bazel(isk) is already installed." >&2
   else
-    echo "WARNING: On Ubuntu arm64 systems, Drake's install_prereqs does not" \
-    "automatically install Bazel on your behalf. You will need to install" \
-    "Bazel yourself. See https://bazel.build for instructions." >&2
+    # TODO(jeremy.nimmer) Once there's a bazelisk 1.20 that incorporates pr563,
+    # we should switch to using that here.
+    dpkg_install_from_wget \
+      bazelisk 1.19.0-9-g58a850f \
+      https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_arm64.deb \
+      5501a44ba1f51298d186e4e66966b0556d03524381a967667696f032e292d719
   fi
 else
+  # Keep this version number in sync with the drake/.bazeliskrc version number.
   dpkg_install_from_wget \
     bazel 7.0.2 \
     https://github.com/bazelbuild/bazel/releases/download/7.0.2/bazel_7.0.2-linux-x86_64.deb \
