@@ -736,7 +736,7 @@ MSKrescodee MosekSolverProgram::AddAffineConeConstraint(
     const Eigen::SparseMatrix<double>& B,
     const VectorX<symbolic::Variable>& decision_vars,
     const std::vector<MSKint32t>& slack_vars_mosek_indices,
-    const Eigen::VectorXd& c, MSKconetypee cone_type, MSKint64t* acc_index) {
+    const Eigen::VectorXd& c, MSKdomaintypee cone_type, MSKint64t* acc_index) {
   MSKrescodee rescode = MSK_RES_OK;
   std::vector<MSKint32t> F_subi;
   std::vector<MSKint32t> F_subj;
@@ -796,16 +796,20 @@ MSKrescodee MosekSolverProgram::AddAffineConeConstraint(
   // Create the domain.
   MSKint64t dom_idx;
   switch (cone_type) {
-    case MSK_CT_QUAD: {
+    case MSK_DOMAIN_QUADRATIC_CONE: {
       rescode = MSK_appendquadraticconedomain(task_, afe_dim, &dom_idx);
       break;
     }
-    case MSK_CT_RQUAD: {
+    case MSK_DOMAIN_RQUADRATIC_CONE: {
       rescode = MSK_appendrquadraticconedomain(task_, afe_dim, &dom_idx);
       break;
     }
-    case MSK_CT_PEXP: {
+    case MSK_DOMAIN_PRIMAL_EXP_CONE: {
       rescode = MSK_appendprimalexpconedomain(task_, &dom_idx);
+      break;
+    }
+    case MSK_DOMAIN_SVEC_PSD_CONE: {
+      rescode = MSK_appendsvecpsdconedomain(task_, afe_dim, &dom_idx);
       break;
     }
     default: {
@@ -855,92 +859,55 @@ MSKrescodee MosekSolverProgram::AddPositiveSemidefiniteConstraints(
 }
 
 MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
-    const MathematicalProgram& prog) {
-  // 1. Create the matrix variable X_bar.
-  // 2. Add the constraint
-  //     x1 * F1(m, n) + ... + xk * Fk(m, n) + <E_mn, X_bar> = -F0(m, n)
-  //    where E_mn is a symmetric matrix, the matrix inner product <E_mn, X_bar>
-  //    = -X_bar(m, n).
-  //    This linear constraint can be written as [F1_lower F2_lower ...
-  //    Fk_lower] * [x1; ...; xk] - X_bar_lower = -F0_lower
+    const MathematicalProgram& prog,
+    std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>*
+        acc_indices) {
+  // Use Mosek's "affine cone constraint". See
+  // https://docs.mosek.com/latest/capi/tutorial-sdo-shared.html#example-sdo-lmi-linear-matrix-inequalities-and-the-vectorized-semidefinite-domain
+  // for more details.
   MSKrescodee rescode = MSK_RES_OK;
+  const double sqrt2 = std::sqrt(2);
   for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
-    int num_linear_constraint = 0;
-    rescode = MSK_getnumcon(task_, &num_linear_constraint);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
-    }
+    // To impose the LMI that
+    // F0 + x1 * F1 + x2 * F2 + ... + xk * Fk is psd,
+    // Mosek takes the lower triangular part of the psd matrix, scale the
+    // off-diagonal terms by sqrt(2), and impose that the concatenation of the
+    // scaled lower triangular part is in the SVEC_PSD_CONE.
 
-    const int rows = binding.evaluator()->matrix_rows();
-    rescode = MSK_appendbarvars(task_, 1, &rows);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
-    }
-    MSKint32t bar_X_index;
-    rescode = MSK_getnumbarvar(task_, &bar_X_index);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
-    }
-    bar_X_index -= 1;
-    // Now form the matrix F_lower = [F1_lower F2_lower ... Fk_lower]
-    std::vector<Eigen::Triplet<double>> F_lower_triplets;
-    const int num_lower_entries = rows * (rows + 1) / 2;
-    F_lower_triplets.reserve(
-        num_lower_entries * static_cast<int>(binding.evaluator()->F().size()) -
-        1);
-    int lower_index = 0;
-    for (int k = 1; k < static_cast<int>(binding.evaluator()->F().size());
-         ++k) {
-      lower_index = 0;
-      for (int j = 0; j < rows; ++j) {
-        for (int i = j; i < rows; ++i) {
-          if (std::abs(binding.evaluator()->F()[k](i, j)) >
-              Eigen::NumTraits<double>::epsilon()) {
-            F_lower_triplets.emplace_back(lower_index, k - 1,
-                                          binding.evaluator()->F()[k](i, j));
+    // We write the concatenated scaled lower-triangular part of
+    // F0 + x1 * F1 + x2 * F2 + ... + xk * Fk
+    // as
+    // A * x + c
+    // where A is a sparse matrix.
+    std::vector<Eigen::Triplet<double>> A_triplets;
+    int A_row_index = 0;
+    Eigen::VectorXd c(binding.evaluator()->matrix_rows() *
+                      (binding.evaluator()->matrix_rows() + 1) / 2);
+    for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
+      for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
+        const double scaling_factor = i == j ? 1 : sqrt2;
+        c(A_row_index) = binding.evaluator()->F()[0](i, j) * scaling_factor;
+        for (int k = 1; k < ssize(binding.evaluator()->F()); ++k) {
+          if (binding.evaluator()->F()[k](i, j) != 0) {
+            A_triplets.emplace_back(
+                A_row_index, k - 1,
+                binding.evaluator()->F()[k](i, j) * scaling_factor);
           }
-          lower_index++;
         }
+        A_row_index++;
       }
     }
-    Eigen::SparseMatrix<double> F_lower(num_lower_entries,
-                                        binding.variables().rows());
-    F_lower.setFromTriplets(F_lower_triplets.begin(), F_lower_triplets.end());
-
-    Eigen::VectorXd bound(num_lower_entries);
-    lower_index = 0;
-    for (int j = 0; j < rows; ++j) {
-      for (int i = j; i < rows; ++i) {
-        bound(lower_index++) = -binding.evaluator()->F()[0](i, j);
-      }
-    }
-
-    rescode = AddLinearConstraintToMosek(
-        prog, F_lower, Eigen::SparseMatrix<double>(num_lower_entries, 0), bound,
-        bound, binding.variables(), {}, LinearConstraintBoundType::kEquality);
+    Eigen::SparseMatrix<double> A(c.rows(),
+                                  binding.evaluator()->F().size() - 1);
+    A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+    MSKint64t acc_index;
+    rescode = this->AddAffineConeConstraint(
+        prog, A, Eigen::SparseMatrix<double>(A.rows(), 0), binding.variables(),
+        {}, c, MSK_DOMAIN_SVEC_PSD_CONE, &acc_index);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    // Now add <Eₘₙ, X̅> = -X̅(m,n) to the linear constraint
-    lower_index = 0;
-    for (int j = 0; j < rows; ++j) {
-      for (int i = j; i < rows; ++i) {
-        const MSKrealt val = i == j ? -1.0 : -0.5;
-        MSKint64t E_index;
-        rescode =
-            MSK_appendsparsesymmat(task_, rows, 1, &i, &j, &val, &E_index);
-        if (rescode != MSK_RES_OK) {
-          return rescode;
-        }
-        const MSKrealt weights{1.0};
-        rescode = MSK_putbaraij(task_, num_linear_constraint + lower_index,
-                                bar_X_index, 1, &E_index, &weights);
-        if (rescode != MSK_RES_OK) {
-          return rescode;
-        }
-        lower_index++;
-      }
-    }
+    acc_indices->emplace(binding, acc_index);
   }
   return rescode;
 }
@@ -1071,9 +1038,9 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   g(0) = 1;
   std::vector<MSKint32t> slack_vars(1);
   slack_vars[0] = s_index;
-  rescode =
-      this->AddAffineConeConstraint(prog, L_bar_sparse, s_coeff, quadratic_vars,
-                                    slack_vars, g, MSK_CT_RQUAD, &acc_index);
+  rescode = this->AddAffineConeConstraint(
+      prog, L_bar_sparse, s_coeff, quadratic_vars, slack_vars, g,
+      MSK_DOMAIN_RQUADRATIC_CONE, &acc_index);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
