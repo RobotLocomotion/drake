@@ -165,8 +165,7 @@ void DoMain() {
   DRAKE_DEMAND(plant.num_actuators() == 16);
   // N.B. This change MUST be performed before Finalize() in order to take
   // effect.
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant.num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant.GetJointActuatorIndices()) {
     JointActuator<double>& actuator =
         plant.get_mutable_joint_actuator(actuator_index);
     actuator.set_default_rotor_inertia(rotor_inertia);

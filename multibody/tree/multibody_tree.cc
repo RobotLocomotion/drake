@@ -121,6 +121,22 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
 }
 
 template <typename T>
+void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
+  DRAKE_MBT_THROW_IF_FINALIZED();
+  JointActuatorIndex actuator_index = actuator.index();
+
+  if (!actuators_.has_element(actuator_index)) {
+    throw std::logic_error(
+        fmt::format("RemoveJointActuator(): Actuator with index {} has "
+                    "already been removed.",
+                    actuator_index));
+  }
+
+  actuators_.Remove(actuator_index);
+  topology_.RemoveJointActuator(actuator_index);
+}
+
+template <typename T>
 const std::string& MultibodyTree<T>::GetModelInstanceName(
     ModelInstanceIndex model_instance) const {
   if (!model_instances_.has_element(model_instance)) {
@@ -3602,7 +3618,7 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
       MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
   int user_index = 0;
   for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
-    Su(int{actuator_index}, user_index) = 1.0;
+    Su(get_joint_actuator(actuator_index).input_start(), user_index) = 1.0;
     ++user_index;
   }
 
@@ -3615,8 +3631,7 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
 
   std::vector<JointActuatorIndex> joint_to_actuator_index(num_joints());
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(actuator_index);
     joint_to_actuator_index[actuator.joint().index()] = actuator_index;
   }
@@ -3723,7 +3738,7 @@ VectorX<double> MultibodyTree<T>::GetEffortLowerLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd lower = Eigen::VectorXd::Constant(
       num_actuated_dofs(), -std::numeric_limits<double>::infinity());
-  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+  for (JointActuatorIndex i : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(i);
     for (int j = actuator.input_start();
          j < actuator.input_start() + actuator.num_inputs(); ++j) {
@@ -3739,7 +3754,7 @@ VectorX<double> MultibodyTree<T>::GetEffortUpperLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd upper = Eigen::VectorXd::Constant(
       num_actuated_dofs(), std::numeric_limits<double>::infinity());
-  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+  for (JointActuatorIndex i : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(i);
     for (int j = actuator.input_start();
          j < actuator.input_start() + actuator.num_inputs(); ++j) {
