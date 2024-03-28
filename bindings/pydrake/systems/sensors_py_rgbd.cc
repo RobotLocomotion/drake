@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -100,7 +101,11 @@ void DefineSensorsRgbd(py::module m) {
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
       .def("parent_frame_id", &RgbdSensor::parent_frame_id,
-          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc)
+      .def("X_PB", &RgbdSensor::X_PB, py::arg("context"),
+          doc.RgbdSensor.X_PB.doc)
+      .def("SetX_PB", &RgbdSensor::SetX_PB, py::arg("context"), py::arg("X_PB"),
+          doc.RgbdSensor.SetX_PB.doc);
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(
@@ -125,7 +130,9 @@ void DefineSensorsRgbd(py::module m) {
   {
     using Class = RgbdSensorAsync;
     constexpr auto& cls_doc = doc.RgbdSensorAsync;
-    py::class_<Class, LeafSystem<double>>(m, "RgbdSensorAsync", cls_doc.doc)
+    py::class_<Class, LeafSystem<double>> cls(
+        m, "RgbdSensorAsync", cls_doc.doc);
+    cls  // BR
         .def(py::init<const geometry::SceneGraph<double>*, geometry::FrameId,
                  const math::RigidTransformd&, double, double, double,
                  std::optional<ColorRenderCamera>,
@@ -135,7 +142,12 @@ void DefineSensorsRgbd(py::module m) {
             py::arg("color_camera"), py::arg("depth_camera") = std::nullopt,
             py::arg("render_label_image") = false, cls_doc.ctor.doc)
         .def("parent_id", &Class::parent_id, cls_doc.parent_id.doc)
-        .def("X_PB", &Class::X_PB, cls_doc.X_PB.doc)
+        .def("X_PB",
+            overload_cast_explicit<const math::RigidTransformd&,
+                const systems::Context<double>&>(&Class::X_PB),
+            py::arg("context"), cls_doc.X_PB.doc)
+        .def("SetX_PB", &Class::SetX_PB, py::arg("context"), py::arg("X_PB"),
+            cls_doc.SetX_PB.doc)
         .def("fps", &Class::fps, cls_doc.fps.doc)
         .def("capture_offset", &Class::capture_offset,
             cls_doc.capture_offset.doc)
@@ -155,6 +167,13 @@ void DefineSensorsRgbd(py::module m) {
             cls_doc.body_pose_in_world_output_port.doc)
         .def("image_time_output_port", &Class::image_time_output_port,
             py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("X_PB", WrapDeprecated(cls_doc.X_PB.doc_deprecated,
+                         overload_cast_explicit<const math::RigidTransformd&>(
+                             &Class::X_PB)));
+#pragma GCC diagnostic pop
   }
 }
 

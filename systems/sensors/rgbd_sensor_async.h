@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -79,6 +80,13 @@ associated with rendering.
 See also RgbdSensorDiscrete for a simpler (unthreaded) discrete sensor model, or
 RgbdSensor for a continuous model.
 
+The camera is posed using a parent frame, P, and a pose relative to that parent
+frame, X_PB. Like with RgbdSensor, the pose X_PB is a parameter of the system
+and can be changed. %RgbdSensorAsync adds a subtle wrinkle to that act. If
+the pose is changed between "capture" and "output" times, the output will
+reflect the pose at the time of the previous capture. The new pose will only
+affect *subsequent* images.
+
 @warning As the moment, this implementation cannnot respond to changes to
 geometry shapes, textures, etc. after a simulation has started. The only thing
 it responds to are changes to geometry poses. If you change anything beyond
@@ -128,7 +136,18 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   geometry::FrameId parent_id() const { return parent_id_; }
 
   /** Returns the `X_PB` passed to the constructor. */
-  const math::RigidTransformd& X_PB() const { return X_PB_; }
+  DRAKE_DEPRECATED("2024-03-01",
+                   "X_PB is now a system parameter; use X_PB(context) to query "
+                   "the value")
+  const math::RigidTransformd& X_PB() const { return X_PB_from_constructor_; }
+
+  /** Returns the `X_PB` parameter value stored in the given `context`. */
+  const math::RigidTransformd& X_PB(
+      const systems::Context<double>& context) const;
+
+  /** Sets the value for the `X_PB` parameter value into the given `context`. */
+  void SetX_PB(systems::Context<double>* context,
+               const math::RigidTransformd& X_PB) const;
 
   /** Returns the `fps` passed to the constructor. */
   double fps() const { return fps_; }
@@ -199,7 +218,9 @@ class RgbdSensorAsync final : public LeafSystem<double> {
 
   const geometry::SceneGraph<double>* const scene_graph_;
   const geometry::FrameId parent_id_;
-  const math::RigidTransformd X_PB_;
+  // 2024-03-01 - remove when removing deprecation.
+  const math::RigidTransformd X_PB_from_constructor_;
+  int X_PB_index_{};
   const double fps_;
   const double capture_offset_;
   const double output_delay_;
