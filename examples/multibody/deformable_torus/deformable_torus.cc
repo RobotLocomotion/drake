@@ -221,6 +221,10 @@ int do_main() {
   const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
   auto torus_instance = std::make_unique<GeometryInstance>(
       X_WB, std::move(torus_mesh), "deformable_torus");
+  auto torus_mesh2 = std::make_unique<Mesh>(torus_vtk, scale);
+  const RigidTransformd X_WB2(Vector3<double>(0.0, 0.0, kL * 2.0));
+  auto torus_instance2 = std::make_unique<GeometryInstance>(
+      X_WB2, std::move(torus_mesh2), "deformable_torus2");
 
   /* Minimumly required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
@@ -228,6 +232,7 @@ int do_main() {
   AddContactMaterial(FLAGS_contact_damping, {}, surface_friction,
                      &deformable_proximity_props);
   torus_instance->set_proximity_properties(deformable_proximity_props);
+  torus_instance2->set_proximity_properties(deformable_proximity_props);
 
   /* Registration of all deformable geometries ostensibly requires a resolution
    hint parameter that dictates how the shape is tessellated. In the case of a
@@ -238,6 +243,8 @@ int do_main() {
   const double unused_resolution_hint = 1.0;
   owned_deformable_model->RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
+  owned_deformable_model->RegisterDeformableBody(
+      std::move(torus_instance2), deformable_config, unused_resolution_hint);
 
   /* Add an external suction force if using a suction gripper. */
   const PointSourceForceField* suction_force_ptr{nullptr};
