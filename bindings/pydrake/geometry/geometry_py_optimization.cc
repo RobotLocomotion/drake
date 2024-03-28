@@ -654,17 +654,22 @@ void DefineGeometryOptimization(py::module m) {
               "flow_tolerance={}, "
               "rounding_seed={}, "
               "solver={}, "
+              "rounding_solver={}, "
               "solver_options={}, "
               "rounding_solver_options={}, "
               ")")
               .format(self.convex_relaxation, self.preprocessing,
                   self.max_rounded_paths, self.max_rounding_trials,
                   self.flow_tolerance, self.rounding_seed, self.solver,
-                  self.solver_options, self.rounding_solver_options);
+                  self.rounding_solver, self.solver_options,
+                  self.rounding_solver_options);
         });
 
     DefReadWriteKeepAlive(&gcs_options, "solver",
         &GraphOfConvexSetsOptions::solver, cls_doc.solver.doc);
+    DefReadWriteKeepAlive(&gcs_options, "rounding_solver",
+        &GraphOfConvexSetsOptions::rounding_solver,
+        cls_doc.rounding_solver.doc);
   }
 
   // GraphOfConvexSets
@@ -677,6 +682,18 @@ void DefineGeometryOptimization(py::module m) {
         graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);
     BindIdentifier<GraphOfConvexSets::EdgeId>(
         graph_of_convex_sets, "EdgeId", doc.GraphOfConvexSets.EdgeId.doc);
+
+    // Problem component
+    constexpr auto& enum_doc = doc.GraphOfConvexSets.ProblemComponent;
+    py::enum_<GraphOfConvexSets::ProblemComponent> enum_py(
+        graph_of_convex_sets, "ProblemComponent", enum_doc.doc);
+    enum_py  // BR
+        .value("kRelaxation", GraphOfConvexSets::ProblemComponent::kRelaxation,
+            enum_doc.kRelaxation.doc)
+        .value("kRounding", GraphOfConvexSets::ProblemComponent::kRounding,
+            enum_doc.kRounding.doc)
+        .value("kBoth", GraphOfConvexSets::ProblemComponent::kBoth,
+            enum_doc.kBoth.doc);
 
     // Vertex
     const auto& vertex_doc = doc.GraphOfConvexSets.Vertex;
@@ -706,17 +723,23 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("binding"), vertex_doc.AddCost.doc_binding)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
-                const symbolic::Formula&>(
+                const symbolic::Formula&, GraphOfConvexSets::ProblemComponent>(
                 &GraphOfConvexSets::Vertex::AddConstraint),
-            py::arg("f"), vertex_doc.AddConstraint.doc_formula)
+            py::arg("f"),
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
+            vertex_doc.AddConstraint.doc_formula)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
-                const solvers::Binding<solvers::Constraint>&>(
+                const solvers::Binding<solvers::Constraint>&,
+                GraphOfConvexSets::ProblemComponent>(
                 &GraphOfConvexSets::Vertex::AddConstraint),
-            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+            py::arg("binding"),
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
+            vertex_doc.AddConstraint.doc_binding)
         .def("GetCosts", &GraphOfConvexSets::Vertex::GetCosts,
             vertex_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
             vertex_doc.GetConstraints.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
             py::arg("result"), vertex_doc.GetSolutionCost.doc)
@@ -763,14 +786,19 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("binding"), edge_doc.AddCost.doc_binding)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
-                const symbolic::Formula&>(
+                const symbolic::Formula&, GraphOfConvexSets::ProblemComponent>(
                 &GraphOfConvexSets::Edge::AddConstraint),
-            py::arg("f"), edge_doc.AddConstraint.doc_formula)
+            py::arg("f"),
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
+            edge_doc.AddConstraint.doc_formula)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
-                const solvers::Binding<solvers::Constraint>&>(
+                const solvers::Binding<solvers::Constraint>&,
+                GraphOfConvexSets::ProblemComponent>(
                 &GraphOfConvexSets::Edge::AddConstraint),
-            py::arg("binding"), edge_doc.AddCost.doc_binding)
+            py::arg("binding"),
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
+            edge_doc.AddConstraint.doc_binding)
         .def("AddPhiConstraint", &GraphOfConvexSets::Edge::AddPhiConstraint,
             py::arg("phi_value"), edge_doc.AddPhiConstraint.doc)
         .def("ClearPhiConstraints",
@@ -779,6 +807,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetCosts", &GraphOfConvexSets::Edge::GetCosts,
             edge_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
+            py::arg("component") = GraphOfConvexSets::ProblemComponent::kBoth,
             edge_doc.GetConstraints.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
             py::arg("result"), edge_doc.GetSolutionCost.doc)
