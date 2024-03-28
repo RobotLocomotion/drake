@@ -330,6 +330,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);
 
+  // TODO(russt): give a better error meesage if limits are not finite.
   const HPolyhedron domain = options.iris_options.bounding_region.value_or(
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
                            checker.plant().GetPositionUpperLimits()));
