@@ -151,10 +151,12 @@ void ClosestCollisionProgram::UpdatePolytope(
 // Sets `closest` to an optimizing solution q*, if a solution is found.
 bool ClosestCollisionProgram::Solve(
     const solvers::SolverInterface& solver,
-    const Eigen::Ref<const Eigen::VectorXd>& q_guess, VectorXd* closest) {
+    const Eigen::Ref<const Eigen::VectorXd>& q_guess,
+    const std::optional<solvers::SolverOptions>& solver_options,
+    VectorXd* closest) {
   prog_.SetInitialGuess(q_, q_guess);
   solvers::MathematicalProgramResult result;
-  solver.Solve(prog_, std::nullopt, std::nullopt, &result);
+  solver.Solve(prog_, std::nullopt, solver_options, &result);
   if (result.is_success()) {
     *closest = result.GetSolution(q_);
     return true;

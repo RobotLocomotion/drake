@@ -81,6 +81,7 @@ class ClosestCollisionProgram {
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
              const Eigen::Ref<const Eigen::VectorXd>& q_guess,
+             const std::optional<solvers::SolverOptions>& solver_options,
              Eigen::VectorXd* closest);
 
  private:

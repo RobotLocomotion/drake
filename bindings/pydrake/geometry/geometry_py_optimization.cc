@@ -514,6 +514,12 @@ void DefineGeometryOptimization(py::module m) {
             "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
         .def_readwrite("mixing_steps", &IrisOptions::mixing_steps,
             cls_doc.mixing_steps.doc)
+        .def_readwrite("counterexample_solver_options",
+            &IrisOptions::counterexample_solver_options,
+            cls_doc.counterexample_solver_options.doc)
+        .def_readwrite("closest_collision_solver_options",
+            &IrisOptions::closest_collision_solver_options,
+            cls_doc.closest_collision_solver_options.doc)
         .def("__repr__", [](const IrisOptions& self) {
           return py::str(
               "IrisOptions("
