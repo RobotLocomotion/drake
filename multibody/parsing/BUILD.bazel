@@ -28,6 +28,7 @@ filegroup(
         "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
+        "test/**/*.usda",
         "test/**/*.xml",
         "test/**/*.zip",
         "test/**/COLCON_IGNORE",
