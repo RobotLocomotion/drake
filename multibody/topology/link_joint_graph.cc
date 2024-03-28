@@ -393,6 +393,241 @@ JointTypeIndex LinkJointGraph::GetJointTypeIndex(
                                                     : it->second;
 }
 
+JointIndex LinkJointGraph::AddModelingJointToWorld(JointTypeIndex type_index,
+                                                   BodyIndex child_link_index) {
+  const LinkJointGraph::Link& child = links(child_link_index);
+  const JointIndex new_joint_index(ssize(joints()));
+  const ModelInstanceIndex model_instance = child.model_instance();
+
+  /* We'll try to name the new Joint the same as the base body it mobilizes.
+  This can fail if there is already a Joint in this model instance with
+  that name (unlikely). In that case we prepend "_" to the body name until
+  the name is unique. This must terminate since there are a finite number
+  of Joints in the graph. */
+  std::string joint_name = child.name();
+  while (HasJointNamed(joint_name, model_instance))
+    joint_name = "_" + joint_name;
+
+  // TODO(sherm1) Extract this code that is common with AddJoint().
+  data_.ephemeral_joint_name_to_index.insert({joint_name, new_joint_index});
+  data_.joints.emplace_back(Joint(new_joint_index, joint_name, model_instance,
+                                  type_index, BodyIndex(0), child_link_index,
+                                  JointFlags::kDefault));
+  // Links need to know their joints.
+  mutable_link(BodyIndex(0)).add_joint_as_parent(new_joint_index);
+  mutable_link(child_link_index).add_joint_as_child(new_joint_index);
+
+  return new_joint_index;
+}
+
+LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
+    BodyIndex existing_link_index, BodyIndex new_link_index) {
+  DRAKE_ASSERT(existing_link_index.is_valid() && new_link_index.is_valid());
+  Link& existing_link = data_.links[existing_link_index];
+  Link& new_link = data_.links[new_link_index];
+  DRAKE_DEMAND(!new_link.is_world());
+  LinkCompositeIndex existing_composite = existing_link.link_composite_index_;
+  if (!existing_composite.is_valid()) {
+    // We're starting a new Link Composite. This must be the "active link"
+    // for this Composite because we saw it first while building the Forest.
+    existing_composite = existing_link.link_composite_index_ =
+        LinkCompositeIndex(ssize(data_.link_composites));
+    data_.link_composites.emplace_back(std::vector{existing_link_index});
+  }
+  data_.link_composites[existing_composite].push_back(new_link_index);
+  new_link.link_composite_index_ = existing_composite;
+
+  return existing_composite;
+}
+
+void LinkJointGraph::AddUnmodeledJointToComposite(
+    JointIndex unmodeled_joint_index, LinkCompositeIndex link_composite_index) {
+  Joint& joint = data_.joints[unmodeled_joint_index];
+  DRAKE_DEMAND(joint.type_index() == weld_joint_type_index());
+  joint.how_modeled_ = link_composite_index;
+}
+
+/* Runs through the Mobods in the model but records the (active) Link
+indexes rather than the Mobod indexes. */
+std::vector<BodyIndex> LinkJointGraph::FindPathFromWorld(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const SpanningForest::Mobod* mobod =
+      &forest().mobods()[link_to_mobod(link_index)];
+  std::vector<BodyIndex> path(mobod->level() + 1);
+  while (mobod->inboard().is_valid()) {
+    path[mobod->level()] = mobod->link();  // Active Link if composite.
+    mobod = &forest().mobods(mobod->inboard());
+  }
+  DRAKE_DEMAND(mobod->is_world());
+  path[0] = BodyIndex(0);
+  return path;
+}
+
+BodyIndex LinkJointGraph::FindFirstCommonAncestor(BodyIndex link1_index,
+                                                  BodyIndex link2_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const MobodIndex mobod_ancestor = forest().FindFirstCommonAncestor(
+      link_to_mobod(link1_index), link_to_mobod(link2_index));
+  return forest().mobod_to_link(mobod_ancestor);
+}
+
+std::vector<BodyIndex> LinkJointGraph::FindSubtreeLinks(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const MobodIndex root_mobod_index = link_to_mobod(link_index);
+  return forest().FindSubtreeLinks(root_mobod_index);
+}
+
+// Our link_composites collection doesn't include lone Links that aren't welded
+// to anything. The return from this function must include every Link, with
+// the World link in the first set (even if nothing is welded to it).
+std::vector<std::set<BodyIndex>> LinkJointGraph::GetSubgraphsOfWeldedLinks()
+    const {
+  ThrowIfForestNotBuiltYet(__func__);
+
+  std::vector<std::set<BodyIndex>> subgraphs;
+
+  // First, collect all the precomputed Link Composites. World is always
+  // the first one, even if nothing is welded to it.
+  for (const std::vector<BodyIndex>& composite : link_composites()) {
+    subgraphs.emplace_back(
+        std::set<BodyIndex>(composite.cbegin(), composite.cend()));
+  }
+
+  // Finally, make one-Link subgraphs for Links that aren't in any composite.
+  for (const Link& link : links()) {
+    if (link.composite().is_valid()) continue;
+    subgraphs.emplace_back(std::set<BodyIndex>{link.index()});
+  }
+
+  return subgraphs;
+}
+
+// Strategy here is to make repeated use of CalcLinksWeldedTo(), separating
+// the singleton sets from the actually-welded sets, and then move the
+// singletons to the end to match what GetSubgraphsOfWeldedLinks() does.
+std::vector<std::set<BodyIndex>> LinkJointGraph::CalcSubgraphsOfWeldedLinks()
+    const {
+  std::vector<bool> visited(num_user_links(), false);
+
+  // World always comes first, even if it is alone.
+  std::vector<std::set<BodyIndex>> subgraphs{CalcLinksWeldedTo(BodyIndex(0))};
+  for (BodyIndex index : subgraphs.back()) visited[index] = true;
+
+  std::vector<std::set<BodyIndex>> singletons;
+  // If a Forest was already built, there may be shadow links added to
+  // the graph -- don't process those here.
+  for (BodyIndex link_index(1); link_index < num_user_links(); ++link_index) {
+    if (visited[link_index]) continue;
+    std::set<BodyIndex> welded_links = CalcLinksWeldedTo(link_index);
+    for (BodyIndex index : welded_links) visited[index] = true;
+    auto* which_list = ssize(welded_links) == 1 ? &singletons : &subgraphs;
+    which_list->emplace_back(std::move(welded_links));
+  }
+
+  // Now move all the singletons onto the end of the subgraphs list.
+  for (auto& singleton : singletons)
+    subgraphs.emplace_back(std::move(singleton));
+
+  return subgraphs;
+}
+
+// If the Link isn't part of a LinkComposite just return the Link. Otherwise,
+// return all the Links in its LinkComposite.
+std::set<BodyIndex> LinkJointGraph::GetLinksWeldedTo(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  DRAKE_THROW_UNLESS(link_index.is_valid() && link_index < ssize(links()));
+  const Link& link = links(link_index);
+  const LinkCompositeIndex composite_index = link.composite();
+  if (!composite_index.is_valid()) return std::set<BodyIndex>{link_index};
+  const std::vector<BodyIndex> welded_links = link_composites(composite_index);
+  return std::set<BodyIndex>(welded_links.cbegin(), welded_links.cend());
+}
+
+// Without a Forest we don't have LinkComposites available so recursively
+// chase Weld joints instead.
+std::set<BodyIndex> LinkJointGraph::CalcLinksWeldedTo(
+    BodyIndex link_index) const {
+  std::set<BodyIndex> result;
+  AppendLinksWeldedTo(link_index, &result);
+  return result;
+}
+
+void LinkJointGraph::AppendLinksWeldedTo(BodyIndex link_index,
+                                         std::set<BodyIndex>* result) const {
+  DRAKE_DEMAND(result != nullptr);
+  DRAKE_THROW_UNLESS(link_index.is_valid() && link_index < ssize(links()));
+  DRAKE_DEMAND(result->count(link_index) == 0);
+
+  const Link& link = links(link_index);
+
+  // A Link is always considered welded to itself.
+  result->insert(link_index);
+  for (auto joint_index : link.joints()) {
+    const Joint& joint = joints(joint_index);
+    if (joint.type_index() != weld_joint_type_index()) continue;
+    const BodyIndex welded_link_index = joint.other_link_index(link_index);
+    // Don't reprocess if we already did the other end.
+    if (result->count(welded_link_index) == 0)
+      AppendLinksWeldedTo(welded_link_index, &*result);
+  }
+}
+
+void LinkJointGraph::ThrowIfForestNotBuiltYet(const char* func) const {
+  if (!forest_is_valid()) {
+    throw std::logic_error(
+        fmt::format("{}(): no SpanningForest available. Call BuildForest() "
+                    "before calling this function.",
+                    func));
+  }
+}
+
+void LinkJointGraph::RenumberMobodIndexes(
+    const std::vector<MobodIndex>& old_to_new) {
+  for (auto& link : data_.links) link.renumber_mobod_indexes(old_to_new);
+  for (auto& joint : data_.joints) joint.renumber_mobod_indexes(old_to_new);
+}
+
+std::tuple<BodyIndex, BodyIndex, bool> LinkJointGraph::FindInboardOutboardLinks(
+    MobodIndex mobod_index, JointIndex joint_index) const {
+  const Joint& joint = joints(joint_index);
+  const Link& parent_link = links(joint.parent_link());
+  if (parent_link.mobod_index().is_valid() &&
+      parent_link.mobod_index() == mobod_index) {
+    return std::make_tuple(joint.parent_link(), joint.child_link(), false);
+  }
+  const LinkJointGraph::Link& child_link = links(joint.child_link());
+  DRAKE_DEMAND(child_link.mobod_index().is_valid() &&
+               child_link.mobod_index() == mobod_index);
+  return std::make_tuple(joint.child_link(), joint.parent_link(), true);
+}
+
+// While modeling, add a shadow link
+BodyIndex LinkJointGraph::AddShadowLink(BodyIndex primary_link_index,
+                                        JointIndex shadow_joint_index) {
+  // Caution: this Link reference will be invalid after the emplace.
+  const Link& primary_link = links(primary_link_index);
+  const int shadow_num = primary_link.num_shadows() + 1;
+  const std::string shadow_link_name =
+      fmt::format("{}${}", primary_link.name(), shadow_num);
+  // TODO(sherm1) Consider whether to modify name until unique.
+  DRAKE_DEMAND(!HasLinkNamed(shadow_link_name, primary_link.model_instance()));
+  const BodyIndex shadow_link_index(ssize(links()));
+  data_.ephemeral_link_name_to_index.insert(
+      {shadow_link_name, shadow_link_index});
+  data_.links.emplace_back(Link(shadow_link_index, shadow_link_name,
+                                primary_link.model_instance(),
+                                LinkFlags::kShadow));
+  Link& shadow_link = data_.links.back();
+  shadow_link.primary_link_ = primary_link_index;
+  shadow_link.add_joint_as_child(shadow_joint_index);  // Always a child.
+  mutable_link(primary_link_index).shadow_links_.push_back(shadow_link_index);
+
+  return shadow_link.index();
+}
+
 LinkJointGraph::Data::Data() = default;
 LinkJointGraph::Data::Data(const Data&) = default;
 LinkJointGraph::Data::Data(Data&&) = default;

@@ -42,18 +42,13 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
-  // the knowledge of the inboard and outboard frames it connects.
-  // Subclasses of %MobilizerImpl are therefore forced to provide this
-  // information in their respective constructors.
-  MobilizerImpl(const Frame<T>& inboard_frame,
-                const Frame<T>& outboard_frame) :
-      Mobilizer<T>(inboard_frame, outboard_frame) {}
-
-  // Returns the number of generalized coordinates granted by this mobilizer.
-  int num_positions() const final { return kNq;}
-
-  // Returns the number of generalized velocities granted by this mobilizer.
-  int num_velocities() const final { return kNv;}
+  // provided here. Subclasses of %MobilizerImpl are therefore forced to
+  // provide this information in their respective constructors.
+  // TODO(sherm1) This is a bad idea -- only the base class should have to
+  //  deal with these parameters that are common to all Mobilizers.
+  MobilizerImpl(const SpanningForest::Mobod& mobod,
+                const Frame<T>& inboard_frame, const Frame<T>& outboard_frame)
+      : Mobilizer<T>(mobod, inboard_frame, outboard_frame) {}
 
   // Sets the elements of the `state` associated with this Mobilizer to the
   // _zero_ state.  See Mobilizer::set_zero_state().
@@ -171,7 +166,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().template get_state_segment<kNq>(
-        context, this->get_positions_start());
+        context, this->position_start_in_q());
   }
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
@@ -181,7 +176,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNq> GetMutablePositions(
       systems::Context<T>* context) const {
     return this->get_parent_tree().template GetMutableStateSegment<kNq>(
-        context, this->get_positions_start());
+        context, this->position_start_in_q());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
@@ -191,7 +186,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNq>(
-        state, this->get_positions_start());
+        state, this->position_start_in_q());
   }
 
   // Helper to return a const fixed-size Eigen::VectorBlock referencing the
@@ -200,7 +195,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().template get_state_segment<kNv>(context,
-        this->get_velocities_start_in_state());
+        num_qs_in_state() + this->velocity_start_in_v());
   }
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
@@ -210,7 +205,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNv> GetMutableVelocities(
       systems::Context<T>* context) const {
     return this->get_parent_tree().template GetMutableStateSegment<kNv>(
-        context, this->get_velocities_start_in_state());
+        context, num_qs_in_state() + this->velocity_start_in_v());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
@@ -220,23 +215,14 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        state, this->get_velocities_start_in_state());
+        state, num_qs_in_state() + this->velocity_start_in_v());
   }
   //@}
 
  private:
-  // Returns the index in the global array of generalized coordinates and
-  // velocities [q v] in the MultibodyTree model to the first component of the
-  // generalized coordinates vector that corresponds to this mobilizer.
-  int get_positions_start() const {
-    return this->get_topology().positions_start;
-  }
-
-  // Returns the index in the global array of generalized coordinates and
-  // velocities [q v] in the MultibodyTree model to the first component of the
-  // generalized velocities vector that corresponds to this mobilizer.
-  int get_velocities_start_in_state() const {
-    return this->get_topology().velocities_start_in_state;
+  int num_qs_in_state() const {
+    const SpanningForest& forest = this->get_parent_tree().forest();
+    return forest.num_positions();
   }
 
   std::optional<Vector<double, kNq>> default_position_{};
