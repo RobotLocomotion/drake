@@ -217,6 +217,7 @@ drake_cc_library(
     interface_deps = [
         ":decision_variable",
         ":evaluator_base",
+        ":sparse_and_dense_matrix",
     ],
     deps = [
         ":constraint",

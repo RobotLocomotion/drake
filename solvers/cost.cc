@@ -200,19 +200,37 @@ std::string L1NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 L2NormCost::L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_DEMAND(A_.get_as_sparse().rows() == b_.rows());
+}
+
+L2NormCost::L2NormCost(const Eigen::SparseMatrix<double>& A,
+                       const Eigen::Ref<const Eigen::VectorXd>& b)
+    : Cost(A.cols()), A_(A), b_(b) {
+  DRAKE_DEMAND(A_.get_as_sparse().rows() == b_.rows());
 }
 
 void L2NormCost::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
-  if (new_A.cols() != A_.cols()) {
+  if (new_A.cols() != A_.get_as_sparse().cols()) {
     throw std::runtime_error("Can't change the number of decision variables");
   }
   if (new_A.rows() != new_b.rows()) {
     throw std::runtime_error("A and b must have the same number of rows.");
   }
+  A_ = new_A;
+  b_ = new_b;
+}
 
+void L2NormCost::UpdateCoefficients(
+    const Eigen::SparseMatrix<double>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != A_.get_as_sparse().cols()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+  if (new_A.rows() != new_b.rows()) {
+    throw std::runtime_error("A and b must have the same number of rows.");
+  }
   A_ = new_A;
   b_ = new_b;
 }
@@ -220,19 +238,19 @@ void L2NormCost::UpdateCoefficients(
 void L2NormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                         Eigen::VectorXd* y) const {
   y->resize(1);
-  (*y)(0) = (A_ * x + b_).norm();
+  (*y)(0) = (A_.GetAsDense() * x + b_).norm();
 }
 
 void L2NormCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                         AutoDiffVecXd* y) const {
   y->resize(1);
-  (*y)(0) = math::DifferentiableNorm(A_ * x + b_);
+  (*y)(0) = math::DifferentiableNorm(A_.GetAsDense() * x + b_);
 }
 
 void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
                         VectorX<symbolic::Expression>* y) const {
   y->resize(1);
-  (*y)(0) = sqrt((A_ * x + b_).squaredNorm());
+  (*y)(0) = sqrt((A_.GetAsDense() * x + b_).squaredNorm());
 }
 
 std::ostream& L2NormCost::DoDisplay(
@@ -242,8 +260,9 @@ std::ostream& L2NormCost::DoDisplay(
 
 std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
                                   int precision) const {
-  return fmt::format("\\left|{}\\right|_2",
-                     symbolic::ToLatex((A_ * vars + b_).eval(), precision));
+  return fmt::format(
+      "\\left|{}\\right|_2",
+      symbolic::ToLatex((A_.GetAsDense() * vars + b_).eval(), precision));
 }
 
 LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
