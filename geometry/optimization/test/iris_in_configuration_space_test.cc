@@ -911,8 +911,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
     meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
     meshcat->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
                                             z_test, theta_test, 0)));
-
-    MaybePauseForUser();
   }
 
   // Confirm that mixing_steps has a tangible effect (this example is
@@ -923,6 +921,16 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   constexpr double kTol = 1e-4;
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume() + kTol,
             region2.MaximumVolumeInscribedEllipsoid().Volume());
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region 2", points, 2.0, Rgba(1, 0, 0));
+  }
+  MaybePauseForUser();
 }
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
