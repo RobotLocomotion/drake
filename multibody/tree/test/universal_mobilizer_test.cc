@@ -95,11 +95,11 @@ TEST_F(UniversalMobilizerTest, DefaultPosition) {
 
   EXPECT_EQ(mobilizer_->get_angles(*context_), Vector2d::Zero());
 
-  Vector2d new_defualt(.4, .5);
-  mutable_mobilizer->set_default_position(new_defualt);
+  Vector2d new_default(.4, .5);
+  mutable_mobilizer->set_default_position(new_default);
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
-  EXPECT_EQ(mobilizer_->get_angles(*context_), new_defualt);
+  EXPECT_EQ(mobilizer_->get_angles(*context_), new_default);
 }
 
 TEST_F(UniversalMobilizerTest, RandomState) {

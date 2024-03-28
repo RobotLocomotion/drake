@@ -682,8 +682,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.default_translational_damping.doc)
         .def("get_quaternion", &Class::get_quaternion, py::arg("context"),
             cls_doc.get_quaternion.doc)
-        .def("get_position", &Class::get_position, py::arg("context"),
-            cls_doc.get_position.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_position",
+            WrapDeprecated(
+                cls_doc.get_position.doc_deprecated, &Class::get_position),
+            py::arg("context"), cls_doc.get_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declaration
+    cls                     // BR
         .def("get_pose", &Class::get_pose, py::arg("context"),
             cls_doc.get_pose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
@@ -695,8 +704,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFromRotationMatrix", &Class::SetFromRotationMatrix,
             py::arg("context"), py::arg("R_FM"),
             cls_doc.SetFromRotationMatrix.doc)
-        .def("set_position", &Class::set_position, py::arg("context"),
-            py::arg("p_FM"), cls_doc.set_position.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("translation"), cls_doc.set_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_position",
+            WrapDeprecated(
+                cls_doc.set_position.doc_deprecated, &Class::set_position),
+            py::arg("context"), py::arg("p_FM"),
+            cls_doc.set_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("set_pose", &Class::set_pose, py::arg("context"), py::arg("X_FM"),
             cls_doc.set_pose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
@@ -716,14 +735,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_quaternion_distribution_to_uniform.doc)
         .def("get_default_quaternion", &Class::get_default_quaternion,
             cls_doc.get_default_quaternion.doc)
-        .def("get_default_position", &Class::get_default_position,
-            cls_doc.get_default_position.doc)
+        .def("get_default_translation", &Class::get_default_translation,
+            cls_doc.get_default_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_default_position",
+            WrapDeprecated(cls_doc.get_default_position.doc_deprecated,
+                &Class::get_default_position),
+            cls_doc.get_default_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("get_default_pose", &Class::get_default_pose,
             cls_doc.get_default_pose.doc)
         .def("set_default_quaternion", &Class::set_default_quaternion,
             py::arg("q_FM"), cls_doc.set_default_quaternion.doc)
-        .def("set_default_position", &Class::set_default_position,
-            py::arg("p_FM"), cls_doc.set_default_position.doc);
+        .def("set_default_translation", &Class::set_default_translation,
+            py::arg("translation"), cls_doc.set_default_translation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_default_position",
+            WrapDeprecated(cls_doc.set_default_position.doc_deprecated,
+                &Class::set_default_position),
+            py::arg("p_FM"),
+            cls_doc.set_default_position.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   // RevoluteJoint

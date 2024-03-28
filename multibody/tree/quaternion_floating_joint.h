@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/random.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
@@ -43,7 +44,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// frame M in F is represented by a quaternion `q_FM` while the position of F
   /// in M is given by a position vector `p_FM` expressed in frame F. See this
   /// class's documentation for further details on the definition of these
-  /// frames, get_quaternion() and get_position() for an explanation of the
+  /// frames, get_quaternion() and get_translation() for an explanation of the
   /// configuration of this joint, and get_angular_velocity() and
   /// get_translational_velocity() for an explanation of the generalized
   /// velocities.
@@ -148,16 +149,18 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return get_mobilizer().get_quaternion(context);
   }
 
-  // TODO(sherm1) Rename this get_translation()
-
-  /// Returns the position `p_FM` of the outboard frame M's origin as measured
-  /// and expressed in the inboard frame F. Refer to the documentation for this
-  /// class for details.
-  /// @param[in] context
-  ///   A Context for the MultibodyPlant this joint belongs to.
-  /// @retval p_FM The position vector of frame M's origin in frame F.
-  Vector3<T> get_position(const systems::Context<T>& context) const {
+  /// Returns the position vector p_FoMo_F from Fo (inboard frame F's origin)
+  /// to Mo (outboard frame M's origin), expressed in inboard frame F.
+  /// @param[in] context contains the state of the multibody system.
+  /// @note Class documentation describes inboard frame F and outboard frame F.
+  Vector3<T> get_translation(const systems::Context<T>& context) const {
     return get_mobilizer().get_translation(context);
+  }
+
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::get_translation()")
+  Vector3<T> get_position(const systems::Context<T>& context) const {
+    return get_translation(context);
   }
 
   // TODO(sherm1) Rename this GetPose()
@@ -170,7 +173,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @retval X_FM The pose of frame M in frame F.
   math::RigidTransform<T> get_pose(const systems::Context<T>& context) const {
     return math::RigidTransform<T>(get_quaternion(context),
-                                   get_position(context));
+                                   get_translation(context));
   }
 
   /// Retrieves from `context` the angular velocity `w_FM` of the child frame
@@ -232,19 +235,22 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  // TODO(sherm1) Rename this set_translation()
-
-  /// Sets `context` to store the position `p_FM` of frame M's origin `Mo`
-  /// measured and expressed in frame F.
-  /// @param[out] context
-  ///   A Context for the MultibodyPlant this joint belongs to.
-  /// @param[in] p_FM
-  ///   The desired position of frame M in F to be stored in `context`.
+  /// Sets `context` to store a position vector for `this` joint.
+  /// @param[out] context contains the state of the multibody system.
+  /// @param[in] translation position vector p_FoMo_F from Fo (inboard frame F's
+  /// origin) to Mo (outboard frame M's origin), expressed in frame F.
   /// @returns a constant reference to `this` joint.
+  const QuaternionFloatingJoint<T>& set_translation(
+      systems::Context<T>* context, const Vector3<T>& translation) const {
+    get_mobilizer().set_translation(context, translation);
+    return *this;
+  }
+
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::set_translation()")
   const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
                                                  const Vector3<T>& p_FM) const {
-    get_mobilizer().set_translation(context, p_FM);
-    return *this;
+    return set_translation(context, p_FM);
   }
 
   // TODO(sherm1) Rename this SetPose()
@@ -303,7 +309,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets the random distribution that translation of this joint will be
   /// randomly sampled from. If a quaternion distribution has already been
   /// set with stochastic variables, it will remain so. Otherwise the quaternion
-  /// will be set to this joint's zero configuration. See get_position() for
+  /// will be set to this joint's zero configuration. See get_translation() for
   /// details on the position representation.
   void set_random_position_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
@@ -345,12 +351,16 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
   }
 
-  // TODO(sherm1) Rename this get_default_translation()
-
-  /// Gets the default position `p_FM` for `this` joint.
-  /// @returns The default position `p_FM` of `this` joint.
-  Vector3<double> get_default_position() const {
+  /// Returns the default position p_FoMo_F from Fo (inboard frame F's origin)
+  /// to Mo (outboard frame M's origin), expressed in inboard frame F.
+  Vector3<double> get_default_translation() const {
     return this->default_positions().template tail<3>();
+  }
+
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::get_default_translation()")
+  Vector3<double> get_default_position() const {
+    return get_default_translation();
   }
 
   // TODO(sherm1) Deprecate this and remove it since the base class
@@ -360,7 +370,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns The default pose `X_FM` of `this` joint.
   math::RigidTransform<double> get_default_pose() const {
     return math::RigidTransform(get_default_quaternion(),
-                                get_default_position());
+                                get_default_translation());
   }
 
   /// @}
@@ -382,15 +392,19 @@ class QuaternionFloatingJoint final : public Joint<T> {
     this->set_default_positions(default_positions);
   }
 
-  // TODO(sherm1) Rename this set_default_translation()
-
-  /// Sets the default position `p_FM` of this joint.
-  /// @param[in] p_FM
-  ///   The desired default position of the joint.
-  void set_default_position(const Vector3<double>& p_FM) {
+  /// Sets the default position vector for `this` joint.
+  /// @param[in] translation position vector p_FoMo_F from Fo (inboard frame F's
+  /// origin) to Mo (outboard frame M's origin), expressed in frame F.
+  void set_default_translation(const Vector3<double>& translation) {
     VectorX<double> default_positions = this->default_positions();
-    default_positions.template tail<3>() = p_FM;
+    default_positions.template tail<3>() = translation;
     this->set_default_positions(default_positions);
+  }
+
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::set_default_translation()")
+  void set_default_position(const Vector3<double>& p_FM) {
+    set_default_translation(p_FM);
   }
   /// @}
 
