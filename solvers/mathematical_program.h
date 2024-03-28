@@ -2577,17 +2577,20 @@ class MathematicalProgram {
    * prog.AddPositiveSemidefiniteConstraint(e);
    * @endcode
    */
-  Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
-    // TODO(jwnimmer-tri) Move this whole function definition into the cc file.
-    DRAKE_THROW_UNLESS(e.rows() == e.cols());
-    DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
-    const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
-    // Adds the linear equality constraint that M = e.
-    AddLinearEqualityConstraint(
-        e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()), true);
-    return AddPositiveSemidefiniteConstraint(M);
-  }
+//  Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
+//      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+//    // TODO(jwnimmer-tri) Move this whole function definition into the cc file.
+//    DRAKE_THROW_UNLESS(e.rows() == e.cols());
+//    DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
+//    const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
+//    // Adds the linear equality constraint that M = e.
+//    AddLinearEqualityConstraint(
+//        e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()), true);
+//    return AddPositiveSemidefiniteConstraint(M);
+//  }
+
+  Binding<LinearMatrixInequalityConstraint> AddPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e);
 
   /**
    * Adds a constraint that the principal submatrix of a symmetric matrix
@@ -2614,7 +2617,7 @@ class MathematicalProgram {
    * @param e Imposes constraint "e is positive semidefinite".
    * @see AddPositiveSemidefiniteConstraint.
    */
-  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<LinearMatrixInequalityConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 
