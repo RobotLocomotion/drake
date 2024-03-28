@@ -66,9 +66,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
                               box_link, {});
 
   // Add a massless body that can rotate about x.
-  const RigidBody<double>& massless_link = tree.AddRigidBody(
-      "massless", SpatialInertia<double>(0, Vector3d::Zero(),
-                                         UnitInertia<double>(0, 0, 0)));
+  const RigidBody<double>& massless_link =
+      tree.AddRigidBody("massless", SpatialInertia<double>::Zero());
   tree.AddJoint<RevoluteJoint>(
       "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
 
@@ -176,9 +175,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
       tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
 
   // Add a massless body that can rotate about x.
-  const RigidBody<double>& massless_link = tree.AddRigidBody(
-      "massless", SpatialInertia<double>(0, Vector3d::Zero(),
-                                         UnitInertia<double>(0, 0, 0)));
+  const RigidBody<double>& massless_link =
+      tree.AddRigidBody("massless", SpatialInertia<double>::Zero());
   const auto& BM_joint = tree.AddJoint<RevoluteJoint>(
       "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
 
