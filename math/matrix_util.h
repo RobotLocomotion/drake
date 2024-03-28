@@ -211,9 +211,9 @@ template <typename Derived>
 MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
     const Eigen::MatrixBase<Derived>& mat, const std::set<int>& indices) {
   DRAKE_THROW_UNLESS(!indices.empty());
-  // Stores the contiguous intervals of the index set of the minor. These
-  // intervals include the first index but exclude the last, i.e.
-  // [intervals[i][0], intervals[i][1]).
+  // Stores the contiguous intervals of the index set of the principal
+  // submatrix. These intervals include the first index but exclude the last,
+  // i.e. [intervals[i][0], intervals[i][1]).
   std::vector<std::pair<int, int>> intervals;
   auto it = indices.begin();
   int interval_start{*it};
