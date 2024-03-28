@@ -28,6 +28,7 @@ using ::testing::MatchesRegex;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 using drake::internal::DiagnosticPolicy;
 using geometry::FrameId;
 using geometry::GeometryId;
@@ -37,6 +38,9 @@ using geometry::SceneGraphInspector;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
+
+const double kInf = std::numeric_limits<double>::infinity();
+
 
 class MujocoParserTest : public test::DiagnosticPolicyTestBase {
  public:
@@ -1254,10 +1258,10 @@ TEST_F(MujocoParserTest, Joint) {
           X_WB, 1e-14));
   EXPECT_TRUE(
       CompareMatrices(plant_.GetJointByName("default").position_lower_limits(),
-                      Vector1d{-std::numeric_limits<double>::infinity()}));
+                      Vector1d{-M_PI / 9.0}));
   EXPECT_TRUE(
       CompareMatrices(plant_.GetJointByName("default").position_upper_limits(),
-                      Vector1d{std::numeric_limits<double>::infinity()}));
+                      Vector1d{M_PI / 12.0}));
 
   const RevoluteJoint<double>& hinge1_joint =
       plant_.GetJointByName<RevoluteJoint>("hinge1");
@@ -1312,6 +1316,88 @@ TEST_F(MujocoParserTest, JointErrors) {
       ".*a free joint is defined.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
       ".*Unknown joint type.*"));
+}
+
+std::string AutoLimitsXML(
+  bool auto_limits, const std::string& motor_limit_prefix) {
+    return fmt::format(R"""(
+  <mujoco model="test">
+    <compiler autolimits="{0}" angle="radian"/>
+    <worldbody>
+      <body>
+        <joint type="hinge" name="hinge0" limited="true"/>
+        <joint type="hinge" name="hinge1" range="-1 1"/>
+        <joint type="hinge" name="hinge2" range="-2 2" limited="auto"/>
+        <joint type="hinge" name="hinge3" range="-3 3" limited="true"/>
+        <joint type="hinge" name="hinge4" range="-4 4" limited="false"/>
+        <joint type="hinge" name="hinge6" range="-5 5" limited="bad"/>
+      </body>
+    </worldbody>
+    <actuator>
+      <!-- Drake does not allow effort limits to be zero. -->
+      <!-- <motor joint="hinge0" {1}limited="true"/> -->
+      <motor joint="hinge1" {1}range="-1 1"/>
+      <motor joint="hinge2" {1}range="-2 2" {1}limited="auto"/>
+      <motor joint="hinge3" {1}range="-3 3" {1}limited="true"/>
+      <motor joint="hinge4" {1}range="-4 4" {1}limited="false"/>
+      <motor joint="hinge6" {1}range="-5 5" {1}limited="bad"/>
+    </actuator>
+  </mujoco>
+  )""", auto_limits, motor_limit_prefix);
+}
+
+TEST_F(MujocoParserTest, AutoLimitsTrue) {
+  const std::string kXml = AutoLimitsXML(true, "ctrl");
+  AddModelFromString(kXml, "test");
+  plant_.Finalize();
+  EXPECT_EQ(plant_.num_positions(), 6);
+  VectorXd expected_limits(6);
+  expected_limits << 0.0, 1.0, 2.0, 3.0, kInf, kInf;
+  EXPECT_TRUE(
+      CompareMatrices(plant_.GetPositionLowerLimits(), -expected_limits));
+  EXPECT_TRUE(
+      CompareMatrices(plant_.GetPositionUpperLimits(), expected_limits));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'limited' attribute must be one of.*"));
+  EXPECT_TRUE(CompareMatrices(
+    plant_.GetEffortLowerLimits(), -expected_limits.tail<5>()));
+  EXPECT_TRUE(CompareMatrices(
+    plant_.GetEffortUpperLimits(), expected_limits.tail<5>()));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'ctrllimited' attribute must be one of.*"));
+}
+
+TEST_F(MujocoParserTest, AutoLimitsFalse) {
+  const std::string kXml = AutoLimitsXML(false, "force");
+  AddModelFromString(kXml, "test");
+  plant_.Finalize();
+  EXPECT_EQ(plant_.num_positions(), 6);
+  VectorXd expected_limits(6);
+  expected_limits << 0.0, kInf, kInf, 3.0, kInf, kInf;
+  EXPECT_TRUE(
+      CompareMatrices(plant_.GetPositionLowerLimits(), -expected_limits));
+  EXPECT_TRUE(
+      CompareMatrices(plant_.GetPositionUpperLimits(), expected_limits));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'range' attribute was specified.*but "
+                           "'autolimits' is disabled."));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'range' attribute was specified.*but "
+                           "'autolimits' is disabled."));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'limited' attribute must be one of.*"));
+  EXPECT_TRUE(CompareMatrices(
+    plant_.GetEffortLowerLimits(), -expected_limits.tail<5>()));
+  EXPECT_TRUE(CompareMatrices(
+    plant_.GetEffortUpperLimits(), expected_limits.tail<5>()));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'forcerange' attribute was specified.*but "
+                           "'autolimits' is disabled."));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'forcerange' attribute was specified.*but "
+                           "'autolimits' is disabled."));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'forcelimited' attribute must be one of.*"));
 }
 
 TEST_F(MujocoParserTest, InertialErrors) {
@@ -1430,7 +1516,7 @@ TEST_F(MujocoParserTest, Motor) {
     <motor joint="hinge0"/>
     <!-- intentionally asymmetric effort limits to cover the warning code -->
     <motor name="motor1" joint="hinge1" ctrllimited="true" ctrlrange="-1 2"/>
-    <motor name="motor2" joint="hinge2" ctrllimited="true" ctrlrange="-2 2"
+    <motor name="motor2" joint="hinge2" ctrllimited="true" ctrlrange="-3 2"
            forcelimited="true" forcerange="-.5 .4"/>
     <!-- malformed limits will be ignored -->
     <motor name="motor3" joint="hinge3" ctrllimited="true" ctrlrange="2 1"
