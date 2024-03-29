@@ -2,7 +2,8 @@
 <!-- This urdf was hand-hacked specifically to catch mass matrix calculation
      errors caused by flawed optimization over fixed (weld) joints as
      introduced in PR #13933. Several revolute joints connecting heavy bodies
-     have been replaced with fixed joints (commented with "REPLACED" below).
+     have been replaced with fixed joints (commented with "REPLACED" below),
+     and mesh geometries have been removed for simplicity.
      See multibody_plant_mass_matrix_test.cc. That test fails
      violently using this file with the #13933 bug in place, but works
      fine after the fix in #13953.
@@ -15,16 +16,6 @@
       <origin rpy="0 0 0" xyz="0 0 -0.084"/>
       <inertia ixx="0.011" ixy="0" ixz="0" iyy="0.009" iyz="0.004" izz="0.004"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_clav.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_clav_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_foot">
     <inertial>
@@ -32,16 +23,6 @@
       <origin rpy="0 0 0" xyz="0.027 0 -0.067"/>
       <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.007" iyz="0" izz="0.008"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_foot.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_foot_chull.obj"/>
-      </geometry>
-    </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.0876 0.066 -0.07645"/>
       <geometry>
@@ -128,16 +109,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.00265" ixy="0" ixz="0" iyy="0.00446" iyz="0" izz="0.00446"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_larm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_larm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_lfarm">
     <inertial>
@@ -145,16 +116,6 @@
       <origin rpy="0 0 0" xyz="0.00017 -0.02515 0.00163"/>
       <inertia ixx="0.000764" ixy="0" ixz="0" iyy="0.000429" iyz="0" izz="0.000825"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_hand.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_hand_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_lglut">
     <inertial>
@@ -162,16 +123,6 @@
       <origin rpy="0 0 0" xyz="0.0133341 0.0170484 -0.0312052"/>
       <inertia ixx="0.000691326" ixy="-2.24344e-05" ixz="2.50508e-06" iyy="0.00126856" iyz="0.000137862" izz="0.00106487"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_lglut.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_lglut_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_lleg">
     <inertial>
@@ -179,16 +130,6 @@
       <origin rpy="0 0 0" xyz="0.001 0 -0.187"/>
       <inertia ixx="0.077" ixy="0" ixz="-0.003" iyy="0.076" iyz="0" izz="0.01"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_lleg.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_lleg_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_scap">
     <inertial>
@@ -196,16 +137,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.00319" ixy="0" ixz="0" iyy="0.00583" iyz="0" izz="0.00583"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_scap.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_scap_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_talus">
     <inertial>
@@ -213,11 +144,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="1.01674e-05" ixy="0" ixz="0" iyy="8.42775e-06" iyz="0" izz="1.30101e-05"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_talus.obj"/>
-      </geometry>
-    </visual>
   </link>
   <link name="l_uarm">
     <inertial>
@@ -225,16 +151,6 @@
       <origin rpy="0 0 0" xyz="0 0.065 0"/>
       <inertia ixx="0.00656" ixy="0" ixz="0" iyy="0.00358" iyz="0" izz="0.00656"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uarm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uarm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_ufarm">
     <inertial>
@@ -242,16 +158,6 @@
       <origin rpy="0 0 0" xyz="0.00015 0.08296 0.00037"/>
       <inertia ixx="0.012731" ixy="0" ixz="0" iyy="0.002857" iyz="0" izz="0.011948"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_farm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_farm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_uglut">
     <inertial>
@@ -259,16 +165,6 @@
       <origin rpy="0 0 0" xyz="0.00529262 -0.00344732 0.00313046"/>
       <inertia ixx="0.00074276" ixy="-3.79607e-08" ixz="-2.79549e-05" iyy="0.000688179" iyz="-3.2735e-08" izz="0.00041242"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_uglut.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_uglut_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="l_uleg">
     <inertial>
@@ -276,19 +172,9 @@
       <origin rpy="0 0 0" xyz="0 0 -0.21"/>
       <inertia ixx="0.09" ixy="0" ixz="0" iyy="0.09" iyz="0" izz="0.02"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_uleg.obj"/>
-      </geometry>
-    </visual>
     <!-- to cover the logo shield -->
     <!-- inside strut -->
     <!-- outside strut -->
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/l_uleg_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="ltorso">
     <inertial>
@@ -296,11 +182,6 @@
       <origin rpy="0 0 0" xyz="-0.0112984 -3.15366e-06 0.0746835"/>
       <inertia ixx="0.0039092" ixy="-5.04491e-08" ixz="-0.000342157" iyy="0.00341694" iyz="4.87119e-07" izz="0.00174492"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/ltorso.obj"/>
-      </geometry>
-    </visual>
   </link>
   <link name="mtorso">
     <inertial>
@@ -308,11 +189,6 @@
       <origin rpy="0 0 0" xyz="-0.00816266 -0.0131245 0.0305974"/>
       <inertia ixx="0.000454181" ixy="-6.10764e-05" ixz="3.94009e-05" iyy="0.000483282" iyz="5.27463e-05" izz="0.000444215"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/mtorso.obj"/>
-      </geometry>
-    </visual>
   </link>
   <link name="pelvis">
     <inertial>
@@ -320,16 +196,6 @@
       <origin rpy="0 0 0" xyz="0.0111 0 0.0271"/>
       <inertia ixx="0.1244" ixy="0.0008" ixz="-0.0007" iyy="0.0958" iyz="-0.0005" izz="0.1167"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/pelvis.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/pelvis_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_clav">
     <inertial>
@@ -337,16 +203,6 @@
       <origin rpy="0 0 0" xyz="0 0 -0.084"/>
       <inertia ixx="0.011" ixy="0" ixz="0" iyy="0.009" iyz="0.004" izz="0.004"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_clav.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_clav_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_foot">
     <inertial>
@@ -354,16 +210,6 @@
       <origin rpy="0 0 0" xyz="0.027 0 -0.067"/>
       <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.007" iyz="0" izz="0.008"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_foot.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_foot_chull.obj"/>
-      </geometry>
-    </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.0876 0.0626 -0.07645"/>
       <geometry>
@@ -450,16 +296,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.00265" ixy="0" ixz="0" iyy="0.00446" iyz="0" izz="0.00446"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_larm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_larm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_lfarm">
     <inertial>
@@ -467,16 +303,6 @@
       <origin rpy="0 0 0" xyz="0.00017 -0.02515 0.00163"/>
       <inertia ixx="0.000764" ixy="0" ixz="0" iyy="0.000429" iyz="0" izz="0.000825"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_hand.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_hand_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_lglut">
     <inertial>
@@ -484,16 +310,6 @@
       <origin rpy="0 0 0" xyz="0.0133341 -0.0170484 -0.0312052"/>
       <inertia ixx="0.000691326" ixy="2.24344e-05" ixz="2.50508e-06" iyy="0.00126856" iyz="-0.000137862" izz="0.00106487"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_lglut.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_lglut_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_lleg">
     <inertial>
@@ -501,16 +317,6 @@
       <origin rpy="0 0 0" xyz="0.001 0 -0.187"/>
       <inertia ixx="0.077" ixy="-0" ixz="-0.003" iyy="0.076" iyz="-0" izz="0.01"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_lleg.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_lleg_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_scap">
     <inertial>
@@ -518,16 +324,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.00319" ixy="0" ixz="0" iyy="0.00583" iyz="0" izz="0.00583"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_scap.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_scap_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_talus">
     <inertial>
@@ -535,11 +331,6 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="1.01674e-05" ixy="0" ixz="0" iyy="8.42775e-06" iyz="0" izz="1.30101e-05"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_talus.obj"/>
-      </geometry>
-    </visual>
   </link>
   <link name="r_uarm">
     <inertial>
@@ -547,16 +338,6 @@
       <origin rpy="0 0 0" xyz="0 0.065 0"/>
       <inertia ixx="0.00656" ixy="0" ixz="0" iyy="0.00358" iyz="0" izz="0.00656"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uarm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uarm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_ufarm">
     <inertial>
@@ -564,16 +345,6 @@
       <origin rpy="0 0 0" xyz="0.00015 0.08296 0.00037"/>
       <inertia ixx="0.012731" ixy="0" ixz="0" iyy="0.002857" iyz="0" izz="0.011948"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_farm.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_farm_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_uglut">
     <inertial>
@@ -581,16 +352,6 @@
       <origin rpy="0 0 0" xyz="0.00529262 0.00344732 0.00313046"/>
       <inertia ixx="0.00074276" ixy="3.79607e-08" ixz="-2.79549e-05" iyy="0.000688179" iyz="3.2735e-08" izz="0.00041242"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uglut.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uglut_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="r_uleg">
     <inertial>
@@ -598,19 +359,9 @@
       <origin rpy="0 0 0" xyz="0 0 -0.21"/>
       <inertia ixx="0.09" ixy="0" ixz="0" iyy="0.09" iyz="0" izz="0.02"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uleg.obj"/>
-      </geometry>
-    </visual>
     <!-- to cover the logo shield -->
     <!-- inside strut -->
     <!-- outside strut -->
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/r_uleg_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="utorso">
     <inertial>
@@ -618,16 +369,6 @@
       <origin rpy="0 0 0" xyz="-0.0622 0.0023 0.3157"/>
       <inertia ixx="1.577" ixy="-0.032" ixz="0.102" iyy="1.602" iyz="0.047" izz="0.565"/>
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/utorso.obj"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/utorso_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <!-- REPLACED revolute with fixed for test purposes. -->
   <joint name="back_bkx" type="fixed">
@@ -1004,21 +745,6 @@
       <mass value="1.4199"/>
       <inertia ixx="0.0039688" ixy="-1.5797E-06" ixz="-0.00089293" iyy="0.0041178" iyz="-6.8415E-07" izz="0.0035243"/>
     </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/head_chull.obj"/>
-      </geometry>
-      <material name="">
-        <color rgba="0.9098 0.44314 0.031373 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/head_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <link name="pre_spindle"/>
   <joint name="pre_spindle_joint" type="fixed">
@@ -1119,19 +845,10 @@
     </inertial>
     <visual>
       <origin rpy="-0.314 0 0" xyz="0.045 -0.0261018277 -0.08342369"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/head_camera_chull.obj"/>
-      </geometry>
       <material name="">
         <color rgba="0.72941 0.35686 0.023529 1"/>
       </material>
     </visual>
-    <collision>
-      <origin rpy="-0.314 0 0" xyz="0.045 -0.0261018277 -0.08342369"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/head_camera_chull.obj"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="head_hokuyo_fixed_joint" type="fixed">
     <axis xyz="0 1 0"/>
@@ -1545,36 +1262,12 @@
   <!-- Set the initial hand position and orientation by changing 'rpy' and 'xyz'
   to mach the values in your actual robot. -->
   <link name="left_palm">
-    <visual>
-      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.1725 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/GRIPPER_OPEN_chull.obj" scale="1 1 1"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.1725 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/GRIPPER_OPEN_chull.obj" scale="1 1 1"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="left_palm_joint" type="fixed">
     <parent link="l_hand_force_torque"/>
     <child link="left_palm"/>
   </joint>
   <link name="right_palm">
-    <visual>
-      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.1725 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/GRIPPER_OPEN_chull.obj" scale="1 1 1"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.1725 0"/>
-      <geometry>
-        <mesh filename="package://drake_models/atlas/meshes/GRIPPER_OPEN_chull.obj" scale="1 1 1"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="right_palm_joint" type="fixed">
     <parent link="r_hand_force_torque"/>
