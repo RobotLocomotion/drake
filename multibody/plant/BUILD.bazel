@@ -708,9 +708,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
-        "//examples/atlas:models",
         "//examples/kuka_iiwa_arm/models",
         "//examples/simple_gripper:simple_gripper_models",
+        "@drake_models//:atlas",
     ],
     deps = [
         ":plant",
@@ -786,8 +786,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "multibody_plant_forward_dynamics_test",
     data = [
-        "//examples/atlas:models",
         "//examples/multibody/cart_pole:models",
+        "@drake_models//:atlas",
     ],
     deps = [
         ":kuka_iiwa_model_tests",
@@ -836,9 +836,9 @@ drake_cc_googletest(
     name = "multibody_plant_mass_matrix_test",
     data = [
         "test/atlas_with_fixed_joints.urdf",
-        "//examples/atlas:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:atlas",
     ],
     deps = [
         ":plant",

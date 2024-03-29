@@ -549,7 +549,7 @@ drake_cc_binary(
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/meshcat:models",
-        "@drake_models",
+        "@drake_models//:ycb",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -998,7 +998,7 @@ drake_cc_googletest(
     data = [
         "//examples/hydroelastic/ball_plate:plate_files",
         "//examples/multibody/deformable_torus:torus_tet_mesh",
-        "@drake_models",
+        "@drake_models//:tri_homecart",
     ],
     tags = [
         "cpus:4",
