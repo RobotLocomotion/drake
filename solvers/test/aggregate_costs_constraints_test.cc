@@ -310,6 +310,15 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   AggregateBoundingBoxConstraints(prog, &lower, &upper);
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
+
+  std::vector<double> lower_vec, upper_vec;
+  AggregateBoundingBoxConstraints(prog, &lower_vec, &upper_vec);
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<Eigen::VectorXd>(lower_vec.data(), lower_vec.size()),
+      Eigen::Vector4d(-1, -kInf, 1, 1)));
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<Eigen::VectorXd>(upper_vec.data(), upper_vec.size()),
+      Eigen::Vector4d(2, kInf, 3, 2)));
 }
 
 void CheckAggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,

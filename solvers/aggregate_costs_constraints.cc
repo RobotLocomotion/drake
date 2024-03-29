@@ -205,6 +205,25 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
   }
 }
 
+void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
+                                     std::vector<double>* lower,
+                                     std::vector<double>* upper) {
+  *lower = std::vector<double>(prog.num_vars(), -kInf);
+  *upper = std::vector<double>(prog.num_vars(), kInf);
+  for (const auto& constraint : prog.bounding_box_constraints()) {
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      const int var_index =
+          prog.FindDecisionVariableIndex(constraint.variables()(i));
+      if (constraint.evaluator()->lower_bound()(i) > (*lower)[var_index]) {
+        (*lower)[var_index] = constraint.evaluator()->lower_bound()(i);
+      }
+      if (constraint.evaluator()->upper_bound()(i) < (*upper)[var_index]) {
+        (*upper)[var_index] = constraint.evaluator()->upper_bound()(i);
+      }
+    }
+  }
+}
+
 void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
                                  const VectorX<symbolic::Variable>& vars,
                                  Eigen::SparseMatrix<double>* A_new,
