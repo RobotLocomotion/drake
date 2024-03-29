@@ -242,9 +242,8 @@ DeformableDriver<T>::ComputeContactDataForRigid(
   const MultibodyTreeTopology& tree_topology =
       manager_->internal_tree().get_topology();
   const TreeIndex tree_index = tree_topology.body_to_tree_index(body_index);
-  /* If the tree index is invalid, the body is welded to world and we don't need
-   to report the velocity and the Jacobian. Everything is trivially zero. */
-  if (!tree_index.is_valid()) {
+  /* If the body is welded to world, then everything is trivially zero. */
+  if (!tree_topology.tree_has_dofs(tree_index)) {
     return result;
   }
 
@@ -254,19 +253,15 @@ DeformableDriver<T>::ComputeContactDataForRigid(
   const int nv = manager_->plant().num_velocities();
   Matrix3X<T> Jv_v_WGc_W(3, nv);
   for (int i = 0; i < surface.num_contact_points(); ++i) {
-    /* Contact solver assumes the normal points from A to B whereas the
-     surface's normal points from B to A. */
-    const Vector3<T>& nhat_W = -surface.nhats_W()[i];
-    constexpr int kZAxis = 2;
-    math::RotationMatrix<T> R_WC =
-        math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_W, kZAxis);
-    const math::RotationMatrix<T> R_CW = R_WC.transpose();
-
+    // TODO(xuchenhan-tri): The computation of the contact Jacobian for all
+    // contact points associated with this contact surface can be done in a
+    // single pass down the kinematic path to world.
     const Vector3<T>& p_WC = surface.contact_points_W()[i];
     manager_->internal_tree().CalcJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
         p_WC, frame_W, frame_W, &Jv_v_WGc_W);
     result.v_WGc.emplace_back(Jv_v_WGc_W * rigid_v0);
+    const math::RotationMatrix<T> R_CW = surface.R_WCs()[i].transpose();
     Matrix3X<T> J = R_CW.matrix() *
                     Jv_v_WGc_W.middleCols(
                         tree_topology.tree_velocities_start_in_v(tree_index),
@@ -320,7 +315,7 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
   // TODO(xuchenhan-tri): Currently deformable bodies don't have names. When
   // they do get names upon registration (in DeformableModel), update its
   // body name here.
-  result.name = fmt::format("deformable body with geometry id {}", geometry_id);
+  result.name = fmt::format("deformable id {}", geometry_id);
   result.v_WGc.reserve(surface.num_contact_points());
   result.jacobian.reserve(surface.num_contact_points());
 
@@ -329,18 +324,11 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
   std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
   triplets.reserve(4);
   for (int i = 0; i < surface.num_contact_points(); ++i) {
-    /* Contact solver assumes the normal points from A to B whereas the
-     surface's normal points from B to A. */
-    const Vector3<T>& nhat_W = -surface.nhats_W()[i];
-    constexpr int kZAxis = 2;
-    math::RotationMatrix<T> R_WC =
-        math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_W, kZAxis);
-    const math::RotationMatrix<T> R_CW = R_WC.transpose();
-
+    const math::RotationMatrix<T> R_CW = surface.R_WCs()[i].transpose();
     /* The contact Jacobian (w.r.t. v) of the velocity of the point affixed to
-     the geometry that coincides with the contact point C in the contact frame
-     C. We scale it by -1 if the body corresponds to body A in contact to get
-     the correct sign. */
+     the geometry that coincides with the contact point C in the world frame,
+     expressed in the contact frame C. We scale it by -1 if the body corresponds
+     to body A in contact to get the correct sign. */
     const double scale = is_A ? -1.0 : 1.0;
     Block3x3SparseMatrix<T> scaled_Jv_v_WGc_C(
         /* block rows */ 1,
@@ -479,10 +467,10 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        density of water, a reasonably small penetration. */
       const T kA = surface.contact_mesh_W().area(i) * 1e8;
       const T default_rigid_k = std::numeric_limits<T>::infinity();
-      const T kB = surface.is_B_deformable()
-                       ? kA
-                       : GetPointContactStiffness(surface.id_B(),
-                                                  default_rigid_k, inspector);
+      const T kB =
+          surface.is_B_deformable()
+              ? kA
+              : GetPointContactStiffness(id_B, default_rigid_k, inspector);
       /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
        according to the rule: 1/k = 1/k₁ + 1/k₂. */
       const T k = GetCombinedPointContactStiffness(kA, kB);
@@ -511,9 +499,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       /* Contact solver assumes the normal points from A to B whereas the
        surface's normal points from B to A. */
       const Vector3<T>& nhat_AB_W = -surface.nhats_W()[i];
-      constexpr int kZAxis = 2;
-      math::RotationMatrix<T> R_WC =
-          math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_AB_W, kZAxis);
+      const math::RotationMatrix<T>& R_WC = surface.R_WCs()[i];
       const T v_AcBc_Cz = nhat_AB_W.dot(v_WBc - v_WAc);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),

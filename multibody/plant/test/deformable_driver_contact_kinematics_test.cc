@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -6,6 +7,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::GeometryId;
@@ -71,7 +73,7 @@ DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
  DeformableDriver::AppendDeformableRigidFixedConstraintKinematics.
  In particular, this fixture sets up environments where the contact/constraint
  information can easily be computed by hand. We then compare the result computed
- by DeformableDriver and the hand-calculated result to confirm correctedness. */
+ by DeformableDriver and the hand-calculated result to confirm correctness. */
 class DeformableDriverContactKinematicsTest
     : public ::testing::TestWithParam<bool> {
  protected:
@@ -96,7 +98,7 @@ class DeformableDriverContactKinematicsTest
 
   @param[in] dynamic_rigid_body
   The rigid body is dynamic if `dynamic_rigid_body` is true. Otherwise, a
-  collision geometry weld to the world body with the same shape is added. */
+  collision geometry welded to the world body with the same shape is added. */
   void MakeDeformableRigidScene(bool dynamic_rigid_body) {
     systems::DiagramBuilder<double> builder;
     constexpr double kDt = 0.01;
@@ -207,29 +209,28 @@ class DeformableDriverContactKinematicsTest
   half intersects the bottom half of the first deformable octahedron. We compare
   rotation matrix from world to the contact frame and contact velocities to
   expected values. The configuration of the deformable bodies are set so that
-  the contact normals are all equal to -Fz, for an arbitrarily chosen frame F.
-  Velocities of the body are set so that the contact velocity in the C frame is
-  (0, 0, -1). */
+  the contact normals are all equal to -Fz, for an arbitrarily chosen frame F
+  fixed the world frame W. Velocities of the body are set so that the contact
+  velocity in the C frame is (0, 0, -1). */
   void MakeDeformableDeformableScene() {
     systems::DiagramBuilder<double> builder;
     constexpr double kDt = 0.01;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
+    // N.B. Deformables are only supported with the SAP solver. Thus for testing
+    // we choose one arbitrary contact approximation that uses the SAP solver.
+    MultibodyPlantConfig config{.time_step = kDt,
+                                .discrete_contact_approximation = "sap"};
+    std::tie(plant_, scene_graph_) = AddMultibodyPlant(config, &builder);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
     deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
                                                        "deformable", X_WF_);
     /* Sets up a second deformable body so that its top half intersects the
-     * bottom half of the first deformable body. */
+     bottom half of the first deformable body. */
     deformable_body_id2_ = RegisterDeformableOctahedron(
         deformable_model.get(), "deformable2",
         X_WF_ * RigidTransformd(Vector3d(0, 0, -1.25)));
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
 
-    // N.B. Deformables are only supported with the SAP solver.
-    // Thus for testing we choose one arbitrary contact approximation that uses
-    // the SAP solver.
-    plant_->set_discrete_contact_approximation(
-        DiscreteContactApproximation::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
@@ -244,11 +245,11 @@ class DeformableDriverContactKinematicsTest
     context_ = diagram_->CreateDefaultContext();
 
     /* Set the velocity of the first deformable body so that it's (0, 0, -0.5)
-     in the F frame. */
+     when expressed in the F frame. */
     const Vector3d v_WD1_F = Vector3d(0, 0, -0.5);
     SetVelocity(deformable_body_id_, X_WF_.rotation() * v_WD1_F);
     /* Set the velocity of the second deformable body so that it's (0, 0, 0.5)
-     in the F frame. */
+     when expressed in the F frame. */
     const Vector3d v_WD2_F = Vector3d(0, 0, 0.5);
     SetVelocity(deformable_body_id2_, X_WF_.rotation() * v_WD2_F);
   }
@@ -305,7 +306,7 @@ class DeformableDriverContactKinematicsTest
       /* Test normal and rotation matrix. */
       EXPECT_TRUE(
           CompareMatrices(contact_pair.nhat_BA_W, -nhat_AB_W, kTolerance));
-      EXPECT_TRUE(contact_pair.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
+      EXPECT_TRUE(contact_pair.R_WC.IsNearlyEqualTo(expected_R_WC, kTolerance));
       /* Test contact point position in world frame and its position relative to
        the bodies in contact. */
       const Vector3d& expected_p_WC = contact_surface.contact_points_W()[i];
@@ -472,9 +473,8 @@ class DeformableDriverContactKinematicsTest
      |        5         |        6         |       no          |
      |        6         |        5         |       yes         |
     */
-    std::vector<int> expected_vertex_permutation{0, 1, 2, 3, 4, 6, 5};
-    EXPECT_EQ(participation.CalcVertexPermutation().permutation(),
-              expected_vertex_permutation);
+    EXPECT_THAT(participation.CalcVertexPermutation().permutation(),
+                testing::ElementsAre(0, 1, 2, 3, 4, 6, 5));
     if (deformable_body_id2_.is_valid()) {
       /* Verifies that all vertices on the top side of the deformable
        octahedron participates in constraints. That is, all vertices, with the
@@ -497,9 +497,8 @@ class DeformableDriverContactKinematicsTest
        |        5         |        5         |       yes         |
        |        6         |        6         |       no          |
       */
-      std::vector<int> expected_vertex_permutation2{0, 1, 2, 3, 4, 5, 6};
-      EXPECT_EQ(participation2.CalcVertexPermutation().permutation(),
-                expected_vertex_permutation2);
+      EXPECT_THAT(participation2.CalcVertexPermutation().permutation(),
+                  testing::ElementsAre(0, 1, 2, 3, 4, 5, 6));
     }
   }
 

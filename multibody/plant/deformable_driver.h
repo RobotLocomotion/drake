@@ -221,6 +221,7 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
 
   /* Computes the contact data for a deformable geometry G participating in
    contact.
+   @param[in] context          Context of the MultibodyPlant owning this driver.
    @param[in] contact_surface  The contact surface between two geometries with
                                one of the geometries being geometry G.
    @param[in] is_A             True if geometry G is labeled as geometry A in
@@ -234,12 +235,13 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       bool is_A) const;
 
   /* Computes the contact data for a rigid geometry G participating in contact.
+   @param[in] context          Context of the MultibodyPlant owning this driver.
    @param[in] contact_surface  The contact surface between two geometries with
                                one of the geometries being geometry G.
    @note Unlike ComputeContactDataForDeformable where we need to determine
-   whether the geometry of interest is labeled as geometry A or B in
-   DeformableContactSurface, by convention, a rigid geometry is always labeled
-   as rigid B if it participates in deformable contact. */
+   whether geometry G is labeled as geometry A or B in DeformableContactSurface,
+   by convention, a rigid geometry is always labeled as geometry B in
+   DeformableContactSurface if it participates in deformable contact. */
   ContactData ComputeContactDataForRigid(
       const systems::Context<T>& context,
       const geometry::internal::DeformableContactSurface<T>& contact_surface)
