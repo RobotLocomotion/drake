@@ -697,9 +697,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_quaternion", &Class::set_quaternion, py::arg("context"),
             py::arg("q_FM"), cls_doc.set_quaternion.doc)
-        .def("SetFromRotationMatrix", &Class::SetFromRotationMatrix,
+        .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
+            py::arg("R"), cls_doc.SetOrientation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("SetFromRotationMatrix",
+            WrapDeprecated(cls_doc.SetFromRotationMatrix.doc_deprecated,
+                &Class::SetFromRotationMatrix),
             py::arg("context"), py::arg("R_FM"),
-            cls_doc.SetFromRotationMatrix.doc)
+            cls_doc.SetFromRotationMatrix.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("set_translation", &Class::set_translation, py::arg("context"),
             py::arg("translation"), cls_doc.set_translation.doc);
 #pragma GCC diagnostic push
@@ -720,9 +729,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_translational_velocity", &Class::set_translational_velocity,
             py::arg("context"), py::arg("v_FM"),
             cls_doc.set_translational_velocity.doc)
+        .def("set_random_translation_distribution",
+            &Class::set_random_translation_distribution, py::arg("translation"),
+            cls_doc.set_random_translation_distribution.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("set_random_position_distribution",
-            &Class::set_random_position_distribution, py::arg("p_FM"),
-            cls_doc.set_random_position_distribution.doc)
+            WrapDeprecated(
+                cls_doc.set_random_position_distribution.doc_deprecated,
+                &Class::set_random_position_distribution),
+            py::arg("p_FM"),
+            cls_doc.set_random_position_distribution.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("set_random_quaternion_distribution",
             &Class::set_random_quaternion_distribution, py::arg("q_FM"),
             cls_doc.set_random_quaternion_distribution.doc)
@@ -754,8 +774,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_default_position",
             WrapDeprecated(cls_doc.set_default_position.doc_deprecated,
                 &Class::set_default_position),
-            py::arg("p_FM"),
-            cls_doc.set_default_position.doc_deprecated);
+            py::arg("p_FM"), cls_doc.set_default_position.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
