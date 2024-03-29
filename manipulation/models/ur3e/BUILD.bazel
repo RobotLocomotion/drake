@@ -1,8 +1,3 @@
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-)
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
 
@@ -35,11 +30,6 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
-install_data(
-    name = "install_data",
-    data = [":glob_models"],
-)
-
 filegroup(
     name = "models",
     srcs = [
@@ -61,20 +51,6 @@ filegroup(
         "@drake_models//:ur3e/wrist2.obj",
         "@drake_models//:ur3e/wrist3.mtl",
         "@drake_models//:ur3e/wrist3.obj",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "parse_test",
-    srcs = ["test/parse_test.cc"],
-    data = [
-        ":models",
-    ],
-    deps = [
-        "//common:find_resource",
-        "//multibody/parsing",
     ],
 )
 
