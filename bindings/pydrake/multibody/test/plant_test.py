@@ -2200,8 +2200,11 @@ class TestPlant(unittest.TestCase):
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
                 joint.set_quaternion(context=context, q_FM=Quaternion_[T]())
-                joint.SetFromRotationMatrix(context=context,
-                                            R_FM=RotationMatrix_[T]())
+                joint.SetOrientation(context=context, R=RotationMatrix_[T]())
+                # Deprecate QuaternionFloatingJoint.SetFromRotationMatrix().
+                with catch_drake_warnings(expected_count=1):
+                    joint.SetFromRotationMatrix(context=context,
+                                                R_FM=RotationMatrix_[T]())
                 joint.set_translation(context=context, translation=[0, 0, 0])
                 # Warn deprecated QuaternionFloatingJoint.set_position().
                 with catch_drake_warnings(expected_count=1):
@@ -2210,7 +2213,11 @@ class TestPlant(unittest.TestCase):
                 joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
                 joint.set_translational_velocity(context=context,
                                                  v_FM=[0, 0, 0])
-                joint.set_random_position_distribution(p_FM=[0, 0, 0])
+                joint.set_random_translation_distribution(
+                    translation=[0, 0, 0])
+                # Deprecate set_random_position_distribution().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_random_position_distribution(p_FM=[0, 0, 0])
                 joint.set_random_quaternion_distribution(
                     q_FM=Quaternion_[Expression]())
                 joint.set_random_quaternion_distribution_to_uniform()
