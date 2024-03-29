@@ -84,6 +84,14 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
                                      Eigen::VectorXd* upper);
 
 /**
+ * Overloads AggregateBoundingBoxConstraints, but the type of lower and upper
+ * are std::vector<double>.
+ */
+void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
+                                     std::vector<double>* lower,
+                                     std::vector<double>* upper);
+
+/**
  For linear expression A * vars where `vars` might contain duplicated entries,
  rewrite this linear expression as A_new * vars_new where vars_new doesn't
  contain duplicated entries.
