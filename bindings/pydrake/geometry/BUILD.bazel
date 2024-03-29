@@ -50,6 +50,7 @@ drake_pybind_library(
         "geometry_py.h",
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
+        "geometry_py_meshes.cc",
         "geometry_py_optimization.cc",
         "geometry_py_render.cc",
         "geometry_py_scene_graph.cc",
@@ -106,6 +107,17 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "meshes_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":geometry",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
@@ -121,6 +133,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "render_test",
     allow_network = ["render_gltf_client"],
+    data = [
+        "//geometry/render:test_models",
+    ],
     deps = [
         ":geometry",
         "//bindings/pydrake/common/test_utilities",

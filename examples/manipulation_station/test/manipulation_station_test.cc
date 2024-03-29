@@ -466,7 +466,7 @@ GTEST_TEST(ManipulationStationTest, AddManipulandFromFile) {
       station.get_multibody_plant().num_model_instances();
 
   station.AddManipulandFromFile(
-      "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+      "drake_models/ycb/003_cracker_box.sdf",
       math::RigidTransform<double>::Identity());
 
   // Check that the cracker box was added.
@@ -474,7 +474,7 @@ GTEST_TEST(ManipulationStationTest, AddManipulandFromFile) {
             num_base_instances + 1);
 
   station.AddManipulandFromFile(
-      "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
+      "drake_models/ycb/004_sugar_box.sdf",
       math::RigidTransform<double>::Identity());
 
   // Check that the sugar box was added.

@@ -3054,14 +3054,12 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
                nullptr);
   EXPECT_EQ(geometry_state_.GetConvexHull(geometries_[0]), nullptr);
 
-  // A shape that *does* require a convex hull has one, after getting proximity
-  // properties.
+  // A shape that *does* require a convex hull has one.
   const std::string mesh_name =
       FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj");
   const GeometryId mesh_id = geometry_state_.RegisterAnchoredGeometry(
       source_id_, make_unique<GeometryInstance>(
                       RigidTransformd{}, Mesh(mesh_name, 1), "mesh_with_hull"));
-  EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
   geometry_state_.AssignRole(source_id_, mesh_id, ProximityProperties());
   EXPECT_NE(geometry_state_.GetConvexHull(mesh_id), nullptr);
 

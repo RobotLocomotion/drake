@@ -316,7 +316,13 @@ template <typename T>
 void ManipulationStation<T>::AddManipulandFromFile(
     const std::string& model_file, const RigidTransform<double>& X_WObject) {
   multibody::Parser parser(plant_);
-  const auto models = parser.AddModels(FindResourceOrThrow(model_file));
+  std::vector<multibody::ModelInstanceIndex> models;
+  if (model_file.starts_with("drake/") ||
+      model_file.starts_with("drake_models/")) {
+    models = parser.AddModelsFromUrl("package://" + model_file);
+  } else {
+    models = parser.AddModels(FindResourceOrThrow(model_file));
+  }
   DRAKE_THROW_UNLESS(models.size() == 1);
   const auto model_index = models[0];
   const auto indices = plant_->GetBodyIndices(model_index);
@@ -1060,8 +1066,7 @@ void ManipulationStation<T>::RegisterRgbdSensor(
   camera_information_[name] = info;
 
   const std::string urdf_url =
-      "package://drake/manipulation/models/realsense2_description/urdf/"
-      "d415.urdf";
+      "package://drake_models/realsense2_description/urdf/d415.urdf";
   multibody::ModelInstanceIndex model_index = internal::AddAndWeldModelFrom(
       urdf_url, name, parent_frame, "base_link", X_PC, plant_);
 

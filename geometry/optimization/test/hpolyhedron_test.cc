@@ -92,11 +92,8 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_FALSE(CheckAddPointInSetConstraints(H, Vector3d(1.1, 1.2, 0.4)));
 
   // Test SceneGraph constructor.
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Box(2.0, 2.0, 2.0), RigidTransformd::Identity());
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
@@ -496,11 +493,8 @@ GTEST_TEST(HPolyhedronTest, L1BallTest) {
 GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   RigidTransformd X_WG(RotationMatrixd::MakeZRotation(M_PI / 2.0),
                        Vector3d(-4.0, -5.0, -6.0));
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Box(1.0, 2.0, 3.0), X_WG);
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   HPolyhedron H(query, geom_id);
 
   EXPECT_EQ(H.ambient_dimension(), 3);
@@ -553,10 +547,8 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
 GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
   RigidTransformd X_WG(RotationMatrixd::MakeYRotation(M_PI / 2.0),
                        Vector3d(-1.2, -2.1, -6.4));
-  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(HalfSpace(), X_WG);
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  auto [scene_graph, geom_id, context, query] =
+      MakeSceneGraphWithShape(HalfSpace(), X_WG);
   HPolyhedron H(query, geom_id);
 
   EXPECT_EQ(H.ambient_dimension(), 3);

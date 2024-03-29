@@ -4,6 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/ssize.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
@@ -157,6 +158,30 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   // expect perfect coverage
   VPolytope vpoly(sets.at(0));
   EXPECT_EQ(vpoly.CalcVolume(), 16.0);
+}
+
+// Plants that don't have joint limits get a reasonable error message.
+GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoJointLimits) {
+  CollisionCheckerParams params;
+
+  RobotDiagramBuilder<double> builder(0.0);
+  params.robot_model_instances = builder.parser().AddModelsFromUrl(
+      "package://drake/examples/pendulum/Pendulum.urdf");
+  params.edge_step_size = 0.01;
+
+  params.model = builder.Build();
+  auto checker =
+      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+
+  IrisFromCliqueCoverOptions options;
+  std::vector<HPolyhedron> sets;
+
+  RandomGenerator generator(0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.GetPositionLowerLimits.*isFinite.* failed.");
 }
 
 /* A movable sphere with fixed boxes in all corners.

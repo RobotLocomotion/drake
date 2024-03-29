@@ -18,12 +18,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_0.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_0.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -45,12 +42,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_1.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_1.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -94,12 +88,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_2.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_2.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -143,12 +134,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_3.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_3.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -192,12 +180,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_4.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_4.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -241,12 +226,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_5.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_5.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -291,12 +273,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_6.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_6.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>
@@ -340,12 +319,9 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_7.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa7/visual/link_7.gltf</uri>
           </mesh>
         </geometry>
-        <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
-        </material>
       </visual>
       <gravity>1</gravity>
     </link>

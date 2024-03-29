@@ -7,6 +7,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/point.h"
@@ -23,6 +24,7 @@ namespace optimization {
 using Eigen::Matrix;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 
 GTEST_TEST(MinkowskiSumTest, BasicTest) {
@@ -118,11 +120,8 @@ GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
   // Test SceneGraph constructor.
   const double kRadius = 0.2;
   const double kLength = 0.5;
-  auto [scene_graph, geom_id] =
-      internal::MakeSceneGraphWithShape(Capsule(kRadius, kLength), X_WG);
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  auto [scene_graph, geom_id, context, query] =
+      MakeSceneGraphWithShape(Capsule(kRadius, kLength), X_WG);
 
   MinkowskiSum S(query, geom_id, std::nullopt);
   Matrix<double, 3, 4> in_G, out_G;
@@ -181,6 +180,13 @@ GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
   ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
+}
+
+GTEST_TEST(MinkowskiSumTest, FromSceneGraphBad) {
+  auto [scene_graph, geom_id, context, query] =
+      MakeSceneGraphWithShape(HalfSpace(), RigidTransformd());
+  DRAKE_EXPECT_THROWS_MESSAGE(MinkowskiSum(query, geom_id),
+                              ".*MinkowskiSum.*cannot.*HalfSpace.*");
 }
 
 GTEST_TEST(MinkowskiSumTest, CloneTest) {

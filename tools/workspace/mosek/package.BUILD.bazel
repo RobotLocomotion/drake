@@ -1,0 +1,115 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:cc.bzl", "cc_import", "cc_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# We use the the MOSEK™ copy of libtbb, even on Ubuntu which *does* have the
+# library already available, because the version in Ubuntu is too old.
+
+# Find the TBB shared library with the major.minor-style version number.
+# This will be the spelling with the actual object code.
+_TBB_MAJMIN_GLOB = glob([
+    # This is the spelling for linux64x86.
+    "bin/libtbb.so.*.*",
+    # This is the spelling for linuxaarch64.
+    "bin/libtbb_debug.so.*.*",
+    # This is the spelling for osxaarch64 and osx64x86.
+    "bin/libtbb.*.*.dylib",
+])
+
+len(_TBB_MAJMIN_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
+
+# Find the TBB shared library with the major-only-style version number.
+# This will be the spelling that's a symlink to the major.minor spelling.
+_TBB_MAJ_GLOB = glob([
+    # This is the spelling for linux64x86.
+    "bin/libtbb.so.*",
+    # This is the spelling for linuxaarch64.
+    "bin/libtbb_debug.so.*",
+    # This is the spelling for osxaarch64 and osx64x86.
+    "bin/libtbb.*.dylib",
+], exclude = _TBB_MAJMIN_GLOB)
+
+len(_TBB_MAJ_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
+
+cc_import(
+    name = "import_tbb_majmin",
+    shared_library = _TBB_MAJMIN_GLOB[0],
+)
+
+cc_import(
+    name = "import_tbb_maj",
+    shared_library = _TBB_MAJ_GLOB[0],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "tbb",
+    deps = [
+        ":import_tbb_maj",
+        ":import_tbb_majmin",
+    ],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+)
+
+# Find the mosek shared library with the major.minor-style version number.
+_MOSEK_MAJMIN_GLOB = glob([
+    "bin/libmosek64.so.*.*",
+    "bin/libmosek64.*.*.dylib",
+])
+
+len(_MOSEK_MAJMIN_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
+
+cc_import(
+    name = "import_mosek",
+    shared_library = _MOSEK_MAJMIN_GLOB[0],
+    deps = [":tbb"],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "mosek",
+    hdrs = ["h/mosek.h"],
+    includes = ["h"],
+    deps = [":import_mosek"],
+    visibility = ["//visibility:public"],
+)
+
+install_files(
+    name = "install_tbb_libraries",
+    dest = "lib",
+    files = _TBB_MAJMIN_GLOB + _TBB_MAJ_GLOB,
+    strip_prefix = ["bin"],
+    visibility = ["//visibility:public"],
+)
+
+install_files(
+    name = "install_mosek_libraries",
+    dest = "lib",
+    files = _MOSEK_MAJMIN_GLOB,
+    strip_prefix = ["bin"],
+)
+
+install(
+    name = "install_licenses",
+    docs = [
+        "mosek-eula.pdf",
+        "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
+        "@drake//tools/workspace/mosek:LICENSE.third_party",
+    ],
+    doc_strip_prefix = ["tools/workspace/mosek"],
+    allowed_externals = ["@drake//:.bazelproject"],
+)
+
+install(
+    name = "install",
+    deps = [
+        ":install_licenses",
+        ":install_mosek_libraries",
+        ":install_tbb_libraries",
+    ],
+    visibility = ["//visibility:public"],
+)

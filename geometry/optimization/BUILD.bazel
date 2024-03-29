@@ -232,6 +232,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test_utilities.cc"],
     hdrs = ["test_utilities.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":convex_set",
         "//geometry:scene_graph",
@@ -543,6 +544,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -552,6 +554,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

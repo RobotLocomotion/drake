@@ -330,6 +330,13 @@ void IrisInConfigurationSpaceFromCliqueCover(
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);
 
+  // Note: Even though the iris_options.bounding_region may be provided,
+  // IrisInConfigurationSpace (currently) requires finite joint limits.
+  DRAKE_THROW_UNLESS(
+      checker.plant().GetPositionLowerLimits().array().isFinite().all());
+  DRAKE_THROW_UNLESS(
+      checker.plant().GetPositionUpperLimits().array().isFinite().all());
+
   const HPolyhedron domain = options.iris_options.bounding_region.value_or(
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
                            checker.plant().GetPositionUpperLimits()));

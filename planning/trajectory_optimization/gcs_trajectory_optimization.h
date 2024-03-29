@@ -259,6 +259,19 @@ class GcsTrajectoryOptimization final {
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+    /** Enforces zero derivatives on the control point connecting the subgraphs.
+
+    For velocity, acceleration, jerk, etc. enforcing zero-derivative on the
+    trajectory q(t) is equivalent to enforcing zero-derivative on the trajectory
+    r(s). Hence this constraint is convex.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if the derivative order < 1.
+    @throws std::exception if both subgraphs order is less than the desired
+    derivative order.
+    */
+    void AddZeroDerivativeConstraints(int derivative_order);
+
     /** Enforces derivative continuity constraints on the edges between the
     subgraphs.
      @param continuity_order is the order of the continuity constraint.

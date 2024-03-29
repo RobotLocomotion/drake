@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
+#include "drake/common/string_map.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_label.h"
 
@@ -71,10 +72,28 @@ struct EnvironmentMap {
   std::variant<NullTexture, EquirectangularMap> texture;
 };
 
+/** Specifies how to deal with glTF "extensions" (non-standard capabilities).
+https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions
+*/
+struct GltfExtension {
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(warn_unimplemented));
+  }
+
+  /** Whether to log a warning when this extension is used (i.e., is listed in
+   `extensionsUsed`) but isn't implemented by the render engine. By default,
+   all unimplemented extensions will log a warning, but users can configure
+   specific extensions to be quiet. */
+  bool warn_unimplemented{true};
+};
+
 /** Construction parameters for the RenderEngineVtk.  */
 struct RenderEngineVtkParams {
   /** Passes this object to an Archive.
-  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(default_diffuse));
@@ -84,6 +103,7 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(exposure));
     a->Visit(DRAKE_NVP(cast_shadows));
     a->Visit(DRAKE_NVP(shadow_map_size));
+    a->Visit(DRAKE_NVP(gltf_extensions));
   }
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
@@ -185,6 +205,15 @@ struct RenderEngineVtkParams {
    See the note on `cast_shadows` for the warning on directional lights and
    shadow maps. */
   int shadow_map_size{256};
+
+  /** Map from the name of a glTF extension (e.g., "KHR_materials_sheen") to
+   render engine settings related to that extension. */
+  string_map<GltfExtension> gltf_extensions{
+      // The basisu extension is commonplace in the Drake ecosystem, because it
+      // vastly speeds up Meshcat visualizer loading. We suppress VTK warnings
+      // about it by default, to avoid too much warning spam.
+      {"KHR_texture_basisu", {.warn_unimplemented = false}},
+  };
 };
 
 }  // namespace geometry
