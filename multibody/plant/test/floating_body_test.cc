@@ -94,7 +94,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
                               -3.5 * v0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));
 
-  // Unit test QuaternionFloatingMobilizer::SetFromRotationMatrix().
+  // Unit test QuaternionFloatingMobilizer::SetOrientation().
   const Vector3d axis = (1.5 * Vector3d::UnitX() + 2.0 * Vector3d::UnitY() +
                          3.0 * Vector3d::UnitZ())
                             .normalized();

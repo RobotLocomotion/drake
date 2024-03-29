@@ -191,9 +191,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return get_mobilizer().get_angular_velocity(context);
   }
 
-  /// Retrieves from `context` the translational velocity `v_FM` of
-  /// the child frame M's origin as measured and expressed in the parent frame
-  /// F.
+  /// Retrieves from `context` the translational velocity `v_FM` of the
+  /// child frame M's origin as measured and expressed in the parent frame F.
   /// @param[in] context
   ///   A Context for the MultibodyPlant this joint belongs to.
   /// @retval v_FM
@@ -223,22 +222,25 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  // TODO(sherm1) Rename this SetOrientation()
-
-  /// Sets `context` so this Joint's orientation is consistent with the given
-  /// `R_FM` rotation matrix.
-  /// @param[in] context
-  ///   A Context for the MultibodyPlant this joint belongs to.
-  /// @param[in] R_FM
-  ///   The rotation matrix relating the orientation of frame F and frame M.
+  /// For `this` joint, stores the rotation matrix `R` in `context`.
+  /// @param[out] context contains the state of the multibody system.
+  /// @param[in] R rotation matrix R_FM relating the inboard frame F and the
+  /// outboard frame M.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
-      systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    get_mobilizer().SetOrientation(context, R_FM);
+  const QuaternionFloatingJoint<T>& SetOrientation(
+      systems::Context<T>* context, const math::RotationMatrix<T>& R) const {
+    get_mobilizer().SetOrientation(context, R);
     return *this;
   }
 
-  /// Sets `context` to store a position vector for `this` joint.
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::SetOrientation()")
+  const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
+      systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
+    return SetOrientation(context, R_FM);
+  }
+
+  /// For `this` joint, stores the position vector `translation` in `context`.
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] translation position vector p_FoMo_F from Fo (inboard frame F's
   /// origin) to Mo (outboard frame M's origin), expressed in frame F.
@@ -267,9 +269,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_pose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    get_mobilizer().set_translation(context, X_FM.translation());
-    get_mobilizer().set_quaternion(context, X_FM.rotation().ToQuaternion());
-    return *this;
+    set_translation(context, X_FM.translation());
+    return SetOrientation(context, X_FM.rotation());
   }
 
   /// Sets in `context` the state for `this` joint so that the angular velocity
@@ -307,16 +308,23 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @name Random distribution setters
   /// @{
 
-  // TODO(sherm1) Rename this set_random_translation_distribution()
-
-  /// Sets the random distribution that translation of this joint will be
-  /// randomly sampled from. If a quaternion distribution has already been
-  /// set with stochastic variables, it will remain so. Otherwise the quaternion
+  /// For `this` joint, sets the random distribution that translation will be
+  /// randomly sampled from. If a quaternion distribution has already been set
+  /// with stochastic variables, it will remain so. Otherwise the quaternion
   /// will be set to this joint's zero configuration. See get_translation() for
   /// details on the position representation.
+  /// with stochastic variables, it will remain so. Otherwise the quaternion
+  /// will be set so its orientation will be zero.
+  void set_random_translation_distribution(
+      const Vector3<symbolic::Expression>& translation) {
+    get_mutable_mobilizer()->set_random_translation_distribution(translation);
+  }
+
+  DRAKE_DEPRECATED("2024-07-01",
+      "Use QuaternionFloatingJoint::set_random_translation_distribution()")
   void set_random_position_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
-    get_mutable_mobilizer()->set_random_translation_distribution(p_FM);
+    set_random_translation_distribution(p_FM);
   }
 
   /// (Advanced) Sets the random distribution that the orientation of this joint
