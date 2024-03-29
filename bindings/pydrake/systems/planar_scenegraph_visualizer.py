@@ -66,6 +66,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     xlim and ylim don't technically provide extra functionality, but it's
     easier to keep handling scaling with xlim, ylim, and view plane selection
     and *maybe* offsetting with the projection matrix.
+
+    Will render contact if constructor `contact` flag is set to true and the
+    corresponding contact port is connected.
     """
 
     def __init__(self,
@@ -100,8 +103,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 will be the same color.)
             substitute_collocated_mesh_files: If True, then a mesh file
                 specified with an unsupported filename extension may be
-                replaced by a file of the same base name in the same
-                directory, but with a supported filename extension.
+                replaced by a file of the same base name in the same directory,
+                but with a supported filename extension.  Currently only .obj
+                files are supported.
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
@@ -171,7 +175,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             self._contacts = self.ax.plot([], [], 'bo', ms=5)[0]
             self._contact_forces = []
             for i in range(10):
-                self._contact_forces.append(self.ax.plot([], [], 'g-', ms=5)[0])
+                self._contact_forces.append(
+                        self.ax.plot([],
+                                     [],
+                                     'g-',
+                                     ms=5)[0])
 
     def get_geometry_query_input_port(self):
         return self._geometry_query_input_port
@@ -263,29 +271,28 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 elif isinstance(shape, (Mesh, Convex)):
                     # Legacy behavior for looking for a .obj when the extension
                     # is not recognized.
-                    filename = Path(shape.filename())
-                    known_suffixes = [".obj", ".vtk", ".gltf"]
-                    if (filename.suffix.lower() not in known_suffixes
+                    filename = shape.filename()
+                    base, ext = os.path.splitext(filename)
+                    if (ext.lower() not in [".obj", ".vtk", ".gltf"]
                             and substitute_collocated_mesh_files):
-                        # Check for a co-located fallback (case insensitive).
-                        for new_suffix in known_suffixes:
-                            new_filename = filename.with_suffix(new_suffix)
-                            if new_filename.exists():
-                                filename = new_filename
+                        # Check for a co-located .obj file (case insensitive).
+                        for f in glob.glob(base + '.*'):
+                            if f[-4:].lower() == '.obj':
+                                filename = f
                                 break
-                        else:
+                        if filename[-4:].lower() != '.obj':
                             raise RuntimeError(
-                                f"The mesh {filename} is not a supported "
-                                f"format and no collocated fallback was found")
-                    if not filename.exists():
+                                f"The given file {filename} is not "
+                                f"supported and no alternate {base}"
+                                ".obj could be found.")
+                    if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    if filename == shape.filename():
-                        # It may have already been computed elsewhere.
-                        convex_hull = shape.GetConvexHull()
-                    else:
-                        temp_mesh = Mesh(str(filename), shape.scale())
-                        convex_hull = temp_mesh.GetConvexHull()
+                    temp_mesh = Mesh(filename, shape.scale())
+                    # TODO(21125): When Convex shape *always* has a
+                    # convex hull available, use it instead of recomputing it
+                    # here.
+                    convex_hull = _MakeConvexHull(temp_mesh)
                     patch_G = np.empty((3, convex_hull.num_vertices()))
                     for i in range(convex_hull.num_vertices()):
                         patch_G[:, i] = convex_hull.vertex(i)
@@ -372,16 +379,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         patch_V = patch_V[:2, :]
         return patch_V
 
-    def _contact_projection(self, contact_points):
-        contact_aug = np.vstack((contact_points, np.ones(
-            (1, contact_points.shape[1]))))
-        point_2d = self._T_VW @ contact_aug
-        point_2d[0, :] /= point_2d[2, :]
-        point_2d[1, :] /= point_2d[2, :]
-        point_2d = point_2d[:2, :]
-        return point_2d
-
     def _contact_force_projection(self, contact_points, contact_forces):
+        """
+        Internal function that projects 3D force information, contact and force
+        magnitude onto the 2D visualization plane
+        """
 
         # visualising contact points
         contact_aug = np.vstack((contact_points, np.ones((
@@ -460,11 +462,18 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 point_contact_info = contact_results.point_pair_contact_info(id)
                 points.append(point_contact_info.contact_point())
                 forces.append(point_contact_info.contact_force())
-                pass
+            for id in range(contact_results.num_hydroelastic_contacts()):
+                contact_info = contact_results.hydroelastic_contact_info(id)
+                surface_data = contact_info.contact_surface()
+                # extracts only translational force
+                spatial_force = contact_info.F_Ac_W().translational()
+                points.append(surface_data.centroid())
+                forces.append(spatial_force)
 
             if len(points) == 0:
                 return
             if len(forces) == 0:
+                print("no contact forces")
                 return
             # experimental scaling down of forces for visualisation
             # TODO: (@kamiradi) forces are randomly scaled down to visualise
@@ -528,15 +537,23 @@ def ConnectPlanarSceneGraphVisualizer(builder,
 
     if contact_port is None:
         visualizer = builder.AddSystem(
-            PlanarSceneGraphVisualizer(scene_graph, **kwargs))
-        builder.Connect(output_port, visualizer.get_geometry_query_input_port())
+            PlanarSceneGraphVisualizer(
+                scene_graph,
+                contact=False,
+                **kwargs))
+        builder.Connect(
+                output_port,
+                visualizer.get_geometry_query_input_port())
     else:
         visualizer = builder.AddSystem(
                 PlanarSceneGraphVisualizer(scene_graph,
                                            contact=True,
                                            **kwargs))
-        builder.Connect(output_port, visualizer.get_geometry_query_input_port())
-        builder.Connect(contact_port,
-                        visualizer.get_contact_results_input_port())
+        builder.Connect(
+                output_port,
+                visualizer.get_geometry_query_input_port())
+        builder.Connect(
+                contact_port,
+                visualizer.get_contact_results_input_port())
 
     return visualizer
