@@ -1,9 +1,4 @@
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-)
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -15,11 +10,6 @@ models_filegroup(
         "README.md",
     ],
     visibility = ["//visibility:private"],
-)
-
-install_data(
-    name = "install_data",
-    data = [":glob_models"],
 )
 
 filegroup(
@@ -46,20 +36,6 @@ filegroup(
         "@drake_models//:franka_description/meshes/visual/link6.obj",
         "@drake_models//:franka_description/meshes/visual/link7.mtl",
         "@drake_models//:franka_description/meshes/visual/link7.obj",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "franka_arm_test",
-    srcs = ["urdf/test/franka_arm_test.cc"],
-    data = [":models"],
-    deps = [
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsing",
-        "//multibody/plant",
     ],
 )
 
