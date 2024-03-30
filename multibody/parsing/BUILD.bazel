@@ -595,9 +595,9 @@ drake_cc_googletest(
     name = "detail_urdf_parser_test",
     data = [
         ":test_models",
-        "//examples/atlas:models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:atlas",
     ],
     deps = [
         ":detail_urdf_parser",

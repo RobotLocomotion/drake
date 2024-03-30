@@ -29,8 +29,8 @@ See below for the suggested workflow.
    ``models`` checkout using
    ``github_archive(..., local_repository_override = <path>)``.
 4. Incorporate the new ``models`` files into a Drake ``BUILD.bazel`` file where
-   they are needed, typically by adding ``data = ["@drake_models"]`` to the
-   demo program or benchmark that uses them.
+   they are needed by adding ``data = ["@drake_models//:some_subdir"]``
+   to the demo program or benchmark that uses them.
    1. Do not ask the build system to "install" any files from ``drake_models``;
       they are already available via remote fetching. In particular, don't add
       any ``install()`` rule for them, nor add them to any ``filegroup()`` that

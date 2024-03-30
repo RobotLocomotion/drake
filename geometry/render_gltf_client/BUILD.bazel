@@ -298,7 +298,7 @@ drake_cc_binary(
     srcs = ["test/client_demo.cc"],
     data = [
         ":gltf_client_test_models",
-        "@drake_models",
+        "@drake_models//:ycb",
     ],
     deps = [
         ":factory",
