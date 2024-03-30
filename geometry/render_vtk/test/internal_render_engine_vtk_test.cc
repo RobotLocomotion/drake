@@ -234,13 +234,17 @@ bool IsColorNear(const TestColor& expected, const TestColor& tested,
 }
 
 // Save the specified `image` in `$TEST_UNDECLARED_OUTPUTS_DIRECTORY/filename`.
-// If the environment variable is not defined, this function does nothing.
+// If the environment variable is not defined, this function logs a warning
+// (the first time) but does not generate any errors or exceptions.
 template <class Image>
 void SaveTestOutputImage(const Image& image, const std::string& filename,
                          ImageFileFormat file_format) {
   if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
     const std::filesystem::path out_dir(dir);
     ImageIo{}.Save(image, out_dir / filename, file_format);
+  } else {
+    static const logging::Warn log_once(
+        "Skipping image saving because TEST_UNDECLARED_OUTPUTS_DIR is unset.");
   }
 }
 
