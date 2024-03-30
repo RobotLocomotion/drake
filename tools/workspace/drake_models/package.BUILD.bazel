@@ -2,14 +2,38 @@
 
 package(default_visibility = ["//visibility:public"])
 
+# Glob for all files in this package. We do one big glob (instead of several
+# smaller ones) so Bazel's loading is as efficient as possible.
 _SRCS = glob(["**/*"])
 
+# All files in this repository are public. Since everything here is excluded
+# from Stable API policy, there's no point in trying to set visibility for the
+# stable parts vs internal-use-only parts.
 exports_files(_SRCS)
 
+# Provide a filegroup with all files.
 filegroup(
     name = "drake_models",
     srcs = _SRCS,
 )
+
+# Provide one filegroup per subdirectory (so Bazel users can depend on a
+# smaller set of runfiles, for efficiency).
+[
+    filegroup(
+        name = top_dir,
+        srcs = [
+            src
+            for src in _SRCS
+            if src.startswith(top_dir + "/")
+        ],
+    )
+    for top_dir in depset([
+        src.split("/", 1)[0]
+        for src in _SRCS
+        if "/" in src
+    ]).to_list()
+]
 
 # Nominally, the `@drake_models` external is fetched via `github_archive()`,
 # which creates a json metadata files to explain what it downloaded. Drake's

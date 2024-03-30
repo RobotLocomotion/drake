@@ -838,6 +838,10 @@ class TestPlant(unittest.TestCase):
         # work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsPhysicallyValid())
+        (semi_diameters, transform) = spatial_inertia \
+            .CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid()
+        self.assertIsInstance(semi_diameters, np.ndarray)
+        self.assertIsInstance(transform, RigidTransform)
         self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
         self.assertIsInstance(
             spatial_inertia.ReExpress(R_AE=RotationMatrix()), SpatialInertia)
@@ -1215,6 +1219,21 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
+
+        # Compute spatial accelerations for base.
+        if T == Expression and plant.time_step() != 0:
+            # N.B. Discrete time dynamics are not supported for symbolic
+            # scalars.
+            with self.assertRaises(ValueError) as cm:
+                A_base = plant.EvalBodySpatialAccelerationInWorld(
+                    context, base)
+            self.assertIn(
+                "This method doesn't support T = drake::symbolic::Expression",
+                str(cm.exception))
+        else:
+            A_base = plant.EvalBodySpatialAccelerationInWorld(context, base)
+            self.assert_sane(A_base.rotational(), nonzero=False)
+            self.assert_sane(A_base.translational(), nonzero=False)
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
@@ -3015,10 +3034,10 @@ class TestPlant(unittest.TestCase):
         # Test SceneGraphInspector
         inspector = query_object.inspector()
 
-        self.assertEqual(inspector.num_geometries(), 2)
+        self.assertEqual(inspector.num_geometries(), 4)
         self.assertEqual(inspector.num_geometries(),
                          len(inspector.GetAllGeometryIds()))
-        for geometry_id in inspector.GetAllGeometryIds():
+        for geometry_id in inspector.GetAllGeometryIds(Role.kProximity):
             frame_id = inspector.GetFrameId(geometry_id)
             self.assertEqual(
                 inspector.GetGeometryIdByName(
@@ -3042,6 +3061,10 @@ class TestPlant(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+        id_, = plant.GetVisualGeometriesForBody(
+            body=plant.GetBodyByName("body1"))
+        self.assertIsInstance(id_, GeometryId)
 
         id_, = plant.GetCollisionGeometriesForBody(
             body=plant.GetBodyByName("body1"))

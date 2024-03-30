@@ -259,6 +259,19 @@ class GcsTrajectoryOptimization final {
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+    /** Enforces zero derivatives on the control point connecting the subgraphs.
+
+    For velocity, acceleration, jerk, etc. enforcing zero-derivative on the
+    trajectory q(t) is equivalent to enforcing zero-derivative on the trajectory
+    r(s). Hence this constraint is convex.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if the derivative order < 1.
+    @throws std::exception if both subgraphs order is less than the desired
+    derivative order.
+    */
+    void AddZeroDerivativeConstraints(int derivative_order);
+
     /** Enforces derivative continuity constraints on the edges between the
     subgraphs.
      @param continuity_order is the order of the continuity constraint.
@@ -606,6 +619,44 @@ class GcsTrajectoryOptimization final {
   */
   static trajectories::CompositeTrajectory<double> NormalizeSegmentTimes(
       const trajectories::CompositeTrajectory<double>& trajectory);
+
+  /** Unwraps a trajectory with continuous revolute joints into a continuous
+   trajectory in the Euclidean space. Trajectories produced by
+   GcsTrajectoryOptimization for robotic systems with continuous revolute joints
+   may include apparent discontinuities, where a multiple of 2π is
+   instantaneously added to a joint value at the boundary between two adjacent
+   segments of the trajectory. This function removes such discontinuities by
+   adding or subtracting the appropriate multiple of 2π, "unwrapping" the
+   trajectory into a continuous representation suitable for downstream tasks
+   that do not take the joint wraparound into account.
+   @param gcs_trajectory The trajectory to unwrap.
+   @param continuous_revolute_joints The indices of the continuous revolute
+   joints.
+   @param starting_rounds A vector of integers that sets the starting rounds for
+   each continuous revolute joint. Given integer k for the starting_round of a
+   joint, its initial position will be wrapped into [2πk , 2π(k+1)). If the
+   starting rounds are not provided, the initial position of @p trajectory will
+   be unchanged.
+
+   @returns an unwrapped (continous in Euclidean space) CompositeTrajectory.
+
+   @throws std::exception if
+   starting_rounds.size()!=continuous_revolute_joints.size().
+   @throws std::exception if continuous_revolute_joints contain repeated indices
+   and/or indices outside the range [0, gcs_trajectory.rows()).
+   @throws std::exception if the gcs_trajectory is not continuous on the
+   manifold defined by the continuous_revolute_joints, i.e., the shift between
+   two consecutive segments is not an integer multiple of 2π (within a tolerance
+   of 1e-10 radians).
+   @throws std::exception if all the segments are not of type BezierCurve.
+   Other types are not supported yet. Note that currently the output of
+   GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
+   BezierCurves.
+    */
+  static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
+      const trajectories::CompositeTrajectory<double>& gcs_trajectory,
+      std::vector<int> continuous_revolute_joints,
+      std::optional<std::vector<int>> starting_rounds = std::nullopt);
 
  private:
   const int num_positions_;

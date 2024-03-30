@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/multibody/parsing/collision_filter_groups.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -190,6 +191,13 @@ class Parser final {
   /// @see the Parser class documentation for more detail.
   bool GetAutoRenaming() const { return enable_auto_rename_; }
 
+  /// Get a reference to the accumulated set of collision filter definitions
+  /// seen by this parser. Collision filter group data is only ever an output
+  /// of parsing, not an input.
+  const CollisionFilterGroups& collision_filter_groups() const {
+    return collision_filter_groups_;
+  }
+
   /// Parses the input file named in @p file_name and adds all of its model(s)
   /// to @p plant.
   ///
@@ -234,6 +242,7 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
+  CollisionFilterGroups collision_filter_groups_;
   std::optional<std::string> model_name_prefix_;
 };
 

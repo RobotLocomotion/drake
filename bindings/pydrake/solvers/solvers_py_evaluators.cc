@@ -423,11 +423,11 @@ void BindEvaluatorsAndBindings(py::module m) {
       std::shared_ptr<LinearMatrixInequalityConstraint>>(m,
       "LinearMatrixInequalityConstraint",
       doc.LinearMatrixInequalityConstraint.doc)
-      .def(py::init([](const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
-                        double symmetry_tolerance) {
-        return std::make_unique<LinearMatrixInequalityConstraint>(
-            F, symmetry_tolerance);
-      }),
+      .def(py::init(
+               [](std::vector<Eigen::MatrixXd> F, double symmetry_tolerance) {
+                 return std::make_unique<LinearMatrixInequalityConstraint>(
+                     std::move(F), symmetry_tolerance);
+               }),
           py::arg("F"), py::arg("symmetry_tolerance") = 1E-10,
           doc.LinearMatrixInequalityConstraint.ctor.doc)
       .def("F", &LinearMatrixInequalityConstraint::F,

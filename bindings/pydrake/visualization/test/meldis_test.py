@@ -198,7 +198,7 @@ class TestMeldis(unittest.TestCase):
         """Checks _ViewerApplet support for textured meshes.
         """
         self._check_viewer_applet_on_model(
-            "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf")
+            "drake_models/ycb/004_sugar_box.sdf")
 
     def test_viewer_applet_reload_optimization(self):
         """Checks that loading the identical scene twice is efficient.

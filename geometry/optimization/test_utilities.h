@@ -7,14 +7,20 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 
+// TODO(jwnimmer-tri) Test utilities belong either in a `test/` subdirectory
+// or a `test_utilities/` subdirectory. They should never live in a package-
+// level subdirectory alongside Drake library code.
+
 namespace drake {
 namespace geometry {
 namespace optimization {
 namespace internal {
 
 // Constructs a SceneGraph containing only the requested shape as geometry G,
-// anchored to the world frame at X_WG.
-std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
+// anchored to the world frame at X_WG. For convience, also returns a default
+// context and query object.
+std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId,
+           std::unique_ptr<systems::Context<double>>, QueryObject<double>>
 MakeSceneGraphWithShape(const Shape& shape, const math::RigidTransformd& X_WG,
                         bool add_proximity_properties = true);
 

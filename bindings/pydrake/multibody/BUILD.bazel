@@ -100,14 +100,17 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
     ],
-    cc_srcs = ["tree_py.cc"],
+    cc_srcs = [
+        "tree_py.cc",
+        "tree_py.h",
+        "tree_py_inertia.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":math_py",
@@ -126,7 +129,6 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -393,10 +395,10 @@ drake_jupyter_py_binary(
 drake_py_unittest(
     name = "parsing_test",
     data = [
-        "//examples/atlas:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/parsing:process_model_directives_test_models",
         "//multibody/parsing:test_models",
+        "@drake_models//:atlas",
     ],
     deps = [
         ":parsing_py",

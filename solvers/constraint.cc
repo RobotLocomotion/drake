@@ -698,17 +698,16 @@ void LinearMatrixInequalityConstraint::DoEval(
 }
 
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
-    const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
-    double symmetry_tolerance)
+    std::vector<Eigen::MatrixXd> F, double symmetry_tolerance)
     : Constraint(F.empty() ? 0 : F.front().rows(),
                  F.empty() ? 0 : F.size() - 1),
-      F_(F.begin(), F.end()),
-      matrix_rows_(F.empty() ? 0 : F.front().rows()) {
-  DRAKE_DEMAND(!F.empty());
+      F_{std::move(F)},
+      matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
+  DRAKE_DEMAND(!F_.empty());
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
                  matrix_rows_, std::numeric_limits<double>::infinity()));
-  for (const auto& Fi : F) {
+  for (const auto& Fi : F_) {
     DRAKE_ASSERT(Fi.rows() == matrix_rows_);
     DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
   }

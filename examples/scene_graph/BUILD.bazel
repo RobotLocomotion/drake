@@ -75,7 +75,9 @@ filegroup(
     name = "models",
     srcs = glob([
         "**/*.gltf",
+        "**/*.mtl",
         "**/*.obj",
+        "**/*.png",
         "**/*.sdf",
         "**/*.urdf",
         "**/*.xml",

@@ -112,6 +112,19 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const GeometryProperties& properties, const Rgba& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 
+/* A variant of MakeRenderMeshFromTriangleSurfaceMesh(). In this case, the
+ RenderMesh is guaranteed to effectively have per-face normals so it renders
+ as a faceted mesh. */
+RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+    const TriangleSurfaceMesh<double>& mesh,
+    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const drake::internal::DiagnosticPolicy& policy = {});
+
+/* Converts from RenderMesh to TriangleSurfaceMesh. Only connectivity and
+ vertex positions information are retained. */
+TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
+    const RenderMesh& render_mesh);
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -3,11 +3,14 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <memory>
 
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/overloaded.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -23,6 +26,25 @@ std::string GetExtensionLower(const std::string& filename) {
     return std::tolower(c);
   });
   return ext;
+}
+
+// Computes a convex hull and assigns it to the given shared pointer in a
+// thread-safe manner. Only does work if the shared_ptr is null (i.e., there is
+// no convex hull yet). Used by Mesh::GetConvexHull() and
+// Convex::GetConvexHull(). Note: the correctness of this function is tested in
+// shape_specification_thread_test.cc.
+void ComputeConvexHullAsNecessary(
+    std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
+    std::string_view filename, double scale) {
+  std::shared_ptr<PolygonSurfaceMesh<double>> check =
+      std::atomic_load(hull_ptr);
+  if (check == nullptr) {
+    // Note: This approach means that multiple threads *may* redundantly compute
+    // the convex hull; but only the first one will set the hull.
+    auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(filename, scale));
+    std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
+  }
 }
 
 }  // namespace
@@ -88,6 +110,11 @@ Convex::Convex(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  return *hull_;
 }
 
 std::string Convex::do_to_string() const {
@@ -171,6 +198,11 @@ Mesh::Mesh(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+}
+
+const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  return *hull_;
 }
 
 std::string Mesh::do_to_string() const {
@@ -291,68 +323,56 @@ double CalcMeshVolumeFromFile(const MeshType& mesh) {
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 
-class CalcVolumeReifier final : public ShapeReifier {
- public:
-  CalcVolumeReifier() = default;
-
-  using ShapeReifier::ImplementGeometry;
-
-  void ImplementGeometry(const Box& box, void*) final {
-    volume_ = box.width() * box.depth() * box.height();
-  }
-  void ImplementGeometry(const Capsule& capsule, void*) final {
-    volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
-              4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
-  }
-  void ImplementGeometry(const Convex& mesh, void*) {
-    volume_ = CalcMeshVolumeFromFile(mesh);
-  }
-  void ImplementGeometry(const Cylinder& cylinder, void*) final {
-    volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
-  }
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final {
-    volume_ = 4.0 / 3.0 * M_PI * ellipsoid.a() * ellipsoid.b() * ellipsoid.c();
-  }
-  void ImplementGeometry(const HalfSpace&, void*) final {
-    volume_ = std::numeric_limits<double>::infinity();
-  }
-  void ImplementGeometry(const Mesh& mesh, void*) {
-    volume_ = CalcMeshVolumeFromFile(mesh);
-  }
-  void ImplementGeometry(const MeshcatCone& cone, void*) final {
-    volume_ = 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
-  }
-  void ImplementGeometry(const Sphere& sphere, void*) final {
-    volume_ = 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
-  }
-
-  double volume() const { return volume_; }
-
- private:
-  double volume_{0.0};
-};
-
 }  // namespace
 
 double CalcVolume(const Shape& shape) {
-  CalcVolumeReifier reifier;
-  shape.Reify(&reifier);
-  return reifier.volume();
+  return shape.Visit<double>(overloaded{
+      [](const Box& box) {
+        return box.width() * box.depth() * box.height();
+      },
+      [](const Capsule& capsule) {
+        return M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
+               4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
+      },
+      [](const Convex& mesh) {
+        return CalcMeshVolumeFromFile(mesh);
+      },
+      [](const Cylinder& cylinder) {
+        return M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
+      },
+      [](const Ellipsoid& ellipsoid) {
+        return 4.0 / 3.0 * M_PI * ellipsoid.a() * ellipsoid.b() * ellipsoid.c();
+      },
+      [](const HalfSpace&) {
+        return std::numeric_limits<double>::infinity();
+      },
+      [](const Mesh& mesh) {
+        return CalcMeshVolumeFromFile(mesh);
+      },
+      [](const MeshcatCone& cone) {
+        return 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
+      },
+      [](const Sphere& sphere) {
+        return 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
+      }});
 }
 
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
 
-#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)              \
-  ShapeType::~ShapeType() = default;                                    \
-  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data) \
-      const {                                                           \
-    shape_reifier->ImplementGeometry(*this, user_data);                 \
-  }                                                                     \
-  std::unique_ptr<Shape> ShapeType::DoClone() const {                   \
-    return std::unique_ptr<ShapeType>(new ShapeType(*this));            \
-  }                                                                     \
-  std::string_view ShapeType::do_type_name() const { return #ShapeType; }
+#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)                \
+  ShapeType::~ShapeType() = default;                                      \
+  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data)   \
+      const {                                                             \
+    shape_reifier->ImplementGeometry(*this, user_data);                   \
+  }                                                                       \
+  std::unique_ptr<Shape> ShapeType::DoClone() const {                     \
+    return std::unique_ptr<ShapeType>(new ShapeType(*this));              \
+  }                                                                       \
+  std::string_view ShapeType::do_type_name() const { return #ShapeType; } \
+  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {       \
+    return this;                                                          \
+  }
 
 DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(Box)
 DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(Capsule)

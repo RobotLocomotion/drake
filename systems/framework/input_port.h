@@ -47,6 +47,11 @@ class InputPort final : public InputPortBase {
   recalculation may be arbitrarily expensive, but Eval() is constant time and
   _very_ fast if the value is already up to date.
 
+  @param context A Context for this System that also contains the value source
+  for this input port. If that source is an output port of another System then
+  `context` must be a subcontext of the Diagram that contains both this System
+  and the one providing the output port.
+
   @tparam ValueType The type of the const-reference returned by this method.
   When omitted, the return type is `const VectorX<T>&` (this is only valid
   when this is a vector-valued port).  For abstract ports, the `ValueType`

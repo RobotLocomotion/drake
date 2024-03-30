@@ -338,6 +338,12 @@ class ProximityEngine {
   // underlying shape is *mathematically* convex, just that it is implemented
   // as fcl::Convex.
   bool IsFclConvexType(GeometryId id) const;
+
+  // Returns the fcl::CollisionObjectd associated with the geometry id. In order
+  // to keep the fcl dependency in the implementation only, we type erase the
+  // pointer type. But if the return value is not null, it can be safely cast to
+  // fcl::CollisionObjectd*. This is for testing only.
+  void* GetCollisionObject(GeometryId id) const;
 };
 
 }  // namespace internal

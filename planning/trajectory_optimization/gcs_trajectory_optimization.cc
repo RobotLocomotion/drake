@@ -624,6 +624,70 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
   }
 }
 
+void EdgesBetweenSubgraphs::AddZeroDerivativeConstraints(int derivative_order) {
+  if (derivative_order < 1) {
+    throw std::runtime_error("Derivative order must be greater than 1.");
+  }
+
+  if (from_subgraph_.order() < derivative_order &&
+      to_subgraph_.order() < derivative_order) {
+    throw std::runtime_error(fmt::format(
+        "Cannot add derivative bounds to subgraph edges where both subgraphs "
+        "have less than derivative order.\n From subgraph order: {}\n To "
+        "subgraph order: {}\n Derivative order: {}",
+        from_subgraph_.order(), to_subgraph_.order(), derivative_order));
+  }
+
+  // We have d^Nq(t)/dt^N = d^Nr(s)/(ds^N * h^N) and h >= 0, which is nonlinear.
+  // To constraint zero velocity we can set the numerator to zero, which is
+  // convex:
+  // d^Nr(s)/ds^N = 0.
+
+  const Vector1d kVecZero = Vector1d::Zero();
+
+  if (from_subgraph_.order() >= derivative_order) {
+    // Add derivative bounds to the last control point of the u set.
+    // See BezierCurve::AsLinearInControlPoints().
+    SparseMatrix<double> M_transpose =
+        ur_trajectory_.AsLinearInControlPoints(derivative_order)
+            .col(from_subgraph_.order() - derivative_order)
+            .transpose();
+
+    // Equality constraint.
+    // (d^Nr(s)/ds^N).row(i) = 0.
+    const auto zero_derivative_constraint =
+        std::make_shared<LinearEqualityConstraint>(M_transpose, kVecZero);
+    for (int i = 0; i < num_positions(); ++i) {
+      for (Edge* edge : edges_) {
+        edge->AddConstraint(Binding<LinearEqualityConstraint>(
+            zero_derivative_constraint,
+            GetControlPointsU(*edge).row(i).transpose()));
+      }
+    }
+  }
+
+  if (to_subgraph_.order() >= derivative_order) {
+    // Add derivative bounds to the first control point of the v set.
+    // See BezierCurve::AsLinearInControlPoints().
+    SparseMatrix<double> M_transpose =
+        vr_trajectory_.AsLinearInControlPoints(derivative_order)
+            .col(0)
+            .transpose();
+    // Equality constraint:
+    // (d^Nr(s)/ds^N).row(i) = 0.
+    const auto zero_derivative_constraint =
+        std::make_shared<LinearEqualityConstraint>(M_transpose, kVecZero);
+
+    for (int i = 0; i < num_positions(); ++i) {
+      for (Edge* edge : edges_) {
+        edge->AddConstraint(Binding<LinearEqualityConstraint>(
+            zero_derivative_constraint,
+            GetControlPointsV(*edge).row(i).transpose()));
+      }
+    }
+  }
+}
+
 void EdgesBetweenSubgraphs::AddPathContinuityConstraints(int continuity_order) {
   if (continuity_order == 0) {
     throw std::runtime_error(
@@ -1158,11 +1222,105 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
       start_time += 1.0;
     } else {
       throw std::runtime_error(
-          "All segments in the gcs trajectory must be of type "
+          "NormalizeSegmentTimes: All segments in the gcs trajectory "
+          "must be of type "
           "BezierCurve<double>.");
     }
   }
   return CompositeTrajectory<double>(normalized_bezier_curves);
+}
+
+namespace {
+bool IsMultipleOf2Pi(double value) {
+  // We allow some tolerance for trajectories coming out of GCS.
+  // TODO(sadra): find out what tolerance is appropriate.
+  double kTol = 1e-10;  // To match what is provided in the docs.
+  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < kTol;
+}
+
+// Unwrap the angle to the range [2π * round, 2π * (round+1)).
+double UnwrapAngle(const double angle, const int round) {
+  const int twopi_factors_to_remove =
+      static_cast<int>(std::floor(angle / (2 * M_PI))) - round;
+  return angle - 2 * M_PI * twopi_factors_to_remove;
+}
+}  // namespace
+
+trajectories::CompositeTrajectory<double>
+GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+    const trajectories::CompositeTrajectory<double>& gcs_trajectory,
+    std::vector<int> continuous_revolute_joints,
+    std::optional<std::vector<int>> starting_rounds) {
+  if (starting_rounds.has_value()) {
+    DRAKE_THROW_UNLESS(starting_rounds->size() ==
+                       continuous_revolute_joints.size());
+  }
+  // TODO(@anyone): make this a unique_ptr and use std::move to avoid copying.
+  std::vector<copyable_unique_ptr<Trajectory<double>>> unwrapped_trajectories;
+  int dim = gcs_trajectory.rows();
+  geometry::optimization::internal::ThrowsForInvalidContinuousJointsList(
+      dim, continuous_revolute_joints);
+  Eigen::VectorXd last_segment_finish;
+  for (int i = 0; i < gcs_trajectory.get_number_of_segments(); ++i) {
+    const auto& traj_segment = gcs_trajectory.segment(i);
+    const auto* bezier_segment =
+        dynamic_cast<const BezierCurve<double>*>(&traj_segment);
+    if (bezier_segment == nullptr) {
+      throw std::runtime_error(
+          "UnwrapToContinuousTrajectory: All segments in the gcs_trajectory "
+          "must be of type "
+          "BezierCurve<double>.");
+    }
+    Eigen::MatrixXd new_control_points = bezier_segment->control_points();
+    const Eigen::MatrixXd& old_control_points =
+        bezier_segment->control_points();
+    const Eigen::VectorXd& old_start = old_control_points.col(0);
+    std::vector<double> shift;
+    if (i == 0) {
+      // there is no shift from previous segment.
+      if (starting_rounds.has_value()) {
+        for (int j = 0; j < ssize(continuous_revolute_joints); ++j) {
+          const int joint_index = continuous_revolute_joints.at(j);
+          const int start_round = starting_rounds->at(j);
+          // This value will be subtracted from the old_start to get the
+          // shift.
+          const double joint_shift =
+              old_start(joint_index) -
+              UnwrapAngle(old_start(joint_index), start_round);
+          DRAKE_DEMAND(IsMultipleOf2Pi(joint_shift));
+          shift.push_back(joint_shift);
+        }
+      } else {
+        shift = std::vector<double>(ssize(continuous_revolute_joints), 0);
+      }
+    } else {
+      DRAKE_DEMAND(last_segment_finish.rows() == gcs_trajectory.rows());
+      // See how much shift is needed to match the previous new segment.
+      for (const int joint_index : continuous_revolute_joints) {
+        const double joint_shift =
+            old_start(joint_index) - last_segment_finish(joint_index);
+        if (!IsMultipleOf2Pi(joint_shift)) {
+          throw std::runtime_error(
+              fmt::format("UnwrapToContinuousTrajectory: The shift from "
+                          "previous segment: {} is not a multiple "
+                          "of 2π at segment {}, joint {}.",
+                          joint_shift, i, joint_index));
+        }
+        shift.push_back(joint_shift);
+      }
+    }
+    for (int j = 0; j < ssize(continuous_revolute_joints); ++j) {
+      const int joint_index = continuous_revolute_joints[j];
+      // Shift all the columns of the control points by the shift.
+      new_control_points.row(joint_index) -=
+          Eigen::VectorXd::Constant(old_control_points.cols(), shift.at(j));
+    }
+    last_segment_finish = new_control_points.rightCols(1);
+    unwrapped_trajectories.emplace_back(std::make_unique<BezierCurve<double>>(
+        bezier_segment->start_time(), bezier_segment->end_time(),
+        new_control_points));
+  }
+  return CompositeTrajectory<double>(unwrapped_trajectories);
 }
 
 std::vector<int> GetContinuousRevoluteJointIndices(
@@ -1181,9 +1339,9 @@ std::vector<int> GetContinuousRevoluteJointIndices(
       }
       continue;
     }
-    // The second possibility we check for is a planar joint. If it is (and the
-    // angle component has no joint limits), we only add the third entry of the
-    // position vector, corresponding to theta.
+    // The second possibility we check for is a planar joint. If it is (and
+    // the angle component has no joint limits), we only add the third entry
+    // of the position vector, corresponding to theta.
     if (joint.type_name() == "planar") {
       if (joint.position_lower_limits()[2] ==
               -std::numeric_limits<float>::infinity() &&
@@ -1193,8 +1351,8 @@ std::vector<int> GetContinuousRevoluteJointIndices(
       }
       continue;
     }
-    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint) can be
-    // handled appropriately with wraparound edges, and if so, return their
+    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint) can
+    // be handled appropriately with wraparound edges, and if so, return their
     // indices as well.
   }
   return indices;

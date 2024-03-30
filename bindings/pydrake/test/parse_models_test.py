@@ -43,6 +43,9 @@ class TestParseModels(unittest.TestCase):
             if model_relpath.startswith("external/sdformat/sdf"):
                 # These are schema files; do not load.
                 model_files.remove(model_file)
+            if model_relpath.startswith("external/drake_models/"):
+                # These are checked elsewhere by drake_models-specific tests.
+                model_files.remove(model_file)
         # We expect there to be dozens of files that should be available for
         # parsing. Do a quick check to make sure we're in the right order of
         # magnitude in order to prevent false test success based on changes

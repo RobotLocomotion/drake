@@ -127,11 +127,19 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
       const GeometryId deformable1_id = it1->first;
       DRAKE_ASSERT(collision_filter.HasGeometry(deformable1_id));
       if (collision_filter.CanCollideWith(deformable0_id, deformable1_id)) {
-        AddDeformableDeformableContactSurface(
-            *signed_distance_fields.at(deformable0_id),
-            it0->second.deformable_mesh(), deformable0_id,
-            *signed_distance_fields.at(deformable1_id),
-            it1->second.deformable_mesh(), deformable1_id, &result);
+        if (deformable1_id < deformable0_id) {
+          AddDeformableDeformableContactSurface(
+              *signed_distance_fields.at(deformable0_id),
+              it0->second.deformable_mesh(), deformable0_id,
+              *signed_distance_fields.at(deformable1_id),
+              it1->second.deformable_mesh(), deformable1_id, &result);
+        } else {
+          AddDeformableDeformableContactSurface(
+              *signed_distance_fields.at(deformable1_id),
+              it1->second.deformable_mesh(), deformable1_id,
+              *signed_distance_fields.at(deformable0_id),
+              it0->second.deformable_mesh(), deformable0_id, &result);
+        }
       }
     }
   }

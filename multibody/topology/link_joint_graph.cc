@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/multibody/topology/forest.h"
 #include "drake/multibody/topology/graph.h"
 
@@ -100,6 +101,7 @@ void LinkJointGraph::InvalidateForest() {
                     data_.links.end());
   data_.joints.erase(data_.joints.begin() + data_.num_user_joints,
                      data_.joints.end());
+  data_.loop_constraints.clear();  // All ephemeral.
 
   data_.ephemeral_link_name_to_index.clear();
   data_.ephemeral_joint_name_to_index.clear();
@@ -192,6 +194,142 @@ bool LinkJointGraph::HasLinkNamed(const std::string& name,
   return false;
 }
 
+bool LinkJointGraph::HasJointNamed(const std::string& name,
+                                   ModelInstanceIndex model_instance) const {
+  DRAKE_DEMAND(model_instance.is_valid());
+
+  // Search linearly on the assumption that we won't often have lots of
+  // joints with the same name in different model instances.  If this turns
+  // out to be incorrect we can switch to a different data structure.
+  const auto range = data_.joint_name_to_index.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    if (joints(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+
+  const auto model_range =
+      data_.ephemeral_joint_name_to_index.equal_range(name);
+  for (auto it = model_range.first; it != model_range.second; ++it) {
+    if (joints(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+JointIndex LinkJointGraph::MaybeGetJointBetween(BodyIndex link1_index,
+                                                BodyIndex link2_index) const {
+  // Work with the Link that has the fewest joints. (If one of these is World
+  // it is probably the other one!)
+  const Link& link1 = links(link1_index);
+  const Link& link2 = links(link2_index);
+  const auto [joint_list_ptr, link_to_look_for] =
+      ssize(link1.joints()) <= ssize(link2.joints())
+          ? std::make_pair(&link1.joints(), link2_index)
+          : std::make_pair(&link2.joints(), link1_index);
+
+  // We're doing a linear search under the assumption that at least one of
+  // these Links won't have very many Joints.
+  for (JointIndex joint_index : *joint_list_ptr) {
+    const Joint& joint = joints(joint_index);
+    if (joint.connects(link_to_look_for)) return joint_index;
+  }
+  return JointIndex{};
+}
+
+JointIndex LinkJointGraph::AddJoint(const std::string& name,
+                                    ModelInstanceIndex model_instance,
+                                    const std::string& type,
+                                    BodyIndex parent_link_index,
+                                    BodyIndex child_link_index,
+                                    JointFlags flags) {
+  DRAKE_DEMAND(model_instance.is_valid());
+  DRAKE_DEMAND(parent_link_index.is_valid());
+  DRAKE_DEMAND(child_link_index.is_valid());
+
+  if (parent_link_index >= ssize(links())) {
+    throw std::range_error(fmt::format(
+        "{}(): parent link index {} for joint '{}' is out of range.", __func__,
+        parent_link_index, name));
+  }
+  if (child_link_index >= ssize(links())) {
+    throw std::range_error(
+        fmt::format("{}(): child link index {} for joint '{}' is out of range.",
+                    __func__, child_link_index, name));
+  }
+
+  if (parent_link_index == child_link_index) {
+    throw std::logic_error(fmt::format(
+        "{}(): Joint '{}' (model instance {}) would connect link '{}' "
+        "to itself.",
+        __func__, name, model_instance, links(parent_link_index).name()));
+  }
+
+  if (HasJointNamed(name, model_instance)) {
+    throw std::logic_error(
+        fmt::format("{}(): There is already a joint named '{}' in "
+                    "the model instance with index {}.",
+                    __func__, name, model_instance));
+  }
+
+  const JointTypeIndex type_index = GetJointTypeIndex(type);
+  if (!type_index.is_valid()) {
+    throw std::logic_error(fmt::format(
+        "{}(): Unrecognized type '{}' for joint '{}' (model instance {}).",
+        __func__, type, name, model_instance));
+  }
+
+  // Static Links are implicitly welded to World. We'll permit an explicit
+  // joint only if it is a weld.
+  const Link& new_parent = links(parent_link_index);
+  const Link& new_child = links(child_link_index);
+  const bool anchoring = (new_parent.is_world() && new_child.is_static()) ||
+                         (new_child.is_world() && new_parent.is_static());
+  if (anchoring && type_index != weld_joint_type_index()) {
+    const std::string static_link_name =
+        new_parent.is_world() ? new_child.name() : new_parent.name();
+    throw std::runtime_error(
+        fmt::format("{}(): can't connect static link '{}' to World "
+                    "using a {} joint; only a weld is permitted. "
+                    "(Joint '{}' in model instance {}.)",
+                    __func__, static_link_name, type, name, model_instance));
+  }
+
+  // We only allow one Joint between any given pair of Links.
+  if (JointIndex existing_joint_index =
+          MaybeGetJointBetween(parent_link_index, child_link_index);
+      existing_joint_index.is_valid()) {
+    const Joint& existing_joint = joints(existing_joint_index);
+    const Link& existing_parent = links(existing_joint.parent_link());
+    const Link& existing_child = links(existing_joint.child_link());
+
+    throw std::logic_error(fmt::format(
+        "{}(): This LinkJointGraph already has joint '{}' (model instance {}) "
+        "connecting link '{}' to link '{}'. Therefore adding joint '{}' "
+        "(model instance {}) connecting link '{}' to link '{}' is not allowed.",
+        __func__, existing_joint.name(), existing_joint.model_instance(),
+        existing_parent.name(), existing_child.name(), name, model_instance,
+        new_parent.name(), new_child.name()));
+  }
+
+  // If we have a SpanningForest, it's no good now.
+  InvalidateForest();
+
+  const JointIndex joint_index(ssize(joints()));  // next available index
+  data_.joints.emplace_back(Joint(joint_index, name, model_instance, type_index,
+                                  parent_link_index, child_link_index, flags));
+  data_.num_user_joints = ssize(joints());
+  data_.joint_name_to_index.insert({name, joint_index});  // fast name lookup
+
+  // Links need to know their joints.
+  mutable_link(parent_link_index).add_joint_as_parent(joint_index);
+  mutable_link(child_link_index).add_joint_as_child(joint_index);
+
+  return joint_index;
+}
+
 JointTypeIndex LinkJointGraph::RegisterJointType(
     const std::string& joint_type_name, int nq, int nv, bool has_quaternion) {
   // Reject duplicate type name.
@@ -206,7 +344,7 @@ JointTypeIndex LinkJointGraph::RegisterJointType(
   DRAKE_DEMAND(!has_quaternion || nq >= 4);
 
   const JointTypeIndex joint_type_index(data_.joint_types.size());
-  data_.joint_types.push_back({.type_name = joint_type_name,
+  data_.joint_types.push_back({.name = joint_type_name,
                                .nq = nq,
                                .nv = nv,
                                .has_quaternion = has_quaternion});
@@ -214,6 +352,45 @@ JointTypeIndex LinkJointGraph::RegisterJointType(
   DRAKE_DEMAND(data_.joint_type_name_to_index.size() ==
                data_.joint_types.size());
   return joint_type_index;
+}
+
+bool LinkJointGraph::IsJointTypeRegistered(
+    const std::string& joint_type_name) const {
+  const auto it = data_.joint_type_name_to_index.find(joint_type_name);
+  return it != data_.joint_type_name_to_index.end();
+}
+
+void LinkJointGraph::CreateWorldLinkComposite() {
+  DRAKE_DEMAND(link_composites().empty() && !links().empty());
+  Link& world_link = data_.links[BodyIndex(0)];
+  DRAKE_DEMAND(!world_link.link_composite_index_.is_valid());
+  data_.link_composites.emplace_back(std::vector{BodyIndex(0)});
+  world_link.link_composite_index_ = LinkCompositeIndex(0);
+}
+
+LoopConstraintIndex LinkJointGraph::AddLoopClosingWeldConstraint(
+    BodyIndex primary_link_index, BodyIndex shadow_link_index) {
+  DRAKE_DEMAND(primary_link_index.is_valid() && shadow_link_index.is_valid());
+  DRAKE_DEMAND(primary_link_index != shadow_link_index);
+  Link& primary_link = mutable_link(primary_link_index);
+  Link& shadow_link = mutable_link(shadow_link_index);
+  DRAKE_DEMAND(primary_link.model_instance() == shadow_link.model_instance());
+  const LoopConstraintIndex index(ssize(loop_constraints()));
+  // Use the shadow Link's name as the constraint name also.
+  data_.loop_constraints.emplace_back(index, shadow_link.name(),
+                                      shadow_link.model_instance(),
+                                      primary_link_index,  // parent
+                                      shadow_link_index);  // child
+  primary_link.add_loop_constraint(index);
+  shadow_link.add_loop_constraint(index);
+  return index;
+}
+
+JointTypeIndex LinkJointGraph::GetJointTypeIndex(
+    const std::string& joint_type_name) const {
+  const auto it = data_.joint_type_name_to_index.find(joint_type_name);
+  return it == data_.joint_type_name_to_index.end() ? JointTypeIndex()
+                                                    : it->second;
 }
 
 LinkJointGraph::Data::Data() = default;

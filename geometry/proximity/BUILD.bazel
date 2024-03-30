@@ -386,6 +386,7 @@ drake_cc_library(
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -469,12 +470,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "make_convex_hull_mesh",
-    srcs = ["make_convex_hull_mesh.cc"],
-    hdrs = ["make_convex_hull_mesh.h"],
+    name = "make_convex_hull_mesh_impl",
+    srcs = ["make_convex_hull_mesh_impl.cc"],
+    hdrs = ["make_convex_hull_mesh_impl.h"],
+    internal = True,
+    visibility = ["//geometry:__subpackages__"],
     interface_deps = [
         "//geometry/proximity:polygon_surface_mesh",
-        "//geometry:shape_specification",
     ],
     deps = [
         ":volume_mesh",
@@ -488,6 +490,19 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOImport",
         "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
+drake_cc_library(
+    name = "make_convex_hull_mesh",
+    srcs = ["make_convex_hull_mesh.cc"],
+    hdrs = ["make_convex_hull_mesh.h"],
+    interface_deps = [
+        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry:shape_specification",
+    ],
+    deps = [
+        ":make_convex_hull_mesh_impl",
     ],
 )
 
@@ -1175,6 +1190,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "hydroelastic_internal_test",
     data = [
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
     ],
@@ -1240,7 +1256,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "make_convex_hull_mesh_test",
+    name = "make_convex_hull_mesh_impl_test",
     data = [
         "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
@@ -1248,11 +1264,23 @@ drake_cc_googletest(
         "//geometry/render:test_models",
     ],
     deps = [
-        ":make_convex_hull_mesh",
+        ":make_convex_hull_mesh_impl",
         "//common:find_resource",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_convex_hull_mesh_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":make_convex_hull_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

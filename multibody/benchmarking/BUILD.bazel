@@ -83,7 +83,7 @@ drake_cc_googlebench_binary(
     data = [
         "//manipulation/models/ur3e:models",
         "//manipulation/models/wsg_50_description:models",
-        "@drake_models",
+        "@drake_models//:tri_homecart",
     ],
     test_tags = gurobi_test_tags(),
     deps = [

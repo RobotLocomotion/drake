@@ -314,7 +314,7 @@ drake_cc_googletest(
     name = "scene_graph_collision_checker_test",
     timeout = "moderate",
     data = [
-        "//manipulation/models/ycb:models",
+        "@drake_models//:ycb",
     ],
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 2,

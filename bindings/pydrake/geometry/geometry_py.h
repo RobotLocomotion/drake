@@ -19,6 +19,10 @@ void DefineGeometryCommon(py::module m);
  */
 void DefineGeometryHydro(py::module m);
 
+/** Defines the basic mesh types (and some parsing operations) on those types.
+ See geometry_py_meshes.cc. */
+void DefineGeometryMeshes(py::module m);
+
 /** Defines all elements in the drake::geometry::optimization namespace.
  See geometry_py_optimization.cc. */
 void DefineGeometryOptimization(py::module m);

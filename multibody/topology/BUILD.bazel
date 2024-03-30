@@ -46,6 +46,7 @@ drake_cc_library(
         "link_joint_graph_inlines.h",
         "link_joint_graph_joint.h",
         "link_joint_graph_link.h",
+        "link_joint_graph_loop_constraint.h",
         "spanning_forest.h",
     ],
     deps = [
@@ -56,6 +57,14 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "link_joint_graph_test",
+    deps = [
+        ":multibody_topology",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spanning_forest_test",
     deps = [
         ":multibody_topology",
         "//common/test_utilities:expect_throws_message",

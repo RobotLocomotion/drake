@@ -76,6 +76,7 @@ drake_cc_library_linux_only(
         ":internal_texture_library",
         ":render_engine_gl_params",
         "//common:diagnostic_policy",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",
@@ -229,6 +230,7 @@ drake_cc_googletest_linux_only(
 drake_cc_googletest_linux_only(
     name = "internal_render_engine_gl_test",
     data = [
+        "//examples/scene_graph:models",
         "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),

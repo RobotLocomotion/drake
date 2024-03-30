@@ -47,6 +47,7 @@ drake_cc_package_library(
         ":read_obj",
         ":rgba",
         ":scene_graph",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
@@ -261,6 +262,7 @@ drake_cc_library(
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
+        ":mesh_deformation_interpolator",
         ":proximity_engine",
         ":utilities",
         "//geometry/proximity:make_convex_hull_mesh",
@@ -275,6 +277,7 @@ drake_cc_library(
     hdrs = ["make_mesh_for_deformable.h"],
     deps = [
         ":shape_specification",
+        "//common:overloaded",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:volume_mesh",
@@ -299,6 +302,16 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         "//multibody/plant:coulomb_friction",
+    ],
+)
+
+drake_cc_library(
+    name = "scene_graph_config",
+    srcs = ["scene_graph_config.cc"],
+    hdrs = ["scene_graph_config.h"],
+    deps = [
+        ":proximity_properties",
+        "//common:name_value",
     ],
 )
 
@@ -378,12 +391,17 @@ drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+    ],
+    deps = [
         "//common:nice_type_name",
+        "//common:overloaded",
+        "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
-        "//math:geometric_transform",
     ],
 )
 
@@ -511,6 +529,7 @@ drake_cc_library(
         "//common:network_policy",
         "//common:scope_exit",
         "//common:sha256",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@nlohmann_internal//:nlohmann",
@@ -526,10 +545,11 @@ drake_cc_binary(
     data = [
         ":environment_maps",
         "//examples/kuka_iiwa_arm:models",
+        "//examples/scene_graph:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/ycb:models",
         "//multibody/meshcat:models",
+        "@drake_models//:ycb",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -727,7 +747,6 @@ filegroup(
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",
-        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/octahedron.mtl",
@@ -742,7 +761,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/cube_as_6_squares.vtk",
-        "test/extruded_u_volume_mesh.vtk",
+        "test/cube_as_volume.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
@@ -799,8 +818,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_visualizer_test",
+    data = ["//geometry/render:test_models"],
     deps = [
         ":drake_visualizer",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm",
@@ -935,6 +956,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "scene_graph_config_test",
+    deps = [
+        ":scene_graph_config",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
         ":scene_graph",
@@ -964,6 +994,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "shape_specification_thread_test",
+    data = [
+        "//examples/hydroelastic/ball_plate:plate_files",
+        "//examples/multibody/deformable_torus:torus_tet_mesh",
+        "@drake_models//:tri_homecart",
+    ],
+    tags = [
+        "cpus:4",
+    ],
+    deps = [
+        ":shape_specification",
+        "//common:find_resource",
+        "//common:find_runfiles",
+    ],
+)
+
+drake_cc_googletest(
     name = "shape_specification_test",
     data = [
         ":test_obj_files",
@@ -973,6 +1020,7 @@ drake_cc_googletest(
     deps = [
         ":shape_specification",
         "//common:find_resource",
+        "//common:overloaded",
         "//common/test_utilities",
     ],
 )

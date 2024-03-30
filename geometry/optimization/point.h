@@ -17,7 +17,7 @@ singleton or unit set.
 This set is always nonempty, even in the zero-dimensional case.
 
 @ingroup geometry_optimization */
-class Point final : public ConvexSet, private ShapeReifier {
+class Point final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
 
@@ -86,10 +86,6 @@ class Point final : public ConvexSet, private ShapeReifier {
       const final;
 
   double DoCalcVolume() const final { return 0.0; }
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* data) final;
 
   Eigen::VectorXd x_;
 };

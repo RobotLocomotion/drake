@@ -62,6 +62,15 @@ class TestDrakeModels(unittest.TestCase):
             "package://drake_models/atlas/atlas_minimal_contact.urdf",
             "package://drake_models/atlas/robotiq.urdf",
             "package://drake_models/atlas/robotiq_simple.urdf",
+            # We don't have any tracking issue for fixing the allegro models,
+            # because we don't use them for anything we care about. If someone
+            # wants to fix the warnings, be our guest.
+            "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_left.urdf",  # noqa
+            "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_right.urdf",  # noqa
+            # We don't have any tracking issue for fixing the PR2 models,
+            # because we don't use them for anything we care about. If someone
+            # wants to fix the warnings, be our guest.
+            "package://drake_models/pr2_description/urdf/pr2_simplified.urdf"
         ]
         self.assertFalse(set(models_with_warnings) - set(all_models))
 

@@ -55,9 +55,9 @@ drake_cc_library(
         ":models",
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/realsense2_description:models",
         "//manipulation/models/wsg_50_description:models",
-        "//manipulation/models/ycb:models",
+        "@drake_models//:realsense2_description",
+        "@drake_models//:ycb",
     ],
     visibility = ["//visibility:public"],
     deps = [

@@ -21,7 +21,7 @@ have sets_.size() == 0) is treated as the singleton {0}, which is nonempty.
 This includes the zero-dimensional case.
 
 @ingroup geometry_optimization */
-class MinkowskiSum final : public ConvexSet, private ShapeReifier {
+class MinkowskiSum final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
 
@@ -100,10 +100,6 @@ class MinkowskiSum final : public ConvexSet, private ShapeReifier {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Capsule& capsule, void* data) final;
 
   ConvexSets sets_{};  // Not marked const to support move semantics.
 };

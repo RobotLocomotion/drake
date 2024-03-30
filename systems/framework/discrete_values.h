@@ -76,6 +76,8 @@ class DiscreteValues {
   /// Adds an additional group that owns the given @p datum, which must be
   /// non-null. Returns the assigned group number, counting up from 0 for the
   /// first group.
+  /// @warning Do not use this method to add groups to a %DiscreteValues
+  /// object that is owned by an existing Context.
   int AppendGroup(std::unique_ptr<BasicVector<T>> datum) {
     if (datum == nullptr) {
       throw std::logic_error(

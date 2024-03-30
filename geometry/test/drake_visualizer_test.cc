@@ -10,6 +10,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -1061,6 +1062,79 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
                    << link_message.name;
     }
   }
+
+  /* We don't care about the draw message. */
+}
+
+/* This confirms that DrakeVisualizer dispatches a faceted convex hull for
+ Convex shapes.
+
+ We can pass a glTF file with known geometry and an arbitrary material and
+ observe the message as being explicit mesh data with expected diffuse color. */
+TYPED_TEST(DrakeVisualizerTest, ConvexIsHull) {
+  using T = TypeParam;
+
+  this->ConfigureDiagram();
+
+  const FrameId f_id = this->scene_graph_->RegisterFrame(
+      this->pose_source_id_, GeometryFrame("test", 0));
+
+  const RigidTransformd X_PC(Vector3d(-1, 2, -3));
+  const GeometryId g_id = this->scene_graph_->RegisterGeometry(
+      this->pose_source_id_, f_id,
+      make_unique<GeometryInstance>(
+          X_PC,
+          make_unique<Convex>(FindResourceOrThrow(
+              "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf")),
+          "test"));
+
+  const Rgba expected_rgba(0.25, 0.5, 0.75, 1.0);
+  IllustrationProperties props;
+  props.AddProperty("phong", "diffuse", expected_rgba);
+  this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
+
+  FramePoseVector<T> poses;
+  poses.set_value(f_id, RigidTransform<T>{});
+  this->pose_source_->SetPoses(std::move(poses));
+
+  /* Dispatch a load message. */
+  auto context = this->diagram_->CreateDefaultContext();
+  const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
+  this->visualizer_->ForcedPublish(vis_context);
+
+  /* Confirm that messages were sent.  */
+  MessageResults results = this->ProcessMessages();
+  ASSERT_EQ(results.num_load, 1);
+  ASSERT_EQ(results.load_message.num_links, 1);
+
+  const auto& link_message = results.load_message.link[0];
+  ASSERT_EQ(link_message.num_geom, 1);
+  const auto& geo_message = link_message.geom[0];
+
+  EXPECT_EQ(geo_message.type, geo_message.MESH);
+  EXPECT_TRUE(geo_message.string_data.empty());
+  // The float data contains:
+  //   - 2 floats indicating triangle and vertex counts.
+  //   - 3 floats for each triangle (we expect 4 for the pyramid).
+  //   - 3 floats for each vertex and 3 vertices per triangle (faceted).
+  const int num_tris = 4;
+  const int num_vertices = num_tris * 3;
+  EXPECT_GT(geo_message.num_float_data, 2 + 3 * num_tris + 3 * num_vertices);
+
+  const auto& color = geo_message.color;
+  const Rgba test_rgba(color[0], color[1], color[2], color[3]);
+  // The color values used in this test can all be perfectly represented by
+  // 32-bit floats (e.g., 0.5, 0.75,  etc.). So, we can use exact equality.
+  EXPECT_EQ(test_rgba, expected_rgba);
+
+  const auto& p_PG = geo_message.position;
+  const auto& q_PG = geo_message.quaternion;
+  const RotationMatrixd R_PG(
+      Eigen::Quaternion<double>(q_PG[0], q_PG[1], q_PG[2], q_PG[3]));
+  const RigidTransformd X_PG_test(R_PG, {p_PG[0], p_PG[1], p_PG[2]});
+  /* Tolerance due to conversion to float. */
+  EXPECT_TRUE(
+      CompareMatrices(X_PC.GetAsMatrix34(), X_PG_test.GetAsMatrix34(), 1e-7));
 
   /* We don't care about the draw message. */
 }

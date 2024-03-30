@@ -28,15 +28,15 @@ enum class ProgramAttribute {
   kLorentzConeConstraint,         ///< A Lorentz cone constraint.
   kRotatedLorentzConeConstraint,  ///< A rotated Lorentz cone constraint.
 
-  kPositiveSemidefiniteConstraint,  /// A positive semidefinite constraint.
+  kPositiveSemidefiniteConstraint,  ///< A positive semidefinite constraint.
 
-  kExponentialConeConstraint,  /// An exponential cone constraint.
+  kExponentialConeConstraint,  ///< An exponential cone constraint.
 
-  kL2NormCost,  /// An L2 norm |Ax+b|
+  kL2NormCost,  ///< An L2 norm |Ax+b|
 
-  kBinaryVariable,  /// variable taking binary value {0, 1}.
+  kBinaryVariable,  ///< Variable taking binary value {0, 1}.
 
-  kCallback,  /// support callback during solving the problem.
+  kCallback,  ///< Supports callback during solving the problem.
 };
 
 using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;

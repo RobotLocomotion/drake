@@ -26,10 +26,10 @@ void DependencyTracker::NoteValueChange(int64_t change_event) const {
   DRAKE_ASSERT(change_event > 0);
 
   ++num_value_change_notifications_received_;
-  if (last_change_event_ == change_event) {
+  if (last_change_event_ == change_event || suppress_notifications_) {
     ++num_ignored_notifications_;
     DRAKE_LOGGER_DEBUG(
-        "... ignoring repeated value change notification same change event.");
+        "... ignoring repeated or suppressed value change notification.");
     return;
   }
   last_change_event_ = change_event;
@@ -52,10 +52,10 @@ void DependencyTracker::NotePrerequisiteChange(
   DRAKE_ASSERT(HasPrerequisite(prerequisite));  // Expensive.
 
   ++num_prerequisite_notifications_received_;
-  if (last_change_event_ == change_event) {
+  if (last_change_event_ == change_event || suppress_notifications_) {
     ++num_ignored_notifications_;
     DRAKE_LOGGER_DEBUG(
-        "{}... ignoring repeated prereq change notification same change event.",
+        "{}... ignoring repeated or suppressed prereq change notification.",
         Indent(depth));
     return;
   }

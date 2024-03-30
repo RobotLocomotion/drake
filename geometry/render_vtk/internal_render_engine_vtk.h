@@ -25,6 +25,7 @@
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
 namespace drake {
@@ -191,11 +192,10 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  // Common interface for loading a mesh-type geometry (i.e., Mesh or Convex).
-  // Examines the extension and delegates to the appropriate
-  // ImplementExtension() variant to handle that file type, warning otherwise.
-  void ImplementMesh(const std::string& file_name, double scale,
-                     void* user_data);
+  // Helper function for mapping a RenderMesh instance into the appropriate VTK
+  // polydata.
+  void ImplementRenderMesh(geometry::internal::RenderMesh&& mesh, double scale,
+                           const RegistrationData& data);
 
   // Adds an .obj to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
@@ -209,6 +209,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
  private:
   friend class RenderEngineVtkTester;
+
+  // Our diagnostic_ object's warning callback calls this function.
+  void HandleWarning(const drake::internal::DiagnosticDetail& detail) const;
 
   // Initializes the VTK pipelines.
   void InitializePipelines();

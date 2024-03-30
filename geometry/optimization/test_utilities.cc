@@ -17,7 +17,8 @@ namespace optimization {
 namespace internal {
 using math::RigidTransformd;
 
-std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
+std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId,
+           std::unique_ptr<systems::Context<double>>, QueryObject<double>>
 MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG,
                         bool add_proximity_properties) {
   auto scene_graph = std::make_unique<SceneGraph<double>>();
@@ -28,8 +29,11 @@ MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG,
   }
   GeometryId geom_id =
       scene_graph->RegisterAnchoredGeometry(source_id, std::move(instance));
-  return std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>(
-      std::move(scene_graph), geom_id);
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  return std::make_tuple(std::move(scene_graph), geom_id, std::move(context),
+                         std::move(query));
 }
 
 // Returns true iff the convex optimization can make the `point` be in the set.

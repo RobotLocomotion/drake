@@ -1,7 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
@@ -487,6 +486,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodyPoseInWorld.doc)
         .def(
+            "EvalBodySpatialAccelerationInWorld",
+            [](const Class* self, const Context<T>& context,
+                const RigidBody<T>& body_B) {
+              return self->EvalBodySpatialAccelerationInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body"),
+            cls_doc.EvalBodySpatialAccelerationInWorld.doc)
+        .def(
             "EvalBodySpatialVelocityInWorld",
             [](const Class* self, const Context<T>& context,
                 const RigidBody<T>& body_B) {
@@ -910,6 +917,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
             py::arg("body_index"), py_rvp::reference_internal,
             cls_doc.GetBodyFrameIdIfExists.doc)
+        .def("GetVisualGeometriesForBody", &Class::GetVisualGeometriesForBody,
+            py::arg("body"), py_rvp::reference_internal,
+            cls_doc.GetVisualGeometriesForBody.doc)
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
             py_rvp::reference_internal,

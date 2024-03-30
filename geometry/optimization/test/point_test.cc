@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/scene_graph.h"
@@ -106,11 +107,8 @@ GTEST_TEST(PointTest, FromSceneGraphTest) {
 
   // Test SceneGraph constructor.
   const double kRadius = 0.2;
-  auto [scene_graph, geom_id] =
+  auto [scene_graph, geom_id, context, query] =
       MakeSceneGraphWithShape(Sphere(kRadius), RigidTransformd(p_W));
-  auto context = scene_graph->CreateDefaultContext();
-  auto query =
-      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   EXPECT_NEAR(query.ComputeSignedDistanceToPoint(p_W)[0].distance, -kRadius,
               1e-16);
@@ -136,6 +134,13 @@ GTEST_TEST(PointTest, FromSceneGraphTest) {
   Point P2(query2, geom_id, frame_id, kAllowableRadius);
 
   EXPECT_TRUE(CompareMatrices(P2.x(), X_WF.inverse() * p_W, 1e-16));
+}
+
+GTEST_TEST(PointTest, FromSceneGraphBad) {
+  auto [scene_graph, geom_id, context, query] =
+      MakeSceneGraphWithShape(HalfSpace(), RigidTransformd());
+  DRAKE_EXPECT_THROWS_MESSAGE(Point(query, geom_id),
+                              ".*Point.*cannot.*HalfSpace.*");
 }
 
 GTEST_TEST(PointTest, 6DTest) {

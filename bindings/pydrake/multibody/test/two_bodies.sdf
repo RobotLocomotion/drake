@@ -24,6 +24,13 @@
           </sphere>
         </geometry>
       </collision>
+      <visual name="body1_visual">
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+      </visual>
     </link>
     <link name="body2">
       <inertial>
@@ -44,6 +51,13 @@
           </sphere>
         </geometry>
       </collision>
+       <visual name="body2_visual">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+      </visual>
     </link>
   </model>
 </sdf>
