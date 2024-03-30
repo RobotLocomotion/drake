@@ -593,8 +593,8 @@ class RenderEngineVtkTest : public ::testing::Test {
 
   // Used to create unique identifiers per-test to persist test renders to
   // $TEST_UNDECLARED_OUTPUTS_DIRECTORY.  The Render() method will save images
-  // and increase the save counter, tests not using Render() should manually
-  // increase this variable as well.
+  // and increase the save counter, tests not using Render() should might need
+  // to manually increase this variable.
   int save_counter_{0};
 
   // The pose of the sphere created in PopulateSphereTest().
