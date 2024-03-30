@@ -40,7 +40,6 @@ filegroup(
     data = [
         "//bindings/pydrake/multibody:models",
         "//examples/acrobot:models",
-        "//examples/atlas:models",
         "//examples/hardware_sim:demo_data",
         "//examples/hydroelastic/ball_plate:floor_files",
         "//examples/hydroelastic/ball_plate:plate_files",
