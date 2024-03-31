@@ -327,8 +327,8 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
 /*
  * Add quadratic or linear costs to the optimization problem.
  */
-int AddCosts(GRBmodel* model, double* pconstant_cost,
-             const MathematicalProgram& prog) {
+int AddLinearAndQuadraticCosts(GRBmodel* model, double* pconstant_cost,
+                               const MathematicalProgram& prog) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
   using std::abs;
@@ -755,9 +755,8 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   // license's use_count lower bounded to 1. If no, the local_hold_holder is
   // null and the usual GetScopedSingleton workflow applies.
   static never_destroyed<std::shared_ptr<void>> local_host_holder{
-     IsGrbLicenseFileLocalHost()
-           ? GetScopedSingleton<GurobiSolver::License>()
-           : nullptr};
+      IsGrbLicenseFileLocalHost() ? GetScopedSingleton<GurobiSolver::License>()
+                                  : nullptr};
   return GetScopedSingleton<GurobiSolver::License>();
 }
 
@@ -892,6 +891,12 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
       &num_gurobi_vars, &rotated_lorentz_cone_new_variable_indices,
       &gurobi_var_type, &xlow, &xupp);
 
+  std::vector<std::vector<int>> l2norm_costs_lorentz_cone_variable_indices;
+  internal::AddL2NormCostVariables(prog.l2norm_costs(), &is_new_variable,
+                                   &num_gurobi_vars,
+                                   &l2norm_costs_lorentz_cone_variable_indices,
+                                   &gurobi_var_type, &xlow, &xupp);
+
   GRBmodel* model = nullptr;
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
               &xupp[0], gurobi_var_type.data(), nullptr);
@@ -902,10 +907,16 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   int error = 0;
   double constant_cost = 0;
   if (!error) {
-    error = AddCosts(model, &constant_cost, prog);
+    error = AddLinearAndQuadraticCosts(model, &constant_cost, prog);
   }
 
   int num_gurobi_linear_constraints = 0;
+  if (!error) {
+    error = internal::AddL2NormCosts(prog,
+                                     l2norm_costs_lorentz_cone_variable_indices,
+                                     model, &num_gurobi_linear_constraints);
+  }
+
   if (!error) {
     error =
         ProcessLinearConstraints(model, prog, &num_gurobi_linear_constraints,

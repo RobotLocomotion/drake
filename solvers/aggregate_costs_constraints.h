@@ -298,6 +298,7 @@ void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length);
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

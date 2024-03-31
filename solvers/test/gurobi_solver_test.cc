@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -308,6 +309,18 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   GurobiSolver solver;
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(L2NormCost, ShortestDistanceToThreePoints) {
+  GurobiSolver solver;
+  ShortestDistanceToThreePoints tester{};
+  tester.CheckSolution(solver);
+}
+
+GTEST_TEST(L2NormCost, ShortestDistanceFromCylinderToPoint) {
+  GurobiSolver solver;
+  ShortestDistanceFromCylinderToPoint tester{};
+  tester.CheckSolution(solver);
 }
 
 GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
