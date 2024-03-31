@@ -99,6 +99,44 @@ void AddSecondOrderConeVariables(
     std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
     std::vector<double>* xupp);
 
+// For an L2 norm cost min |Cx+d|₂, we consider introducing a Lorentz cone
+// constraint as
+// z in Lorentz cone.
+// z[1:] = C*x + d
+// min z[0]
+// So we will need to add the slack variable z.
+// @param[in/out] is_new_variable is_new_variable[i] is true if the i'th
+// variable in Gurobi model is not included in MathematicalProgram.
+// @param[in/out] num_gurobi_vars Number of variables in Gurobi model.
+// @param[out] lorentz_cone_variable_indices lorentz_cone_variable_indices[i] is
+// the indices of variable z for l2_norm_costs[i] in the Gurobi model.
+// @param[in/out] gurobi_var_type gurobi_var_type[i] is the type of the i'th
+// variable in the Gurobi model.
+// @param[in/out] xlow The lower bound of the Gurobi variables.
+// @param[in/out] xupp The upper bound of the Gurobi variables.
+void AddL2NormCostVariables(
+    const std::vector<Binding<L2NormCost>>& l2_norm_costs,
+    std::vector<bool>* is_new_variable, int* num_gurobi_vars,
+    std::vector<std::vector<int>>* lorentz_cone_variable_indices,
+    std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
+    std::vector<double>* xupp);
+
+// Adds L2 norm cost |Cx+d|₂ to Gurobi.
+// We introduce a Lorentz cone constraint as
+// z in Lorentz cone.
+// z[1:] = C*x + d
+// min z[0]
+// @param[in] prog All prog.l2norm_costs() will be added to Gurobi model.
+// @param[in] l2norm_costs_lorentz_cone_variable_indices
+// l2norm_costs_lorentz_cone_variable_indices[i] are the indices of the slack
+// variable z for prog.l2norm_costs()[i] in Gurobi model.
+// @param[in/out] model The Gurobi model.
+// @param[in/out] num_gurobi_linear_constraints The number of linear constraints
+// in Gurobi before/after calling this function.
+int AddL2NormCosts(const MathematicalProgram& prog,
+                   const std::vector<std::vector<int>>&
+                       l2norm_costs_lorentz_cone_variable_indices,
+                   GRBmodel* model, int* num_gurobi_linear_constraints);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
