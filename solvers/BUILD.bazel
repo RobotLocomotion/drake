@@ -806,12 +806,27 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     deps_enabled = [
+        ":gurobi_solver_internal",
         "//math:eigen_sparse_triplet",
         "//common:find_resource",
         "//common:scope_exit",
         "//common:scoped_singleton",
         "@gurobi//:gurobi_c",
         "@fmt",
+    ],
+)
+
+drake_cc_optional_library(
+    name = "gurobi_solver_internal",
+    opt_in_condition = "//tools:with_gurobi",
+    srcs = ["gurobi_solver_internal.cc"],
+    hdrs = ["gurobi_solver_internal.h"],
+    interface_deps = [":mathematical_program_result"],
+    deps = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
+        "//math:quadratic_form",
+        "@gurobi//:gurobi_c",
     ],
 )
 
