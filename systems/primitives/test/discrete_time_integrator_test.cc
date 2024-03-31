@@ -1,0 +1,46 @@
+#include "drake/systems/primitives/discrete_time_integrator.h"
+
+#include <gtest/gtest.h>
+
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
+
+namespace drake {
+namespace systems {
+namespace {
+
+GTEST_TEST(DiscreteTimeIntegratorTest, BasicTest) {
+  const double kTimeStep = 0.1;
+  const IntegrationMethod kMethod = IntegrationMethod::kExplicitEuler;
+  DiscreteTimeIntegrator<double> integrator(3, kTimeStep, kMethod);
+  EXPECT_EQ(integrator.get_input_port().size(), 3);
+  EXPECT_EQ(integrator.get_output_port().size(), 3);
+
+  EXPECT_EQ(integrator.integration_method(), kMethod);
+  EXPECT_EQ(integrator.time_step(), kTimeStep);
+  std::optional<PeriodicEventData> data =
+      integrator.GetUniquePeriodicDiscreteUpdateAttribute();
+  EXPECT_TRUE(data.has_value());
+  EXPECT_EQ(data->period_sec(), kTimeStep);
+
+  auto context = integrator.CreateDefaultContext();
+  const Eigen::Vector3d x{1.0, 2.0, 3.0};
+  integrator.set_integral_value(context.get(), x);
+  EXPECT_TRUE(CompareMatrices(x, context->get_discrete_state_vector().value()));
+
+  const Eigen::Vector3d u{4.0, 5.0, 6.0};
+  integrator.get_input_port().FixValue(context.get(), u);
+  EXPECT_TRUE(CompareMatrices(
+      x + kTimeStep * u,
+      integrator.EvalUniquePeriodicDiscreteUpdate(*context).value(), 1e-14));
+}
+
+GTEST_TEST(DiscreteTimeIntegratorTest, ScalarConversion) {
+  DiscreteTimeIntegrator<double> integrator(1, 0.1);
+  EXPECT_TRUE(is_autodiffxd_convertible(integrator));
+  EXPECT_TRUE(is_symbolic_convertible(integrator));
+}
+
+}  // namespace
+}  // namespace systems
+}  // namespace drake
