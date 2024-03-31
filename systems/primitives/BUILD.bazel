@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":demultiplexer",
         ":discrete_derivative",
         ":discrete_time_delay",
+        ":discrete_time_integrator",
         ":first_order_low_pass_filter",
         ":gain",
         ":integrator",
@@ -127,6 +128,15 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_integrator",
+    srcs = ["discrete_time_integrator.cc"],
+    hdrs = ["discrete_time_integrator.h"],
+    deps = [
         "//systems/framework",
     ],
 )
@@ -479,6 +489,16 @@ drake_cc_googletest(
         ":sine",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_integrator_test",
+    deps = [
+        ":discrete_time_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],
