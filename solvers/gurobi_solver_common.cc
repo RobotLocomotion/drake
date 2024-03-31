@@ -41,7 +41,7 @@ bool CheckAttributes(const MathematicalProgram& prog,
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
-          ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kL2NormCost, ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLinearEqualityConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
