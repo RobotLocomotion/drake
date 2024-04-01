@@ -1,16 +1,3 @@
-load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-
-install(
-    name = "install_data",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//manipulation/models/franka_description:install_data",
-        "//manipulation/models/iiwa_description:install_data",
-        "//manipulation/models/jaco_description:install_data",
-        "//manipulation/models/ur3e:install_data",
-        "//manipulation/models/wsg_50_description:install_data",
-    ],
-)
 
 add_lint_tests()

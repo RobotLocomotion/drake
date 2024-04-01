@@ -1,9 +1,4 @@
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-)
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = [":__subpackages__"])
@@ -15,12 +10,6 @@ models_filegroup(
         "README.md",
     ],
     visibility = ["//visibility:private"],
-)
-
-install_data(
-    name = "install_data",
-    data = [":glob_models"],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -46,19 +35,6 @@ filegroup(
         "@drake_models//:jaco_description/meshes/wrist_spherical_2.obj",
     ],
     visibility = ["//visibility:public"],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "jaco_arm_test",
-    srcs = ["urdf/test/jaco_arm_test.cc"],
-    data = [":models"],
-    deps = [
-        "//common:find_resource",
-        "//multibody/parsing",
-        "//multibody/plant",
-    ],
 )
 
 add_lint_tests()
