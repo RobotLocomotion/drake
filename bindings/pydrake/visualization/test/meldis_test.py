@@ -398,7 +398,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(parsed['value'], new_alpha)
 
     def test_inertia_geometry(self):
-        url = "package://drake/examples/manipulation_station/models/sphere.sdf"
+        url = "package://drake_models/manipulation_station/sphere.sdf"
         dut = mut.Meldis()
         lcm = dut._lcm
         builder = DiagramBuilder()
@@ -445,7 +445,7 @@ class TestMeldis(unittest.TestCase):
         lcm = dut._lcm
 
         # Enqueue a point contact result message.
-        url = "package://drake/examples/manipulation_station/models/sphere.sdf"
+        url = "package://drake_models/manipulation_station/sphere.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
         sphere1_model, = Parser(plant, "sphere1").AddModels(url=url)

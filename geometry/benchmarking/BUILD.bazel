@@ -14,9 +14,9 @@ drake_cc_googlebench_binary(
     srcs = ["iris_in_configuration_space_benchmarks.cc"],
     add_test_rule = True,
     data = [
-        "//examples/manipulation_station:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:manipulation_station",
     ],
     test_args = [
         "--test",
