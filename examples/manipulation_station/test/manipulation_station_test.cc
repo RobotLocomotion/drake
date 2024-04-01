@@ -179,8 +179,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModelsFromUrl(
-      "package://drake/examples/manipulation_station/models/"
-      "061_foam_brick.sdf");
+      "package://drake_models/manipulation_station/061_foam_brick.sdf");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();

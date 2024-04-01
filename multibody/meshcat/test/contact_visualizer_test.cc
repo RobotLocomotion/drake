@@ -37,14 +37,16 @@ class ContactVisualizerTest : public ::testing::Test {
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
 
     // Add the point contact spheres and joints.
-    const std::string sdf = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/sphere.sdf");
-    auto sphere1_model = Parser(&plant, "sphere1").AddModels(sdf).at(0);
+    const std::string sphere_url =
+        "package://drake_models/manipulation_station/sphere.sdf";
+    auto sphere1_model =
+        Parser(&plant, "sphere1").AddModelsFromUrl(sphere_url).at(0);
     const auto& sphere1 = plant.GetBodyByName("base_link", sphere1_model);
     plant.AddJoint<multibody::PrismaticJoint>(
         "sphere1_x", plant.world_body(), std::nullopt, sphere1, std::nullopt,
         Eigen::Vector3d::UnitX());
-    auto sphere2_model = Parser(&plant, "sphere2").AddModels(sdf).at(0);
+    auto sphere2_model =
+        Parser(&plant, "sphere2").AddModelsFromUrl(sphere_url).at(0);
     const auto& sphere2 = plant.GetBodyByName("base_link", sphere2_model);
     plant.AddJoint<multibody::PrismaticJoint>(
         "sphere2_x", plant.world_body(), std::nullopt, sphere2, std::nullopt,
@@ -57,10 +59,10 @@ class ContactVisualizerTest : public ::testing::Test {
     }
 
     // Add the hydroelastic spheres and joints between them.
-    const std::string hydro_sdf = FindResourceOrThrow(
-        "drake/multibody/meshcat/test/hydroelastic.sdf");
+    const std::string hydro_url =
+        "package://drake/multibody/meshcat/test/hydroelastic.sdf";
     multibody::Parser parser(&plant);
-    parser.AddModels(hydro_sdf);
+    parser.AddModelsFromUrl(hydro_url);
     const auto& body1 = plant.GetBodyByName("body1");
     plant.AddJoint<multibody::PrismaticJoint>(
         "body1", plant.world_body(), std::nullopt, body1, std::nullopt,

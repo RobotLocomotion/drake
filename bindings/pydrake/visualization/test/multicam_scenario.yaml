@@ -8,7 +8,7 @@ Multicam:
   directives:
   - add_model:
       name: amazon_table
-      file: package://drake/examples/manipulation_station/models/amazon_table_simplified.sdf
+      file: package://drake_models/manipulation_station/amazon_table_simplified.sdf
   - add_weld:
       parent: world
       child: amazon_table::amazon_table

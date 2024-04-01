@@ -1109,8 +1109,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "internal_geometry_names_test",
     data = [
-        "//examples/manipulation_station:models",
         "//multibody:models",
+        "@drake_models//:manipulation_station",
     ],
     deps = [
         ":internal_geometry_names",

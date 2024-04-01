@@ -345,7 +345,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
   // Add the bins.
   {
     const std::string sdf_url =
-        "package://drake/examples/manipulation_station/models/bin.sdf";
+        "package://drake_models/manipulation_station/bin.sdf";
 
     RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                 Vector3d(-0.145, -0.63, 0.075));
@@ -386,7 +386,7 @@ void ManipulationStation<T>::SetupManipulationClassStation(
     const double dx_table_center_to_robot_base = 0.3257;
     const double dz_table_top_robot_base = 0.0127;
     const std::string sdf_url =
-        "package://drake/examples/manipulation_station/models/"
+        "package://drake_models/manipulation_station/"
         "amazon_table_simplified.sdf";
 
     RigidTransform<double> X_WT(
@@ -404,7 +404,7 @@ void ManipulationStation<T>::SetupManipulationClassStation(
     const double cupboard_height = 0.815;
 
     const std::string sdf_url =
-        "package://drake/examples/manipulation_station/models/cupboard.sdf";
+        "package://drake_models/manipulation_station/cupboard.sdf";
 
     RigidTransform<double> X_WC(
         RotationMatrix<double>::MakeZRotation(M_PI),

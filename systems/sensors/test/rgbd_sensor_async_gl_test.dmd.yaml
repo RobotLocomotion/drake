@@ -1,7 +1,7 @@
 directives:
 - add_model:
     name: bin
-    file: package://drake/examples/manipulation_station/models/bin.sdf
+    file: package://drake_models/manipulation_station/bin.sdf
 - add_weld:
     parent: world
     child: bin::bin_base
@@ -9,37 +9,37 @@ directives:
       translation: [0, 0, 0.20]
 - add_model:
     name: ball_1
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.08, 0.01, 0.3] } }
 - add_model:
     name: ball_2
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.07, 0.02, 0.6] } }
 - add_model:
     name: ball_3
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.06, 0.03, 0.9] } }
 - add_model:
     name: ball_4
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.05, 0.04, 1.2] } }
 - add_model:
     name: ball_5
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.04, 0.05, 1.5] } }
 - add_model:
     name: ball_6
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.03, 0.06, 1.8] } }
 - add_model:
     name: ball_7
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.02, 0.07, 2.1] } }
 - add_model:
     name: ball_8
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.01, 0.08, 2.4] } }
 - add_model:
     name: ball_9
-    file: package://drake/examples/manipulation_station/models/sphere.sdf
+    file: package://drake_models/manipulation_station/sphere.sdf
     default_free_body_pose: { base_link: { translation: [0.00, 0.09, 2.7] } }

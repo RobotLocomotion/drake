@@ -11,37 +11,8 @@ load(
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
-
-models_filegroup(
-    name = "installed_models",
-    visibility = ["//visibility:public"],
-)
-
-install_data(
-    name = "install_data",
-    data = [":installed_models"],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "models",
-    srcs = [
-        ":installed_models",
-        "@drake_models//:manipulation_station/bin.mtl",
-        "@drake_models//:manipulation_station/bin.obj",
-        "@drake_models//:manipulation_station/bin.png",
-        "@drake_models//:manipulation_station/shelves.mtl",
-        "@drake_models//:manipulation_station/shelves.obj",
-        "@drake_models//:manipulation_station/shelves.png",
-        "@drake_models//:manipulation_station/table_wide.mtl",
-        "@drake_models//:manipulation_station/table_wide.obj",
-        "@drake_models//:manipulation_station/table_wide.png",
-    ],
-    visibility = ["//visibility:public"],
-)
 
 drake_cc_library(
     name = "manipulation_station",
@@ -52,10 +23,10 @@ drake_cc_library(
         "manipulation_station.h",
     ],
     data = [
-        ":models",
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:manipulation_station",
         "@drake_models//:realsense2_description",
         "@drake_models//:ycb",
     ],

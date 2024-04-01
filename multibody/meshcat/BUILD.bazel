@@ -51,7 +51,7 @@ drake_cc_googletest(
     timeout = "moderate",
     data = [
         ":models",
-        "//examples/manipulation_station:models",
+        "@drake_models//:manipulation_station",
     ],
     deps = [
         ":contact_visualizer",
