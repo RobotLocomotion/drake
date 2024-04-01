@@ -762,11 +762,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_default_position",
             WrapDeprecated(cls_doc.get_default_position.doc_deprecated,
                 &Class::get_default_position),
-            cls_doc.get_default_position.doc_deprecated);
+            cls_doc.get_default_position.doc_deprecated)
+        .def("get_default_pose", &Class::get_default_pose,
+            cls_doc.get_default_pose.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls                     // BR
-        .def("get_default_pose", &Class::get_default_pose,
-            cls_doc.get_default_pose.doc)
         .def("set_default_quaternion", &Class::set_default_quaternion,
             py::arg("q_FM"), cls_doc.set_default_quaternion.doc)
         .def("set_default_translation", &Class::set_default_translation,
