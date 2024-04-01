@@ -28,11 +28,11 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   const ModelInstanceIndex instance1 = tree.AddModelInstance("instance1");
 
   const RigidBody<double>& body1 =
-      tree.AddRigidBody("Body1", instance1, SpatialInertia<double>());
+      tree.AddRigidBody("Body1", instance1, SpatialInertia<double>::NaN());
   const RigidBody<double>& body2 =
-      tree.AddRigidBody("Body2", instance1, SpatialInertia<double>());
+      tree.AddRigidBody("Body2", instance1, SpatialInertia<double>::NaN());
   const RigidBody<double>& body3 =
-      tree.AddRigidBody("Body3", instance1, SpatialInertia<double>());
+      tree.AddRigidBody("Body3", instance1, SpatialInertia<double>::NaN());
 
   const auto& weld1 = tree.AddJoint<WeldJoint>(
       "weld1", tree.world_body(), math::RigidTransformd::Identity(),
@@ -57,9 +57,9 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   const ModelInstanceIndex instance2 = tree.AddModelInstance("instance2");
 
   const RigidBody<double>& body4 =
-      tree.AddRigidBody("Body4", instance2, SpatialInertia<double>());
+      tree.AddRigidBody("Body4", instance2, SpatialInertia<double>::NaN());
   const RigidBody<double>& body5 =
-      tree.AddRigidBody("Body5", instance2, SpatialInertia<double>());
+      tree.AddRigidBody("Body5", instance2, SpatialInertia<double>::NaN());
 
   const Joint<double>& body4_body5 =
       tree.AddJoint<PrismaticJoint>(

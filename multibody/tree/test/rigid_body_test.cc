@@ -16,14 +16,17 @@ using systems::Context;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Test rigid body constructor.
-GTEST_TEST(RigidBody, RigidBodyConstructor) {
+// Test rigid body 2-argument constructor.
+GTEST_TEST(RigidBody, RigidBodyConstructor2) {
   // Construct a rigid body with a spatial inertia.
   const double mass = 2;
   const Vector3d p_BoBcm_B(0.4, 0.3, 0.2);
   const UnitInertia<double> G_BBo_B(6, 7, 8);
   const SpatialInertia<double> M_Bo_B(mass, p_BoBcm_B, G_BBo_B);
-  const RigidBody<double> B("B", M_Bo_B);
+  const RigidBody<double> B("foo", M_Bo_B);
+
+  // Test that the name made it through.
+  EXPECT_EQ(B.name(), "foo");
 
   // Test that after construction, RigidBody class properly returns its default
   // spatial inertia or parts of it.
@@ -46,14 +49,17 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
 }
 
-// Test rigid body constructor passing a string name.
-GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
-  const std::string kLinkName = "LinkName";
-  // For this test the numerical values of the spatial inertia are not
-  // important and therefore it is left uninitialized.
-  const SpatialInertia<double> M_Bo_B;
-  const RigidBody<double> B("LinkName", M_Bo_B);
-  EXPECT_EQ(B.name(), kLinkName);
+// Test rigid body 1-argument constructor.
+GTEST_TEST(RigidBody, RigidBodyConstructor1) {
+  // Construct a rigid body without specifying any inertia.
+  const RigidBody<double> B("bar");
+  EXPECT_EQ(B.name(), "bar");
+
+  // Sanity check that the inertia was zero.
+  EXPECT_GE(B.default_spatial_inertia().get_mass(), 0.0);
+  EXPECT_EQ(B.default_spatial_inertia().get_com(), Vector3d::Zero());
+  EXPECT_GE(B.default_mass(), 0.0);
+  EXPECT_EQ(B.default_com(), Vector3d::Zero());
 }
 
 // Fixture for a MultibodyTree model with a single rigid body and a Context.
@@ -62,7 +68,7 @@ class RigidBodyTest : public ::testing::Test {
   void SetUp() override {
     // Create an empty model and then add a rigid body.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    const SpatialInertia<double> M_BBo_B;  // Default constructor is OK here
+    const auto M_BBo_B = SpatialInertia<double>::NaN();
     rigid_body_ = &model->AddRigidBody("rigidBody_B", M_BBo_B);
 
     // Finalize the model and create a default context for this system.
