@@ -425,7 +425,7 @@ class TestMeldis(unittest.TestCase):
         lcm = dut._lcm
         diagram = self._make_diagram(
             resource="drake/examples/hydroelastic/"
-                     "spatula_slip_control/models/spatula.sdf",
+                     "spatula_slip_control/spatula.sdf",
             visualizer_params=DrakeVisualizerParams(
                 show_hydroelastic=True,
                 role=Role.kProximity),

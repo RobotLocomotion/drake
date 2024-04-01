@@ -36,7 +36,6 @@ drake_cc_binary(
 # process and loaded into //tools:meldis's model database by default.
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
-    "//examples/hydroelastic/spatula_slip_control",
     "//examples/kuka_iiwa_arm/models",
     "//examples/manipulation_station",
     "//examples/multibody/cart_pole",
