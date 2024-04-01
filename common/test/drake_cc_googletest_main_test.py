@@ -7,6 +7,7 @@ with a variety of command-line flags.
 import re
 import subprocess
 import os
+from pathlib import Path
 import sys
 import unittest
 
@@ -18,13 +19,14 @@ class TestGtestMain(unittest.TestCase):
             os.path.exists(self._main_exe),
             "Could not find " + self._main_exe)
 
-    def _check_call(self, args, expected_returncode=0):
+    def _check_call(self, args, expected_returncode=0, env=None):
         """Run _main_exe with the given args; return output.
         """
         try:
             output = subprocess.check_output(
                 [self._main_exe] + args,
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                env=env)
             returncode = 0
         except subprocess.CalledProcessError as e:
             output = e.output
@@ -70,3 +72,12 @@ class TestGtestMain(unittest.TestCase):
         args.append("-spdlog_level=debug")
         output = self._check_call(args, expected_returncode=0)
         self.assertTrue(log_message in output, output)
+
+    def test_shard_ack(self):
+        # Ensure that we acknowledge sharding for Bazel.
+        env = dict(os.environ)
+        shard_ack_file = Path(os.environ["TEST_TMPDIR"]) / "shard_ack"
+        env["TEST_SHARD_STATUS_FILE"] = str(shard_ack_file)
+        self.assertFalse(shard_ack_file.exists())
+        self._check_call(["-magic_number=1.0"], expected_returncode=0, env=env)
+        self.assertTrue(shard_ack_file.exists())
