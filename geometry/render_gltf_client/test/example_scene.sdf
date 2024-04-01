@@ -154,7 +154,7 @@
 
     <!-- Add a YCB mustard bottle. -->
     <include>
-      <uri>package://drake_models/ycb/006_mustard_bottle.sdf</uri>
+      <uri>package://drake/geometry/render_gltf_client/test/006_mustard_bottle.sdf</uri>
       <name>mustard_bottle</name>
       <pose>0 0 0 0 0 0</pose>
     </include>
