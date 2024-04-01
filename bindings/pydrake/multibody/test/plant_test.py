@@ -2192,6 +2192,7 @@ class TestPlant(unittest.TestCase):
                 # Deprecated QuaternionFloatingJoint.get_default_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.get_default_position()
+                # Deprecated QuaternionFloatingJoint.get_default_pose().
                 joint.get_default_pose()
                 joint.set_default_quaternion(q_FM=Quaternion_[float]())
                 joint.set_default_translation(translation=[0, 0, 0])
