@@ -63,11 +63,6 @@ from pydrake.multibody.tree import (
     world_index,
     world_model_instance,
 )
-# Deprecated, remove 2024-04-01. Just making sure these exist.
-from pydrake.multibody.tree import (
-    BodyFrame,
-    BodyFrame_,
-)
 from pydrake.multibody.math import (
     SpatialForce_,
     SpatialMomentum_,
