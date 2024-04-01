@@ -286,10 +286,20 @@ filegroup(
     name = "gltf_client_test_models",
     testonly = True,
     data = [
+        ":test/006_mustard_bottle.sdf",
         ":test/4_color_texture.png",
         ":test/example_scene.sdf",
     ],
     visibility = ["//:__pkg__"],
+)
+
+# The integration test was written using OBJ-based model files, so even though
+# our nominal mesh format is glTF now, we'll still use OBJ for our testing.
+genrule(
+    name = "gen_mustard_bottle",
+    srcs = ["@drake_models//:ycb/006_mustard_bottle.sdf"],
+    outs = ["test/006_mustard_bottle.sdf"],
+    cmd = "sed -e 's#\\.gltf#.obj#g;' $< > $@",
 )
 
 drake_cc_binary(
