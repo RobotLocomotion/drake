@@ -97,11 +97,6 @@ if [[ "$(uname)" == "Linux" ]]; then
         /opt/drake/share/drake/setup/deepnote
 fi
 
-# TODO(jwnimmer-tri) We need to remove this to keep the wheel from being too
-# large; the better fix is that Atlas's meshes should move into drake_models.
-rm -rf \
-    ${WHEEL_SHARE_DIR}/drake/examples/atlas
-
 if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
 fi
