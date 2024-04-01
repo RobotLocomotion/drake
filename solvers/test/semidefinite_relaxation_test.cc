@@ -32,8 +32,9 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
   relaxation->SetInitialGuess(X, X_expected);
 }
 
-void SetRelaxationInitialGuess(std::map<Variable, double> expected_values,
-                               MathematicalProgram* relaxation) {
+void SetRelaxationInitialGuess(
+    const std::map<Variable, double>& expected_values,
+    MathematicalProgram* relaxation) {
   for (const auto& [var, val] : expected_values) {
     relaxation->SetInitialGuess(var, val);
   }
@@ -304,7 +305,7 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, NonConvexQuadraticConstraint) {
   Matrix2d Q;
   Q << 1, 2, 3, 4;
   const Vector2d b(0.2, 0.4);
-  const double lb = -.4, ub = 0.5;
+  const double lb = -0.4, ub = 0.5;
   prog.AddQuadraticConstraint(Q, b, lb, ub, y);
   auto relaxation = MakeSemidefiniteRelaxation(prog);
 
@@ -691,7 +692,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
                     {-1.1, -1.7}};
   // clang-format on
   const Vector2d bx(-0.2, -3.1);
-  const double lbx = -.7, ubx = 1.5;
+  const double lbx = -0.7, ubx = 1.5;
   // These are intentionally placed out of order with respect to the
   // ordering that happens in MakeSemidefiniteRelaxation.
   VectorX<Variable> out_of_order_x_vars(2);

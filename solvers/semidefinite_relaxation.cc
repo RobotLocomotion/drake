@@ -29,7 +29,7 @@ namespace {
 
 const double kInf = std::numeric_limits<double>::infinity();
 // TODO(AlexandreAmice) Move all these methods to
-// semidefinite_relaxation_internal
+// semidefinite_relaxation_internal.
 
 // Validate that we can compute the semidefinite relaxation of prog.
 void ValidateProgramIsSupported(const MathematicalProgram& prog) {
@@ -319,9 +319,9 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
   X.bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
 
   std::map<Variable, int> variables_to_sorted_indices;
-  int ctr = 0;
+  int i = 0;
   for (const auto& v : sorted_variables) {
-    variables_to_sorted_indices[v] = ctr++;
+    variables_to_sorted_indices[v] = i++;
   }
 
   // X(-1,-1) = 1.
@@ -415,12 +415,12 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
 
   // Now constrain the semidefinite variables to agree where they overlap.
   for (auto it = groups_to_psd_variables.begin();
-       it != groups_to_psd_variables.end(); it++) {
+       it != groups_to_psd_variables.end(); ++it) {
     for (auto it2 = std::next(it); it2 != groups_to_psd_variables.end();
-         it2++) {
+         ++it2) {
       const Variables common_variables = intersect(it->first, it2->first);
       if (!common_variables.empty()) {
-        auto GetSubmatrixOfVariables =
+        auto get_submatrix_of_variables =
             [&common_variables](const MatrixXDecisionVariable& X) {
               std::set<int> submatrix_indices;
               for (const auto& v : common_variables) {
@@ -434,8 +434,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
               return math::ExtractPrincipalSubmatrix(X, submatrix_indices);
             };
         relaxation->AddLinearEqualityConstraint(
-            GetSubmatrixOfVariables(it->second) ==
-            GetSubmatrixOfVariables(it2->second));
+            get_submatrix_of_variables(it->second) ==
+            get_submatrix_of_variables(it2->second));
       }
     }
   }

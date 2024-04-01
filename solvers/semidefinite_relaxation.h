@@ -35,7 +35,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
 /** A version of MakeSemidefiniteRelaxation that allows for specifying the
  * sparsity of the relaxation.
  *
- * For each group in @p variable group, the costs and constraints whose
+ * For each group in @p variable_groups, the costs and constraints whose
  * variables are a subset of the group will be jointly relaxed into a single,
  * dense semidefinite program in the same manner as
  * MakeSemidefiniteRelaxation(prog).
@@ -49,7 +49,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  *
  * Costs and constraints whose variables are not a subset of any of the groups
  * are not relaxed and are simply added to the aggregated program. If these
- * costs and constraints are non-convex, then this method will throw
+ * costs and constraints are non-convex, then this method will throw.
  *
  * As an example, consider the following program.
  * min x₂ᵀ * Q * x₂ subject to
