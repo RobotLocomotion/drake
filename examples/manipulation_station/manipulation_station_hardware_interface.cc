@@ -129,8 +129,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
   const std::string iiwa_sdf_url =
-      "package://drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf";
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
   Parser parser(owned_controller_plant_.get());
   iiwa_model_instance_ = parser.AddModelsFromUrl(iiwa_sdf_url).at(0);
 
