@@ -119,7 +119,6 @@ drake_cc_library(
     ],
     hdrs = [
         "ball_rpy_joint.h",
-        "body.h",
         "body_node.h",
         "body_node_impl.h",
         "body_node_world.h",

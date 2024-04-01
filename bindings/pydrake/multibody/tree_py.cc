@@ -282,10 +282,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Frame<T>>(
         m, "RigidBodyFrame", param, cls_doc.doc);
     // No need to re-bind element mixins from `Frame`.
-
-    // TODO(sherm1) This is deprecated; remove 2024-04-01.
-    m.attr("BodyFrame") = m.attr("RigidBodyFrame");
-    m.attr("BodyFrame_") = m.attr("RigidBodyFrame_");
   }
 
   {

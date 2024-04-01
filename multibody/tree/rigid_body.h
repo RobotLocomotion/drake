@@ -134,10 +134,6 @@ class RigidBodyFrame final : public Frame<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-template <typename T>
-using BodyFrame DRAKE_DEPRECATED("2024-04-01", "Use RigidBodyFrame instead.") =
-    RigidBodyFrame<T>;
-
 /// @cond
 // Internal implementation details. Users should not access implementations
 // in this namespace.
