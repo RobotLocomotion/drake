@@ -374,11 +374,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return get_default_translation();
   }
 
-  // TODO(sherm1) Deprecate this and remove it since the base class
-  //  now provides GetDefaultPose().
-
-  /// Gets the default pose `X_FM` for `this` joint.
-  /// @returns The default pose `X_FM` of `this` joint.
+  DRAKE_DEPRECATED("2024-07-01",
+                   "Removed since functionality already provided by base class "
+                   "Joint::GetDefaultPose()")
   math::RigidTransform<double> get_default_pose() const {
     return math::RigidTransform(get_default_quaternion(),
                                 get_default_translation());
