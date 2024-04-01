@@ -1223,7 +1223,8 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
   // Test a case where the number of faces that should be removed is known:
   // The circumbody is a square with the top-right and bottom-left corners cut
-  // off (6 faces).  The inbody should remove the two diagonal faces.
+  // off (6 faces).  The inbody should remove the two diagonal faces by scaling
+  // the left and right faces in by (min_v_ratio) ^ (1.0 / ambient_dimension()).
   const double kConstraintTol = 1e-6;
   Eigen::Matrix<double, 6, 2> A;
   // clang-format off
@@ -1241,26 +1242,21 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
 
   const HPolyhedron inbody =
       circumbody.SimplifyByIncrementalFaceTranslation(min_v_ratio, false);
-  EXPECT_TRUE(inbody.ContainedIn(circumbody, kConstraintTol));
-  EXPECT_GE(VPolytope(inbody).CalcVolume() / VPolytope(circumbody).CalcVolume(),
-            min_v_ratio);
-  EXPECT_EQ(inbody.b().rows(), circumbody.b().rows() - 2);
 
-  // Check that the two diagonal faces are no longer present.
-  // Also check that the four non-diagonal faces are still present.
-  std::vector<bool> row_found(circumbody.b().rows() - 2, false);
-  for (int i = 0; i < inbody.A().rows(); ++i) {
-    EXPECT_FALSE(inbody.A().row(i) == A.row(4));
-    EXPECT_FALSE(inbody.A().row(i) == A.row(5));
-    for (int j = 0; j < circumbody.b().rows() - 2; ++j) {
-      if (inbody.A().row(i) == A.row(j)) {
-        row_found[j] = true;
-      }
-    }
-  }
-  for (int j = 0; j < circumbody.b().rows() - 2; ++j) {
-    EXPECT_TRUE(row_found[j]);
-  }
+  Eigen::Matrix<double, 4, 2> A_expected;
+  // clang-format off
+  A_expected << 1, 0,  // x <= 2 * (min_v_ratio) ^ (1.0 / ambient_dimension())
+                -1, 0,  // -x <= 2 * (min_v_ratio) ^ (1.0 / ambient_dimension())
+                0, 1,  // y <= 2
+                0, -1;  // -y <= 2
+  // clang-format on
+  Eigen::VectorXd b_expected(4);
+  b_expected << 2 * std::pow(min_v_ratio, 0.5), 2 * std::pow(min_v_ratio, 0.5),
+      2, 2;
+  const HPolyhedron inbody_expected = HPolyhedron(A_expected, b_expected);
+
+  EXPECT_TRUE(inbody_expected.ContainedIn(inbody, kConstraintTol));
+  EXPECT_TRUE(inbody.ContainedIn(inbody_expected, kConstraintTol));
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation2) {
