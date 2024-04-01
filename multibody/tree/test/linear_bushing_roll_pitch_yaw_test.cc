@@ -145,7 +145,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     //   Co's position from Ao expressed in frame A,
     //   C's angular velocity in A expressed in A,
     //   Co's translational velocity in A expressed in A.
-    joint_->SetFromRotationMatrix(&context, R_AC);
+    joint_->SetOrientation(&context, R_AC);
     joint_->set_translation(&context, p_AoCo_A);
     joint_->set_angular_velocity(&context, w_AC_A);
     joint_->set_translational_velocity(&context, v_ACo_A);
@@ -677,7 +677,7 @@ TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
   // Use the mobilizer to set frame C's pose and motion in frame A.
   const RotationMatrixd R_AC(rpy_gimbal_lock);
   systems::Context<double>& context = *(context_.get());
-  joint_->SetFromRotationMatrix(&context, R_AC);
+  joint_->SetOrientation(&context, R_AC);
   joint_->set_translation(&context, p_zero);
   joint_->set_angular_velocity(&context, w_zero);
   joint_->set_translational_velocity(&context, v_zero);
