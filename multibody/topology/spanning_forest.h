@@ -193,6 +193,11 @@ class SpanningForest {
   // height seen so far.
   int height() const { return data_.forest_height; }
 
+  // TODO(sherm1) Remove this.
+  // (Testing stub only) Add enough fake elements to the forest to allow
+  // testing of the Tree and LoopConstraint APIs.
+  void AddStubTreeAndLoopConstraint();
+
  private:
   friend class LinkJointGraph;
   friend class copyable_unique_ptr<SpanningForest>;
