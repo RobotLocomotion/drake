@@ -29,20 +29,19 @@ class GeometryNamesTest : public ::testing::Test {
     Parser parser(plant_);
 
     // A single model, single body, single geometry.
-    const std::string box =
-        FindResourceOrThrow("drake/multibody/models/box.urdf");
-    parser.AddModels(box);
+    const std::string box_url = "package://drake/multibody/models/box.urdf";
+    parser.AddModelsFromUrl(box_url);
 
     // A single model, single body, multiple geometries.
-    const std::string bin = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/bin.sdf");
-    parser.AddModels(bin);
+    const std::string bin_url =
+        "package://drake_models/manipulation_station/bin.sdf";
+    parser.AddModelsFromUrl(bin_url);
 
     // Two identical models (each one has a single body, single geometry).
-    const std::string sphere = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/sphere.sdf");
-    Parser(plant_, "sphere1").AddModels(sphere);
-    Parser(plant_, "sphere2").AddModels(sphere);
+    const std::string sphere =
+        "package://drake_models/manipulation_station/sphere.sdf";
+    Parser(plant_, "sphere1").AddModelsFromUrl(sphere);
+    Parser(plant_, "sphere2").AddModelsFromUrl(sphere);
 
     // Build everything.
     plant_->Finalize();

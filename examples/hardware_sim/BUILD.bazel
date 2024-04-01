@@ -21,10 +21,10 @@ filegroup(
     name = "demo_data",
     srcs = [
         ":example_scenarios.yaml",
-        "//examples/manipulation_station:models",
         "//examples/pendulum:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:manipulation_station",
     ],
     visibility = ["//:__pkg__"],
 )

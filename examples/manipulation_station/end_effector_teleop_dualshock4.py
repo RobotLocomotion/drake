@@ -356,8 +356,7 @@ def main():
             station.SetupManipulationClassStation(
                 schunk_model=schunk_model)
             station.AddManipulandFromFile(
-                ("drake/examples/manipulation_station/models/"
-                 "061_foam_brick.sdf"),
+                "drake_models/manipulation_station/061_foam_brick.sdf",
                 RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
         elif args.setup == 'clutter_clearing':
             station.SetupClutterClearingStation(

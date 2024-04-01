@@ -47,7 +47,6 @@ filegroup(
         "//examples/hydroelastic/python_nonconvex_mesh:models",
         "//examples/hydroelastic/spatula_slip_control:models",
         "//examples/kuka_iiwa_arm/models",
-        "//examples/manipulation_station:models",
         "//examples/multibody/cart_pole:models",
         "//examples/multibody/four_bar:models",
         "//examples/pendulum:models",
