@@ -1,9 +1,4 @@
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-)
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -15,11 +10,6 @@ models_filegroup(
         "iiwa_stack.LICENSE.txt",
     ],
     visibility = ["//visibility:private"],
-)
-
-install_data(
-    name = "install_data",
-    data = [":glob_models"],
 )
 
 filegroup(
@@ -77,19 +67,6 @@ filegroup(
         "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_6.gltf",
         "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_7.bin",
         "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_7.gltf",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "iiwa_variants_parsing_test",
-    srcs = ["test/iiwa_variants_parsing_test.cc"],
-    data = [":models"],
-    deps = [
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsing",
     ],
 )
 
