@@ -105,6 +105,12 @@ template <typename T>
 void System<T>::SetDefaultContext(Context<T>* context) const {
   this->ValidateContext(context);
 
+  // Set the default parameters, checking that the number of parameters does
+  // not change.
+  const int num_params = context->num_numeric_parameter_groups();
+  SetDefaultParameters(*context, &context->get_mutable_parameters());
+  DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
+
   // Set the default state, checking that the number of state variables does
   // not change.
   const int n_xc = context->num_continuous_states();
@@ -116,12 +122,6 @@ void System<T>::SetDefaultContext(Context<T>* context) const {
   DRAKE_DEMAND(n_xc == context->num_continuous_states());
   DRAKE_DEMAND(n_xd == context->num_discrete_state_groups());
   DRAKE_DEMAND(n_xa == context->num_abstract_states());
-
-  // Set the default parameters, checking that the number of parameters does
-  // not change.
-  const int num_params = context->num_numeric_parameter_groups();
-  SetDefaultParameters(*context, &context->get_mutable_parameters());
-  DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
 }
 
 template <typename T>

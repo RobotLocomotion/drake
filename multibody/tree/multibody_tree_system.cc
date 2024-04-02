@@ -76,13 +76,6 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::SetDefaultState(const Context<T>& context,
-                                             State<T>* state) const {
-  LeafSystem<T>::SetDefaultState(context, state);
-  tree_->SetDefaultState(context, state);
-}
-
-template <typename T>
 void MultibodyTreeSystem<T>::SetDefaultParameters(
     const Context<T>& context, Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
@@ -130,6 +123,13 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
         .get_force_element(force_element_index)
         .SetDefaultParameters(parameters);
   }
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::SetDefaultState(const Context<T>& context,
+                                             State<T>* state) const {
+  LeafSystem<T>::SetDefaultState(context, state);
+  tree_->SetDefaultState(context, state);
 }
 
 template <typename T>

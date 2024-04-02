@@ -116,11 +116,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
-  void SetDefaultState(const Context<T>& context,
-                       State<T>* state) const override;
-
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* params) const override;
+
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override;
 
   void SetRandomState(const Context<T>& context, State<T>* state,
                       RandomGenerator* generator) const override;
