@@ -154,11 +154,10 @@ drake_cc_library(
 drake_cc_googletest(
     name = "schunk_wsg_constants_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":schunk_wsg_constants",
-        "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
     ],
@@ -176,7 +175,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "schunk_wsg_position_controller_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":schunk_wsg_position_controller",
@@ -190,7 +189,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "schunk_wsg_lcm_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":schunk_wsg_lcm",
@@ -202,7 +201,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "schunk_wsg_trajectory_generator_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":schunk_wsg_trajectory_generator",
@@ -213,12 +212,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "build_schunk_wsg_control_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":build_schunk_wsg_control",
         ":schunk_wsg_lcm",
-        "//common:find_resource",
         "//lcm",
         "//multibody/parsing:parser",
         "//multibody/plant",
@@ -231,11 +229,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "schunk_wsg_driver_functions_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":schunk_wsg_driver_functions",
-        "//common:find_resource",
         "//lcm:drake_lcm_params",
         "//multibody/parsing:parser",
         "//multibody/plant",

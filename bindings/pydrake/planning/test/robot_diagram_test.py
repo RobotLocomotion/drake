@@ -18,9 +18,9 @@ class TestRobotDiagram(unittest.TestCase):
         Class = mut.RobotDiagramBuilder_[T]
         dut = Class(time_step=0.0)
         if T == float:
-            dut.parser().AddModels(FindResourceOrThrow(
-                "drake/manipulation/models/iiwa_description/urdf/"
-                "iiwa14_spheres_dense_collision.urdf"))
+            dut.parser().AddModels(url=(
+                "package://drake_models/iiwa_description/urdf/"
+                + "iiwa14_spheres_dense_collision.urdf"))
         else:
             # TODO(jwnimmer-tri) Use dut.plant() to manually add some
             # models, bodies, and geometries here.

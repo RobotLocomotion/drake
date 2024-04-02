@@ -440,9 +440,9 @@ Ignore those for now; we'll need to circle back and fix them later.
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     multibody::Parser parser(&plant);
-    parser.AddModels(
-        FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                            "iiwa14_spheres_collision.urdf"));
+    parser.AddModelsFromUrl(
+        "package://drake_models/iiwa_description/urdf/"
+        "iiwa14_spheres_collision.urdf");
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
     parser.AddModels(FindResourceOrThrow(
         "drake/examples/kuka_iiwa_arm/models/table/"

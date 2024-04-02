@@ -180,7 +180,7 @@ directives:
       child: ground_plane_box::ground_plane_box
   - add_model:
       name: iiwa
-      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+      file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
   - add_weld:
       parent: world
       child: iiwa::base
@@ -317,7 +317,7 @@ directives:
       file: package://drake/planning/test_utilities/flying_robot_base.sdf
   - add_model:
       name: iiwa
-      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+      file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
   - add_weld:
       parent: flying_robot_base::flying_robot_base
       child: iiwa::base

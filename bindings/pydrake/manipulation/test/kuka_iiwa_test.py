@@ -33,9 +33,9 @@ class TestKukaIiwa(unittest.TestCase):
         plant.Finalize()
         controller_plant = MultibodyPlant(1.)
         parser = Parser(controller_plant)
-        parser.AddModels(FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_no_collision.sdf"))
+        parser.AddModels(url=(
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa7_no_collision.sdf"))
         controller_plant.WeldFrames(
             controller_plant.world_frame(),
             controller_plant.GetFrameByName("iiwa_link_0"), RigidTransform())

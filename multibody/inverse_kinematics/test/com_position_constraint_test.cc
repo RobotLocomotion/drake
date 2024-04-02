@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
 using drake::systems::Context;
@@ -123,11 +122,10 @@ TEST_F(IiwaKinematicConstraintTest,
 }
 
 GTEST_TEST(DualIiwaTest, ComPositionConstraint_model_instance) {
-  const std::string iiwa_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf");
+  const std::string iiwa_url =
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
   auto plant =
-      ConstructIiwaPlant(iiwa_path, 0.1 /* time step */, 2 /* num_iiwa */);
+      ConstructIiwaPlant(iiwa_url, 0.1 /* time step */, 2 /* num_iiwa */);
   auto plant_context = plant->CreateDefaultContext();
 
   auto plant_autodiff = systems::System<double>::ToAutoDiffXd(*plant);

@@ -15,6 +15,7 @@
 #include "drake/lcmt_robot_plan.hpp"
 #include "drake/manipulation/util/move_ik_demo_base.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/package_map.h"
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "IIWA_STATUS",
@@ -35,9 +36,10 @@ namespace kuka_iiwa_arm {
 namespace {
 
 using manipulation::util::MoveIkDemoBase;
+using multibody::PackageMap;
 
-const char kIiwaUrdf[] =
-    "drake/manipulation/models/iiwa_description/urdf/"
+const char kIiwaUrdfUrl[] =
+    "package://drake_models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 int DoMain() {
@@ -46,7 +48,7 @@ int DoMain() {
       Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
 
   MoveIkDemoBase demo(
-      !FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf),
+      !FLAGS_urdf.empty() ? FLAGS_urdf : PackageMap{}.ResolveUrl(kIiwaUrdfUrl),
       "base", FLAGS_ee_name, 100);
   demo.set_joint_velocity_limits(get_iiwa_max_joint_velocities());
 

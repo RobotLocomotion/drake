@@ -15,12 +15,11 @@ drake_cc_binary(
     srcs = ["jaco_controller.cc"],
     add_test_rule = 1,
     data = [
-        "//manipulation/models/jaco_description:models",
+        "@drake_models//:jaco_description",
     ],
     test_rule_args = ["--build_only"],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//lcm",
         "//manipulation/kinova_jaco",
         "//manipulation/util:robot_plan_interpolator",
@@ -39,7 +38,7 @@ drake_cc_binary(
     srcs = ["jaco_simulation.cc"],
     add_test_rule = 1,
     data = [
-        "//manipulation/models/jaco_description:models",
+        "@drake_models//:jaco_description",
     ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
@@ -62,11 +61,10 @@ drake_cc_binary(
     name = "move_jaco_ee",
     srcs = ["move_jaco_ee.cc"],
     data = [
-        "//manipulation/models/jaco_description:models",
+        "@drake_models//:jaco_description",
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//lcmtypes:jaco",
         "//manipulation/kinova_jaco:jaco_constants",
         "//manipulation/util:move_ik_demo_base",

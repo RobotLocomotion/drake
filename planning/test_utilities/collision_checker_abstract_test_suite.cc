@@ -27,7 +27,7 @@ multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
 
   multibody::parsing::ModelDirective add_robot_model;
   add_robot_model.add_model = multibody::parsing::AddModel{
-      "package://drake/manipulation/models/iiwa_description/urdf/"
+      "package://drake_models/iiwa_description/urdf/"
       "iiwa14_spheres_dense_collision.urdf",
       "iiwa"};
   multibody::parsing::ModelDirective add_robot_weld;

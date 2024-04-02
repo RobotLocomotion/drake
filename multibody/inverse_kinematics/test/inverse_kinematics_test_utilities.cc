@@ -24,15 +24,14 @@ namespace multibody {
 using math::RigidTransformd;
 
 IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
-  const std::string iiwa_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf");
+  const std::string iiwa_url =
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
   systems::DiagramBuilder<double> builder{};
   plant_ = builder.AddSystem<MultibodyPlant<double>>(0.1);
   plant_->RegisterAsSourceForSceneGraph(
       builder.AddSystem<SceneGraph<double>>());
   multibody::Parser parser{plant_};
-  parser.AddModels(iiwa_path);
+  parser.AddModelsFromUrl(iiwa_url);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();
@@ -43,7 +42,7 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
       &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
   plant_autodiff_ = systems::System<double>::ToAutoDiffXd(
-      *ConstructIiwaPlant(iiwa_path, 0.1));
+      *ConstructIiwaPlant(iiwa_url, 0.1));
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
 
@@ -82,12 +81,12 @@ std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
 }
 
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
-    const std::string& file_path, double time_step, int num_iiwa) {
+    const std::string& url, double time_step, int num_iiwa) {
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   Parser parser(plant.get());
   parser.SetAutoRenaming(true);
   for (int i = 0; i < num_iiwa; ++i) {
-    const auto iiwa_instance = parser.AddModels(file_path).at(0);
+    const auto iiwa_instance = parser.AddModelsFromUrl(url).at(0);
     plant->WeldFrames(plant->world_frame(),
                       plant->GetFrameByName("iiwa_link_0", iiwa_instance));
   }

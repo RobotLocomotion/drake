@@ -96,9 +96,9 @@ drake_cc_googletest(
     name = "joint_sliders_test",
     data = [
         ":test/universal_joint.sdf",
-        "//manipulation/models/iiwa_description:models",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":joint_sliders",

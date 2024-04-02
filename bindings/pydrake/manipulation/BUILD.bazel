@@ -47,8 +47,8 @@ drake_pybind_library(
 drake_py_unittest(
     name = "kuka_iiwa_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
         "//manipulation/util:test_directives",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":manipulation",
