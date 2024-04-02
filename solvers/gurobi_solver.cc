@@ -792,12 +792,6 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   // EXPECT_TRUE(HasCorrectNumberOfVariables(model, is_new_variables.size()))
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
-  // Bound constraints.
-  std::vector<double> xlow(num_prog_vars,
-                           -std::numeric_limits<double>::infinity());
-  std::vector<double> xupp(num_prog_vars,
-                           std::numeric_limits<double>::infinity());
-
   std::vector<char> gurobi_var_type(num_prog_vars);
   bool is_mip{false};
   for (int i = 0; i < num_prog_vars; ++i) {
@@ -824,17 +818,10 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
 
-  for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.evaluator();
-    const Eigen::VectorXd& lower_bound = constraint->lower_bound();
-    const Eigen::VectorXd& upper_bound = constraint->upper_bound();
+  std::vector<double> xlow;
+  std::vector<double> xupp;
+  AggregateBoundingBoxConstraints(prog, &xlow, &xupp);
 
-    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[idx] = std::max(lower_bound(k), xlow[idx]);
-      xupp[idx] = std::min(upper_bound(k), xupp[idx]);
-    }
-  }
   // bb_con_dual_indices[constraint] returns the pair (lower_dual_indices,
   // upper_dual_indices), where lower_dual_indices are the indices of the dual
   // variables associated with the lower bound side (x >= lower) of the bounding

@@ -398,21 +398,9 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
                        std::pair<ConstraintDualIndices, ConstraintDualIndices>>*
         dual_indices) {
   int num_decision_vars = prog.num_vars();
-  std::vector<double> x_lb(num_decision_vars,
-                           -std::numeric_limits<double>::infinity());
-  std::vector<double> x_ub(num_decision_vars,
-                           std::numeric_limits<double>::infinity());
-  for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.evaluator();
-    const Eigen::VectorXd& lower_bound = constraint->lower_bound();
-    const Eigen::VectorXd& upper_bound = constraint->upper_bound();
-
-    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      size_t x_idx = prog.FindDecisionVariableIndex(binding.variables()(i));
-      x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[i]);
-      x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[i]);
-    }
-  }
+  std::vector<double> x_lb;
+  std::vector<double> x_ub;
+  AggregateBoundingBoxConstraints(prog, &x_lb, &x_ub);
 
   auto add_variable_bound_in_mosek = [this](int mosek_var_index, double lower,
                                             double upper) {
