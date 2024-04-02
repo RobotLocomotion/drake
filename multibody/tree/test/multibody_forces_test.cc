@@ -28,7 +28,7 @@ class MultibodyForcesTests : public ::testing::Test {
   // Creates a simple MultibodyTree model so that we can instantiate
   // MultibodyForces objects for this model.
   void SetUp() override {
-    SpatialInertia<double> M;
+    const auto M = SpatialInertia<double>::NaN();
     const RigidBody<double>& body1 = model_.AddRigidBody("Body1", M);
     const RigidBody<double>& body2 = model_.AddRigidBody("Body2", M);
     model_.AddJoint<RevoluteJoint>("Joint1", model_.world_body(), std::nullopt,

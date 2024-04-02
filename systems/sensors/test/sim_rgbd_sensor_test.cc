@@ -38,7 +38,6 @@ using multibody::FixedOffsetFrame;
 using multibody::Frame;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
-using multibody::SpatialInertia;
 using systems::lcm::LcmPublisherSystem;
 
 /* Returns a pointer to the named instance of TargetSystem (if it exists). */
@@ -67,10 +66,8 @@ class SimRgbdSensorTest : public ::testing::Test {
   void SetUp() override {
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder_, 1e-2);
-    bodyA_ =
-        &plant_->AddRigidBody("bodyA", SpatialInertia<double>::MakeUnitary());
-    bodyB_ =
-        &plant_->AddRigidBody("bodyB", SpatialInertia<double>::MakeUnitary());
+    bodyA_ = &plant_->AddRigidBody("bodyA");
+    bodyB_ = &plant_->AddRigidBody("bodyB");
 
     X_AF_ = RigidTransformd(Vector3d(-0.5, 0.5, 0.75));
     frame_F_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
