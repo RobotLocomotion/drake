@@ -193,11 +193,12 @@ class RigidBody : public MultibodyElement<T> {
   ///   A name associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B.
+  ///   expressed in the body frame B. When not provided, defaults to zero.
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
-  RigidBody(const std::string& body_name,
-            const SpatialInertia<double>& M_BBo_B);
+  explicit RigidBody(
+      const std::string& body_name,
+      const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero());
 
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
@@ -208,12 +209,12 @@ class RigidBody : public MultibodyElement<T> {
   ///   The model instance associated with this body.
   /// @param[in] M_BBo_B
   ///   Spatial inertia of this body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B.
+  ///   expressed in the body frame B. When not provided, defaults to zero.
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
-  RigidBody(const std::string& body_name,
-            ModelInstanceIndex model_instance,
-            const SpatialInertia<double>& M_BBo_B);
+  RigidBody(
+      const std::string& body_name, ModelInstanceIndex model_instance,
+      const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero());
 
   /// Returns this element's unique index.
   BodyIndex index() const { return this->template index_impl<BodyIndex>(); }

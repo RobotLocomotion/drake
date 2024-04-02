@@ -512,17 +512,11 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   // properties.
   AddContactMaterial(0.1, 250.0, multibody::CoulombFriction<double>{0.9, 0.5},
                      &proximity_properties);
-  // C-IRIS only considers robot kinematics, not dynamics. So we use an
-  // arbitrary inertia.
-  const multibody::SpatialInertia<double> spatial_inertia(
-      1, Eigen::Vector3d::Zero(),
-      multibody::UnitInertia<double>(0.01, 0.01, 0.01, 0, 0, 0));
 
   std::vector<multibody::BodyIndex> body_indices;
   for (int i = 0; i < 5; ++i) {
     body_indices.push_back(
-        plant->AddRigidBody("body" + std::to_string(i), spatial_inertia)
-            .index());
+        plant->AddRigidBody("body" + std::to_string(i)).index());
   }
   const Eigen::Vector3d box_size(0.05, 0.02, 0.03);
   const geometry::GeometryId body0_box = plant->RegisterCollisionGeometry(

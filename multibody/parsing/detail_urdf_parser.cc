@@ -214,12 +214,9 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
               " the world link. The <inertial> tag is being ignored.");
     }
   } else {
-    SpatialInertia<double> M_BBo_B;
+    auto M_BBo_B = SpatialInertia<double>::Zero();
     XMLElement* inertial_node = node->FirstChildElement("inertial");
-    if (!inertial_node) {
-      M_BBo_B = SpatialInertia<double>(0, Vector3d::Zero(),
-                                       UnitInertia<double>(0, 0, 0));
-    } else {
+    if (inertial_node) {
       M_BBo_B = ExtractSpatialInertiaAboutBoExpressedInB(inertial_node);
     }
 
