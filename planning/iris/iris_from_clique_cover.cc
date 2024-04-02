@@ -214,6 +214,7 @@ std::queue<HPolyhedron> IrisWorker(
       log()->info(
           "Iris builder thread {} failed to compute an ellipse for a clique.",
           builder_id, e.what());
+      current_clique = computed_cliques->pop();
       continue;
     }
 
