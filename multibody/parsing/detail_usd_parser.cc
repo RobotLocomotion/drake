@@ -30,6 +30,10 @@ namespace fs = std::filesystem;
 namespace pxr = drake_vendor_pxr;
 #endif
 
+struct UsdStageMetadata {
+    double meters_per_unit = 1.0;
+};
+
 namespace {
 void InitializeOpenUsdLibrary() {
 #if 0

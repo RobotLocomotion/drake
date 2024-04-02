@@ -31,10 +31,6 @@ class UsdParser final : public ParserInterface {
       const ParsingWorkspace& workspace) final;
 };
 
-struct UsdStageMetadata {
-    double meters_per_unit = 1.0;
-};
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
