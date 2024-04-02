@@ -25,9 +25,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// hong-nvidia: Make this a constant for now. Pass in as an argument later
-const double METERS_PER_UNIT = 0.01;
-
 namespace fs = std::filesystem;
 #if 0
 namespace pxr = drake_vendor_pxr;
@@ -82,13 +79,13 @@ Eigen::Vector3d UsdVec3dtoEigenVec3d(pxr::GfVec3d v) {
 }
 
 math::RigidTransform<double> GetPrimRigidTransform(
-  const pxr::UsdPrim& prim) {
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
 
   pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
   pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
-  translation *= METERS_PER_UNIT;
+  translation *= metadata.meters_per_unit;
   pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix()
     .GetOrthonormalized();  // The extracted matrix contains scaling so
     // we have to orthonormalize it
@@ -98,8 +95,8 @@ math::RigidTransform<double> GetPrimRigidTransform(
     UsdVec3dtoEigenVec3d(translation));
 }
 
-Eigen::Vector3d CalculateCubeDimension(
-  const ParsingWorkspace& workspace, const pxr::UsdPrim& prim) {
+Eigen::Vector3d CalculateCubeDimension(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
 
   // TODO(hong-nvidia): make sure that the extent of the cube is symmetric
@@ -120,7 +117,7 @@ Eigen::Vector3d CalculateCubeDimension(
   Eigen::Vector3d dimension = Eigen::Vector3d(prim_scale[0] * cube_size,
                                               prim_scale[1] * cube_size,
                                               prim_scale[2] * cube_size);
-  dimension *= METERS_PER_UNIT;
+  dimension *= metadata.meters_per_unit;
   return dimension;
 }
 
@@ -142,11 +139,13 @@ Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
   }
 }
 
-void ProcessStaticColliderCube(
-  const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
+void ProcessStaticColliderCube(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
   MultibodyPlant<double>* plant = workspace.plant;
-  Eigen::Vector3d cube_dimension = CalculateCubeDimension(workspace, prim);
-  math::RigidTransform<double> transform = GetPrimRigidTransform(prim);
+  Eigen::Vector3d cube_dimension = CalculateCubeDimension(prim, metadata,
+    workspace);
+  math::RigidTransform<double> transform = GetPrimRigidTransform(
+    prim, metadata);
 
   plant->RegisterCollisionGeometry(
     plant->world_body(),
@@ -163,10 +162,10 @@ void ProcessStaticColliderCube(
     GetGeomPrimColor(prim));
 }
 
-void ProcessStaticCollider(
-  const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
+void ProcessStaticCollider(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    ProcessStaticColliderCube(prim, workspace);
+    ProcessStaticColliderCube(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     // ProcessStaticColliderSphere(prim, workspace);
     throw std::runtime_error("UsdGeomSphere parsing is not yet implemented");
@@ -177,14 +176,15 @@ void ProcessStaticCollider(
   }
 }
 
-void ProcessPrim(const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
+void ProcessPrim(const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
   drake::log()->info("Processing " + prim.GetPath().GetString());
 
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
     if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
       // ProcessRigidBody(prim, plant);
     } else {
-      ProcessStaticCollider(prim, workspace);
+      ProcessStaticCollider(prim, metadata, workspace);
     }
   }
 }
@@ -215,8 +215,16 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
       data_source.filename()));
   }
 
+  UsdStageMetadata metadata;
+  if (!stage->GetMetadata(pxr::TfToken("metersPerUnit"),
+      &metadata.meters_per_unit)) {
+    workspace.diagnostic.Warning(fmt::format(
+      "Failed to read metersPerUnit in stage metadata. "
+      "Using the default value ({}) instead.", metadata.meters_per_unit));
+  }
+
   for (pxr::UsdPrim prim : stage->Traverse()) {
-    ProcessPrim(prim, workspace);
+    ProcessPrim(prim, metadata, workspace);
   }
 
   // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
