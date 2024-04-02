@@ -6,8 +6,8 @@ def drake_models_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/models",
-        commit = "db9c78f538fb1cd519098a6d6422c3f179415eb6",
-        sha256 = "f3a630b78671f52412e2b5b54dc4ac26c855a88af8c49df0e2f9a9d36f20b570",  # noqa
+        commit = "54684a01dad22d42a24401c7666dcd3bb1739499",
+        sha256 = "ab9c8efcff1dffa5347da24d1079a39a1c59510bd8e8f909fe1c73dfe1c0f9a1",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

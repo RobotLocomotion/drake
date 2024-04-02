@@ -24,8 +24,7 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-        "@drake_models//:skydio_2/skydio_2_1000_poly.mtl",
-        "@drake_models//:skydio_2/skydio_2_1000_poly.obj",
+        "@drake_models//:skydio_2",
     ],
 )
 
