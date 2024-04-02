@@ -1,7 +1,6 @@
 load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 
 models_filegroup(
     name = "glob_models",
@@ -9,20 +8,10 @@ models_filegroup(
     visibility = ["//visibility:private"],
 )
 
-install_data(
-    name = "install_data",
-    data = [":glob_models"],
-    visibility = ["//visibility:public"],
-)
-
 filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.mtl",
-        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.obj",
-        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.mtl",  # noqa
-        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj",  # noqa
     ],
     visibility = ["//visibility:public"],
 )
@@ -33,7 +22,7 @@ drake_cc_binary(
     add_test_rule = True,
     data = [
         ":models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     test_rule_args = [
         "--simulation_sec=0.1",
