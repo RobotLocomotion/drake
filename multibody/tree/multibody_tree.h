@@ -127,9 +127,11 @@ class MultibodyTree {
   //   frame B.
   // @returns A constant reference to the new RigidBody just added, which will
   //          remain valid for the lifetime of `this` %MultibodyTree.
-  // @throws std::exception if a body named `name` already exists in this
-  //         model instance.
   // @throws std::exception if the model instance does not exist.
+  // @throws std::exception if a body named `name` already exists in this
+  //   model instance.
+  // @throws std::exception if M_BBo_B corresponds to a preposterously large
+  //   physical object, e.g., larger than the world's largest aircraft carrier.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B);
@@ -158,9 +160,12 @@ class MultibodyTree {
   //   frame B.
   // @returns A constant reference to the new RigidBody just added, which will
   //          remain valid for the lifetime of `this` %MultibodyTree.
-  // @throws std::exception if a body named `name` already exists.
   // @throws std::exception if additional model instances have been created
-  //                        beyond the world and default instances.
+  //   beyond the world and default instances.
+  // @throws std::exception if a body named `name` already exists in the
+  //   default model instance.
+  // @throws std::exception if M_BBo_B corresponds to a preposterously large
+  //   physical object, e.g., larger than the world's largest aircraft carrier.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B);
 

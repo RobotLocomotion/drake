@@ -1162,6 +1162,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   in the body frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  /// @throws std::exception if the model instance does not exist.
+  /// @throws std::exception if a body named `name` already exists in this
+  ///   model instance.
   const RigidBody<T>& AddRigidBody(const std::string& name,
                                    ModelInstanceIndex model_instance,
                                    const SpatialInertia<double>& M_BBo_B) {
@@ -1208,7 +1211,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   /// @throws std::exception if additional model instances have been created
-  ///                        beyond the world and default instances.
+  ///   beyond the world and default instances.
+  /// @throws std::exception if a body named `name` already exists in the
+  ///   default model instance.
   const RigidBody<T>& AddRigidBody(const std::string& name,
                                    const SpatialInertia<double>& M_BBo_B) {
     if (num_model_instances() != 2) {
