@@ -608,7 +608,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
     bool seed_point_requirement = true;
-    HPolyhedron P_candidate = P;
+    HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
+                                          b.head(num_initial_constraints));
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
 
