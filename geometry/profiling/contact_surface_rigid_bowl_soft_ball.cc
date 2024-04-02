@@ -18,7 +18,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/value.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_frame.h"
@@ -353,7 +353,7 @@ int do_main() {
 
   // Rigid anchored bowl with frame B. It is a non-convex mesh.
   std::string bowl_absolute_path =
-      FindResourceOrThrow("drake/geometry/profiling/evo_bowl_no_mtl.obj");
+      FindRunfile("drake_models/dishes/assets/evo_bowl_no_mtl.obj").abspath;
   // The bowl's bounding box is about 14.7cm x 14.7cm x 6.1cm with its
   // center at the origin Bo of frame B. Place B at 3.05cm above the ground
   // plane, so the bottom of the bowl is on the ground. Furthermore,
