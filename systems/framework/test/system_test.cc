@@ -656,6 +656,8 @@ TEST_F(SystemTest, IsDifferentialEquationSystem) {
   EXPECT_FALSE(system_.IsDifferentialEquationSystem());
 }
 
+// System used to test some contracts about setting a default state (as
+// documented on the SetDefaultInvocationContract test).
 class TestDefaultSystem final : public TestSystemBase<double> {
  public:
   TestDefaultSystem() {
@@ -692,6 +694,8 @@ class TestDefaultSystem final : public TestSystemBase<double> {
   // magic number.
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const final {
+    EXPECT_EQ(&context.get_state(), state);
+
     const BasicVector<double>& param =
         context.get_parameters().get_numeric_parameter(0);
     state->get_mutable_continuous_state().get_mutable_vector()[0] = param[0];
@@ -699,6 +703,8 @@ class TestDefaultSystem final : public TestSystemBase<double> {
 
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* parameters) const final {
+    EXPECT_EQ(&context.get_parameters(), parameters);
+
     DRAKE_DEMAND(context.get_parameters().num_numeric_parameter_groups() == 1);
     BasicVector<double>& param = parameters->get_mutable_numeric_parameter(0);
     param[0] = kMagicValue;
@@ -707,8 +713,11 @@ class TestDefaultSystem final : public TestSystemBase<double> {
   constexpr static double kMagicValue = 17.5;
 };
 
-// Confirm that default parameters always get set before default state.
-GTEST_TEST(SystemDefaultTest, ParametersBeforeState) {
+// Confirms some documented contracts regarding setting default context values:
+//   1. The default parameters always get set before default state.
+//   2. The state/parameters output parameters are mutable views into the
+//      const input Context.
+GTEST_TEST(SystemDefaultTest, SetDefaultInvocationContract) {
   TestDefaultSystem system;
   auto context = system.CreateDefaultContext();
   EXPECT_EQ(context->get_state().get_continuous_state()[0],

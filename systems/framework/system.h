@@ -165,12 +165,20 @@ class System : public SystemBase {
 
   /** Assigns default values to all elements of the state. Overrides must not
   change the number of state variables. The context's default parameters will
-  have already been set. */
+  have already been set.
+
+  @warning `state` is a mutable view into `context`. Take care in updating the
+  state that any calculations don't depend on incrementally changing state
+  values. */
   virtual void SetDefaultState(const Context<T>& context,
                                State<T>* state) const = 0;
 
   /** Assigns default values to all parameters. Overrides must not
-  change the number of parameters. */
+  change the number of parameters.
+
+  @warning `parameters` is a mutable view into `context`. Take care in updating
+  the parameters that any calculations don't depend on incrementally changing
+  parameter values. */
   virtual void SetDefaultParameters(const Context<T>& context,
                                     Parameters<T>* parameters) const = 0;
 
