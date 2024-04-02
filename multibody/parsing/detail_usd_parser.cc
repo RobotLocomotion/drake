@@ -25,6 +25,9 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// hong-nvidia: Make this a constant for now. Pass in as an argument later
+const double METERS_PER_UNIT = 0.01;
+
 namespace fs = std::filesystem;
 #if 0
 namespace pxr = drake_vendor_pxr;
@@ -85,6 +88,7 @@ math::RigidTransform<double> GetPrimRigidTransform(
   pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
   pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
+  translation *= METERS_PER_UNIT;
   pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix()
     .GetOrthonormalized();  // The extracted matrix contains scaling so
     // we have to orthonormalize it
@@ -97,6 +101,8 @@ math::RigidTransform<double> GetPrimRigidTransform(
 Eigen::Vector3d CalculateCubeDimension(
   const ParsingWorkspace& workspace, const pxr::UsdPrim& prim) {
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
+
+  // TODO(hong-nvidia): make sure that the extent of the cube is symmetric
 
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
@@ -111,10 +117,11 @@ Eigen::Vector3d CalculateCubeDimension(
       "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
   }
 
-  return Eigen::Vector3d(
-    prim_scale[0] * cube_size,
-    prim_scale[1] * cube_size,
-    prim_scale[2] * cube_size);
+  Eigen::Vector3d dimension = Eigen::Vector3d(prim_scale[0] * cube_size,
+                                              prim_scale[1] * cube_size,
+                                              prim_scale[2] * cube_size);
+  dimension *= METERS_PER_UNIT;
+  return dimension;
 }
 
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
