@@ -334,16 +334,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
   //@}
 
-  // TODO(sherm1) Shouldn't require overriding the default method; need
-  // a DoLeafSetDefaultState().
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
-
   // Override of LeafSystem::SetDefaultParameters. For all parameters declared
   // by various MultibodyElement subclasses, sets numeric and abstract
   // parameters to default values stored in their class members.
   void SetDefaultParameters(const systems::Context<T>& context,
                             systems::Parameters<T>* parameters) const final;
+
+  // TODO(sherm1) Shouldn't require overriding the default method; need
+  // a DoLeafSetDefaultState().
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
  private:
   // This is only meaningful in continuous mode.

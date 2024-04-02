@@ -163,15 +163,22 @@ class System : public SystemBase {
   sets its default values using SetDefaultContext(). */
   std::unique_ptr<Context<T>> CreateDefaultContext() const;
 
-  /** Assigns default values to all elements of the state. Overrides must not
-  change the number of state variables. */
-  virtual void SetDefaultState(const Context<T>& context,
-                               State<T>* state) const = 0;
-
   /** Assigns default values to all parameters. Overrides must not
-  change the number of parameters. */
+  change the number of parameters.
+
+  @warning `parameters` *may be* a mutable view into `context`. Don't assume
+  that evaluating `context` will be independent of writing to `parameters`. */
   virtual void SetDefaultParameters(const Context<T>& context,
                                     Parameters<T>* parameters) const = 0;
+
+  /** Assigns default values to all elements of the state. Overrides must not
+  change the number of state variables. The context's default parameters will
+  have already been set.
+
+  @warning `state` *may be* a mutable view into `context`. Don't assume that
+  evaluating `context` will be independent of writing to `state`. */
+  virtual void SetDefaultState(const Context<T>& context,
+                               State<T>* state) const = 0;
 
   /** Sets Context fields to their default values.  User code should not
   override. */
