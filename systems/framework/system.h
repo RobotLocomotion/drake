@@ -164,7 +164,8 @@ class System : public SystemBase {
   std::unique_ptr<Context<T>> CreateDefaultContext() const;
 
   /** Assigns default values to all elements of the state. Overrides must not
-  change the number of state variables. */
+  change the number of state variables. The context's default parameters will
+  have already been set. */
   virtual void SetDefaultState(const Context<T>& context,
                                State<T>* state) const = 0;
 

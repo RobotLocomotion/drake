@@ -40,9 +40,9 @@ class TestSystemBase : public System<T> {
  public:
   TestSystemBase() : System<T>(SystemScalarConverter{}) {}
 
-  void SetDefaultState(const Context<T>&, State<T>*) const final {}
+  void SetDefaultState(const Context<T>&, State<T>*) const override {}
 
-  void SetDefaultParameters(const Context<T>&, Parameters<T>*) const final {}
+  void SetDefaultParameters(const Context<T>&, Parameters<T>*) const override {}
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<T>*, CompositeEventCollection<T>*) const final {
@@ -80,7 +80,7 @@ class TestSystemBase : public System<T> {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const override {
     auto context = std::make_unique<LeafContext<T>>();
     this->InitializeContextBase(context.get());
     return context;
@@ -654,6 +654,65 @@ TEST_F(SystemTest, IsDifferentialEquationSystem) {
   EXPECT_TRUE(system_.IsDifferentialEquationSystem());
   system_.AddAbstractInputPort();
   EXPECT_FALSE(system_.IsDifferentialEquationSystem());
+}
+
+class TestDefaultSystem final : public TestSystemBase<double> {
+ public:
+  TestDefaultSystem() {
+    this->set_name("TestDefaultSystem");
+  }
+
+  // Allocates a context with a single parameter group (with a single numeric
+  // value) and continuous state with a single value.
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<double>>();
+    this->InitializeContextBase(&*context);
+
+    // One parameter group with a single numeric parameter of zero.
+    std::vector<std::unique_ptr<BasicVector<double>>> numeric_params;
+    numeric_params.emplace_back(std::make_unique<BasicVector<double>>(
+        std::initializer_list<double>{0.0}));
+    auto parameters =
+        std::make_unique<Parameters<double>>(std::move(numeric_params));
+    parameters->set_system_id(this->get_system_id());
+    context->init_parameters(std::move(parameters));
+    DRAKE_DEMAND(context->get_parameters().num_numeric_parameter_groups() == 1);
+
+    // A single continuous state variable.
+    auto state = std::make_unique<ContinuousState<double>>(
+        std::make_unique<BasicVector<double>>(
+            std::initializer_list<double>{0.0}));
+    context->init_continuous_state(std::move(state));
+
+    return context;
+  }
+
+  // The state simply copies the parameter value over. If the default parameters
+  // have been evaluated *first*, then the continuous state should contain the
+  // magic number.
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const final {
+    const BasicVector<double>& param =
+        context.get_parameters().get_numeric_parameter(0);
+    state->get_mutable_continuous_state().get_mutable_vector()[0] = param[0];
+  }
+
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* parameters) const final {
+    DRAKE_DEMAND(context.get_parameters().num_numeric_parameter_groups() == 1);
+    BasicVector<double>& param = parameters->get_mutable_numeric_parameter(0);
+    param[0] = kMagicValue;
+  }
+
+  constexpr static double kMagicValue = 17.5;
+};
+
+// Confirm that default parameters always get set before default state.
+GTEST_TEST(SystemDefaultTest, ParametersBeforeState) {
+  TestDefaultSystem system;
+  auto context = system.CreateDefaultContext();
+  EXPECT_EQ(context->get_state().get_continuous_state()[0],
+            TestDefaultSystem::kMagicValue);
 }
 
 template <typename T>
