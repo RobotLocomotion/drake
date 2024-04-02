@@ -37,7 +37,7 @@ class Quadrotor : public systems::Diagram<T> {
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
     multibody::Parser parser(&plant);
     parser.AddModelsFromUrl(
-        "package://drake/examples/quadrotor/quadrotor.urdf");
+        "package://drake_models/skydio_2/quadrotor.urdf");
     parser.AddModelsFromUrl(
         "package://drake/examples/quadrotor/warehouse.sdf");
     plant.Finalize();

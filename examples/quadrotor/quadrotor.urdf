@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!-- This model file is deprecated and should not be used in new code.
+Instead, use the drake_models/skydio_2/quadrotor.urdf.
+TODO(jwnimmer-tri) Delete this on 2024-05-01. -->
 <!-- Mesh file and approximate numbers are from Abe Bachrach at Skdio.  -->
 <robot name="quadrotor">
   <!--
