@@ -64,7 +64,7 @@ collision (aka, proximity) geometries or both as shown
 in the following picture.
 Click on `illustration` or `proximity` as you wish.
 
-![spatula_3](images/spatula3.jpg)
+![spatula_3](images/spatula_3.jpg)
 
 ## Playback simulation
 
