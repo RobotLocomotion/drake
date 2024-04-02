@@ -246,6 +246,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     params = CollisionCheckerParams();
 
     meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->Delete("/drake");
     meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
                              -3.25, 3.25, -3.25, 3.25);
     meshcat->SetProperty("/Grid", "visible", true);
@@ -449,6 +450,34 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   // of the random seed. (The probability of success is larger than 1-1e-9).
   EXPECT_GE(coverage_estimate, 0.8);
 
+  MaybePauseForUser();
+}
+
+// Tests that the minimum_clique_size correctly gets overridden
+TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+       BoxWithCornerObstaclesMinCliqueSizeTest) {
+  options.parallelism = Parallelism(1);
+  options.minimum_clique_size = 1;
+  options.iteration_limit = 1;
+  options.num_points_per_visibility_round = 6;
+  // use default solver MaxCliqueSovlerViaGreedy
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+
+  EXPECT_EQ(ssize(sets), 0);
+
+  // Show the IrisFromCliqueCoverDecomposition
+  for (int i = 0; i < ssize(sets); ++i) {
+    // Choose a random color.
+    for (int j = 0; j < color.size(); ++j) {
+      color[j] = abs(gaussian(generator));
+    }
+    color.normalize();
+    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+    Draw2dVPolytope(vregion,
+                    fmt::format("iris_from_clique_cover_min_cl_size{}", i),
+                    color, meshcat);
+  }
   MaybePauseForUser();
 }
 

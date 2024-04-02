@@ -156,7 +156,7 @@ void ComputeGreedyTruncatedCliqueCover(
     last_clique_size = max_clique.template cast<int>().sum();
     log()->debug("Last Clique Size = {}", last_clique_size);
     num_points_left -= last_clique_size;
-    if (last_clique_size > minimum_clique_size) {
+    if (last_clique_size >= minimum_clique_size) {
       computed_cliques->push(max_clique);
       ++num_cliques;
       MakeFalseRowsAndColumns(max_clique, adjacency_matrix);
