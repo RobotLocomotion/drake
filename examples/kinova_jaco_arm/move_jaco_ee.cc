@@ -9,12 +9,12 @@
 #include "lcm/lcm-cpp.hpp"
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/manipulation/util/move_ik_demo_base.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parsing/package_map.h"
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "KINOVA_JACO_STATUS",
@@ -40,9 +40,10 @@ namespace {
 
 using manipulation::kinova_jaco::kFingerSdkToUrdf;
 using manipulation::util::MoveIkDemoBase;
+using multibody::PackageMap;
 
-const char kUrdfPath[] =
-    "drake/manipulation/models/jaco_description/urdf/"
+const char kUrdfUrl[] =
+    "package://drake_models/jaco_description/urdf/"
     "j2s7s300_sphere_collision.urdf";
 
 int DoMain() {
@@ -51,7 +52,7 @@ int DoMain() {
       Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
 
   MoveIkDemoBase demo(
-      !FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kUrdfPath),
+      !FLAGS_urdf.empty() ? FLAGS_urdf : PackageMap{}.ResolveUrl(kUrdfUrl),
       "base", FLAGS_ee_name, 100);
 
   ::lcm::LCM lc;

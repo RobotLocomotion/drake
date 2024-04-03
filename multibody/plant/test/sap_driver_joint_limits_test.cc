@@ -3,7 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
@@ -246,21 +245,17 @@ class KukaIiwaArmTests : public ::testing::Test {
   std::vector<ModelInstanceIndex> LoadIiwaWithGripper(
       MultibodyPlant<double>* plant) const {
     DRAKE_DEMAND(plant != nullptr);
-    const char kArmFilePath[] =
-        "drake/manipulation/models/iiwa_description/urdf/"
-        "iiwa14_no_collision.urdf";
-
-    const char kWsg50FilePath[] =
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    const char kArmUrl[] =
+        "package://drake_models/iiwa_description/urdf/iiwa14_no_collision.urdf";
+    const char kWsg50Url[] =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(plant);
     parser.SetAutoRenaming(true);
-    ModelInstanceIndex arm_model =
-        parser.AddModels(FindResourceOrThrow(kArmFilePath)).at(0);
+    ModelInstanceIndex arm_model = parser.AddModelsFromUrl(kArmUrl).at(0);
 
     // Add the gripper.
-    ModelInstanceIndex gripper_model =
-        parser.AddModels(FindResourceOrThrow(kWsg50FilePath)).at(0);
+    ModelInstanceIndex gripper_model = parser.AddModelsFromUrl(kWsg50Url).at(0);
 
     const auto& base_body = plant->GetBodyByName("base", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);

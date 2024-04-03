@@ -43,10 +43,10 @@ class TestVideoWriter(unittest.TestCase):
         directives:
         - add_model:
             name: iiwa
-            file: package://drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf  # noqa
+            file: package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf  # noqa
         - add_model:
             name: wsg
-            file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf  # noqa
+            file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf  # noqa
         - add_weld:
             parent: world
             child: iiwa::iiwa_link_0

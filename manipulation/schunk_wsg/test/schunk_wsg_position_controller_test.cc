@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -74,10 +73,10 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
   const auto wsg = builder.AddSystem<MultibodyPlant>(kTimeStep);
 
   // Add the Schunk gripper and weld it to the world.
-  const std::string wsg_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/"
-      "wsg_50_description/sdf/schunk_wsg_50.sdf");
-  const auto wsg_model = Parser(wsg).AddModels(wsg_sdf_path).at(0);
+  const std::string wsg_sdf_url =
+      "package://drake_models/"
+      "wsg_50_description/sdf/schunk_wsg_50.sdf";
+  const auto wsg_model = Parser(wsg).AddModelsFromUrl(wsg_sdf_url).at(0);
   wsg->WeldFrames(wsg->world_frame(), wsg->GetFrameByName("body", wsg_model),
                   math::RigidTransformd::Identity());
   wsg->Finalize();

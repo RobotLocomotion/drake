@@ -7,7 +7,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_jaco_command.hpp"
@@ -17,6 +16,7 @@
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
 #include "drake/manipulation/util/robot_plan_interpolator.h"
+#include "drake/multibody/parsing/package_map.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/context.h"
@@ -47,9 +47,10 @@ using manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
 using manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
 using manipulation::kinova_jaco::JacoStatusReceiver;
 using manipulation::util::RobotPlanInterpolator;
+using multibody::PackageMap;
 
-const char* const kJacoUrdf =
-    "drake/manipulation/models/jaco_description/urdf/"
+const char* const kJacoUrdfUrl =
+    "package://drake_models/jaco_description/urdf/"
     "j2s7s300_sphere_collision.urdf";
 const char* const kLcmStatusChannel = "KINOVA_JACO_STATUS";
 const char* const kLcmCommandChannel = "KINOVA_JACO_COMMAND";
@@ -64,7 +65,8 @@ int DoMain() {
           kLcmPlanChannel, &lcm));
 
   const std::string urdf =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kJacoUrdf));
+      (!FLAGS_urdf.empty() ? FLAGS_urdf
+                           : PackageMap{}.ResolveUrl(kJacoUrdfUrl));
   auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
 
   builder.Connect(plan_sub->get_output_port(),

@@ -300,7 +300,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "toppra_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     use_default_main = False,
     deps = [

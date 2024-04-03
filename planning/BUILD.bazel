@@ -268,9 +268,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "linear_distance_and_interpolation_provider_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
         "//planning/test_utilities:collision_ground_plane.sdf",
         "//planning/test_utilities:flying_robot_base.sdf",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":linear_distance_and_interpolation_provider",
@@ -300,7 +300,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "robot_diagram_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":robot_diagram",

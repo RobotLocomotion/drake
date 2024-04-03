@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {
@@ -12,12 +11,11 @@ namespace manipulation {
 namespace util {
 
 const char kIiwaUrdf[] =
-    "drake/manipulation/models/iiwa_description/urdf/"
-    "iiwa14_no_collision.urdf";
+    "package://drake_models/iiwa_description/urdf/iiwa14_no_collision.urdf";
 
 GTEST_TEST(RobotPlanUtilsTest, GetJointNamesTest) {
   multibody::MultibodyPlant<double> plant(0.001);
-  multibody::Parser(&plant).AddModels(FindResourceOrThrow(kIiwaUrdf));
+  multibody::Parser(&plant).AddModelsFromUrl(kIiwaUrdf);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
   plant.Finalize();
@@ -46,7 +44,7 @@ GTEST_TEST(RobotPlanUtilsTest, ApplyJointVelocityLimitsTest) {
 
 GTEST_TEST(RobotPlanUtilsTest, EncodeKeyFramesTest) {
   multibody::MultibodyPlant<double> plant(0.001);
-  multibody::Parser(&plant).AddModels(FindResourceOrThrow(kIiwaUrdf));
+  multibody::Parser(&plant).AddModelsFromUrl(kIiwaUrdf);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
   plant.Finalize();

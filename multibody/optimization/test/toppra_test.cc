@@ -22,7 +22,7 @@ class IiwaToppraTest : public ::testing::Test {
   IiwaToppraTest() : iiwa_plant_(std::make_unique<MultibodyPlant<double>>(0)) {
     multibody::Parser(iiwa_plant_.get())
         .AddModelsFromUrl(
-            "package://drake/manipulation/models/iiwa_description/iiwa7/"
+            "package://drake_models/iiwa_description/sdf/"
             "iiwa7_no_collision.sdf");
     iiwa_plant_->WeldFrames(
         iiwa_plant_->world_frame(), iiwa_plant_->GetFrameByName("iiwa_link_0"));

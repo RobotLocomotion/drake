@@ -473,14 +473,13 @@ drake_cc_library(
 drake_cc_googletest(
     name = "actuated_models_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
@@ -503,7 +502,6 @@ drake_cc_googletest(
         ":compliant_contact_manager_tester",
         ":plant",
         ":spheres_stack",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
@@ -565,13 +563,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_driver_joint_limits_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":compliant_contact_manager_tester",
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
@@ -600,7 +597,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":hydroelastic_traction",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
@@ -629,11 +625,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "applied_generalized_force_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//multibody/parsing",
         "//systems/controllers:inverse_dynamics_controller",
     ],
@@ -646,7 +641,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/primitives:constant_vector_source",
@@ -664,11 +658,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "gravity_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
     ],
@@ -680,16 +673,15 @@ drake_cc_googletest(
         "test/split_pendulum.sdf",
         "//examples/kuka_iiwa_arm/models",
         "//examples/simple_gripper:simple_gripper_models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/benchmarks/free_body:models",
         "//multibody/parsing:test_models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":plant",
         "//common:autodiff",
-        "//common:find_resource",
         "//common/test_utilities",
         "//common/test_utilities:limit_malloc",
         "//geometry/test_utilities",
@@ -714,7 +706,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
     ],
@@ -748,7 +739,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//multibody/parsing",
@@ -771,13 +761,12 @@ drake_cc_library(
     hdrs = ["test/kuka_iiwa_model_tests.h"],
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     visibility = ["//visibility:private"],
     deps = [
         ":plant",
         "//common:autodiff",
-        "//common:find_resource",
         "//math:geometric_transform",
         "//multibody/parsing",
     ],
@@ -818,13 +807,12 @@ drake_cc_googletest(
     name = "multibody_plant_jacobians_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common:autodiff",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
@@ -836,13 +824,12 @@ drake_cc_googletest(
     name = "multibody_plant_mass_matrix_test",
     data = [
         "test/atlas_with_fixed_joints.urdf",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
         "@drake_models//:atlas",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing",
@@ -852,12 +839,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_reflected_inertia_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
@@ -924,7 +910,6 @@ drake_cc_googletest(
     data = ["test/box.sdf"],
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/analysis:implicit_euler_integrator",
@@ -1123,12 +1108,11 @@ drake_cc_googletest(
     name = "joint_limits_test",
     timeout = "long",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     shard_count = 3,
     deps = [
         ":plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/analysis:simulator",
@@ -1269,13 +1253,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_driver_pd_controller_constraints_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":compliant_contact_manager_tester",
         ":plant",
-        "//common:find_resource",
         "//multibody/parsing",
     ],
 )

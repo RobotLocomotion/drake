@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
@@ -111,11 +110,10 @@ class ExternallyAppliedForcesTest : public ::testing::Test {
  protected:
   void MakePlantWithGravityCompensator(double time_step) {
     // Load the acrobot model.
-    const std::string full_name =
-        FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<MultibodyPlant<double>>(time_step);
-    Parser(plant_).AddModels(full_name);
+    Parser(plant_).AddModelsFromUrl(
+        "package://drake/multibody/benchmarks/acrobot/acrobot.sdf");
     plant_->Finalize();
 
     // Add the system that applies inverse gravitational forces to the link

@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
@@ -69,12 +68,10 @@ namespace kcov339_avoidance_magic {
 class ActuatedIiiwaArmTest : public ::testing::Test {
  public:
   void SetUp() override {
-    const char kArmSdfPath[] =
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
-
-    const char kWsg50SdfPath[] =
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    const char kArmSdfUrl[] =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
+    const char kWsg50SdfUrl[] =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     // Make a discrete model.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.01 /* update period */);
@@ -86,10 +83,10 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     Parser parser(plant_.get());
 
     // Add the arm.
-    arm_model_ = parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
+    arm_model_ = parser.AddModelsFromUrl(kArmSdfUrl).at(0);
 
     // Add the gripper.
-    gripper_model_ = parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
+    gripper_model_ = parser.AddModelsFromUrl(kWsg50SdfUrl).at(0);
 
     const auto& base_body = plant_->GetBodyByName("iiwa_link_0", arm_model_);
     const auto& end_effector = plant_->GetBodyByName("iiwa_link_7", arm_model_);

@@ -4,7 +4,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -113,18 +112,16 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
  private:
   void LoadIiwaWithGripper(MultibodyPlant<double>* plant) {
     DRAKE_DEMAND(plant != nullptr);
-    const char kArmSdfPath[] =
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
-
-    const char kWsg50SdfPath[] =
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    const char kArmSdfUrl[] =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
+    const char kWsg50SdfUrl[] =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(plant);
-    arm_model = parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
+    arm_model = parser.AddModelsFromUrl(kArmSdfUrl).at(0);
 
     // Add the gripper.
-    gripper_model = parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
+    gripper_model = parser.AddModelsFromUrl(kWsg50SdfUrl).at(0);
 
     const auto& base_body = plant->GetBodyByName("iiwa_link_0", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);

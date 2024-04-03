@@ -2,7 +2,6 @@ import unittest
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.examples import (
     CreateClutterClearingYcbObjectList,
     CreateManipulationClassYcbObjectList,
@@ -20,7 +19,10 @@ from pydrake.geometry import (
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import ModelInstanceIndex
-from pydrake.multibody.parsing import Parser
+from pydrake.multibody.parsing import (
+    PackageMap,
+    Parser,
+)
 from pydrake.systems.sensors import CameraInfo
 
 
@@ -66,8 +68,8 @@ class TestManipulationStation(unittest.TestCase):
         plant = station.get_mutable_multibody_plant()
 
         # Add models for iiwa and wsg
-        iiwa_model_file = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
+        iiwa_model_file = PackageMap().ResolveUrl(
+            "package://drake_models/iiwa_description/sdf/"
             "iiwa7_no_collision.sdf")
         (iiwa,) = parser.AddModels(iiwa_model_file)
         X_WI = RigidTransform.Identity()
@@ -75,8 +77,8 @@ class TestManipulationStation(unittest.TestCase):
                          plant.GetFrameByName("iiwa_link_0", iiwa),
                          X_WI)
 
-        wsg_model_file = FindResourceOrThrow(
-            "drake/manipulation/models/wsg_50_description/sdf/"
+        wsg_model_file = PackageMap().ResolveUrl(
+            "package://drake_models/wsg_50_description/sdf/"
             "schunk_wsg_50.sdf")
         (wsg,) = parser.AddModels(wsg_model_file)
         X_7G = RigidTransform.Identity()

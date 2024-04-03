@@ -18,10 +18,8 @@ std::unique_ptr<multibody::MultibodyPlant<double>> MakeIiwa(void) {
   // Load the IIWA SDF, welding link_0 to the world.
   auto robot = std::make_unique<multibody::MultibodyPlant<double>>(0.01);
   multibody::Parser parser(robot.get());
-  const std::string filename = FindResourceOrThrow(
-      "drake/manipulation/models/"
-      "iiwa_description/sdf/iiwa14_no_collision.sdf");
-  parser.AddModels(filename);
+  parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
   return robot;
@@ -107,10 +105,8 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, FrameATest) {
   // This time the iiwa will _not_ be welded to the world.
   auto robot = std::make_unique<multibody::MultibodyPlant<double>>(0.01);
   multibody::Parser parser(robot.get());
-  const std::string filename = FindResourceOrThrow(
-      "drake/manipulation/models/"
-      "iiwa_description/sdf/iiwa14_no_collision.sdf");
-  parser.AddModels(filename);
+  parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   robot->Finalize();
 
   auto robot_context = robot->CreateDefaultContext();

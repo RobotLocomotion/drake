@@ -3,7 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
@@ -162,12 +161,11 @@ class SlidingBoxTest : public ::testing::Test {
   // (discrete_period = 0 for a continuous model).
   std::unique_ptr<Diagram<double>> MakeBoxDiagram(double time_step) {
     DiagramBuilder<double> builder;
-    const std::string full_name =
-        FindResourceOrThrow("drake/multibody/plant/test/box.sdf");
     MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
         &builder, std::make_unique<MultibodyPlant<double>>(time_step));
     plant.set_name("plant");
-    Parser(&plant).AddModels(full_name);
+    Parser(&plant).AddModelsFromUrl(
+        "package://drake/multibody/plant/test/box.sdf");
 
     // Add gravity to the model.
     plant.mutable_gravity_field().set_gravity_vector(-g_ *

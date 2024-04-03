@@ -24,7 +24,7 @@ drake_cc_library(
     data = [
         ":collision_ground_plane.sdf",
         ":flying_robot_base.sdf",
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         "//multibody/parsing",

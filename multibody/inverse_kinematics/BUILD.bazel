@@ -154,19 +154,18 @@ drake_cc_googletest(
     name = "constraint_relaxing_ik_test",
     srcs = ["test/constraint_relaxing_ik_test.cc"],
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     tags = ["snopt"],
     deps = [
         ":constraint_relaxing_ik",
-        "//common:find_resource",
     ],
 )
 
 drake_cc_googletest(
     name = "differential_inverse_kinematics_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":differential_inverse_kinematics",
@@ -180,7 +179,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "differential_inverse_kinematics_integrator_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":differential_inverse_kinematics_integrator",
@@ -191,17 +190,18 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(jwnimmer-tri) Test utilities with public visibility are supposed to be
+# in a 'test_utilities' subdir, not a 'test' subdir. Move these files.
 drake_cc_library(
     name = "inverse_kinematics_test_utilities",
     testonly = 1,
     srcs = ["test/inverse_kinematics_test_utilities.cc"],
     hdrs = ["test/inverse_kinematics_test_utilities.h"],
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         "//common:default_scalars",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:compute_numerical_gradient",
         "//math:gradient",
@@ -362,12 +362,14 @@ drake_cc_library(
     srcs = ["test/global_inverse_kinematics_test_util.cc"],
     hdrs = ["test/global_inverse_kinematics_test_util.h"],
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
+    ],
+    visibility = [
+        "//visibility:private",
     ],
     deps = [
         ":global_inverse_kinematics",
         ":inverse_kinematics",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/parsing",

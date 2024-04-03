@@ -379,7 +379,7 @@ drake_jupyter_py_binary(
     name = "examples/jupyter_widgets_examples",
     add_test_rule = 1,
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":jupyter_widgets_py",
@@ -427,11 +427,11 @@ drake_py_unittest(
     data = [
         ":models",
         "//examples/acrobot:models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/benchmarks/free_body:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":benchmarks_py",

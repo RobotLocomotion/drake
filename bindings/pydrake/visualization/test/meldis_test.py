@@ -191,7 +191,7 @@ class TestMeldis(unittest.TestCase):
         """Checks _ViewerApplet support for untextured meshes.
         """
         self._check_viewer_applet_on_model(
-            "drake/manipulation/models/iiwa_description/urdf/"
+            "drake_models/iiwa_description/urdf/"
             "iiwa14_no_collision.urdf")
 
     def test_viewer_applet_textured_meshes(self):

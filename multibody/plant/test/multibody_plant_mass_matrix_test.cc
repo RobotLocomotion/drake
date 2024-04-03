@@ -4,7 +4,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/parsing/parser.h"
@@ -29,13 +28,6 @@ namespace {
 //     column of the mass matrix at a time.
 class MultibodyPlantMassMatrixTests : public ::testing::Test {
  public:
-  void LoadModel(const std::string& file_path) {
-    const std::string model_path = FindResourceOrThrow(file_path);
-    Parser parser(&plant_);
-    parser.AddModels(model_path);
-    plant_.Finalize();
-  }
-
   void LoadUrl(const std::string& url) {
     Parser parser(&plant_);
     parser.AddModelsFromUrl(url);
@@ -43,20 +35,18 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   }
 
   void LoadIiwaWithGripper() {
-    const char kArmSdfPath[] =
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
-
-    const char kWsg50SdfPath[] =
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    const char kArmSdfUrl[] =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
+    const char kWsg50SdfUrl[] =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(&plant_);
     const ModelInstanceIndex arm_model =
-        parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
+        parser.AddModelsFromUrl(kArmSdfUrl).at(0);
 
     // Add the gripper.
     const ModelInstanceIndex gripper_model =
-        parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
+        parser.AddModelsFromUrl(kWsg50SdfUrl).at(0);
 
     const auto& base_body = plant_.GetBodyByName("iiwa_link_0", arm_model);
     const auto& end_effector = plant_.GetBodyByName("iiwa_link_7", arm_model);
@@ -98,8 +88,8 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
 };
 
 TEST_F(MultibodyPlantMassMatrixTests, IiwaRobot) {
-  LoadModel(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  LoadUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   // We did not weld the arm to the world, therefore we expect it to be free.
   EXPECT_EQ(plant_.num_velocities(), 13);
 
@@ -139,7 +129,7 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
 TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
   // TODO(sherm1) Replace this large copied file with the original Atlas urdf
   //              plus a patch or in-memory edit (issue #13954).
-  LoadModel("drake/multibody/plant/test/atlas_with_fixed_joints.urdf");
+  LoadUrl("package://drake/multibody/plant/test/atlas_with_fixed_joints.urdf");
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();

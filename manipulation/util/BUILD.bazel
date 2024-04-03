@@ -134,7 +134,7 @@ drake_cc_library(
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
-    data = ["//manipulation/models/jaco_description:models"],
+    data = ["@drake_models//:jaco_description"],
     deps = ["//bindings/pydrake"],
 )
 
@@ -161,7 +161,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "move_ik_demo_base_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":move_ik_demo_base",
@@ -172,7 +172,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "robot_plan_utils_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":robot_plan_utils",
@@ -194,7 +194,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "zero_force_driver_functions_test",
     data = [
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":zero_force_driver_functions",
@@ -208,7 +208,7 @@ filegroup(
     testonly = 1,
     srcs = [
         ":test/panda_arm_and_hand.dmd.yaml",
-        "//manipulation/models/franka_description:models",
+        "@drake_models//:franka_description",
     ],
     visibility = ["//multibody/parsing:__pkg__"],
 )
@@ -219,8 +219,8 @@ drake_cc_googletest(
         ":test/fake_camera.sdf",
         ":test/iiwa7_wsg.dmd.yaml",
         ":test/iiwa7_wsg_cameras.dmd.yaml",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":make_arm_controller_model",
@@ -239,11 +239,10 @@ drake_cc_googletest(
     name = "robot_plan_interpolator_test",
     data = [
         "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":robot_plan_interpolator",
-        "//common:find_resource",
         "//systems/framework",
     ],
 )

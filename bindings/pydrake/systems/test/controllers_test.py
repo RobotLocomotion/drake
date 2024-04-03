@@ -108,12 +108,12 @@ class TestControllers(unittest.TestCase):
         self.assertAlmostEqual(J[0], 1., delta=1e-6)
 
     def test_joint_stiffness_controller(self):
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        Parser(plant).AddModels(sdf_path)
+        Parser(plant).AddModels(url=url)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()
@@ -130,12 +130,12 @@ class TestControllers(unittest.TestCase):
         self.assertIsInstance(controller.get_multibody_plant(), MultibodyPlant)
 
     def test_inverse_dynamics(self):
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        Parser(plant).AddModels(sdf_path)
+        Parser(plant).AddModels(url=url)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()
@@ -159,12 +159,12 @@ class TestControllers(unittest.TestCase):
         self.assertTrue(controller.is_pure_gravity_compensation())
 
     def test_inverse_dynamics_controller(self):
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        Parser(plant).AddModels(sdf_path)
+        Parser(plant).AddModels(url=url)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])

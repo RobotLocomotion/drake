@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -20,9 +19,8 @@ using multibody::MultibodyPlant;
 GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
   DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant>(0.0);
-  std::string full_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
-  multibody::Parser(plant).AddModels(full_name);
+  multibody::Parser(plant).AddModelsFromUrl(
+      "package://drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base"));
   plant->Finalize();
 
@@ -62,9 +60,8 @@ GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
 
 GTEST_TEST(JointStiffnessControllerTest, ScalarConversion) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
   const int num_states = mbp->num_multibody_states();

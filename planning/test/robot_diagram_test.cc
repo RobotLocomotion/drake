@@ -7,7 +7,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
@@ -27,9 +26,9 @@ using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
-  builder->parser().AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_spheres_dense_collision.urdf"));
+  builder->parser().AddModelsFromUrl(
+      "package://drake_models/iiwa_description/urdf/"
+      "iiwa14_spheres_dense_collision.urdf");
   return builder;
 }
 
