@@ -563,31 +563,33 @@ configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/WORKSPACE.in drake_build_cwd/WORKSPACE.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 
-set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
-set(GIT_REVISION HEAD)
-
 find_package(Git)
 
-if(GIT_FOUND AND EXISTS "${GIT_DIR}")
-  execute_process(COMMAND
-    "${GIT_EXECUTABLE}" "--git-dir=${GIT_DIR}" rev-parse HEAD
-    RESULT_VARIABLE GIT_REV_PARSE_RESULT_VARIABLE
-    OUTPUT_VARIABLE GIT_REV_PARSE_OUTPUT_VARIABLE
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(GIT_REV_PARSE_RESULT_VARIABLE EQUAL 0)
-    set(GIT_REVISION "${GIT_REV_PARSE_OUTPUT_VARIABLE}")
-  endif()
-endif()
-
-string(TIMESTAMP BUILD_TIMESTAMP "%Y%m%d%H%M%S")
-
-configure_file(tools/install/libdrake/VERSION.TXT.in VERSION.TXT @ONLY)
+set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
 
 execute_process(
   COMMAND "${Bazel_EXECUTABLE}" info --announce_rc
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
+)
+
+set(GENERATE_DRAKE_VERSION_ARGS)
+if(DEFINED DRAKE_VERSION_OVERRIDE)
+  list(APPEND GENERATE_DRAKE_VERSION_ARGS
+    "-DDRAKE_VERSION_OVERRIDE=${DRAKE_VERSION_OVERRIDE}")
+endif()
+if(DEFINED DRAKE_GIT_SHA_OVERRIDE)
+  list(APPEND GENERATE_DRAKE_VERSION_ARGS
+    "-DDRAKE_GIT_SHA_OVERRIDE=${DRAKE_GIT_SHA_OVERRIDE}")
+endif()
+
+add_custom_target(drake_version ALL
+  COMMAND "${CMAKE_COMMAND}"
+    ${GENERATE_DRAKE_VERSION_ARGS}
+    "-DGIT_DIR=${GIT_DIR}"
+    "-DGIT_EXECUTABLE=${GIT_EXECUTABLE}"
+    "-DINPUT_FILE=${PROJECT_SOURCE_DIR}/tools/install/libdrake/VERSION.TXT.in"
+    "-DOUTPUT_FILE=${PROJECT_BINARY_DIR}/VERSION.TXT"
+    -P "${PROJECT_SOURCE_DIR}/tools/install/libdrake/generate_version.cmake"
 )
 
 add_custom_target(drake_cxx_python ALL
