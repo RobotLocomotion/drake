@@ -1,4 +1,4 @@
-#include "drake/examples/multibody/deformable_torus/parallel_gripper_controller.h"
+#include "drake/examples/multibody/deformable/parallel_gripper_controller.h"
 
 namespace drake {
 namespace examples {

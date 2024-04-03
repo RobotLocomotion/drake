@@ -23,7 +23,7 @@ bazel run //tools:meldis -- --open-window &
 ## Run the example
 
 ```
-bazel run //examples/multibody/deformable_torus:deformable_torus
+bazel run //examples/multibody/deformable:deformable_torus
 ```
 
 ## Options
@@ -32,5 +32,5 @@ There are a few command-line options that you can use to adjust the physical
 properties of the deformable body. Use `--help` to see the list.
 
 ```
-bazel run //examples/multibody/deformable_torus:deformable_torus -- --help
+bazel run //examples/multibody/deformable:deformable_torus -- --help
 ```

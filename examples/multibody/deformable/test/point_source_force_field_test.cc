@@ -1,4 +1,4 @@
-#include "drake/examples/multibody/deformable_torus/point_source_force_field.h"
+#include "drake/examples/multibody/deformable/point_source_force_field.h"
 
 #include <gtest/gtest.h>
 
