@@ -281,6 +281,17 @@ double ConvexSet::DoCalcVolume() const {
                   NiceTypeName::Get(*this)));
 }
 
+solvers::MathematicalProgramResult ConvexSet::DoSolve(
+    const solvers::MathematicalProgram& prog) const {
+  if (solver_ == nullptr) {
+    return solvers::Solve(prog, std::nullopt, solver_options_);
+  } else {
+    solvers::MathematicalProgramResult result;
+    solver_->Solve(prog, std::nullopt, solver_options_, &result);
+    return result;
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

@@ -49,13 +49,19 @@ namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
 std::tuple<bool, solvers::MathematicalProgramResult> IsInfeasible(
-    const MathematicalProgram& prog) {
+    const MathematicalProgram& prog,
+    const std::shared_ptr<solvers::SolverInterface>& solver,
+    solvers::SolverOptions solver_options) {
   // Turn off Gurobi DualReduction to ensure that infeasible problems always
   // return solvers::SolutionResult::kInfeasibleConstraints rather than
   // SolutionResult::kInfeasibleOrUnbounded.
-  solvers::SolverOptions solver_options;
   solver_options.SetOption(solvers::GurobiSolver::id(), "DualReductions", 0);
-  auto result = solvers::Solve(prog, std::nullopt, solver_options);
+  solvers::MathematicalProgramResult result;
+  if (solver == nullptr) {
+    result = solvers::Solve(prog, std::nullopt, solver_options);
+  } else {
+    solver->Solve(prog, std::nullopt, solver_options, &result);
+  }
   return {result.get_solution_result() ==
               solvers::SolutionResult::kInfeasibleConstraints,
           result};
@@ -70,6 +76,8 @@ std::tuple<bool, solvers::MathematicalProgramResult> IsInfeasible(
  strict on the containment.
  */
 bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
+                 const std::shared_ptr<solvers::SolverInterface>& solver,
+                 const solvers::SolverOptions& solver_options,
                  solvers::MathematicalProgram* prog,
                  Binding<solvers::LinearConstraint>* new_constraint,
                  Binding<solvers::LinearCost>* program_cost_binding,
@@ -90,7 +98,8 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // redundant. Since we tested whether this polyhedron is empty earlier, the
   // function would already have exited so this is proof that this inequality
   // is irredundant.
-  auto [polyhedron_is_empty, result] = IsInfeasible(*prog);
+  auto [polyhedron_is_empty, result] =
+      IsInfeasible(*prog, solver, solver_options);
 
   if (!polyhedron_is_empty && !result.is_success()) {
     throw std::runtime_error(fmt::format(
@@ -427,7 +436,7 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
     b_lorentz(0) = b_(i) / row_norms(i);
     prog.AddLorentzConeConstraint(A_lorentz, b_lorentz, vars);
   }
-  auto result = solvers::Solve(prog);
+  auto result = DoSolve(prog);
   if (!result.is_success()) {
     throw std::runtime_error(fmt::format(
         "Solver {} failed to solve the maximum inscribed ellipse problem; it "
@@ -458,7 +467,7 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
     prog.AddLinearConstraint(a, -inf, b_[i], {r, x});
   }
 
-  auto result = solvers::Solve(prog);
+  auto result = DoSolve(prog);
   if (!result.is_success()) {
     throw std::runtime_error(fmt::format(
         "Solver {} failed to solve the Chebyshev center problem; it terminated "
@@ -619,7 +628,7 @@ std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
                                 y);
   prog.AddLinearEqualityConstraint(A_.transpose(), VectorXd::Zero(A_.cols()),
                                    y);
-  auto result = solvers::Solve(prog);
+  auto result = DoSolve(prog);
   return result.is_success();
 }
 
@@ -631,7 +640,7 @@ bool HPolyhedron::DoIsEmpty() const {
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
   prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_, x);
-  return std::get<0>(IsInfeasible(prog));
+  return std::get<0>(IsInfeasible(prog, solver_, solver_options_));
 }
 
 bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
@@ -656,9 +665,9 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   for (int i = 0; i < other.A().rows(); ++i) {
     // If any of the constraints of `other` are irredundant then `this` is
     // not contained in `other`.
-    if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding,
-                     tol)) {
+    if (!IsRedundant(other.A().row(i), other.b()(i), solver_, solver_options_,
+                     &prog, &redundant_constraint_binding,
+                     &program_cost_binding, tol)) {
       return false;
     }
   }
@@ -688,7 +697,7 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
   prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_, x);
-  auto [infeasible, result] = IsInfeasible(prog);
+  auto [infeasible, result] = IsInfeasible(prog, solver_, solver_options_);
 
   // `this` defines an empty set therefore any additional constraint is
   // redundant.
@@ -704,9 +713,9 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
 
   int num_kept = A_.rows();
   for (int i = 0; i < other.A().rows(); ++i) {
-    if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding,
-                     tol)) {
+    if (!IsRedundant(other.A().row(i), other.b()(i), solver_, solver_options_,
+                     &prog, &redundant_constraint_binding,
+                     &program_cost_binding, tol)) {
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       ++num_kept;
@@ -877,7 +886,7 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   prog.AddLinearConstraint(
       other.A(), VectorXd::Constant(other.b().rows(), -kInf), other.b(), x);
 
-  auto result = solvers::Solve(prog);
+  auto result = DoSolve(prog);
   // other is an empty polyhedron and so Pontryagin difference does nothing
   if (result.get_solution_result() ==
       solvers::SolutionResult::kInfeasibleConstraints) {
@@ -888,7 +897,7 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
       prog.AddLinearCost(A_.row(0), 0, x);
   for (int i = 0; i < b_.rows(); ++i) {
     program_cost_binding.evaluator()->UpdateCoefficients(-A_.row(i), 0);
-    result = solvers::Solve(prog);
+    result = DoSolve(prog);
     // since constraint set is bounded and non-empty then the program should
     // always have an optimal solution
     if (!result.is_success()) {
