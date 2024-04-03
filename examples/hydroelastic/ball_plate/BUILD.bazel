@@ -7,6 +7,14 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+filegroup(
+    name = "models",
+    srcs = [
+        "floor.sdf",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
 drake_cc_library(
     name = "make_ball_plate_plant",
     srcs = [
@@ -16,8 +24,8 @@ drake_cc_library(
         "make_ball_plate_plant.h",
     ],
     data = [
-        ":floor_files",
-        ":plate_files",
+        ":models",
+        "@drake_models//:dishes",
     ],
     deps = [
         "//common:default_scalars",
@@ -47,27 +55,6 @@ drake_cc_binary(
         "//visualization:visualization_config_functions",
         "@gflags",
     ],
-)
-
-filegroup(
-    name = "plate_files",
-    srcs = [
-        "plate_8in.sdf",
-        "plate_8in_col.mtl",
-        "plate_8in_col.obj",
-    ],
-    visibility = [
-        "//:__pkg__",
-        "//geometry:__subpackages__",
-    ],
-)
-
-filegroup(
-    name = "floor_files",
-    srcs = [
-        "floor.sdf",
-    ],
-    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests(enable_clang_format_lint = False)
