@@ -30,7 +30,7 @@ class RobotDiagramBuilder {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotDiagramBuilder)
 
   /** Constructs with the specified time step for the contained plant. */
-  explicit RobotDiagramBuilder(double time_step = 0.0);
+  explicit RobotDiagramBuilder(double time_step = 0.001);
 
   ~RobotDiagramBuilder();
 
