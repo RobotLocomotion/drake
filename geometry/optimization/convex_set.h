@@ -287,13 +287,6 @@ class ConvexSet {
   std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>> Projection(
       const Eigen::Ref<const Eigen::MatrixXd>& points) const;
 
-  /** Computes in the L₂ norm the distance and the nearest point in this convex
-   set to @p point
-   @pre point.size() == ambient_dimension().
-   @throws if the internal convex optimization solver fails. */
-  //  std::pair<double, Eigen::VectorXd> Projection(
-  //      const Eigen::Ref<const Eigen::VectorXd>& point) const;
-
   /** Returns true if the exact volume can be computed for this convex set
   instance.
   @note This value reasons about to the generic case of the convex set class
