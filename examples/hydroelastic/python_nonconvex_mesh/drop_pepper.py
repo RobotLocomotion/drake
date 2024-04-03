@@ -34,12 +34,11 @@ def make_pepper_bowl_table(contact_model, time_step):
 
     parser = Parser(plant)
     parser.AddModels(
-        url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
-            "pepper.sdf")
+        url="package://drake_models/veggies/"
+            "yellow_bell_pepper_no_stem_low.sdf")
     parser.AddModels(
-        url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
-            "bowl.sdf")
-    (table,) = parser.AddModels(
+        url="package://drake_models/dishes/evo_bowl.sdf")
+    parser.AddModels(
         url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
             "table.sdf")
 
@@ -48,7 +47,7 @@ def make_pepper_bowl_table(contact_model, time_step):
     p_WTable_fixed = RigidTransform(np.array([0, 0, -0.01]))
     plant.WeldFrames(
             frame_on_parent_F=plant.world_frame(),
-            frame_on_child_M=plant.GetFrameByName("table", table),
+            frame_on_child_M=plant.GetFrameByName("table"),
             X_FM=p_WTable_fixed)
     plant.Finalize()
 
