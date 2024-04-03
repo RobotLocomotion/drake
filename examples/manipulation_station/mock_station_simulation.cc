@@ -65,7 +65,7 @@ int do_main(int argc, char* argv[]) {
   if (FLAGS_setup == "manipulation_class") {
     station->SetupManipulationClassStation();
     station->AddManipulandFromFile(
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        "drake_models/manipulation_station/061_foam_brick.sdf",
         math::RigidTransform<double>(math::RotationMatrix<double>::Identity(),
                                      Eigen::Vector3d(0.6, 0, 0)));
   } else if (FLAGS_setup == "clutter_clearing") {

@@ -44,7 +44,7 @@ QuadrotorGeometry::QuadrotorGeometry(
   multibody::Parser parser(&mbp, scene_graph);
 
   const auto model_instance_indices = parser.AddModelsFromUrl(
-      "package://drake/examples/quadrotor/quadrotor.urdf");
+      "package://drake_models/skydio_2/quadrotor.urdf");
   mbp.Finalize();
 
   // Identify the single quadrotor body and its frame.

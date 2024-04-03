@@ -20,7 +20,6 @@ using multibody::CoulombFriction;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
-using multibody::UnitInertia;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using Eigen::Vector3d;
@@ -89,8 +88,7 @@ void AddBallPlateBodies(
 
   // Add the dinner plate.
   drake::multibody::Parser parser(plant);
-  parser.AddModelsFromUrl(
-      "package://drake/examples/hydroelastic/ball_plate/plate_8in.sdf");
+  parser.AddModelsFromUrl("package://drake_models/dishes/plate_8in.sdf");
 
   // Add the floor. Assume the frame named "Floor" is in the SDFormat file.
   parser.AddModelsFromUrl(

@@ -87,7 +87,6 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
     /opt/drake/share/drake/geometry \
-    /opt/drake/share/drake/manipulation \
     /opt/drake/share/drake/multibody \
     /opt/drake/share/drake/tutorials
 
@@ -96,11 +95,6 @@ if [[ "$(uname)" == "Linux" ]]; then
     cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
         /opt/drake/share/drake/setup/deepnote
 fi
-
-# TODO(jwnimmer-tri) We need to remove this to keep the wheel from being too
-# large; the better fix is that Atlas's meshes should move into drake_models.
-rm -rf \
-    ${WHEEL_SHARE_DIR}/drake/examples/atlas
 
 if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib

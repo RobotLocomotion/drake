@@ -7,6 +7,7 @@
 
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {
@@ -242,6 +243,14 @@ class DeformableContactSurface {
    `signed_distances()`.*/
   const std::vector<Vector3<T>>& nhats_W() const { return nhats_W_; }
 
+  /* Returns rotation matrices that transform the basis of frame W into the
+   basis of an arbitrary frame C. In this transformation, the z-axis of frame,
+   Cz, is aligned with the vector n̂. The vector n̂ represents the normal as
+   reported in `nhats_W()`. Cx and Cy are arbitrary but sufficient to form the
+   right-handed basis. The ordering of rotation matrices is the same as that in
+   `signed_distances()`. */
+  const std::vector<math::RotationMatrix<T>>& R_WCs() const { return R_WCs_; }
+
   bool is_B_deformable() const { return contact_vertex_indexes_B_.has_value(); }
 
  private:
@@ -256,6 +265,7 @@ class DeformableContactSurface {
   std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B_;
   std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B_;
   std::vector<Vector3<T>> nhats_W_;
+  std::vector<math::RotationMatrix<T>> R_WCs_;
 };
 
 /* Data structure to hold contact information about all deformable geometries

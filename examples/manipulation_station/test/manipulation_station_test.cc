@@ -44,8 +44,7 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   multibody::MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModelsFromUrl(
-      "package://drake/manipulation/models/wsg_50_description/sdf/"
-      "schunk_wsg_50_no_tip.sdf");
+      "package://drake_models/wsg_50_description/sdf/schunk_wsg_50_no_tip.sdf");
   plant.Finalize();
   const std::string gripper_body_frame_name = "body";
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
@@ -179,8 +178,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModelsFromUrl(
-      "package://drake/examples/manipulation_station/models/"
-      "061_foam_brick.sdf");
+      "package://drake_models/manipulation_station/061_foam_brick.sdf");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();

@@ -158,6 +158,9 @@ struct IrisOptions {
   control the total number of hit-and-run steps taken for each new random
   sample. */
   int mixing_steps{10};
+
+  /* The SolverOptions used in the optimization program. */
+  std::optional<solvers::SolverOptions> solver_options;
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,

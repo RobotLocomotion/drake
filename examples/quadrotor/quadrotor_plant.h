@@ -14,7 +14,7 @@ namespace quadrotor {
 
 /// The Quadrotor - an underactuated aerial vehicle. This version of the
 /// Quadrotor is implemented to match the dynamics of the plant specified in
-/// the `quadrotor.urdf` model file.
+/// the `package://drake_models/skydio_2/quadrotor.urdf` model file.
 ///
 /// @system
 /// name: QuadrotorPlant

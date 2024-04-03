@@ -191,7 +191,7 @@ endif()
 # standard nor CMAKE_CXX_FLAGS to Bazel, but we should.
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # The supported Python major/minor versions should match those listed in
 # doc/_pages/from_source.md.

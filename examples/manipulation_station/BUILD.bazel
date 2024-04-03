@@ -11,37 +11,8 @@ load(
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
-
-models_filegroup(
-    name = "installed_models",
-    visibility = ["//visibility:public"],
-)
-
-install_data(
-    name = "install_data",
-    data = [":installed_models"],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "models",
-    srcs = [
-        ":installed_models",
-        "@drake_models//:manipulation_station/bin.mtl",
-        "@drake_models//:manipulation_station/bin.obj",
-        "@drake_models//:manipulation_station/bin.png",
-        "@drake_models//:manipulation_station/shelves.mtl",
-        "@drake_models//:manipulation_station/shelves.obj",
-        "@drake_models//:manipulation_station/shelves.png",
-        "@drake_models//:manipulation_station/table_wide.mtl",
-        "@drake_models//:manipulation_station/table_wide.obj",
-        "@drake_models//:manipulation_station/table_wide.png",
-    ],
-    visibility = ["//visibility:public"],
-)
 
 drake_cc_library(
     name = "manipulation_station",
@@ -52,12 +23,17 @@ drake_cc_library(
         "manipulation_station.h",
     ],
     data = [
-        ":models",
         "//examples/kuka_iiwa_arm:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:realsense2_description",
+        "@drake_models//:wsg_50_description",
+        "@drake_models//:ycb",
+        # TODO(jwnimmer-tri) These are not actually used by this library
+        # anymore, but removing them breaks too many other things. We'll
+        # revisit this later when we finally delete these paths entirely.
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
-        "@drake_models//:realsense2_description",
-        "@drake_models//:ycb",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -86,8 +62,8 @@ drake_cc_library(
         "manipulation_station_hardware_interface.h",
     ],
     data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     visibility = ["//visibility:public"],
     deps = [

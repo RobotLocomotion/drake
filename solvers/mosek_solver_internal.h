@@ -256,7 +256,7 @@ class MosekSolverProgram {
       const Eigen::SparseMatrix<double>& B,
       const VectorX<symbolic::Variable>& decision_vars,
       const std::vector<MSKint32t>& slack_vars_mosek_indices,
-      const Eigen::VectorXd& c, MSKconetypee cone_type, MSKint64t* acc_index);
+      const Eigen::VectorXd& c, MSKdomaintypee cone_type, MSKint64t* acc_index);
 
   /*
    * This is the helper function to add three types of conic constraints
@@ -286,8 +286,12 @@ class MosekSolverProgram {
       std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>*
           psd_barvar_indices);
 
+  // Add linear matrix inequality (LMI) constraints as affine cone constraints
+  // (acc), return the indices of the added affine cone constraints.
   MSKrescodee AddLinearMatrixInequalityConstraint(
-      const MathematicalProgram& prog);
+      const MathematicalProgram& prog,
+      std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>*
+          lmi_acc_indices);
 
   MSKrescodee AddLinearCost(const Eigen::SparseVector<double>& linear_coeff,
                             const VectorX<symbolic::Variable>& linear_vars,
@@ -470,16 +474,16 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
       b(0) *= 0.5;
       rescode = this->AddAffineConeConstraint(
           prog, A, Eigen::SparseMatrix<double>(A.rows(), 0),
-          binding.variables(), {}, b, MSK_CT_RQUAD, &acc_index);
+          binding.variables(), {}, b, MSK_DOMAIN_RQUADRATIC_CONE, &acc_index);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     } else {
-      MSKconetypee cone_type;
+      MSKdomaintypee cone_type;
       if (std::is_same_v<C, LorentzConeConstraint>) {
-        cone_type = MSK_CT_QUAD;
+        cone_type = MSK_DOMAIN_QUADRATIC_CONE;
       } else if (std::is_same_v<C, ExponentialConeConstraint>) {
-        cone_type = MSK_CT_PEXP;
+        cone_type = MSK_DOMAIN_PRIMAL_EXP_CONE;
       }
       rescode = this->AddAffineConeConstraint(
           prog, binding.evaluator()->A(),

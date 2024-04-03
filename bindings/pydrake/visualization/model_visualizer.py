@@ -28,7 +28,7 @@ Refer to the instructions printed by ``--help`` for additional details.
 An example of viewing an iiwa model file::
 
   python3 -m pydrake.visualization.model_visualizer --open-window \
-        package://drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
+        package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
 
 This program respects the ``ROS_PACKAGE_PATH``; if your model uses external
 resources then you will need to set that environment variable.

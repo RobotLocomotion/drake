@@ -588,7 +588,7 @@ drake_cc_googletest(
     }),
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
-        "//examples/manipulation_station:models",
+        "@drake_models//:manipulation_station",
     ],
     tags = vtk_test_tags() + [
         # Similar to #7520, the GL vendor's libraries are not sufficiently

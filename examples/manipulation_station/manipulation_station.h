@@ -230,6 +230,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // TODO(siyuan.feng@tri.global): Some of these information should be
   // retrievable from the MultibodyPlant directly or MultibodyPlant should
   // provide partial tree cloning.
+  // TODO(jwnimmer-tri) The model_path should be a package URL, not a filename.
   void RegisterIiwaControllerModel(
       const std::string& model_path,
       const multibody::ModelInstanceIndex iiwa_instance,

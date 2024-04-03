@@ -68,7 +68,6 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
-using multibody::SpatialInertia;
 using multibody::world_model_instance;
 using std::optional;
 using std::pair;
@@ -88,8 +87,7 @@ ModelInstanceIndex AddEnvironmentModelInstance(MultibodyPlant<double>* plant,
   DRAKE_DEMAND(plant->geometry_source_is_registered());
 
   std::vector<const RigidBody<double>*> bodies;
-  const RigidBody<double>& body = plant->AddRigidBody(
-      "env_body", instance, SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body = plant->AddRigidBody("env_body", instance);
   for (int i = 0; i < num_geo; ++i) {
     plant->RegisterCollisionGeometry(body, RigidTransformd::Identity(),
                                      Sphere(0.01), fmt::format("g{}", i),
@@ -292,8 +290,8 @@ pair<std::unique_ptr<RobotDiagram<double>>, ModelInstanceIndex> MakeModel(
   } else if (config.on_env_base) {
     const ModelInstanceIndex instance =
         builder_plant.AddModelInstance("floating");
-    const RigidBody<double>& floater = builder_plant.AddRigidBody(
-        "floater", instance, SpatialInertia<double>::MakeUnitary());
+    const RigidBody<double>& floater =
+        builder_plant.AddRigidBody("floater", instance);
     // Connect the first chain body (1) to this floating base.
     builder_plant.AddJoint<RevoluteJoint>("floating", floater, {},
                                           builder_plant.get_body(BodyIndex(1)),
@@ -429,7 +427,7 @@ GTEST_TEST(CollisionCheckerTest, CollisionCheckerEmpty) {
                               .self_collision_padding = 0});
 
   EXPECT_THAT(dut.robot_model_instances(), testing::ElementsAre(robot));
-  RigidBody<double> free_body("free", world, {});
+  RigidBody<double> free_body("free", world);
   EXPECT_FALSE(dut.IsPartOfRobot(free_body));
   EXPECT_FALSE(dut.IsPartOfRobot(BodyIndex(0)));
 

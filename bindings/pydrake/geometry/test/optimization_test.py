@@ -639,6 +639,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         options.bounding_region = mut.HPolyhedron.MakeBox(
             lb=[-6, -6, -6], ub=[6, 6, 6])
+        options.solver_options = SolverOptions()
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
