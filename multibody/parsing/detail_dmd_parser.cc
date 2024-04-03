@@ -8,6 +8,7 @@
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
@@ -84,11 +85,34 @@ void ParseModelDirectivesImpl(
         plant->GetMutableJointByName(joint_name, child_model_instance_id)
             .set_default_positions(positions);
       }
-      for (const auto& [body_name, pose] :
-               directive.add_model->default_free_body_pose) {
-        plant->SetDefaultFreeBodyPose(
-            plant->GetBodyByName(body_name, *child_model_instance_id),
-            pose.GetDeterministicValue());
+      for (const auto& [element_name, pose] :
+           directive.add_model->default_free_body_pose) {
+        const Frame<double>& child_frame =
+            plant->GetFrameByName(element_name, *child_model_instance_id);
+        if (pose.base_frame.has_value() && *pose.base_frame != "world") {
+          // TODO(SeanCurtis-TRI): When the new multibody graph code lands,
+          // update this code to test to see if there is already a joint between
+          // the two bodies.
+
+          // Note: the logic for generating the joint name is borrowed from
+          // MultibodyTree::CreateJointImplementations().
+          std::string joint_name = child_frame.body().name();
+          while (plant->HasJointNamed(joint_name, *child_model_instance_id)) {
+            joint_name = "_" + joint_name;
+          }
+
+          const Frame<double>& parent_frame =
+              get_scoped_frame(*pose.base_frame);
+          plant->AddJoint(std::make_unique<QuaternionFloatingJoint<double>>(
+              joint_name, parent_frame, child_frame));
+          auto& joint =
+              plant->GetMutableJointByName(joint_name, child_model_instance_id);
+          joint.SetDefaultPose(pose.GetDeterministicValue());
+        } else {
+          // We can only call this if we haven't injected the floating joint.
+          plant->SetDefaultFreeBodyPose(child_frame.body(),
+                                        pose.GetDeterministicValue());
+        }
       }
       info.model_instance = *child_model_instance_id;
       info.model_name = name;
