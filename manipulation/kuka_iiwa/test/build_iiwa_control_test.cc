@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -29,6 +28,7 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+using multibody::PackageMap;
 using multibody::Parser;
 using multibody::parsing::ModelInstanceInfo;
 using systems::ConstantVectorSource;
@@ -46,9 +46,9 @@ class BuildIiwaControlTest : public ::testing::Test {
   void SetUp() {
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_};
-    const std::string iiwa7_model_path = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/iiwa7"
-        "/iiwa7_no_collision.sdf");
+    const std::string iiwa7_model_path = PackageMap{}.ResolveUrl(
+        "package://drake_models/iiwa_description/sdf/"
+        "iiwa7_no_collision.sdf");
     const ModelInstanceIndex iiwa7_instance =
         parser.AddModels(iiwa7_model_path).at(0);
     const std::string iiwa7_model_name =

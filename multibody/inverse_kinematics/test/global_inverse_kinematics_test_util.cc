@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -24,12 +23,11 @@ using drake::solvers::SolutionResult;
 namespace drake {
 namespace multibody {
 std::unique_ptr<multibody::MultibodyPlant<double>> ConstructKuka() {
-  const std::string iiwa_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf");
+  const std::string iiwa_url =
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
   auto plant = std::make_unique<MultibodyPlant<double>>(0.1);
   multibody::Parser parser{plant.get()};
-  parser.AddModels(iiwa_path);
+  parser.AddModelsFromUrl(iiwa_url);
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   plant->Finalize();
 

@@ -7,7 +7,7 @@
 directives:
 - add_model:
     name: panda
-    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+    file: package://drake_models/franka_description/urdf/panda_arm.urdf
 - add_collision_filter_group:
     name: panda_wrist_filter_group
     members:

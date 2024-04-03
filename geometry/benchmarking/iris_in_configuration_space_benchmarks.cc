@@ -80,7 +80,7 @@ directives:
 # Add iiwa
 - add_model:
     name: iiwa
-    file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+    file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
     default_joint_positions:
         iiwa_joint_1: [0]
         iiwa_joint_2: [0.3]
@@ -97,7 +97,7 @@ directives:
 # Add schunk
 - add_model:
     name: wsg
-    file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_welded_fingers.sdf
+    file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_welded_fingers.sdf
 
 - add_weld:
     parent: iiwa::iiwa_link_7

@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {

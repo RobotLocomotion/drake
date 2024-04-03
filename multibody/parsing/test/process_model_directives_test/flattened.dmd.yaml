@@ -4,7 +4,7 @@ directives:
     name: right
 - add_model:
     name: right::panda
-    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+    file: package://drake_models/franka_description/urdf/panda_arm.urdf
 - add_collision_filter_group:
     name: panda_wrist_filter_group
     model_namespace: right
@@ -24,7 +24,7 @@ directives:
     name: left
 - add_model:
     name: left::panda
-    file: package://drake/manipulation/models/franka_description/urdf/panda_arm.urdf
+    file: package://drake_models/franka_description/urdf/panda_arm.urdf
 - add_collision_filter_group:
     name: panda_wrist_filter_group
     model_namespace: left

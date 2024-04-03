@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -16,8 +15,8 @@ namespace {
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddModels(FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"));
+  parser.AddModelsFromUrl(
+      "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body"));
   plant.Finalize();
 

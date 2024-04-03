@@ -8,7 +8,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -32,19 +31,19 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   const std::string atlas_url =
       "package://drake_models/atlas/atlas_convex_hull.urdf";
 
-  const std::string table_sdf_path = FindResourceOrThrow(
-      "drake/examples/kuka_iiwa_arm/models/table/"
-      "extra_heavy_duty_table_surface_only_collision.sdf");
+  const std::string table_url =
+      "package://drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf";
 
-  const std::string mug_sdf_path =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
+  const std::string mug_url =
+      "package://drake/examples/simple_gripper/simple_mug.sdf";
 
   MultibodyPlant<double> plant(0.0);
 
   // Load a model of a table for the environment around the robot.
   Parser parser(&plant);
   const ModelInstanceIndex robot_table_model =
-      parser.AddModels(table_sdf_path).at(0);
+      parser.AddModelsFromUrl(table_url).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
@@ -59,7 +58,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
       plant.GetBodyByName("pelvis", atlas_model2);
 
   // Add a floating mug.
-  const ModelInstanceIndex mug_model = parser.AddModels(mug_sdf_path).at(0);
+  const ModelInstanceIndex mug_model = parser.AddModelsFromUrl(mug_url).at(0);
   const RigidBody<double>& mug = plant.GetBodyByName("simple_mug", mug_model);
 
   // Introspection of the underlying mathematical model is not available until

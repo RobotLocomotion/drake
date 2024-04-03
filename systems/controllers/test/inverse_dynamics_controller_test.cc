@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -95,9 +94,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
 // the input robot plant.
 TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(robot.get()).AddModels(full_name);
+  multibody::Parser(robot.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 
@@ -117,9 +115,8 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
 // input robot plant.
 TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(robot.get()).AddModels(full_name);
+  multibody::Parser(robot.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 
@@ -137,9 +134,8 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
 
 GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();

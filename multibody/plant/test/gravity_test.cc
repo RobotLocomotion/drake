@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -22,14 +21,13 @@ class MultibodyPlantGravityForceTest : public ::testing::Test {
  public:
   void SetUp() override {
     // Load two Iiwa models.
-    const std::string full_name = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf");
+    const std::string url =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
 
     // Add the model twice.
-    iiwa1_ = Parser(plant_.get(), "iiwa1").AddModels(full_name).at(0);
-    iiwa2_ = Parser(plant_.get(), "iiwa2").AddModels(full_name).at(0);
+    iiwa1_ = Parser(plant_.get(), "iiwa1").AddModelsFromUrl(url).at(0);
+    iiwa2_ = Parser(plant_.get(), "iiwa2").AddModelsFromUrl(url).at(0);
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa1_));
     plant_->WeldFrames(plant_->world_frame(),

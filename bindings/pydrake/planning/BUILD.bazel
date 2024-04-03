@@ -90,7 +90,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "robot_diagram_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":planning",

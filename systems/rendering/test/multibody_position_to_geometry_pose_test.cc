@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -34,9 +33,8 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, BadConstruction) {
     MultibodyPlant<double> mbp(0.0);
     SceneGraph<double> scene_graph;
     mbp.RegisterAsSourceForSceneGraph(&scene_graph);
-    Parser(&mbp).AddModels(
-        FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
-                            "/iiwa7_no_collision.sdf"));
+    Parser(&mbp).AddModelsFromUrl(
+        "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf");
     DRAKE_EXPECT_THROWS_MESSAGE(MultibodyPositionToGeometryPose<double>{mbp},
                                 "MultibodyPositionToGeometryPose requires a "
                                 "MultibodyPlant that has been finalized");
@@ -48,9 +46,8 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, Ownership) {
   auto raw_ptr = mbp.get();
   SceneGraph<double> scene_graph;
   mbp->RegisterAsSourceForSceneGraph(&scene_graph);
-  Parser(mbp.get()).AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
-                          "/iiwa7_no_collision.sdf"));
+  Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf");
   mbp->Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(std::move(mbp));
@@ -85,9 +82,8 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
   MultibodyPlant<double> mbp(0.0);
   SceneGraph<double> scene_graph;
   mbp.RegisterAsSourceForSceneGraph(&scene_graph);
-  Parser(&mbp).AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
-                          "/iiwa7_no_collision.sdf"));
+  Parser(&mbp).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf");
   mbp.Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(mbp);
@@ -124,9 +120,8 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, FullStateInput) {
   auto mbp = make_unique<MultibodyPlant<double>>(0.0);
   SceneGraph<double> scene_graph;
   mbp->RegisterAsSourceForSceneGraph(&scene_graph);
-  Parser(mbp.get()).AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
-                          "/iiwa7_no_collision.sdf"));
+  Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf");
   mbp->Finalize();
 
   const Eigen::VectorXd state =

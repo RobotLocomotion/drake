@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 #include <msgpack.hpp>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/multibody/parsing/parser.h"
@@ -45,9 +44,9 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
     auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
     plant_ = &plant;
     scene_graph_ = &scene_graph;
-    multibody::Parser(plant_).AddModels(
-        FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                            "iiwa14_spheres_collision.urdf"));
+    multibody::Parser(plant_).AddModelsFromUrl(
+        "package://drake_models/iiwa_description/urdf/"
+        "iiwa14_spheres_collision.urdf");
     plant.WeldFrames(plant.world_frame(),
                      plant.GetBodyByName("base").body_frame());
     plant.Finalize();
@@ -466,13 +465,14 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
 
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
-  std::string urdf = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_no_collision.urdf");
-  auto iiwa0 = multibody::Parser(&plant).AddModels(urdf).at(0);
+  const std::string urdf_url =
+      "package://drake_models/iiwa_description/urdf/"
+      "iiwa14_no_collision.urdf";
+  auto iiwa0 = multibody::Parser(&plant).AddModelsFromUrl(urdf_url).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa0).body_frame());
-  auto iiwa1 = multibody::Parser(&plant, "second").AddModels(urdf).at(0);
+  auto iiwa1 =
+      multibody::Parser(&plant, "second").AddModelsFromUrl(urdf_url).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa1).body_frame());
   plant.Finalize();

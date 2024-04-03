@@ -26,6 +26,7 @@ using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+using multibody::PackageMap;
 using multibody::Parser;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
@@ -43,11 +44,11 @@ class MakeArmControllerModelTest : public ::testing::Test {
   MakeArmControllerModelTest()
       : builder_{},
         sim_plant_{builder_.AddSystem<MultibodyPlant<double>>(0.001)},
-        iiwa7_model_path_(FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7"
-            "/iiwa7_no_collision.sdf")),
-        wsg_model_path_(FindResourceOrThrow(
-            "drake/manipulation/models/wsg_50_description/sdf/"
+        iiwa7_model_path_(PackageMap{}.ResolveUrl(
+            "package://drake_models/iiwa_description/sdf/"
+            "iiwa7_no_collision.sdf")),
+        wsg_model_path_(PackageMap{}.ResolveUrl(
+            "package://drake_models/wsg_50_description/sdf/"
             "schunk_wsg_50.sdf")) {
     // Add an `empty` model instance to ensure model instance lookups are
     // correct between this plant and the newly constructed control plant.

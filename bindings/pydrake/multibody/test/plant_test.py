@@ -1398,18 +1398,18 @@ class TestPlant(unittest.TestCase):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
-        wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        wsg50_sdf_url = (
+            "package://drake_models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        iiwa_sdf_url = (
+            "package://drake_models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](time_step=2e-3)
         parser = Parser(plant_f)
-        iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)
-        gripper_model, = parser.AddModels(file_name=wsg50_sdf_path)
+        iiwa_model, = parser.AddModels(url=iiwa_sdf_url)
+        gripper_model, = parser.AddModels(url=wsg50_sdf_url)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         models = [iiwa_model, gripper_model]
@@ -1558,19 +1558,19 @@ class TestPlant(unittest.TestCase):
         RigidTransform = RigidTransform_[T]
         RollPitchYaw = RollPitchYaw_[T]
 
-        wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "wsg_50_description/sdf/schunk_wsg_50.sdf")
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        wsg50_sdf_url = (
+            "package://drake_models/wsg_50_description/sdf/"
+            + "schunk_wsg_50.sdf")
+        iiwa_sdf_url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](0.0)
         parser = Parser(plant_f)
 
-        iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)
-        gripper_model, = parser.AddModels(file_name=wsg50_sdf_path)
+        iiwa_model, = parser.AddModels(url=iiwa_sdf_url)
+        gripper_model, = parser.AddModels(url=wsg50_sdf_url)
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = RigidTransform_[float](
@@ -1704,11 +1704,11 @@ class TestPlant(unittest.TestCase):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
-        wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        wsg50_sdf_url = (
+            "package://drake_models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        iiwa_sdf_url = (
+            "package://drake_models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         time_step = 0.0002
@@ -1716,8 +1716,8 @@ class TestPlant(unittest.TestCase):
         plant_f = MultibodyPlant_[float](time_step)
         parser = Parser(plant_f)
 
-        iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)
-        gripper_model, = parser.AddModels(file_name=wsg50_sdf_path)
+        iiwa_model, = parser.AddModels(url=iiwa_sdf_url)
+        gripper_model, = parser.AddModels(url=wsg50_sdf_url)
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = RigidTransform_[float](
@@ -1813,12 +1813,12 @@ class TestPlant(unittest.TestCase):
         RollPitchYaw = RollPitchYaw_[T]
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](0.0)
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        iiwa_sdf_url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
         # Use floating base to effectively add a quaternion in the generalized
         # quaternion.
-        iiwa_model, = Parser(plant_f).AddModels(iiwa_sdf_path)
+        iiwa_model, = Parser(plant_f).AddModels(url=iiwa_sdf_url)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -2325,13 +2325,13 @@ class TestPlant(unittest.TestCase):
                 loop_body(make_joint, 0.001)
 
     def test_actuation_matrix(self):
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        iiwa_sdf_url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant_[float](0.0)
         parser = Parser(plant)
-        iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)
+        iiwa_model, = parser.AddModels(url=iiwa_sdf_url)
         plant.WeldFrames(
             frame_on_parent_F=plant.world_frame(),
             frame_on_child_M=plant.GetFrameByName("iiwa_link_0", iiwa_model))
@@ -2481,7 +2481,7 @@ class TestPlant(unittest.TestCase):
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
         Parser(plant).AddModelsFromUrl(
-            "package://drake/manipulation/models/"
+            "package://drake_models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
 
         # Add coupler constraint.
@@ -2558,7 +2558,7 @@ class TestPlant(unittest.TestCase):
             body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
 
         Parser(plant).AddModelsFromUrl(
-            "package://drake/manipulation/models/"
+            "package://drake_models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
 
         # Add coupler constraint.

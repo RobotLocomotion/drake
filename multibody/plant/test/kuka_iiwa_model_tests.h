@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -34,17 +33,14 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   // Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    const std::string kArmSdfPath = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf");
-
     // Create a model of a Kuka arm. Notice we do not weld the robot's base to
     // the world and therefore the model is free floating in space. This makes
     // for a more interesting setup to test the computation of Jacobians with
     // respect to q̇ (time-derivative of generalized positions).
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     Parser parser(plant_.get());
-    parser.AddModels(kArmSdfPath);
+    parser.AddModelsFromUrl(
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
     // Add a frame H with a fixed pose X_EH in the end effector frame E.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(

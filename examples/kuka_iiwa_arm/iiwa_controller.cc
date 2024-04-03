@@ -8,13 +8,13 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/kuka_iiwa_arm/lcm_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_robot_plan.hpp"
+#include "drake/multibody/parsing/package_map.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
@@ -38,9 +38,10 @@ namespace kuka_iiwa_arm {
 namespace {
 using manipulation::util::InterpolatorType;
 using manipulation::util::RobotPlanInterpolator;
+using multibody::PackageMap;
 
-const char kIiwaUrdf[] =
-    "drake/manipulation/models/iiwa_description/urdf/"
+const char kIiwaUrdfUrl[] =
+    "package://drake_models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 // Create a system which has an integrator on the interpolated
@@ -57,7 +58,8 @@ int DoMain() {
   drake::log()->debug("Plan channel: {}", kLcmPlanChannel);
 
   const std::string urdf =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
+      (!FLAGS_urdf.empty() ? FLAGS_urdf
+                           : PackageMap{}.ResolveUrl(kIiwaUrdfUrl));
 
   // Sets the robot plan interpolation type.
   std::string interp_str(FLAGS_interp_type);

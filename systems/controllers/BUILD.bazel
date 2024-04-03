@@ -208,11 +208,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":inverse_dynamics",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
@@ -223,11 +222,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inverse_dynamics_controller_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":inverse_dynamics_controller",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
@@ -238,12 +236,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "joint_stiffness_controller_test",
     data = [
-        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":joint_stiffness_controller",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
