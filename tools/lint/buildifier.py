@@ -81,6 +81,7 @@ def main(workspace_name="drake"):
     # Slice out our overlay command-line argument "--all".
     argv = sys.argv[1:]
     find_all = False
+    using_stdin = False
     if "--all" in argv:
         find_all = True
         argv.remove("--all")
@@ -98,8 +99,7 @@ def main(workspace_name="drake"):
         print("ERROR: cannot combine single inputs with '--all'")
         return 1
     if not find_all and not has_files:
-        print("ERROR: no input files; did you want '--all'?")
-        return 1
+        using_stdin = True
     if find_all:
         workspace_dir, found = _find_buildifier_sources(workspace_name)
         if len(found) == 0:
@@ -115,7 +115,7 @@ def main(workspace_name="drake"):
     # Provide helpful diagnostics when in check mode.  Buildifier's -mode=check
     # uses exitcode 0 even when lint exists; we use whether or not its output
     # was empty to tell whether there was lint.
-    if "-mode=check" in argv or "--mode=check" in argv:
+    if not using_stdin and ("-mode=check" in argv or "--mode=check" in argv):
         if _passes_check_mode(tool_cmds + argv):
             return 0
         switches = [x for x in argv if x.startswith("-")]
@@ -135,14 +135,16 @@ def main(workspace_name="drake"):
         return 1
 
     # In fix mode, disallow running from within the Bazel sandbox.
-    if "-mode=diff" not in argv and "--mode=diff" not in argv:
+    if not using_stdin and (
+            "-mode=diff" not in argv and "--mode=diff" not in argv):
         if os.getcwd().endswith(".runfiles/drake"):
             print("ERROR: do not use 'bazel run' for buildifier in fix mode")
             print("ERROR: use bazel-bin/tools/lint/buildifier instead")
             return 1
 
     # In fix or diff mode, just let buildifier do its thing.
-    return subprocess.call(tool_cmds + argv)
+    return subprocess.call(tool_cmds + argv,
+                           stdin=(sys.stdin.fileno() if using_stdin else None))
 
 
 if __name__ == "__main__":

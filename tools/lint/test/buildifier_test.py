@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import unittest
@@ -18,15 +19,17 @@ class BuildifierTest(unittest.TestCase):
         return "\n\n".join(result) + "\n"
 
     def _call_buildifier(self, testdata_contents, args):
-        testdata_filename = "tmp/BUILD.bazel"
-        if not os.path.exists("tmp"):
-            os.mkdir("tmp")
-        with open(testdata_filename, "w") as testdata_file:
-            testdata_file.write(testdata_contents)
-        command = ["tools/lint/buildifier"] + args + [testdata_filename]
+        command = ["tools/lint/buildifier"] + args
+        if testdata_contents is not None:
+            testdata_filename = "tmp/BUILD.bazel"
+            if not os.path.exists("tmp"):
+                os.mkdir("tmp")
+            with open(testdata_filename, "w") as testdata_file:
+                testdata_file.write(testdata_contents)
+            command += [testdata_filename]
         process = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        stdout, _ = process.communicate()
+        stdout, _ = process.communicate(input="")
         return process.returncode, stdout.decode('utf8')
 
     def test_mode_check(self):
@@ -61,3 +64,16 @@ class BuildifierTest(unittest.TestCase):
         self.assertIn(
             "do not use 'bazel run' for buildifier in fix mode",
             output)
+
+    def test_vscode_integration(self):
+        """Test the invocation used by vscode to check for valid buildifier
+
+        vscode checks that it has a valid buildifier by calling its
+        configured bazel.buildifierExecutable with the arguments
+        `--format=json --mode=check`, truncates stdin, and checks
+        that stdout is valid json."""
+        returncode, output = self._call_buildifier(
+            None,
+            ["--format=json", "--mode=check"])
+        self.assertEqual(returncode, 0)
+        json.loads(output)
