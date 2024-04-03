@@ -618,6 +618,104 @@ GTEST_TEST(ParseQuadraticCosts, Test) {
   EXPECT_TRUE(CompareMatrices(P_upper.toDense(), P_upper_expected));
 }
 
+GTEST_TEST(ParseL2NormCosts, Test) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix<double, 3, 2> A1;
+  A1 << 1, 2, 3, 4, 5, 6;
+  const Eigen::Vector3d b1(-1, -2, -3);
+  auto cost1 = prog.AddL2NormCost(A1, b1, x.tail<2>());
+
+  int num_solver_variables = prog.num_vars();
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  std::vector<int> second_order_cone_length;
+  std::vector<int> lorentz_cone_y_start_indices;
+  std::vector<double> cost_coeffs(prog.num_vars(), 0.0);
+  std::vector<int> t_slack_indices;
+  // First test with a single L2NormCost.
+  ParseL2NormCosts(prog, &num_solver_variables, &A_triplets, &b, &A_row_count,
+                   &second_order_cone_length, &lorentz_cone_y_start_indices,
+                   &cost_coeffs, &t_slack_indices);
+  EXPECT_EQ(num_solver_variables, 1 + prog.num_vars());
+  Eigen::SparseMatrix<double> A(1 + A1.rows(), prog.num_vars() + 1);
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::MatrixXd A_expected(1 + A1.rows(), prog.num_vars() + 1);
+  A_expected.setZero();
+  A_expected(0, prog.num_vars()) = -1;
+  A_expected.block(1, 1, A1.rows(), A1.cols()) = -A1;
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  Eigen::VectorXd b_expected(1 + b1.rows());
+  b_expected.setZero();
+  b_expected.tail(b1.rows()) = b1;
+  EXPECT_TRUE(CompareMatrices(Eigen::Map<Eigen::VectorXd>(b.data(), b.size()),
+                              b_expected));
+  EXPECT_EQ(A_row_count, 1 + A1.rows());
+  EXPECT_EQ(second_order_cone_length.size(), 1);
+  EXPECT_EQ(second_order_cone_length[0], A1.rows() + 1);
+  EXPECT_EQ(lorentz_cone_y_start_indices.size(), 1);
+  EXPECT_EQ(lorentz_cone_y_start_indices[0], 0);
+  Eigen::VectorXd cost_coeffs_expected(prog.num_vars() + 1);
+  cost_coeffs_expected.setZero();
+  cost_coeffs_expected(prog.num_vars()) = 1;
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<Eigen::VectorXd>(cost_coeffs.data(), cost_coeffs.size()),
+      cost_coeffs_expected));
+  EXPECT_EQ(t_slack_indices.size(), 1);
+  EXPECT_EQ(t_slack_indices[0], prog.num_vars());
+
+  // Test with multiple L2NormCost.
+  num_solver_variables = prog.num_vars();
+  A_row_count = 0;
+  A_triplets.clear();
+  b.clear();
+  second_order_cone_length.clear();
+  lorentz_cone_y_start_indices.clear();
+  cost_coeffs = std::vector<double>(prog.num_vars(), 0);
+  t_slack_indices.clear();
+  Eigen::Matrix<double, 2, 2> A2;
+  A2 << -1, -3, -5, -7;
+  const Eigen::Vector2d b2(5, 10);
+  auto cost2 = prog.AddL2NormCost(A2, b2, x.head<2>());
+  ParseL2NormCosts(prog, &num_solver_variables, &A_triplets, &b, &A_row_count,
+                   &second_order_cone_length, &lorentz_cone_y_start_indices,
+                   &cost_coeffs, &t_slack_indices);
+  EXPECT_EQ(num_solver_variables, prog.num_vars() + 2);
+  A_expected.resize(2 + A1.rows() + A2.rows(), prog.num_vars() + 2);
+  A_expected.setZero();
+  A_expected(0, prog.num_vars()) = -1;
+  A_expected.block(1, 1, A1.rows(), 2) = -A1;
+  A_expected(A1.rows() + 1, prog.num_vars() + 1) = -1;
+  A_expected.block(2 + A1.rows(), 0, A2.rows(), 2) = -A2;
+  A.resize(2 + A1.rows() + A2.rows(), 2 + prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  b_expected.resize(A1.rows() + A2.rows() + 2);
+  b_expected.setZero();
+  b_expected.segment(1, A1.rows()) = b1;
+  b_expected.segment(2 + A1.rows(), A2.rows()) = b2;
+  EXPECT_TRUE(CompareMatrices(Eigen::Map<Eigen::VectorXd>(b.data(), b.size()),
+                              b_expected));
+  EXPECT_EQ(A_row_count, 2 + A1.rows() + A2.rows());
+  EXPECT_EQ(second_order_cone_length.size(), 2);
+  EXPECT_EQ(second_order_cone_length[0], A1.rows() + 1);
+  EXPECT_EQ(second_order_cone_length[1], A2.rows() + 1);
+  EXPECT_EQ(lorentz_cone_y_start_indices.size(), 2);
+  EXPECT_EQ(lorentz_cone_y_start_indices[0], 0);
+  EXPECT_EQ(lorentz_cone_y_start_indices[1], 1 + A1.rows());
+  cost_coeffs_expected.resize(prog.num_vars() + 2);
+  cost_coeffs_expected.setZero();
+  cost_coeffs_expected(prog.num_vars()) = 1;
+  cost_coeffs_expected(prog.num_vars() + 1) = 1;
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<Eigen::VectorXd>(cost_coeffs.data(), cost_coeffs.size()),
+      cost_coeffs_expected));
+  EXPECT_EQ(t_slack_indices.size(), 2);
+  EXPECT_EQ(t_slack_indices[0], prog.num_vars());
+  EXPECT_EQ(t_slack_indices[1], prog.num_vars() + 1);
+}
+
 GTEST_TEST(ParseSecondOrderConeConstraints, LorentzCone) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();
