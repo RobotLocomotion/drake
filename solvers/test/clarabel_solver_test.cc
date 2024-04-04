@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
+#include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
@@ -324,6 +325,24 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   ClarabelSolver solver;
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(TestL2NormCost, ShortestDistanceToThreePoints) {
+  ClarabelSolver solver;
+  ShortestDistanceToThreePoints tester{};
+  tester.CheckSolution(solver);
+}
+
+GTEST_TEST(TestL2NormCost, ShortestDistanceFromCylinderToPoint) {
+  ClarabelSolver solver;
+  ShortestDistanceFromCylinderToPoint tester{};
+  tester.CheckSolution(solver);
+}
+
+GTEST_TEST(TestL2NormCost, ShortestDistanceFromPlaneToTwoPoints) {
+  ClarabelSolver solver;
+  ShortestDistanceFromPlaneToTwoPoints tester{};
+  tester.CheckSolution(solver, std::nullopt, 5E-4);
 }
 
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {

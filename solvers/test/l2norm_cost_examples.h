@@ -34,6 +34,7 @@ class ShortestDistanceToThreePoints {
 // min |x - pt|₂
 // -1 <= x[2] <= 1
 // x[0]² + x[1]² <= 4
+// This test L2NormCost with Lorentz cone and bounding box constraints.
 class ShortestDistanceFromCylinderToPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromCylinderToPoint)
@@ -49,6 +50,31 @@ class ShortestDistanceFromCylinderToPoint {
   MathematicalProgram prog_;
   Vector3<symbolic::Variable> x_;
   Eigen::Vector3d pt_;
+};
+
+// Compute the shortest distance from a plane to two points
+// min |A * x - pt0|₂ + |A * x - pt1|₂
+// s.t cᵀ*(A*x) = d
+// This test L2NormCost with linear constraints.
+// Notice we take an invertible transformation A.
+class ShortestDistanceFromPlaneToTwoPoints {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromPlaneToTwoPoints)
+
+  ShortestDistanceFromPlaneToTwoPoints();
+
+  void CheckSolution(
+      const SolverInterface& solver,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-5) const;
+
+ private:
+  MathematicalProgram prog_;
+  Vector3<symbolic::Variable> x_;
+  std::array<Eigen::Vector3d, 2> pts_;
+  Eigen::Vector3d plane_normal_;
+  Eigen::Vector3d plane_pt_;
+  Eigen::Matrix3d A_;
 };
 }  // namespace test
 }  // namespace solvers
