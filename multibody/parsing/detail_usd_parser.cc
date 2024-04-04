@@ -171,7 +171,6 @@ void ProcessStaticCollider(const pxr::UsdPrim& prim,
     ProcessStaticColliderCube(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     // ProcessStaticColliderSphere(prim, workspace);
-    throw std::runtime_error("UsdGeomSphere parsing is not yet implemented");
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(

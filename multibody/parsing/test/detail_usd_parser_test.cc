@@ -53,7 +53,7 @@ std::string FindUsdTestResourceOrThrow(const std::string& filename) {
 }
 
 TEST_F(UsdParserTest, BasicImportTest) {
-  std::string filename = FindUsdTestResourceOrThrow("cube_plane.usda");
+  std::string filename = FindUsdTestResourceOrThrow("simple_geometries.usda");
   ParseFile(filename);
 
   DRAKE_ASSERT(plant_.num_collision_geometries() == 1);
