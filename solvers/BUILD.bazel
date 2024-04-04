@@ -1740,6 +1740,7 @@ drake_cc_googletest(
     deps = [
         ":clarabel_solver",
         ":exponential_cone_program_examples",
+        ":l2norm_cost_examples",
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
@@ -1755,6 +1756,7 @@ drake_cc_googletest(
     name = "scs_solver_test",
     deps = [
         ":exponential_cone_program_examples",
+        ":l2norm_cost_examples",
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
