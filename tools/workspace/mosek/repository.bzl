@@ -1,7 +1,6 @@
-load("//tools/workspace/mosek:repository_impl.bzl", "repository_impl")
-
 # TODO(jwnimmer-tri) Remove on 2024-07-01 upon completion of deprecation.
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+load("//tools/workspace/mosek:repository_impl.bzl", "repository_impl")
 
 def mosek_repository(
         name,

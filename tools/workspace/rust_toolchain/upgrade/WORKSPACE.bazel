@@ -6,10 +6,13 @@ workspace(name = "upgrade")
 
 # Load Drake's version of bazel_skylib.
 
-local_repository(name = "drake", path = "../../../..")
+local_repository(
+    name = "drake",
+    path = "../../../..",
+)
 
-load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 
 bazel_skylib_repository(
     name = "bazel_skylib",
@@ -22,8 +25,8 @@ load("@drake//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository
 
 rules_rust_repository(
     name = "rules_rust",
-    mirrors = DEFAULT_MIRRORS,
     extra_patches = ["@upgrade//:rules_rust_tracing.patch"],
+    mirrors = DEFAULT_MIRRORS,
 )
 
 # Register the default toolchains from rules_rust.
@@ -32,7 +35,7 @@ load("@rules_rust//rust:defs.bzl", "rust_common")
 load("@rules_rust//rust:repositories.bzl", "rust_register_toolchains")
 
 rust_register_toolchains(
+    extra_target_triples = [],
     rustfmt_version = rust_common.default_version,
     versions = [rust_common.default_version],
-    extra_target_triples = [],
 )

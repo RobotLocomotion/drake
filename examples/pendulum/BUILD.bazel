@@ -1,3 +1,5 @@
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -5,8 +7,6 @@ load(
     "drake_cc_library",
 )
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",

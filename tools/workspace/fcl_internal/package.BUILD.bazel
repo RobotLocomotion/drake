@@ -1,10 +1,10 @@
 # -*- bazel -*-
 
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",

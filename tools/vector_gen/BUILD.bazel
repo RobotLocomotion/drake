@@ -1,14 +1,12 @@
-package(default_visibility = ["//visibility:public"])
-
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-    "vector_gen_lcm_sources",
-)
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "//tools/skylark:drake_lcm.bzl",
+    "drake_lcm_cc_library",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -16,10 +14,12 @@ load(
     "drake_py_library",
 )
 load(
-    "//tools/skylark:drake_lcm.bzl",
-    "drake_lcm_cc_library",
+    "//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+    "vector_gen_lcm_sources",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
 
 drake_py_binary(
     name = "lcm_vector_gen",

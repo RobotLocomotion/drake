@@ -1,10 +1,10 @@
 load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
 load("//tools/skylark:py.bzl", "py_library")
 load(
     "//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
-load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
 
 def _lcm_aggregate_hdr(
         lcm_package,

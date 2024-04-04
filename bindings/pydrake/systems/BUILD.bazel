@@ -1,10 +1,6 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
-load(
-    "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
-    "get_pybind_package_info",
-)
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
@@ -15,8 +11,12 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [

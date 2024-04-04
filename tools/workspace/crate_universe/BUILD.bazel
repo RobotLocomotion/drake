@@ -1,12 +1,12 @@
-load("//tools/install:install.bzl", "install", "install_license")
-load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@rules_rust//crate_universe:defs.bzl",
     "crate",
     "crates_vendor",
     "render_config",
 )
+load("//tools/install:install.bzl", "install", "install_license")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 
 exports_files(glob(["lock/**"]))
 
