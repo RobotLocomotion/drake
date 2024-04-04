@@ -34,6 +34,7 @@ namespace pxr = drake_vendor_pxr;
 
 struct UsdStageMetadata {
     double meters_per_unit = 1.0;
+    pxr::TfToken up_axis = pxr::TfToken("Z");
 };
 
 namespace {
@@ -248,6 +249,26 @@ void ProcessPrim(const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   }
 }
 
+UsdStageMetadata GetStageMetadata(pxr::UsdStageRefPtr stage,
+  const ParsingWorkspace& workspace) {
+  UsdStageMetadata metadata;
+  if (!stage->GetMetadata(pxr::TfToken("metersPerUnit"),
+    &metadata.meters_per_unit)) {
+    workspace.diagnostic.Warning(fmt::format(
+      "Failed to read metersPerUnit in stage metadata. "
+      "Using the default value ({}) instead.", metadata.meters_per_unit));
+  }
+  if (!stage->GetMetadata(pxr::TfToken("upAxis"), &metadata.up_axis)) {
+    workspace.diagnostic.Warning(fmt::format(
+      "Failed to read upAxis in stage metadata. "
+      "Using the default value ({}) instead.", metadata.up_axis));
+  }
+  if (metadata.up_axis != "Z") {
+    throw std::runtime_error("Only Z-up stages are supported currently");
+  }
+  return metadata;
+}
+
 std::optional<ModelInstanceIndex> UsdParser::AddModel(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
@@ -274,13 +295,7 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
       data_source.filename()));
   }
 
-  UsdStageMetadata metadata;
-  if (!stage->GetMetadata(pxr::TfToken("metersPerUnit"),
-      &metadata.meters_per_unit)) {
-    workspace.diagnostic.Warning(fmt::format(
-      "Failed to read metersPerUnit in stage metadata. "
-      "Using the default value ({}) instead.", metadata.meters_per_unit));
-  }
+  UsdStageMetadata metadata = GetStageMetadata(stage, workspace);
 
   for (pxr::UsdPrim prim : stage->Traverse()) {
     ProcessPrim(prim, metadata, workspace);
