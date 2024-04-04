@@ -1148,7 +1148,7 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_touching",
         "//common:essential",
-        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities",
         "//math:geometric_transform",
     ],
 )
