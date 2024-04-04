@@ -307,6 +307,12 @@ class MosekSolverProgram {
       const VectorX<symbolic::Variable>& quadratic_vars,
       const MathematicalProgram& prog);
 
+  // Adds the L2 norm cost min |C*x+d|₂ to Mosek.
+  MSKrescodee AddL2NormCost(const Eigen::SparseMatrix<double>& C,
+                            const Eigen::VectorXd& d,
+                            const VectorX<symbolic::Variable>& x,
+                            const MathematicalProgram& prog);
+
   MSKrescodee AddCosts(const MathematicalProgram& prog);
 
   // @param[out] with_integer_or_binary_variables True if the program has
@@ -462,7 +468,7 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
       // ⌊  A.row(n-1)*x + b(n-1)⌋
       // is in Mosek's rotated quadratic cone. Namely we multiply 0.5 to the
       // first row of A, b.
-      Eigen::SparseMatrix<double> A = binding.evaluator()->A();
+      const Eigen::SparseMatrix<double>& A = binding.evaluator()->A();
       for (int k = 0; k < A.outerSize(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
           if (it.row() == 0) {

@@ -1547,6 +1547,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":exponential_cone_program_examples",
+        ":l2norm_cost_examples",
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
