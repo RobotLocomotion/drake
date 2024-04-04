@@ -1,4 +1,4 @@
-#include "drake/examples/multibody/deformable_torus/suction_cup_controller.h"
+#include "drake/examples/multibody/deformable/suction_cup_controller.h"
 
 namespace drake {
 namespace examples {

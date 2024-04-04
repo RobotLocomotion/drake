@@ -3,9 +3,9 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/multibody/deformable_torus/parallel_gripper_controller.h"
-#include "drake/examples/multibody/deformable_torus/point_source_force_field.h"
-#include "drake/examples/multibody/deformable_torus/suction_cup_controller.h"
+#include "drake/examples/multibody/deformable/parallel_gripper_controller.h"
+#include "drake/examples/multibody/deformable/point_source_force_field.h"
+#include "drake/examples/multibody/deformable/suction_cup_controller.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
@@ -132,8 +132,7 @@ ModelInstanceIndex AddParallelGripper(
   // station instead.
   Parser parser(plant);
   ModelInstanceIndex model_instance = parser.AddModelsFromUrl(
-      "package://drake/examples/multibody/deformable_torus/simple_gripper.sdf")
-                                          [0];
+      "package://drake/examples/multibody/deformable/simple_gripper.sdf")[0];
   /* Add collision geometries. */
   const RigidTransformd X_BG =
       RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
@@ -208,8 +207,8 @@ int do_main() {
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
 
-  const std::string torus_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable_torus/torus.vtk");
+  const std::string torus_vtk =
+      FindResourceOrThrow("drake/examples/multibody/deformable/torus.vtk");
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
   const double scale = 0.65;

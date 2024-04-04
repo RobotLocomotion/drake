@@ -996,7 +996,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "shape_specification_thread_test",
     data = [
-        "//examples/multibody/deformable_torus:torus_tet_mesh",
+        "//examples/multibody/deformable:torus_tet_mesh",
         "@drake_models//:dishes",
         "@drake_models//:tri_homecart",
     ],
