@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "pxr/base/gf/transform.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/primRange.h"
@@ -69,7 +70,7 @@ UsdParser::UsdParser() {
 
 UsdParser::~UsdParser() = default;
 
-Eigen::Matrix3d UsdMat3dToEigenMat3d(pxr::GfMatrix3d m) {
+Eigen::Matrix3d UsdMat3dToEigen(pxr::GfMatrix3d m) {
   Eigen::Matrix3d ret;
   ret << m[0][0], m[0][1], m[0][2],
          m[1][0], m[1][1], m[1][2],
@@ -77,25 +78,47 @@ Eigen::Matrix3d UsdMat3dToEigenMat3d(pxr::GfMatrix3d m) {
   return ret;
 }
 
-Eigen::Vector3d UsdVec3dtoEigenVec3d(pxr::GfVec3d v) {
+Eigen::Vector3d UsdVec3dToEigen(pxr::GfVec3d v) {
   return Eigen::Vector3d{ v[0], v[1], v[2] };
+}
+
+Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q) {
+  return Eigen::Quaterniond(
+    q.GetReal(),
+    q.GetImaginary()[0],
+    q.GetImaginary()[1],
+    q.GetImaginary()[2]);
 }
 
 math::RigidTransform<double> GetPrimRigidTransform(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
 
-  pxr::GfMatrix4d xform_matrix = xformable.ComputeLocalToWorldTransform(
+  pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
-  pxr::GfVec3d translation = xform_matrix.ExtractTranslation();
-  translation *= metadata.meters_per_unit;
-  pxr::GfMatrix3d rotation = xform_matrix.ExtractRotationMatrix()
-    .GetOrthonormalized();  // The extracted matrix contains scaling so
-    // we have to orthonormalize it
+
+  pxr::GfTransform transform(transform_matrix);
+  pxr::GfVec3d translation = transform.GetTranslation();
+  pxr::GfRotation rotation = transform.GetRotation();
+
+  math::RotationMatrix<double> rotation_matrix(
+    UsdQuatdToEigen(rotation.GetQuat()));
 
   return math::RigidTransform<double>(
-    math::RotationMatrixd(UsdMat3dToEigenMat3d(rotation)),
-    UsdVec3dtoEigenVec3d(translation));
+    rotation_matrix,
+    UsdVec3dToEigen(translation));
+}
+
+Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim, 
+  const ParsingWorkspace& workspace) {
+  pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+  
+  pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
+    pxr::UsdTimeCode::Default());
+
+  pxr::GfTransform transform(transform_matrix);
+  pxr::GfVec3d scale = transform.GetScale();
+  return UsdVec3dToEigen(scale);
 }
 
 Eigen::Vector3d CalculateCubeDimension(const pxr::UsdPrim& prim,
@@ -110,17 +133,26 @@ Eigen::Vector3d CalculateCubeDimension(const pxr::UsdPrim& prim,
       "Failed to read the size of cube at {}", prim.GetPath().GetString()));
   }
 
-  pxr::GfVec3f prim_scale;
-  pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
-  if (!xformable.GetScaleOp().Get(&prim_scale)) {
+  Eigen::Vector3d dimension = GetPrimScale(prim, workspace) * cube_size;
+  dimension *= metadata.meters_per_unit;
+  return dimension;
+}
+
+Eigen::Vector3d CalculateSphereDimension(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
+
+  // TODO(hong-nvidia): make sure that the extent of the sphere is symmetric
+
+  double sphere_radius = 0;
+  if(!sphere.GetRadiusAttr().Get(&sphere_radius)) {
     workspace.diagnostic.Error(fmt::format(
-      "Failed to read the scale of prim at {}", prim.GetPath().GetString()));
+      "Failed to read the radius of sphere at {}", prim.GetPath().GetString()));
   }
 
-  Eigen::Vector3d dimension = Eigen::Vector3d(prim_scale[0] * cube_size,
-                                              prim_scale[1] * cube_size,
-                                              prim_scale[2] * cube_size);
+  Eigen::Vector3d dimension = GetPrimScale(prim, workspace) * sphere_radius;
   dimension *= metadata.meters_per_unit;
+
   return dimension;
 }
 
@@ -165,12 +197,20 @@ void ProcessStaticColliderCube(const pxr::UsdPrim& prim,
     GetGeomPrimColor(prim));
 }
 
+void ProcessStaticColliderSphere(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+    MultibodyPlant<double>* plant = workspace.plant;
+    Eigen::Vector3d sphere_dimension = CalculateSphereDimension(prim, metadata,
+      workspace);
+  // TODO(hongw): Unfinished function
+}
+
 void ProcessStaticCollider(const pxr::UsdPrim& prim,
   const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
   if (prim.IsA<pxr::UsdGeomCube>()) {
     ProcessStaticColliderCube(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    // ProcessStaticColliderSphere(prim, workspace);
+    ProcessStaticColliderSphere(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
