@@ -16,6 +16,7 @@ using Eigen::Vector3d;
 using fcl::Boxd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using math::RotationMatrixd;
 using std::make_shared;
 
 // Tests CalcGradientWhenTouching() when a sphere touches another object. Use
@@ -106,15 +107,12 @@ GTEST_TEST(PointInBox, PointOnBoxSurfaceHelper) {
   const fcl::Boxd box_B(2, 4, 8);
   {
     SCOPED_TRACE("This point is in the interior of the box.");
-    EXPECT_THROW(PointOnBoxSurfaceHelperTester(
-                     box_B, Vector3d(0.01, -0.02, 0.03), 0, {}, {}),
-                 std::exception);
+    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.01, -0.02, 0.03), 0, {},
+                                  {});
   }
   {
     SCOPED_TRACE("This point is outside the box.");
-    EXPECT_THROW(
-        PointOnBoxSurfaceHelperTester(box_B, Vector3d(10, 10, 10), 0, {}, {}),
-        std::exception);
+    PointOnBoxSurfaceHelperTester(box_B, Vector3d(10, 10, 10), 0, {}, {});
   }
   {
     SCOPED_TRACE("This point is strictly on -X face of the box.");
@@ -492,6 +490,71 @@ GTEST_TEST(BoxBoxGradient, VertexVertexNeedCrossProduct) {
   EXPECT_TRUE(
       CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
                       -expect_gradient, 1e-14));
+}
+
+// Users provided data for this test case. See issue 21192. Visually the two
+// boxes touched along an edge, but numerically they overlapped within a very
+// small tolerance. Furthermore, the caller provided one of the witness points
+// at the end of the touching edge.
+GTEST_TEST(BoxBoxGradient, Issue21192) {
+  const fcl::Boxd box_A(0.135999, 0.167092, 0.276916);
+  const Vector3d half_size_A = box_A.side / 2;
+  const fcl::Boxd box_B(0.132334, 0.177387, 0.137409);
+  const Vector3d half_size_B = box_B.side / 2;
+  const RigidTransformd X_WA(
+      RotationMatrixd(RollPitchYawd(-0.9999901072383376 * M_PI,
+                                    -0.472887818233649 * M_PI,
+                                    -0.5000099287557301 * M_PI)),
+      Vector3d(-0.01554599999994518, 0.434174978106377, 0.6778455642817045));
+  const RigidTransformd X_WB(
+      RotationMatrixd(RollPitchYawd(0.5000049564737601 * M_PI,
+                                    0.4301511633951143 * M_PI,
+                                    0.5000038803050185 * M_PI)),
+      Vector3d(-2.897114691894844e-17, 0.2298401771670561, 0.5144261282155572));
+  const Vector3d p_ACa(-0.06799949999996824, 0.05315817907282317,
+                       0.1384579999999353);
+  const Vector3d p_BCb(-0.066166999999969, 0.08869349999995851,
+                       -0.06870450000000002);
+
+  // The following sequence of assertions provides useful information about
+  // the input.
+  {
+    // The two witness points co-locate within a tolerance.
+    ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
+
+    // The two boxes overlap. Overlapping boxes cannot have separating vectors
+    // unless we have a reasonable tolerance in the code.
+    //
+    // Ca is in box_B.
+    const Vector3d p_BCa = X_WB.inverse() * X_WA * p_ACa;
+    ASSERT_TRUE((p_BCa.cwiseAbs().array() <= half_size_B.array()).all());
+    // Cb is in box_A.
+    const Vector3d p_ACb = X_WA.inverse() * X_WB * p_BCb;
+    ASSERT_TRUE((p_ACb.cwiseAbs().array() <= half_size_A.array()).all());
+    // The first witness point p_ACa is on an edge of box_A 3cm from a vertex.
+    using std::abs;
+    ASSERT_NEAR(abs(p_ACa.x()), half_size_A.x(), 1e-13);
+    ASSERT_NEAR(abs(abs(p_ACa.y()) - half_size_A.y()), 0.030, 3e-3);
+    ASSERT_NEAR(abs(p_ACa.z()), half_size_A.z(), 1e-13);
+    // The second witness point p_BCb is near a vertex of box_B.
+    ASSERT_NEAR(abs(p_BCb.x()), half_size_B.x(), 1e-13);
+    ASSERT_NEAR(abs(p_BCb.y()), half_size_B.y(), 1e-13);
+    ASSERT_NEAR(abs(p_BCb.z()), half_size_B.z(), 1e-13);
+  }
+
+  // Confirm that our classifcation makes sense: p_ACa is classified on an edge,
+  // and p_BCb is classified on a vertex. (However, visually the two boxes
+  // touch along an edge.)
+  EXPECT_EQ(PointOnBoxSurfaceHelper(p_ACa, box_A), Vector3d(1, 0, 1));
+  EXPECT_EQ(PointOnBoxSurfaceHelper(p_BCb, box_B), Vector3d(1, 1, 1));
+
+  // It makes sense to have gradient mostly along +Wz direction because box_A
+  // is above box_B (see the picture in issue 21192). There are other valid
+  // directions.  If the code changes and selects a different direction, we
+  // will have to change the expected result.
+  const Vector3d nhat_BA_W =
+      BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb);
+  EXPECT_TRUE(CompareMatrices(nhat_BA_W, Vector3d(0, -0.0850, 0.9963), 1e-4));
 }
 
 }  // namespace

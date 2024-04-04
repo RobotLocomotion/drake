@@ -66,12 +66,8 @@ Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
  v[0] = 1 if p_BQ is on one of the two faces normal to Bx axis, otherwise 0.
  v[1] = 1 if p_BQ is on one of the two faces normal to By axis, otherwise 0.
  v[2] = 1 if p_BQ is on one of the two faces normal to Bz axis, otherwise 0.
- The quantity v.sum() encodes whether p_BQ lies stricly on a face (1), edge (2)
- or vertex(3).
-
- @pre p_BQ is on the surface of the box.
-
- @throws std::exception if p_BQ does not lie on the surface of box B. */
+ The quantity v.sum() encodes whether p_BQ lies stricly on a face (1), edge (2),
+ vertex(3), or it's not on the surface (0). */
 Eigen::Vector3d PointOnBoxSurfaceHelper(const Eigen::Vector3d& p_BQ,
                                         const fcl::Boxd& box_B);
 
@@ -91,8 +87,7 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
 
 /* Returns the unit vector nhat_BA_W--out of box_B into box_A expressed in
  World frame--parallel to a vector in `v_Ws` that can make a separating axis
- between two touching boxes. If no vector in `v_Ws` can make it, returns
- Vector3d of NaN.
+ between two touching boxes. If no vector in `v_Ws` can make it, returns null.
 
  See https://en.wikipedia.org/wiki/Hyperplane_separation_theorem for the
  definition of separating axis.
