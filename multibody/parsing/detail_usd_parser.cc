@@ -71,7 +71,6 @@ UsdParser::~UsdParser() = default;
 
 Eigen::Matrix3d UsdMat3dToEigenMat3d(pxr::GfMatrix3d m) {
   Eigen::Matrix3d ret;
-  // TODO(hong-nvidia): check if we need to transpose the matrix
   ret << m[0][0], m[0][1], m[0][2],
          m[1][0], m[1][1], m[1][2],
          m[2][0], m[2][1], m[2][2];
@@ -182,8 +181,6 @@ void ProcessStaticCollider(const pxr::UsdPrim& prim,
 
 void ProcessPrim(const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
-  drake::log()->info("Processing " + prim.GetPath().GetString());
-
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
     if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
       // ProcessRigidBody(prim, plant);
@@ -232,7 +229,7 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   }
 
   // Returning an empty vector, since right now we only support static
-  // colliders attached to the world body (i.e., no actual models are 
+  // colliders attached to the world body (i.e., no actual models are
   // involved).
   return std::vector<ModelInstanceIndex>();
 }
