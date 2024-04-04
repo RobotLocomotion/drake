@@ -110,8 +110,6 @@ class LinkJointGraph::Joint {
       how_modeled_ = old_to_new[std::get<MobodIndex>(how_modeled_)];
   }
 
-  struct IgnoredLoopJoint {};
-
   JointIndex index_;
   std::string name_;
   ModelInstanceIndex model_instance_;
@@ -130,10 +128,7 @@ class LinkJointGraph::Joint {
   // - LinkCompositeIndex: not modeled because this is a weld interior to
   //     the indicated composite and we are combining so that one Mobod serves
   //     the whole composite.
-  // - IgnoredLoopJoint: not modeled because we intentionally ignored the Joint
-  //     (used with the IgnoreLoopJoints modeling option)
-  std::variant<std::monostate, MobodIndex, LinkCompositeIndex, IgnoredLoopJoint>
-      how_modeled_;
+  std::variant<std::monostate, MobodIndex, LinkCompositeIndex> how_modeled_;
 };
 
 }  // namespace internal
