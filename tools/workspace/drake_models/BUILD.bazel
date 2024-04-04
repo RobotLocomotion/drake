@@ -9,6 +9,7 @@ enumerate_filegroup(
 
 drake_py_unittest(
     name = "parse_test",
+    timeout = "moderate",
     data = [
         ":inventory.txt",
         "@drake_models",
