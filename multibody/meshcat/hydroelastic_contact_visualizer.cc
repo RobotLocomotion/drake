@@ -51,6 +51,7 @@ void HydroelasticContactVisualizer::Update(
     const std::string path =
         fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
 
+    // path is like "drake/contact_forces/hydroelastic/bowl+bell_pepper"
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.
@@ -169,6 +170,7 @@ void HydroelasticContactVisualizer::Update(
   }
 }
 
+// path is like "drake/contact_forces/hydroelastic/bowl+bell_pepper"
 HydroelasticContactVisualizer::VisibilityStatus&
 HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
   auto iter = path_visibility_status_.find(path);
@@ -178,7 +180,7 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
 
   // Start with it being invisible, to prevent flickering at the origin.
   iter = path_visibility_status_.insert({path, {false, false}}).first;
-  meshcat_->SetProperty(path, "visible", false, 0);
+  meshcat_->SetProperty(path, "visible", false, /*time_in_recording*/ 0);
 
   // Add the geometry to meshcat.
   // Set radius 1.0 so that it can be scaled later by the force/moment norm in
