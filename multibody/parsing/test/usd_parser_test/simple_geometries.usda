@@ -49,6 +49,7 @@ def Xform "World"
     {
         float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double radius = 50
+        color3f[] primvars:displayColor = [(0.8, 0.5, 0.5)]
         custom bool refinementEnableOverride = 1
         custom int refinementLevel = 2
         double3 xformOp:rotateXYZ = (-20, 0, 0)
