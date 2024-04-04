@@ -13,6 +13,7 @@
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include <fmt/format.h>
@@ -112,30 +113,13 @@ math::RigidTransform<double> GetPrimRigidTransform(
 
 Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
-  
+
   pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
 
   pxr::GfTransform transform(transform_matrix);
   pxr::GfVec3d scale = transform.GetScale();
   return UsdVec3dToEigen(scale);
-}
-
-Eigen::Vector3d CalculateCubeDimension(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-  pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
-
-  // TODO(hong-nvidia): make sure that the extent of the cube is symmetric
-
-  double cube_size = 0;
-  if (!cube.GetSizeAttr().Get(&cube_size)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the size of cube at {}", prim.GetPath().GetString()));
-  }
-
-  Eigen::Vector3d dimension = GetPrimScale(prim) * cube_size;
-  dimension *= metadata.meters_per_unit;
-  return dimension;
 }
 
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
@@ -156,17 +140,34 @@ Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
   }
 }
 
-std::unique_ptr<geometry::Shape> CreateSphereOrEllipsoid(
-  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
-  const ParsingWorkspace& workspace) {
+std::unique_ptr<geometry::Shape> CreateGeometryCube(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
+
+  // TODO(hong-nvidia): make sure that the extent of the cube is symmetric
+
+  double cube_size = 0;
+  if (!cube.GetSizeAttr().Get(&cube_size)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the size of cube at {}", prim.GetPath().GetString()));
+  }
+
+  Eigen::Vector3d cube_dimension = GetPrimScale(prim) * cube_size;
+  cube_dimension *= metadata.meters_per_unit;
+  return std::make_unique<geometry::Box>(cube_dimension);
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometrySphere(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
   pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
 
   // TODO(hong-nvidia): make sure that the extent of the sphere is symmetric
 
   double sphere_radius = 0;
-  if(!sphere.GetRadiusAttr().Get(&sphere_radius)) {
+  if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
     workspace.diagnostic.Error(fmt::format(
-      "Failed to read the radius of sphere at {}", prim.GetPath().GetString()));
+      "Failed to read the radius of sphere at {}",
+      prim.GetPath().GetString()));
   }
   sphere_radius *= metadata.meters_per_unit;
 
@@ -177,67 +178,62 @@ std::unique_ptr<geometry::Shape> CreateSphereOrEllipsoid(
     return std::make_unique<geometry::Ellipsoid>(
       sphere_radius * prim_scale[0],
       sphere_radius * prim_scale[1],
-      sphere_radius * prim_scale[2]
-    );
+      sphere_radius * prim_scale[2]);
   }
 }
 
-void ProcessStaticColliderSphere(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-  MultibodyPlant<double>* plant = workspace.plant;
-  math::RigidTransform<double> transform = GetPrimRigidTransform(
-    prim, metadata);
-
-  auto collision_geometry = CreateSphereOrEllipsoid(prim, metadata, workspace);
-  plant->RegisterCollisionGeometry(
-    plant->world_body(),
-    transform,
-    *collision_geometry,
-    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-    GetPrimFriction(prim));
-
-  auto visual_geometry = CreateSphereOrEllipsoid(prim, metadata, workspace);
-  plant->RegisterVisualGeometry(
-    plant->world_body(),
-    transform,
-    *visual_geometry,
-    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    GetGeomPrimColor(prim));
-}
-
-void ProcessStaticColliderCube(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-  MultibodyPlant<double>* plant = workspace.plant;
-  Eigen::Vector3d cube_dimension = CalculateCubeDimension(prim, metadata,
-    workspace);
-  math::RigidTransform<double> transform = GetPrimRigidTransform(
-    prim, metadata);
-
-  plant->RegisterCollisionGeometry(
-    plant->world_body(),
-    transform,
-    geometry::Box(cube_dimension),
-    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-    GetPrimFriction(prim));
-
-  plant->RegisterVisualGeometry(
-    plant->world_body(),
-    transform,
-    geometry::Box(cube_dimension),
-    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    GetGeomPrimColor(prim));
-}
-
-void ProcessStaticCollider(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+std::unique_ptr<geometry::Shape> CreateVisualGeometry(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    ProcessStaticColliderCube(prim, metadata, workspace);
+    return CreateGeometryCube(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    ProcessStaticColliderSphere(prim, metadata, workspace);
+    return CreateGeometrySphere(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
       fmt::format("Unsupported Prim type: {}", prim_type));
+    return nullptr;
+  }
+}
+
+std::unique_ptr<geometry::Shape> CreateCollisionGeometry(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  if (prim.IsA<pxr::UsdGeomMesh>()) {
+    // See if there is a simplified version of the mesh available
+    // for collision detection
+    throw std::runtime_error("Mesh parsing is not implemented");
+  } else {
+    // Assuming all geometries other than mesh are simple enough
+    // to be used directly for collision detection
+    return CreateVisualGeometry(prim, metadata, workspace);
+  }
+}
+
+void ProcessStaticCollider(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  MultibodyPlant<double>* plant = workspace.plant;
+  math::RigidTransform<double> transform = GetPrimRigidTransform(
+    prim, metadata);
+
+  auto collision_geometry = CreateCollisionGeometry(prim, metadata, workspace);
+  auto visual_geometry = CreateVisualGeometry(prim, metadata, workspace);
+
+  if (collision_geometry && visual_geometry) {
+    plant->RegisterCollisionGeometry(
+      plant->world_body(),
+      transform,
+      *collision_geometry,
+      fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+      GetPrimFriction(prim));
+
+    plant->RegisterVisualGeometry(
+      plant->world_body(),
+      transform,
+      *visual_geometry,
+      fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+      GetGeomPrimColor(prim));
   }
 }
 
