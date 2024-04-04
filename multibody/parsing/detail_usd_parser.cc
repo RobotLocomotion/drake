@@ -100,6 +100,7 @@ math::RigidTransform<double> GetPrimRigidTransform(
   pxr::GfTransform transform(transform_matrix);
   pxr::GfVec3d translation = transform.GetTranslation();
   pxr::GfRotation rotation = transform.GetRotation();
+  translation *= metadata.meters_per_unit;
 
   math::RotationMatrix<double> rotation_matrix(
     UsdQuatdToEigen(rotation.GetQuat()));
@@ -109,8 +110,7 @@ math::RigidTransform<double> GetPrimRigidTransform(
     UsdVec3dToEigen(translation));
 }
 
-Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim, 
-  const ParsingWorkspace& workspace) {
+Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
   
   pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
@@ -133,26 +133,8 @@ Eigen::Vector3d CalculateCubeDimension(const pxr::UsdPrim& prim,
       "Failed to read the size of cube at {}", prim.GetPath().GetString()));
   }
 
-  Eigen::Vector3d dimension = GetPrimScale(prim, workspace) * cube_size;
+  Eigen::Vector3d dimension = GetPrimScale(prim) * cube_size;
   dimension *= metadata.meters_per_unit;
-  return dimension;
-}
-
-Eigen::Vector3d CalculateSphereDimension(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
-
-  // TODO(hong-nvidia): make sure that the extent of the sphere is symmetric
-
-  double sphere_radius = 0;
-  if(!sphere.GetRadiusAttr().Get(&sphere_radius)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the radius of sphere at {}", prim.GetPath().GetString()));
-  }
-
-  Eigen::Vector3d dimension = GetPrimScale(prim, workspace) * sphere_radius;
-  dimension *= metadata.meters_per_unit;
-
   return dimension;
 }
 
@@ -172,6 +154,55 @@ Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
     // Prim does not contain color attribute, use default color instead
     return Vector4<double>(0.5, 0.5, 0.5, 1.0);
   }
+}
+
+std::unique_ptr<geometry::Shape> CreateSphereOrEllipsoid(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
+
+  // TODO(hong-nvidia): make sure that the extent of the sphere is symmetric
+
+  double sphere_radius = 0;
+  if(!sphere.GetRadiusAttr().Get(&sphere_radius)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the radius of sphere at {}", prim.GetPath().GetString()));
+  }
+  sphere_radius *= metadata.meters_per_unit;
+
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  if (prim_scale[0] == prim_scale[1] && prim_scale[1] == prim_scale[2]) {
+    return std::make_unique<geometry::Sphere>(sphere_radius * prim_scale[0]);
+  } else {
+    return std::make_unique<geometry::Ellipsoid>(
+      sphere_radius * prim_scale[0],
+      sphere_radius * prim_scale[1],
+      sphere_radius * prim_scale[2]
+    );
+  }
+}
+
+void ProcessStaticColliderSphere(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  MultibodyPlant<double>* plant = workspace.plant;
+  math::RigidTransform<double> transform = GetPrimRigidTransform(
+    prim, metadata);
+
+  auto collision_geometry = CreateSphereOrEllipsoid(prim, metadata, workspace);
+  plant->RegisterCollisionGeometry(
+    plant->world_body(),
+    transform,
+    *collision_geometry,
+    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+    GetPrimFriction(prim));
+
+  auto visual_geometry = CreateSphereOrEllipsoid(prim, metadata, workspace);
+  plant->RegisterVisualGeometry(
+    plant->world_body(),
+    transform,
+    *visual_geometry,
+    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+    GetGeomPrimColor(prim));
 }
 
 void ProcessStaticColliderCube(const pxr::UsdPrim& prim,
@@ -195,14 +226,6 @@ void ProcessStaticColliderCube(const pxr::UsdPrim& prim,
     geometry::Box(cube_dimension),
     fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
     GetGeomPrimColor(prim));
-}
-
-void ProcessStaticColliderSphere(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-    MultibodyPlant<double>* plant = workspace.plant;
-    Eigen::Vector3d sphere_dimension = CalculateSphereDimension(prim, metadata,
-      workspace);
-  // TODO(hongw): Unfinished function
 }
 
 void ProcessStaticCollider(const pxr::UsdPrim& prim,

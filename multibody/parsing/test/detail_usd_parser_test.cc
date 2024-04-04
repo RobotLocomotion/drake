@@ -56,8 +56,8 @@ TEST_F(UsdParserTest, BasicImportTest) {
   std::string filename = FindUsdTestResourceOrThrow("simple_geometries.usda");
   ParseFile(filename);
 
-  DRAKE_ASSERT(plant_.num_collision_geometries() == 1);
-  DRAKE_ASSERT(plant_.num_visual_geometries() == 1);
+  DRAKE_ASSERT(plant_.num_collision_geometries() == 2);
+  DRAKE_ASSERT(plant_.num_visual_geometries() == 2);
 }
 
 }  // namespace
