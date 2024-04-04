@@ -162,6 +162,40 @@ class MujocoParser {
     return RigidTransformd(X_default.rotation(), pos);
   }
 
+  // Returns true if limits were parsed.
+  bool ParseLimits(XMLElement* node, const char* range_attr_name,
+                   const char* limited_attr_name, Vector2d* limits) {
+    std::string limited_attr;
+    if (!ParseStringAttribute(node, limited_attr_name, &limited_attr)) {
+      limited_attr = "auto";
+    }
+
+    bool has_range = ParseVectorAttribute(node, range_attr_name, limits);
+
+    bool limited{false};
+    if (limited_attr == "true") {
+      limited = true;
+    } else if (limited_attr == "false") {
+      limited = false;
+    } else if (limited_attr == "auto") {
+      if (autolimits_) {
+        limited = has_range;
+      } else if (has_range) {
+        // From the mujoco docs: In this mode [autolimits == false], it is an
+        // error to specify a range without a limit.
+        Error(*node, fmt::format("The '{}' attribute was specified but "
+                                 "'autolimits' is disabled.",
+                                 range_attr_name));
+      }
+    } else {
+      Error(*node,
+            fmt::format("The '{}' attribute must be one of 'true', 'false', "
+                        "or 'auto'.",
+                        limited_attr_name));
+    }
+    return limited;
+  }
+
   void ParseMotor(XMLElement* node) {
     std::string name;
     if (!ParseStringAttribute(node, "name", &name)) {
@@ -179,58 +213,55 @@ class MujocoParser {
       return;
     }
 
-    // Parse effort limits.
+    // Parse effort limits. For a motor, force limits are the same as control
+    // limits, so we take the min of the two.
     double effort_limit = std::numeric_limits<double>::infinity();
-    bool ctrl_limited = node->BoolAttribute("ctrllimited", false);
+    Vector2d ctrl_range(0.0, 0.0), force_range(0.0, 0.0);
+    bool ctrl_limited =
+        ParseLimits(node, "ctrlrange", "ctrllimited", &ctrl_range);
+    bool force_limited =
+        ParseLimits(node, "forcerange", "forcelimited", &force_range);
+
     if (ctrl_limited) {
-      Vector2d ctrl_range;
-      if (ParseVectorAttribute(node, "ctrlrange", &ctrl_range)) {
-        if (ctrl_range[0] > ctrl_range[1]) {
-          Warning(
-              *node,
-              fmt::format(
-                  "The motor '{}' specified a ctrlrange attribute where lower "
-                  "limit > upper limit; these limits will be ignored.",
-                  name));
-        } else {
-          effort_limit = std::max(ctrl_range[1], -ctrl_range[0]);
-          if (ctrl_range[0] != ctrl_range[1]) {
-            Warning(
-                *node,
-                fmt::format("The motor '{}' specified a ctrlrange attribute "
-                            "where lower limit != upper limit.  Asymmetrical "
-                            "effort limits are not supported yet, so the "
-                            "larger of the values {} will be used.",
-                            name, effort_limit));
-          }
+      if (ctrl_range[0] > ctrl_range[1]) {
+        Warning(
+            *node,
+            fmt::format(
+                "The motor '{}' specified a ctrlrange attribute where lower "
+                "limit > upper limit; these limits will be ignored.",
+                name));
+      } else {
+        effort_limit = std::max(ctrl_range[1], -ctrl_range[0]);
+        if (-ctrl_range[0] != ctrl_range[1]) {
+          Warning(*node,
+                  fmt::format("The motor '{}' specified a ctrlrange attribute "
+                              "where lower limit != -upper limit. Asymmetrical "
+                              "effort limits are not supported yet, so the "
+                              "larger of the values {} will be used.",
+                              name, effort_limit));
         }
       }
     }
-    bool force_limited = node->BoolAttribute("forcelimited", false);
     if (force_limited) {
       // For a motor, force limits are the same as control limits, so we take
       // the min of the two.
-      Vector2d force_range;
-      if (ParseVectorAttribute(node, "forcerange", &force_range)) {
-        if (force_range[0] > force_range[1]) {
-          Warning(
-              *node,
-              fmt::format(
-                  "The motor '{}' specified a forcerange attribute where lower "
-                  "limit > upper limit; these limits will be ignored.",
-                  name));
-        } else {
-          effort_limit =
-              std::min(effort_limit, std::max(force_range[1], -force_range[0]));
-          if (force_range[0] != force_range[1]) {
-            Warning(
-                *node,
-                fmt::format("The motor '{}' specified a forcerange attribute "
-                            "where lower limit != upper limit.  Asymmetrical "
-                            "effort limits are not supported yet, so the "
-                            "larger of the values {} will be used.",
-                            name, std::max(force_range[1], -force_range[0])));
-          }
+      if (force_range[0] > force_range[1]) {
+        Warning(
+            *node,
+            fmt::format(
+                "The motor '{}' specified a forcerange attribute where lower "
+                "limit > upper limit; these limits will be ignored.",
+                name));
+      } else {
+        effort_limit =
+            std::min(effort_limit, std::max(force_range[1], -force_range[0]));
+        if (-force_range[0] != force_range[1]) {
+          Warning(*node,
+                  fmt::format("The motor '{}' specified a forcerange attribute "
+                              "where lower limit != -upper limit. Asymmetrical "
+                              "effort limits are not supported yet, so the "
+                              "larger of the values {} will be used.",
+                              name, std::max(force_range[1], -force_range[0])));
         }
       }
     }
@@ -306,9 +337,8 @@ class MujocoParser {
       type = "hinge";
     }
 
-    bool limited = node->BoolAttribute("limited", false);
     Vector2d range(0.0, 0.0);
-    ParseVectorAttribute(node, "range", &range);
+    bool limited = ParseLimits(node, "range", "limited", &range);
 
     if (type == "free") {
       if (damping != 0.0) {
@@ -1156,6 +1186,7 @@ class MujocoParser {
   }
 
   void ParseCompiler(XMLElement* node) {
+    autolimits_ = node->BoolAttribute("autolimits", true);
     WarnUnsupportedAttribute(*node, "boundmass");
     WarnUnsupportedAttribute(*node, "boundinertia");
     WarnUnsupportedAttribute(*node, "settotalmass");
@@ -1246,7 +1277,9 @@ class MujocoParser {
         // Ok. No attribute to set.
         break;
     }
+    WarnUnsupportedAttribute(*node, "exactmeshinertia");
     WarnUnsupportedAttribute(*node, "inertiagrouprange");
+    WarnUnsupportedElement(*node, "lengthrange");
   }
 
   void ParseContact(XMLElement* node) {
@@ -1578,6 +1611,7 @@ class MujocoParser {
   MultibodyPlant<double>* plant_;
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
+  bool autolimits_{true};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
