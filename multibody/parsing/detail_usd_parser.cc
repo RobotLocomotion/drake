@@ -231,7 +231,9 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     ProcessPrim(prim, metadata, workspace);
   }
 
-  // TODO(hong-nvidia) Returning an empty vector for now as a placeholder
+  // Returning an empty vector, since right now we only support static
+  // colliders attached to the world body (i.e., no actual models are 
+  // involved).
   return std::vector<ModelInstanceIndex>();
 }
 

@@ -53,12 +53,11 @@ std::string FindUsdTestResourceOrThrow(const std::string& filename) {
 }
 
 TEST_F(UsdParserTest, BasicImportTest) {
-  // hong-nvidia: temporary check to ensure that this file indeed exists
-  drake::log()->info(FindUsdTestResourceOrThrow("cube_plane.usda"));
-
-  const fs::path filename{
-    "multibody/parsing/test/usd_parser_test/cube_plane.usda"};
+  std::string filename = FindUsdTestResourceOrThrow("cube_plane.usda");
   ParseFile(filename);
+
+  DRAKE_ASSERT(plant_.num_collision_geometries() == 1);
+  DRAKE_ASSERT(plant_.num_visual_geometries() == 1);
 }
 
 }  // namespace
