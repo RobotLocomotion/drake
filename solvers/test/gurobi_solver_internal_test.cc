@@ -101,6 +101,7 @@ GTEST_TEST(AddL2NormCosts, Test) {
   int num_q_constrs;
   GRBgetintattr(model, "NumQConstrs", &num_q_constrs);
   EXPECT_EQ(num_q_constrs, 2);
+  GRBfreemodel(model);
   GRBfreeenv(env);
 }
 }  // namespace internal
