@@ -210,9 +210,46 @@ std::unique_ptr<geometry::Shape> CreateGeometrySphere(const pxr::UsdPrim& prim,
   }
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryCapsule(const pxr::UsdPrim& prim,
-  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
-  return nullptr;
+std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+
+  ValidatePrimExtent(prim, workspace);
+
+  pxr::TfToken capsule_axis;
+  if (!capsule.GetAxisAttr().Get(&capsule_axis)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the axis of capsule at {}", prim.GetPath().GetString()));
+  }
+  if (capsule_axis != metadata.up_axis) {
+    workspace.diagnostic.Error(fmt::format(
+      "Only upright capsules are supported at the moment. The capsule at {} "
+      "is not upright because its axis ({}) differs from the axis of the "
+      "stage ({})", prim.GetPath().GetString(), capsule_axis.GetString(),
+      metadata.up_axis.GetString()));
+  }
+
+  // Makes the assumption that axis X/Y scales the radius of the capsule
+  // and axis Z scales the height of the capsule
+  if (prim_scale[0] != prim_scale[1]) {
+    workspace.diagnostic.Error(fmt::format(
+      "The capsule at {} has different scaling in X and Y axis, and that is "
+      "not supported", prim.GetPath().GetString()));
+  }
+
+  double capsule_height, capsule_radius;
+  if (!capsule.GetHeightAttr().Get(&capsule_height) ||
+      !capsule.GetRadiusAttr().Get(&capsule_radius)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the height or radius of capsule at {}",
+      prim.GetPath().GetString()));
+  }
+
+  return std::make_unique<geometry::Capsule>(
+    capsule_radius * prim_scale[0] * metadata.meters_per_unit,
+    capsule_height * prim_scale[2] * metadata.meters_per_unit);
 }
 
 std::unique_ptr<geometry::Shape> CreateVisualGeometry(
