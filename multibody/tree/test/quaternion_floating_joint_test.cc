@@ -179,11 +179,19 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   joint_->set_translation(context_.get(), Vector3d::Zero());  // Zero out pose.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   joint_->set_pose(context_.get(), transform_A);
+  EXPECT_TRUE(
+      joint_->get_pose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  joint_->SetPose(context_.get(), transform_A);
   // We expect a bit of roundoff error due to transforming between quaternion
   // and rotation matrix representations.
   EXPECT_TRUE(
-      joint_->get_pose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
+      joint_->GetPose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
+
 
   // Angular velocity access:
   joint_->set_angular_velocity(context_.get(), angular_velocity);
@@ -380,7 +388,12 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   // Default behavior is to set to zero.
   tree().SetRandomState(*context_, &context_->get_mutable_state(),
                            &generator);
+  EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
   // Set the position distribution to arbitrary values.
   Eigen::Matrix<symbolic::Expression, 3, 1> position_distribution;
   for (int i = 0; i < 3; i++) {
@@ -397,7 +410,11 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   tree().SetRandomState(*context_, &context_->get_mutable_state(),
                            &generator);
   // We expect arbitrary non-zero values for the random state.
+  EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Set position and quaternion distributions back to 0.
   mutable_joint_->set_random_quaternion_distribution(
@@ -412,14 +429,22 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   tree().SetRandomState(*context_, &context_->get_mutable_state(),
                            &generator);
   // We expect zero values for pose.
+  EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Set the quaternion distribution using built in uniform sampling.
   mutable_joint_->set_random_quaternion_distribution_to_uniform();
   tree().SetRandomState(*context_, &context_->get_mutable_state(),
                            &generator);
   // We expect arbitrary non-zero pose.
+  EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 }  // namespace
