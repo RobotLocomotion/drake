@@ -166,7 +166,7 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets the `context` so that the generalized coordinates corresponding to
   the roll-pitch-yaw rotation angles of this joint equals `angles`.
-  @param[in] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] angles
     Angles in radians to be stored in `context` ordered as θr, θp, θy.
@@ -181,7 +181,7 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets the roll-pitch-yaw angles in `context` so this Joint's orientation
   is consistent with the given `R_FM` rotation matrix.
-  @param[in] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] R_FM
     The rotation matrix giving the orientation of frame M in frame F.
@@ -205,7 +205,7 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets `context` to store the translation (position vector) `p_FM` of frame
   M's origin Mo measured and expressed in frame F.
-  @param[out] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] p_FM
     The desired position of frame M's origin in frame F, to be stored in
@@ -230,10 +230,10 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets `context` to store `X_FM` the pose of frame M measured and expressed
   in frame F.
-  @param[out] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] X_FM
-    The desired pose of frame M in F to be stored in `context`.
+    The desired pose of frame M in frame F to be stored in `context`.
   @warning See class documentation for discussion of singular configurations.
   @returns a constant reference to `this` joint. */
   const RpyFloatingJoint<T>& SetPose(
@@ -246,7 +246,6 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Retrieves from `context` the angular velocity `w_FM` of the child frame
   M in the parent frame F, expressed in F.
-
   @param[in] context
     A Context for the MultibodyPlant this joint belongs to.
   @retval w_FM
@@ -259,7 +258,7 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets in `context` the state for this joint so that the angular velocity
   of the child frame M in the parent frame F is `w_FM`.
-  @param[out] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] w_FM
     A vector in ℝ³ with the angular velocity of the child frame M in the
@@ -287,7 +286,7 @@ class RpyFloatingJoint final : public Joint<T> {
 
   /** Sets in `context` the state for this joint so that the translational
   velocity of the child frame M's origin in the parent frame F is `v_FM`.
-  @param[out] context
+  @param[in,out] context
     A Context for the MultibodyPlant this joint belongs to.
   @param[in] v_FM
     A vector in ℝ³ with the translational velocity of the child frame M's
