@@ -667,6 +667,14 @@ class GeometryState {
 
   //@}
 
+  /** (Internal use only) Gets the source id for the given frame id.
+   @throws std::exception if the frame belongs to no registered source. */
+  SourceId get_source_id(FrameId frame_id) const;
+
+  /** (Internal use only) Gets the source id for the given geometry id.
+   @throws std::exception if the geometry belongs to no registered source. */
+  SourceId get_source_id(GeometryId id) const;
+
  private:
   // GeometryState of one scalar type is friends with all other scalar types.
   template <typename>
@@ -748,14 +756,6 @@ class GeometryState {
       const internal::DrivenMeshData& driven_mesh_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
-
-  // Gets the source id for the given frame id. Throws std::exception if the
-  // frame belongs to no registered source.
-  SourceId get_source_id(FrameId frame_id) const;
-
-  // Gets the source id for the given frame id. Throws std::exception if the
-  // geometry belongs to no registered source.
-  SourceId get_source_id(GeometryId frame_id) const;
 
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given
