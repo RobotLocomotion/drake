@@ -5,6 +5,7 @@ import unittest
 from bazel_tools.tools.python.runfiles import runfiles
 
 from pydrake.planning import RobotDiagramBuilder
+from pydrake.multibody.plant import DiscreteContactApproximation
 
 
 class TestDrakeModels(unittest.TestCase):
@@ -67,10 +68,6 @@ class TestDrakeModels(unittest.TestCase):
             "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_right.urdf",  # noqa
             # TODO(jwnimmer-tri) Fix these warnings.
             "package://drake_models/jaco_description/urdf/j2n6s300_col.urdf",
-            # We don't have any tracking issue for fixing the PR2 models,
-            # because we don't use them for anything we care about. If someone
-            # wants to fix the warnings, be our guest.
-            "package://drake_models/pr2_description/urdf/pr2_simplified.urdf"
         ]
         self.assertFalse(set(models_with_warnings) - set(all_models))
 
@@ -112,7 +109,9 @@ class TestDrakeModels(unittest.TestCase):
         self._parse(url=url, strict=True)
 
     def _parse(self, *, url: str, strict: bool):
-        builder = RobotDiagramBuilder()
+        builder = RobotDiagramBuilder(0.01)
+        builder.plant().set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
         parser = builder.parser()
         parser.package_map().AddPackageXml(str(self.package_xml()))
         if strict:
