@@ -11,6 +11,7 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/capsule.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -190,6 +191,9 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     return CreateGeometryCube(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     return CreateGeometrySphere(prim, metadata, workspace);
+  } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
+    // return CreateGeometryCapsule(prim, metadata, workspace);
+    return nullptr;
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
@@ -240,6 +244,7 @@ void ProcessStaticCollider(const pxr::UsdPrim& prim,
 
 void ProcessPrim(const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
+  drake::log()->info(fmt::format("Processing {}", prim.GetPath().GetString()));
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
     if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
       // ProcessRigidBody(prim, plant);

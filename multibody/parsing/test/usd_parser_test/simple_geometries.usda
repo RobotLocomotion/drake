@@ -57,4 +57,29 @@ def Xform "World"
         double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
+
+    def Xform "CapsuleXform"
+    {
+        double3 xformOp:rotateXYZ = (-90, 0, 45)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, -200, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Capsule "Capsule" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            float3[] extent = [(-25, -25, -50), (25, 25, 50)]
+            double height = 50
+            double radius = 25
+            color3f[] primvars:displayColor = [(0.5, 0.8, 0.5)]
+            custom bool refinementEnableOverride = 1
+            custom int refinementLevel = 2
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+    }
 }
