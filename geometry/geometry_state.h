@@ -24,6 +24,7 @@
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -664,6 +665,28 @@ class GeometryState {
    instance already instantiated on AutoDiffXd, it is equivalent to cloning
    the instance.  */
   std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
+
+  //@}
+
+  /** @name Default proximity properties */
+  //@{
+
+  /** Applies the default proximity values in `defaults` to the proximity
+   properties of the geometries in geometry_state. For detailed semantics, see
+   the 2-argument overload.
+  */
+  void ApplyProximityDefaults(const DefaultProximityProperties& defaults);
+
+  /** Applies the default proximity values in `defaults` to the proximity
+   properties of the geometry with the given geometry_id in geometry_state as
+   appropriate. For a given property, no value will be written if (a)
+   `defaults` contains no value for it, or (b) the geometry's proximity
+   property already contains a value.
+
+   @pre geometry_id indicates a geometry with an assigned proximity role.
+  */
+  void ApplyProximityDefaults(const DefaultProximityProperties& defaults,
+                              GeometryId geometry_id);
 
   //@}
 
