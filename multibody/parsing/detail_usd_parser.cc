@@ -142,11 +142,38 @@ Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
   }
 }
 
+void ValidatePrimExtent(const pxr::UsdPrim& prim,
+  const ParsingWorkspace& workspace, bool check_if_isotropic = false) {
+  pxr::VtVec3fArray extent;
+  if (!prim.GetAttribute(pxr::TfToken("extent")).Get(&extent)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the extent of prim at {}", prim.GetPath().GetString()));
+  }
+  const pxr::GfVec3f& lower_bound = extent[0];
+  const pxr::GfVec3f& upper_bound = extent[1];
+  if (-lower_bound[0] != upper_bound[0] ||
+      -lower_bound[1] != upper_bound[1] ||
+      -lower_bound[2] != upper_bound[2]) {
+    workspace.diagnostic.Error(fmt::format(
+      "The extent of the prim at {} is not symmetric",
+      prim.GetPath().GetString()));
+  }
+  if (check_if_isotropic) {
+    if (lower_bound[0] != lower_bound[1] ||
+        lower_bound[1] != lower_bound[2] ||
+        upper_bound[0] != upper_bound[1] ||
+        upper_bound[1] != upper_bound[2]) {
+      workspace.diagnostic.Error(fmt::format(
+        "The extent of the prim at {} should be of the same magnitude across"
+        "all three dimensions", prim.GetPath().GetString()));
+    }
+  }
+}
+
 std::unique_ptr<geometry::Shape> CreateGeometryCube(const pxr::UsdPrim& prim,
   const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  ValidatePrimExtent(prim, workspace, true);
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
-
-  // TODO(hong-nvidia): make sure that the extent of the cube is symmetric
 
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
@@ -161,9 +188,8 @@ std::unique_ptr<geometry::Shape> CreateGeometryCube(const pxr::UsdPrim& prim,
 
 std::unique_ptr<geometry::Shape> CreateGeometrySphere(const pxr::UsdPrim& prim,
   const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  ValidatePrimExtent(prim, workspace, true);
   pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
-
-  // TODO(hong-nvidia): make sure that the extent of the sphere is symmetric
 
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
@@ -184,6 +210,11 @@ std::unique_ptr<geometry::Shape> CreateGeometrySphere(const pxr::UsdPrim& prim,
   }
 }
 
+std::unique_ptr<geometry::Shape> CreateGeometryCapsule(const pxr::UsdPrim& prim,
+  const UsdStageMetadata& metadata, const ParsingWorkspace& workspace) {
+  return nullptr;
+}
+
 std::unique_ptr<geometry::Shape> CreateVisualGeometry(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
@@ -192,8 +223,7 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     return CreateGeometrySphere(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
-    // return CreateGeometryCapsule(prim, metadata, workspace);
-    return nullptr;
+    return CreateGeometryCapsule(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
