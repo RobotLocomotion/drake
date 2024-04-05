@@ -28,11 +28,11 @@ namespace {
 bool SolverReturnedWithoutError(
     const solvers::MathematicalProgramResult& result) {
   const SolutionResult status = result.get_solution_result();
-  return solution_result_ == SolutionResult::kSolutionFound ||
-         solution_result_ == SolutionResult::kInfeasibleConstraints ||
-         solution_result_ == SolutionResult::kUnbounded ||
-         solution_result_ == SolutionResult::kInfeasibleOrUnbounded ||
-         solution_result_ == SolutionResult::kDualInfeasible;
+  return status == SolutionResult::kSolutionFound ||
+         status == SolutionResult::kInfeasibleConstraints ||
+         status == SolutionResult::kUnbounded ||
+         status == SolutionResult::kInfeasibleOrUnbounded ||
+         status == SolutionResult::kDualInfeasible;
 }
 
 }  // namespace
@@ -167,11 +167,14 @@ ConvexSet::GenericDoProjection(
   }
   const auto result = solvers::Solve(prog);
   if (!result.is_success()) {
-    if (result.get_solution_result() != solvers::SolutionResult::kInfeasible) {
+    if (result.get_solution_result() !=
+            solvers::SolutionResult::kInfeasibleConstraints ||
+        result.get_solution_result() !=
+            solvers::SolutionResult::kInfeasibleOrUnbounded) {
       log()->warn(
           "ConvexSet Projection failed with result {} which indicates "
-          "numerical difficulties. Projections should always if the set is "
-          "non-empty, and infeasible otherwise.");
+          "numerical difficulties. Projections should always be feasible if "
+          "the set is non-empty, and infeasible otherwise.");
     }
     return std::nullopt;
   }
