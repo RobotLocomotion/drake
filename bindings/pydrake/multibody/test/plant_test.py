@@ -2162,6 +2162,8 @@ class TestPlant(unittest.TestCase):
                 # Warn on deprecated QuaternionFloatingJoint.get_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.get_position(context=context)
+                joint.GetPose(context=context)
+                # Warn on deprecated QuaternionFloatingJoint.get_pose().
                 joint.get_pose(context=context)
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
@@ -2175,7 +2177,10 @@ class TestPlant(unittest.TestCase):
                 # Warn deprecated QuaternionFloatingJoint.set_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.set_position(context=context, p_FM=[0, 0, 0])
-                joint.set_pose(context=context, X_FM=RigidTransform_[T]())
+                joint.SetPose(context=context, X_FM=RigidTransform_[T]())
+                # Warn deprecated QuaternionFloatingJoint.set_pose().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_pose(context=context, X_FM=RigidTransform_[T]())
                 joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
                 joint.set_translational_velocity(context=context,
                                                  v_FM=[0, 0, 0])
