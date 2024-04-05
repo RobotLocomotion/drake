@@ -264,6 +264,7 @@ drake_cc_library(
         ":kinematics_vector",
         ":mesh_deformation_interpolator",
         ":proximity_engine",
+        ":scene_graph_config",
         ":utilities",
         "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
