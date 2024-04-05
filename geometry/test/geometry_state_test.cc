@@ -41,8 +41,19 @@ using Eigen::VectorXd;
 using internal::DrivenTriangleMesh;
 using internal::DummyRenderEngine;
 using internal::FrameNameSet;
+using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::kComplianceType;
+using internal::kElastic;
+using internal::kFriction;
+using internal::kHcDissipation;
+using internal::kHydroGroup;
+using internal::kMaterialGroup;
+using internal::kPointStiffness;
+using internal::kRelaxationTime;
+using internal::kRezHint;
+using internal::kSlabThickness;
 using internal::ProximityEngine;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -4409,6 +4420,167 @@ TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
       geometry_state_.ComputeSignedDistancePairClosestPoints(percep,
                                                              proximity1),
       ".*has the perception role.");
+}
+
+// This is the base for testing the ApplyProximityDefaults() overloaded
+// methods. Note that only the resulting proximity properties contents are
+// tested.  Since we know (glass-box knowledge) that ApplyProximityDefaults
+// calls GeometryState::AssignRole, we don't bother testing whether the
+// proximity engine gets appropriately updated.
+class ApplyProximityDefaultsTests : public testing::Test {
+ protected:
+  std::unique_ptr<ProximityProperties> MakeFullProperties() {
+    // Fill the properties with identifiably stupid values.
+    auto props = std::make_unique<ProximityProperties>();
+    props->AddProperty(kHydroGroup, kComplianceType,
+                       HydroelasticType::kRigid);
+    props->AddProperty(kHydroGroup, kElastic, 123.0);
+    props->AddProperty(kHydroGroup, kRezHint, 456.0);
+    props->AddProperty(kHydroGroup, kSlabThickness, 789.0);
+    multibody::CoulombFriction<double> friction{2.2, 2.2};
+    props->AddProperty(kMaterialGroup, kFriction, friction);
+    props->AddProperty(kMaterialGroup, kHcDissipation, 987.0);
+    props->AddProperty(kMaterialGroup, kRelaxationTime, 654.0);
+    props->AddProperty(kMaterialGroup, kPointStiffness, 321.0);
+    return props;
+  }
+
+  GeometryId AddSphere(const std::string name,
+                       const ProximityProperties* props) {
+    auto instance = std::make_unique<GeometryInstance>(math::RigidTransformd{},
+                                                       Sphere(0.1), name);
+    if (props != nullptr) {
+      instance->set_proximity_properties(*props);
+    }
+    return geometry_state_.RegisterGeometry(source_id_, frame_id_,
+                                            std::move(instance));
+  }
+
+  DefaultProximityProperties empty_defaults_{
+    "undefined", {}, {}, {}, {}, {}, {}, {}, {}};
+  // Use stupid values distinct from those in MakeFullProperties().
+  DefaultProximityProperties full_defaults_{
+    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7};
+  GeometryState<double> geometry_state_;
+  SourceId source_id_{geometry_state_.RegisterNewSource("test")};
+  FrameId frame_id_{
+    geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
+};
+
+TEST_F(ApplyProximityDefaultsTests, TrivialApplyProximityDefaults) {
+  // Feeding in an empty geometry state does not crash.
+  EXPECT_NO_THROW(geometry_state_.ApplyProximityDefaults({}));
+}
+
+TEST_F(ApplyProximityDefaultsTests, NoRole) {
+  // Geometries without a proximity role are unaffected.
+  auto geometry_id = AddSphere("no_prox_role", nullptr);
+  geometry_state_.ApplyProximityDefaults(full_defaults_);
+  EXPECT_EQ(geometry_state_.GetProximityProperties(geometry_id), nullptr);
+}
+
+TEST_F(ApplyProximityDefaultsTests, EmptyPropsEmptyDefaults) {
+  // Given empty properties and minimal defaults, only compliance type is
+  // populated.
+  ProximityProperties empty_props;
+  auto geometry_id = AddSphere("empty_props", &empty_props);
+  geometry_state_.ApplyProximityDefaults(empty_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      HydroelasticType::kUndefined);
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kElastic));
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kRezHint));
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kSlabThickness));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kFriction));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kHcDissipation));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kRelaxationTime));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kPointStiffness));
+}
+
+TEST_F(ApplyProximityDefaultsTests, EmptyPropsFullDefaults) {
+  // Given empty properties and full defaults, the default struct values are
+  // written into the properties.
+  ProximityProperties empty_props;
+  auto geometry_id = AddSphere("empty_props", &empty_props);
+  geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            internal::GetHydroelasticTypeFromString(
+                full_defaults_.compliance_type));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
+            *full_defaults_.hydroelastic_modulus);
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
+            *full_defaults_.resolution_hint);
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kSlabThickness),
+            *full_defaults_.slab_thickness);
+
+  auto friction = props->GetProperty<multibody::CoulombFriction<double>>(
+      kMaterialGroup, kFriction);
+  EXPECT_EQ(friction.static_friction(), *full_defaults_.static_friction);
+  EXPECT_EQ(friction.dynamic_friction(), *full_defaults_.dynamic_friction);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kHcDissipation),
+            *full_defaults_.hunt_crossley_dissipation);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kRelaxationTime),
+            *full_defaults_.relaxation_time);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+            *full_defaults_.point_stiffness);
+}
+
+TEST_F(ApplyProximityDefaultsTests, FullPropsFullDefaults) {
+  // Given full properties and full defaults, the property values remain
+  // unchanged.
+  std::unique_ptr<ProximityProperties> full_props = MakeFullProperties();
+  auto geometry_id = AddSphere("full_props", full_props.get());
+  geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            full_props->GetProperty<HydroelasticType>(kHydroGroup,
+                                                      kComplianceType));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
+            full_props->GetProperty<double>(kHydroGroup, kElastic));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
+            full_props->GetProperty<double>(kHydroGroup, kRezHint));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kSlabThickness),
+            full_props->GetProperty<double>(kHydroGroup, kSlabThickness));
+
+  auto friction = props->GetProperty<multibody::CoulombFriction<double>>(
+      kMaterialGroup, kFriction);
+  auto full_props_friction =
+      full_props->GetProperty<multibody::CoulombFriction<double>>(
+          kMaterialGroup, kFriction);
+  EXPECT_EQ(friction.static_friction(), full_props_friction.static_friction());
+  EXPECT_EQ(friction.dynamic_friction(),
+            full_props_friction.dynamic_friction());
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kHcDissipation),
+            full_props->GetProperty<double>(kMaterialGroup, kHcDissipation));
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kRelaxationTime),
+            full_props->GetProperty<double>(kMaterialGroup, kRelaxationTime));
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+            full_props->GetProperty<double>(kMaterialGroup, kPointStiffness));
+}
+
+TEST_F(ApplyProximityDefaultsTests, MultipleGeometries) {
+  // The one-argument overload modifies multiple geometries, consistent with
+  // the detailed behavior tested above.
+  ProximityProperties empty_props;
+  const int kNumTestGeoms = 10;
+  std::vector<GeometryId> geometry_ids;
+  geometry_ids.reserve(kNumTestGeoms);
+  for (int k = 0; k < kNumTestGeoms; ++k) {
+    geometry_ids.push_back(AddSphere(fmt::to_string(k), &empty_props));
+  }
+  geometry_state_.ApplyProximityDefaults(full_defaults_);
+  // Spot-check that values got written into the properties.
+  for (const auto& id : geometry_ids) {
+    auto* props = geometry_state_.GetProximityProperties(id);
+    ASSERT_NE(props, nullptr);
+    EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+              *full_defaults_.point_stiffness);
+  }
 }
 
 // Test the ability of GeometryState to successfully report geometries with

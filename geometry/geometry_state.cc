@@ -32,6 +32,16 @@ using internal::FrameNameSet;
 using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::kComplianceType;
+using internal::kElastic;
+using internal::kFriction;
+using internal::kHcDissipation;
+using internal::kHydroGroup;
+using internal::kMaterialGroup;
+using internal::kPointStiffness;
+using internal::kRelaxationTime;
+using internal::kRezHint;
+using internal::kSlabThickness;
 using internal::MakeRenderMeshFromTriangleSurfaceMesh;
 using internal::ProximityEngine;
 using internal::RenderMesh;
@@ -200,6 +210,49 @@ static RigidTransform<T> ChangeScalarType(const RigidTransform<U>& other) {
   } else {
     return RigidTransform<T>(ExtractDoubleOrThrow(other.GetAsMatrix34()));
   }
+}
+
+// Helper for ApplyProximityDefaults(). Adds any proximity properties that are
+// (a) missing in `properties`, and (b) not nullopt in `defaults`.
+//
+// @returns true if any properties were modified.
+bool BackfillDefaults(ProximityProperties* properties,
+                      const DefaultProximityProperties& defaults) {
+  auto backfill = [&](const std::string& group_name, const std::string& name,
+                      const auto& default_value) -> bool {
+    if (properties->HasProperty(group_name, name)) {
+      return false;
+    }
+    if (!default_value.has_value()) {
+      return false;
+    }
+    properties->AddProperty(group_name, name, *default_value);
+    return true;
+  };
+
+  bool result = false;
+  std::optional<HydroelasticType> wrapped_compliance(
+      internal::GetHydroelasticTypeFromString(defaults.compliance_type));
+  result |= backfill(kHydroGroup, kComplianceType, wrapped_compliance);
+
+  result |= backfill(kHydroGroup, kElastic, defaults.hydroelastic_modulus);
+  result |= backfill(kHydroGroup, kRezHint, defaults.resolution_hint);
+  result |= backfill(kHydroGroup, kSlabThickness, defaults.slab_thickness);
+
+  result |= backfill(kMaterialGroup, kHcDissipation,
+                     defaults.hunt_crossley_dissipation);
+  result |= backfill(kMaterialGroup, kRelaxationTime, defaults.relaxation_time);
+  result |= backfill(kMaterialGroup, kPointStiffness, defaults.point_stiffness);
+  if (defaults.static_friction.has_value()) {
+    // DefaultProximityProperties::ValidateOrThrow() enforces invariants on
+    // friction quantities.
+    DRAKE_DEMAND(defaults.dynamic_friction.has_value());
+    const auto wrapped_friction =
+        std::make_optional<multibody::CoulombFriction<double>>(
+            *defaults.static_friction, *defaults.dynamic_friction);
+    result |= backfill(kMaterialGroup, kFriction, wrapped_friction);
+  }
+  return result;
 }
 
 }  // namespace
@@ -1440,6 +1493,40 @@ std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
     const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
+}
+
+template <typename T>
+void GeometryState<T>::ApplyProximityDefaults(
+    const DefaultProximityProperties& defaults) {
+  for (const auto& geometry_id : GetAllGeometryIds(Role::kProximity)) {
+    ApplyProximityDefaults(defaults, geometry_id);
+  }
+}
+
+template <typename T>
+void GeometryState<T>::ApplyProximityDefaults(
+    const DefaultProximityProperties& defaults,
+    GeometryId geometry_id) {
+  // TODO(#20820) Maybe this can be removed later.
+  // Leave deformables untouched.
+  if (IsDeformableGeometry(geometry_id)) {
+    return;
+  }
+
+  // Get current proximity properties, required by documented precondition.
+  const auto* found_props = GetProximityProperties(geometry_id);
+  DRAKE_DEMAND(found_props != nullptr);
+  ProximityProperties props(*found_props);
+
+  // Update properties with defaults. Return early if nothing changed.
+  bool changed = BackfillDefaults(&props, defaults);
+  if (!changed) {
+    return;
+  }
+
+  // Make the final changes to proximity properties.
+  AssignRole(get_source_id(geometry_id), geometry_id, props,
+             RoleAssign::kReplace);
 }
 
 template <typename T>
