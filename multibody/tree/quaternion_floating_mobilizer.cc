@@ -142,8 +142,7 @@ void QuaternionFloatingMobilizer<T>::set_random_translation_distribution(
 }
 
 template <typename T>
-void QuaternionFloatingMobilizer<
-    T>::set_random_quaternion_distribution(
+void QuaternionFloatingMobilizer<T>::set_random_quaternion_distribution(
         const Eigen::Quaternion<symbolic::Expression>& q_FM) {
   Vector<symbolic::Expression, kNq> positions;
   if (this->get_random_state_distribution()) {
