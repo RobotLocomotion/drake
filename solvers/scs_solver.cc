@@ -537,6 +537,16 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
       prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
 
+  // Add L2NormCost. L2NormCost should be parsed together with the other second
+  // order cone constraints, since we introduce new second order cone
+  // constraints to formulate the L2 norm cost.
+  std::vector<int> l2norm_costs_lorentz_cone_y_start_indices;
+  std::vector<int> l2norm_costs_t_slack_indices;
+  internal::ParseL2NormCosts(prog, &num_x, &A_triplets, &b, &A_row_count,
+                             &second_order_cone_length,
+                             &l2norm_costs_lorentz_cone_y_start_indices, &c,
+                             &l2norm_costs_t_slack_indices);
+
   // Parse quadratic cost. This MUST be called after parsing the second order
   // cone constraint, as we might convert quadratic cost to second order cone
   // constraint.
