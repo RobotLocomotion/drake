@@ -12,7 +12,7 @@ from pathlib import Path
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
-    _MakeConvexhull,
+    _MakeConvexHull,
     Box,
     Convex,
     Cylinder,
