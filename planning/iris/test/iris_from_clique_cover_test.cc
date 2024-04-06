@@ -138,7 +138,6 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   IrisFromCliqueCoverOptions options;
 
   options.num_points_per_coverage_check = 100;
-  options.num_points_per_visibility_round = 100;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
@@ -151,9 +150,26 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   RandomGenerator generator(0);
 
+  // checking that adversarial setting gets overridden and correctly returns no
+  // sets.
+  options.num_points_per_visibility_round = 1;
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
-  EXPECT_GE(ssize(sets), 1);
+  EXPECT_EQ(ssize(sets), 0);
+
+  // checking that ellipsoid program can no longer stop the set builders by
+  // forcing it to fail
+  options.num_points_per_visibility_round = 20;
+  options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e10;
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+  EXPECT_EQ(ssize(sets), 0);
+
+  // reverting to normal settings, expect perfect coverage in a single plolytope
+  options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-6;
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+  EXPECT_EQ(ssize(sets), 1);
 
   // expect perfect coverage
   VPolytope vpoly(sets.at(0));
@@ -450,34 +466,6 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   // of the random seed. (The probability of success is larger than 1-1e-9).
   EXPECT_GE(coverage_estimate, 0.8);
 
-  MaybePauseForUser();
-}
-
-// Tests that the minimum_clique_size correctly gets overridden
-TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
-       BoxWithCornerObstaclesMinCliqueSizeTest) {
-  options.parallelism = Parallelism(1);
-  options.minimum_clique_size = 1;
-  options.iteration_limit = 1;
-  options.num_points_per_visibility_round = 6;
-  // use default solver MaxCliqueSovlerViaGreedy
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
-                                          nullptr);
-
-  EXPECT_EQ(ssize(sets), 0);
-
-  // Show the IrisFromCliqueCoverDecomposition
-  for (int i = 0; i < ssize(sets); ++i) {
-    // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
-    }
-    color.normalize();
-    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
-    Draw2dVPolytope(vregion,
-                    fmt::format("iris_from_clique_cover_min_cl_size{}", i),
-                    color, meshcat);
-  }
   MaybePauseForUser();
 }
 
