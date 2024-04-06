@@ -111,7 +111,7 @@ void AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(
 namespace {
 // Special case when min(X.rows(), X.cols()) ≤ 2. In this case, the Lorentz cone
 // is just a linear transformation of the positive orthant (i.e. the Lorentz
-// cone is simplicial). Therefore, begin Lorentz by Lorentz separable is
+// cone is simplicial). Therefore, being Lorentz-Lorentz separable is
 // equivalent to being Lorentz by positive orthant separable and should be
 // encoded as such.
 template <typename T,
@@ -121,20 +121,23 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraintSimplicialCase(
     const Eigen::Ref<const Eigen::MatrixX<T>>& X, MathematicalProgram* prog) {
   DRAKE_DEMAND(X.rows() <= 2 || X.cols() <= 2);
   // In 2d, the Lorentz cone is x₀ ≥ 0 and x₀ ≥ √x₁² and so is equivalent to the
-  // constraint linear constraints x₀ ≥ 0 and x₀ - x₁  ≥ 0. In 1d, the Lorentz
-  // cone is just x₀ ≥ 0 so there is nothing special that needs to be done.
+  // constraint linear constraints x₀ ≥ 0, x₀ ≥ x₁, x₀ ≥ -x₁. This can be
+  // expressed as R(π/4) x ∈ ⊗ R₊ⁿ, where R(π/4) is rotation matrix by π/4
+  // counterclockwise. In 1d, the Lorentz cone is just x₀ ≥ 0 so there is
+  // nothing special that needs to be done.
   Eigen::MatrixX<Expression> X_expr = X.template cast<Expression>();
-  Eigen::Matrix2d A{{1, 0}, {1, -1}};
+  const Eigen::Matrix2d R{{1 / std::sqrt(2), -1 / std::sqrt(2)},
+                          {1 / std::sqrt(2), 1 / std::sqrt(2)}};
   if (X.rows() == 2) {
-    X_expr = A * X_expr;
+    X_expr = R * X_expr;
   }
   if (X.cols() == 2) {
-    X_expr = X_expr * A.transpose();
+    X_expr = X_expr * R.transpose();
   }
 
   if (X.rows() <= 2 && X.cols() <= 2) {
-    // In this case, we have that X_expr must be positive orthant separable,
-    // i.e. pointwise positive.
+    // In this case, we have that X_expr must be
+    // positive-orthant-positive-orthant separable, i.e. pointwise positive.
     prog->AddLinearConstraint(
         X_expr, Eigen::MatrixXd::Zero(X_expr.rows(), X_expr.cols()),
         kInf * Eigen::MatrixXd::Ones(X_expr.rows(), X_expr.cols()));
@@ -149,9 +152,9 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraintSimplicialCase(
 }
 
 // Constrain that the affine expression A * x + b, is Lorentz by Lorentz
-// separable. Concretely, this means that the matrix Z = (A * x).reshaped(m,n)
-// can be written as Z = ∑ᵢ λᵢuᵢwᵢᵀ where λᵢ ≥ 0, uᵢ is in the Lorentz cone of
-// size m and w is in the Lorentz cone of size n.
+// separable. Concretely, this means that the matrix
+// Z = (A * x + b).reshaped(m,n) can be written as Z = ∑ᵢ λᵢuᵢwᵢᵀ where λᵢ ≥ 0,
+// uᵢ is in the Lorentz cone of size m and w is in the Lorentz cone of size n.
 void DoAddMatrixIsLorentzByLorentzSeparableConstraint(
     const SparseMatrix<double>& A, const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorX<Variable>>& x, const int m, const int n,
@@ -160,7 +163,7 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraint(
   DRAKE_DEMAND(A.cols() == x.rows());
   DRAKE_DEMAND(n > 2 || m > 2);
 
-  // The lower triagular part of Y ∈ S⁽ⁿ⁻¹⁾ ⊗ S⁽ᵐ⁻¹⁾
+  // The lower triangular part of Y ∈ S⁽ⁿ⁻¹⁾ ⊗ S⁽ᵐ⁻¹⁾
   auto y = prog->NewContinuousVariables((n * (n - 1) * m * (m - 1)) / 4, "y");
   MatrixX<Variable> Y = ToSymmetricMatrixFromTensorVector(y, n - 1, m - 1);
   prog->AddPositiveSemidefiniteConstraint(Y);
