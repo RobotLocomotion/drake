@@ -138,6 +138,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   IrisFromCliqueCoverOptions options;
 
   options.num_points_per_coverage_check = 100;
+  options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
@@ -150,23 +151,19 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   RandomGenerator generator(0);
 
-  // checking that adversarial setting gets overridden and correctly returns no
-  // sets.
-  options.num_points_per_visibility_round = 1;
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
-                                          nullptr);
-  EXPECT_EQ(ssize(sets), 0);
-
-  // checking that ellipsoid program can no longer stop the set builders by
-  // forcing it to fail
-  options.num_points_per_visibility_round = 20;
+  // Checking that ellipsoid program can no longer stop the set builders by
+  // forcing ellipsoid program to fail.
   options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e10;
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
   EXPECT_EQ(ssize(sets), 0);
 
-  // reverting to normal settings, expect perfect coverage in a single plolytope
+  // Reverting to normal settings.
   options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-6;
+  // Checking that the adversarial setting of 1 point visibility graphs gets
+  // overridden and correctly increases the number of samples. The result should
+  // be perfect coverage in a single polytope.
+  options.num_points_per_visibility_round = 1;
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
   EXPECT_EQ(ssize(sets), 1);
