@@ -276,8 +276,8 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
       metadata.up_axis.GetString()));
   }
 
-  // Makes the assumption that axis X/Y scales the radius of the capsule
-  // and axis Z scales the height of the capsule
+  // Makes the assumption that axis X/Y scales the radius of the cylinder
+  // and axis Z scales the height of the cylinder
   if (prim_scale[0] != prim_scale[1]) {
     workspace.diagnostic.Error(fmt::format(
       "The cylinder at {} has different scaling in X and Y axis, and that is "
@@ -297,12 +297,6 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
     cylinder_height * prim_scale[2] * metadata.meters_per_unit);
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryCone(
-  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
-  const ParsingWorkspace& workspace) {
-  return nullptr;
-}
-
 std::unique_ptr<geometry::Shape> CreateVisualGeometry(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
@@ -314,8 +308,6 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     return CreateGeometryCapsule(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     return CreateGeometryCylinder(prim, metadata, workspace);
-  } else if (prim.IsA<pxr::UsdGeomCone>()) {
-    return CreateGeometryCone(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(

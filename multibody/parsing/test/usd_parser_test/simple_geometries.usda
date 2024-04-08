@@ -14,6 +14,7 @@ def Xform "World"
         vector3f physics:gravityDirection = (0, 0, -1)
         float physics:gravityMagnitude = 981
     }
+
     def Cube "boxActor" (
         prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
@@ -43,7 +44,7 @@ def Xform "World"
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
     }
 
-    def Sphere "Sphere" (
+    def Sphere "Ellipsoid" (
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
     {
@@ -62,7 +63,7 @@ def Xform "World"
     {
         double3 xformOp:rotateXYZ = (-90, 0, 45)
         double3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:translate = (0, -200, 0)
+        double3 xformOp:translate = (200, 200, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
 
         def Capsule "Capsule" (
@@ -114,5 +115,33 @@ def Xform "World"
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
             }
         }
+    }
+
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+        double radius = 50
+        color3f[] primvars:displayColor = [(0.5, 0.9, 0.9)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (200, -200, 6.59383658785373e-12)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Cube "Cube" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+        double size = 100
+        color3f[] primvars:displayColor = [(0.3, 0.5, 1.0)]
+        double3 xformOp:rotateXYZ = (45, 45, 45)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-200, -200, 8.071765478234738e-12)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 }
