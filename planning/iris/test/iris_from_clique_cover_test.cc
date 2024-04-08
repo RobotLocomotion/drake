@@ -151,8 +151,10 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   RandomGenerator generator(0);
 
-  // Checking that ellipsoid program can no longer stop the set builders by
-  // forcing ellipsoid program to fail.
+  // This checks that errors in finding the minimum volume circumscribed
+  // ellipsoid does not lead to an infinite loop or program crash. Setting this
+  // tolerance very high has the effect of rejecting every clique as being in an
+  // affine subspace.
   options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e10;
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
