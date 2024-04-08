@@ -6,8 +6,8 @@ def com_github_nelhage_rules_boost_internal_repository(
     github_archive(
         name = name,
         repository = "nelhage/rules_boost",
-        commit = "00b9b9ecb9b43564de44ea0b10e22b29dcf84d79",
-        sha256 = "a8499f581899ae7356e40e2aab6e985dd2da9c894c91197341aace9a0a6157fe",  # noqa
+        commit = "52dfb0c28241d48047fe59dfcea92f9370099a13",
+        sha256 = "3fe1fa91450e47b0c969640ec0d7a6495c5ea310538d6316b0787cd01087391c",  # noqa
         patches = [
             ":patches/iostreams.patch",
         ],
