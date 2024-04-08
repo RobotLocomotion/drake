@@ -7,6 +7,10 @@
 namespace drake {
 namespace solvers {
 namespace internal {
+namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+}  // namespace
+
 int AddLinearConstraintNoDuplication(
     const MathematicalProgram& prog, GRBmodel* model,
     const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
@@ -128,6 +132,89 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
   }
 }
 
+namespace {
+// Drake's MathematicalProgram imposes the second order cone constraint in the
+// form "A*x+b is in cone". On the other hand, Gurobi imposes the second order
+// cone in this form "z is in cone". So we consider to add the linear equality
+// constraint z-A*x=b. We write z-A*x in the form of M * [x;z], where
+// M = [-A I].
+void ConvertSecondOrderConeLinearConstraint(
+    const Eigen::SparseMatrix<double>& A, const std::vector<int>& xz_indices,
+    std::vector<Eigen::Triplet<double>>* M_triplets) {
+  M_triplets->clear();
+  M_triplets->reserve(A.nonZeros() + A.rows());
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      M_triplets->emplace_back(it.row(), xz_indices[it.col()], -it.value());
+    }
+  }
+  for (int i = 0; i < A.rows(); ++i) {
+    M_triplets->emplace_back(i, xz_indices[A.cols() + i], 1);
+  }
+}
+
+// Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
+// cone constraint.
+// https://www.gurobi.com/documentation/10.0/refman/c_addqconstr.html
+// For Lorentz cone constraint,
+// Q = [-1 0 0 ... 0]
+//     [ 0 1 0 ... 0]
+//     [ 0 0 1 ... 0]
+//          ...
+//     [ 0 0 0 ... 1]
+// namely Q = diag([-1; 1; 1; ...; 1], so
+// z' * Q * z = z(1)^2 + ... + z(n-1)^2 - z(0)^2.
+// For rotated Lorentz cone constraint
+// Q = [0 -1 0 0 ... 0]
+//     [0  0 0 0 ... 0]
+//     [0  0 1 0 ... 0]
+//     [0  0 0 1 ... 0]
+//           ...
+//     [0  0 0 0 ... 1]
+// so z' * Q * z = z(2)^2 + ... + z(n-1)^2 - z(0) * z(1).
+// Note that Q in the rotated Lorentz cone case is not symmetric (following the
+// example https://www.gurobi.com/documentation/current/examples/qcp_c_c.html).
+// We will store Q in a sparse format.
+// qrow stores the row    indices of the non-zero entries of Q.
+// qcol stores the column indices of the non-zero entries of Q.
+// qval stores the value          of the non-zero entries of Q.
+// GRBaddqconstr expects this qrow/qcol/qval format instead of
+// Eigen::SparseMatrix format.
+void CalcSecondOrderConeQ(bool is_rotated_cone,
+                          const std::vector<int>& z_indices,
+                          std::vector<int>* qrow, std::vector<int>* qcol,
+                          std::vector<double>* qval) {
+  const int num_z = z_indices.size();
+  const size_t num_Q_nonzero = is_rotated_cone ? num_z - 1 : num_z;
+  qrow->clear();
+  qcol->clear();
+  qval->clear();
+  qrow->reserve(num_Q_nonzero);
+  qcol->reserve(num_Q_nonzero);
+  qval->reserve(num_Q_nonzero);
+  for (int i = 0; i < num_z - 2; ++i) {
+    const int zi_index = z_indices[i + 2];
+    qrow->push_back(zi_index);
+    qcol->push_back(zi_index);
+    qval->push_back(1.0);
+  }
+  const int z0_index = z_indices[0];
+  const int z1_index = z_indices[1];
+  if (is_rotated_cone) {
+    qrow->push_back(z0_index);
+    qcol->push_back(z1_index);
+    qval->push_back(-1);
+  } else {
+    qrow->push_back(z0_index);
+    qcol->push_back(z0_index);
+    qval->push_back(-1);
+    qrow->push_back(z1_index);
+    qcol->push_back(z1_index);
+    qval->push_back(1);
+  }
+}
+}  // namespace
+
 template <typename C>
 int AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
@@ -168,16 +255,7 @@ int AddSecondOrderConeConstraints(
     // Gurobi expects M in compressed sparse row format, so we will first find
     // out the non-zero entries in each row of M.
     std::vector<Eigen::Triplet<double>> M_triplets;
-    M_triplets.reserve(A.nonZeros() + num_z);
-    for (int i = 0; i < A.outerSize(); ++i) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-        M_triplets.emplace_back(it.row(), xz_indices[it.col()], -it.value());
-      }
-    }
-    for (int i = 0; i < num_z; ++i) {
-      M_triplets.emplace_back(i, xz_indices[num_x + i], 1);
-    }
-
+    ConvertSecondOrderConeLinearConstraint(A, xz_indices, &M_triplets);
     Eigen::SparseMatrix<double, Eigen::RowMajor> M(num_z, num_gurobi_vars);
     // Eigen::SparseMatrix::setFromTriplets will automatically group the sum of
     // the values in M_triplets that correspond to the same entry in the sparse
@@ -195,54 +273,14 @@ int AddSecondOrderConeConstraints(
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
     // https://www.gurobi.com/documentation/10.0/refman/c_addqconstr.html
-    // For Lorentz cone constraint,
-    // Q = [-1 0 0 ... 0]
-    //     [ 0 1 0 ... 0]
-    //     [ 0 0 1 ... 0]
-    //          ...
-    //     [ 0 0 0 ... 1]
-    // namely Q = diag([-1; 1; 1; ...; 1], so
-    // z' * Q * z = z(1)^2 + ... + z(n-1)^2 - z(0)^2.
-    // For rotated Lorentz cone constraint
-    // Q = [0 -1 0 0 ... 0]
-    //     [0  0 0 0 ... 0]
-    //     [0  0 1 0 ... 0]
-    //     [0  0 0 1 ... 0]
-    //           ...
-    //     [0  0 0 0 ... 1]
-    // so z' * Q * z = z(2)^2 + ... + z(n-1)^2 - z(0) * z(1).
-    // We will store Q in a sparse format.
-    // qrow stores the row    indices of the non-zero entries of Q.
-    // qcol stores the column indices of the non-zero entries of Q.
-    // qval stores the value          of the non-zero entries of Q.
-    size_t num_Q_nonzero = is_rotated_cone ? num_z - 1 : num_z;
-    std::vector<int> qrow(num_Q_nonzero);
-    std::vector<int> qcol(num_Q_nonzero);
-    std::vector<double> qval(num_Q_nonzero);
-    for (int i = 0; i < num_z - 2; ++i) {
-      int zi_index =
-          second_order_cone_new_variable_indices[second_order_cone_count]
-                                                [i + 2];
-      qrow[i] = zi_index;
-      qcol[i] = zi_index;
-      qval[i] = 1.0;
-    }
-    int z0_index =
-        second_order_cone_new_variable_indices[second_order_cone_count][0];
-    int z1_index =
-        second_order_cone_new_variable_indices[second_order_cone_count][1];
-    if (is_rotated_cone) {
-      qrow[num_z - 2] = z0_index;
-      qcol[num_z - 2] = z1_index;
-      qval[num_z - 2] = -1;
-    } else {
-      qrow[num_z - 2] = z0_index;
-      qcol[num_z - 2] = z0_index;
-      qval[num_z - 2] = -1;
-      qrow[num_z - 1] = z1_index;
-      qcol[num_z - 1] = z1_index;
-      qval[num_z - 1] = 1;
-    }
+    std::vector<int> qrow;
+    std::vector<int> qcol;
+    std::vector<double> qval;
+    CalcSecondOrderConeQ(
+        is_rotated_cone,
+        second_order_cone_new_variable_indices[second_order_cone_count], &qrow,
+        &qcol, &qval);
+    const size_t num_Q_nonzero = qrow.size();
     error =
         GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
                       qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
@@ -301,6 +339,114 @@ void AddSecondOrderConeVariables(
       xlow->at((*second_order_cone_variable_indices)[i][1]) = 0;
     }
   }
+}
+
+void AddL2NormCostVariables(
+    const std::vector<Binding<L2NormCost>>& l2_norm_costs,
+    std::vector<bool>* is_new_variable, int* num_gurobi_vars,
+    std::vector<std::vector<int>>* lorentz_cone_variable_indices,
+    std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
+    std::vector<double>* xupp) {
+  for (const auto& l2_norm_cost : l2_norm_costs) {
+    // z is of size l2_norm_cost.A().rows() + 1
+    for (int i = 0; i < 1 + l2_norm_cost.evaluator()->get_sparse_A().rows();
+         ++i) {
+      is_new_variable->push_back(true);
+      gurobi_var_type->push_back(GRB_CONTINUOUS);
+    }
+    lorentz_cone_variable_indices->emplace_back(
+        1 + l2_norm_cost.evaluator()->get_sparse_A().rows(), 0);
+    for (int i = 0; i < 1 + l2_norm_cost.evaluator()->get_sparse_A().rows();
+         ++i) {
+      lorentz_cone_variable_indices->back()[i] = *num_gurobi_vars + i;
+    }
+    // For Lorentz cone constraint z(0) >= 0.
+    xlow->push_back(0);
+    xupp->push_back(kInf);
+    for (int i = 0; i < l2_norm_cost.evaluator()->get_sparse_A().rows(); ++i) {
+      xlow->push_back(-kInf);
+      xupp->push_back(kInf);
+    }
+    *num_gurobi_vars += 1 + l2_norm_cost.evaluator()->get_sparse_A().rows();
+  }
+}
+
+int AddL2NormCosts(const MathematicalProgram& prog,
+                   const std::vector<std::vector<int>>&
+                       l2norm_costs_lorentz_cone_variable_indices,
+                   GRBmodel* model, int* num_gurobi_linear_constraints) {
+  DRAKE_ASSERT(prog.l2norm_costs().size() ==
+               l2norm_costs_lorentz_cone_variable_indices.size());
+  int num_gurobi_vars;
+  int error = GRBgetintattr(model, "NumVars", &num_gurobi_vars);
+  DRAKE_ASSERT(!error);
+  // We declare the vectors here outside of the for loop, so that we can re-use
+  // the heap memory of these vectors in each iteration of the for loop.
+  // We will impose the linear equality constraint z[1:] - Cx = d.
+  // xz_indices records the indices of [x;z[1:]] in Gurobi.
+  // M_triplets records the non-zero entries in M = [-C I].
+  // sense records the sign (=, <= or >=) in Gurobi model's linear constraints.
+  // qrow, qcol, qval stores the row, column and value of the Q matrix in the
+  // second order cone constraint.
+  std::vector<int> xz_indices;
+  std::vector<Eigen::Triplet<double>> M_triplets;
+  // This is used when adding linear constraints to the Gurobi model to indicate
+  // that we are adding equality constraints.
+  std::vector<char> sense;
+  std::vector<int> qrow;
+  std::vector<int> qcol;
+  std::vector<double> qval;
+  for (int i = 0; i < ssize(prog.l2norm_costs()); ++i) {
+    const Eigen::SparseMatrix<double>& C =
+        prog.l2norm_costs()[i].evaluator()->get_sparse_A();
+    const auto& d = prog.l2norm_costs()[i].evaluator()->b();
+    const int num_x = C.cols();
+    const int num_z = C.rows() + 1;
+    // Add the constraint z[1:]-C*x=d
+    xz_indices.clear();
+    xz_indices.reserve(num_x + num_z - 1);
+    for (int j = 0; j < num_x; ++j) {
+      xz_indices.push_back(prog.FindDecisionVariableIndex(
+          prog.l2norm_costs()[i].variables()(j)));
+    }
+    for (int j = 1; j < num_z; ++j) {
+      xz_indices.push_back(l2norm_costs_lorentz_cone_variable_indices[i][j]);
+    }
+    // z[1:]-Cx will be written as M * [x;z[1:]], where M=[-C I].
+    ConvertSecondOrderConeLinearConstraint(C, xz_indices, &M_triplets);
+    // Gurobi expects the matrix in the sparse row format.
+    Eigen::SparseMatrix<double, Eigen::RowMajor> M(num_z - 1, num_gurobi_vars);
+    M.setFromTriplets(M_triplets.begin(), M_triplets.end());
+
+    sense.clear();
+    sense.reserve(num_z - 1);
+    for (int j = 0; j < num_z - 1; ++j) {
+      sense.push_back(GRB_EQUAL);
+    }
+
+    error = GRBaddconstrs(model, num_z - 1, M.nonZeros(), M.outerIndexPtr(),
+                          M.innerIndexPtr(), M.valuePtr(), sense.data(),
+                          const_cast<double*>(d.data()), nullptr);
+    DRAKE_ASSERT(!error);
+    *num_gurobi_linear_constraints += num_z - 1;
+    CalcSecondOrderConeQ(false /*is_rotated_cone=false*/,
+                         l2norm_costs_lorentz_cone_variable_indices[i], &qrow,
+                         &qcol, &qval);
+    const size_t num_Q_nonzero = qrow.size();
+    error =
+        GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
+                      qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    if (error) {
+      return error;
+    }
+    // Add the cost min z[0]
+    error = GRBsetdblattrelement(
+        model, "Obj", l2norm_costs_lorentz_cone_variable_indices[i][0], 1.0);
+    if (error) {
+      return error;
+    }
+  }
+  return 0;
 }
 
 // Explicit instantiation.

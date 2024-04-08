@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -33,9 +32,9 @@ class BuildSchunkWsgControlTest : public ::testing::Test {
   void SetUp() {
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_};
-    const std::string wsg_file = FindResourceOrThrow(
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-    wsg_instance_ = parser.AddModels(wsg_file).at(0);
+    const std::string wsg_url =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    wsg_instance_ = parser.AddModelsFromUrl(wsg_url).at(0);
 
     // Weld the gripper to the world frame.
     sim_plant_->WeldFrames(sim_plant_->world_frame(),

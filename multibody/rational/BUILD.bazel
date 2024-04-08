@@ -44,12 +44,11 @@ drake_cc_library(
     hdrs = ["test/rational_forward_kinematics_test_utilities.h"],
     data = [
         "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     visibility = ["//visibility:private"],
     deps = [
-        "//common:find_resource",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/parsing:parser",
         "//multibody/plant",

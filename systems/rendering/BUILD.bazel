@@ -30,10 +30,9 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_position_to_geometry_pose_test",
-    data = ["//manipulation/models/iiwa_description:models"],
+    data = ["@drake_models//:iiwa_description"],
     deps = [
         ":multibody_position_to_geometry_pose",
-        "//common:find_resource",
         "//common/test_utilities",
         "//multibody/parsing",
         "//systems/framework/test_utilities",

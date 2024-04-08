@@ -6,11 +6,18 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import SceneGraph_
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import MultibodyPlant_
+from pydrake.multibody.plant import MultibodyPlant_, MultibodyPlantConfig
 from pydrake.systems.framework import Context_, DiagramBuilder_
 
 
 class TestRobotDiagram(unittest.TestCase):
+    @numpy_compare.check_all_types
+    def test_robot_diagram_builder_default_time_step(self, T):
+        Class = mut.RobotDiagramBuilder_[T]
+        dut = Class()
+        self.assertEqual(dut.plant().time_step(),
+                         MultibodyPlantConfig().time_step)
+
     @numpy_compare.check_all_types
     def test_robot_diagram_builder(self, T):
         """Tests the full RobotDiagramBuilder API.
@@ -18,9 +25,9 @@ class TestRobotDiagram(unittest.TestCase):
         Class = mut.RobotDiagramBuilder_[T]
         dut = Class(time_step=0.0)
         if T == float:
-            dut.parser().AddModels(FindResourceOrThrow(
-                "drake/manipulation/models/iiwa_description/urdf/"
-                "iiwa14_spheres_dense_collision.urdf"))
+            dut.parser().AddModels(url=(
+                "package://drake_models/iiwa_description/urdf/"
+                + "iiwa14_spheres_dense_collision.urdf"))
         else:
             # TODO(jwnimmer-tri) Use dut.plant() to manually add some
             # models, bodies, and geometries here.

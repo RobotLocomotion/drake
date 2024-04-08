@@ -580,8 +580,8 @@ drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
-        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":detail_mujoco_parser",
@@ -595,9 +595,9 @@ drake_cc_googletest(
     name = "detail_urdf_parser_test",
     data = [
         ":test_models",
-        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:atlas",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":detail_urdf_parser",

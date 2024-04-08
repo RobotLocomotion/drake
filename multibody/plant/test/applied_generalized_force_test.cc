@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -29,16 +28,15 @@ class MultibodyPlantGeneralizedAppliedForceTest
  public:
   void SetUp() override {
     // Load two Iiwa models.
-    const std::string full_name = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf");
+    const std::string url =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
     systems::DiagramBuilder<double> builder;
     const double dt = GetParam();
     plant_ = builder.AddSystem<MultibodyPlant<double>>(dt);
 
     // Add the model twice.
-    auto iiwa1 = Parser(plant_, "iiwa1").AddModels(full_name).at(0);
-    auto iiwa2 = Parser(plant_, "iiwa2").AddModels(full_name).at(0);
+    auto iiwa1 = Parser(plant_, "iiwa1").AddModelsFromUrl(url).at(0);
+    auto iiwa2 = Parser(plant_, "iiwa2").AddModelsFromUrl(url).at(0);
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa1));
     plant_->WeldFrames(plant_->world_frame(),

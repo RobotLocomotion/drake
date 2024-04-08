@@ -7,7 +7,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
@@ -18,6 +17,7 @@ namespace {
 
 using geometry::SceneGraph;
 using multibody::MultibodyPlant;
+using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using symbolic::Expression;
 using systems::Context;
@@ -27,13 +27,19 @@ using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
-  builder->parser().AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_spheres_dense_collision.urdf"));
+  builder->parser().AddModelsFromUrl(
+      "package://drake_models/iiwa_description/urdf/"
+      "iiwa14_spheres_dense_collision.urdf");
   return builder;
 }
 
-GTEST_TEST(RobotDiagramBuilderTest, TimeStep) {
+GTEST_TEST(RobotDiagramBuilderTest, TimeStepDefault) {
+  const MultibodyPlantConfig default_plant_config;
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  EXPECT_EQ(builder->plant().time_step(), default_plant_config.time_step);
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, TimeStepExplicit) {
   const double time_step = 0.01;
   auto builder = std::make_unique<RobotDiagramBuilder<double>>(time_step);
   EXPECT_EQ(builder->plant().time_step(), time_step);

@@ -8,7 +8,6 @@
 
 #include <benchmark/benchmark.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/tools/performance/fixture_common.h"
 
@@ -28,15 +27,14 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
 
     const int kNumIiwas = 10;
 
-    const std::string iiwa_path = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf");
+    const std::string iiwa_url =
+        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     multibody::Parser parser{plant_.get()};
     parser.SetAutoRenaming(true);
     for (int i = 0; i < kNumIiwas; ++i) {
       const ModelInstanceIndex model_instance =
-          parser.AddModels(iiwa_path).at(0);
+          parser.AddModelsFromUrl(iiwa_url).at(0);
       plant_->WeldFrames(plant_->world_frame(),
                          plant_->GetFrameByName("iiwa_link_0", model_instance));
     }

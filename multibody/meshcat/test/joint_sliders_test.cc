@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_visualizer.h"
@@ -33,14 +32,14 @@ class JointSlidersTest : public ::testing::Test {
         plant_{plant_and_scene_graph_.plant},
         scene_graph_{plant_and_scene_graph_.scene_graph} {}
 
-  void Add(const std::string& resource_path,
+  void Add(const std::string& url,
            const std::string& model_name = {}) {
     Parser parser(&plant_, model_name);
-    parser.AddModels(FindResourceOrThrow(resource_path));
+    parser.AddModelsFromUrl(url);
   }
 
   void AddAcrobot() {
-    Add("drake/multibody/benchmarks/acrobot/acrobot.urdf");
+    Add("package://drake/multibody/benchmarks/acrobot/acrobot.urdf");
     plant_.Finalize();
   }
 
@@ -206,8 +205,8 @@ TEST_F(JointSlidersTest, WrongNumPositions) {
 // Test robots with overlapping joint names, in which case the model name must
 // be used to disambiguate them.
 TEST_F(JointSlidersTest, DuplicatedJointNames) {
-  Add("drake/multibody/benchmarks/acrobot/acrobot.urdf", "alpha");
-  Add("drake/multibody/benchmarks/acrobot/acrobot.urdf", "bravo");
+  Add("package://drake/multibody/benchmarks/acrobot/acrobot.urdf", "alpha");
+  Add("package://drake/multibody/benchmarks/acrobot/acrobot.urdf", "bravo");
   plant_.Finalize();
 
   // Add the sliders.
@@ -226,7 +225,7 @@ TEST_F(JointSlidersTest, DuplicatedJointNames) {
 
 // Test a multi-dof joint.
 TEST_F(JointSlidersTest, MultiDofJoint) {
-  Add("drake/multibody/meshcat/test/universal_joint.sdf");
+  Add("package://drake/multibody/meshcat/test/universal_joint.sdf");
   plant_.Finalize();
   const JointSliders<double> dut(meshcat_, &plant_);
 
@@ -239,7 +238,7 @@ TEST_F(JointSlidersTest, MultiDofJoint) {
 // for this, which is fine (and thus we'd change this test), but at least for
 // now we should confirm that nothing crashes in this case.
 TEST_F(JointSlidersTest, FreeBody) {
-  Add("drake/multibody/models/box.urdf");
+  Add("package://drake/multibody/models/box.urdf");
   plant_.Finalize();
   const JointSliders<double> dut(meshcat_, &plant_);
   EXPECT_EQ(dut.get_output_port().size(), 7);
@@ -377,7 +376,7 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
   static constexpr char kKukaIiwaJoint5[] = "iiwa_joint_5";  // Index: 11
   static constexpr char kKukaIiwaJoint6[] = "iiwa_joint_6";  // Index: 12
   static constexpr char kKukaIiwaJoint7[] = "iiwa_joint_7";  // Index: 13
-  Add("drake/manipulation/models/iiwa_description/urdf/"
+  Add("package://drake_models/iiwa_description/urdf/"
       "iiwa14_primitive_collision.urdf");
   plant_.Finalize();
   JointSliders<double> dut(meshcat_, &plant_);

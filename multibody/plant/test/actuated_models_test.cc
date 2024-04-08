@@ -5,7 +5,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -64,12 +63,10 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
       ModelConfiguration model_config = ModelConfiguration::kArmIsNotControlled,
       const MultibodyPlantConfig& config = MultibodyPlantConfig{
           .time_step = 0.01, .discrete_contact_approximation = "sap"}) {
-    const char kArmSdfPath[] =
-        "drake/manipulation/models/iiwa_description/iiwa7/"
-        "iiwa7_no_collision.sdf";
-
-    const char kWsg50SdfPath[] =
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+    const char kArmSdfUrl[] =
+        "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf";
+    const char kWsg50SdfUrl[] =
+        "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     // Make a discrete model.
     plant_ = std::make_unique<MultibodyPlant<double>>(config.time_step);
@@ -78,20 +75,21 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     Parser parser(plant_.get());
 
     // Add the arm.
-    arm_model_ = parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
+    arm_model_ = parser.AddModelsFromUrl(kArmSdfUrl).at(0);
 
     // A model of an underactuated robot.
-    acrobot_model_ = parser
-                         .AddModels(FindResourceOrThrow(
-                             "drake/multibody/benchmarks/acrobot/acrobot.sdf"))
-                         .at(0);
+    acrobot_model_ =
+        parser
+            .AddModelsFromUrl(
+                "package://drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            .at(0);
 
     // Add the gripper.
-    gripper_model_ = parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
+    gripper_model_ = parser.AddModelsFromUrl(kWsg50SdfUrl).at(0);
 
     // A model of a (non-actuated) plate.
     box_model_ =
-        parser.AddModels(FindResourceOrThrow("drake/multibody/models/box.urdf"))
+        parser.AddModelsFromUrl("package://drake/multibody/models/box.urdf")
             .at(0);
 
     const auto& base_body = plant_->GetBodyByName("iiwa_link_0", arm_model_);

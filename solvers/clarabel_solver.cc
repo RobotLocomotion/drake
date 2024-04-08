@@ -382,6 +382,17 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
 
   internal::ParseQuadraticCosts(prog, &P_upper_triplets, &q, &cost_constant);
 
+  std::vector<int> l2norm_costs_second_order_cone_length;
+  std::vector<int> l2norm_costs_lorentz_cone_y_start_indices;
+  std::vector<int> l2norm_costs_t_slack_indices;
+  internal::ParseL2NormCosts(prog, &num_x, &A_triplets, &b, &A_row_count,
+                             &l2norm_costs_second_order_cone_length,
+                             &l2norm_costs_lorentz_cone_y_start_indices, &q,
+                             &l2norm_costs_t_slack_indices);
+  for (const int soc_length : l2norm_costs_second_order_cone_length) {
+    cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
+  }
+
   // Parse linear equality constraint
   // linear_eq_y_start_indices[i] is the starting index of the dual
   // variable for the constraint prog.linear_equality_constraints()[i]. Namely

@@ -71,8 +71,7 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   // the joint limits are imposed when with_joint_limits=true, and the joint
   // limits are ignored when with_joint_limits=false.
   auto plant = ConstructIiwaPlant(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
-                          "iiwa14_no_collision.sdf"),
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf",
       0.01);
 
   InverseKinematics ik_with_joint_limits(*plant);

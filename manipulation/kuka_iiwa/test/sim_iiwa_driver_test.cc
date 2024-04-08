@@ -31,7 +31,7 @@ class SimIiwaDriverTest : public ::testing::Test {
     sim_plant_ = std::make_unique<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_.get()};
     iiwa_instance_ = parser.AddModelsFromUrl(
-        "package://drake/manipulation/models/iiwa_description/iiwa7/"
+        "package://drake_models/iiwa_description/sdf/"
         "iiwa7_no_collision.sdf")[0];
     sim_plant_->WeldFrames(sim_plant_->world_frame(),
                            sim_plant_->GetFrameByName("iiwa_link_0"));

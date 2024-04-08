@@ -10,7 +10,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
@@ -47,6 +46,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 using multibody::MultibodyPlant;
+using multibody::PackageMap;
 using systems::Context;
 using systems::Demultiplexer;
 using systems::StateInterpolatorWithDiscreteDerivative;
@@ -60,11 +60,11 @@ int DoMain() {
   // Adds a plant.
   auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
       &builder, FLAGS_sim_dt);
-  const char* kModelPath =
-      "drake/manipulation/models/iiwa_description/"
+  const char* kModelUrl =
+      "package://drake_models/iiwa_description/"
       "urdf/iiwa14_polytope_collision.urdf";
   const std::string urdf =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kModelPath));
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : PackageMap{}.ResolveUrl(kModelUrl));
   auto iiwa_instance =
       multibody::Parser(&plant, &scene_graph).AddModels(urdf).at(0);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));

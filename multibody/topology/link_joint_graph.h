@@ -350,18 +350,18 @@ class LinkJointGraph {
   MobodIndex link_to_mobod(BodyIndex index) const;  // See below
 
   /** After the SpanningForest has been built, returns groups of Links that are
-  welded together, which we call "Link Composites". Each group may be modeled
+  welded together, which we call "LinkComposites". Each group may be modeled
   in the Forest with a single mobilized body or multiple mobilized bodies
   depending on modeling options, but that doesn't change anything here. The
-  first entry in each Link Composite is the "active link", the one whose
-  (non-weld) Joint moves the whole Link Composite due to its modeling in the
+  first entry in each LinkComposite is the "active link", the one whose
+  (non-weld) Joint moves the whole LinkComposite due to its modeling in the
   Spanning Forest. The rest of the Links in the composite are listed in no
   particular order.
 
-  The 0th Link Composite is always present and its first entry is World
+  The 0th LinkComposite is always present and its first entry is World
   (Link 0), even if nothing else is welded to World. Otherwise, composites
   are present here if they contain two or more welded Links; Links that aren't
-  welded to any other Links are not included here at all. Link Composites
+  welded to any other Links are not included here at all. LinkComposites
   are discovered as a side effect of Forest-building; there is no cost to
   accessing them here. */
   const std::vector<std::vector<BodyIndex>>& link_composites() const {
@@ -428,7 +428,7 @@ class LinkJointGraph {
                                   JointIndex primary_joint_index);
 
   // The World Link must already be in the graph but there are no Link
-  // Composites yet. This creates the 0th Link Composite and puts World in it.
+  // Composites yet. This creates the 0th LinkComposite and puts World in it.
   void CreateWorldLinkComposite();
 
   LoopConstraintIndex AddLoopClosingWeldConstraint(BodyIndex primary_link_index,

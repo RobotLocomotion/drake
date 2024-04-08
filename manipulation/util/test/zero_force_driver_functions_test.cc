@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
@@ -22,9 +21,8 @@ GTEST_TEST(ZeroForceDriverFunctionsTest, SmokeTest) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant =
       AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
-  const std::string filename = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-  Parser(&plant).AddModels(filename);
+  Parser(&plant).AddModelsFromUrl(
+      "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   plant.Finalize();
 
   // Apply zero actuation input.

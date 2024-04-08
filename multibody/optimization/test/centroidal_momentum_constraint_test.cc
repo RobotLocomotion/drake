@@ -2,9 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
+#include "drake/multibody/parsing/package_map.h"
 
 namespace drake {
 namespace multibody {
@@ -102,12 +102,12 @@ void CentroidalMomentumConstraintTester(
 }
 
 GTEST_TEST(CentroidalMomentumConstraintTest, TestDualIiwas) {
-  const std::string iiwa_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf");
+  const std::string iiwa_url =
+      "package://drake_models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
 
   auto plant =
-      ConstructIiwaPlant(iiwa_path, 0.1 /* time step */, 2 /* num_iiwa */);
+      ConstructIiwaPlant(iiwa_url, 0.1 /* time step */, 2 /* num_iiwa */);
   auto plant_context = plant->CreateDefaultContext();
   auto plant_autodiff = systems::System<double>::ToAutoDiffXd(*plant);
   auto plant_context_autodiff = plant_autodiff->CreateDefaultContext();

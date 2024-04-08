@@ -58,11 +58,10 @@ drake_cc_googlebench_binary(
     srcs = ["iiwa_relaxed_pos_ik.cc"],
     add_test_rule = True,
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
         "//solvers:solve",
@@ -106,10 +105,9 @@ drake_cc_googlebench_binary(
     srcs = ["position_constraint.cc"],
     add_test_rule = True,
     data = [
-        "//manipulation/models/iiwa_description:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
-        "//common:find_resource",
         "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/parsing",
         "//multibody/plant",

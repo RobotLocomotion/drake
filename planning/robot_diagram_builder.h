@@ -29,8 +29,13 @@ class RobotDiagramBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotDiagramBuilder)
 
-  /** Constructs with the specified time step for the contained plant. */
-  explicit RobotDiagramBuilder(double time_step = 0.0);
+  /** Constructs with the specified time step for the contained plant.
+  @param time_step Governs whether the MultibodyPlant is modeled as a discrete
+  system (`time_step > 0`) or as a continuous system (`time_step = 0`). See
+  @ref time_advancement_strategy "Choice of Time Advancement Strategy" for
+  further details. The default here matches the default value from
+  multibody::MultibodyPlantConfig. */
+  explicit RobotDiagramBuilder(double time_step = 0.001);
 
   ~RobotDiagramBuilder();
 

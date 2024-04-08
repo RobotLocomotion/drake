@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -17,8 +16,7 @@ using Eigen::Vector3d;
 
 GTEST_TEST(WingTest, BasicTest) {
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModels(
-      FindResourceOrThrow("drake/multibody/models/box.urdf"));
+  Parser(&plant).AddModelsFromUrl("package://drake/multibody/models/box.urdf");
   plant.Finalize();
 
   const RigidBody<double>& body = plant.GetBodyByName("box");
@@ -35,8 +33,7 @@ GTEST_TEST(WingTest, FallingFlatPlate) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModels(
-      FindResourceOrThrow("drake/multibody/models/box.urdf"));
+  Parser(plant).AddModelsFromUrl("package://drake/multibody/models/box.urdf");
   plant->Finalize();
 
   const RigidBody<double>& body = plant->GetBodyByName("box");
@@ -147,8 +144,7 @@ GTEST_TEST(WingTest, ScalarConversion) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModels(
-      FindResourceOrThrow("drake/multibody/models/box.urdf"));
+  Parser(plant).AddModelsFromUrl("package://drake/multibody/models/box.urdf");
   plant->Finalize();
 
   const RigidBody<double>& body = plant->GetBodyByName("box");
@@ -167,8 +163,7 @@ GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModels(
-      FindResourceOrThrow("drake/multibody/models/box.urdf"));
+  Parser(plant).AddModelsFromUrl("package://drake/multibody/models/box.urdf");
   plant->Finalize();
   plant->set_name("plant");
 

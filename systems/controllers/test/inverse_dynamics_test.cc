@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -128,9 +127,8 @@ class InverseDynamicsTest : public ::testing::Test {
 // desired acceleration for the iiwa arm.
 TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -161,9 +159,9 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
 // for a given joint configuration of the KUKA IIWA Arm are identical.
 TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
+  const std::string url =
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
+  multibody::Parser(mbp.get()).AddModelsFromUrl(url);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -183,7 +181,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 
   // Re-initialize the model so we can add gravity.
   mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  multibody::Parser(mbp.get()).AddModels(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromUrl(url);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -202,11 +200,9 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 
 GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModels(full_name);
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
+  multibody::Parser(mbp.get()).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
   const int num_states = mbp->num_multibody_states();
 

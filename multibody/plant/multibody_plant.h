@@ -529,10 +529,9 @@ files.  Consider the example below which loads an acrobot model:
   MultibodyPlant<T> acrobot;
   SceneGraph<T> scene_graph;
   Parser parser(&acrobot, &scene_graph);
-  const std::string relative_name =
-    "drake/multibody/benchmarks/acrobot/acrobot.sdf";
-  const std::string full_name = FindResourceOrThrow(relative_name);
-  parser.AddModels(full_name);
+  const std::string url =
+      "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
+  parser.AddModelsFromUrl(url);
 @endcode
 As in the example above, for models including visual geometry, collision
 geometry or both, the user must specify a SceneGraph for geometry handling.

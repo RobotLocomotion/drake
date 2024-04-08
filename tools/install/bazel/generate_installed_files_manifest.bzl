@@ -6,7 +6,6 @@ def _impl(ctx):
     known_non_runfiles = [
         # These are installed in share/drake, but are not runfiles (at least,
         # not with these paths).
-        "manipulation/models/iiwa_description/iiwa_stack.LICENSE.txt",
         "setup/Brewfile",
         "setup/install_prereqs",
         "setup/packages-jammy.txt",

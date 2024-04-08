@@ -38,7 +38,8 @@ bool CheckAttributes(const MathematicalProgram& prog,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kExponentialConeConstraint,
-          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost});
+          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kL2NormCost});
   return internal::CheckConvexSolverAttributes(
       prog, solver_capabilities.access(), "ScsSolver", explanation);
 }

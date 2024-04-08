@@ -55,12 +55,12 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
 
     def test_kuka(self):
         """Kuka IIWA with mesh geometry."""
-        file_name = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/sdf/"
-            "iiwa14_no_collision.sdf")
+        url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
         builder = DiagramBuilder()
         kuka, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant=kuka).AddModels(file_name)
+        Parser(plant=kuka).AddModels(url=url)
         kuka.Finalize()
 
         # Make sure that the frames to visualize exist.

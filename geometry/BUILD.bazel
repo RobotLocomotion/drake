@@ -547,8 +547,8 @@ drake_cc_binary(
         "//examples/kuka_iiwa_arm:models",
         "//examples/scene_graph:models",
         "//geometry/render:test_models",
-        "//manipulation/models/iiwa_description:models",
         "//multibody/meshcat:models",
+        "@drake_models//:iiwa_description",
         "@drake_models//:ycb",
     ],
     visibility = ["//visibility:private"],
@@ -715,8 +715,8 @@ drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
         "//geometry/render:test_models",
-        "//manipulation/models/iiwa_description:models",
         "//multibody/meshcat:models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":meshcat_visualizer",
@@ -996,7 +996,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "shape_specification_thread_test",
     data = [
-        "//examples/multibody/deformable_torus:torus_tet_mesh",
+        "//examples/multibody/deformable:torus_tet_mesh",
         "@drake_models//:dishes",
         "@drake_models//:tri_homecart",
     ],

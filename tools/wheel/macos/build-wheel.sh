@@ -88,6 +88,7 @@ EOF
 
 # Install Drake.
 cmake "$git_root" \
+    -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
     -DPython_EXECUTABLE="$pyvenv_root/bin/$python"
 make install

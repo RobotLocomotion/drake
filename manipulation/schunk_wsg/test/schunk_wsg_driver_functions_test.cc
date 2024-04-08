@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
 #include "drake/multibody/parsing/parser.h"
@@ -31,10 +30,10 @@ GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant =
       AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
-  const std::string filename = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+  const std::string url =
+      "package://drake_models/wsg_50_description/sdf/schunk_wsg_50.sdf";
   const ModelInstanceIndex schunk_wsg =
-      Parser(&plant).AddModels(filename).at(0);
+      Parser(&plant).AddModelsFromUrl(url).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("body", schunk_wsg));
   plant.Finalize();

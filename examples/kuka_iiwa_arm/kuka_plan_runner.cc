@@ -181,7 +181,7 @@ class RobotPlanRunner {
 int do_main() {
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser(&plant).AddModelsFromUrl(
-      "package://drake/manipulation/models/iiwa_description/urdf/"
+      "package://drake_models/iiwa_description/urdf/"
       "iiwa14_no_collision.urdf");
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
