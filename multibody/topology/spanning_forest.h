@@ -24,7 +24,7 @@ namespace internal {
 using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 
 // TODO(sherm1) The following describes the aspirational SpanningForest but
-//  the code so far has only stubs. See PR #20225 for the implementation.
+//  some functionality is missing. See PR #20225 for the full implementation.
 
 /** SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
@@ -145,6 +145,9 @@ class SpanningForest {
   class Tree;
   class LoopConstraint;
 
+  using Link = LinkJointGraph::Link;
+  using Joint = LinkJointGraph::Joint;
+
   /** Returns a reference to the graph that owns this forest (as set during
   construction). */
   const LinkJointGraph& graph() const {
@@ -155,6 +158,24 @@ class SpanningForest {
   /** Returns `true` if this forest is up to date with respect to its owning
   graph. */
   bool is_valid() const { return graph().forest_is_valid(); }
+
+  /** Provides convenient access to the owning graph's links. */
+  const std::vector<Link>& links() const { return graph().links(); }
+
+  /** Provides convenient access to one of the owning graph's links. Requires
+  a BodyIndex, not a plain integer.
+  @pre link_index is in range */
+  const Link& links(BodyIndex link_index) const { return links()[link_index]; }
+
+  /** Provides convenient access to the owning graph's joints. */
+  const std::vector<Joint>& joints() const { return graph().joints(); }
+
+  /** Provides convenient access to one of the owning graph's joints. Requires
+  a JointIndex, not a plain integer.
+  @pre joint_index is in range */
+  const Joint& joints(JointIndex joint_index) const {
+    return joints()[joint_index];
+  }
 
   /** All the mobilized bodies, in depth-first order. World comes first,
   then every Mobod in tree 0, then every Mobod in tree 1, etc. Free bodies
@@ -198,6 +219,86 @@ class SpanningForest {
   // Internal use only: During BuildForest() this will track the largest
   // height seen so far.
   int height() const { return data_.forest_height; }
+
+  /** Returns precalculated groups of mobilized bodies that are mutually
+  interconnected by Weld mobilizers so have no relative degrees of freedom.
+  Note that if you have chosen the modeling option to combine welded-together
+  Links into single bodies, then each LinkComposite gets only a single Mobod
+  and hence there won't be any WeldedMobods groups here (except for World which
+  is always considered to be in a WeldedMobods group even if nothing is welded
+  to it). Use mobod_to_links() to find all the Links following a single Mobod.
+
+  The World WeldedMobods group comes first and contains World, mobilized bodies
+  representing Links marked "Static", and bodies (if any) welded to Static
+  bodies or World (recursively). Those are the "anchored" mobilized bodies. The
+  other groups represent sets of welded-together mobilized bodies, with the
+  first one in the group the only Mobod with a non-weld inboard mobilizer.
+  That moving Mobod is necessarily the lowest numbered (most inboard) Mobod
+  of the WeldedMobods group. The remaining Mobods are in no particular order.
+
+  Except for World, Mobods not welded to any other Mobods do not appear here.
+  @see mobod_to_links() */
+  const std::vector<std::vector<MobodIndex>>& welded_mobods() const {
+    return data_.welded_mobods;
+  }
+  const std::vector<MobodIndex>& welded_mobods(WeldedMobodsIndex index) const {
+    return welded_mobods()[index];
+  }
+
+  /** Returns the global ForestBuildingOptions in effect in the owning graph. */
+  ForestBuildingOptions options() const {
+    return graph().get_global_forest_building_options();
+  }
+
+  /** Returns the ForestBuildingOptions in effect for elements of the given
+  ModelInstance. If we don't have specific options for this instance, we
+  return the global ForestBuildingOptions as returned by options(). */
+  ForestBuildingOptions options(ModelInstanceIndex index) const {
+    return graph().get_forest_building_options_in_use(index);
+  }
+
+  /** Returns the Link that is represented by the given Mobod. This could be
+  one of the Links from the original graph or an added shadow Link. If this
+  Mobod represents a Link Composite, the Link returned here is the
+  "active" Link, that is, the one whose mobilizer is used to move the whole
+  Composite. Cost is O(1) and very fast. */
+  inline BodyIndex mobod_to_link(
+      MobodIndex mobod_index) const;  // Defined below.
+
+  /** Returns all the Links mobilized by this Mobod. The "active" Link returned
+  by mobod_to_link() comes first, then any other Links in the same Composite. */
+  inline const std::vector<BodyIndex>& mobod_to_links(
+      MobodIndex mobod_index) const;  // Defined below.
+
+  /** Returns the total number of generalized position coordinates q used by
+  this model. O(1), very fast. */
+  int num_positions() const { return ssize(data_.q_to_mobod); }
+
+  /** Returns the total number of generalized velocity coordinates v used by
+  this model. O(1), very fast. */
+  int num_velocities() const { return ssize(data_.v_to_mobod); }
+
+  /** Returns the Mobod to which a given position coordinate q belongs.
+  O(1), very fast. */
+  MobodIndex q_to_mobod(int q_index) const {
+    DRAKE_ASSERT(0 <= q_index && q_index < num_positions());
+    return data_.q_to_mobod[q_index];
+  }
+
+  /** Returns the Mobod to which a given velocity coordinate v belongs.
+  O(1), very fast. */
+  MobodIndex v_to_mobod(int v_index) const {
+    DRAKE_ASSERT(0 <= v_index && v_index < num_velocities());
+    return data_.v_to_mobod[v_index];
+  }
+
+  /** Returns the Tree to which a given position coordinate q belongs.
+  O(1), very fast. */
+  inline TreeIndex q_to_tree(int q_index) const;  // Defined below.
+
+  /** Returns the Tree to which a given velocity coordinate v belongs.
+  O(1), very fast. */
+  inline TreeIndex v_to_tree(int v_index) const;  // Defined below.
 
   // TODO(sherm1) Remove this.
   // (Testing stub only) Add enough fake elements to the forest to allow
@@ -246,20 +347,82 @@ class SpanningForest {
   // construction. The owning LinkJointGraph remains unchanged.
   void Clear();
 
-  // Produce the optimal forest, but with suboptimal node ordering.
+  // Produces the optimal forest, but with suboptimal node ordering.
   void ChooseForestTopology();
 
-  // Determine proposed depth-first reordering. Index the `old_to_new` result
+  // Determines proposed depth-first reordering. Index the `old_to_new` result
   // using the original MobodIndex to obtain the new MobodIndex.
   // @retval old_to_new
   std::vector<MobodIndex> CreateDepthFirstReordering() const;
 
-  // Update the forest to reorder the Mobods into depth-first order, and
-  // update the as-modeled information in the graph to match.
+  // Updates the forest to reorder the Mobods into depth-first order, and
+  // updates the as-modeled information in the graph to match.
   void FixupForestToUseNewNumbering(const std::vector<MobodIndex>& old_to_new);
 
-  // Once we have a depth-first ordering we can assign q's and v's.
+  // Once we have a depth-first ordering, assigns q's and v's.
   void AssignCoordinates();
+
+  // Given a set of Joints, each of which has one of its Links already
+  // modeled by some Mobod, grows the trees by modeling these Joints and the
+  // other Link they connect. Then continues growing in a breadth-first manner,
+  // one level at a time.
+  void ExtendTrees(const std::vector<JointIndex>& joints_to_model,
+                   int* num_unprocessed_links);
+
+  // Grows the trees containing each of the given Joints by one level.
+  // Returns the set of Joints that should be modeled next.
+  void ExtendTreesOneLevel(const std::vector<JointIndex>& joints_to_model,
+                           int* num_unprocessed_links,
+                           std::vector<JointIndex>* joints_to_model_next);
+
+  // After dealing with everything that had some path to World, deals with
+  // remaining disconnected subgraphs and lone free bodies.
+  void ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links);
+
+  const Mobod& AddNewMobod(BodyIndex outboard_link_index,
+                           JointIndex joint_index,
+                           MobodIndex inboard_mobod_index, bool is_reversed);
+
+  // Given a list of Static or MustBeBaseBody Links, adds a weld or floating
+  // Joint to World for each Link that doesn't already have one.
+  void ConnectLinksToWorld(const std::vector<BodyIndex>& links, bool use_weld);
+
+  void SetBaseBodyChoicePolicy();
+
+  bool model_instance_is_static(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) & ForestBuildingOptions::kStatic);
+  }
+
+  bool use_fixed_base(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) &
+                             ForestBuildingOptions::kUseFixedBase);
+  }
+
+  bool use_rpy_floating_joint(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) &
+                             ForestBuildingOptions::kUseRpyFloatingJoints);
+  }
+
+  // Returns the appropriate joint type to use for this model instance when
+  // attaching a base body to World. Can be fixed or floating, and floating
+  // can be rpy or quaternion, depending on modeling options.
+  JointTypeIndex base_joint_type_index(
+      ModelInstanceIndex model_instance_index) const {
+    if (use_fixed_base(model_instance_index))
+      return LinkJointGraph::weld_joint_type_index();
+    return use_rpy_floating_joint(model_instance_index)
+               ? LinkJointGraph::rpy_floating_joint_type_index()
+               : LinkJointGraph::quaternion_floating_joint_type_index();
+  }
+
+  bool link_is_already_in_forest(BodyIndex link_index) const {
+    return graph().link_to_mobod(link_index).is_valid();
+  }
+
+  LinkJointGraph& mutable_graph() {
+    DRAKE_ASSERT(data_.graph != nullptr);
+    return *data_.graph;
+  }
 
   struct Data {
     // These are all default but definitions deferred to .cc file so

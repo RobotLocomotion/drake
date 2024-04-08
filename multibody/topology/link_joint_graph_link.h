@@ -16,7 +16,7 @@ namespace internal {
 /** Represents a %Link in the LinkJointGraph. This includes Links provided via
 user input and also those added during forest building as Shadow links created
 when we cut a user %Link in order to break a kinematic loop. Links may be
-modeled individually or can be combined into Composite Links comprising groups
+modeled individually or can be combined into LinkComposites comprising groups
 of Links that were connected by weld joints. */
 class LinkJointGraph::Link {
  public:
