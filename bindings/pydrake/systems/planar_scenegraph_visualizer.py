@@ -32,7 +32,7 @@ from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     """
     Given a SceneGraph and a view plane, provides a view of the robot by
-    projecting all geometry onto the view plane.
+    projecting all geometry and contact information onto the view plane.
 
     This is intended to be used for robots that operate in the plane, but
     should render any robot approximately correctly. It has the following
