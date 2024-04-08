@@ -45,7 +45,7 @@ bool CheckAttributes(const MathematicalProgram& prog,
           ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
-          ProgramAttribute::kBinaryVariable});
+          ProgramAttribute::kL2NormCost, ProgramAttribute::kBinaryVariable});
   return internal::CheckConvexSolverAttributes(
       prog, solver_capabilities.access(), "MosekSolver", explanation);
 }
