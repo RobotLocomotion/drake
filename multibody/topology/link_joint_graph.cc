@@ -393,6 +393,73 @@ JointTypeIndex LinkJointGraph::GetJointTypeIndex(
                                                     : it->second;
 }
 
+JointIndex LinkJointGraph::AddModelingJointToWorld(JointTypeIndex type_index,
+                                                   BodyIndex child_link_index) {
+  const LinkJointGraph::Link& child = links(child_link_index);
+  const JointIndex new_joint_index(ssize(joints()));
+  const ModelInstanceIndex model_instance = child.model_instance();
+
+  /* We'll try to name the new Joint the same as the base body it mobilizes.
+  This can fail if there is already a Joint in this model instance with
+  that name (unlikely). In that case we prepend "_" to the body name until
+  the name is unique. This must terminate since there are a finite number
+  of Joints in the graph. */
+  std::string joint_name = child.name();
+  while (HasJointNamed(joint_name, model_instance))
+    joint_name = "_" + joint_name;
+
+  // TODO(sherm1) Extract this code that is common with AddJoint().
+  data_.ephemeral_joint_name_to_index.insert({joint_name, new_joint_index});
+  data_.joints.emplace_back(Joint(new_joint_index, joint_name, model_instance,
+                                  type_index, BodyIndex(0), child_link_index,
+                                  JointFlags::kDefault));
+  // Links need to know their joints.
+  mutable_link(BodyIndex(0)).add_joint_as_parent(new_joint_index);
+  mutable_link(child_link_index).add_joint_as_child(new_joint_index);
+
+  return new_joint_index;
+}
+
+LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
+    BodyIndex existing_link_index, BodyIndex new_link_index) {
+  DRAKE_ASSERT(existing_link_index.is_valid() && new_link_index.is_valid());
+  Link& existing_link = data_.links[existing_link_index];
+  Link& new_link = data_.links[new_link_index];
+  DRAKE_DEMAND(!new_link.is_world());
+  LinkCompositeIndex existing_composite = existing_link.link_composite_index_;
+  if (!existing_composite.is_valid()) {
+    // We're starting a new Link Composite. This must be the "active link"
+    // for this Composite because we saw it first while building the Forest.
+    existing_composite = existing_link.link_composite_index_ =
+        LinkCompositeIndex(ssize(data_.link_composites));
+    data_.link_composites.emplace_back(std::vector{existing_link_index});
+  }
+  data_.link_composites[existing_composite].push_back(new_link_index);
+  new_link.link_composite_index_ = existing_composite;
+
+  return existing_composite;
+}
+
+void LinkJointGraph::RenumberMobodIndexes(
+    const std::vector<MobodIndex>& old_to_new) {
+  for (auto& link : data_.links) link.renumber_mobod_indexes(old_to_new);
+  for (auto& joint : data_.joints) joint.renumber_mobod_indexes(old_to_new);
+}
+
+std::tuple<BodyIndex, BodyIndex, bool> LinkJointGraph::FindInboardOutboardLinks(
+    MobodIndex mobod_index, JointIndex joint_index) const {
+  const Joint& joint = joints(joint_index);
+  const Link& parent_link = links(joint.parent_link());
+  if (parent_link.mobod_index().is_valid() &&
+      parent_link.mobod_index() == mobod_index) {
+    return std::make_tuple(joint.parent_link(), joint.child_link(), false);
+  }
+  const LinkJointGraph::Link& child_link = links(joint.child_link());
+  DRAKE_DEMAND(child_link.mobod_index().is_valid() &&
+               child_link.mobod_index() == mobod_index);
+  return std::make_tuple(joint.child_link(), joint.parent_link(), true);
+}
+
 LinkJointGraph::Data::Data() = default;
 LinkJointGraph::Data::Data(const Data&) = default;
 LinkJointGraph::Data::Data(Data&&) = default;

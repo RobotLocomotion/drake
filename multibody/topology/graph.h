@@ -5,8 +5,6 @@ This is the file to #include to use LinkJointGraph. It includes
 subsidiary headers for nested class definitions to keep file sizes
 reasonable. */
 
-// TODO(sherm1) Not used yet by MultibodyPlant; see PR #20225.
-
 #define DRAKE_MULTIBODY_TOPOLOGY_GRAPH_INCLUDED
 
 // Don't alpha-sort these internal includes; the order matters.

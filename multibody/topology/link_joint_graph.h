@@ -23,9 +23,6 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) The class comment describes the complete functionality of
-//  PR #20225; only part of that code is actually here.
-
 /** Represents a graph consisting of Links (user-defined rigid bodies)
 interconnected by Joints.
 
@@ -393,6 +390,17 @@ class LinkJointGraph {
   JointIndex MaybeGetJointBetween(BodyIndex link1_index,
                                   BodyIndex link2_index) const;
 
+  /** Returns true if the given Link should be treated as massless. That
+  requires that the Link was marked TreatAsMassless and is not connected by
+  a Weld Joint to a massful Link or Composite. */
+  bool must_treat_as_massless(BodyIndex link_index) const;
+
+  /** (Internal use only) For testing -- clears the Forest. */
+  void change_link_flags(BodyIndex link_index, LinkFlags flags);
+
+  /** (Internal use only) For testing -- clears the Forest. */
+  void change_joint_flags(JointIndex joint_index, JointFlags flags);
+
   // Forest building requires these joint types so they are predefined.
 
   /** The predefined index for the "weld" joint type. */
@@ -422,6 +430,8 @@ class LinkJointGraph {
 
   inline Link& mutable_link(BodyIndex link_index);
 
+  inline Joint& mutable_joint(JointIndex joint_index);
+
   // For use by SpanningForest.
   void set_primary_mobod_for_link(BodyIndex link_index,
                                   MobodIndex primary_mobod_index,
@@ -433,6 +443,30 @@ class LinkJointGraph {
 
   LoopConstraintIndex AddLoopClosingWeldConstraint(BodyIndex primary_link_index,
                                                    BodyIndex shadow_link_index);
+
+  void set_mobod_for_joint(JointIndex joint_index, MobodIndex mobod_index);
+  void RenumberMobodIndexes(const std::vector<MobodIndex>& old_to_new);
+
+  // While building the Forest, we're trying to add the given Joint outboard of
+  // the given Mobod. At least one of the Joint's two Links must already be
+  // modeled with that Mobod. That one will be the inboard Link. If that's the
+  // parent Link then parent->child and inboard->outboard will match, otherwise
+  // the mobilizer must be reversed. The bool return is true if we're reversing.
+  // tuple is: inboard, outboard, is_reversed
+  std::tuple<BodyIndex, BodyIndex, bool> FindInboardOutboardLinks(
+      MobodIndex mobod_index, JointIndex joint_index) const;
+
+  // Adds the implicit Joint for a floating or fixed base Link, with World
+  // as the parent and the base Link as the child.
+  JointIndex AddModelingJointToWorld(JointTypeIndex type_index,
+                                     BodyIndex child_link_index);
+
+  // Adds the new link to the composite of which the existing_link is a
+  // member. If the existing_link is not a member of any composite, then we
+  // create a new composite with the existing_link as the first (and hence
+  // "active") link.
+  LinkCompositeIndex AddToLinkComposite(BodyIndex existing_link_index,
+                                        BodyIndex new_link_index);
 
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
