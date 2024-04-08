@@ -12,7 +12,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/capsule.h"
+#include "pxr/usd/usdGeom/cone.h"
 #include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/sphere.h"
@@ -252,6 +254,55 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
     capsule_height * prim_scale[2] * metadata.meters_per_unit);
 }
 
+std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+
+  ValidatePrimExtent(prim, workspace);
+
+  pxr::TfToken cylinder_axis;
+  if (!cylinder.GetAxisAttr().Get(&cylinder_axis)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the axis of cylinder at {}",
+      prim.GetPath().GetString()));
+  }
+  if (cylinder_axis != metadata.up_axis) {
+    workspace.diagnostic.Error(fmt::format(
+      "Only upright cylinders are supported at the moment. The cylinder at {} "
+      "is not upright because its axis ({}) differs from the axis of the "
+      "stage ({})", prim.GetPath().GetString(), cylinder_axis.GetString(),
+      metadata.up_axis.GetString()));
+  }
+
+  // Makes the assumption that axis X/Y scales the radius of the capsule
+  // and axis Z scales the height of the capsule
+  if (prim_scale[0] != prim_scale[1]) {
+    workspace.diagnostic.Error(fmt::format(
+      "The cylinder at {} has different scaling in X and Y axis, and that is "
+      "not supported", prim.GetPath().GetString()));
+  }
+
+  double cylinder_height, cylinder_radius;
+  if (!cylinder.GetHeightAttr().Get(&cylinder_height) ||
+      !cylinder.GetRadiusAttr().Get(&cylinder_radius)) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the height or radius of cylinder at {}",
+      prim.GetPath().GetString()));
+  }
+
+  return std::make_unique<geometry::Cylinder>(
+    cylinder_radius * prim_scale[0] * metadata.meters_per_unit,
+    cylinder_height * prim_scale[2] * metadata.meters_per_unit);
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryCone(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  return nullptr;
+}
+
 std::unique_ptr<geometry::Shape> CreateVisualGeometry(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
@@ -261,6 +312,10 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     return CreateGeometrySphere(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
     return CreateGeometryCapsule(prim, metadata, workspace);
+  } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
+    return CreateGeometryCylinder(prim, metadata, workspace);
+  } else if (prim.IsA<pxr::UsdGeomCone>()) {
+    return CreateGeometryCone(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
@@ -336,7 +391,7 @@ UsdStageMetadata GetStageMetadata(pxr::UsdStageRefPtr stage,
       "Using the default value ({}) instead.", metadata.up_axis));
   }
   if (metadata.up_axis != "Z") {
-    throw std::runtime_error("Only Z-up stages are supported currently");
+    throw std::runtime_error("Only Z-up stages are supported at the moment");
   }
   return metadata;
 }
