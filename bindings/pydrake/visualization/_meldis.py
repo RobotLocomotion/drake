@@ -189,6 +189,9 @@ class _ViewerApplet:
             self._should_accept_link = should_accept_link
         else:
             self._should_accept_link = lambda _: True
+        self._applet_name = (alpha_slider_name[:-2]
+                             if alpha_slider_name.endswith(" α")
+                             else alpha_slider_name)
         self._start_visible = start_visible
         self._geom_paths = []
 
@@ -208,7 +211,8 @@ class _ViewerApplet:
             if (message.num_links == self._load_message.num_links
                     and message.encode() == self._load_message.encode()
                     and mesh_checksum == self._load_message_mesh_checksum):
-                _logger.info("Ignoring duplicate load message")
+                _logger.info("Ignoring duplicate load message for "
+                             f"{self._applet_name}.")
                 return
 
         # The semantics of a load message is to reset the entire scene.

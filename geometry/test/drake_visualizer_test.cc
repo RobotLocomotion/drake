@@ -355,6 +355,105 @@ class DrakeVisualizerTest : public ::testing::Test {
     }
   }
 
+  /* Test helper to evaluate how mesh types appear in messages. It can
+   distinguish between whether we expect to see an explicit mesh (e.g., a convex
+   hull) or whether we simply forward the file path. See tests below for usage.
+
+   @param role         The role to assign to the test geometry -- must not be
+                       Role::kUnassigned.
+   @param expect_hull  If true, we expect the MeshType with the given `role`
+                       to be represented by its convex hull. */
+  template <typename MeshType>
+  void ExpectMeshInMessage(Role role, bool expect_hull) {
+    auto mesh = make_unique<MeshType>(
+        FindResourceOrThrow("drake/geometry/render/test/meshes/"
+                            "fully_textured_pyramid.gltf"));
+    SCOPED_TRACE(fmt::format("{} shape with {} role", mesh->type_name(), role));
+    this->ConfigureDiagram({.role = role});
+
+    const FrameId f_id = this->scene_graph_->RegisterFrame(
+        this->pose_source_id_, GeometryFrame("test", 0));
+
+    const RigidTransformd X_PC(Vector3d(-1, 2, -3));
+    const GeometryId g_id = this->scene_graph_->RegisterGeometry(
+        this->pose_source_id_, f_id,
+        make_unique<GeometryInstance>(X_PC, std::move(mesh), "test"));
+
+    // We assign a diffuse color, because we expect it to come through when
+    // `expect_hull` is true.
+    const Rgba expected_rgba(0.25, 0.5, 0.75, 1.0);
+    switch (role) {
+      case Role::kProximity: {
+        ProximityProperties props;
+        props.AddProperty("phong", "diffuse", expected_rgba);
+        this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
+      } break;
+      case Role::kIllustration: {
+        IllustrationProperties props;
+        props.AddProperty("phong", "diffuse", expected_rgba);
+        this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
+      } break;
+      case Role::kPerception: {
+        PerceptionProperties props;
+        props.AddProperty("phong", "diffuse", expected_rgba);
+        this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
+      } break;
+      case Role::kUnassigned:
+        DRAKE_UNREACHABLE();
+        break;
+    }
+
+    FramePoseVector<T> poses;
+    poses.set_value(f_id, RigidTransform<T>{});
+    this->pose_source_->SetPoses(std::move(poses));
+
+    /* Dispatch a load message. */
+    auto context = this->diagram_->CreateDefaultContext();
+    const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
+    this->visualizer_->ForcedPublish(vis_context);
+
+    /* Confirm that messages were sent.  */
+    MessageResults results = this->ProcessMessages();
+    ASSERT_EQ(results.num_load, 1);
+    ASSERT_EQ(results.load_message.num_links, 1);
+
+    const auto& link_message = results.load_message.link[0];
+    ASSERT_EQ(link_message.num_geom, 1);
+    const auto& geo_message = link_message.geom[0];
+
+    EXPECT_EQ(geo_message.type, geo_message.MESH);
+    if (expect_hull) {
+      EXPECT_TRUE(geo_message.string_data.empty());
+      // The float data contains:
+      //   - 2 floats indicating triangle and vertex counts.
+      //   - 3 floats for each triangle (we expect 4 for the pyramid).
+      //   - 3 floats for each vertex and 3 vertices per triangle (faceted).
+      const int num_tris = 4;
+      const int num_vertices = num_tris * 3;
+      EXPECT_GT(geo_message.num_float_data,
+                2 + 3 * num_tris + 3 * num_vertices);
+
+      const auto& color = geo_message.color;
+      const Rgba test_rgba(color[0], color[1], color[2], color[3]);
+      // The color values used in this test can all be perfectly represented by
+      // 32-bit floats (e.g., 0.5, 0.75,  etc.). So, we can use exact equality.
+      EXPECT_EQ(test_rgba, expected_rgba);
+
+      const auto& p_PG = geo_message.position;
+      const auto& q_PG = geo_message.quaternion;
+      const RotationMatrixd R_PG(
+          Eigen::Quaternion<double>(q_PG[0], q_PG[1], q_PG[2], q_PG[3]));
+      const RigidTransformd X_PG_test(R_PG, {p_PG[0], p_PG[1], p_PG[2]});
+      /* Tolerance due to conversion to float. */
+      EXPECT_TRUE(CompareMatrices(X_PC.GetAsMatrix34(),
+                                  X_PG_test.GetAsMatrix34(), 1e-7));
+    } else {
+      EXPECT_THAT(geo_message.string_data,
+                  ::testing::HasSubstr("fully_textured_pyramid.gltf"));
+    }
+    /* We don't care about the draw message. */
+  }
+
   struct Subscribers;
   Subscribers& GetSubscribers(std::optional<Role> role) {
     std::map<Role, Subscribers*> subscribers_{
@@ -1067,76 +1166,21 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
 }
 
 /* This confirms that DrakeVisualizer dispatches a faceted convex hull for
- Convex shapes.
+ Convex shapes. */
+TYPED_TEST(DrakeVisualizerTest, ConvexIsHullAlways) {
+  this->template ExpectMeshInMessage<Convex>(Role::kProximity,
+                                             /* expect_hull = */ true);
+  this->template ExpectMeshInMessage<Convex>(Role::kIllustration,
+                                             /* expect_hull = */ true);
+}
 
- We can pass a glTF file with known geometry and an arbitrary material and
- observe the message as being explicit mesh data with expected diffuse color. */
-TYPED_TEST(DrakeVisualizerTest, ConvexIsHull) {
-  using T = TypeParam;
-
-  this->ConfigureDiagram();
-
-  const FrameId f_id = this->scene_graph_->RegisterFrame(
-      this->pose_source_id_, GeometryFrame("test", 0));
-
-  const RigidTransformd X_PC(Vector3d(-1, 2, -3));
-  const GeometryId g_id = this->scene_graph_->RegisterGeometry(
-      this->pose_source_id_, f_id,
-      make_unique<GeometryInstance>(
-          X_PC,
-          make_unique<Convex>(FindResourceOrThrow(
-              "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf")),
-          "test"));
-
-  const Rgba expected_rgba(0.25, 0.5, 0.75, 1.0);
-  IllustrationProperties props;
-  props.AddProperty("phong", "diffuse", expected_rgba);
-  this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
-
-  FramePoseVector<T> poses;
-  poses.set_value(f_id, RigidTransform<T>{});
-  this->pose_source_->SetPoses(std::move(poses));
-
-  /* Dispatch a load message. */
-  auto context = this->diagram_->CreateDefaultContext();
-  const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
-  this->visualizer_->ForcedPublish(vis_context);
-
-  /* Confirm that messages were sent.  */
-  MessageResults results = this->ProcessMessages();
-  ASSERT_EQ(results.num_load, 1);
-  ASSERT_EQ(results.load_message.num_links, 1);
-
-  const auto& link_message = results.load_message.link[0];
-  ASSERT_EQ(link_message.num_geom, 1);
-  const auto& geo_message = link_message.geom[0];
-
-  EXPECT_EQ(geo_message.type, geo_message.MESH);
-  EXPECT_TRUE(geo_message.string_data.empty());
-  // The float data contains:
-  //   - 2 floats indicating triangle and vertex counts.
-  //   - 3 floats for each triangle (we expect 4 for the pyramid).
-  //   - 3 floats for each vertex and 3 vertices per triangle (faceted).
-  const int num_tris = 4;
-  const int num_vertices = num_tris * 3;
-  EXPECT_GT(geo_message.num_float_data, 2 + 3 * num_tris + 3 * num_vertices);
-
-  const auto& color = geo_message.color;
-  const Rgba test_rgba(color[0], color[1], color[2], color[3]);
-  // The color values used in this test can all be perfectly represented by
-  // 32-bit floats (e.g., 0.5, 0.75,  etc.). So, we can use exact equality.
-  EXPECT_EQ(test_rgba, expected_rgba);
-
-  const auto& p_PG = geo_message.position;
-  const auto& q_PG = geo_message.quaternion;
-  const RotationMatrixd R_PG(
-      Eigen::Quaternion<double>(q_PG[0], q_PG[1], q_PG[2], q_PG[3]));
-  const RigidTransformd X_PG_test(R_PG, {p_PG[0], p_PG[1], p_PG[2]});
-  /* Tolerance due to conversion to float. */
-  EXPECT_TRUE(
-      CompareMatrices(X_PC.GetAsMatrix34(), X_PG_test.GetAsMatrix34(), 1e-7));
-
-  /* We don't care about the draw message. */
+/* This confirms that DrakeVisualizer dispatches a faceted convex hull for
+ Mesh shapes with proximity role, but the mesh name for non-proximity role. */
+TYPED_TEST(DrakeVisualizerTest, MeshIsHullForProximity) {
+  this->template ExpectMeshInMessage<Mesh>(Role::kProximity,
+                                           /* expect_hull = */ true);
+  this->template ExpectMeshInMessage<Mesh>(Role::kIllustration,
+                                           /* expect_hull = */ false);
 }
 
 /* Tests the AddToBuilder method that connects directly to a provided SceneGraph
