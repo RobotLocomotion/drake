@@ -422,17 +422,51 @@ class LinkJointGraph {
 
   inline Link& mutable_link(BodyIndex link_index);
 
-  // For use by SpanningForest.
+  inline Joint& mutable_joint(JointIndex joint_index);
+
+  // Tells this Link which Mobod it follows and which Joint corresponds to
+  // that Mobod's inboard mobilizer.
   void set_primary_mobod_for_link(BodyIndex link_index,
                                   MobodIndex primary_mobod_index,
                                   JointIndex primary_joint_index);
+
+  // Tells this Joint that it was modeled by the given Mobod.
+  void set_mobod_for_joint(JointIndex joint_index, MobodIndex mobod_index);
 
   // The World Link must already be in the graph but there are no Link
   // Composites yet. This creates the 0th LinkComposite and puts World in it.
   void CreateWorldLinkComposite();
 
+  // Registers a loop-closing weld constraint between these Links and updates
+  // the Links to know about it.
   LoopConstraintIndex AddLoopClosingWeldConstraint(BodyIndex primary_link_index,
                                                    BodyIndex shadow_link_index);
+
+  // Delegates to each MobodIndex-keeping element to renumber those indices
+  // using the given map.
+  void RenumberMobodIndexes(const std::vector<MobodIndex>& old_to_new);
+
+  // While building the Forest, we're trying to add the given Joint outboard of
+  // the given Mobod. At least one of the Joint's two Links must already be
+  // modeled with that Mobod. That one will be the inboard Link. If that's the
+  // parent Link then parent->child and inboard->outboard will match, otherwise
+  // the mobilizer must be reversed. The bool return is true if we're reversing.
+  // tuple is: inboard, outboard, is_reversed
+  std::tuple<BodyIndex, BodyIndex, bool> FindInboardOutboardLinks(
+      MobodIndex mobod_index, JointIndex joint_index) const;
+
+  // Adds the ephemeral Joint for a floating or fixed base Link to mirror a
+  // mobilizer added during BuildForest(). World is the parent and the given
+  // base Link is the child for the new Joint.
+  JointIndex AddEphemeralJointToWorld(JointTypeIndex type_index,
+                                      BodyIndex child_link_index);
+
+  // Adds the new link to the composite of which the existing_link is a
+  // member. If the existing_link is not a member of any composite, then we
+  // create a new composite with the existing_link as the first (and hence
+  // "active") link.
+  LinkCompositeIndex AddToLinkComposite(BodyIndex existing_link_index,
+                                        BodyIndex new_link_index);
 
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
