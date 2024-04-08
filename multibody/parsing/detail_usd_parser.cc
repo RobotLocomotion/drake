@@ -144,12 +144,18 @@ Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
   }
 }
 
+void RaiseFailedToReadAttributeError(const std::string& attr_name,
+  const pxr::UsdPrim& prim, const ParsingWorkspace& workspace) {
+    workspace.diagnostic.Error(fmt::format(
+      "Failed to read the \"{}\" attribute of the prim at {}", attr_name,
+      prim.GetPath().GetString()));
+}
+
 void ValidatePrimExtent(const pxr::UsdPrim& prim,
   const ParsingWorkspace& workspace, bool check_if_isotropic = false) {
   pxr::VtVec3fArray extent;
   if (!prim.GetAttribute(pxr::TfToken("extent")).Get(&extent)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the extent of prim at {}", prim.GetPath().GetString()));
+    RaiseFailedToReadAttributeError("extent", prim, workspace);
   }
   const pxr::GfVec3f& lower_bound = extent[0];
   const pxr::GfVec3f& upper_bound = extent[1];
@@ -179,8 +185,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryCube(const pxr::UsdPrim& prim,
 
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the size of cube at {}", prim.GetPath().GetString()));
+    RaiseFailedToReadAttributeError("size", prim, workspace);
   }
 
   Eigen::Vector3d cube_dimension = GetPrimScale(prim) * cube_size;
@@ -195,9 +200,7 @@ std::unique_ptr<geometry::Shape> CreateGeometrySphere(const pxr::UsdPrim& prim,
 
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the radius of sphere at {}",
-      prim.GetPath().GetString()));
+    RaiseFailedToReadAttributeError("radius", prim, workspace);
   }
   sphere_radius *= metadata.meters_per_unit;
 
@@ -222,8 +225,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
 
   pxr::TfToken capsule_axis;
   if (!capsule.GetAxisAttr().Get(&capsule_axis)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the axis of capsule at {}", prim.GetPath().GetString()));
+    RaiseFailedToReadAttributeError("axis", prim, workspace);
   }
   if (capsule_axis != metadata.up_axis) {
     workspace.diagnostic.Error(fmt::format(
@@ -242,11 +244,11 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   }
 
   double capsule_height, capsule_radius;
-  if (!capsule.GetHeightAttr().Get(&capsule_height) ||
-      !capsule.GetRadiusAttr().Get(&capsule_radius)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the height or radius of capsule at {}",
-      prim.GetPath().GetString()));
+  if (!capsule.GetHeightAttr().Get(&capsule_height)) {
+    RaiseFailedToReadAttributeError("height", prim, workspace);
+  }
+  if (!capsule.GetRadiusAttr().Get(&capsule_radius)) {
+    RaiseFailedToReadAttributeError("radius", prim, workspace);
   }
 
   return std::make_unique<geometry::Capsule>(
@@ -264,9 +266,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
 
   pxr::TfToken cylinder_axis;
   if (!cylinder.GetAxisAttr().Get(&cylinder_axis)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the axis of cylinder at {}",
-      prim.GetPath().GetString()));
+    RaiseFailedToReadAttributeError("axis", prim, workspace);
   }
   if (cylinder_axis != metadata.up_axis) {
     workspace.diagnostic.Error(fmt::format(
@@ -285,11 +285,11 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   }
 
   double cylinder_height, cylinder_radius;
-  if (!cylinder.GetHeightAttr().Get(&cylinder_height) ||
-      !cylinder.GetRadiusAttr().Get(&cylinder_radius)) {
-    workspace.diagnostic.Error(fmt::format(
-      "Failed to read the height or radius of cylinder at {}",
-      prim.GetPath().GetString()));
+  if (!cylinder.GetHeightAttr().Get(&cylinder_height)) {
+    RaiseFailedToReadAttributeError("height", prim, workspace);
+  }
+  if (!cylinder.GetRadiusAttr().Get(&cylinder_radius)) {
+    RaiseFailedToReadAttributeError("radius", prim, workspace);
   }
 
   return std::make_unique<geometry::Cylinder>(
