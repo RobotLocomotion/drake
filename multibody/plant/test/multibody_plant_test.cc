@@ -33,6 +33,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -100,6 +101,13 @@ class MultibodyPlantTester {
   static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
                                         GeometryId id) {
     return plant.FindBodyByGeometryId(id);
+  }
+
+  template <typename T>
+  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
+                                      const systems::Context<T>& context,
+                                      VectorX<T>* forces) {
+    plant.AddJointActuationForces(context, forces);
   }
 };
 
@@ -2790,6 +2798,70 @@ GTEST_TEST(KukaModel, ActuationMatrix) {
   EXPECT_EQ(B_inv.cols(), plant.num_velocities());
   EXPECT_TRUE((B * B_inv).isIdentity());
   EXPECT_TRUE((B_inv * B).isIdentity());
+}
+
+TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
+  FinalizeAndBuild();
+
+  // Actuator with index 1 has been removed.
+  // clang-format off
+  const Eigen::MatrixXd B_expected =
+        (Eigen::MatrixXd(3, 2) << 1, 0,
+                                  0, 0,
+                                  0, 1).finished();
+  const Eigen::MatrixXd B_inv_expected =
+        (Eigen::MatrixXd(2, 3) << 1, 0, 0,
+                                  0, 0, 1).finished();
+  // clang-format on
+
+  // Test that MakeActuationMatrix uses the correct indices into 'u'
+  // using JointActuator::input_start().
+  const Eigen::MatrixXd B = plant_->MakeActuationMatrix();
+  EXPECT_TRUE(CompareMatrices(B, B_expected));
+  const Eigen::MatrixXd B_inv = plant_->MakeActuationMatrixPseudoinverse();
+  EXPECT_TRUE(CompareMatrices(B_inv, B_inv_expected));
+}
+
+TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
+  FinalizeAndBuild();
+
+  // Actuator with index 1 ("actuator1") has been removed.
+  // Flip the order of the actuators in the user list compared to the input
+  // ordering.
+  const std::vector<JointActuatorIndex> user_to_actuator_index_map{
+      plant_->GetJointActuatorByName("actuator2").index(),
+      plant_->GetJointActuatorByName("actuator0").index()};
+
+  // clang-format off
+  const Eigen::MatrixXd Su_expected =
+        (Eigen::MatrixXd(2, 2) << 0, 1,
+                                  1, 0).finished();
+  // clang-format on
+
+  // Test that MakeActuationSelectorMatrix uses the correct indices into 'u'
+  // using JointActuator::input_start().
+  const Eigen::MatrixXd Su =
+      plant_->MakeActuatorSelectorMatrix(user_to_actuator_index_map);
+  EXPECT_TRUE(CompareMatrices(Su, Su_expected));
+}
+
+TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
+  FinalizeAndBuild();
+
+  // Actuator with index 1 has been removed.
+  const systems::InputPort<double>& u_input =
+      plant_->get_actuation_input_port();
+  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+
+  const VectorXd forces_expected = (VectorXd(3) << 1.0, 0.0, 3.0).finished();
+
+  // Test that AddJointActuationForces uses the correct indices into 'u'
+  // using JointActuator::input_start().
+  VectorXd forces(3);
+  forces.setZero();
+  MultibodyPlantTester::AddJointActuationForces(*plant_, *plant_context_,
+                                                &forces);
+  EXPECT_TRUE(CompareMatrices(forces, forces_expected));
 }
 
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
