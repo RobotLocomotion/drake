@@ -11,6 +11,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/discrete_time_delay.h"
+#include "drake/systems/primitives/discrete_time_integrator.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
@@ -160,6 +161,17 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("abstract_model_value"),
             doc.DiscreteTimeDelay.ctor
                 .doc_3args_update_sec_delay_time_steps_abstract_model_value);
+
+    DefineTemplateClassWithDefault<DiscreteTimeIntegrator<T>, LeafSystem<T>>(m,
+        "DiscreteTimeIntegrator", GetPyParam<T>(),
+        doc.DiscreteTimeIntegrator.doc)
+        .def(py::init<int, double>(), py::arg("size"), py::arg("time_step"),
+            doc.DiscreteTimeIntegrator.ctor.doc)
+        .def("set_integral_value",
+            &DiscreteTimeIntegrator<T>::set_integral_value, py::arg("context"),
+            py::arg("value"), doc.DiscreteTimeIntegrator.set_integral_value.doc)
+        .def("time_step", &DiscreteTimeIntegrator<T>::time_step,
+            doc.DiscreteTimeIntegrator.time_step.doc);
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
         m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
