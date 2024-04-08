@@ -143,7 +143,8 @@ class SpanningForest::Mobod {
   /** The number of %Mobods in the subtree with this %Mobod as its root,
   including this %Mobod in the count. These are numbered consecutively starting
   with this %Mobod's index, so the indices of the subtree %Mobods are [i, i+n)
-  where i is this %Mobod's index and n is the return value of this method. */
+  where i is this %Mobod's index and n is the return value of this method. When
+  applied to World this returns the total number of %Mobods in the forest.*/
   int num_subtree_mobods() const { return num_subtree_mobods_; }
 
   /** Returns the velocity coordinates for the subtree rooted at this %Mobod,
@@ -152,7 +153,8 @@ class SpanningForest::Mobod {
   return the index of the first one and the number of velocities. We return the
   pair {i, n} where i is the index of this %Mobod's first velocity coordinate
   vᵢ and n is the number of subtree velocity coordinates. So the subtree
-  coordinates are [vᵢ..vᵢ₊ₙ).
+  coordinates are [vᵢ..vᵢ₊ₙ). When applied to World, returns all the
+  velocities in the forest.
   @see outboard_velocities() */
   std::pair<int, int> subtree_velocities() const {
     return std::make_pair(v_start(), nv() + nv_outboard());
@@ -160,7 +162,8 @@ class SpanningForest::Mobod {
 
   /** Returns the velocity coordinates v that are outboard of this %Mobod,
   _not including_ its own velocities. This is the same as subtree_velocities()
-  but with this Mobod's velocities removed.
+  but with this Mobod's velocities removed. When applied to World, returns all
+  the velocities in the forest.
   @see subtree_velocities(). */
   std::pair<int, int> outboard_velocities() const {
     return std::make_pair(v_start() + nv(), nv_outboard());

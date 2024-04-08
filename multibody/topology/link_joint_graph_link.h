@@ -16,7 +16,7 @@ namespace internal {
 /** Represents a %Link in the LinkJointGraph. This includes Links provided via
 user input and also those added during forest building as Shadow links created
 when we cut a user %Link in order to break a kinematic loop. Links may be
-modeled individually or can be combined into Composite Links comprising groups
+modeled individually or can be combined into LinkComposites comprising groups
 of Links that were connected by weld joints. */
 class LinkJointGraph::Link {
  public:
@@ -183,8 +183,8 @@ class LinkJointGraph::Link {
 
   std::vector<LoopConstraintIndex> loop_constraints_;
 
-  MobodIndex mobod_;  // Which Mobod mobilizes this Link?
-  JointIndex joint_;  // Which Joint connected us to the Mobod?
+  MobodIndex mobod_;  // Mobod that mobilizes this Link.
+  JointIndex joint_;  // Joint that connects us to the Mobod (invalid if World).
 
   BodyIndex primary_link_;  // Same as index_ if this is a primary link.
   std::vector<BodyIndex> shadow_links_;

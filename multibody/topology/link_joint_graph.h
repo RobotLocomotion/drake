@@ -155,6 +155,7 @@ class LinkJointGraph {
   get_global_forest_building_options() returns. */
   ForestBuildingOptions get_forest_building_options_in_use(
       ModelInstanceIndex model_instance) const {
+    DRAKE_DEMAND(model_instance.is_valid());
     auto instance_options =
         data_.model_instance_forest_building_options.find(model_instance);
     return instance_options ==
@@ -413,7 +414,7 @@ class LinkJointGraph {
     std::string name;
     int nq{-1};
     int nv{-1};
-    bool has_quaternion;  // If so, the first 4 qs are wxyz.
+    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
   };
 
  private:
@@ -422,17 +423,53 @@ class LinkJointGraph {
 
   inline Link& mutable_link(BodyIndex link_index);
 
-  // For use by SpanningForest.
+  inline Joint& mutable_joint(JointIndex joint_index);
+
+  // Tells this Link which Mobod it follows and which Joint corresponds to
+  // that Mobod's inboard mobilizer.
   void set_primary_mobod_for_link(BodyIndex link_index,
                                   MobodIndex primary_mobod_index,
                                   JointIndex primary_joint_index);
+
+  // Tells this currently-unmodeled Joint that the given Mobod models it.
+  void set_mobod_for_joint(JointIndex joint_index, MobodIndex mobod_index);
 
   // The World Link must already be in the graph but there are no Link
   // Composites yet. This creates the 0th LinkComposite and puts World in it.
   void CreateWorldLinkComposite();
 
+  // Registers a loop-closing weld constraint between these Links and updates
+  // the Links to know about it.
   LoopConstraintIndex AddLoopClosingWeldConstraint(BodyIndex primary_link_index,
                                                    BodyIndex shadow_link_index);
+
+  // Delegates to each MobodIndex-keeping element to renumber those indices
+  // using the given map.
+  // @pre old_to_new is a permutation of [0, ..., num_mobods-1].
+  void RenumberMobodIndexes(const std::vector<MobodIndex>& old_to_new);
+
+  // The Forest already has the given (inboard) Mobod, and we want to add a new
+  // Mobod outboard of that one to model the given Joint. At least one of the
+  // Joint's two Links must already be following the inboard Mobod. That one
+  // will be the inboard Link (that is, the Link following the more-inboard
+  // Mobod). If that's the Joint's parent Link then parent->child and
+  // inboard->outboard will match, otherwise the mobilizer must be reversed.
+  // Returned tuple is: inboard link, outboard link, is_reversed.
+  std::tuple<BodyIndex, BodyIndex, bool> FindInboardOutboardLinks(
+      MobodIndex inboard_mobod_index, JointIndex joint_index) const;
+
+  // Adds the ephemeral Joint for a floating or fixed base Link to mirror a
+  // mobilizer added during BuildForest(). World is the parent and the given
+  // base Link is the child for the new Joint.
+  JointIndex AddEphemeralJointToWorld(JointTypeIndex type_index,
+                                      BodyIndex child_link_index);
+
+  // Adds the new Link to the LinkComposite of which maybe_composite_link is a
+  // member. If maybe_composite_link is not a member of any LinkComposite, then
+  // we create a new LinkComposite with maybe_composite_link as the first
+  // (and hence "active") Link.
+  LinkCompositeIndex AddToLinkComposite(BodyIndex maybe_composite_link_index,
+                                        BodyIndex new_link_index);
 
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
