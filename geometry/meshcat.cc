@@ -2486,16 +2486,12 @@ void Meshcat::SetTriangleColorMeshWithTime(
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
     const Eigen::Ref<const Eigen::Matrix3Xd>& colors, double time_in_recording,
     bool wireframe, double wireframe_line_width, SideOfFaceToRender side) {
-  if (!animation_) {
-    throw std::runtime_error(
-        "You must create a recording (via StartRecording) before calling "
-        "SetTriangleColorMeshWithTime");
+  if (!animation_ || recording_ == false) {
+    impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
+                                wireframe_line_width, side);
+    return;
   }
-  if (recording_ == false) {
-    throw std::runtime_error(
-        "You must not stop recording (via StopRecording) before calling "
-        "SetTriangleColorMeshWithTime");
-  }
+
   if (last_frame_.contains(std::string(path)) &&
       last_frame_[std::string(path)] > animation_->frame(time_in_recording)) {
     throw std::runtime_error(

@@ -308,13 +308,17 @@ class Meshcat {
   /** Sets the animated triangular mesh with per-vertex coloring at
    `path` in the scene tree at `time_in_recording`.
 
-  Calling this function with `path`="/foo" will create the path
-  "/foo/<animation>/frame#", where `frame#` is the frame index converted from
-  `time_in_recording`.
+
+  During recording (started by StartRecording()), calling this function with
+  `path`="/foo" will create the path "/foo/<animation>/frame#", where `frame#`
+   is the frame index converted from `time_in_recording`.
+
+  If there is no recording (no StartRecording() or already StopRecording()),
+  the `time_in_recording` is ignored, and the path "/foo/<object>" is created.
 
   @experimental
 
-  @note For a `path`="/foo", we only support the usage like this:
+  @note For a `path`="/foo", we recommend the usage like this:
   @code
   meshcat.StartRecording();
   meshcat.SetTriangleColorMeshWithTime("/foo",..., time1);
@@ -326,8 +330,6 @@ class Meshcat {
   Only SetTriangleColorMeshWithTime(), as opposed to SetTriangleColorMesh(),
   is allowed during recording.
 
-  @throws std::exception if meshcat does not have a recording.
-  @throws std::exception if meshcat already stopped recording.
   @throws std::exception if `time_in_recording` corresponds to an earlier
    frame than the last frame.  */
   void SetTriangleColorMeshWithTime(
