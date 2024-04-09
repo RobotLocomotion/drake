@@ -3528,7 +3528,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
                                     2.0 + uniform(generator),
                                     3.0 + uniform(generator));
 
-  plant.SetFreeBodyRandomPositionDistribution(body, xyz);
+  plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
   plant.SetFreeBodyRandomRotationDistributionToUniform(body);
 
   auto context = plant.CreateDefaultContext();
