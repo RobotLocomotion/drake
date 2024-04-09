@@ -250,17 +250,17 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] p_FM position vector p_FoMo_F from Fo (inboard frame F's
   /// origin) to Mo (outboard frame M's origin), expressed in frame F.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_translation(
+  const QuaternionFloatingJoint<T>& SetTranslation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const {
     get_mobilizer().set_translation(context, p_FM);
     return *this;
   }
 
   DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::set_translation()")
+      "Use QuaternionFloatingJoint::SetTranslation()")
   const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
                                                  const Vector3<T>& p_FM) const {
-    return set_translation(context, p_FM);
+    return SetTranslation(context, p_FM);
   }
 
   /// Sets `context` to store `X_FM` the pose of frame M measured and expressed
@@ -272,7 +272,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& SetPose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    set_translation(context, X_FM.translation());
+    SetTranslation(context, X_FM.translation());
     return SetOrientation(context, X_FM.rotation());
   }
 
