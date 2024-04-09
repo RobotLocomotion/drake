@@ -1,16 +1,16 @@
-package(default_visibility = ["//visibility:private"])
-
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-)
 load(
     "//doc:defs.bzl",
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
+
+package(default_visibility = ["//visibility:private"])
 
 # TODO(eric.cousineau): Add a smaller stub library stub to test this extension.
 drake_py_library(

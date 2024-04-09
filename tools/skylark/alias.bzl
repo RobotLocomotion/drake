@@ -1,6 +1,6 @@
 load("//tools/skylark:cc.bzl", "cc_library")
-load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
+load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
 def _combine_relative_labels(arg_list, arg_map):

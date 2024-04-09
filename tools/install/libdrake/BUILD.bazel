@@ -1,12 +1,15 @@
-package(default_visibility = ["//visibility:private"])
-
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "@python//:version.bzl",
     "PYTHON_SITE_PACKAGES_RELPATH",
     "PYTHON_VERSION",
 )
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
 load("//tools/install:install.bzl", "install", "install_cmake_config")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -19,13 +22,10 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
-load(":header_lint.bzl", "cc_check_allowed_headers")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load(
-    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
-    "cc_whole_archive_library",
-)
+load(":header_lint.bzl", "cc_check_allowed_headers")
+
+package(default_visibility = ["//visibility:private"])
 
 genrule(
     name = "drake_config_cmake_expand",

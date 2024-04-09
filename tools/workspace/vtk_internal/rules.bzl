@@ -1,11 +1,11 @@
+load("@vtk_internal//:modules.bzl", "MODULES", "PLATFORM")
+load("@vtk_internal//:settings.bzl", "MODULE_SETTINGS")
 load("//tools/skylark:cc.bzl", "cc_library")
-load("//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_files",
 )
-load("@vtk_internal//:modules.bzl", "MODULES", "PLATFORM")
-load("@vtk_internal//:settings.bzl", "MODULE_SETTINGS")
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 # You can manually set this to True, to get some feedback during upgrades.
 _VERBOSE = False

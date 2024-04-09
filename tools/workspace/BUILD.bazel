@@ -1,8 +1,8 @@
-load("//tools/skylark:py.bzl", "py_library")
 load("//tools/install:check_licenses.bzl", "check_licenses")
 load("//tools/install:install.bzl", "install")
-load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
+load("//tools/skylark:py.bzl", "py_library")
 
 py_library(
     name = "module_py",

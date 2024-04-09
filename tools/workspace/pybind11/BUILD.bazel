@@ -1,14 +1,14 @@
-load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/skylark:pybind.bzl",
-    "generate_pybind_documentation_header",
-)
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/skylark:py.bzl", "py_binary", "py_library")
+load(
+    "//tools/skylark:pybind.bzl",
+    "generate_pybind_documentation_header",
 )
 
 exports_files(

@@ -1,10 +1,10 @@
-load("//tools/skylark:cc.bzl", "cc_binary")
-load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 load("//tools/install:install.bzl", "install")
+load("//tools/skylark:cc.bzl", "cc_binary")
 load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
+load("//tools/skylark:py.bzl", "py_library")
 
 EXTRA_PYBIND_COPTS = [
     # GCC and Clang don't always agree / succeed when inferring storage

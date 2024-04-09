@@ -1,10 +1,10 @@
 # -*- bazel -*-
 
-load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//:cmake/external/workspace/conversion.bzl",
     "split_cmake_list",
 )
+load("@drake//tools/install:install.bzl", "install")
 
 _DEFINES = split_cmake_list(
     "$<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_COMPILE_DEFINITIONS>",
