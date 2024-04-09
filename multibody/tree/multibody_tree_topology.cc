@@ -4,14 +4,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-bool FrameTopology::operator==(const FrameTopology& other) const = default;
-
-bool MobilizerTopology::operator==(const MobilizerTopology& other) const =
-    default;
-
-bool JointActuatorTopology::operator==(
-    const JointActuatorTopology& other) const = default;
-
 bool MultibodyTreeTopology::operator==(
     const MultibodyTreeTopology& other) const {
   if (is_valid_ != other.is_valid_) return false;
