@@ -37,8 +37,6 @@ cmake_configure_file(
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "SDF_PKG_VERSION=0.0",
-        "SDF_MAJOR_VERSION=0",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     undefines = [
