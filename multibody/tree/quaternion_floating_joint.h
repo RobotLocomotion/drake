@@ -156,7 +156,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// to Mo (outboard frame M's origin), expressed in inboard frame F.
   /// @param[in] context contains the state of the multibody system.
   /// @note Class documentation describes inboard frame F and outboard frame M.
-  /// @retval Position vector p_FM from frame F's origin to frame M's origin.
+  /// @retval p_FM The position vector from Fo (frame F's origin) to Mo (frame
+  /// M's origin), expressed in frame F.
   Vector3<T> get_translation(const systems::Context<T>& context) const {
     return get_mobilizer().get_translation(context);
   }
@@ -226,7 +227,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  /// Sets the quaternion in `context` so this Joint's orientation is consistent
+  /// Sets the quaternion in `context` so this joint's orientation is consistent
   /// with the given `R_FM` rotation matrix.
   /// @param[in,out] context
   ///   A Context for the MultibodyPlant this joint belongs to.
@@ -320,7 +321,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @name Random distribution setters
   /// @{
 
-  /// For `this` joint, sets the random distribution that the translation of
+  /// For this joint, sets the random distribution that the translation of this
   /// this joint will be randomly sampled from. If a quaternion distribution has
   /// already been set with stochastic variables, it will remain so. Otherwise
   /// the quaternion will be set to this joint's has a zero orientation.
