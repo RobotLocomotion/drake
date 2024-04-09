@@ -146,7 +146,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     //   C's angular velocity in A expressed in A,
     //   Co's translational velocity in A expressed in A.
     joint_->SetOrientation(&context, R_AC);
-    joint_->set_translation(&context, p_AoCo_A);
+    joint_->SetTranslation(&context, p_AoCo_A);
     joint_->set_angular_velocity(&context, w_AC_A);
     joint_->set_translational_velocity(&context, v_ACo_A);
 

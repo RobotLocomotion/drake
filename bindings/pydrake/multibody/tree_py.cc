@@ -715,8 +715,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetFromRotationMatrix.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls                     // BR
-        .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.set_translation.doc);
+        .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
+            py::arg("p_FM"), cls_doc.SetTranslation.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
