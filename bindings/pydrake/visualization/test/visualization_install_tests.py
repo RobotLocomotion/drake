@@ -42,7 +42,7 @@ class TestVisualizationInstalled(unittest.TestCase):
             join(install_dir, "bin", "model_visualizer"),
             "--loop_once",
             "package://drake_models/"
-            "wsg_50_description/meshes/finger_without_tip.obj"
+            "jaco_description/meshes/base.obj"
         ])
 
 

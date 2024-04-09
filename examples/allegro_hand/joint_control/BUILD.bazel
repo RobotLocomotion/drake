@@ -17,7 +17,7 @@ drake_cc_binary(
     srcs = ["allegro_single_object_simulation.cc"],
     data = [
         ":simple_mug.sdf",
-        "//examples/allegro_hand:models",
+        "@drake_models//:allegro_hand_description",
     ],
     deps = [
         "//common:add_text_logging_gflags",
