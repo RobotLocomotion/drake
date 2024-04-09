@@ -251,7 +251,7 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 
   void PrintSelf(std::ostream& os, vtkIndent indent) override {
     this->Superclass::PrintSelf(os, indent);
-    os << indent << "Num triangles: " << mesh_.indices.rows();
+    os << indent << "Num triangles: " << mesh_.indices().rows();
   }
 
   void set_render_mesh(RenderMesh mesh) { mesh_ = std::move(mesh); }
@@ -275,8 +275,8 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
       newPolys->Delete();
     });
 
-    const int num_points = mesh_.positions.rows();
-    const int num_tris = mesh_.indices.rows();
+    const int num_points = mesh_.positions().rows();
+    const int num_tris = mesh_.indices().rows();
     newPoints->Allocate(num_points);
     newNormals->SetNumberOfComponents(3);
     newNormals->Allocate(num_points);
@@ -288,16 +288,17 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
     newPolys->Allocate(newPolys->EstimateSize(num_tris, 3));
 
     for (int p = 0; p < num_points; ++p) {
-      newPoints->InsertNextPoint(mesh_.positions(p, 0), mesh_.positions(p, 1),
-                                 mesh_.positions(p, 2));
-      const double n[] = {mesh_.normals(p, 0), mesh_.normals(p, 1),
-                          mesh_.normals(p, 2)};
+      newPoints->InsertNextPoint(mesh_.positions()(p, 0),
+                                 mesh_.positions()(p, 1),
+                                 mesh_.positions()(p, 2));
+      const double n[] = {mesh_.normals()(p, 0), mesh_.normals()(p, 1),
+                          mesh_.normals()(p, 2)};
       newNormals->InsertNextTuple(n);
-      const double uv[] = {mesh_.uvs(p, 0), mesh_.uvs(p, 1)};
+      const double uv[] = {mesh_.uvs()(p, 0), mesh_.uvs()(p, 1)};
       newTCoords->InsertNextTuple(uv);
     }
     for (int t = 0; t < num_tris; ++t) {
-      const auto& row = mesh_.indices.row(t);
+      const auto& row = mesh_.indices().row(t);
       const vtkIdType triangle[] = {row[0], row[1], row[2]};
       newPolys->InsertNextCell(3, triangle);
     }

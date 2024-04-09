@@ -530,7 +530,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 
 void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
                                           const RegistrationData& data) {
-  const RenderMaterial material = mesh.material;
+  const RenderMaterial material = mesh.material();
 
   vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
       CreateVtkMesh(std::move(mesh));

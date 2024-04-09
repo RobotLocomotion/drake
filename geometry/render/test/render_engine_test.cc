@@ -78,14 +78,17 @@ GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
   DummyRenderEngine engine;
 
   geometry::internal::RenderMesh mesh;
-  mesh.positions.resize(1, 3);
-  mesh.normals.resize(1, 3);
-  mesh.uvs.resize(1, 2);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(1, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(1, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(1, 2);
   const Vector3d initial_q = Vector3d(1, 2, 3);
   const Vector3d initial_normal = Vector3d(-1, 0, 0);
-  mesh.positions.row(0) = initial_q;
-  mesh.normals.row(0) = initial_normal;
-  mesh.uvs.row(0) = Vector2d(1, 0).transpose();
+  positions.row(0) = initial_q;
+  normals.row(0) = initial_normal;
+  uvs.row(0) = Vector2d(1, 0).transpose();
+  mesh.set_positions(positions);
+  mesh.set_normals(normals);
+  mesh.set_uvs(uvs);
 
   PerceptionProperties properties = engine.accepting_properties();
   const GeometryId id0 = GeometryId::get_new_id();

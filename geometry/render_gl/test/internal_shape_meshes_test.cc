@@ -25,8 +25,8 @@ using std::vector;
 // Computes the normal to the indicated triangle whose magnitude is twice the
 // triangle's area. I.e., for triangle (A, B, C), computes: (B - A) X (C - A).
 Vector3d CalcTriNormal(const RenderMesh& data, int tri_index) {
-  const auto& vertices = data.positions;
-  const auto& tris = data.indices;
+  const auto& vertices = data.positions();
+  const auto& tris = data.indices();
   const auto& a = vertices.row(tris(tri_index, 0));
   const auto& b = vertices.row(tris(tri_index, 1));
   const auto& c = vertices.row(tris(tri_index, 2));
@@ -41,7 +41,7 @@ double CalcTriArea(const RenderMesh& data, int tri_index) {
 // Computes the total area of the given triangles.
 double CalcTotalArea(const RenderMesh& data) {
   double total_area = 0;
-  for (int t = 0; t < data.indices.rows(); ++t) {
+  for (int t = 0; t < data.indices().rows(); ++t) {
     const auto a = CalcTriArea(data, t);
     total_area += a;
   }
@@ -55,8 +55,8 @@ Vector3d CalcTriUnitNormal(const RenderMesh& data, int tri_index) {
 
 // Computes the centroid of the indicated triangle.
 Vector3d CalcTriCentroid(const RenderMesh& data, int tri_index) {
-  const auto& vertices = data.positions;
-  const auto& tris = data.indices;
+  const auto& vertices = data.positions();
+  const auto& tris = data.indices();
   return (vertices.row(tris(tri_index, 0)) + vertices.row(tris(tri_index, 1)) +
           vertices.row(tris(tri_index, 2))) /
          3.f;
@@ -65,7 +65,7 @@ Vector3d CalcTriCentroid(const RenderMesh& data, int tri_index) {
 // Simply confirm that the utility functions above report good values.
 GTEST_TEST(PrimitiveMeshTests, ConfirmUtilities) {
   RenderMesh data;
-  data.positions.resize(3, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(3, 3);
   /*
             │╲ (0, 1.5, 0)        Right isosceles triangle with legs of length
             │ ╲                   1.5, lying on the z = 0 plane.
@@ -74,11 +74,13 @@ GTEST_TEST(PrimitiveMeshTests, ConfirmUtilities) {
             │    ╲                   normal = <0, 0, 2.25>
    (0, 0, 0)└─────  (1.5, 0, 0)      centroid = (0.5, 0.5, 0)
   */
-  data.positions.row(0) << 0, 0, 0;
-  data.positions.row(1) << 1.5, 0, 0;
-  data.positions.row(2) << 0, 1.5, 0;
-  data.indices.resize(1, 3);
-  data.indices.row(0) << 0, 1, 2;
+  positions.row(0) << 0, 0, 0;
+  positions.row(1) << 1.5, 0, 0;
+  positions.row(2) << 0, 1.5, 0;
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(1, 3);
+  indices.row(0) << 0, 1, 2;
+  data.set_positions(positions);
+  data.set_indices(indices);
   EXPECT_EQ(CalcTriNormal(data, 0), Vector3d(0, 0, 2.25));
   EXPECT_EQ(CalcTriUnitNormal(data, 0), Vector3d(0, 0, 1));
   EXPECT_EQ(CalcTriArea(data, 0), 1.125);
@@ -112,11 +114,11 @@ class NormalCone {
   NormalCone(const RenderMesh& mesh_data, int t) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const Vector3d n_0 =
-        mesh_data.normals.row(mesh_data.indices(t, 0)).normalized();
+        mesh_data.normals().row(mesh_data.indices()(t, 0)).normalized();
     const Vector3d n_1 =
-        mesh_data.normals.row(mesh_data.indices(t, 1)).normalized();
+        mesh_data.normals().row(mesh_data.indices()(t, 1)).normalized();
     const Vector3d n_2 =
-        mesh_data.normals.row(mesh_data.indices(t, 2)).normalized();
+        mesh_data.normals().row(mesh_data.indices()(t, 2)).normalized();
     const Vector3d p_01 = n_1 - n_0;
     const Vector3d p_02 = n_2 - n_0;
     const Vector3d p_12 = n_2 - n_1;
@@ -182,16 +184,18 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
   const Vector3d expected_ray = Vector3d(1, 2, 3).normalized().normalized();
 
   RenderMesh mesh_data;
-  mesh_data.indices.resize(1, 3);
-  mesh_data.indices << 0, 1, 2;
-  mesh_data.normals.resize(3, 3);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(1, 3);
+  indices << 0, 1, 2;
+  mesh_data.set_indices(indices);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(3, 3);
   // Each case must set the normals explicitly.
 
   {
     // Case: all three normals point in the same direction.
     for (int i = 0; i < 3; ++i) {
-      mesh_data.normals.row(i) = expected_ray;
+      normals.row(i) = expected_ray;
     }
+    mesh_data.set_normals(normals);
     const NormalCone cone(mesh_data, 0);
     // The ray should be an exact match and cos_theta should be epsilon less
     // than one.
@@ -226,11 +230,12 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
     for (int axis = 0; axis < 3; ++axis) {
       for (int i = 0; i < 3; ++i) {
         if (i == axis) {
-          mesh_data.normals.row(i) = n1;
+          normals.row(i) = n1;
         } else {
-          mesh_data.normals.row(i) = n0;
+          normals.row(i) = n0;
         }
       }
+      mesh_data.set_normals(normals);
       const NormalCone cone(mesh_data, 0);
       // The ray and cos_theta should match within epsilon.
       EXPECT_TRUE(CompareMatrices(cone.ray(), expected_ray, kEps));
@@ -255,15 +260,16 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
         AngleAxisd(theta, Vector3d(-2, 1, 0).normalized()) * expected_ray;
     for (int i = 0; i < 3; ++i) {
       const AngleAxisd R(2 * M_PI / 3 * i, expected_ray);
-      mesh_data.normals.row(i) = R * n_base;
+      normals.row(i) = R * n_base;
     }
+    mesh_data.set_normals(normals);
     const NormalCone cone(mesh_data, 0);
     // The ray and cos_theta should match within epsilon.
     EXPECT_TRUE(CompareMatrices(cone.ray(), expected_ray, kEps));
     EXPECT_NEAR(cone.cos_theta(), cos_theta_expected, kEps);
     // The three normals should lie on the boundary of the cone.
     for (int i = 0; i < 3; ++i) {
-      const Vector3d n = mesh_data.normals.row(i);
+      const Vector3d n = mesh_data.normals().row(i);
       EXPECT_NEAR(cone.ray().dot(n), cone.cos_theta(), 2 * kEps);
     }
     const AngleAxisd R_outside(theta + kThetaEpsilon,
@@ -292,17 +298,17 @@ void TestGenericPrimitiveTraits(const RenderMesh& mesh,
                                 bool origin_is_inside = true) {
   const double kEps = std::numeric_limits<double>::epsilon();
 
-  ASSERT_EQ(mesh.positions.rows(), mesh.normals.rows());
-  ASSERT_EQ(mesh.positions.rows(), mesh.uvs.rows());
+  ASSERT_EQ(mesh.positions().rows(), mesh.normals().rows());
+  ASSERT_EQ(mesh.positions().rows(), mesh.uvs().rows());
 
   // All normals have unit length.
-  for (int n_i = 0; n_i < mesh.normals.rows(); ++n_i) {
-    const Vector3d n = mesh.normals.row(n_i);
+  for (int n_i = 0; n_i < mesh.normals().rows(); ++n_i) {
+    const Vector3d n = mesh.normals().row(n_i);
     ASSERT_NEAR(n.norm(), 1, kEps);
   }
 
   // Face normals point outward, within the face's normal cone.
-  for (int t = 0; t < mesh.indices.rows(); ++t) {
+  for (int t = 0; t < mesh.indices().rows(); ++t) {
     Vector3d n_face = CalcTriNormal(mesh, t);
     if (origin_is_inside) {
       Vector3d c = CalcTriCentroid(mesh, t);
@@ -315,10 +321,10 @@ void TestGenericPrimitiveTraits(const RenderMesh& mesh,
   }
 
   // UVs lie in the expected range.
-  ASSERT_EQ(mesh.uvs.rows(), mesh.positions.rows());
-  for (int i = 0; i < mesh.uvs.rows(); ++i) {
-    const double u = mesh.uvs(i, 0);
-    const double v = mesh.uvs(i, 1);
+  ASSERT_EQ(mesh.uvs().rows(), mesh.positions().rows());
+  for (int i = 0; i < mesh.uvs().rows(); ++i) {
+    const double u = mesh.uvs()(i, 0);
+    const double v = mesh.uvs()(i, 1);
     ASSERT_TRUE((0 <= u) && (u <= 1));
     ASSERT_TRUE((0 <= v) && (v <= 1));
   }
@@ -349,10 +355,10 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
 
     // All vertices lie on the unit sphere and that position is equal to the
     // reported normal (and its magnitude is 1).
-    for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-      const Vector3d v_i = mesh_data.positions.row(v);
+    for (int v = 0; v < mesh_data.positions().rows(); ++v) {
+      const Vector3d v_i = mesh_data.positions().row(v);
       EXPECT_NEAR(v_i.norm(), 1.f, kEps) << "for vertex " << v;
-      const Vector3d n_i = mesh_data.normals.row(v);
+      const Vector3d n_i = mesh_data.normals().row(v);
       EXPECT_TRUE(CompareMatrices(v_i, n_i, kEps));
       EXPECT_NEAR(n_i.norm(), 1, kEps);
     }
@@ -368,9 +374,9 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
     // We'll confirm the north and south poles (first and last vertices) are
     // where we expect them.
     EXPECT_TRUE(
-        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
-    const int row_count = mesh_data.uvs.rows();
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+        CompareMatrices(mesh_data.uvs().row(0), Vector2d(0, 1).transpose()));
+    const int row_count = mesh_data.uvs().rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs().row(row_count - 1),
                                 Vector2d(0, 0).transpose()));
   }
 }
@@ -396,14 +402,14 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     prev_area = curr_area;
 
     // All vertices (except first and last) are 1 unit away from z-axis.
-    for (int v_i = 1; v_i < mesh_data.positions.rows() - 1; ++v_i) {
-      Vector3d v = mesh_data.positions.row(v_i);
+    for (int v_i = 1; v_i < mesh_data.positions().rows() - 1; ++v_i) {
+      Vector3d v = mesh_data.positions().row(v_i);
       v(2) = 0;
       EXPECT_NEAR(v.norm(), 1.f, kEps) << "for vertex " << v_i;
     }
     // First and last vertices are *on* the z axis.
-    for (int v_i : {0, static_cast<int>(mesh_data.positions.rows() - 1)}) {
-      Vector3d v = mesh_data.positions.row(v_i);
+    for (int v_i : {0, static_cast<int>(mesh_data.positions().rows() - 1)}) {
+      Vector3d v = mesh_data.positions().row(v_i);
       v(2) = 0;
       EXPECT_NEAR(v.norm(), 0.f, kEps) << "for vertex " << v_i;
     }
@@ -411,20 +417,20 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     // The first resolution + 1 vertices should be at z = 0.5. The last
     // resolution + 1 mesh_data.positions should be at z = -0.5.
     for (int v_i = 0; v_i < resolution + 1; ++v_i) {
-      EXPECT_EQ(mesh_data.positions(v_i, 2), 0.5);
+      EXPECT_EQ(mesh_data.positions()(v_i, 2), 0.5);
     }
-    for (int v_i = mesh_data.positions.rows() - resolution - 1;
-         v_i < mesh_data.positions.rows(); ++v_i) {
-      EXPECT_EQ(mesh_data.positions(v_i, 2), -0.5);
+    for (int v_i = mesh_data.positions().rows() - resolution - 1;
+         v_i < mesh_data.positions().rows(); ++v_i) {
+      EXPECT_EQ(mesh_data.positions()(v_i, 2), -0.5);
     }
 
     TestGenericPrimitiveTraits(mesh_data);
 
     // See note in MakeLongLatUnitSphere about testing texture coordinates.
     EXPECT_TRUE(
-        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
-    const int row_count = mesh_data.uvs.rows();
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+        CompareMatrices(mesh_data.uvs().row(0), Vector2d(0, 1).transpose()));
+    const int row_count = mesh_data.uvs().rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs().row(row_count - 1),
                                 Vector2d(0, 0).transpose()));
   }
 }
@@ -449,9 +455,10 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     // number of triangles (representative of the number of small additions).
     const double area_epsilon = kEps * kArea * resolution * resolution;
     EXPECT_NEAR(CalcTotalArea(mesh_data), kArea, area_epsilon);
-    EXPECT_EQ(mesh_data.positions.rows(), (resolution + 1) * (resolution + 1));
-    EXPECT_EQ(mesh_data.indices.rows(), 2 * resolution * resolution);
-    for (int t = 0; t < mesh_data.indices.rows(); ++t) {
+    EXPECT_EQ(mesh_data.positions().rows(),
+              (resolution + 1) * (resolution + 1));
+    EXPECT_EQ(mesh_data.indices().rows(), 2 * resolution * resolution);
+    for (int t = 0; t < mesh_data.indices().rows(); ++t) {
       EXPECT_TRUE(CompareMatrices(CalcTriUnitNormal(mesh_data, t),
                                   Vector3d(0, 0, 1), kEps));
     }
@@ -459,8 +466,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     // Confirm the bounding box is what we would expected.
     Vector3d min_pt{kMax, kMax, kMax};
     Vector3d max_pt = -min_pt;
-    for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-      Vector3d vertex = mesh_data.positions.row(v);
+    for (int v = 0; v < mesh_data.positions().rows(); ++v) {
+      Vector3d vertex = mesh_data.positions().row(v);
       min_pt = min_pt.cwiseMin(vertex);
       max_pt = max_pt.cwiseMax(vertex);
     }
@@ -469,17 +476,17 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
 
     const auto expected_n = Vector3d::UnitZ().transpose();
-    for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-      ASSERT_TRUE(CompareMatrices(mesh_data.normals.row(v), expected_n));
+    for (int v = 0; v < mesh_data.positions().rows(); ++v) {
+      ASSERT_TRUE(CompareMatrices(mesh_data.normals().row(v), expected_n));
     }
 
     // Coarse sampling of UVs. The first vertex should be at (0, 0) the last
     // at (1, 1). See note on texture coordinate testing in
     // MakeLongLatUnitSphere.
     EXPECT_TRUE(
-        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 0).transpose()));
-    const int row_count = mesh_data.uvs.rows();
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+        CompareMatrices(mesh_data.uvs().row(0), Vector2d(0, 0).transpose()));
+    const int row_count = mesh_data.uvs().rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs().row(row_count - 1),
                                 Vector2d(1, 1).transpose()));
   }
 }
@@ -494,15 +501,15 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
   // In computing total area, we scale epsilon by the expected area and also
   // the number of triangles, as per-triangle area gets magnified.
   EXPECT_NEAR(CalcTotalArea(mesh_data), 6.f, kEps);
-  EXPECT_EQ(mesh_data.positions.rows(), 24);
-  EXPECT_EQ(mesh_data.normals.rows(), 24);
-  EXPECT_EQ(mesh_data.indices.rows(), 12);
+  EXPECT_EQ(mesh_data.positions().rows(), 24);
+  EXPECT_EQ(mesh_data.normals().rows(), 24);
+  EXPECT_EQ(mesh_data.indices().rows(), 12);
 
   // Confirm the bounding box is what we would expected.
   Vector3d min_pt{kMax, kMax, kMax};
   Vector3d max_pt = -min_pt;
-  for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-    Vector3d vertex = mesh_data.positions.row(v);
+  for (int v = 0; v < mesh_data.positions().rows(); ++v) {
+    Vector3d vertex = mesh_data.positions().row(v);
     min_pt = min_pt.cwiseMin(vertex);
     max_pt = max_pt.cwiseMax(vertex);
   }
@@ -514,14 +521,14 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
 
   // We expect the UVs to have the pattern (0, 0) -> (1, 0) -> (1, 1) -> (1, 0)
   // once for each face. We'll test that explicitly.
-  for (int row = 0; row < mesh_data.uvs.rows(); row += 4) {
+  for (int row = 0; row < mesh_data.uvs().rows(); row += 4) {
     ASSERT_TRUE(
-        CompareMatrices(mesh_data.uvs.row(row), Vector2d(0, 0).transpose()));
-    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 1),
+        CompareMatrices(mesh_data.uvs().row(row), Vector2d(0, 0).transpose()));
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs().row(row + 1),
                                 Vector2d(1, 0).transpose()));
-    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 2),
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs().row(row + 2),
                                 Vector2d(1, 1).transpose()));
-    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 3),
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs().row(row + 3),
                                 Vector2d(0, 1).transpose()));
   }
 }
@@ -539,26 +546,26 @@ GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
     // sphere and the normals lie in the same direction as from sphere center
     // to vertex. Repeat with the second half, with a sphere center at
     // (0, 0, -kLength / 2).
-    const int num_vertices = mesh_data.positions.rows();
+    const int num_vertices = mesh_data.positions().rows();
     {
       const Vector3d p_MC(0, 0, kLength / 2);
       for (int v = 0; v < num_vertices / 2; ++v) {
-        const Vector3d p_MV = mesh_data.positions.row(v);
+        const Vector3d p_MV = mesh_data.positions().row(v);
         const Vector3d p_CV = p_MV - p_MC;
         ASSERT_NEAR(p_CV.norm(), kRadius, kEps);
         const Vector3d nhat_V_expected = p_CV.normalized();
-        const Vector3d nhat_V = mesh_data.normals.row(v);
+        const Vector3d nhat_V = mesh_data.normals().row(v);
         ASSERT_TRUE(CompareMatrices(nhat_V, nhat_V_expected, kEps));
       }
     }
     {
       const Vector3d p_MC(0, 0, -kLength / 2);
       for (int v = num_vertices / 2; v < num_vertices; ++v) {
-        const Vector3d p_MV = mesh_data.positions.row(v);
+        const Vector3d p_MV = mesh_data.positions().row(v);
         const Vector3d p_CV = p_MV - p_MC;
         ASSERT_NEAR(p_CV.norm(), kRadius, kEps);
         const Vector3d nhat_V_expected = p_CV.normalized();
-        const Vector3d nhat_V = mesh_data.normals.row(v);
+        const Vector3d nhat_V = mesh_data.normals().row(v);
         ASSERT_TRUE(CompareMatrices(nhat_V, nhat_V_expected, kEps));
       }
     }
@@ -567,9 +574,9 @@ GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
 
     // See note in MakeLongLatUnitSphere about testing texture coordinates.
     EXPECT_TRUE(
-        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
-    const int row_count = mesh_data.uvs.rows();
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+        CompareMatrices(mesh_data.uvs().row(0), Vector2d(0, 1).transpose()));
+    const int row_count = mesh_data.uvs().rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs().row(row_count - 1),
                                 Vector2d(0, 0).transpose()));
     // TODO(SeanCurtis-TRI) Consider testing the v-values of the two equators
     //  to make sure the distribution from 0-1 is arc-length parameterized.

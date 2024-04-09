@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -25,20 +26,72 @@ namespace internal {
  For now, all vertex quantities (`positions`, `normals` and `uvs`) are
  guaranteed (as well as the `indices` data). In the future, `uvs` may become
  optional. */
-struct RenderMesh {
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions;
-  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
-  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
-  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
+class RenderMesh {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderMesh);
+
+  RenderMesh() = default;
+
+  const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>& positions()
+      const {
+    return positions_;
+  }
+
+  const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>& normals()
+      const {
+    return normals_;
+  }
+
+  const Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>& uvs() const {
+    return uvs_;
+  }
+
+  const Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor>&
+  indices() const {
+    return indices_;
+  }
+
+  const UvState& uv_state() const { return uv_state_; }
+
+  const RenderMaterial& material() const { return material_; }
+
+  void set_positions(
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions) {
+    positions_ = std::move(positions);
+  }
+
+  void set_normals(
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals) {
+    normals_ = std::move(normals);
+  }
+
+  void set_uvs(Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs) {
+    uvs_ = std::move(uvs);
+  }
+
+  void set_indices(
+      Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices) {
+    indices_ = std::move(indices);
+  }
+
+  void set_uv_state(const UvState& uv_state) { uv_state_ = uv_state; }
+
+  void set_material(const RenderMaterial& material) { material_ = material; }
+
+ private:
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions_;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals_;
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs_;
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices_;
 
   /* Indicates the degree that UV coordinates have been assigned to the mesh.
    Only UvState::kFull supports texture images. No matter what, the `uvs` matrix
    will be appropriately sized. But only for kFull will the values be
    meaningful. */
-  UvState uv_state{UvState::kNone};
+  UvState uv_state_{UvState::kNone};
 
   /* The specification of the material associated with this mesh data. */
-  RenderMaterial material;
+  RenderMaterial material_;
 };
 
 // TODO(SeanCurtis-TRI): All of this explanation, and general guidance for what

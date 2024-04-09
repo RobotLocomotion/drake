@@ -64,7 +64,7 @@ bool RenderEngine::RegisterDeformableVisual(
   if (accepted) {
     std::vector<int> mesh_dofs;
     for (const auto& mesh : render_meshes) {
-      mesh_dofs.emplace_back(mesh.positions.size());
+      mesh_dofs.emplace_back(mesh.positions().size());
     }
     deformable_mesh_dofs_[id] = std::move(mesh_dofs);
   }

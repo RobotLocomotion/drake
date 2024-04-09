@@ -836,9 +836,9 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
     PerformCenterShapeTest(renderer_.get());
 
     const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
-        initial_q_WG = render_meshes[0].positions;
+        initial_q_WG = render_meshes[0].positions();
     const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
-        initial_nhat_W = render_meshes[0].normals;
+        initial_nhat_W = render_meshes[0].normals();
     // Helper lambda to translate all vertex positions by the same vector.
     auto translate_all_vertices = [&initial_q_WG](const Vector3d& t_W) {
       auto result = initial_q_WG;

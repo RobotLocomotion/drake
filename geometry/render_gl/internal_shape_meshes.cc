@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -83,9 +84,9 @@ RenderMesh MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
   const int tri_count = (curve_sample_count - 2) * 2 * rotate_sample_count;
 
   RenderMesh mesh_data;
-  auto& vertices = mesh_data.positions;
+  auto vertices = mesh_data.positions();
   vertices.resize(vert_count, 3);
-  auto& indices = mesh_data.indices;
+  auto indices = mesh_data.indices();
   indices.resize(tri_count, 3);
 
   /* Insertion points into vertices and indices for each new vertex and tri.  */
@@ -179,6 +180,9 @@ RenderMesh MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
   DRAKE_DEMAND(v_index == vert_count);
   DRAKE_DEMAND(t_index == tri_count);
 
+  mesh_data.set_positions(std::move(vertices));
+  mesh_data.set_indices(std::move(indices));
+
   return mesh_data;
 }
 
@@ -257,25 +261,26 @@ RenderMesh MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
                                            calc_radius_i, calc_z_i);
 
   /* The process of building should match our predicted counts.  */
-  DRAKE_DEMAND(mesh_data.positions.rows() == vert_count);
-  DRAKE_DEMAND(mesh_data.indices.rows() == tri_count);
+  DRAKE_DEMAND(mesh_data.positions().rows() == vert_count);
+  DRAKE_DEMAND(mesh_data.indices().rows() == tri_count);
 
   /* We can add the normals in a post-hoc manner; every vertex normal is simply
    the normalized position vector (given this is the unit sphere, the two
    quantities should be the same).  */
-  mesh_data.normals.resize(vert_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(vert_count,
+                                                                    3);
   for (int v = 0; v < vert_count; ++v) {
-    const auto p_MV = mesh_data.positions.row(v);
-    mesh_data.normals.row(v) = p_MV.normalized();
+    const auto p_MV = mesh_data.positions().row(v);
+    normals.row(v) = p_MV.normalized();
   }
 
   /* Post hoc addition of texture coordinates. Note: the values at the north
    and south poles, (<0, 1> and <0, 0>, respectively) will lead to visual
    artifacts. There is no known good solution for polar texture coordinates
    without those artifacts.  */
-  mesh_data.uvs.resize(vert_count, 2);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(vert_count, 2);
   /* North pole.  */
-  mesh_data.uvs.row(0) << 0, 1;
+  uvs.row(0) << 0, 1;
   /* All lines of latitude.  */
   int v_index = 1;
   const double delta_u = 1.0 / longitude_bands;
@@ -284,12 +289,15 @@ RenderMesh MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
     const double v = 1.0 - ring * delta_v;
     for (int vertex = 0; vertex <= longitude_bands; ++vertex, ++v_index) {
       const double u = vertex * delta_u;
-      mesh_data.uvs.row(v_index) << u, v;
+      uvs.row(v_index) << u, v;
     }
   }
   /* South pole.  */
-  mesh_data.uvs.row(v_index) << 0, 0;
+  uvs.row(v_index) << 0, 0;
   DRAKE_DEMAND(++v_index == vert_count);
+
+  mesh_data.set_normals(std::move(normals));
+  mesh_data.set_uvs(std::move(uvs));
 
   return mesh_data;
 }
@@ -394,8 +402,8 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
       MakeRevoluteShape(num_strips, num_bands + 3, calc_radius_i, calc_z_i);
 
   /* The process of building should match our predicted counts.  */
-  DRAKE_DEMAND(mesh_data.positions.rows() == rev_vert_count);
-  DRAKE_DEMAND(mesh_data.indices.rows() == tri_count);
+  DRAKE_DEMAND(mesh_data.positions().rows() == rev_vert_count);
+  DRAKE_DEMAND(mesh_data.indices().rows() == tri_count);
 
   /* To have a hard-edge on the cylinder cap, we need to have
    2 * (num_strips + 1) more vertices; the vertices on the top and bottom rings
@@ -413,14 +421,18 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
    the last ring directly before c₁. All triangle indices will be modified
    to reflect the shift.  */
 
-  const int old_v_count = mesh_data.positions.rows();
+  const int old_v_count = mesh_data.positions().rows();
   const int new_v_count = old_v_count + 2 * (num_strips + 1);
+  const int t_count = mesh_data.indices().rows();
+
   RenderMesh full_mesh_data;
-  full_mesh_data.positions.resize(new_v_count, 3);
-  full_mesh_data.normals.resize(new_v_count, 3);
-  full_mesh_data.uvs.resize(new_v_count, 2);
-  const int t_count = mesh_data.indices.rows();
-  full_mesh_data.indices.resize(t_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(
+      new_v_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(new_v_count,
+                                                                    3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(new_v_count, 2);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(
+      t_count, 3);
 
   /* The first and last k = S + 2 vertices are referenced by cap triangles.  */
   const int cap_v_count = num_strips + 2;
@@ -428,43 +440,42 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
   const int barrel_v_count = old_v_count - 2;
   /* Copy vertex positions; the first N + 1 vertices are the bottom cap and the
    last N + 1 are the top cap.  */
-  full_mesh_data.positions.block(0, 0, cap_v_count, 3) =
-      mesh_data.positions.block(0, 0, cap_v_count, 3);
-  full_mesh_data.positions.block(cap_v_count, 0, barrel_v_count, 3) =
-      mesh_data.positions.block(1, 0, barrel_v_count, 3);
-  full_mesh_data.positions.block(new_v_count - cap_v_count, 0, cap_v_count, 3) =
-      mesh_data.positions.block(old_v_count - cap_v_count, 0, cap_v_count, 3);
+  positions.block(0, 0, cap_v_count, 3) =
+      mesh_data.positions().block(0, 0, cap_v_count, 3);
+  positions.block(cap_v_count, 0, barrel_v_count, 3) =
+      mesh_data.positions().block(1, 0, barrel_v_count, 3);
+  positions.block(new_v_count - cap_v_count, 0, cap_v_count, 3) =
+      mesh_data.positions().block(old_v_count - cap_v_count, 0, cap_v_count, 3);
 
   /* Write all the normal data.  */
   /* Top cap.  */
   int v = 0;
   for (; v < cap_v_count; ++v) {
-    full_mesh_data.normals.row(v) << 0, 0, 1;
+    normals.row(v) << 0, 0, 1;
   }
   /* All barrel vertices.  */
   for (; v < barrel_v_count + cap_v_count; ++v) {
-    const auto p_MV = full_mesh_data.positions.row(v);
+    const auto p_MV = positions.row(v);
     const Vector2d p_MV_xy(p_MV(0, 0), p_MV(0, 1));
     const Vector2d n_MV_xy = p_MV_xy.normalized();
-    full_mesh_data.normals.row(v) << n_MV_xy(0), n_MV_xy(1), 0;
+    normals.row(v) << n_MV_xy(0), n_MV_xy(1), 0;
   }
   /* Bottom cap.  */
   for (; v < new_v_count; ++v) {
-    full_mesh_data.normals.row(v) << 0, 0, -1;
+    normals.row(v) << 0, 0, -1;
   }
 
   /* Transform indices in the triangles. */
   /* Top cap remains unchanged; so we'll skip the first num_strips triangles. */
-  using indices_uint_t = decltype(full_mesh_data.indices)::Scalar;
-  full_mesh_data.indices = mesh_data.indices;
+  indices.topRows(mesh_data.indices().rows()) = mesh_data.indices();
   const auto offset =
-      Vector3<indices_uint_t>::Constant(num_strips + 1).transpose();
+      Vector3<unsigned int>::Constant(num_strips + 1).transpose();
   int t = num_strips;
   for (; t < t_count - num_strips; ++t) {
-    full_mesh_data.indices.row(t) += offset;
+    indices.row(t) += offset;
   }
   for (; t < t_count; ++t) {
-    full_mesh_data.indices.row(t) += 2 * offset;
+    indices.row(t) += 2 * offset;
   }
 
   /* TODO(SeanCurtis-TRI) Consider treating cylinders like capsules; rather
@@ -484,7 +495,7 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
   const double arc_length = 3; /* Two radii + length.  */
   int uv_index = 0;
   /* North pole.  */
-  full_mesh_data.uvs.row(uv_index) << 0, 1;
+  uvs.row(uv_index) << 0, 1;
   ++uv_index;
   /* Now handle the rings of vertices. Each ring has a constant v-coordinate
    and a set of u-values that span [0, 1]. So, we'll create the u- and
@@ -495,34 +506,39 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
   v_values.setConstant(2 / arc_length);
 
   /* First two rings are duplicates with matching uv coordinates.  */
-  full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
-  full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
+  uvs.block(uv_index, 0, ring_size, 1) = u_values;
+  uvs.block(uv_index, 1, ring_size, 1) = v_values;
   uv_index += ring_size;
-  full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
-  full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
+  uvs.block(uv_index, 0, ring_size, 1) = u_values;
+  uvs.block(uv_index, 1, ring_size, 1) = v_values;
   uv_index += ring_size;
 
   /* For B bands, there are B - 1 rings located *strictly* on the barrel.  */
   const double v_delta = 1 / arc_length / num_bands;
   for (int barrel_ring = 0; barrel_ring < num_bands - 1; ++barrel_ring) {
     v_values.setConstant(v_values(0) - v_delta);
-    full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
-    full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
+    uvs.block(uv_index, 0, ring_size, 1) = u_values;
+    uvs.block(uv_index, 1, ring_size, 1) = v_values;
     uv_index += ring_size;
   }
 
   /* Last two rings are duplicates with matching uv coordinates.  */
   v_values.setConstant(1 / arc_length);
-  full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
-  full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
+  uvs.block(uv_index, 0, ring_size, 1) = u_values;
+  uvs.block(uv_index, 1, ring_size, 1) = v_values;
   uv_index += ring_size;
-  full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
-  full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
+  uvs.block(uv_index, 0, ring_size, 1) = u_values;
+  uvs.block(uv_index, 1, ring_size, 1) = v_values;
   uv_index += ring_size;
 
   /* South pole.  */
-  full_mesh_data.uvs.row(uv_index) << 0, 0;
+  uvs.row(uv_index) << 0, 0;
   DRAKE_DEMAND(++uv_index == new_v_count);
+
+  full_mesh_data.set_positions(std::move(positions));
+  full_mesh_data.set_normals(std::move(normals));
+  full_mesh_data.set_uvs(std::move(uvs));
+  full_mesh_data.set_indices(std::move(indices));
 
   return full_mesh_data;
 }
@@ -535,10 +551,13 @@ RenderMesh MakeSquarePatch(double measure, int resolution) {
   const int tri_count = 2 * resolution * resolution;
 
   RenderMesh mesh_data;
-  mesh_data.positions.resize(vert_count, 3);
-  mesh_data.normals.resize(vert_count, 3);
-  mesh_data.uvs.resize(vert_count, 2);
-  mesh_data.indices.resize(tri_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(
+      vert_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(vert_count,
+                                                                    3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(vert_count, 2);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(
+      tri_count, 3);
 
   /* The size of each square sub-patch.  */
   const double delta_pos = measure / resolution;
@@ -578,11 +597,11 @@ RenderMesh MakeSquarePatch(double measure, int resolution) {
     const double y = y0 + i * delta_pos;
     const double v = i * delta_uv;
     for (int j = 0; j <= resolution; ++j) {
-      mesh_data.normals.row(v_index) << 0, 0, 1;
+      normals.row(v_index) << 0, 0, 1;
       const double x = x0 + j * delta_pos;
-      mesh_data.positions.row(v_index) << x, y, 0;
+      positions.row(v_index) << x, y, 0;
       const double u = j * delta_uv;
-      mesh_data.uvs.row(v_index++) << u, v;
+      uvs.row(v_index++) << u, v;
     }
   }
 
@@ -608,12 +627,17 @@ RenderMesh MakeSquarePatch(double measure, int resolution) {
       const int n = v + 1;
       const int v_u = v + resolution + 1;
       const int n_u = n + resolution + 1;
-      mesh_data.indices.row(t_index++) << v, n, n_u;
-      mesh_data.indices.row(t_index++) << v, n_u, v_u;
+      indices.row(t_index++) << v, n, n_u;
+      indices.row(t_index++) << v, n_u, v_u;
     }
     ++v_index;
   }
   DRAKE_DEMAND(t_index == tri_count);
+
+  mesh_data.set_positions(std::move(positions));
+  mesh_data.set_normals(std::move(normals));
+  mesh_data.set_uvs(std::move(uvs));
+  mesh_data.set_indices(std::move(indices));
 
   return mesh_data;
 }
@@ -633,101 +657,113 @@ RenderMesh MakeUnitBox() {
             a      b
   */
   RenderMesh mesh_data;
-  mesh_data.positions.resize(24, 3);
-  mesh_data.normals.resize(24, 3);
-  mesh_data.uvs.resize(24, 2);
-  mesh_data.indices.resize(12, 3);
-  /* clang-format off */
-  mesh_data.positions << -0.5f, -0.5f, -0.5f,  /* -y face: a b c d.  */
-                          0.5f, -0.5f, -0.5f,
-                          0.5f, -0.5f,  0.5f,
-                         -0.5f, -0.5f,  0.5f,
-                          0.5f, -0.5f, -0.5f,  /* +x face: b f g c.  */
-                          0.5f,  0.5f, -0.5f,
-                          0.5f,  0.5f,  0.5f,
-                          0.5f, -0.5f,  0.5f,
-                         -0.5f, -0.5f,  0.5f,  /* +z face: d c g h  */
-                          0.5f, -0.5f,  0.5f,
-                          0.5f,  0.5f,  0.5f,
-                         -0.5f,  0.5f,  0.5f,
-                         -0.5f,  0.5f, -0.5f,  /* -x face: e a d h  */
-                         -0.5f, -0.5f, -0.5f,
-                         -0.5f, -0.5f,  0.5f,
-                         -0.5f,  0.5f,  0.5f,
-                         -0.5f,  0.5f, -0.5f,  /* -z face: e f b a  */
-                          0.5f,  0.5f, -0.5f,
-                          0.5f, -0.5f, -0.5f,
-                         -0.5f, -0.5f, -0.5f,
-                          0.5f,  0.5f, -0.5f,  /*  +y face: f e h g  */
-                         -0.5f,  0.5f, -0.5f,
-                         -0.5f,  0.5f,  0.5f,
-                          0.5f,  0.5f,  0.5f;
+  const int vert_count = 24;
+  const int tri_count = 12;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(
+      vert_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(vert_count,
+                                                                    3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(vert_count, 2);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(
+      tri_count, 3);
 
-  mesh_data.normals <<  0, -1,  0,
-                        0, -1,  0,
-                        0, -1,  0,
-                        0, -1,  0,
-                        1,  0,  0,
-                        1,  0,  0,
-                        1,  0,  0,
-                        1,  0,  0,
-                        0,  0,  1,
-                        0,  0,  1,
-                        0,  0,  1,
-                        0,  0,  1,
-                       -1,  0,  0,
-                       -1,  0,  0,
-                       -1,  0,  0,
-                       -1,  0,  0,
-                        0,  0, -1,
-                        0,  0, -1,
-                        0,  0, -1,
-                        0,  0, -1,
-                        0,  1,  0,
-                        0,  1,  0,
-                        0,  1,  0,
-                        0,  1,  0;
+  /* clang-format off */
+  positions << -0.5f, -0.5f, -0.5f,  /* -y face: a b c d.  */
+                0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f,  0.5f,
+               -0.5f, -0.5f,  0.5f,
+                0.5f, -0.5f, -0.5f,  /* +x face: b f g c.  */
+                0.5f,  0.5f, -0.5f,
+                0.5f,  0.5f,  0.5f,
+                0.5f, -0.5f,  0.5f,
+               -0.5f, -0.5f,  0.5f,  /* +z face: d c g h  */
+                0.5f, -0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f,
+               -0.5f,  0.5f,  0.5f,
+               -0.5f,  0.5f, -0.5f,  /* -x face: e a d h  */
+               -0.5f, -0.5f, -0.5f,
+               -0.5f, -0.5f,  0.5f,
+               -0.5f,  0.5f,  0.5f,
+               -0.5f,  0.5f, -0.5f,  /* -z face: e f b a  */
+                0.5f,  0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
+               -0.5f, -0.5f, -0.5f,
+                0.5f,  0.5f, -0.5f,  /*  +y face: f e h g  */
+               -0.5f,  0.5f, -0.5f,
+               -0.5f,  0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f;
+
+  normals <<  0, -1,  0,
+              0, -1,  0,
+              0, -1,  0,
+              0, -1,  0,
+              1,  0,  0,
+              1,  0,  0,
+              1,  0,  0,
+              1,  0,  0,
+              0,  0,  1,
+              0,  0,  1,
+              0,  0,  1,
+              0,  0,  1,
+             -1,  0,  0,
+             -1,  0,  0,
+             -1,  0,  0,
+             -1,  0,  0,
+              0,  0, -1,
+              0,  0, -1,
+              0,  0, -1,
+              0,  0, -1,
+              0,  1,  0,
+              0,  1,  0,
+              0,  1,  0,
+              0,  1,  0;
   /* The ordering of the face vertex indices have been defined such that we can
    specify each face's vertex coordinates with the same clockwise pattern:
    (0, 0) -> (1, 0) -> (1, 1) -> (0, 1).  */
-  mesh_data.uvs << 0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1,
-                   0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1,
-                   0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1,
-                   0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1,
-                   0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1,
-                   0, 0,
-                   1, 0,
-                   1, 1,
-                   0, 1;
+  uvs << 0, 0,
+         1, 0,
+         1, 1,
+         0, 1,
+         0, 0,
+         1, 0,
+         1, 1,
+         0, 1,
+         0, 0,
+         1, 0,
+         1, 1,
+         0, 1,
+         0, 0,
+         1, 0,
+         1, 1,
+         0, 1,
+         0, 0,
+         1, 0,
+         1, 1,
+         0, 1,
+         0, 0,
+         1, 0,
+         1, 1,
+         0, 1;
 
-  mesh_data.indices << 0, 1, 2,
-                       0, 2, 3,
-                       4, 5, 6,
-                       4, 6, 7,
-                       8, 9, 10,
-                       8, 10, 11,
-                       12, 13, 14,
-                       12, 14, 15,
-                       16, 17, 18,
-                       16, 18, 19,
-                       20, 21, 22,
-                       20, 22, 23;
+  indices << 0, 1, 2,
+             0, 2, 3,
+             4, 5, 6,
+             4, 6, 7,
+             8, 9, 10,
+             8, 10, 11,
+             12, 13, 14,
+             12, 14, 15,
+             16, 17, 18,
+             16, 18, 19,
+             20, 21, 22,
+             20, 22, 23;
   /* clang-format on */
+
+  mesh_data.set_positions(std::move(positions));
+  mesh_data.set_normals(std::move(normals));
+  mesh_data.set_uvs(std::move(uvs));
+  mesh_data.set_indices(std::move(indices));
+
   return mesh_data;
 }
 
@@ -758,16 +794,20 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
    The resulting capsule will have `2H + 2 * ring_size` vertices, normals, and
    uvs and `T + 2 * samples` triangles, where T is the number of triangles in
    the sphere.  */
-  const int H = (sphere_data.positions.rows() - ring_size) / 2;
-  DRAKE_DEMAND(2 * H + ring_size == sphere_data.positions.rows());
+  const int H = (sphere_data.positions().rows() - ring_size) / 2;
+  DRAKE_DEMAND(2 * H + ring_size == sphere_data.positions().rows());
 
   RenderMesh data;
   const int vert_count = 2 * (H + ring_size);
-  data.positions.resize(vert_count, 3);
-  data.normals.resize(vert_count, 3);
-  data.uvs.resize(vert_count, 2);
-  const int tri_count = sphere_data.indices.rows() + (2 * samples);
-  data.indices.resize(tri_count, 3);
+  const int tri_count = sphere_data.indices().rows() + (2 * samples);
+
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(
+      vert_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(vert_count,
+                                                                    3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(vert_count, 2);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(
+      tri_count, 3);
 
   /* Process vertices and normals. Vertices get scaled by radius and offset
    half the length, normals and uvs get copied. (The copied uv values will be
@@ -777,27 +817,27 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
   /* Northern hemisphere plus the equator.  */
   const Vector3d offset(0, 0, length / 2);
   for (int i = 0; i < H + ring_size; ++i) {
-    const Vector3d p_SV = sphere_data.positions.row(++sphere_v);
-    data.positions.row(++capsule_v) = p_SV * radius + offset;
-    data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
-    data.uvs.row(capsule_v) = sphere_data.uvs.row(sphere_v);
+    const Vector3d p_SV = sphere_data.positions().row(++sphere_v);
+    positions.row(++capsule_v) = p_SV * radius + offset;
+    normals.row(capsule_v) = sphere_data.normals().row(sphere_v);
+    uvs.row(capsule_v) = sphere_data.uvs().row(sphere_v);
   }
   /* Back up our *reading* index so that we get a copy of the equator.  */
   sphere_v -= ring_size;
   for (int i = 0; i < H + ring_size; ++i) {
-    const Vector3d p_SV = sphere_data.positions.row(++sphere_v);
-    data.positions.row(++capsule_v) = p_SV * radius - offset;
-    data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
-    data.uvs.row(capsule_v) = sphere_data.uvs.row(sphere_v);
+    const Vector3d p_SV = sphere_data.positions().row(++sphere_v);
+    positions.row(++capsule_v) = p_SV * radius - offset;
+    normals.row(capsule_v) = sphere_data.normals().row(sphere_v);
+    uvs.row(capsule_v) = sphere_data.uvs().row(sphere_v);
   }
 
   /* Process the faces. The first half can be taken verbatim. Then we inject
    the barrel vertices (connecting the two equators), the southern hemisphere
    needs all indices offset by `ring_size`.  */
 
-  const int hemisphere_tri_count = sphere_data.indices.rows() / 2;
-  data.indices.block(0, 0, hemisphere_tri_count, 3) =
-      sphere_data.indices.block(0, 0, hemisphere_tri_count, 3);
+  const int hemisphere_tri_count = sphere_data.indices().rows() / 2;
+  indices.block(0, 0, hemisphere_tri_count, 3) =
+      sphere_data.indices().block(0, 0, hemisphere_tri_count, 3);
   /* We add all the triangles for the barrel spanning the two equators. Given
    a vertex index lying on the southern equator v, we walk around the equator
    building triangle pairs as shown:
@@ -821,17 +861,16 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
   int capsule_t = hemisphere_tri_count;
   int v = H + ring_size; /* the "first" vertex of the southern equator.  */
   for (int i = 0; i < samples; ++i, ++v, capsule_t += 2) {
-    data.indices.row(capsule_t) << v, v + 1, v - ring_size;
-    data.indices.row(capsule_t + 1) << v + 1, v + 1 - ring_size, v - ring_size;
+    indices.row(capsule_t) << v, v + 1, v - ring_size;
+    indices.row(capsule_t + 1) << v + 1, v + 1 - ring_size, v - ring_size;
   }
   /* Now the southern hemisphere gets its indices offset to account for the
    injection of `ring_size` new vertices.  */
-  using indices_uint_t = decltype(sphere_data.indices)::Scalar;
-  const Vector3<indices_uint_t> i_offset(ring_size, ring_size, ring_size);
+  const Vector3<unsigned int> i_offset(ring_size, ring_size, ring_size);
   for (int sphere_t = hemisphere_tri_count;
-       sphere_t < sphere_data.indices.rows(); ++sphere_t, ++capsule_t) {
-    auto tri = sphere_data.indices.row(sphere_t);
-    data.indices.row(capsule_t) = tri + i_offset.transpose();
+       sphere_t < sphere_data.indices().rows(); ++sphere_t, ++capsule_t) {
+    auto tri = sphere_data.indices().row(sphere_t);
+    indices.row(capsule_t) = tri + i_offset.transpose();
   }
 
   /* Texture coordinates.
@@ -870,7 +909,7 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
     /* The v-value for this ring.  */
     const double v_value = 1.0 - r * delta_v;
     for (int i = 0; i < ring_size; ++i) {
-      data.uvs(++uv_index, 1) = v_value;
+      uvs(++uv_index, 1) = v_value;
     }
   }
   /* The latitude rings for the southern hemisphere.  */
@@ -878,13 +917,18 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
     /* The v-value for this ring.  */
     const double v_value = (lat_bands - r) * delta_v;
     for (int i = 0; i < ring_size; ++i) {
-      data.uvs(++uv_index, 1) = v_value;
+      uvs(++uv_index, 1) = v_value;
     }
   }
 
   /* The index is of the second-to-last texture coordinate. Increment one for
    the last, and one more for the total count.  */
   DRAKE_DEMAND(uv_index + 2 == vert_count);
+
+  data.set_positions(std::move(positions));
+  data.set_normals(std::move(normals));
+  data.set_uvs(std::move(uvs));
+  data.set_indices(std::move(indices));
 
   return data;
 }

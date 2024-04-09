@@ -889,9 +889,9 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
 
     PerceptionProperties mesh_properties(properties);
     mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   render_mesh.material.diffuse_map.string());
+                                   render_mesh.material().diffuse_map.string());
     mesh_properties.UpdateProperty("phong", "diffuse",
-                                   render_mesh.material.diffuse);
+                                   render_mesh.material().diffuse);
     RegistrationData data{id, RigidTransformd::Identity(), mesh_properties};
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
@@ -1265,7 +1265,7 @@ void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
     // Note: the material is left as std::nullopt, so that the instance of this
     // geometry must define its own material.
     meshes_[file_key] = vector<RenderGlMesh>{
-        {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state}};
+        {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state()}};
   }
 }
 
@@ -1302,11 +1302,11 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
           fmt::format("Error creating object for mesh {}", filename).c_str());
 
       file_meshes.push_back(
-          {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
+          {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state()});
 
       // Only store materials defined by the obj file; otherwise let instances
       // define their own (see ImplementMeshesForFile()).
-      const RenderMaterial& material = render_mesh.material;
+      const RenderMaterial& material = render_mesh.material();
       if (material.from_mesh_file) {
         file_meshes.back().mesh_material = material;
       }
@@ -1430,9 +1430,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // We're representing the vertex data as a concatenation of positions,
   // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
   // equal number of vertices, normals, and texture coordinates.
-  DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.normals.rows());
-  DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.uvs.rows());
-  const int v_count = render_mesh.positions.rows();
+  DRAKE_DEMAND(render_mesh.positions().rows() == render_mesh.normals().rows());
+  DRAKE_DEMAND(render_mesh.positions().rows() == render_mesh.uvs().rows());
+  const int v_count = render_mesh.positions().rows();
   vector<GLfloat> vertex_data;
   // 3 floats each for position and normal, 2 for texture coordinates.
   const int kFloatsPerPosition = 3;
@@ -1443,12 +1443,12 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // N.B. we are implicitly converting from double to float by inserting them
   // into the vector.
   vertex_data.insert(
-      vertex_data.end(), render_mesh.positions.data(),
-      render_mesh.positions.data() + v_count * kFloatsPerPosition);
-  vertex_data.insert(vertex_data.end(), render_mesh.normals.data(),
-                     render_mesh.normals.data() + v_count * kFloatsPerNormal);
-  vertex_data.insert(vertex_data.end(), render_mesh.uvs.data(),
-                     render_mesh.uvs.data() + v_count * kFloatsPerUv);
+      vertex_data.end(), render_mesh.positions().data(),
+      render_mesh.positions().data() + v_count * kFloatsPerPosition);
+  vertex_data.insert(vertex_data.end(), render_mesh.normals().data(),
+                     render_mesh.normals().data() + v_count * kFloatsPerNormal);
+  vertex_data.insert(vertex_data.end(), render_mesh.uvs().data(),
+                     render_mesh.uvs().data() + v_count * kFloatsPerUv);
   // For deformable meshes, we set the dynamic storage bit to allow modification
   // to the vertex position data.
   glNamedBufferStorage(geometry.vertex_buffer,
@@ -1456,16 +1456,16 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
                        is_deformable ? GL_DYNAMIC_STORAGE_BIT : 0);
 
   // Create the index buffer object (IBO).
-  using indices_uint_t = decltype(render_mesh.indices)::Scalar;
+  using indices_uint_t = unsigned int;
   static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
                 "If this fails, cast from unsigned int to GLuint");
   glCreateBuffers(1, &geometry.index_buffer);
   // The connectivity is always NOT modifiable.
   glNamedBufferStorage(geometry.index_buffer,
-                       render_mesh.indices.size() * sizeof(GLuint),
-                       render_mesh.indices.data(), 0);
+                       render_mesh.indices().size() * sizeof(GLuint),
+                       render_mesh.indices().data(), 0);
 
-  geometry.index_buffer_size = render_mesh.indices.size();
+  geometry.index_buffer_size = render_mesh.indices().size();
 
   geometry.v_count = v_count;
   CreateVertexArray(&geometry);

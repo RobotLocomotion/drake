@@ -272,19 +272,19 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     RenderMesh mesh_data;
 
     /* Create the material for set of triangles. */
-    mesh_data.uv_state = material_uvs[mat_index] == 0 ? UvState::kNone
-                         : material_uvs[mat_index] == ssize(tri_indices) * 3
-                             ? UvState::kFull
-                             : UvState::kPartial;
+    mesh_data.set_uv_state(material_uvs[mat_index] == 0 ? UvState::kNone
+                           : material_uvs[mat_index] == ssize(tri_indices) * 3
+                               ? UvState::kFull
+                               : UvState::kPartial);
     if (mat_index == -1) {
       /* This is the default material. No material was assigned to the faces.
        We'll apply the fallback logic. */
-      mesh_data.material = MakeMeshFallbackMaterial(
-          properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
+      mesh_data.set_material(MakeMeshFallbackMaterial(
+          properties, obj_path, default_diffuse, policy, mesh_data.uv_state()));
     } else {
-      mesh_data.material =
+      mesh_data.set_material(
           MakeMaterialFromMtl(reader.GetMaterials().at(mat_index), obj_path,
-                              properties, policy, mesh_data.uv_state);
+                              properties, policy, mesh_data.uv_state()));
     }
 
     /* Partition the data into distinct RenderMeshes. The triangles in one
@@ -293,22 +293,22 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
      from [0, N-1]. This map provides the mapping from the original index value
      in the full buffer, to the vertex buffer in this RenderMesh. At the same
      time, convert them to the unsigned type required by RenderMesh. */
-    using indices_uint_t = decltype(mesh_data.indices)::Scalar;
-    map<int, indices_uint_t> vertex_index_full_to_part;
+    map<int, unsigned int> vertex_index_full_to_part;
     for (const auto& t : tri_indices) {
       const auto& tri = triangles[t];
       for (int i = 0; i < 3; ++i) {
         if (!vertex_index_full_to_part.contains(tri[i])) {
           vertex_index_full_to_part[tri(i)] =
-              static_cast<indices_uint_t>(vertex_index_full_to_part.size());
+              static_cast<unsigned int>(vertex_index_full_to_part.size());
         }
       }
     }
-    mesh_data.indices.resize(ssize(tri_indices), 3);
+    auto mesh_data_indices = mesh_data.indices();
+    mesh_data_indices.resize(ssize(tri_indices), 3);
     int row = -1;
     for (const int t : tri_indices) {
       const Vector3<int>& source_tri = triangles[t];
-      auto mapped_tri = mesh_data.indices.row(++row);
+      auto mapped_tri = mesh_data_indices.row(++row);
       /* Each vertex maps independently. */
       for (int i = 0; i < 3; ++i) {
         mapped_tri[i] = vertex_index_full_to_part[source_tri[i]];
@@ -316,14 +316,21 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     }
 
     const int vertex_count = ssize(vertex_index_full_to_part);
-    mesh_data.positions.resize(vertex_count, 3);
-    mesh_data.normals.resize(vertex_count, 3);
-    mesh_data.uvs.resize(vertex_count, 2);
+    auto mesh_data_positions = mesh_data.positions();
+    auto mesh_data_normals = mesh_data.normals();
+    auto mesh_data_uvs = mesh_data.uvs();
+    mesh_data_positions.resize(vertex_count, 3);
+    mesh_data_normals.resize(vertex_count, 3);
+    mesh_data_uvs.resize(vertex_count, 2);
     for (const auto& [full_index, part_index] : vertex_index_full_to_part) {
-      mesh_data.positions.row(part_index) = positions[full_index];
-      mesh_data.normals.row(part_index) = normals[full_index];
-      mesh_data.uvs.row(part_index) = uvs[full_index];
+      mesh_data_positions.row(part_index) = positions[full_index];
+      mesh_data_normals.row(part_index) = normals[full_index];
+      mesh_data_uvs.row(part_index) = uvs[full_index];
     }
+    mesh_data.set_positions(std::move(mesh_data_positions));
+    mesh_data.set_normals(std::move(mesh_data_normals));
+    mesh_data.set_uvs(std::move(mesh_data_uvs));
+    mesh_data.set_indices(std::move(mesh_data_indices));
     meshes.push_back(std::move(mesh_data));
   }
 
@@ -335,33 +342,41 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const GeometryProperties& properties, const Rgba& default_diffuse,
     const DiagnosticPolicy& policy) {
   RenderMesh result;
-  result.material = MakeMeshFallbackMaterial(properties, "", default_diffuse,
-                                             policy, UvState::kNone);
+  result.set_material(MakeMeshFallbackMaterial(properties, "", default_diffuse,
+                                               policy, UvState::kNone));
   const int vertex_count = mesh.num_vertices();
   const int triangle_count = mesh.num_triangles();
-  result.positions.resize(vertex_count, 3);
-  result.normals.resize(vertex_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions(
+      vertex_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals(
+      vertex_count, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs(vertex_count,
+                                                                3);
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices(
+      triangle_count, 3);
   /* Normals need to be zero initialized because we will accumulate into them.
    */
-  result.normals.setZero();
+  normals.setZero();
   /* uv values are unused but need to be properly sized. We arbitrarily set them
    to all zeros. */
-  result.uvs.resize(vertex_count, 2);
-  result.uvs.setZero();
-  result.indices.resize(triangle_count, 3);
+  uvs.setZero();
   for (int i = 0; i < triangle_count; ++i) {
     const SurfaceTriangle& t = mesh.element(i);
-    result.indices.row(i) << t.vertex(0), t.vertex(1), t.vertex(2);
+    indices.row(i) << t.vertex(0), t.vertex(1), t.vertex(2);
     const double area = mesh.area(i);
     const Vector3<double> weighted_normal = area * mesh.face_normal(i);
     for (int j = 0; j < 3; ++j) {
-      result.normals.row(t.vertex(j)) += weighted_normal;
+      normals.row(t.vertex(j)) += weighted_normal;
     }
   }
   for (int i = 0; i < vertex_count; ++i) {
-    result.positions.row(i) = mesh.vertex(i);
-    result.normals.row(i).normalize();
+    positions.row(i) = mesh.vertex(i);
+    normals.row(i).normalize();
   }
+  result.set_positions(std::move(positions));
+  result.set_normals(std::move(normals));
+  result.set_uvs(std::move(uvs));
+  result.set_indices(std::move(indices));
   return result;
 }
 
@@ -392,18 +407,19 @@ RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
 
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
     const RenderMesh& render_mesh) {
-  const int num_vertices = render_mesh.positions.rows();
-  const int num_triangles = render_mesh.indices.rows();
+  const int num_vertices = render_mesh.positions().rows();
+  const int num_triangles = render_mesh.indices().rows();
   std::vector<Vector3<double>> vertices;
   vertices.reserve(num_vertices);
   std::vector<SurfaceTriangle> triangles;
   triangles.reserve(num_triangles);
   for (int v = 0; v < num_vertices; ++v) {
-    vertices.emplace_back(render_mesh.positions.row(v));
+    vertices.emplace_back(render_mesh.positions().row(v));
   }
   for (int t = 0; t < num_triangles; ++t) {
-    triangles.emplace_back(render_mesh.indices(t, 0), render_mesh.indices(t, 1),
-                           render_mesh.indices(t, 2));
+    triangles.emplace_back(render_mesh.indices()(t, 0),
+                           render_mesh.indices()(t, 1),
+                           render_mesh.indices()(t, 2));
   }
   return TriangleSurfaceMesh<double>(
       TriangleSurfaceMesh(std::move(triangles), std::move(vertices)));
