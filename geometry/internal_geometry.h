@@ -188,6 +188,11 @@ class InternalGeometry {
   /* Reports if the geometry has a perception role. */
   bool has_perception_role() const { return perception_props_ != std::nullopt; }
 
+  /* Returns a pointer to the geometry's properties associated with the given
+   `role` (if they are defined). Nullptr otherwise. Always returns the nullptr
+   for Role::kUnassigned. */
+  const GeometryProperties* properties(Role role) const;
+
   /* Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */
   const ProximityProperties* proximity_properties() const {
