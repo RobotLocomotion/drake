@@ -49,7 +49,7 @@ int do_main() {
   // For every items we add to the initial array, decrement start_x by one half
   // to keep things centered.
   // Use ++x as the x-position of new items.
-  const double start_x = -8.5;
+  const double start_x = -9.0;
   double x = start_x;
 
   Vector3d sphere_home{++x, 0, 0};
@@ -83,6 +83,13 @@ int do_main() {
   meshcat->SetObject("obj_as_mesh", Mesh(polytope_with_hole, 0.25),
                      Rgba(0.8, 0.4, 0.1, 1.0));
   meshcat->SetTransform("obj_as_mesh", RigidTransformd(Vector3d{x, 1, 0}));
+
+  const std::string quad_cube =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
+  meshcat->SetObject("obj_as_stl_mesh", Mesh(quad_cube, 0.25),
+                     Rgba(1, 1, 0, 1.0));
+  meshcat->SetTransform("obj_as_stl_mesh",
+                        RigidTransformd(Vector3d{++x, 0, 0}));
 
   meshcat->SetObject("capsule", Capsule(0.25, 0.5), Rgba(0, 1, 1, 1));
   meshcat->SetTransform("capsule", RigidTransformd(Vector3d{++x, 0, 0}));
@@ -253,6 +260,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - an orange polytopes (with a similary shaped textured polytope behind it).
     The textured shape has a hole through. The orange polytope is its convex
     hull.
+  - a yellow cube
   - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
   - a shiny, green, dented cube (created with a PBR material)
