@@ -274,10 +274,9 @@ struct MeshFileGeometryData : public GeometryData {
     o.pack("_meshfile_geometry");
     PACK_MAP_VAR(o, uuid);
     PACK_MAP_VAR(o, format);
-    if(format=="obj" || format=="dae") {
+    if (format == "obj" || format == "dae") {
       PACK_MAP_VAR(o, data);
-    }
-    else if(format=="stl") {
+    } else if (format == "stl") {
       // 0x12 means Uint8Array in three.js
       msgpack::type::ext data_ext(0x12, data.c_str(), data.size());
       o.pack("data");
