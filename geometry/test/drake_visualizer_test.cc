@@ -968,6 +968,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
   constexpr double kRadius = 1.0;
   auto geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(kRadius), "sphere");
+  geometry_instance->set_illustration_properties(IllustrationProperties{});
   GeometryId g_id = this->scene_graph_->RegisterDeformableGeometry(
       this->configuration_source_id_, this->scene_graph_->world_frame_id(),
       std::move(geometry_instance), kRezHint);
@@ -985,7 +986,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
   /* Confirm that messages were sent.  */
   MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
-  // No rigid geometries are added.
+  /* No rigid geometries are added. */
   ASSERT_EQ(results.load_message.num_links, 0);
   ASSERT_EQ(results.num_deformable, 1);
   ASSERT_EQ(results.deformable_message.num_geom, 1);

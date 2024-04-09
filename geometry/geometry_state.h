@@ -215,6 +215,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;
 
+  /** Implementation of
+   SceneGraphInspector::NumDeformableGeometriesWithRole().  */
+  int NumDeformableGeometriesWithRole(Role role) const;
+
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
 
@@ -345,6 +349,11 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
 
+  /** Implementation of
+   SceneGraphInspector::GetDrivenIllustrationRenderMeshes().  */
+  const std::vector<internal::RenderMesh>& GetDrivenIllustrationRenderMeshes(
+      GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
   bool IsDeformableGeometry(GeometryId id) const;
 
@@ -378,6 +387,11 @@ class GeometryState {
 
   /** Implementation of QueryObject::GetConfigurationsInWorld().  */
   const VectorX<T>& get_configurations_in_world(GeometryId geometry_id) const;
+
+  /** Implementation of
+   QueryObject::GetIllustrationMeshConfigurationsInWorld().  */
+  std::vector<VectorX<T>> GetIllustrationMeshConfigurationsInWorld(
+      GeometryId geometry_id) const;
   //@}
 
   /** @name        State management
@@ -856,7 +870,18 @@ class GeometryState {
   // contained within the control volume mesh.
   // @pre The geometry associated with `geometry_id` is a deformable geometry
   // registered with `this` GeometryState.
+  // @note if driven meshes are already registered for the given `geometry_id`,
+  // they will be replaced with the new driven mesh.
   void RegisterDrivenPerceptionMesh(GeometryId geometry_id);
+
+  // Adds the driven mesh used for visualizing the deformable geometry with the
+  // given `geometry_id`. The driven mesh is the surface triangle mesh of the
+  // control volume mesh.
+  // @pre The geometry associated with `geometry_id` is a deformable geometry
+  // registered with `this` GeometryState.
+  // @note if driven meshes are already registered for the given `geometry_id`,
+  // they will be replaced with the new driven mesh.
+  void RegisterDrivenIllustrationMesh(GeometryId geometry_id);
 
   // Attempts to remove the geometry with the given id from *all* render
   // engines. The only GeometryState-level data structure modified is the
@@ -923,6 +948,13 @@ class GeometryState {
   internal::DrivenMeshData& mutable_driven_perception_meshes() const {
     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
     return mutable_state->driven_perception_meshes_;
+  }
+
+  // Returns a mutable reference to the driven illustration meshes in this
+  // GeometryState.
+  internal::DrivenMeshData& mutable_driven_illustration_meshes() const {
+    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+    return mutable_state->driven_illustration_meshes_;
   }
 
   // Returns a mutable reference to the proximity engine in this GeometryState.
@@ -1012,6 +1044,10 @@ class GeometryState {
   // Mesh representations for deformable geometries with perception roles that
   // move passively with the simulated control mesh.
   internal::DrivenMeshData driven_perception_meshes_;
+
+  // Mesh representations for deformable geometries with illustration roles that
+  // move passively with the simulated control mesh.
+  internal::DrivenMeshData driven_illustration_meshes_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

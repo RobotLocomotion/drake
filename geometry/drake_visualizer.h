@@ -33,22 +33,16 @@ struct DynamicFrameData {
   std::string name;
 };
 
-/* Helper data structure to hold the topology information necessary to visualize
- the surface of a volume mesh. */
+/* Helper data structure to hold the topology and material information necessary
+ to visualize the surface of a volume mesh. */
 struct DeformableMeshData {
   GeometryId geometry_id;
   /* The name of the deformable mesh. Included in all lcm messages.  */
   std::string name;
-  /* An *implicit* map from *surface* vertex indices to volume vertex indices.
-   The iᵗʰ surface vertex corresponds to the volume vertex with index
-   `surface_to_volume_vertices_[i]`.  */
-  std::vector<int> surface_to_volume_vertices;
-  /* Surface triangle mesh representing the topology of the volume mesh's
-   surfaces. Each triangle is encoded with three index values that are keys for
-   surface_to_volume_vertices. */
-  std::vector<Vector3<int>> surface_triangles;
-  /* The total number of vertices implied by the tetrahedra definitions.  */
-  int volume_vertex_count{};
+  /* Mesh representation of the deformable geometry to be visualized, along with
+   its render material information. The vertex positions in `render_meshes`
+   represents the deformable meshes' intial vertex positions. */
+  std::vector<RenderMesh> render_meshes;
 };
 
 /* If requested in @p params, adds a suffix to the provided LCM channel name,

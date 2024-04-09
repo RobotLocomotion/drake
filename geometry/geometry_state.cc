@@ -301,6 +301,15 @@ int GeometryState<T>::NumGeometriesWithRole(Role role) const {
 }
 
 template <typename T>
+int GeometryState<T>::NumDeformableGeometriesWithRole(Role role) const {
+  int count = 0;
+  for (const auto& pair : geometries_) {
+    if (pair.second.has_role(role) && pair.second.is_deformable()) ++count;
+  }
+  return count;
+}
+
+template <typename T>
 int GeometryState<T>::NumDynamicGeometries() const {
   return NumDeformableGeometries() + NumDynamicNonDeformableGeometries();
 }
@@ -662,6 +671,20 @@ const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
 }
 
 template <typename T>
+const std::vector<RenderMesh>&
+GeometryState<T>::GetDrivenIllustrationRenderMeshes(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry == nullptr ||
+      !driven_illustration_meshes_.driven_meshes().contains(id)) {
+    throw std::logic_error(
+        fmt::format("Referenced geometry {} is not a registered deformable "
+                    "geometry with illustration role",
+                    id));
+  }
+  return driven_illustration_meshes_.render_meshes(id);
+}
+
+template <typename T>
 bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
   const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
   return geometry.is_deformable();
@@ -801,6 +824,29 @@ const VectorX<T>& GeometryState<T>::get_configurations_in_world(
         "get_pose_in_world() instead.");
   }
   return kinematics_data_.q_WGs.at(geometry_id);
+}
+
+template <typename T>
+std::vector<VectorX<T>>
+GeometryState<T>::GetIllustrationMeshConfigurationsInWorld(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No illustration mesh data available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  DRAKE_THROW_UNLESS(geometry.is_deformable());
+  std::vector<VectorX<T>> result;
+  if (geometry.has_illustration_role()) {
+    DRAKE_THROW_UNLESS(
+        driven_illustration_meshes_.driven_meshes().contains(geometry_id));
+    const std::vector<DrivenTriangleMesh>& driven_meshes =
+        driven_illustration_meshes_.driven_meshes().at(geometry_id);
+    for (const auto& mesh : driven_meshes) {
+      result.emplace_back(mesh.GetDrivenVertexPositions());
+    }
+  }
+  return result;
 }
 
 template <typename T>
@@ -1223,6 +1269,10 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   geometry_version_.modify_illustration();
 
   geometry.SetRole(std::move(properties));
+
+  if (geometry.is_deformable()) {
+    RegisterDrivenIllustrationMesh(geometry_id);
+  }
 }
 
 template <typename T>
@@ -1906,6 +1956,28 @@ void GeometryState<T>::RegisterDrivenPerceptionMesh(GeometryId geometry_id) {
     }
   }
   driven_perception_meshes_.SetMeshes(geometry_id, std::move(driven_meshes),
+                                      std::move(render_meshes));
+}
+
+template <typename T>
+void GeometryState<T>::RegisterDrivenIllustrationMesh(GeometryId geometry_id) {
+  InternalGeometry& geometry = geometries_[geometry_id];
+  DRAKE_DEMAND(geometry.is_deformable());
+  DRAKE_DEMAND(geometry.has_illustration_role());
+  const IllustrationProperties& illustration_properties =
+      *geometry.illustration_properties();
+
+  const VolumeMesh<double>* control_mesh_ptr = geometry.reference_mesh();
+  DRAKE_DEMAND(control_mesh_ptr != nullptr);
+  const VolumeMesh<double>& control_mesh = *control_mesh_ptr;
+
+  std::vector<DrivenTriangleMesh> driven_meshes;
+  driven_meshes.emplace_back(internal::MakeDrivenSurfaceMesh(control_mesh));
+
+  std::vector<RenderMesh> render_meshes;
+  render_meshes.emplace_back(MakeRenderMeshFromTriangleSurfaceMesh(
+      driven_meshes.back().triangle_surface_mesh(), illustration_properties));
+  driven_illustration_meshes_.SetMeshes(geometry_id, std::move(driven_meshes),
                                       std::move(render_meshes));
 }
 

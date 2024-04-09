@@ -177,7 +177,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
 }
 
 /* Create an lcm message for a deformable mesh representation of the geometry
- described by `deformable_data`.
+ described by the input parameters.
 
  The geometry data message is marked as a MESH, but rather than having a
  path to a parseable file stored in it, the actual mesh data is stored.
@@ -185,13 +185,20 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
  geometry is set to identity because the vertex positions are expressed in the
  world frame.
 
- When the Mesh shape specification supports in-memory mesh definitions, this
- can be rolled into ShapeToLcm and it will more fully share that class's code
- for handling color. */
+ @param[in] name              The name of the geometry.
+ @param[in] vertex_poistions  The positions of the mesh vertices in the world
+                              frame.
+ @param[in] render_mesh       Describes the connectivity and the material of the
+                              mesh. Other information from render_mesh (e.g the
+                              uv coordinates) are unused. Currently only the
+                              diffuse color part of the material is used. Other
+                              information about the material is discarded.
+ @param[in] default_diffuse   The diffuse color of the geometry if no material
+                              is specified in `render_mesh`. */
 template <typename T>
 lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
-    const VectorX<T>& volume_vertex_positions,
-    const internal::DeformableMeshData& deformable_data, const Rgba& in_color) {
+    const std::string& name, const VectorX<T>& vertex_positions,
+    const internal::RenderMesh& render_mesh, const Rgba& default_diffuse) {
   lcmt_viewer_geometry_data geometry_data;
   // The pose is unused and set to identity.
   geometry_data.quaternion[0] = 1;
@@ -202,9 +209,14 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   geometry_data.position[1] = 0;
   geometry_data.position[2] = 0;
 
-  geometry_data.string_data = deformable_data.name;
+  geometry_data.string_data = name;
 
-  EigenMapView(geometry_data.color) = in_color.rgba().cast<float>();
+  // Right now we only support a single diffuse color as the visualization
+  // material. Textures are not supported.
+  const Rgba& diffuse_color = render_mesh.material.has_value()
+                                  ? render_mesh.material->diffuse
+                                  : default_diffuse;
+  EigenMapView(geometry_data.color) = diffuse_color.rgba().cast<float>();
 
   // We can define the mesh in the float data as:
   // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
@@ -214,9 +226,11 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   //   N: 3V, the number of floating point values for the V vertices.
   //   M: 3T, the number of vertex indices for the T triangles.
   geometry_data.type = geometry_data.MESH;
-
-  const int num_tris = deformable_data.surface_triangles.size();
-  const int num_verts = deformable_data.surface_to_volume_vertices.size();
+  const Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor>&
+      triangles = render_mesh.indices;
+  const int num_tris = render_mesh.indices.rows();
+  const int num_verts = render_mesh.positions.rows();
+  DRAKE_DEMAND(3 * num_verts == vertex_positions.size());
   const int header_floats = 2;
   geometry_data.num_float_data = header_floats + 3 * num_tris + 3 * num_verts;
   geometry_data.float_data.resize(geometry_data.num_float_data);
@@ -233,18 +247,12 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   int t_index = t_start_index - 1;
 
   for (int f = 0; f < num_tris; ++f) {
-    const Vector3<int>& face = deformable_data.surface_triangles[f];
     for (int fv = 0; fv < 3; ++fv) {
-      float_data[++t_index] = face[fv];
+      float_data[++t_index] = triangles(f, fv);
     }
   }
-  for (int i = 0; i < num_verts; ++i) {
-    // v_i is the index into the volume mesh
-    const int v_i = deformable_data.surface_to_volume_vertices[i];
-    for (int d = 0; d < 3; ++d) {
-      float_data[++v_index] =
-          ExtractDoubleOrThrow(volume_vertex_positions[3 * v_i + d]);
-    }
+  for (int i = 0; i < 3 * num_verts; ++i) {
+    float_data[++v_index] = ExtractDoubleOrThrow(vertex_positions[i]);
   }
   // v_index and t_index end with the index of the last element added, so one
   // less than the expected number, hence the "+ 1". So, the vertex index should
@@ -255,118 +263,15 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   return geometry_data;
 }
 
-/* Analyzes the tetrahedral mesh topology of the deformble geometry with `g_id`
- to do the following:
-  1. Build a surface mesh from each volume mesh.
-  2. Create a mapping from surface vertex to volume vertex for each mesh.
-  3. Record the expected number of vertices referenced by each tet mesh.
- Store the results in DeformableMeshData.
- @pre g_id corresponds to a deformable geometry. */
+/* Builds DeformableMeshData for geometry with the given geometry id. See
+ DeformableMeshData.
+ @pre g_id corresponds to a deformable geometry with illustration role. */
 template <typename T>
 internal::DeformableMeshData MakeDeformableMeshData(
     GeometryId g_id, const SceneGraphInspector<T>& inspector) {
-  /* For each tet mesh, extract all the border triangles. Those are the
-   triangles that are only referenced by a single tet. So, for every tet, we
-   examine its four constituent triangle and determine if any other tet
-   shares it. Any triangle that is only referenced once is a border triangle.
-   Each triangle has a unique key: a SortedTriplet (so the ordering of the
-   triangle vertex indices won't matter). The first time we see a triangle, we
-   add it to a map. The second time we see the triangle, we remove it. When
-   we're done, the keys in the map will be those triangles referenced only once.
-   The values in the map represent the triangle, with the vertex indices
-   ordered so that they point *out* of the tetrahedron. Therefore,
-   they will also point outside of the mesh. A typical tetrahedral element
-   looks like:
-
-       p2 *
-          |
-          |
-       p3 *---* p0
-         /
-        /
-    p1 *
-
-   The index order for a particular tetrahedron has the order [p0, p1, p2,
-   p3]. These local indices enumerate each of the tet triangles with
-   outward-pointing normals with respect to the right-hand rule. */
-  const array<array<int, 3>, 4> local_indices{
-      {{{1, 0, 2}}, {{3, 0, 1}}, {{3, 1, 2}}, {{2, 0, 3}}}};
-
-  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
-  DRAKE_DEMAND(mesh != nullptr);
-
-  std::map<SortedTriplet<int>, array<int, 3>> border_triangles;
-  for (const VolumeElement& tet : mesh->tetrahedra()) {
-    for (const array<int, 3>& tet_triangle : local_indices) {
-      const array<int, 3> tri{tet.vertex(tet_triangle[0]),
-                              tet.vertex(tet_triangle[1]),
-                              tet.vertex(tet_triangle[2])};
-      const SortedTriplet triangle_key(tri[0], tri[1], tri[2]);
-      // Here we rely on the fact that at most two tets would share a common
-      // triangle.
-      if (auto itr = border_triangles.find(triangle_key);
-          itr != border_triangles.end()) {
-        border_triangles.erase(itr);
-      } else {
-        border_triangles[triangle_key] = tri;
-      }
-    }
-  }
-  /* Record the expected minimum number of vertex positions to be received.
-   For simplicity we choose a generous upper bound: the total number of
-   vertices in the tetrahedral mesh, even though we really only need the
-   positions of the vertices on the surface. */
-  // TODO(xuchenhan-tri) It might be worthwhile to make largest_index the
-  //  largest index that lies on the surface. Then, when we create our meshes,
-  //  if we intentionally construct them so that the surface vertices come
-  //  first, we will process a very compact representation.
-  const int volume_vertex_count = mesh->num_vertices();
-
-  /* Using a set because the vertices will be nicely ordered. Ideally, we'll
-   be extracting a subset of the vertex positions from the input port. We
-   optimize cache coherency if we march in a monotonically increasing pattern.
-   So, we'll map triangle vertex indices to volume vertex indices in a
-   strictly monotonically increasing relationship. */
-  set<int> unique_vertices;
-  for (const auto& [triangle_key, triangle] : border_triangles) {
-    unused(triangle_key);
-    for (int j = 0; j < 3; ++j) unique_vertices.insert(triangle[j]);
-  }
-
-  /* This is the *second* documented responsibility of this function: Populate
-   the mapping from surface to volume so that we can efficiently extract the
-   *surface* vertex positions from the *volume* vertex input. */
-  vector<int> surface_to_volume_vertices;
-  surface_to_volume_vertices.insert(surface_to_volume_vertices.begin(),
-                                    unique_vertices.begin(),
-                                    unique_vertices.end());
-
-  /* The border triangles all include indices into the volume vertices. To turn
-   them into surface triangles, they need to include indices into the surface
-   vertices. Create the volume index --> surface map to facilitate the
-   transformation. */
-  const int surface_vertex_count =
-      static_cast<int>(surface_to_volume_vertices.size());
-  map<int, int> volume_to_surface;
-  for (int j = 0; j < surface_vertex_count; ++j) {
-    volume_to_surface[surface_to_volume_vertices[j]] = j;
-  }
-
-  /* This is the *first* documented responsibility: Create the topology of the
-   surface triangle mesh for each volume mesh. Each triangle consists of three
-   indices into the set of *surface* vertex positions. */
-  vector<Vector3<int>> surface_triangles;
-  surface_triangles.reserve(border_triangles.size());
-  for (auto& [triangle_key, face] : border_triangles) {
-    unused(triangle_key);
-    surface_triangles.emplace_back(volume_to_surface[face[0]],
-                                   volume_to_surface[face[1]],
-                                   volume_to_surface[face[2]]);
-  }
-
-  // TODO(xuchenhan-tri): Read the color of the mesh from properties.
-  return {g_id, inspector.GetName(g_id), std::move(surface_to_volume_vertices),
-          std::move(surface_triangles), volume_vertex_count};
+  DRAKE_DEMAND(inspector.IsDeformableGeometry(g_id));
+  return {g_id, inspector.GetName(g_id),
+          inspector.GetDrivenIllustrationRenderMeshes(g_id)};
 }
 
 // Simple class for converting shape specifications into LCM-compatible shapes.
@@ -678,9 +583,11 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message{};
 
-  // Add the world frame if it has geometries with the specified role.
-  const int anchored_count = inspector.NumGeometriesForFrameWithRole(
-      inspector.world_frame_id(), params.role);
+  // Add the world frame if it has rigid geometries with the specified role.
+  const int anchored_count =
+      inspector.NumGeometriesForFrameWithRole(inspector.world_frame_id(),
+                                              params.role) -
+      inspector.NumDeformableGeometriesWithRole(params.role);
   const int frame_count =
       static_cast<int>(dynamic_frames.size()) + (anchored_count > 0 ? 1 : 0);
 
@@ -806,25 +713,19 @@ void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
   lcmt_viewer_link_data message{};
   message.name = "deformable_geometries";
   message.robot_num = 0;  // robot_num = 0 corresponds to world frame.
-  message.num_geom = deformable_data.size();
-  message.geom.resize(message.num_geom);
-  for (int i = 0; i < message.num_geom; ++i) {
+  for (int i = 0; i < ssize(deformable_data); ++i) {
     const internal::DeformableMeshData& data = deformable_data[i];
     const GeometryId g_id = data.geometry_id;
-    const VectorX<T>& vertex_positions =
-        query_object.GetConfigurationsInWorld(g_id);
-    if (vertex_positions.size() <= data.volume_vertex_count) {
-      throw std::logic_error(fmt::format(
-          "For mesh named '{}', The number of given vertex positions "
-          "({}) is smaller than the "
-          "minimum expected number of positions ({}).",
-          data.name, vertex_positions.size(), data.volume_vertex_count));
+    const std::vector<VectorX<T>> vertex_positions =
+        query_object.GetIllustrationMeshConfigurationsInWorld(g_id);
+    DRAKE_DEMAND(vertex_positions.size() == data.render_meshes.size());
+    for (int j = 0; j < ssize(vertex_positions); ++j) {
+      message.geom.emplace_back(MakeDeformableSurfaceMesh(
+          data.name, vertex_positions[j], data.render_meshes[j],
+          params.default_color));
     }
-    // TODO(xuchenhan-tri): We should use the color from the property of the
-    // geometry when available.
-    message.geom[i] =
-        MakeDeformableSurfaceMesh(vertex_positions, data, params.default_color);
   }
+  message.num_geom = message.geom.size();
   std::string channel =
       MakeLcmChannelNameForRole("DRAKE_VIEWER_DEFORMABLE", params);
   lcm::Publish(lcm, channel, message, time);
