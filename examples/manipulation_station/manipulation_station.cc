@@ -608,7 +608,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
@@ -623,7 +623,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
@@ -638,7 +638,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
       }
       break;
     }

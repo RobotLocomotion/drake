@@ -319,9 +319,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @{
 
   /// For this joint, sets the random distribution that the translation of this
-  /// this joint will be randomly sampled from. If a quaternion distribution has
+  /// joint will be randomly sampled from. If a quaternion distribution has
   /// already been set with stochastic variables, it will remain so. Otherwise
-  /// the quaternion will be set to this joint's has a zero orientation.
+  /// the quaternion will be set to this joint's zero orientation.
   /// See get_translation() for details on the translation representation.
   void set_random_translation_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
@@ -370,9 +370,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
   }
 
-  /// Returns this joint's default position p_FoMo_F from Fo (inboard frame F's
-  /// origin) to Mo (outboard frame M's origin), expressed in inboard frame F.
-  /// @retval This joint's default position vector p_FM.
+  /// Returns this joint's default translation as the position vector p_FoMo_F
+  /// from Fo (inboard frame F's origin) to Mo (outboard frame M's origin),
+  /// expressed in inboard frame F.
+  /// @retval This joint's default translation as the position vector p_FM.
   Vector3<double> get_default_translation() const {
     return this->default_positions().template tail<3>();
   }
