@@ -323,6 +323,17 @@ GTEST_TEST(L2NormCost, ShortestDistanceFromCylinderToPoint) {
   tester.CheckSolution(solver);
 }
 
+GTEST_TEST(L2NormCost, ShortestDistanceFromPlaneToTwoPoints) {
+  GurobiSolver solver;
+  ShortestDistanceFromPlaneToTwoPoints tester{};
+  SolverOptions solver_options{};
+  // Gurobi's default QCP tolerance result in very low precision sub-optimal
+  // solution. We use a tighter tolerance to make sure the Gurobi solution is
+  // close to optimal.
+  solver_options.SetOption(solver.id(), "BarQCPConvTol", 1E-9);
+  tester.CheckSolution(solver, solver_options, 5E-4);
+}
+
 GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
   // Running multiple threads of GurobiSolver, they share the same GRBenv
   // which is created when acquiring the Gurobi license in the main function.
