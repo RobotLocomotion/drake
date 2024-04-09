@@ -164,9 +164,10 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  joint_->SetFromRotationMatrix(context_.get(), rotation_matrix_B);
+  const RotationMatrixd rotation_matrix_A(quaternion_A);
+  joint_->SetFromRotationMatrix(context_.get(), rotation_matrix_A);
   EXPECT_TRUE(math::AreQuaternionsEqualForOrientation(
-      joint_->get_quaternion(*context_), quaternion_B, kTolerance));
+      joint_->get_quaternion(*context_), quaternion_A, kTolerance));
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   joint_->set_translation(context_.get(), position);
@@ -174,24 +175,24 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  joint_->set_position(context_.get(), position);
-  EXPECT_EQ(joint_->get_position(*context_), position);
+  joint_->set_position(context_.get(), Vector3d(0.3, 0.2, 0.1));
+  EXPECT_EQ(joint_->get_position(*context_), Vector3d(0.3, 0.2, 0.1));
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
-  joint_->set_translation(context_.get(), Vector3d::Zero());  // Zero out pose.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  joint_->set_translation(context_.get(), Vector3d::Zero());  // Zero out pose.
   joint_->set_pose(context_.get(), transform_A);
   EXPECT_TRUE(
       joint_->get_pose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
+  joint_->set_translation(context_.get(), Vector3d::Zero());  // Zero out pose.
   joint_->SetPose(context_.get(), transform_A);
   // We expect a bit of roundoff error due to transforming between quaternion
   // and rotation matrix representations.
   EXPECT_TRUE(
       joint_->GetPose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
-
 
   // Angular velocity access:
   joint_->set_angular_velocity(context_.get(), angular_velocity);
@@ -389,10 +390,6 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   tree().SetRandomState(*context_, &context_->get_mutable_state(),
                            &generator);
   EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Set the position distribution to arbitrary values.
   Eigen::Matrix<symbolic::Expression, 3, 1> position_distribution;
@@ -411,10 +408,6 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
                            &generator);
   // We expect arbitrary non-zero values for the random state.
   EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Set position and quaternion distributions back to 0.
   mutable_joint_->set_random_quaternion_distribution(
@@ -430,10 +423,6 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
                            &generator);
   // We expect zero values for pose.
   EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Set the quaternion distribution using built in uniform sampling.
   mutable_joint_->set_random_quaternion_distribution_to_uniform();
@@ -441,10 +430,6 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
                            &generator);
   // We expect arbitrary non-zero pose.
   EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 }  // namespace

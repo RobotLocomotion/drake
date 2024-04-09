@@ -3158,13 +3158,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                                       state);
   }
 
-  // TODO(sherm1) Rename this SetFreeBodyRandomTranslationDistribution()
-
   /// Sets the distribution used by SetRandomState() to populate the free
   /// body's x-y-z `position` with respect to World.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
-  void SetFreeBodyRandomPositionDistribution(
+  void SetFreeBodyRandomTranslationDistribution(
       const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
     this->mutable_tree().SetFreeBodyRandomTranslationDistributionOrThrow(
         body, position);
