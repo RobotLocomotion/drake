@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 namespace {
 
 using drake::math::RigidTransformd;
@@ -56,6 +56,6 @@ GTEST_TEST(PointSourceForceFieldTest, EvaluateAt) {
 }
 
 }  // namespace
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake
