@@ -43,6 +43,14 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   SourceId source_id = plant_->get_source_id().value();
   /* All deformable bodies are registered with the world frame at the moment. */
   const FrameId world_frame_id = scene_graph.world_frame_id();
+  // TODO(xuchenhan-tri): Consider allowing users to opt out of illustration
+  // property for the deformable body if that's ever useful.
+  /* If the geometry doesn't have illustration properties, add an empty one so
+   that it can at least be visualized. */
+  if (geometry_instance->illustration_properties() == nullptr) {
+    geometry_instance->set_illustration_properties(
+        geometry::IllustrationProperties{});
+  }
   GeometryId geometry_id = scene_graph.RegisterDeformableGeometry(
       source_id, world_frame_id, std::move(geometry_instance), resolution_hint);
 
