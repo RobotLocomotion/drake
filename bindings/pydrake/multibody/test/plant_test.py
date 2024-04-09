@@ -2208,7 +2208,7 @@ class TestPlant(unittest.TestCase):
                 with catch_drake_warnings(expected_count=1):
                     joint.SetFromRotationMatrix(context=context,
                                                 R_FM=RotationMatrix_[T]())
-                joint.set_translation(context=context, p_FM=[0, 0, 0])
+                joint.SetTranslation(context=context, p_FM=[0, 0, 0])
                 # Warn deprecated QuaternionFloatingJoint.set_position().
                 with catch_drake_warnings(expected_count=1):
                     joint.set_position(context=context, p_FM=[0, 0, 0])
