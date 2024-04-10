@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -38,7 +39,7 @@ struct RenderMesh {
   UvState uv_state{UvState::kNone};
 
   /* The specification of the material associated with this mesh data. */
-  RenderMaterial material;
+  std::optional<RenderMaterial> material;
 };
 
 // TODO(SeanCurtis-TRI): All of this explanation, and general guidance for what
@@ -90,7 +91,7 @@ struct RenderMesh {
                            they are present. */
 std::vector<RenderMesh> LoadRenderMeshesFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
-    const Rgba& default_diffuse,
+    std::optional<Rgba> default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* Constructs a render mesh from a triangle surface mesh.
@@ -103,13 +104,13 @@ std::vector<RenderMesh> LoadRenderMeshesFromObj(
 
  UvState will be set to UvState::kNone and all uv coordinates are set to zero.
  The material of the resulting render mesh is created using the protocol in
- MakeMeshFallbackMaterial() with the given `properties` and `default_diffuse`.
+ MakeMeshFallbackMaterial() with the given `properties`.
 
  The returned RenderMesh has the same number of positions, vertex normals, and
  uv coordinates as `mesh.num_vertices()`. */
 RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const GeometryProperties& properties,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* A variant of MakeRenderMeshFromTriangleSurfaceMesh(). In this case, the
@@ -117,7 +118,7 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
  as a faceted mesh. */
 RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const GeometryProperties& properties,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* Converts from RenderMesh to TriangleSurfaceMesh. Only connectivity and

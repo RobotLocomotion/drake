@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_properties.h"
@@ -29,6 +30,10 @@ struct RenderMaterial {
   bool from_mesh_file{false};
 };
 
+/* Makes an otherwise default constructed RenderMaterial with its `diffuse`
+ * field set to the given value. */
+RenderMaterial MakeDiffuseMaterial(const Rgba& diffuse);
+
 /* Dispatches a warning to the given diagnostic policy if the props contain a
  material definition. It is assumed an intrinsic material has already been found
  for the named mesh. */
@@ -49,16 +54,16 @@ void MaybeWarnForRedundantMaterial(
      foo.png for a mesh foo.obj), a material with an unmodulated texture is
      created.
    - Finally, a diffuse material is created with the given default_diffuse
-     color value.
+     color value if one is provided. Otherwise, returns std::nullopt.
 
  References to textures will be included in the material iff they can be read
  and the `uv_state` is full. Otherwise, a warning will be dispatched.
 
  @pre The mesh (named by `mesh_filename`) is a valid mesh and did not have an
       acceptable material definition). */
-RenderMaterial MakeMeshFallbackMaterial(
+std::optional<RenderMaterial> MakeMeshFallbackMaterial(
     const GeometryProperties& props, const std::filesystem::path& mesh_path,
-    const Rgba& default_diffuse,
+    std::optional<Rgba> default_diffuse,
     const drake::internal::DiagnosticPolicy& policy, UvState uv_state);
 
 /* Creates a RenderMaterial from the given set of geometry properties. If no

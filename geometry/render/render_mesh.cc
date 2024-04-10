@@ -94,7 +94,7 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
 
 vector<RenderMesh> LoadRenderMeshesFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
-    const Rgba& default_diffuse, const DiagnosticPolicy& policy) {
+    std::optional<Rgba> default_diffuse, const DiagnosticPolicy& policy) {
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
   config.vertex_color = false;
@@ -332,11 +332,10 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
 
 RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+    const GeometryProperties& properties, const DiagnosticPolicy& policy) {
   RenderMesh result;
-  result.material = MakeMeshFallbackMaterial(properties, "", default_diffuse,
-                                             policy, UvState::kNone);
+  result.material =
+      MakeMeshFallbackMaterial(properties, "", {}, policy, UvState::kNone);
   const int vertex_count = mesh.num_vertices();
   const int triangle_count = mesh.num_triangles();
   result.positions.resize(vertex_count, 3);
@@ -367,8 +366,7 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
 
 RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+    const GeometryProperties& properties, const DiagnosticPolicy& policy) {
   // The simple solution is to create a *new* mesh where every triangle has its
   // own vertices and then pass to MakeRenderMeshFromTriangleSurfaceMesh().
   // If this ever becomes an onerous burden, we can do that directly into the
@@ -386,8 +384,7 @@ RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
   }
   const TriangleSurfaceMesh<double> faceted(std::move(triangles),
                                             std::move(vertices));
-  return MakeRenderMeshFromTriangleSurfaceMesh(faceted, properties,
-                                               default_diffuse, policy);
+  return MakeRenderMeshFromTriangleSurfaceMesh(faceted, properties, policy);
 }
 
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(

@@ -183,12 +183,12 @@ class MakeMeshFallbackMaterialTest : public test::DiagnosticPolicyTestBase {
 TEST_F(MakeMeshFallbackMaterialTest, DefaultDiffuseMaterial) {
   PerceptionProperties props;
 
-  const RenderMaterial mat =
+  const std::optional<RenderMaterial> mat =
       MakeMeshFallbackMaterial(props, "no_png_for_this.obj", default_diffuse(),
                                diagnostic_policy_, UvState::kFull);
-
-  EXPECT_TRUE(mat.diffuse_map.empty());
-  EXPECT_EQ(mat.diffuse, default_diffuse());
+  ASSERT_TRUE(mat.has_value());
+  EXPECT_TRUE(mat->diffuse_map.empty());
+  EXPECT_EQ(mat->diffuse, default_diffuse());
 }
 
 /* No material defined in the properties, but foo.png exists and is available.*/
@@ -218,11 +218,12 @@ TEST_F(MakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
   for (const TestCase& test_case : cases) {
     SCOPED_TRACE(test_case.description);
 
-    const RenderMaterial mat =
+    const std::optional<RenderMaterial> mat =
         MakeMeshFallbackMaterial(props, obj_path.string(), default_diffuse(),
                                  diagnostic_policy_, test_case.uv_state);
-    EXPECT_EQ(mat.diffuse_map, test_case.expected_texture);
-    EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
+    ASSERT_TRUE(mat.has_value());
+    EXPECT_EQ(mat->diffuse_map, test_case.expected_texture);
+    EXPECT_EQ(mat->diffuse, Rgba(1, 1, 1));
     if (!test_case.error.empty()) {
       EXPECT_THAT(
           TakeWarning(),
@@ -249,12 +250,13 @@ TEST_F(MakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
 TEST_F(MakeMeshFallbackMaterialTest, PropertiesHaveDiffuseColor) {
   PerceptionProperties props;
   props.AddProperty("phong", "diffuse", Rgba(0.25, 0.5, 0.75, 0.5));
-  const RenderMaterial mat =
+  const std::optional<RenderMaterial> mat =
       MakeMeshFallbackMaterial(props, "doesn't_matter.obj", default_diffuse(),
                                diagnostic_policy_, UvState::kFull);
 
-  EXPECT_TRUE(mat.diffuse_map.empty());
-  EXPECT_EQ(mat.diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
+  ASSERT_TRUE(mat.has_value());
+  EXPECT_TRUE(mat->diffuse_map.empty());
+  EXPECT_EQ(mat->diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
 }
 
 TEST_F(MakeMeshFallbackMaterialTest, PropertiesHaveDiffuseMap) {
@@ -262,12 +264,13 @@ TEST_F(MakeMeshFallbackMaterialTest, PropertiesHaveDiffuseMap) {
   const std::string tex_name =
       FindResourceOrThrow("drake/geometry/render/test/diag_gradient.png");
   props.AddProperty("phong", "diffuse_map", tex_name);
-  const RenderMaterial mat =
+  const std::optional<RenderMaterial> mat =
       MakeMeshFallbackMaterial(props, "doesn't_matter.obj", default_diffuse(),
                                diagnostic_policy_, UvState::kFull);
 
-  EXPECT_EQ(mat.diffuse_map, tex_name);
-  EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
+  ASSERT_TRUE(mat.has_value());
+  EXPECT_EQ(mat->diffuse_map, tex_name);
+  EXPECT_EQ(mat->diffuse, Rgba(1, 1, 1));
 }
 
 TEST_F(MakeMeshFallbackMaterialTest, PropertiesHaveEverything) {
@@ -276,12 +279,13 @@ TEST_F(MakeMeshFallbackMaterialTest, PropertiesHaveEverything) {
       FindResourceOrThrow("drake/geometry/render/test/diag_gradient.png");
   props.AddProperty("phong", "diffuse_map", tex_name);
   props.AddProperty("phong", "diffuse", Rgba(0.25, 0.5, 0.75, 0.5));
-  const RenderMaterial mat =
+  const std::optional<RenderMaterial> mat =
       MakeMeshFallbackMaterial(props, "doesn't_matter.obj", default_diffuse(),
                                diagnostic_policy_, UvState::kFull);
 
-  EXPECT_EQ(mat.diffuse_map, tex_name);
-  EXPECT_EQ(mat.diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
+  ASSERT_TRUE(mat.has_value());
+  EXPECT_EQ(mat->diffuse_map, tex_name);
+  EXPECT_EQ(mat->diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
 }
 
 }  // namespace
