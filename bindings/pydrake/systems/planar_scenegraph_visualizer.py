@@ -105,8 +105,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             substitute_collocated_mesh_files: If True, then a mesh file
                 specified with an unsupported filename extension may be
                 replaced by a file of the same base name in the same directory,
-                but with a supported filename extension.  Currently only .obj
-                files are supported.
+                but with a supported filename extension.
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
@@ -272,28 +271,29 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 elif isinstance(shape, (Mesh, Convex)):
                     # Legacy behavior for looking for a .obj when the extension
                     # is not recognized.
-                    filename = shape.filename()
-                    base, ext = os.path.splitext(filename)
-                    if (ext.lower() not in [".obj", ".vtk", ".gltf"]
+                    filename = Path(shape.filename())
+                    known_suffixes = [".obj", ".vtk", ".gltf"]
+                    if (filename.suffix.lower() not in known_suffixes
                             and substitute_collocated_mesh_files):
-                        # Check for a co-located .obj file (case insensitive).
-                        for f in glob.glob(base + '.*'):
-                            if f[-4:].lower() == '.obj':
-                                filename = f
+                        # Check for a co-located fallback (case insensitive).
+                        for new_suffix in known_suffixes:
+                            new_filename = filename.with_suffix(new_suffix)
+                            if new_filename.exists():
+                                filename = new_filename
                                 break
-                        if filename[-4:].lower() != '.obj':
+                        else:
                             raise RuntimeError(
-                                f"The given file {filename} is not "
-                                f"supported and no alternate {base}"
-                                ".obj could be found.")
-                    if not os.path.exists(filename):
+                                f"The mesh {filename} is not a supported "
+                                f"format and no collocated fallback was found")
+                    if not filename.exists():
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    temp_mesh = Mesh(filename, shape.scale())
-                    # TODO(21125): When Convex shape *always* has a
-                    # convex hull available, use it instead of recomputing it
-                    # here.
-                    convex_hull = _MakeConvexHull(temp_mesh)
+                    if filename == shape.filename():
+                        # It may have already been computed elsewhere.
+                        convex_hull = shape.GetConvexHull()
+                    else:
+                        temp_mesh = Mesh(str(filename), shape.scale())
+                        convex_hull = temp_mesh.GetConvexHull()
                     patch_G = np.empty((3, convex_hull.num_vertices()))
                     for i in range(convex_hull.num_vertices()):
                         patch_G[:, i] = convex_hull.vertex(i)
