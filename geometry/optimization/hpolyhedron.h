@@ -110,7 +110,7 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   /** Returns an inner approximation of `this`, aiming to use fewer
   faces.  Proceeds by incrementally translating faces inward and removing other
   faces that become redundant upon doing so.
-  @param min_v_ratio is a lower bound for the ratio of the volume of the
+  @param min_volume_ratio is a lower bound for the ratio of the volume of the
   returned inbody and the volume of `this`.
   @param do_affine_transformation specifies whether to call
   MaximumVolumeInscribedAffineTransformation(), to take an affine transformation
@@ -128,26 +128,26 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
   parameter, the intersections may be reduced by the affine transformation step
   if `do_affine_transformation` is true.
-  @param intersection_pad is a distance by which each hyperplane is translated
-  back outward after satisfing intersection constraints, subject to not
-  surpassing the original hyperplane position.  In the case where
+  @param intersection_padding is a distance by which each hyperplane is
+  translated back outward after satisfing intersection constraints, subject to
+  not surpassing the original hyperplane position.  In the case where
   `keep_whole_intersection` is false, using a non-zero value for this parameter
   prevents intersections from being single points.
   @param random_seed is a seed for a random number generator used to shuffle
   the ordering of hyperplanes in between iterations.
-  @pre `min_v_ratio` > 0.
+  @pre `min_volume_ratio` > 0.
   @pre `max_iterations` > 0.
-  @pre `intersection_pad` >= 0.
+  @pre `intersection_padding` >= 0.
   @pre All columns of `points_to_contain` are points contained within `this`.
   @pre All elements of `intersecting_polytopes` intersect with `this`.
   */
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
-      double min_v_ratio = 0.1, bool do_affine_transformation = true,
+      double min_volume_ratio = 0.1, bool do_affine_transformation = true,
       int max_iterations = 10,
       const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
       const std::vector<drake::geometry::optimization::HPolyhedron>&
           intersecting_polytopes = std::vector<HPolyhedron>(),
-      bool keep_whole_intersection = false, double intersection_pad = 1e-4,
+      bool keep_whole_intersection = false, double intersection_padding = 1e-4,
       int random_seed = 0) const;
 
   /**
@@ -155,13 +155,16 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   transformation of `this`, subject to being a subset of `circumbody`,
   and subject to the transformation matrix being positive
   semi-definite.  The latter condition is necessary for convexity of the
-  program.  We solve
+  program.  We use the containment condition stated in Lemma 1 of "Linear
+  Encodings for Polytope Containment Problems" by Sadra Sadraddini and Russ
+  Tedrake, extended to apply to the affine transformation of `this`.  We solve
   @verbatim
   max_{T,t} log det (T)
         s.t. T ≽ 0
         t + TX ⊆ Y
   @endverbatim
-  where X is `this`, and Y is `circumbody`.  Returns t + TX.
+  where X is `this`, and Y is `circumbody`.
+  @returns the transformed polyhedron, t + TX.
 
   @param circumbody is an HPolyhedron that must contain the returned inbody.
   @throws std::exception if the solver fails to solve the problem.*/

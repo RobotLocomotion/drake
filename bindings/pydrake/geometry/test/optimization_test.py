@@ -273,7 +273,11 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # Check SimplifyByIncrementalFaceTranslation binding with
         # default input parameters.
-        h6 = h_box.SimplifyByIncrementalFaceTranslation()
+        h6 = h_box.SimplifyByIncrementalFaceTranslation(
+            min_volume_ratio=0.1, do_affine_transformation=True,
+            max_iterations=10, points_to_contain=np.empty((3, 0)),
+            intersecting_polytopes=[], keep_whole_intersection=False,
+            intersection_padding=0.1, random_seed=0)
         self.assertIsInstance(h6, mut.HPolyhedron)
         self.assertEqual(h6.ambient_dimension(), 3)
 
