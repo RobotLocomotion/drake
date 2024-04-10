@@ -307,7 +307,8 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   DRAKE_DEMAND(discrete_contact_approximation_ ==
                DiscreteContactApproximation::kTamsi);
   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "");
-  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation == "");
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
+               "similar");
 }
 
 template <typename T>

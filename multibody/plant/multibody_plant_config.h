@@ -86,7 +86,7 @@ struct MultibodyPlantConfig {
   /// discrete_contact_solver, see set_discrete_contact_solver(). If both
   /// discrete_contact_solver and discrete_contact_approximation are empty, the
   /// default model (and solver) is TAMSI.
-  std::string discrete_contact_approximation{""};
+  std::string discrete_contact_approximation{"similar"};
 
   // TODO(amcastro-tri): Change default to zero, or simply eliminate.
   /// Non-negative dimensionless number typically in the range [0.0, 1.0],
