@@ -64,6 +64,7 @@ cc_library(
         "-Dexit=drake_csdp_cpp_wrapper_exit",
         # Because we use longjmp, we must forbid CSDP's OpenMP-based threads.
         "-fno-openmp",
+        "-Wno-deprecated-non-prototype",
     ],
     includes = ["includes"],
     linkstatic = 1,

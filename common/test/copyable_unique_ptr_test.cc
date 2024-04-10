@@ -480,7 +480,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromCopyable) {
   cup<CloneOnly> u_ptr(base_ptr = new CloneOnly(1));
   EXPECT_EQ(u_ptr.get(), base_ptr);
   // Move constructor on copyable_unique-ptr of same specialized class.
-  cup<CloneOnly> cup_ptr(move(u_ptr));
+  cup<CloneOnly> cup_ptr(std::move(u_ptr));
   EXPECT_EQ(u_ptr.get(), nullptr);
   EXPECT_EQ(cup_ptr.get(), base_ptr);
 
@@ -490,7 +490,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromCopyable) {
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(u_ptr2.get()));
   // Copy constructor on copyable_unique-ptr of same specialized class, but
   // contains derived class.
-  cup<CloneOnly> cup_ptr2(move(u_ptr2));
+  cup<CloneOnly> cup_ptr2(std::move(u_ptr2));
   EXPECT_EQ(u_ptr2.get(), nullptr);
   EXPECT_EQ(cup_ptr2.get(), co_ptr);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(cup_ptr2.get()));
@@ -499,7 +499,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromCopyable) {
   CloneOnlyChildWithClone* co_ptr3;
   cup<CloneOnlyChildWithClone> u_ptr3(co_ptr3 = new CloneOnlyChildWithClone(3));
   EXPECT_EQ(u_ptr3.get(), co_ptr3);
-  cup<CloneOnly> cup_ptr3(move(u_ptr3));
+  cup<CloneOnly> cup_ptr3(std::move(u_ptr3));
   EXPECT_EQ(u_ptr3.get(), nullptr);
   EXPECT_EQ(cup_ptr3.get(), co_ptr3);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(cup_ptr3.get()));
@@ -515,7 +515,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
   unique_ptr<CloneOnly> u_ptr(base_ptr = new CloneOnly(1));
   EXPECT_EQ(u_ptr.get(), base_ptr);
   // Move constructor on copyable_unique-ptr of same specialized class.
-  cup<CloneOnly> cup_ptr(move(u_ptr));
+  cup<CloneOnly> cup_ptr(std::move(u_ptr));
   EXPECT_EQ(u_ptr.get(), nullptr);
   EXPECT_EQ(cup_ptr.get(), base_ptr);
 
@@ -525,7 +525,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(u_ptr2.get()));
   // Copy constructor on copyable_unique-ptr of same specialized class, but
   // contains derived class.
-  cup<CloneOnly> cup_ptr2(move(u_ptr2));
+  cup<CloneOnly> cup_ptr2(std::move(u_ptr2));
   EXPECT_EQ(u_ptr2.get(), nullptr);
   EXPECT_EQ(cup_ptr2.get(), co_ptr);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(cup_ptr2.get()));
@@ -535,7 +535,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
   unique_ptr<CloneOnlyChildWithClone> u_ptr3(
       co_ptr3 = new CloneOnlyChildWithClone(3));
   EXPECT_EQ(u_ptr3.get(), co_ptr3);
-  cup<CloneOnly> cup_ptr3(move(u_ptr3));
+  cup<CloneOnly> cup_ptr3(std::move(u_ptr3));
   EXPECT_EQ(u_ptr3.get(), nullptr);
   EXPECT_EQ(cup_ptr3.get(), co_ptr3);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(cup_ptr3.get()));
@@ -851,14 +851,14 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
   // Case 1: Assign empty unique_ptr to empty cup.
   EXPECT_EQ(tgt.get(), nullptr);
   DestructorTracker::dtor_called = false;
-  tgt = move(empty);
+  tgt = std::move(empty);
   EXPECT_FALSE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), nullptr);
   EXPECT_EQ(empty.get(), nullptr);
 
   // Case 2: Assign non-empty unique_ptr<Base> to empty cup<Base>.
   DestructorTracker::dtor_called = false;
-  tgt = move(src);
+  tgt = std::move(src);
   EXPECT_FALSE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), raw);      // Tgt has taken ownership of raw.
   EXPECT_EQ(src.get(), nullptr);  // Src has been cleared.
@@ -867,7 +867,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
   DestructorTracker* raw2;
   cup<DestructorTracker> src2(raw2 = new DestructorTracker(124));
   DestructorTracker::dtor_called = false;
-  tgt = move(src2);
+  tgt = std::move(src2);
   EXPECT_TRUE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), raw2);       // Tgt has taken ownership of raw.
   EXPECT_EQ(src2.get(), nullptr);   // Src has been cleared.
@@ -877,7 +877,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
   CloneOnlyChildWithClone* derived_raw;
   cup<CloneOnlyChildWithClone> derived_src(derived_raw =
                                                new CloneOnlyChildWithClone(13));
-  base_tgt = move(derived_src);
+  base_tgt = std::move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.
   EXPECT_EQ(derived_src.get(), nullptr);    // Src has been cleared.
@@ -906,14 +906,14 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
   // Case 1: Assign empty unique_ptr to empty cup.
   EXPECT_EQ(tgt.get(), nullptr);
   DestructorTracker::dtor_called = false;
-  tgt = move(empty);
+  tgt = std::move(empty);
   EXPECT_FALSE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), nullptr);
   EXPECT_EQ(empty.get(), nullptr);
 
   // Case 2: Assign non-empty unique_ptr<Base> to empty cup<Base>.
   DestructorTracker::dtor_called = false;
-  tgt = move(src);
+  tgt = std::move(src);
   EXPECT_FALSE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), raw);      // Tgt has taken ownership of raw.
   EXPECT_EQ(src.get(), nullptr);  // Src has been cleared.
@@ -922,7 +922,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
   DestructorTracker* raw2;
   cup<DestructorTracker> src2(raw2 = new DestructorTracker(124));
   DestructorTracker::dtor_called = false;
-  tgt = move(src2);
+  tgt = std::move(src2);
   EXPECT_TRUE(DestructorTracker::dtor_called);
   EXPECT_EQ(tgt.get(), raw2);       // Tgt has taken ownership of raw.
   EXPECT_EQ(src2.get(), nullptr);   // Src has been cleared.
@@ -932,7 +932,7 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
   CloneOnlyChildWithClone* derived_raw;
   unique_ptr<CloneOnlyChildWithClone> derived_src(
       derived_raw = new CloneOnlyChildWithClone(13));
-  base_tgt = move(derived_src);
+  base_tgt = std::move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.
   EXPECT_EQ(derived_src.get(), nullptr);    // Src has been cleared.

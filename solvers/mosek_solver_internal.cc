@@ -1137,7 +1137,7 @@ MSKrescodee MosekSolverProgram::AddL2NormCost(
   offset(0) = 0;
   offset.tail(C.rows()) = d;
   rescode = this->AddAffineConeConstraint(
-      prog, A, B, x, std::vector<MSKint32t>{{t_index}}, offset,
+      prog, A, B, x, std::vector<MSKint32t>{t_index}, offset,
       MSK_DOMAIN_QUADRATIC_CONE, &acc_index);
   if (rescode != MSK_RES_OK) {
     return rescode;
