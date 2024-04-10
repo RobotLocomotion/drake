@@ -59,13 +59,48 @@ Vector3d PointOnBoxSurfaceHelper(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
   // on either the positive or negative face of the box on dimension `i`.
   for (int i = 0; i < 3; ++i) {
     double diff = abs(half_size(i) - abs(p_BQ(i)));
-    // Bias the classification of the query point towards a vertex of
-    // the box because, in practice, the floating-point representation of the
-    // query point p_BQ is not exact, and the noise in the representation
-    // can easily perturb it towards one of the three incident faces.
-    // We don't want to classify a point near a vertex as being on a face
-    // because we use the face normal as the signed-distance gradient.
-    if (diff <= 0.01 * half_size(i)) {
+    // The signed-distance gradient is very unstable inside the box near its
+    // vertex. An arbitrary small perturbation can change the gradient
+    // direction abruptly.
+    //
+    // In terms of our classification, a query point near a box's vertex can
+    // easily get misclassified as being on a face and contributed to an
+    // incorrect gradient calculation in the caller BoxBoxGradient().
+    //
+    // In general, there is no safe threshold ε.  This is an example of wrong
+    // classification. We have a cube of half-length h spanning
+    // [-h,h]x[-h,h]x[-h,h] in the box's frame B. The query point Q is at:
+    //
+    //     p_BQ = (h - 2 * ε, h - ε / 2, h - 2 * ε).
+    //
+    // The query point is near the vertex (h,h,h), but we would classify the
+    // query point as being on a face perpendicular to the By axis and return
+    // the encoding vector n = (0, 1, 0). As a result, the caller
+    // BoxBoxGradient() will assign By as the gradient without considering
+    // the other box in contact.  The following picture illustrates one such
+    // bad cases. Visually it looks like the two boxes touch on their faces
+    // perpendicular to Bx axis, so the gradient should be Bx. However, the
+    // witness point is classified as being on the face perpendicular to By,
+    // and BoxBoxGradient() will return the incorrect gradient By.
+    //
+    //        By
+    //        ↑
+    //        | +--------------+
+    //        | |              |
+    //     +---(*)             |               (*) Witness point p_BQ
+    //     | Bo |---→ Bx       |
+    //     +----+              |
+    //          |              |
+    //          +--------------+
+    //
+    // A similar argument also shows that, using a threshold ε, we would
+    // classify the query point p_BQ = (0, h - ε / 2, h - 2 * ε) that is
+    // near the midpoint of an edge of the box as being on a face of the box.
+    //
+    // Since there is no guaranteed threshold to work, we pick this threshold
+    // empirically. We assume that the caller always passes p_BQ on the
+    // surface of the box with appropriate precisions.
+    if (diff <= 8e-14) {
       n(i) = 1.0;
     }
   }
