@@ -191,8 +191,7 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   joint_->SetOrientation(context_.get(), RotationMatrixd::Identity());
   joint_->SetTranslation(context_.get(), Vector3d::Zero());  // Zero out pose.
   joint_->SetPose(context_.get(), transform_A);
-  // We expect a bit of roundoff error due to transforming between quaternion
-  // and rotation matrix representations.
+  // Expect roundoff error in converting the quaternion to a rotation matrix.
   EXPECT_TRUE(
       joint_->GetPose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
 
