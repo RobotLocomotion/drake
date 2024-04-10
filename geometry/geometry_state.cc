@@ -1882,12 +1882,6 @@ void GeometryState<T>::RegisterDrivenPerceptionMesh(GeometryId geometry_id) {
   DRAKE_DEMAND(geometry.is_deformable());
   DRAKE_DEMAND(geometry.has_perception_role());
   const PerceptionProperties& properties = *geometry.perception_properties();
-  // TODO(xuchenhan-tri): Each render engine customizes its own default diffuse
-  // color. By setting a default value here, we are subverting the engine,
-  // preventing it from applying its own logic. Lack of a diffuse color should
-  // propagate all the way down to the engine for the engine to resolve.
-  const auto default_rgba = properties.GetPropertyOrDefault(
-      "phong", "diffuse", Rgba{1.0, 1.0, 1.0, 1.0});
 
   const VolumeMesh<double>* control_mesh_ptr = geometry.reference_mesh();
   DRAKE_DEMAND(control_mesh_ptr != nullptr);
@@ -1902,11 +1896,10 @@ void GeometryState<T>::RegisterDrivenPerceptionMesh(GeometryId geometry_id) {
     // control volume mesh as the render mesh.
     driven_meshes.emplace_back(internal::MakeDrivenSurfaceMesh(control_mesh));
     render_meshes.emplace_back(MakeRenderMeshFromTriangleSurfaceMesh(
-        driven_meshes.back().triangle_surface_mesh(), properties,
-        default_rgba));
+        driven_meshes.back().triangle_surface_mesh(), properties));
   } else {
-    render_meshes = internal::LoadRenderMeshesFromObj(render_meshes_file,
-                                                      properties, default_rgba);
+    render_meshes =
+        internal::LoadRenderMeshesFromObj(render_meshes_file, properties, {});
     for (const internal::RenderMesh& render_mesh : render_meshes) {
       driven_meshes.emplace_back(MakeTriangleSurfaceMesh(render_mesh),
                                  control_mesh);
