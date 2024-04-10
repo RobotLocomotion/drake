@@ -83,7 +83,13 @@ cc_library_vendored(
     includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
-    copts = ["-w"],
+    copts = ["-w"] + select({
+        "@bazel_tools//tools/cpp:clang": [
+            "-Wnounused-but-set-variable",
+            "-Wnodeprecated-volatile",
+        ],
+        "//conditions:default": [],
+    }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],
