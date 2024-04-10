@@ -12,7 +12,6 @@ from pathlib import Path
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
-    _MakeConvexHull,
     Box,
     Convex,
     Cylinder,
@@ -176,10 +175,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             self._contact_forces = []
             for i in range(10):
                 self._contact_forces.append(
-                        self.ax.plot([],
-                                     [],
-                                     'g-',
-                                     ms=5)[0])
+                    self.ax.plot([],
+                                 [],
+                                 'g-',
+                                 ms=5)[0])
 
     def get_geometry_query_input_port(self):
         return self._geometry_query_input_port
@@ -408,7 +407,6 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
         return point_2d, contact_vis_2d
 
-
     def _update_body_fill_verts(self, body_fill, patch_V):
         """
         Takes a convex hull if necessary and uses in-place replacement of
@@ -460,7 +458,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             forces = []
             # extract contact information
             for id in range(contact_results.num_point_pair_contacts()):
-                point_contact_info = contact_results.point_pair_contact_info(id)
+                point_contact_info = contact_results.point_pair_contact_info(
+                    id)
                 points.append(point_contact_info.contact_point())
                 forces.append(point_contact_info.contact_force())
             for id in range(contact_results.num_hydroelastic_contacts()):
@@ -543,18 +542,18 @@ def ConnectPlanarSceneGraphVisualizer(builder,
                 contact=False,
                 **kwargs))
         builder.Connect(
-                output_port,
-                visualizer.get_geometry_query_input_port())
+            output_port,
+            visualizer.get_geometry_query_input_port())
     else:
         visualizer = builder.AddSystem(
-                PlanarSceneGraphVisualizer(scene_graph,
-                                           contact=True,
-                                           **kwargs))
+            PlanarSceneGraphVisualizer(scene_graph,
+                                       contact=True,
+                                       **kwargs))
         builder.Connect(
-                output_port,
-                visualizer.get_geometry_query_input_port())
+            output_port,
+            visualizer.get_geometry_query_input_port())
         builder.Connect(
-                contact_port,
-                visualizer.get_contact_results_input_port())
+            contact_port,
+            visualizer.get_contact_results_input_port())
 
     return visualizer
