@@ -55,6 +55,7 @@ cc_library(
         "includes/csdp/parameters.h",
     ],
     copts = [
+        "-Wno-deprecated-non-prototype",
         "-Wno-unknown-pragmas",
         "-Wno-unused-variable",
         "-fvisibility=hidden",

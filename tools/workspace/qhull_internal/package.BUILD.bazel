@@ -60,6 +60,7 @@ cc_library(
     hdrs = _HDRS_C,
     copts = [
         "-fvisibility=hidden",
+        "-w",
     ],
     includes = ["src"],
     srcs = _SRCS_C,
