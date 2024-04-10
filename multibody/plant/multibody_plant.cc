@@ -297,17 +297,11 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   // By default, MultibodyPlantConfig::discrete_contact_approximation and
   // MultibodyPlantConfig::discrete_contact_solver are empty, indicating that
   // TAMSI is the default approximation and solver.
-  // TODO(amcastro-tri): Along the removal of
-  // MultibodyPlant::set_discrete_contact_solver() on or after 2024-04-01,
-  // the code below should be updated to:
-  //   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
-  //     "[approximation]");
-  // with [approximation] the name of the default contact approximation
-  // consistent with MultibodyPlantConfig.
   DRAKE_DEMAND(discrete_contact_approximation_ ==
                DiscreteContactApproximation::kTamsi);
   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "");
-  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation == "");
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
+               "similar");
 }
 
 template <typename T>
