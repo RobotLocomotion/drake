@@ -50,6 +50,26 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
                     args.append(f"--compliance_type=compliant")
                 subprocess.check_call(args)
 
+    def test_model_with_invalid_dynamics(self):
+        """
+        Test on a model with invalid dynamics.
+        The visualizer script will disable visualization of contact forces.
+        """
+
+        # Model containing a free body with zero inertias.
+        # Obviously, physics cannot be computed, and thus visualization of
+        # contact forces is turned off.
+        result = subprocess.run([
+            self.dut,
+            "bindings/pydrake/visualization/test/massless_robot.urdf",
+            "--loop_once"],
+            stderr=subprocess.PIPE,
+            text=True)
+
+        # If the model is handled as expected, the visualizer script prints a
+        # WARNING message.
+        self.assertRegex(result.stderr, "WARNING.*Contact results cannot")
+
     def test_package_url(self):
         """Test that a package URL works."""
         subprocess.check_call([

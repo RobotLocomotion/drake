@@ -169,6 +169,7 @@ drake_py_unittest(
     name = "model_visualizer_test",
     timeout = "moderate",
     data = [
+        "test/massless_robot.urdf",
         ":model_visualizer",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
