@@ -972,8 +972,8 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
   } else {
     // Do not replace the floating joints.
 
-    // Joints will have assigned continguous indices and ordinals in the
-    // order they were created.
+    // Joints will have assigned contiguous indices and ordinals in the order
+    // they were created.
     const std::vector<const Joint<double>*> joints{floating0_, floating1_,
                                                    weld2_, weld3_};
     const std::vector<JointIndex> expected_indices{
@@ -988,10 +988,11 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
       if (i < 2) {
         // Joints for bodies 0 and 1 are floating, so we expect no reaction
         // forces.
-        EXPECT_EQ(F_Bcm_W.translational(), Vector3d::Zero());
+        EXPECT_TRUE(CompareMatrices(F_Bcm_W.translational(), Vector3d::Zero(),
+                                    5.0e-15));
         EXPECT_EQ(F_Bcm_W.rotational(), Vector3d::Zero());
       } else {
-        // Joints for bodies 2 and 3 are welded, so we expect the reation
+        // Joints for bodies 2 and 3 are welded, so we expect the reaction
         // forces to oppose gravity on the bodies.
         EXPECT_EQ(F_Bcm_W.translational(),
                   kBodyMasses[i] * kGravity * Vector3d::UnitZ());

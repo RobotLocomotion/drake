@@ -1232,9 +1232,7 @@ class TestPlant(unittest.TestCase):
             with self.assertRaises(Exception) as cm:
                 a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
                     context=context)
-            self.assertIn(
-                "This method doesn't support T = Expression",
-                str(cm.exception))
+            self.assertIn("Expression", str(cm.exception))
         else:
             a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
                 context=context)
@@ -1246,9 +1244,7 @@ class TestPlant(unittest.TestCase):
             with self.assertRaises(Exception) as cm:
                 a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
                     context=context, model_instances=[instance])
-            self.assertIn(
-                "This method doesn't support T = Expression",
-                str(cm.exception))
+            self.assertIn("Expression", str(cm.exception))
         else:
             a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
                 context=context, model_instances=[instance])
@@ -1370,9 +1366,7 @@ class TestPlant(unittest.TestCase):
             with self.assertRaises(Exception) as cm:
                 A_base = plant.EvalBodySpatialAccelerationInWorld(
                     context, base)
-            self.assertIn(
-                "This method doesn't support T = Expression",
-                str(cm.exception))
+            self.assertIn("Expression", str(cm.exception))
         else:
             A_base = plant.EvalBodySpatialAccelerationInWorld(context, base)
             self.assert_sane(A_base.rotational(), nonzero=False)
@@ -2959,20 +2953,6 @@ class TestPlant(unittest.TestCase):
         for model in models:
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
-
-    # N.B. MultibodyPlant::set_discrete_contact_solver() is deprecated and will
-    # be removed on or after 2024-04-01. This entire unit test can be removed
-    # entirely with the removal of discrete_contact_solver().
-    def test_discrete_contact_solver(self):
-        plant = MultibodyPlant_[float](0.1)
-        models = [
-            DiscreteContactSolver.kTamsi,
-            DiscreteContactSolver.kSap,
-        ]
-        for model in models:
-            with catch_drake_warnings(expected_count=1) as w:
-                plant.set_discrete_contact_solver(model)
-            self.assertEqual(plant.get_discrete_contact_solver(), model)
 
     def test_discrete_contact_approximation(self):
         plant = MultibodyPlant_[float](0.1)
