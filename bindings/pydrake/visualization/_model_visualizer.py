@@ -401,9 +401,23 @@ class ModelVisualizer:
                 position)
             self._sliders.SetPositions(position)
 
-        # Use Simulator to dispatch initialization events.
-        # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
-        Simulator(self._diagram).Initialize()
+        # Not all model files are compatible with computing dynamics (e.g.,
+        # they might have zero-mass floating bodies). We'll try computing to
+        # see if it works, but if not then we'll need to turn off contact
+        # visualization.
+        try:
+            # Use Simulator to dispatch initialization events.
+            # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
+            Simulator(self._diagram).Initialize()
+        except RuntimeError:
+            # Turn off contact visualization and inform the user.
+            logging.warning(
+                "Contact results cannot be visualized. This is most likely "
+                "caused by a model with invalid (e.g. zero) inertia "
+                "properties.")
+            self._publish_contacts = False
+            self._reload()
+
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
 
