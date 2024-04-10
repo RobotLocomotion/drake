@@ -678,7 +678,7 @@ TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
   const RotationMatrixd R_AC(rpy_gimbal_lock);
   systems::Context<double>& context = *(context_.get());
   joint_->SetOrientation(&context, R_AC);
-  joint_->set_translation(&context, p_zero);
+  joint_->SetTranslation(&context, p_zero);
   joint_->set_angular_velocity(&context, w_zero);
   joint_->set_translational_velocity(&context, v_zero);
 
