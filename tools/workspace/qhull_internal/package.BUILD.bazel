@@ -83,7 +83,11 @@ cc_library_vendored(
     includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
-    copts = ["-w"],
+    copts = [
+        "-w",
+        "-Wnounused-but-set-variable",
+        "-Wnodeprecated-volatile",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],
