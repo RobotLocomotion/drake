@@ -2882,20 +2882,6 @@ class TestPlant(unittest.TestCase):
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
 
-    # N.B. MultibodyPlant::set_discrete_contact_solver() is deprecated and will
-    # be removed on or after 2024-04-01. This entire unit test can be removed
-    # entirely with the removal of discrete_contact_solver().
-    def test_discrete_contact_solver(self):
-        plant = MultibodyPlant_[float](0.1)
-        models = [
-            DiscreteContactSolver.kTamsi,
-            DiscreteContactSolver.kSap,
-        ]
-        for model in models:
-            with catch_drake_warnings(expected_count=1) as w:
-                plant.set_discrete_contact_solver(model)
-            self.assertEqual(plant.get_discrete_contact_solver(), model)
-
     def test_discrete_contact_approximation(self):
         plant = MultibodyPlant_[float](0.1)
         approximations = [
