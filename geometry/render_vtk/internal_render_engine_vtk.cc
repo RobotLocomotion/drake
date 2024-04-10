@@ -63,6 +63,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::internal::DefineMaterial;
 using geometry::internal::LoadRenderMeshesFromObj;
+using geometry::internal::MakeDiffuseMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using math::RigidTransformd;
@@ -223,7 +224,10 @@ void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
       geometry::internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
   RenderMesh render_mesh =
       geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
-          tri_hull, data.properties, default_diffuse_);
+          tri_hull, data.properties);
+  if (!render_mesh.material.has_value()) {
+    render_mesh.material = MakeDiffuseMaterial(default_diffuse_);
+  }
   // We don't use convex.scale() because it's already built in to the convex
   // hull.
   ImplementRenderMesh(std::move(render_mesh), /* scale =*/1.0, data);
@@ -530,7 +534,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 
 void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
                                           const RegistrationData& data) {
-  const RenderMaterial material = mesh.material;
+  const RenderMaterial material = mesh.material.has_value()
+                                      ? *mesh.material
+                                      : MakeDiffuseMaterial(default_diffuse_);
 
   vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
       CreateVtkMesh(std::move(mesh));
