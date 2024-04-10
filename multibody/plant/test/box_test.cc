@@ -5,7 +5,9 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -16,6 +18,8 @@
 
 namespace drake {
 
+using drake::multibody::contact_solvers::internal::SapSolverParameters;
+using drake::multibody::internal::CompliantContactManager;
 using geometry::Box;
 using geometry::SceneGraph;
 using multibody::Parser;
@@ -173,6 +177,23 @@ class SlidingBoxTest : public ::testing::Test {
 
     plant.Finalize();  // Done creating the model.
 
+    // For testing purposes, we set the discrete updates manager programatically
+    // so that we gain fine control over the simulation accuracy, allowing us to
+    // specify testing tolerances consistent with the solver accuracy.
+    if (plant.is_discrete()) {
+      auto owned_contact_manager =
+          std::make_unique<CompliantContactManager<double>>();
+      CompliantContactManager<double>* contact_manager =
+          owned_contact_manager.get();
+      plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+      // This onl applies when using the SAP solver.
+      EXPECT_TRUE(plant.get_discrete_contact_solver() ==
+                  DiscreteContactSolver::kSap);
+      SapSolverParameters sap_parameters;
+      sap_parameters.rel_tolerance = kTolerance;
+      contact_manager->set_sap_solver_parameters(sap_parameters);
+    }
+
     // Set contact parameters.
     plant.set_penetration_allowance(penetration_allowance_);
     plant.set_stiction_tolerance(stiction_tolerance_);
@@ -203,11 +224,11 @@ class SlidingBoxTest : public ::testing::Test {
   const double kTolerance{1.0e-12};
 };
 
-TEST_F(SlidingBoxTest, ContinuousModel) {
+TEST_F(SlidingBoxTest, DiscreteModel) {
   RunSimulationToSteadyStateAndVerifyContactResults(1.0e-3);
 }
 
-TEST_F(SlidingBoxTest, DiscreteModel) {
+TEST_F(SlidingBoxTest, ContinuousModel) {
   RunSimulationToSteadyStateAndVerifyContactResults(0.0);
 }
 

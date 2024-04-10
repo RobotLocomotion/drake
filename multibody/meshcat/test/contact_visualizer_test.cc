@@ -35,6 +35,13 @@ class ContactVisualizerTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    // Which contact approximation is used is irrelevant for these tests.
+    // However, only the kTamsi approximation supports scalar conversion. Since
+    // we want to unit test scalar conversion for a diagram containing a contact
+    // visualizer, we need a scalar convertible plant. Therefore we use the
+    // kTamsi approximation.
+    plant.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kTamsi);
 
     // Add the point contact spheres and joints.
     const std::string sphere_url =
