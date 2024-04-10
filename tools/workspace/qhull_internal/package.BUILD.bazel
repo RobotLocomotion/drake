@@ -1,5 +1,5 @@
 # -*- bazel -*-
-
+load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
@@ -60,6 +60,7 @@ cc_library(
     hdrs = _HDRS_C,
     copts = [
         "-fvisibility=hidden",
+        "-w",
     ],
     includes = ["src"],
     srcs = _SRCS_C,
@@ -83,6 +84,7 @@ cc_library_vendored(
     includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
+    # Mute warnings based on clang vs gcc.
     copts = ["-w"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
