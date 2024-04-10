@@ -1,5 +1,5 @@
 # -*- bazel -*-
-
+load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
@@ -83,7 +83,11 @@ cc_library_vendored(
     includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
-    copts = ["-w"],
+    # Mute warnings based on clang vs gcc.
+    copts = ["-w"] + [
+        "-Wno-unused-but-set-variable",
+        "-Wno-deprecated-volatile",
+    ] if COMPILER_ID.endswith("Clang") else ["-Wno-volatile"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],
