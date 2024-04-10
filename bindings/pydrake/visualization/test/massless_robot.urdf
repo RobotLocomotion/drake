@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<robot name="massless_robot" xmlns:drake="http://drake.mit.edu">
+  <link name="massless_link"/>
+</robot>
