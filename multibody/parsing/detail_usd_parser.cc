@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_usd_parser.h"
 
 #include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -297,6 +298,81 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
     cylinder_height * prim_scale[2] * metadata.meters_per_unit);
 }
 
+std::string FormatObjFilename(const pxr::UsdPrim& prim) {
+  std::string filename = prim.GetPath().GetString().substr(1);
+  std::replace(filename.begin(), filename.end(), '/', '-');
+  filename.append(".obj");
+  return filename;
+}
+
+void WriteMeshToObjFile(const std::string filename,
+  const pxr::VtArray<pxr::GfVec3f>& vertices, const pxr::VtArray<int>& indices,
+  const ParsingWorkspace& workspace) {
+  std::string obj_file_contents;
+  int num_triangles = indices.size() / 3;
+  for (auto& vertex : vertices) {
+    obj_file_contents.append(
+      fmt::format("v {} {} {}\n", vertex[0], vertex[1], vertex[2]));
+  }
+  for (int i = 0; i < num_triangles; ++i) {
+    // Adding one to all three indices because obj index starts at one
+    int index0 = indices[i * 3] + 1;
+    int index1 = indices[i * 3 + 1] + 1;
+    int index2 = indices[i * 3 + 2] + 1;
+    obj_file_contents.append(
+      fmt::format("f {} {} {}\n", index0, index1, index2));
+  }
+
+  std::ofstream out_file(filename);
+  if (!out_file.is_open()) {
+    workspace.diagnostic.Error(
+      fmt::format("Failed to create file {} for obj mesh", filename));
+  }
+  out_file << obj_file_contents;
+  out_file.close();
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryMesh(
+  const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
+  const ParsingWorkspace& workspace) {
+  pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(prim);
+
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
+    workspace.diagnostic.Error(fmt::format(
+      "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
+      "of a mesh is not supported", prim.GetPath().GetString()));
+  }
+
+  pxr::VtArray<int> face_vertex_counts;
+  if (!mesh.GetFaceVertexCountsAttr().Get(&face_vertex_counts)) {
+     RaiseFailedToReadAttributeError("faceVertexCounts", prim, workspace);
+  }
+  for (int count : face_vertex_counts) {
+    if (count != 3) {
+      workspace.diagnostic.Error(fmt::format(
+        "The mesh at {} is not a triangle mesh. Only triangle mesh are "
+        "supported at the moment", prim.GetPath().GetString()));
+    }
+  }
+
+  pxr::VtArray<pxr::GfVec3f> vertices;
+  if (!mesh.GetPointsAttr().Get(&vertices)) {
+     RaiseFailedToReadAttributeError("points", prim, workspace);
+  }
+
+  pxr::VtArray<int> indices;
+  if (!mesh.GetFaceVertexIndicesAttr().Get(&indices)) {
+    RaiseFailedToReadAttributeError("faceVertexIndices", prim, workspace);
+  }
+
+  std::string obj_filename = FormatObjFilename(prim);
+  WriteMeshToObjFile(obj_filename, vertices, indices, workspace);
+
+  return std::make_unique<geometry::Mesh>(
+    obj_filename, prim_scale[0] * metadata.meters_per_unit);
+}
+
 std::unique_ptr<geometry::Shape> CreateVisualGeometry(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
@@ -308,6 +384,8 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     return CreateGeometryCapsule(prim, metadata, workspace);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     return CreateGeometryCylinder(prim, metadata, workspace);
+  } else if (prim.IsA<pxr::UsdGeomMesh>()) {
+    return CreateGeometryMesh(prim, metadata, workspace);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     workspace.diagnostic.Error(
@@ -319,15 +397,9 @@ std::unique_ptr<geometry::Shape> CreateVisualGeometry(
 std::unique_ptr<geometry::Shape> CreateCollisionGeometry(
   const pxr::UsdPrim& prim, const UsdStageMetadata& metadata,
   const ParsingWorkspace& workspace) {
-  if (prim.IsA<pxr::UsdGeomMesh>()) {
-    // See if there is a simplified version of the mesh available
-    // for collision detection
-    throw std::runtime_error("Mesh parsing is not implemented");
-  } else {
-    // Assuming all geometries other than mesh are simple enough
-    // to be used directly for collision detection
-    return CreateVisualGeometry(prim, metadata, workspace);
-  }
+  // For now, we use the raw visual geometry for collision detection
+  // for all geometry types
+  return CreateVisualGeometry(prim, metadata, workspace);
 }
 
 void ProcessStaticCollider(const pxr::UsdPrim& prim,
