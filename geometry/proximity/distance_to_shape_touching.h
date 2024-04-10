@@ -87,7 +87,8 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
 
 /* Returns the unit vector nhat_BA_W--out of box_B into box_A expressed in
  World frame--parallel to a vector in `v_Ws` that can make a separating axis
- between two touching boxes. If no vector in `v_Ws` can make it, returns null.
+ between two touching boxes. If no vector in `v_Ws` can make it, returns
+ std::nullopt.
 
  See https://en.wikipedia.org/wiki/Hyperplane_separation_theorem for the
  definition of separating axis.
