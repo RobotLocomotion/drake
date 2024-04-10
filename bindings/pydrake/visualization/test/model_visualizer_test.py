@@ -1,10 +1,14 @@
 import copy
 import inspect
+import io
+import logging
 import os
+import re
 import subprocess
 import textwrap
 import time
 import unittest
+from unittest.mock import patch
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Meshcat
@@ -49,6 +53,34 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
                 if i % 2 == 1:
                     args.append(f"--compliance_type=compliant")
                 subprocess.check_call(args)
+
+    def test_model_with_invalid_dynamics(self):
+        """
+        Test on a model with invalid dynamics.
+        The visualizer script will disable visualization of contact forces.
+        """
+
+        # Model containing a free body with zero inertias.
+        # Obviously, physics cannot be computed, and thus visualization of
+        # contact forces is turned off.
+        result = subprocess.run([
+            self.dut,
+            "package://drake_models/dishes/table_top.urdf",
+            "--loop_once"],
+            stderr=subprocess.PIPE,
+            text=True)
+
+        # result.stderr contains ANSI escape sequences (e.g., \x1b[36m), which
+        # are used for terminal colors.
+        # We use a regex to remove these ANSI escape sequences.
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        stderr_cleaned = ansi_escape.sub('', result.stderr)
+
+        # If the model is handled as expected, the visualizer script prints a
+        # WARNING message.
+        match = re.search(
+            "WARNING: Contact results cannot be visualized", stderr_cleaned)
+        self.assertTrue(match)
 
     def test_package_url(self):
         """Test that a package URL works."""
