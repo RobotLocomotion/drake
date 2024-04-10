@@ -24,7 +24,8 @@ namespace internal {
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::internal::LoadRenderMeshesFromObj;
-using geometry::internal::MakeMeshFallbackMaterial;
+using geometry::internal::MakeDiffuseMaterial;
+using geometry::internal::MaybeMakeMeshFallbackMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using geometry::internal::UvState;
@@ -855,7 +856,7 @@ void RenderEngineGl::ImplementMeshesForFile(void* user_data,
     if (gl_mesh.mesh_material.has_value()) {
       material = gl_mesh.mesh_material.value();
     } else {
-      material = MakeMeshFallbackMaterial(
+      material = *MaybeMakeMeshFallbackMaterial(
           data.properties, filename, parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
     }
@@ -886,12 +887,14 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
         CreateGlGeometry(render_mesh, /* is_deformable */ true);
     DRAKE_DEMAND(mesh_index >= 0);
     gl_mesh_indices.emplace_back(mesh_index);
-
+    const RenderMaterial material =
+        render_mesh.material.has_value()
+            ? *render_mesh.material
+            : MakeDiffuseMaterial(parameters_.default_diffuse);
     PerceptionProperties mesh_properties(properties);
     mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   render_mesh.material.diffuse_map.string());
-    mesh_properties.UpdateProperty("phong", "diffuse",
-                                   render_mesh.material.diffuse);
+                                   material.diffuse_map.string());
+    mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
     RegistrationData data{id, RigidTransformd::Identity(), mesh_properties};
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
@@ -1258,8 +1261,9 @@ void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
         geometry::internal::MakeTriangleFromPolygonMesh(hull);
     RenderMesh render_mesh =
         geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
-            tri_hull, data.properties, parameters_.default_diffuse);
+            tri_hull, data.properties);
 
+    render_mesh.material = MakeDiffuseMaterial(parameters_.default_diffuse);
     const int mesh_index = CreateGlGeometry(render_mesh);
     DRAKE_DEMAND(mesh_index >= 0);
     // Note: the material is left as std::nullopt, so that the instance of this
@@ -1306,7 +1310,8 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
 
       // Only store materials defined by the obj file; otherwise let instances
       // define their own (see ImplementMeshesForFile()).
-      const RenderMaterial& material = render_mesh.material;
+      DRAKE_DEMAND(render_mesh.material.has_value());
+      const RenderMaterial& material = *render_mesh.material;
       if (material.from_mesh_file) {
         file_meshes.back().mesh_material = material;
       }
