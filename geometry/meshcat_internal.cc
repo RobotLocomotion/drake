@@ -127,9 +127,10 @@ std::shared_ptr<const FileStorage::Handle> LoadGltfUri(
 
 std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
     const fs::path& gltf_filename, std::string* gltf_contents,
-    FileStorage* storage) {
+    FileStorage* storage, std::set<std::filesystem::path>* asset_paths) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
+  DRAKE_DEMAND(asset_paths != nullptr);
   std::vector<std::shared_ptr<const FileStorage::Handle>> assets;
   json gltf;
   try {
@@ -150,6 +151,8 @@ std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
       if (item.contains("uri") && item["uri"].is_string()) {
         const std::string_view uri =
             item["uri"].template get<std::string_view>();
+        asset_paths->emplace(
+            (gltf_filename.parent_path() / uri).lexically_normal());
         const std::string array_hint = fmt::format("{}[{}]", array_name, i);
         std::shared_ptr<const FileStorage::Handle> asset =
             LoadGltfUri(gltf_filename, array_hint, uri, storage);
