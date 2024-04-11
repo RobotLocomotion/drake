@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import logging
 import numpy as np
 from pathlib import Path
@@ -147,12 +148,23 @@ class _GeometryFileHasher:
 
     def on_mesh(self, path: Path):
         assert isinstance(path, Path)
+        # Hash the file contents, even if we don't know how to interpret it.
         content = self._read_file(path)
         if path.suffix.lower() == ".obj":
-            for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
-                                        re.MULTILINE):
-                for mtl_name in mtl_names.decode("utf-8").split():
-                    self.on_mtl(path.parent / mtl_name)
+            self.on_obj(path, content)
+        elif path.suffix.lower() == ".gltf":
+            self.on_gltf(path, content)
+        else:
+            _logger.warn(f"Unsupported mesh file: '{path}'\n"
+                         "Update Meldis's hasher to trigger reloads on this "
+                         "kind of file.")
+
+    def on_obj(self, path: Path, content: bytes):
+        assert isinstance(path, Path)
+        for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
+                                    re.MULTILINE):
+            for mtl_name in mtl_names.decode("utf-8").split():
+                self.on_mtl(path.parent / mtl_name)
 
     def on_mtl(self, path: Path):
         assert isinstance(path, Path)
@@ -164,6 +176,24 @@ class _GeometryFileHasher:
     def on_texture(self, path: Path):
         assert isinstance(path, Path)
         self._read_file(path)
+
+    def on_gltf(self, path: Path, content: bytes):
+        assert isinstance(path, Path)
+        try:
+            document = json.loads(content.decode(encoding="utf-8"))
+        except json.JSONDecodeError:
+            _logger.warn(f"glTF file is not valid JSON: {path}")
+            return
+
+        # Handle the images
+        for image in document.get("images", []):
+            if not image.get("uri", "").startswith("data:"):
+                self.on_texture(path.parent / image["uri"])
+
+        # Handle the .bin files.
+        for buffer in document.get("buffers", []):
+            if not buffer.get("uri", "").startswith("data:"):
+                self._read_file(path.parent / buffer["uri"])
 
 
 class _ViewerApplet:
