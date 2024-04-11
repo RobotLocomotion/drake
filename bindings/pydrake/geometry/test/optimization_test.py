@@ -283,7 +283,8 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # Check Simplify MaximumVolumeInscribedAffineTransformation binding
         # with default input parameters.
-        h7 = h6.MaximumVolumeInscribedAffineTransformation(h_box)
+        h7 = h6.MaximumVolumeInscribedAffineTransformation(
+            circumbody=h_box)
         self.assertIsInstance(h7, mut.HPolyhedron)
         self.assertEqual(h7.ambient_dimension(), 3)
 

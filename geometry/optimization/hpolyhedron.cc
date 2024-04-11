@@ -723,7 +723,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   DRAKE_THROW_UNLESS(circumbody.IsBounded());
 
   for (int i = 0; i < points_to_contain.cols(); ++i) {
-    log()->info("here {}", points_to_contain.cols());
     DRAKE_DEMAND(circumbody.PointInSet(points_to_contain.col(i)));
   }
 
