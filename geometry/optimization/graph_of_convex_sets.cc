@@ -45,6 +45,7 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
 using solvers::LorentzConeConstraint;
+using solvers::PositiveSemidefiniteConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
@@ -775,6 +776,9 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
     prog->AddRotatedLorentzConeConstraint(A_cone,
                                           VectorXd::Zero(rc->A().rows()), vars);
+  } else if (PositiveSemidefiniteConstraint* pc =
+                 dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)){
+    prog->AddConstraint(binding.evaluator(), binding.variables());
   } else {
     throw std::runtime_error(
         fmt::format("ShortestPathProblem::Edge does not support this "
