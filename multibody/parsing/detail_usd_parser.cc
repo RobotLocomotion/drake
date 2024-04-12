@@ -43,12 +43,13 @@ struct UsdStageMetadata {
 
 class UsdParser {
  public:
-  UsdParser(const ParsingWorkspace& ws);
+  explicit UsdParser(const ParsingWorkspace& ws);
   ~UsdParser() = default;
   std::vector<ModelInstanceIndex> AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
+
  private:
   UsdStageMetadata GetStageMetadata(const pxr::UsdStageRefPtr stage);
   void ProcessPrim(const pxr::UsdPrim& prim);
@@ -67,10 +68,9 @@ class UsdParser {
     const pxr::UsdPrim& prim);
   std::unique_ptr<geometry::Shape> CreateGeometryCube(
     const pxr::UsdPrim& prim);
-  void WriteMeshToObjFile(const std::string filename,
+  std::string WriteMeshToObjFile(
     const pxr::VtArray<pxr::GfVec3f>& vertices,
     const pxr::VtArray<int>& indices);
-  std::string FormatObjFilename(const pxr::UsdPrim& prim);
   void ValidatePrimExtent(const pxr::UsdPrim& prim,
     bool check_if_isotropic = false);
   void RaiseFailedToReadAttributeError(const std::string& attr_name,
@@ -80,7 +80,7 @@ class UsdParser {
   Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim);
   math::RigidTransform<double> GetPrimRigidTransform(const pxr::UsdPrim& prim);
 
-  static std::vector<std::string> mesh_filenames_;
+  inline static std::vector<std::string> mesh_filenames_;
   const ParsingWorkspace& w_;
   UsdStageMetadata metadata_;
 };
@@ -118,7 +118,11 @@ UsdParserWrapper::UsdParserWrapper() {
   unused(ignored);
 }
 
-UsdParserWrapper::~UsdParserWrapper() = default;
+UsdParserWrapper::~UsdParserWrapper() {
+  // TODO(hong-nvidia):
+  // Delete all the temporary files (UsdParserWrapper::mesh_filenames_)
+  // generated during the parsing process
+}
 
 std::optional<ModelInstanceIndex> UsdParserWrapper::AddModel(
     const DataSource& data_source, const std::string& model_name,
@@ -358,14 +362,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateGeometryCylinder(
     cylinder_height * prim_scale[2] * metadata_.meters_per_unit);
 }
 
-std::string UsdParser::FormatObjFilename(const pxr::UsdPrim& prim) {
-  std::string filename = prim.GetPath().GetString().substr(1);
-  std::replace(filename.begin(), filename.end(), '/', '-');
-  filename.append(".obj");
-  return filename;
-}
-
-void UsdParser::WriteMeshToObjFile(const std::string filename,
+std::string UsdParser::WriteMeshToObjFile(
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices) {
   std::string obj_file_contents;
@@ -383,6 +380,7 @@ void UsdParser::WriteMeshToObjFile(const std::string filename,
       fmt::format("f {} {} {}\n", index0, index1, index2));
   }
 
+  std::string filename = fmt::format("{}.obj", mesh_filenames_.size());
   std::ofstream out_file(filename);
   if (!out_file.is_open()) {
     w_.diagnostic.Error(
@@ -390,6 +388,7 @@ void UsdParser::WriteMeshToObjFile(const std::string filename,
   }
   out_file << obj_file_contents;
   out_file.close();
+  return filename;
 }
 
 std::unique_ptr<geometry::Shape> UsdParser::CreateGeometryMesh(
@@ -425,8 +424,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateGeometryMesh(
     RaiseFailedToReadAttributeError("faceVertexIndices", prim);
   }
 
-  std::string obj_filename = FormatObjFilename(prim);
-  WriteMeshToObjFile(obj_filename, vertices, indices);
+  std::string obj_filename = WriteMeshToObjFile(vertices, indices);
 
   return std::make_unique<geometry::Mesh>(
     obj_filename, prim_scale[0] * metadata_.meters_per_unit);
