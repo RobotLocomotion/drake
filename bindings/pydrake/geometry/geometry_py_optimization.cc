@@ -268,6 +268,20 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
         .def("FindRedundant", &HPolyhedron::FindRedundant,
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
+        .def("SimplifyByIncrementalFaceTranslation",
+            &HPolyhedron::SimplifyByIncrementalFaceTranslation,
+            py::arg("min_volume_ratio") = 0.1,
+            py::arg("do_affine_transformation") = true,
+            py::arg("max_iterations") = 10,
+            py::arg("points_to_contain") = Eigen::MatrixXd(),
+            py::arg("intersecting_polytopes") = std::vector<HPolyhedron>(),
+            py::arg("keep_whole_intersection") = false,
+            py::arg("intersection_padding") = 1e-4, py::arg("random_seed") = 0,
+            cls_doc.SimplifyByIncrementalFaceTranslation.doc)
+        .def("MaximumVolumeInscribedAffineTransformation",
+            &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
+            py::arg("circumbody"),
+            cls_doc.MaximumVolumeInscribedAffineTransformation.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)

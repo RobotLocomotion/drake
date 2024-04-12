@@ -271,6 +271,23 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
 
+        # Check SimplifyByIncrementalFaceTranslation binding with
+        # default input parameters.
+        h6 = h_box.SimplifyByIncrementalFaceTranslation(
+            min_volume_ratio=0.1, do_affine_transformation=True,
+            max_iterations=10, points_to_contain=np.empty((3, 0)),
+            intersecting_polytopes=[], keep_whole_intersection=False,
+            intersection_padding=0.1, random_seed=0)
+        self.assertIsInstance(h6, mut.HPolyhedron)
+        self.assertEqual(h6.ambient_dimension(), 3)
+
+        # Check Simplify MaximumVolumeInscribedAffineTransformation binding
+        # with default input parameters.
+        h7 = h6.MaximumVolumeInscribedAffineTransformation(
+            circumbody=h_box)
+        self.assertIsInstance(h7, mut.HPolyhedron)
+        self.assertEqual(h7.ambient_dimension(), 3)
+
         # This polyhedron is intentionally constructed to be an empty set.
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
         b_empty = -np.ones(6)

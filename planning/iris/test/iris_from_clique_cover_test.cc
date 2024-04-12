@@ -138,7 +138,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   IrisFromCliqueCoverOptions options;
 
   options.num_points_per_coverage_check = 100;
-  options.num_points_per_visibility_round = 100;
+  options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
@@ -151,9 +151,24 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
 
   RandomGenerator generator(0);
 
+  // This checks that errors in finding the minimum volume circumscribed
+  // ellipsoid do not lead to an infinite loop or program crash. Setting this
+  // tolerance very high has the effect of rejecting every clique as being in an
+  // affine subspace.
+  options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e10;
   IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
                                           nullptr);
-  EXPECT_GE(ssize(sets), 1);
+  EXPECT_EQ(ssize(sets), 0);
+
+  // Reverting to normal settings.
+  options.rank_tol_for_minimum_volume_circumscribed_ellipsoid = 1e-6;
+  // Checking that the adversarial setting of 1 point visibility graphs gets
+  // overridden and correctly increases the number of samples. The result should
+  // be perfect coverage in a single polytope.
+  options.num_points_per_visibility_round = 1;
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+  EXPECT_EQ(ssize(sets), 1);
 
   // expect perfect coverage
   VPolytope vpoly(sets.at(0));
@@ -246,6 +261,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     params = CollisionCheckerParams();
 
     meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->Delete("/drake");
     meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
                              -3.25, 3.25, -3.25, 3.25);
     meshcat->SetProperty("/Grid", "visible", true);

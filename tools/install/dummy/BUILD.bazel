@@ -1,6 +1,5 @@
-load("//tools/skylark:py.bzl", "py_library")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -11,6 +10,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load("//tools/skylark:py.bzl", "py_library")
 
 package(default_visibility = ["//tools/install:__subpackages__"])
 

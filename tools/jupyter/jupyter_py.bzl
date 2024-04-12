@@ -1,9 +1,9 @@
-load("//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_test",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 # Generate file to bake file path in rather than require it as an argument.
 _JUPYTER_PY_TEMPLATE = """

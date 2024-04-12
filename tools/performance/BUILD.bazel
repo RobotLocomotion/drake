@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
@@ -7,7 +8,6 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = [
     # All benchmarks should be in folders named "benchmarking".

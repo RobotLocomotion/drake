@@ -9,6 +9,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/value.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
@@ -378,8 +379,16 @@ class ShapeToLcm : public ShapeReifier {
 
   lcmt_viewer_geometry_data Convert(const Shape& shape,
                                     const RigidTransformd& X_PG,
+                                    const DrakeVisualizerParams& params,
                                     const Rgba& in_color) {
     X_PG_ = X_PG;
+    // We're capturing the provided params so it is available to the
+    // ImplementGeometry() functions. We'll make sure it's cleared upon
+    // completion.
+    ScopeExit clear_params([this]() {
+      this->params_ = nullptr;
+    });
+    params_ = &params;
     // NOTE: Reify *may* change X_PG_ based on the shape. For example, the
     // half-space requires an additional offset to shift the box representing
     // the plane *to* the plane.
@@ -420,14 +429,7 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& convex, void*) override {
-    const TriangleSurfaceMesh<double> tri_mesh =
-        internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
-    // Note: the transform X_PG and color are dummy values; ShapeToLcm will set
-    // them when we return from this Convex-specific callback.
-    // We can ignore the convex.scale() because it is already incorporated in
-    // the convex hull.
-    geometry_data_ =
-        MakeFacetedMeshDataForLcm(tri_mesh, RigidTransformd{}, Rgba());
+    geometry_data_ = MakeMeshDataForConvexHull(convex.GetConvexHull());
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) override {
@@ -465,6 +467,15 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void*) override {
+    // ShapeToLcm::Convert() only gets called if we haven't already dealt with
+    // the possibility of needing to display a hydroelastic representation.
+    // So, here, we only need to handle the case of proximity role requiring
+    // the convex hull.
+    if (params_->role == Role::kProximity) {
+      geometry_data_ = MakeMeshDataForConvexHull(mesh.GetConvexHull());
+      return;
+    }
+    // No specific mesh beat out the mesh file, so we'll simply send that.
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
@@ -480,9 +491,23 @@ class ShapeToLcm : public ShapeReifier {
   }
 
  private:
+  // Prepares the geometry message for a convex hull.
+  lcmt_viewer_geometry_data MakeMeshDataForConvexHull(
+      const PolygonSurfaceMesh<double>& hull) {
+    // Convert polygonal surface mesh to triangle surface mesh.
+    const TriangleSurfaceMesh<double> tri_mesh(
+        internal::MakeTriangleFromPolygonMesh(hull));
+    // Note: the transform X_PG and color are dummy values; ShapeToLcm
+    // will set them when we return from this Mesh-specific callback. We
+    // can ignore the mesh.scale() because it is already incorporated in
+    // the convex hull or the hydroelastic mesh.
+    return MakeFacetedMeshDataForLcm(tri_mesh, RigidTransformd{}, Rgba());
+  }
+
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
   RigidTransformd X_PG_;
+  const DrakeVisualizerParams* params_{};
 };
 
 }  // namespace
@@ -690,7 +715,8 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
                              color);
       }
     }
-    return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), color);
+    return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), params,
+                                color);
   };
 
   int link_index = 0;

@@ -28,6 +28,7 @@ from pydrake.systems.primitives import (
     Demultiplexer, Demultiplexer_,
     DiscreteDerivative, DiscreteDerivative_,
     DiscreteTimeDelay, DiscreteTimeDelay_,
+    DiscreteTimeIntegrator_,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
     Gain, Gain_,
@@ -91,6 +92,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Demultiplexer_)
         self._check_instantiations(DiscreteDerivative_)
         self._check_instantiations(DiscreteTimeDelay_)
+        self._check_instantiations(DiscreteTimeIntegrator_)
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
@@ -113,6 +115,20 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
+
+    @numpy_compare.check_all_types
+    def test_discrete_time_integrator(self, T):
+        time_step = 0.1
+        integrator = DiscreteTimeIntegrator_[T](size=2, time_step=time_step)
+        self.assertEqual(integrator.time_step(), time_step)
+        context = integrator.CreateDefaultContext()
+        x = np.array([1., 2.])
+        integrator.set_integral_value(context=context, value=x)
+        u = np.array([3., 4.])
+        integrator.get_input_port(0).FixValue(context, u)
+        x_next = integrator.EvalUniquePeriodicDiscreteUpdate(
+            context).get_vector()._get_value_copy()
+        numpy_compare.assert_float_equal(x_next, x + time_step * u)
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.

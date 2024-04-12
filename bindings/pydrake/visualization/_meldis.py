@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import logging
 import numpy as np
 from pathlib import Path
@@ -147,12 +148,23 @@ class _GeometryFileHasher:
 
     def on_mesh(self, path: Path):
         assert isinstance(path, Path)
+        # Hash the file contents, even if we don't know how to interpret it.
         content = self._read_file(path)
         if path.suffix.lower() == ".obj":
-            for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
-                                        re.MULTILINE):
-                for mtl_name in mtl_names.decode("utf-8").split():
-                    self.on_mtl(path.parent / mtl_name)
+            self.on_obj(path, content)
+        elif path.suffix.lower() == ".gltf":
+            self.on_gltf(path, content)
+        else:
+            _logger.warn(f"Unsupported mesh file: '{path}'\n"
+                         "Update Meldis's hasher to trigger reloads on this "
+                         "kind of file.")
+
+    def on_obj(self, path: Path, content: bytes):
+        assert isinstance(path, Path)
+        for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
+                                    re.MULTILINE):
+            for mtl_name in mtl_names.decode("utf-8").split():
+                self.on_mtl(path.parent / mtl_name)
 
     def on_mtl(self, path: Path):
         assert isinstance(path, Path)
@@ -164,6 +176,24 @@ class _GeometryFileHasher:
     def on_texture(self, path: Path):
         assert isinstance(path, Path)
         self._read_file(path)
+
+    def on_gltf(self, path: Path, content: bytes):
+        assert isinstance(path, Path)
+        try:
+            document = json.loads(content.decode(encoding="utf-8"))
+        except json.JSONDecodeError:
+            _logger.warn(f"glTF file is not valid JSON: {path}")
+            return
+
+        # Handle the images
+        for image in document.get("images", []):
+            if not image.get("uri", "").startswith("data:"):
+                self.on_texture(path.parent / image["uri"])
+
+        # Handle the .bin files.
+        for buffer in document.get("buffers", []):
+            if not buffer.get("uri", "").startswith("data:"):
+                self._read_file(path.parent / buffer["uri"])
 
 
 class _ViewerApplet:
@@ -183,12 +213,13 @@ class _ViewerApplet:
         self._path = path
         self._load_message = None
         self._load_message_mesh_checksum = None
-        self._alpha_slider = _Slider(meshcat, alpha_slider_name)
+        self._alpha_slider = _Slider(meshcat, f"{alpha_slider_name} α")
         self._alpha_slider._value = initial_alpha_value
         if should_accept_link is not None:
             self._should_accept_link = should_accept_link
         else:
             self._should_accept_link = lambda _: True
+        self._applet_name = alpha_slider_name
         self._start_visible = start_visible
         self._geom_paths = []
 
@@ -208,7 +239,8 @@ class _ViewerApplet:
             if (message.num_links == self._load_message.num_links
                     and message.encode() == self._load_message.encode()
                     and mesh_checksum == self._load_message_mesh_checksum):
-                _logger.info("Ignoring duplicate load message")
+                _logger.info("Ignoring duplicate load message for "
+                             f"{self._applet_name}.")
                 return
 
         # The semantics of a load message is to reset the entire scene.
@@ -714,7 +746,7 @@ class Meldis:
 
         default_viewer = _ViewerApplet(meshcat=self.meshcat,
                                        path="/DRAKE_VIEWER",
-                                       alpha_slider_name="Viewer α",
+                                       alpha_slider_name="Viewer",
                                        should_accept_link=is_not_inertia_link)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
                         message_type=lcmt_viewer_load_robot,
@@ -729,7 +761,7 @@ class Meldis:
 
         inertia_viewer = _ViewerApplet(meshcat=self.meshcat,
                                        path="/Inertia Visualizer",
-                                       alpha_slider_name="Inertia α",
+                                       alpha_slider_name="Inertia",
                                        should_accept_link=is_inertia_link,
                                        start_visible=False)
         inertia_viewer._alpha_slider._value = 0.5
@@ -743,7 +775,7 @@ class Meldis:
 
         illustration_viewer = _ViewerApplet(meshcat=self.meshcat,
                                             path="/Visual Geometry",
-                                            alpha_slider_name="Visual α")
+                                            alpha_slider_name="Visual")
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_ILLUSTRATION",
                         message_type=lcmt_viewer_load_robot,
                         handler=illustration_viewer.on_viewer_load)
@@ -754,7 +786,7 @@ class Meldis:
 
         proximity_viewer = _ViewerApplet(meshcat=self.meshcat,
                                          path="/Collision Geometry",
-                                         alpha_slider_name="Collision α",
+                                         alpha_slider_name="Collision",
                                          start_visible=False,
                                          initial_alpha_value=0.5)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",

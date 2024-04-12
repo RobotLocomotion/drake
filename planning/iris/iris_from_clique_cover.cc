@@ -156,7 +156,7 @@ void ComputeGreedyTruncatedCliqueCover(
     last_clique_size = max_clique.template cast<int>().sum();
     log()->debug("Last Clique Size = {}", last_clique_size);
     num_points_left -= last_clique_size;
-    if (last_clique_size > minimum_clique_size) {
+    if (last_clique_size >= minimum_clique_size) {
       computed_cliques->push(max_clique);
       ++num_cliques;
       MakeFalseRowsAndColumns(max_clique, adjacency_matrix);
@@ -214,6 +214,7 @@ std::queue<HPolyhedron> IrisWorker(
       log()->info(
           "Iris builder thread {} failed to compute an ellipse for a clique.",
           builder_id, e.what());
+      current_clique = computed_cliques->pop();
       continue;
     }
 
@@ -345,8 +346,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
   Eigen::VectorXd last_polytope_sample = domain.UniformSample(generator);
 
   // Override options which are set too aggressively.
-  const int minimum_clique_size =
-      std::max(options.minimum_clique_size, checker.plant().num_positions());
+  const int minimum_clique_size = std::max(options.minimum_clique_size,
+                                           checker.plant().num_positions() + 1);
 
   int num_points_per_visibility_round = std::max(
       options.num_points_per_visibility_round, 2 * minimum_clique_size);
@@ -420,7 +421,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
     // worst case.
     sets->reserve(sets->size() +
                   ComputeMaxNumberOfCliquesInGreedyCliqueCover(
-                      visibility_graph.cols(), options.minimum_clique_size) /
+                      visibility_graph.cols(), minimum_clique_size) /
                       2);
 
     // Now solve the max clique cover and build new sets.
@@ -429,9 +430,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
     // off the queue by the set builder workers to build the sets.
     AsyncQueue<VectorX<bool>> computed_cliques;
     if (options.parallelism.num_threads() == 1) {
-      ComputeGreedyTruncatedCliqueCover(options.minimum_clique_size,
-                                        *max_clique_solver, &visibility_graph,
-                                        &computed_cliques);
+      ComputeGreedyTruncatedCliqueCover(minimum_clique_size, *max_clique_solver,
+                                        &visibility_graph, &computed_cliques);
       std::queue<HPolyhedron> new_set_queue =
           IrisWorker(checker, points, 0, options, &computed_cliques,
                      false /* No need to disable meshcat */);
@@ -444,7 +444,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       // Compute truncated clique cover.
       std::future<void> clique_future{
           std::async(std::launch::async, ComputeGreedyTruncatedCliqueCover,
-                     options.minimum_clique_size, std::ref(*max_clique_solver),
+                     minimum_clique_size, std::ref(*max_clique_solver),
                      &visibility_graph, &computed_cliques)};
 
       // We will use one thread to build cliques and the remaining threads to

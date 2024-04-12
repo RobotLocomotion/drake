@@ -4,8 +4,8 @@
 # source, i.e., when we are not using pkg-config.  See repository.bzl for the
 # logic to select when that occurs.
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["notice"])  # MIT
 

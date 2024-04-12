@@ -1,10 +1,10 @@
 load(
-    "//tools/workspace:github.bzl",
-    "setup_github_repository",
-)
-load(
     "//tools/workspace:execute.bzl",
     "execute_or_fail",
+)
+load(
+    "//tools/workspace:github.bzl",
+    "setup_github_repository",
 )
 
 def parse_module(repo_ctx, subdir):

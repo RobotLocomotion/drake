@@ -1,5 +1,5 @@
-load("//tools/workspace:os.bzl", "is_wheel_build")
 load("//tools/workspace:github.bzl", "setup_github_repository")
+load("//tools/workspace:os.bzl", "is_wheel_build")
 load("//tools/workspace:pkg_config.bzl", "setup_pkg_config_repository")
 
 def _impl(repo_ctx):

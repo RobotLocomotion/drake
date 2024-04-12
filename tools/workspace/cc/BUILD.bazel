@@ -1,5 +1,5 @@
-load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 
 # Note that this program is compiled not only by this drake_cc_binary rule
 # but also separately by the repository.bzl file in this directory.
