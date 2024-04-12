@@ -1171,7 +1171,8 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
 }
 
 TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
-  auto constraint = std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
   e_off_->AddConstraint(
       solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
 
@@ -1180,7 +1181,7 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
 
   Eigen::Matrix2d mat;
   mat << source_->GetSolution(result)[0], target_->GetSolution(result)[0],
-         source_->GetSolution(result)[1], target_->GetSolution(result)[1];
+      source_->GetSolution(result)[1], target_->GetSolution(result)[1];
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(mat);
   EXPECT_GE(solver.eigenvalues()[0], 0);
   EXPECT_GE(solver.eigenvalues()[1], 0);

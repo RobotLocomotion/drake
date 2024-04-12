@@ -45,11 +45,11 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
 using solvers::LorentzConeConstraint;
-using solvers::PositiveSemidefiniteConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
 using solvers::PerspectiveQuadraticCost;
+using solvers::PositiveSemidefiniteConstraint;
 using solvers::ProgramType;
 using solvers::QuadraticCost;
 using solvers::RotatedLorentzConeConstraint;
@@ -777,7 +777,7 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     prog->AddRotatedLorentzConeConstraint(A_cone,
                                           VectorXd::Zero(rc->A().rows()), vars);
   } else if (PositiveSemidefiniteConstraint* pc =
-                 dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)){
+                 dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
     prog->AddConstraint(binding.evaluator(), binding.variables());
   } else {
     throw std::runtime_error(
