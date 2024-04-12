@@ -1157,7 +1157,9 @@ class MathematicalProgram {
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
-   * @note Currently only the SnoptSolver and IpoptSolver support kL2NormCost.
+   * @note Currently kL2NormCost is supported by the non-linear solvers
+   * SnoptSolver and IpoptSolver as well as the convex solvers Gurobi, Mosek,
+   * Clarabel, and SCS.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   // TODO(hongkai.dai): support L2NormCost in each solver.
@@ -1189,6 +1191,7 @@ class MathematicalProgram {
    * variable (with variable name string as "slack"), `linear_cost` is the cost
    * on `s`, and `lorentz_cone_constraint` is the constraint s≥|Ax+b|₂
    */
+   // TODO(hongkai.dai) Decide whether to deprecate this.
   std::tuple<symbolic::Variable, Binding<LinearCost>,
              Binding<LorentzConeConstraint>>
   AddL2NormCostUsingConicConstraint(
