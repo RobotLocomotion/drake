@@ -177,6 +177,7 @@ def vtk_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/camera_copy.patch",
+            ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
