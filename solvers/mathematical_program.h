@@ -1154,6 +1154,7 @@ class MathematicalProgram {
    */
   Binding<L2NormCost> AddCost(const Binding<L2NormCost>& binding);
 
+  // TODO(hongkai.dai): support L2NormCost in each solver.
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
@@ -1162,7 +1163,6 @@ class MathematicalProgram {
    * Clarabel, and SCS.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
-  // TODO(hongkai.dai): support L2NormCost in each solver.
   Binding<L2NormCost> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -1179,6 +1179,7 @@ class MathematicalProgram {
     return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
   }
 
+  // TODO(hongkai.dai) Decide whether to deprecate this.
   /**
    * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
    * on the slack variable s, together with a Lorentz cone constraint
@@ -1191,7 +1192,6 @@ class MathematicalProgram {
    * variable (with variable name string as "slack"), `linear_cost` is the cost
    * on `s`, and `lorentz_cone_constraint` is the constraint s≥|Ax+b|₂
    */
-   // TODO(hongkai.dai) Decide whether to deprecate this.
   std::tuple<symbolic::Variable, Binding<LinearCost>,
              Binding<LorentzConeConstraint>>
   AddL2NormCostUsingConicConstraint(
