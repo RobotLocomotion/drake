@@ -26,7 +26,7 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_,  &resolver,    NoSelect};
-    UsdParser dut;
+    UsdParserWrapper dut;
     auto result = dut.AddAllModels(source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
