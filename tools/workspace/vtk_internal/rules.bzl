@@ -126,6 +126,9 @@ def _vtk_cc_module_impl(
     srcs = srcs_extra + native.glob(
         [subdir + "/*.cxx"] + srcs_glob_extra,
         exclude = included_cxxs + srcs_glob_exclude + [
+            # Unwanted serialization code which leaks non-namespaced symbols.
+            "**/*SerDesHelper.cxx",
+            # Never build test code into our runtime libraries.
             "**/vtkTest*",
             "**/test*",
         ],
