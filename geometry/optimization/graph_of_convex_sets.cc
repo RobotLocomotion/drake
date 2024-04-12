@@ -778,7 +778,7 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
                                           VectorXd::Zero(rc->A().rows()), vars);
   } else if (PositiveSemidefiniteConstraint* pc =
                  dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
-    prog->AddConstraint(binding.evaluator(), binding.variables());
+    prog->AddConstraint(binding.evaluator(), vars.tail(vars.size() - 1));
   } else {
     throw std::runtime_error(
         fmt::format("ShortestPathProblem::Edge does not support this "

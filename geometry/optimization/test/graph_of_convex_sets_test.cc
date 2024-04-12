@@ -1173,8 +1173,8 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
 TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
   auto constraint =
       std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
-  e_off_->AddConstraint(
-      solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
+  e_on_->AddConstraint(
+      solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
 
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
