@@ -24,13 +24,13 @@ Arguments:
 """
 
 load(
+    "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
+    "git_repo",
+)
+load(
     "@bazel_tools//tools/build_defs/repo:utils.bzl",
     "patch",
     "update_attrs",
-)
-load(
-    "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
-    "git_repo",
 )
 load("//tools/workspace:execute.bzl", "execute_and_return")
 

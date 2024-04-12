@@ -1,24 +1,24 @@
 # -*- bazel -*-
 
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:py.bzl",
     "py_binary",
 )
 load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
-load(
-    "@drake//tools/workspace:check_lists_consistency.bzl",
-    "check_lists_consistency",
-)
-load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
-load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
 
@@ -37,8 +37,6 @@ cmake_configure_file(
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "SDF_PKG_VERSION=0.0",
-        "SDF_MAJOR_VERSION=0",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     undefines = [

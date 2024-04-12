@@ -1,15 +1,15 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:drake_java.bzl", "drake_java_binary")
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load("@drake//tools/skylark:drake_java.bzl", "drake_java_binary")
 load("@drake//tools/skylark:py.bzl", "py_library")
-load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",
 )
-load("@drake//tools/install:install.bzl", "install", "install_files")
-load("@drake//tools/lint:python_lint.bzl", "python_lint")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 
 licenses([

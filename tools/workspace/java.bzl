@@ -1,8 +1,8 @@
-load("//tools/skylark:pathutils.bzl", "basename")
 load(
     "@bazel_tools//tools/build_defs/repo:java.bzl",
     "java_import_external",
 )
+load("//tools/skylark:pathutils.bzl", "basename")
 
 def _impl(repo_ctx):
     os_name = repo_ctx.os.name

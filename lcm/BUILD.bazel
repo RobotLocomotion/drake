@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -10,7 +11,6 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 

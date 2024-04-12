@@ -114,7 +114,7 @@ struct FrameTopology {
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
-  bool operator==(const FrameTopology& other) const;
+  bool operator==(const FrameTopology& other) const = default;
 
   // Index in the MultibodyPlant.
   FrameIndex index{0};
@@ -161,7 +161,7 @@ struct MobilizerTopology {
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
-  bool operator==(const MobilizerTopology& other) const;
+  bool operator==(const MobilizerTopology& other) const = default;
 
   // Returns `true` if this Mobilizer connects these Frames.
   bool connects_frames(FrameIndex frame1, FrameIndex frame2) const {
@@ -212,7 +212,7 @@ struct MobilizerTopology {
 struct JointActuatorTopology {
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
-  bool operator==(const JointActuatorTopology& other) const;
+  bool operator==(const JointActuatorTopology& other) const = default;
 
   // Unique index in the MultibodyTree.
   JointActuatorIndex index{0};

@@ -1,15 +1,15 @@
-package(default_visibility = ["//visibility:private"])
-
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-)
 load(
     "//doc:defs.bzl",
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+
+package(default_visibility = ["//visibility:private"])
 
 filegroup(
     name = "jekyll_input",

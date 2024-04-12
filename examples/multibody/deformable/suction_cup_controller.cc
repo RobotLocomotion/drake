@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 using Eigen::Vector2d;
 using systems::BasicVector;
@@ -68,6 +68,6 @@ void SuctionCupController::CalcMaxForceDensity(
   }
 }
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake

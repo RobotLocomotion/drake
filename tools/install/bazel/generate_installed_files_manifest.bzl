@@ -1,6 +1,6 @@
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load("//tools/install:install.bzl", "InstallInfo")
 load("//tools/skylark:pathutils.bzl", "basename")
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 
 def _impl(ctx):
     known_non_runfiles = [

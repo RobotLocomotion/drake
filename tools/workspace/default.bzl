@@ -1,7 +1,7 @@
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
-load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
 load("//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
+load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
 load("//tools/workspace/blas:repository.bzl", "blas_repository")
 load("//tools/workspace/boost_internal:repository.bzl", "boost_internal_repository")  # noqa
 load("//tools/workspace/build_bazel_apple_support:repository.bzl", "build_bazel_apple_support_repository")  # noqa
@@ -20,8 +20,8 @@ load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_reposito
 load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
-load("//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
+load("//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
 load("//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa

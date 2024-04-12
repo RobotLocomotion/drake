@@ -1,6 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
-load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
+load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 
 def _add_mirrors(*, urls, mirrors):
     # The input `urls` will be a singleton list like this:

@@ -120,6 +120,70 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
+  /** Returns an inner approximation of `this`, aiming to use fewer
+  faces.  Proceeds by incrementally translating faces inward and removing other
+  faces that become redundant upon doing so.
+  @param min_volume_ratio is a lower bound for the ratio of the volume of the
+  returned inbody and the volume of `this`.
+  @param do_affine_transformation specifies whether to call
+  MaximumVolumeInscribedAffineTransformation(), to take an affine transformation
+  of the inner approximation to maximize its volume.  The affine transformation
+  is reverted if the resulting inner approximation violates conditions related
+  to `points_to_contain` or `intersecting_polytopes`.
+  @param max_iterations is the maximum number of times to loop through all
+  faces.
+  @param points_to_contain is an optional matrix whose columns are points that
+  must be contained in the returned inbody.
+  @param intersecting_polytopes is an optional list of HPolyhedrons that must
+  intersect with the returned inbody.
+  @param keep_whole_intersection specifies whether the face translation
+  step of the algorithm is prohibited from reducing the intersections with the
+  HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
+  parameter, the intersections may be reduced by the affine transformation step
+  if `do_affine_transformation` is true.
+  @param intersection_padding is a distance by which each hyperplane is
+  translated back outward after satisfing intersection constraints, subject to
+  not surpassing the original hyperplane position.  In the case where
+  `keep_whole_intersection` is false, using a non-zero value for this parameter
+  prevents intersections from being single points.
+  @param random_seed is a seed for a random number generator used to shuffle
+  the ordering of hyperplanes in between iterations.
+  @pre `min_volume_ratio` > 0.
+  @pre `max_iterations` > 0.
+  @pre `intersection_padding` >= 0.
+  @pre All columns of `points_to_contain` are points contained within `this`.
+  @pre All elements of `intersecting_polytopes` intersect with `this`.
+  */
+  [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
+      double min_volume_ratio = 0.1, bool do_affine_transformation = true,
+      int max_iterations = 10,
+      const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+      const std::vector<drake::geometry::optimization::HPolyhedron>&
+          intersecting_polytopes = std::vector<HPolyhedron>(),
+      bool keep_whole_intersection = false, double intersection_padding = 1e-4,
+      int random_seed = 0) const;
+
+  /**
+  Solves a semi-definite program to compute the maximum-volume affine
+  transformation of `this`, subject to being a subset of `circumbody`,
+  and subject to the transformation matrix being positive
+  semi-definite.  The latter condition is necessary for convexity of the
+  program.  We use the containment condition stated in Lemma 1 of "Linear
+  Encodings for Polytope Containment Problems" by Sadra Sadraddini and Russ
+  Tedrake, extended to apply to the affine transformation of `this`.  We solve
+  @verbatim
+  max_{T,t} log det (T)
+        s.t. T ≽ 0
+        t + TX ⊆ Y
+  @endverbatim
+  where X is `this`, and Y is `circumbody`.
+  @returns the transformed polyhedron, t + TX.
+
+  @param circumbody is an HPolyhedron that must contain the returned inbody.
+  @throws std::exception if the solver fails to solve the problem.*/
+  [[nodiscard]] HPolyhedron MaximumVolumeInscribedAffineTransformation(
+      const HPolyhedron& circumbody) const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and
   Vandenberghe, 2004, we solve

@@ -1,8 +1,8 @@
-load("//tools/workspace:github.bzl", "github_archive")
 load(
     "//third_party:com_github_bazelbuild_rules_python/internal_config_repo.bzl",  # noqa
     "internal_config_repo",
 )
+load("//tools/workspace:github.bzl", "github_archive")
 
 # Note that we do NOT install a LICENSE file as part of the Drake install
 # because this repository is required only when building and testing with

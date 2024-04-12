@@ -1,10 +1,10 @@
-load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
     "incorporate_allow_network",
     "incorporate_num_threads",
 )
+load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
 def drake_py_library(
         name,
