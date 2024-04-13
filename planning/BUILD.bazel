@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
         ":visibility_graph",
+        ":zmp_planner",
     ],
 )
 
@@ -213,6 +214,29 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "zmp_planner",
+    srcs = ["zmp_planner.cc"],
+    hdrs = ["zmp_planner.h"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/controllers:linear_quadratic_regulator",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "zmp_test_util",
+    testonly = 1,
+    srcs = ["test/zmp_test_util.cc"],
+    hdrs = ["test/zmp_test_util.h"],
+    deps = [
+        ":zmp_planner",
+    ],
+)
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
@@ -345,6 +369,14 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zmp_planner_test",
+    deps = [
+        ":zmp_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
