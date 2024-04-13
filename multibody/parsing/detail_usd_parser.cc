@@ -44,9 +44,9 @@ class UsdParser {
     const std::optional<std::string>& parent_model_name);
 
  private:
-  UsdStageMetadata GetStageMetadata(const pxr::UsdStageRefPtr stage);
   void ProcessPrim(const pxr::UsdPrim& prim);
   void ProcessStaticCollider(const pxr::UsdPrim& prim);
+  UsdStageMetadata GetStageMetadata(const pxr::UsdStageRefPtr stage);
   std::unique_ptr<geometry::Shape> CreateCollisionGeometry(
     const pxr::UsdPrim& prim);
   std::unique_ptr<geometry::Shape> CreateVisualGeometry(
@@ -130,8 +130,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     return CreateGeometryMesh(obj_filename, prim, mpu, w_);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
-    w_.diagnostic.Error(
-      fmt::format("Unsupported Prim type: {}", prim_type));
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
     return nullptr;
   }
 }
