@@ -6,8 +6,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 namespace drake {
-namespace systems {
-namespace controllers {
+namespace planning {
 
 /**
  Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
@@ -185,6 +184,7 @@ class ZmpPlanner {
   /**
    Returns the desired ZMP evaluated at `time`.
    @pre Plan() has already been called.
+   @pydrake_mkdoc_identifier{at_time}
    */
   Eigen::Vector2d get_desired_zmp(double time) const {
     DRAKE_DEMAND(planned_);
@@ -194,6 +194,7 @@ class ZmpPlanner {
   /**
    Returns the nominal CoM position evaluated at `time`.
    @pre Plan() has already been called.
+   @pydrake_mkdoc_identifier{at_time}
    */
   Eigen::Vector2d get_nominal_com(double time) const {
     DRAKE_DEMAND(planned_);
@@ -203,6 +204,7 @@ class ZmpPlanner {
   /**
    Returns the nominal CoM velocity evaluated at `time`.
    @pre Plan() has already been called.
+   @pydrake_mkdoc_identifier{at_time}
    */
   Eigen::Vector2d get_nominal_comd(double time) const {
     DRAKE_DEMAND(planned_);
@@ -212,6 +214,7 @@ class ZmpPlanner {
   /**
    Returns the nominal CoM acceleration evaluated at `time`.
    @pre Plan() has already been called.
+   @pydrake_mkdoc_identifier{at_time}
    */
   Eigen::Vector2d get_nominal_comdd(double time) const {
     DRAKE_DEMAND(planned_);
@@ -290,6 +293,7 @@ class ZmpPlanner {
    Returns the time varying first order term (s2 in [1]) of the value function,
    evaluated at the given `time`.
    @pre Plan() has already been called.
+   @pydrake_mkdoc_identifier{at_time}
    */
   const Eigen::Vector4d get_Vx(double time) const {
     DRAKE_DEMAND(planned_);
@@ -351,6 +355,5 @@ class ZmpPlanner {
   bool planned_{false};
 };
 
-}  // namespace controllers
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

@@ -213,6 +213,8 @@ drake_cc_library(
     ],
 )
 
+# === test/ ===
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [

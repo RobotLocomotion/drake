@@ -10,7 +10,7 @@ drake_cc_binary(
     srcs = ["zmp_example.cc"],
     deps = [
         "//common/proto:call_python",
-        "//systems/controllers:zmp_test_util",
+        "//planning/locomotion:zmp_test_util",
     ],
 )
 
