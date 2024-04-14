@@ -684,6 +684,12 @@ void GraphOfConvexSets::AddPerspectiveCost(
 void GraphOfConvexSets::AddPerspectiveConstraint(
     MathematicalProgram* prog, const Binding<Constraint>& binding,
     const VectorXDecisionVariable& vars) const {
+  /*
+  Adds the perspective of the constraint in `binding` to `prog`.
+  @param binding is a constraint bound to _placeholder_ variables for yz.
+  @param vars` is a list of variables [phi, yz], where `phi` is the scaling
+  variable to be used in the perspective.
+  */
   const double inf = std::numeric_limits<double>::infinity();
 
   Constraint* constraint = binding.evaluator().get();
@@ -778,6 +784,9 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
                                           VectorXd::Zero(rc->A().rows()), vars);
   } else if (PositiveSemidefiniteConstraint* pc =
                  dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
+    // Since we have ϕ ≥ 0, we have S ≽ 0 ⇔ ϕS ≽ 0.
+    // It is sufficient to add the original constraint to the program (with the
+    // new variables).
     prog->AddConstraint(binding.evaluator(), vars.tail(vars.size() - 1));
   } else {
     throw std::runtime_error(

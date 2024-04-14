@@ -1173,9 +1173,17 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
 TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
   auto constraint =
       std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
-  solvers::VectorXDecisionVariable psd_x(4);
-  psd_x << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
-  e_on_->AddConstraint(solvers::Binding(constraint, psd_x));
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == 1);
+
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == 1);
 
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
