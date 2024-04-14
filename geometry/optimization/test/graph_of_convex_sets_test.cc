@@ -1170,7 +1170,7 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
   EXPECT_GE(z[0], 0);
 }
 
-TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
   auto constraint =
       std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
   solvers::VectorXDecisionVariable psd_x_on(4);
@@ -1194,6 +1194,28 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint) {
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(mat);
   EXPECT_GE(solver.eigenvalues()[0], 0);
   EXPECT_GE(solver.eigenvalues()[1], 0);
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == -1);
+
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == -1);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_FALSE(result.is_success());
+
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
