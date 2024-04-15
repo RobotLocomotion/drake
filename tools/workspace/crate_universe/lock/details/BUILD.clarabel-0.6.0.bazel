@@ -6,9 +6,9 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
-load("@rules_rust//rust:defs.bzl", "rust_library")
 
 package(
     default_package_metadata = [
@@ -57,7 +57,7 @@ rust_library(
     crate_root = "src/lib.rs",
     edition = "2021",
     proc_macro_deps = [
-        "@crate__enum_dispatch-0.3.12//:enum_dispatch",
+        "@crate__enum_dispatch-0.3.13//:enum_dispatch",
     ],
     rustc_flags = [
         "--cap-lints=allow",
@@ -116,6 +116,6 @@ rust_library(
         "@crate__lapack-0.19.0//:lapack",
         "@crate__lazy_static-1.4.0//:lazy_static",
         "@crate__num-traits-0.2.18//:num_traits",
-        "@crate__thiserror-1.0.57//:thiserror",
+        "@crate__thiserror-1.0.58//:thiserror",
     ],
 )

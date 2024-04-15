@@ -6,10 +6,10 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_license//rules:license.bzl", "license")
-load("@rules_license//rules:package_info.bzl", "package_info")
 load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_license//rules:license.bzl", "license")
+load("@rules_license//rules:package_info.bzl", "package_info")
 
 package(
     default_package_metadata = [
@@ -152,7 +152,7 @@ cargo_build_script(
     version = "0.2.18",
     visibility = ["//visibility:private"],
     deps = [
-        "@crate__autocfg-1.1.0//:autocfg",
+        "@crate__autocfg-1.2.0//:autocfg",
     ],
 )
 
