@@ -1177,8 +1177,10 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
   // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
   psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
   e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  // Prevent the matrix from collapsing to zero.
   e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == 1);
 
+  // Make sure the PSD constraint is inactive for the off edge.
   solvers::VectorXDecisionVariable psd_x_off(4);
   psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
       e_off_->xv()[0];
@@ -1197,6 +1199,8 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
+// This test has linear constraints to prevent the matrix from being positive
+// semidefinite. The solver should fail.
 TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
   auto constraint =
       std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
