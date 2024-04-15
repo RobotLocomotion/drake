@@ -287,52 +287,36 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
     EXPECT_EQ(forest.mobod_to_links(MobodIndex(mobod_link.first))[0],
               BodyIndex(mobod_link.second));
   }
+  EXPECT_EQ(forest.height(), 7);
 
   // Check that the three Trees in the forest make sense.
   // Reminder: left->tree0, right->tree1, free link->tree2.
-  EXPECT_EQ(forest.height(), 7);
-  const SpanningForest::Tree& tree0 = forest.trees(TreeIndex(0));
-  const SpanningForest::Tree& tree1 = forest.trees(TreeIndex(1));
-  const SpanningForest::Tree& tree2 = forest.trees(TreeIndex(2));
-  EXPECT_EQ(tree0.index(), TreeIndex(0));
-  EXPECT_EQ(tree1.index(), TreeIndex(1));
-  EXPECT_EQ(tree2.index(), TreeIndex(2));
-  EXPECT_EQ(tree0.height(), 4);
-  EXPECT_EQ(tree1.height(), 6);
-  EXPECT_EQ(tree2.height(), 1);
-  EXPECT_EQ(tree0.base_mobod(), MobodIndex(1));
-  EXPECT_EQ(tree0.last_mobod(), MobodIndex(6));
-  EXPECT_EQ(tree1.base_mobod(), MobodIndex(7));
-  EXPECT_EQ(tree1.last_mobod(), MobodIndex(14));
-  EXPECT_EQ(tree2.base_mobod(), MobodIndex(15));
-  EXPECT_EQ(tree2.last_mobod(), MobodIndex(15));
-  EXPECT_EQ(tree0.num_mobods(), 6);
-  EXPECT_EQ(tree1.num_mobods(), 8);
-  EXPECT_EQ(tree2.num_mobods(), 1);
-  EXPECT_EQ(&tree0.front(), &forest.mobods(MobodIndex(1)));
-  EXPECT_EQ(&tree0.back(), &forest.mobods(MobodIndex(6)));
-  EXPECT_EQ(&tree1.front(), &forest.mobods(MobodIndex(7)));
-  EXPECT_EQ(&tree1.back(), &forest.mobods(MobodIndex(14)));
-  EXPECT_EQ(&tree2.front(), &forest.mobods(MobodIndex(15)));
-  EXPECT_EQ(&tree2.back(), &forest.mobods(MobodIndex(15)));
-  EXPECT_EQ(tree0.begin(), &tree0.front());
-  EXPECT_EQ(tree0.end(), &tree0.back() + 1);
-  EXPECT_EQ(tree1.begin(), &tree1.front());
-  EXPECT_EQ(tree1.end(), &tree1.back() + 1);
-  EXPECT_EQ(tree2.begin(), &tree2.front());
-  EXPECT_EQ(tree2.end(), &tree2.back() + 1);
-  EXPECT_EQ(tree0.q_start(), 0);
-  EXPECT_EQ(tree0.nq(), 12);
-  EXPECT_EQ(tree1.q_start(), 12);
-  EXPECT_EQ(tree1.nq(), 14);
-  EXPECT_EQ(tree2.q_start(), 26);
-  EXPECT_EQ(tree2.nq(), 7);
-  EXPECT_EQ(tree0.v_start(), 0);
-  EXPECT_EQ(tree0.nv(), 11);
-  EXPECT_EQ(tree1.v_start(), 11);
-  EXPECT_EQ(tree1.nv(), 13);
-  EXPECT_EQ(tree2.v_start(), 24);
-  EXPECT_EQ(tree2.nv(), 6);
+
+  auto tree_check = [&forest](int index, int height, int base_mobod,
+                              int last_mobod, int num_mobods, int q_start,
+                              int nq, int v_start, int nv) {
+    const SpanningForest::Tree& tree = forest.trees(TreeIndex(index));
+    EXPECT_EQ(tree.index(), TreeIndex(index));
+    EXPECT_EQ(tree.height(), height);
+    EXPECT_EQ(tree.base_mobod(), MobodIndex(base_mobod));
+    EXPECT_EQ(tree.last_mobod(), MobodIndex(last_mobod));
+    EXPECT_EQ(tree.num_mobods(), num_mobods);
+    EXPECT_EQ(tree.q_start(), q_start);
+    EXPECT_EQ(tree.nq(), nq);
+    EXPECT_EQ(tree.v_start(), v_start);
+    EXPECT_EQ(tree.nv(), nv);
+    EXPECT_EQ(&tree.front(), &forest.mobods(MobodIndex(base_mobod)));
+    EXPECT_EQ(&tree.back(), &forest.mobods(MobodIndex(last_mobod)));
+    EXPECT_EQ(tree.begin(), &tree.front());
+    EXPECT_EQ(tree.end(), &tree.back() + 1);
+  };
+
+  // clang-format off
+  //         index  height  base_ last_ num_mobods  qstart nq  vstart nv
+  tree_check(0,        4,     1,    6,      6,         0,  12,    0,  11);
+  tree_check(1,        6,     7,   14,      8,        12,  14,   11,  13);
+  tree_check(2,        1,    15,   15,      1,        26,   7,   24,   6);
+  // clang-format on
 
   // Sample some q's and v's to see if they can find their tree and mobod.
   EXPECT_EQ(forest.q_to_tree(9), TreeIndex(0));
