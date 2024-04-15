@@ -184,7 +184,7 @@ Here is the original graph and its expected forest model:
            9  10         11                     5  6      10
        5    6            8   7     -->      3    4        9   14
           4                3                   2            8
-          1       12       2                   1            7      15
+          1       2       12                   1            7      15
 
           ..........0..........                ...........0..........
 
@@ -202,22 +202,24 @@ LinkJointGraph MakeMultiBranchGraph(ModelInstanceIndex left,
   graph.RegisterJointType("revolute", 1, 1);
 
   // Map links to their model instances.
-  std::map<int, ModelInstanceIndex> link2instance{
-      {1, left},   {2, right},      {3, right},  {4, left},   {5, left},
-      {6, left},   {7, right},      {8, right},  {9, left},   {10, left},
-      {11, right}, {12, free_link}, {13, right}, {14, right}, {15, right}};
+  std::map<int, ModelInstanceIndex> link_to_instance{
+      {1, left},      {4, left},   {5, left},   {6, left},
+      {9, left},      {10, left},  //
+      {2, free_link},              //
+      {12, right},    {3, right},  {8, right},  {7, right},
+      {11, right},    {13, right}, {14, right}, {15, right}};
 
   // Define the graph. Links:
   for (int i = 1; i <= 15; ++i)
-    graph.AddLink("link" + std::to_string(i), link2instance[i]);
+    graph.AddLink("link" + std::to_string(i), link_to_instance[i]);
 
   // Joints: (Check against left-hand diagram above.)
   const std::vector<std::pair<int, int>> joints{
-      {1, 4}, {2, 3},  {3, 8},  {3, 7},   {4, 5},   {4, 6},
-      {6, 9}, {6, 10}, {8, 11}, {11, 13}, {11, 14}, {14, 15}};
+      {1, 4},  {4, 5}, {4, 6}, {6, 9},  {6, 10},                        // left
+      {12, 3}, {3, 8}, {3, 7}, {8, 11}, {11, 13}, {11, 14}, {14, 15}};  // right
   for (int i = 0; i < ssize(joints); ++i) {
     const auto joint = joints[i];
-    graph.AddJoint("joint_" + std::to_string(i), link2instance[joint.second],
+    graph.AddJoint("joint_" + std::to_string(i), link_to_instance[joint.second],
                    "revolute", BodyIndex(joint.first), BodyIndex(joint.second));
   }
 
@@ -271,20 +273,19 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   EXPECT_EQ(forest.num_positions(), 33);   // 12 revolute, 3 x 7 quat floating
   EXPECT_EQ(forest.num_velocities(), 30);  // 12 revolute, 3 x 6 floating
 
-  // Check Link->Mobod and Mobod->Link mappings.
-  const std::vector<pair<int, int>> link_mobod_map{
-      {0, 0},   {1, 1},   {2, 7},   {3, 8},  {4, 2},  {5, 3},
-      {6, 4},   {7, 14},  {8, 9},   {9, 5},  {10, 6}, {11, 10},
-      {12, 15}, {13, 11}, {14, 12}, {15, 13}};
-  for (auto link_mobod : link_mobod_map) {
-    EXPECT_EQ(graph.link_to_mobod(BodyIndex(link_mobod.first)),
-              MobodIndex(link_mobod.second));
-    EXPECT_EQ(forest.mobod_to_link(MobodIndex(link_mobod.second)),
-              BodyIndex(link_mobod.first));
+  // Check Mobod->Link and Link->Mobod mappings.
+  const std::vector<pair<int, int>> mobod_link_map{
+      {0, 0}, {1, 1}, {2, 4},   {3, 5},   {4, 6},   {5, 9},   {6, 10}, {7, 12},
+      {8, 3}, {9, 8}, {10, 11}, {11, 13}, {12, 14}, {13, 15}, {14, 7}, {15, 2}};
+  for (auto mobod_link : mobod_link_map) {
+    EXPECT_EQ(graph.link_to_mobod(BodyIndex(mobod_link.second)),
+              MobodIndex(mobod_link.first));
+    EXPECT_EQ(forest.mobod_to_link(MobodIndex(mobod_link.first)),
+              BodyIndex(mobod_link.second));
     // Each Mobod has only a single Link that follows it.
-    EXPECT_EQ(ssize(forest.mobod_to_links(MobodIndex(link_mobod.second))), 1);
-    EXPECT_EQ(forest.mobod_to_links(MobodIndex(link_mobod.second))[0],
-              BodyIndex(link_mobod.first));
+    EXPECT_EQ(ssize(forest.mobod_to_links(MobodIndex(mobod_link.first))), 1);
+    EXPECT_EQ(forest.mobod_to_links(MobodIndex(mobod_link.first))[0],
+              BodyIndex(mobod_link.second));
   }
 
   // Check that the three Trees in the forest make sense.
@@ -498,7 +499,8 @@ GTEST_TEST(SpanningForest, BaseBodyChoicePolicy) {
   EXPECT_EQ(forest.trees(TreeIndex(1)).base_mobod(), MobodIndex(4));
   EXPECT_EQ(forest.trees(TreeIndex(2)).base_mobod(), MobodIndex(8));
 
-  // Check that only joints {4,5} and {10,9} were reversed.
+  // Check that only joints {4,5} and {10,9} were reversed. (The last three
+  // entries are the added base joints.)
   const std::vector<bool> expect_reversed{false, false, true,  false, false,
                                           false, true,  false, false, false};
   for (auto joint : graph.joints()) {
