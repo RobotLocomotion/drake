@@ -49,6 +49,7 @@ cc_library(
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
+    copts = ["-w"],
     linkstatic = True,
     deps = [
         "@eigen",
