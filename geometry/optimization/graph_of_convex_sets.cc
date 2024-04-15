@@ -681,15 +681,15 @@ void GraphOfConvexSets::AddPerspectiveCost(
   }
 }
 
+/*
+Adds the perspective of the constraint in `binding` to `prog`.
+@param binding is a constraint bound to _placeholder_ variables for yz.
+@param vars` is a list of variables [phi, yz], where `phi` is the scaling
+variable to be used in the perspective.
+*/
 void GraphOfConvexSets::AddPerspectiveConstraint(
     MathematicalProgram* prog, const Binding<Constraint>& binding,
     const VectorXDecisionVariable& vars) const {
-  /*
-  Adds the perspective of the constraint in `binding` to `prog`.
-  @param binding is a constraint bound to _placeholder_ variables for yz.
-  @param vars` is a list of variables [phi, yz], where `phi` is the scaling
-  variable to be used in the perspective.
-  */
   const double inf = std::numeric_limits<double>::infinity();
 
   Constraint* constraint = binding.evaluator().get();
