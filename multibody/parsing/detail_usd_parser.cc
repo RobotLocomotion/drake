@@ -127,6 +127,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     return CreateGeometryCylinder(prim, mpu, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
+    mesh_filenames_.push_back(obj_filename);
     return CreateGeometryMesh(obj_filename, prim, mpu, w_);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
