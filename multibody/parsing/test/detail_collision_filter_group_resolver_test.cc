@@ -35,11 +35,10 @@ class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
 
  protected:
   MultibodyPlant<double> plant_{0.0};
-  CollisionFilterGroups group_output_;
   SceneGraph<double> scene_graph_;
   const geometry::SceneGraphInspector<double>& inspector_{
       scene_graph_.model_inspector()};
-  internal::CollisionFilterGroupResolver resolver_{&plant_, &group_output_};
+  internal::CollisionFilterGroupResolver resolver_{&plant_};
 };
 
 // These tests concentrate on name resolution details and responses to errors
@@ -180,7 +179,7 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalBodies) {
   expected_group_output.AddGroup("a", {"r1::body1"});
   expected_group_output.AddGroup("b", {"r2::body2"});
   expected_group_output.AddExclusionPair({"a", "b"});
-  EXPECT_EQ(group_output_, expected_group_output);
+  EXPECT_EQ(resolver_.GetCollisionFilterGroups(), expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(b1, b2));
 }
 
@@ -206,7 +205,7 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalMemberGroups) {
   expected_group_output.AddGroup("r1::ra", {"r1::body1"});
   expected_group_output.AddGroup("r2::rb", {"r2::body2"});
   expected_group_output.AddExclusionPair({"a", "b"});
-  EXPECT_EQ(group_output_, expected_group_output);
+  EXPECT_EQ(resolver_.GetCollisionFilterGroups(), expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(b1, b2));
 }
 
@@ -224,7 +223,7 @@ TEST_F(CollisionFilterGroupResolverTest, LinkScoped) {
   CollisionFilterGroups expected_group_output;
   expected_group_output.AddGroup("r1::a", {"r1::abody", "r1::sub::abody"});
   expected_group_output.AddExclusionPair({"r1::a", "r1::a"});
-  EXPECT_EQ(group_output_, expected_group_output);
+  EXPECT_EQ(resolver_.GetCollisionFilterGroups(), expected_group_output);
   EXPECT_TRUE(inspector_.CollisionFiltered(ra, rsa));
 }
 
@@ -262,7 +261,7 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupCycle) {
                                    all_bodies);
   }
   expected_group_output.AddExclusionPair({"r1::body99", "r1::body99"});
-  EXPECT_EQ(group_output_, expected_group_output);
+  EXPECT_EQ(resolver_.GetCollisionFilterGroups(), expected_group_output);
 
   // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));
@@ -302,7 +301,7 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupDeepNest) {
     expected_group_output.AddGroup(fmt::format("r1::{}", body_of(k)), bodies);
   }
   expected_group_output.AddExclusionPair({"r1::body0", "r1::body0"});
-  EXPECT_EQ(group_output_, expected_group_output);
+  EXPECT_EQ(resolver_.GetCollisionFilterGroups(), expected_group_output);
 
   // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));

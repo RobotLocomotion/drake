@@ -6,6 +6,8 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_instanced_name.h"
+#include "drake/multibody/parsing/detail_parser_internal_data.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_select_parser.h"
@@ -32,7 +34,7 @@ Parser::Parser(MultibodyPlant<double>* plant,
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph,
                std::string_view model_name_prefix)
-    : plant_(plant) {
+    : plant_(plant), data_(new internal::ParserInternalData) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   if (!model_name_prefix.empty()) {
@@ -52,6 +54,33 @@ Parser::Parser(MultibodyPlant<double>* plant,
         }
       };
   diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
+}
+
+Parser::~Parser() {}
+
+CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
+  // Convert the data from the internal type back to the user-visible type.
+  auto convert = [this](const internal::InstancedName& input) -> std::string {
+    std::string result;
+    if (input.index.has_value()) {
+      auto scoped = ScopedName::Join(
+          plant_->GetModelInstanceName(*input.index),
+          input.name);
+      result = scoped.get_full();
+    } else {
+      result = input.name;
+    }
+    return result;
+  };
+
+  // Merge the internal data into an empty object of the user-visible type, and
+  // return it.
+  CollisionFilterGroups result;
+  MergeCollisionFilterGroups<std::string, internal::InstancedName>(
+      &result,
+      data_->collision_filter_groups_storage_,
+      convert);
+  return result;
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModels(

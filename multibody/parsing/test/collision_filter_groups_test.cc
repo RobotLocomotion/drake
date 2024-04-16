@@ -102,6 +102,46 @@ Collision filter exclusion pairs:
   EXPECT_EQ(fmt::format("{}", stuff), expected_dump);
 }
 
+// Tests the MergeCollisionFilterGroups function.
+GTEST_TEST(CollisionFilterGroups, Merge) {
+  using internal::MergeCollisionFilterGroups;
+
+  // Use some arbitrary reversible conversions.
+  auto double_to_int = [](const double& x) { return x * 32; };
+  auto int_to_double = [](const int& x) { return x / 32.0; };
+
+  CollisionFilterGroupsBase<int> int_groups1;
+  int_groups1.AddGroup(1, {2});
+  int_groups1.AddGroup(3, {4});
+  int_groups1.AddExclusionPair({1, 3});
+
+  CollisionFilterGroupsBase<int> int_groups2;
+  int_groups2.AddGroup(5, {6});
+  int_groups2.AddGroup(7, {8});
+  int_groups2.AddExclusionPair({5, 7});
+
+  // Cram the two test objects into an object of different type.
+  CollisionFilterGroupsBase<double> double_groups;
+  MergeCollisionFilterGroups<double, int>(
+      &double_groups, int_groups1, int_to_double);
+  MergeCollisionFilterGroups<double, int>(
+      &double_groups, int_groups2, int_to_double);
+  // Recover the data into a new empty group of the original type.
+  CollisionFilterGroupsBase<int> int_groups3;
+  MergeCollisionFilterGroups<int, double>(
+      &int_groups3, double_groups, double_to_int);
+
+  // Compare the recovered data with what was expected.
+  CollisionFilterGroupsBase<int> expected;
+  expected.AddGroup(1, {2});
+  expected.AddGroup(3, {4});
+  expected.AddGroup(5, {6});
+  expected.AddGroup(7, {8});
+  expected.AddExclusionPair({1, 3});
+  expected.AddExclusionPair({5, 7});
+  EXPECT_EQ(int_groups3, expected);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

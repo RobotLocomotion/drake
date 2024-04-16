@@ -60,11 +60,9 @@ class CollisionFilterGroupResolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver)
 
-  // Both parameters are aliased, and must outlive the resolver.
+  // The plant parameter is aliased, and must outlive the resolver.
   // @pre plant is not nullptr.
-  // @pre group_output is not nullptr.
-  CollisionFilterGroupResolver(MultibodyPlant<double>* plant,
-                               CollisionFilterGroups* group_output);
+  explicit CollisionFilterGroupResolver(MultibodyPlant<double>* plant);
 
   ~CollisionFilterGroupResolver();
 
@@ -122,6 +120,13 @@ class CollisionFilterGroupResolver {
   // @pre cannot have be previously invoked on this instance.
   void Resolve(const drake::internal::DiagnosticPolicy& diagnostic);
 
+  // @returns the collision filter groups found after resolution.
+  // @pre Resolve() must have already been invoked.
+  CollisionFilterGroups GetCollisionFilterGroups() const {
+    DRAKE_DEMAND(is_resolved_);
+    return group_output_;
+  }
+
  private:
   struct GroupData {
     std::set<std::string> body_names;
@@ -140,7 +145,7 @@ class CollisionFilterGroupResolver {
                                     ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
-  CollisionFilterGroups* const group_output_;
+  CollisionFilterGroups group_output_;
 
   std::map<std::string, GroupData> groups_;
   std::set<SortedPair<std::string>> pairs_;
