@@ -186,13 +186,14 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
  world frame.
 
  @param[in] name              The name of the geometry.
- @param[in] vertex_poistions  The positions of the mesh vertices in the world
+ @param[in] vertex_positions  The positions of the mesh vertices in the world
                               frame.
  @param[in] render_mesh       Describes the connectivity and the material of the
                               mesh. Other information from render_mesh (e.g the
-                              uv coordinates) are unused. Currently only the
-                              diffuse color part of the material is used. Other
-                              information about the material is discarded.
+                              uv coordinates and the normals) are unused.
+                              Currently only the diffuse color part of the
+                              material is used. Other information about the
+                              material is discarded.
  @param[in] default_diffuse   The diffuse color of the geometry if no material
                               is specified in `render_mesh`. */
 template <typename T>
@@ -270,6 +271,7 @@ template <typename T>
 internal::DeformableMeshData MakeDeformableMeshData(
     GeometryId g_id, const SceneGraphInspector<T>& inspector) {
   DRAKE_DEMAND(inspector.IsDeformableGeometry(g_id));
+  DRAKE_DEMAND(inspector.GetIllustrationProperties(g_id) != nullptr);
   return {g_id, inspector.GetName(g_id),
           inspector.GetDrivenIllustrationRenderMeshes(g_id)};
 }

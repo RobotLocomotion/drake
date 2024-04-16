@@ -836,15 +836,14 @@ GeometryState<T>::GetIllustrationMeshConfigurationsInWorld(
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   DRAKE_THROW_UNLESS(geometry.is_deformable());
+  DRAKE_THROW_UNLESS(geometry.has_illustration_role());
   std::vector<VectorX<T>> result;
-  if (geometry.has_illustration_role()) {
-    DRAKE_THROW_UNLESS(
-        driven_illustration_meshes_.driven_meshes().contains(geometry_id));
-    const std::vector<DrivenTriangleMesh>& driven_meshes =
-        driven_illustration_meshes_.driven_meshes().at(geometry_id);
-    for (const auto& mesh : driven_meshes) {
-      result.emplace_back(mesh.GetDrivenVertexPositions());
-    }
+  DRAKE_THROW_UNLESS(
+      driven_illustration_meshes_.driven_meshes().contains(geometry_id));
+  const std::vector<DrivenTriangleMesh>& driven_meshes =
+      driven_illustration_meshes_.driven_meshes().at(geometry_id);
+  for (const auto& mesh : driven_meshes) {
+    result.emplace_back(mesh.GetDrivenVertexPositions());
   }
   return result;
 }

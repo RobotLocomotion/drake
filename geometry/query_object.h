@@ -183,9 +183,9 @@ class QueryObject {
    deformable geometry indicated by `deformable_geometry_id` relative to the
    world frame if the deformable geometry has illustration role. If the
    geometry doesn't have illustration role, returns an empty vector.
-   @throws std::exception if the geometry `deformable_geometry_id` is not
-   valid or is not a deformable geometry.
-   @experimental */
+   @throws std::exception if the geometry associated with
+   `deformable_geometry_id` is not a registered deformable geometry with
+   illustration role. */
   std::vector<VectorX<T>> GetIllustrationMeshConfigurationsInWorld(
       GeometryId deformable_geometry_id) const;
   //@}
