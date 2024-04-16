@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -17,6 +18,7 @@ namespace multibody {
 
 namespace internal {
 class CompositeParse;
+struct ParserInternalData;
 }  // namespace internal
 
 /// Parses model description input into a MultibodyPlant and (optionally) a
@@ -173,6 +175,8 @@ class Parser final {
   ///   when empty, no scoping will be added.
   Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
+  ~Parser();
+
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
   MultibodyPlant<double>& plant() { return *plant_; }
@@ -194,9 +198,7 @@ class Parser final {
 
   /// Gets the accumulated set of collision filter definitions seen by this
   /// parser.
-  CollisionFilterGroups GetCollisionFilterGroups() const {
-    return collision_filter_groups_;
-  }
+  CollisionFilterGroups GetCollisionFilterGroups() const;
 
   DRAKE_DEPRECATED("2024-10-01", "Use GetCollisionFilterGroups() instead.")
   CollisionFilterGroups collision_filter_groups() const {
@@ -247,10 +249,9 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
-  CollisionFilterGroups collision_filter_groups_;
   std::optional<std::string> model_name_prefix_;
+  std::unique_ptr<internal::ParserInternalData> data_;
 };
 
 }  // namespace multibody
 }  // namespace drake
-
