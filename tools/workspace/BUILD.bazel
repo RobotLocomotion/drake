@@ -1,6 +1,7 @@
 load("//tools/install:check_licenses.bzl", "check_licenses")
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
 load("//tools/skylark:py.bzl", "py_library")
 
@@ -70,6 +71,13 @@ drake_py_test(
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "apple_framework_accelerate",
+    linkopts = ["-framework Accelerate"],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
