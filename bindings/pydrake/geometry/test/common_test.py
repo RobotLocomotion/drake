@@ -102,12 +102,14 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(actual_color, test_color)
         # Test proximity properties.
         prop = mut.ProximityProperties()
+        self.assertTrue(prop.IsEmpty())
         self.assertEqual(str(prop), "[__default__]")
         default_group = prop.default_group_name()
         self.assertTrue(prop.HasGroup(group_name=default_group))
         self.assertEqual(prop.num_groups(), 1)
         self.assertTrue(default_group in prop.GetGroupNames())
         prop.AddProperty(group_name=default_group, name="test", value=3)
+        self.assertFalse(prop.IsEmpty())
         self.assertTrue(prop.HasProperty(group_name=default_group,
                                          name="test"))
         self.assertEqual(
