@@ -115,6 +115,7 @@ drake_jupyter_py_binary(
         "@drake_models//:dishes",
         "@drake_models//:veggies",
     ],
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
