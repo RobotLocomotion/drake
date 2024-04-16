@@ -51,7 +51,7 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
 
   std::vector<ModelInstanceInfo> ParseModelDirectives(
       const ModelDirectives& directives) {
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     const ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                              &plant_,  &resolver,    TestingSelect};
     auto result =
@@ -65,7 +65,6 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.01};
-  CollisionFilterGroups group_output_;
 };
 
 /* Make an SDF containing a "ball" body (with an attached frame) and a dummy
