@@ -35,6 +35,27 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
 }
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest,
+           AddMultibodySceneGraphConfigTest) {
+  // Demonstrate that SceneGraph gets configured in the 3-argument overload.
+  MultibodyPlantConfig plant_config;
+  // A bunch of arbitrary, mostly nonsensical, values.
+  const geometry::SceneGraphConfig scene_graph_config{
+      .default_proximity_properties = {.compliance_type = "compliant",
+                                       .hydroelastic_modulus = 2,
+                                       .resolution_hint = 3,
+                                       .slab_thickness = 4}};
+
+  drake::systems::DiagramBuilder<double> builder;
+  auto result = AddMultibodyPlant(plant_config, scene_graph_config, &builder);
+  const auto& got_properties =
+      result.scene_graph.get_config().default_proximity_properties;
+  EXPECT_EQ(got_properties.compliance_type, "compliant");
+  EXPECT_EQ(got_properties.hydroelastic_modulus, 2);
+  EXPECT_EQ(got_properties.resolution_hint, 3);
+  EXPECT_EQ(got_properties.slab_thickness, 4);
+}
+
+GTEST_TEST(MultibodyPlantConfigFunctionsTest,
            ApplyMultibodyPlantConfigBasicTest) {
   MultibodyPlantConfig config;
   config.time_step = 0.002;
