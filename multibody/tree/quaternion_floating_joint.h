@@ -24,9 +24,11 @@ namespace multibody {
 /// introducing six degrees of freedom. This Joint introduces four generalized
 /// positions to describe the orientation `R_FM` of frame M in F with a
 /// quaternion `q_FM`, and three generalized positions to describe the position
-/// of frame M's origin in F with a position vector `p_FM`. As generalized
-/// velocities, this Joint introduces the angular velocity `w_FM` of frame M in
-/// F and the linear velocity `v_FM` of frame M's origin in frame F.
+/// of frame M's origin in F with a position vector `p_FM`; in the configuration
+/// vector, the four generalized positions for orientation precede the three
+/// generalized positions for translation. As generalized velocities, this Joint
+/// introduces the angular velocity `w_FM` of frame M in F and the linear
+/// velocity `v_FM` of frame M's origin in frame F.
 ///
 /// @tparam_default_scalar
 template <typename T>
