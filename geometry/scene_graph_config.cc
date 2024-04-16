@@ -100,4 +100,3 @@ void SceneGraphConfig::ValidateOrThrow() const {
 
 }  // namespace geometry
 }  // namespace drake
-
