@@ -99,13 +99,14 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& model_name,
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
     std::optional<ModelInstanceIndex> result =
         AddModelFromSdf(data_source, model_name, parent_model_name, w);
     EXPECT_TRUE(result.has_value());
-    resolver.Resolve(diagnostic_policy_);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
     return result.value_or(ModelInstanceIndex{});
   }
 
@@ -113,11 +114,12 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_name,
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
-    resolver.Resolve(diagnostic_policy_);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
     return result;
   }
 
@@ -125,11 +127,12 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_contents,
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kContents, &file_contents};
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
-    resolver.Resolve(diagnostic_policy_);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
     return result;
   }
 
@@ -172,7 +175,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.01};
   SceneGraph<double> scene_graph_;
-  CollisionFilterGroups group_output_;
+  CollisionFilterGroupsImpl<std::string> last_parsed_groups_;
 };
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -1284,7 +1287,7 @@ TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
 )""";
 
   const DataSource data_source{DataSource::kContents, &sdf_string};
-  internal::CollisionFilterGroupResolver resolver{&plant_, & group_output_};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
   ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                       &plant_, &resolver, TestingSelect};
   std::optional<ModelInstanceIndex> result =
@@ -3158,12 +3161,12 @@ TEST_F(SdfParserTest, InterfaceApi) {
     VerifyCollisionFilters(ids, expected_filters);
 
     // Verify parser-level collision filter reporting.
-    CollisionFilterGroups expected_report;
+    CollisionFilterGroupsImpl<std::string> expected_report;
     expected_report.AddGroup(
         "top::g1",
         {"top::arm::L1", "top::gripper::gripper_link", "top::torso"});
     expected_report.AddExclusionPair({"top::g1", "top::g1"});
-    EXPECT_EQ(group_output_, expected_report);
+    EXPECT_EQ(last_parsed_groups_, expected_report);
   }
 
   plant_.Finalize();
@@ -3283,7 +3286,7 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
   VerifyCollisionFilters(ids, expected_filters);
 
   // Verify parser-level collision filter reporting.
-  CollisionFilterGroups expected_report;
+  CollisionFilterGroupsImpl<std::string> expected_report;
   expected_report.AddGroup("test::group_3s", {"test::robot1::link3"});
   expected_report.AddGroup("test::group_6s",
                            {"test::robot1::link6", "test::robot2::link6"});
@@ -3338,7 +3341,7 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
   expected_report.AddExclusionPair(
       {"test::robot2::group_link56", "test::robot2::group_link56"});
 
-  EXPECT_EQ(group_output_, expected_report);
+  EXPECT_EQ(last_parsed_groups_, expected_report);
 
   // Make sure we can add the model a second time.
   AddModelFromSdfFile(full_sdf_filename, "model2");
@@ -3636,7 +3639,7 @@ TEST_F(SdfParserTest, TestSingleModelEnforcement) {
 )""";
 
   const DataSource data_source{DataSource::kContents, &multi_models};
-  internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
   ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
     &plant_, &resolver, TestingSelect};
   std::optional<ModelInstanceIndex> result =

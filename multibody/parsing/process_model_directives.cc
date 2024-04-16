@@ -179,6 +179,7 @@ void ProcessModelDirectives(const ModelDirectives& directives,
   if (added_models) {
     added_models->insert(added_models->end(), models.begin(), models.end());
   }
+  composite->Finish();
 }
 
 std::vector<ModelInstanceInfo> ProcessModelDirectives(
