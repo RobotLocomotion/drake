@@ -22,6 +22,7 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.tree import (
     FixedOffsetFrame,
+    FrameIndex,
     default_model_instance,
 )
 from pydrake.planning import RobotDiagramBuilder
@@ -267,19 +268,23 @@ class ModelVisualizer:
             # Find all the frames and draw them.
             # The frames are drawn using the parsed length.
             # The world frame is drawn thicker than the rest.
-            inspector = self._builder.scene_graph().model_inspector()
-            for frame_id in inspector.GetAllFrameIds():
-                world_id = self._builder.scene_graph().world_frame_id()
+            plant = self._builder.plant()
+            for i in range(plant.num_frames()):
+                frame = plant.get_frame(FrameIndex(i))
+                triad_name = f"{frame.name()}({int(frame.model_instance())})"
+                brightness = 1 if frame.is_body_frame() else 0.5
                 radius = self._triad_radius * (
-                    3 if frame_id == world_id else 1
+                    3 if frame.is_world_frame() else 1
                     )
                 AddFrameTriadIllustration(
                     plant=self._builder.plant(),
                     scene_graph=self._builder.scene_graph(),
-                    frame_id=frame_id,
+                    frame=frame,
                     length=self._triad_length,
                     radius=radius,
                     opacity=self._triad_opacity,
+                    name=triad_name,
+                    brightness=brightness
                 )
 
         # Add a model to provide a pose-able anchor for the camera.

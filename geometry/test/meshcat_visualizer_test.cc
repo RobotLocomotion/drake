@@ -137,8 +137,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
     FrameId iiwa_link_7 = plant_->GetBodyFrameIdOrThrow(
         plant_->GetBodyByName("iiwa_link_7").index());
     for (GeometryId geom_id : inspector.GetGeometries(iiwa_link_7, role)) {
-      EXPECT_TRUE(meshcat_->HasPath(
-          fmt::format("visualizer/iiwa14/iiwa_link_7/{}", geom_id)));
+      EXPECT_TRUE(meshcat_->HasPath(fmt::format(
+          "visualizer/iiwa14/iiwa_link_7/{}", inspector.GetName(geom_id))));
     }
     meshcat_->Delete();
   }
@@ -400,7 +400,7 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
     // just the ellipse axes (very small); the hydro representation is all
     // of the tessellated faces (very large).
     const std::string data = meshcat->GetPackedObject(fmt::format(
-        "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
+        "/drake/{}/two_bodies/body1/{}", prefix, inspector.GetName(sphere1)));
     if (show_hydroelastic) {
       EXPECT_GT(data.size(), 5000);
       // The BufferGeometry has explicitly declared its material to be flat
@@ -456,7 +456,7 @@ GTEST_TEST(MeshcatVisualizerTest, ConvexHull) {
   // the obj had been sent. If, however, the generated convex hull is sent, the
   // type will be BufferGeometry.
   const std::string data = meshcat->GetPackedObject(fmt::format(
-      "/drake/{}/box/box/{}", params.prefix, box_id.get_value()));
+      "/drake/{}/box/box/{}", params.prefix, inspector.GetName(box_id)));
   EXPECT_THAT(data, testing::HasSubstr("BufferGeometry"));
 }
 
@@ -553,7 +553,7 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
 
       // Publish geometry. Check whether the shape was published.
       const std::string geom_path =
-          fmt::format("prefix/box/box/{}", geom_id.get_value());
+          fmt::format("prefix/box/box/{}", inspector.GetName(geom_id));
       const bool should_show =
           (accepting == "prefix") ||
           (include_unspecified_accepting && accepting.empty());
@@ -625,7 +625,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
   DRAKE_DEMAND(geom_ids.size() == 1);
   const GeometryId geom_id = *geom_ids.begin();
   const std::string geom_path =
-      fmt::format("visualizer/box/box/{}", geom_id.get_value());
+      fmt::format("visualizer/box/box/{}", inspector.GetName(geom_id));
 
   // Create the visualizer.
   MeshcatVisualizerParams params;

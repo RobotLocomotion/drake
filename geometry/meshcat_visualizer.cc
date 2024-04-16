@@ -199,7 +199,7 @@ void MeshcatVisualizer<T>::SetObjects(
       // when coming from MultibodyPlant.
       // TODO(russt): Use the geometry names if/when they are cleaned up.
       const std::string path =
-          fmt::format("{}/{}", frame_path, geom_id.get_value());
+          fmt::format("{}/{}", frame_path, inspector.GetName(geom_id));
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
 
