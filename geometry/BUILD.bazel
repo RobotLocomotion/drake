@@ -515,8 +515,10 @@ drake_cc_library(
         "meshcat_types_internal.h",
     ],
     interface_deps = [
+        ":geometry_ids",
         ":meshcat_animation",
         ":rgba",
+        ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
         "//common:name_value",
@@ -606,7 +608,11 @@ drake_cc_googletest(
         "//geometry/render:test_models",
     ],
     deps = [
+        ":geometry_instance",
         ":meshcat",
+        ":scene_graph",
+        ":shape_specification",
+        "//math:geometric_transform",
         "@nlohmann_internal//:nlohmann",
     ],
 )

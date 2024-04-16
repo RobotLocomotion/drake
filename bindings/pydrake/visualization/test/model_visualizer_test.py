@@ -1,5 +1,6 @@
 import copy
 import inspect
+import os
 import subprocess
 import textwrap
 import time
@@ -248,3 +249,56 @@ class TestModelVisualizer(unittest.TestCase):
         actual = mut.ModelVisualizer._get_constructor_defaults()
         for name in ("length", "radius", "opacity"):
             self.assertEqual(actual[f"triad_{name}"], expected[name].default)
+
+    def test_visualize_all_frames(self):
+        """ Confirm that *all* frames get added. """
+        dut = mut.ModelVisualizer(visualize_frames=True)
+        dut.parser().AddModels(file_type=".urdf", file_contents="""
+<?xml version="1.0"?>
+<robot name="test_model">
+    <link name="box">
+        <inertial>
+        <mass value="1"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+        </inertial>
+        <visual>
+        <geometry>
+            <box size=".1 .2 .3"/>
+        </geometry>
+        </visual>
+    </link>
+    <frame name="offset_frame" link="box" xyz="0.25 0 0" rpy="0 0 0"/>
+</robot>
+""")
+        dut.Run(loop_once=True)
+
+        meshcat = dut.meshcat()
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model"))
+        # Body frame.
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/box(2)/x-axis"))
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/box(2)/y-axis"))
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/box(2)/z-axis"))
+        # Offset frame.
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/offset_frame(2)/x-axis"))
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/offset_frame(2)/y-axis"))
+        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
+                                        "/_frames/offset_frame(2)/z-axis"))
+
+    def test_visualize_all_frames_nested_models(self):
+        """When parsing SDFormat with nested models, we can get multiple
+        __model__ frames associated with the same body. It should still
+        process the frames and not complain about repeated geometry names.
+        """
+        sdf_file = FindResourceOrThrow(
+            "drake/multibody/parsing/test/sdf_parser_test/"
+            "model_with_directly_nested_models.sdf")
+
+        dut = mut.ModelVisualizer(visualize_frames=True)
+        dut.AddModels(filename=sdf_file)
+        dut.Run(loop_once=True)
+        # Note: reaching here without throwing is enough.
