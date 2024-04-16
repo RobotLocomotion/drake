@@ -503,6 +503,38 @@ directives:
   }
 }
 
+// Reproduction of issue from
+// https://stackoverflow.com/questions/78208761/drake-faking-attachment-between-floating-objects-with-locking-joints-is-it-po
+GTEST_TEST(SceneGraphCollisionCheckerTest, QuaternionFloatingJoint) {
+  RobotDiagramBuilder<double> builder;
+  const std::string model_directives = R"""(
+directives:
+- add_model:
+    name: arm
+    file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: world
+    child: arm::base
+- add_model:
+    name: cracker
+    file: package://drake_models/ycb/003_cracker_box.sdf
+    default_free_body_pose:
+        base_link_cracker:
+            base_frame: arm::iiwa_link_ee
+)""";
+  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
+
+  const auto& plant = builder.plant();
+  CollisionCheckerParams params;
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("arm"));
+  params.edge_step_size = 0.05;
+  SceneGraphCollisionChecker dut(std::move(params));
+
+  // As constructed, collision filters must be consistent.
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+}
+
 }  // namespace test
 }  // namespace planning
 }  // namespace drake
