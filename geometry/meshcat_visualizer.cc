@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <string>
 #include <utility>
 
@@ -194,12 +195,14 @@ void MeshcatVisualizer<T>::SetObjects(
         continue;
       }
 
-      // Note: We use the frame_path/id instead of instance.GetName(geom_id),
-      // which is a garbled mess of :: and _ and a memory address by default
-      // when coming from MultibodyPlant.
-      // TODO(russt): Use the geometry names if/when they are cleaned up.
+      // We'll turned scoped names into meshcat paths.
+      std::string geometry_name = inspector.GetName(geom_id);
+      pos = 0;
+      while ((pos = geometry_name.find("::", pos)) != std::string::npos) {
+        geometry_name.replace(pos++, 2, "/");
+      }
       const std::string path =
-          fmt::format("{}/{}", frame_path, geom_id.get_value());
+          fmt::format("{}/{}", frame_path, geometry_name);
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
 
@@ -246,6 +249,12 @@ void MeshcatVisualizer<T>::SetObjects(
       }
 
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
+      meshcat_->SetProperty(
+          path + "/<object>", "castShadow",
+          properties.GetPropertyOrDefault("meshcat", "cast_shadows", true));
+      meshcat_->SetProperty(
+          path + "/<object>", "receiveShadow",
+          properties.GetPropertyOrDefault("meshcat", "receive_shadows", true));
       geometries_[geom_id] = path;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
       frame_has_any_geometry = true;
