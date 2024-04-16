@@ -31,6 +31,7 @@ class CompositeParse {
  private:
   explicit CompositeParse(Parser* parser);
 
+  Parser* const parser_;
   CollisionFilterGroupResolver resolver_;
   const ParsingOptions options_;
   const ParsingWorkspace workspace_;
