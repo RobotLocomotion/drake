@@ -25,6 +25,7 @@ def AddFrameTriadIllustration(
     radius: float = 0.005,
     opacity: float = 0.9,
     X_FT: RigidTransform = None,
+    brightness: float = 1.0
 ):
     """
     Adds illustration geometry representing the given frame using an RGB triad,
@@ -87,7 +88,8 @@ def AddFrameTriadIllustration(
         R_TG = AngleAxis(angle=np.pi/2, axis=eye[1-i])
         X_FG = X_FT @ RigidTransform(R_TG, p_TG)
         geom = GeometryInstance(X_FG, Cylinder(radius, length), geom_name)
-        phong = MakePhongIllustrationProperties(np.append(eye[i], [opacity]))
+        phong = MakePhongIllustrationProperties(np.append(eye[i] * brightness,
+                                                          [opacity]))
         geom.set_illustration_properties(phong)
         geometry_id = scene_graph.RegisterGeometry(source_id, frame_id, geom)
         result.append(geometry_id)
