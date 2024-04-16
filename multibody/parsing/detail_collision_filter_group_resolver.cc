@@ -15,9 +15,8 @@ using drake::internal::DiagnosticPolicy;
 using geometry::GeometrySet;
 
 CollisionFilterGroupResolver::CollisionFilterGroupResolver(
-    MultibodyPlant<double>* plant,
-    CollisionFilterGroups* group_output)
-    : plant_(plant), group_output_(group_output) {
+    MultibodyPlant<double>* plant)
+    : plant_(plant) {
   DRAKE_DEMAND(plant != nullptr);
   minimum_model_instance_index_ =
       ModelInstanceIndex(plant->num_model_instances());
@@ -206,7 +205,7 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
 
   // Save the groups to report at API level.
   for (const auto& [name, members] : groups_) {
-    group_output_->AddGroup(name, members.body_names);
+    group_output_.AddGroup(name, members.body_names);
   }
 
   // Now that the groups are complete, evaluate the pairs into plant rules, and
@@ -220,7 +219,7 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
     }
     plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
         {name_a, set_a->geometries}, {name_b, set_b->geometries});
-    group_output_->AddExclusionPair(pair);
+    group_output_.AddExclusionPair(pair);
   }
 }
 

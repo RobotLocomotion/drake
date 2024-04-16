@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
+class CollisionFilterGroupResolver;
 class CompositeParse;
 }  // namespace internal
 
@@ -173,6 +175,8 @@ class Parser final {
   ///   when empty, no scoping will be added.
   Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
+  ~Parser();
+
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
   MultibodyPlant<double>& plant() { return *plant_; }
@@ -194,9 +198,14 @@ class Parser final {
 
   /// Gets the accumulated set of collision filter definitions seen by this
   /// parser.
-  CollisionFilterGroups GetCollisionFilterGroups() const {
-    return collision_filter_groups_;
-  }
+  ///
+  /// There are two kinds of names in the returned data: group names and body
+  /// names. Both may occur within scoped names indicating the model instance
+  /// where they are defined. Note that the model instance names used in the
+  /// returned data will reflect the current names in plant() at the time this
+  /// accessor is called (see MultibodyPlant::RenameModelInstance()), but the
+  /// local group and body names will be the names seen during parsing.
+  CollisionFilterGroups GetCollisionFilterGroups() const;
 
   DRAKE_DEPRECATED(
       "2024-10-01",
@@ -204,6 +213,8 @@ class Parser final {
       " changed to by-value in the new method; callers may need to store the"
       " return value in a variable with an appropriate lifetime.")
   const CollisionFilterGroups& collision_filter_groups() const {
+    std::lock_guard lock(deprecated_groups_mutex_);
+    collision_filter_groups_ = CollisionFilterGroups();
     return collision_filter_groups_;
   }
 
@@ -246,15 +257,22 @@ class Parser final {
  private:
   friend class internal::CompositeParse;
 
+  // This is called back from CompositeParse::Finish().
+  void ResolveCollisionFilterGroupsFromCompositeParse(
+      internal::CollisionFilterGroupResolver* resolver);
+
   bool is_strict_{false};
   bool enable_auto_rename_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
-  CollisionFilterGroups collision_filter_groups_;
   std::optional<std::string> model_name_prefix_;
+  struct ParserInternalData;
+  std::unique_ptr<ParserInternalData> data_;
+  // Support for deprecated API: 2024-10-01.
+  mutable std::mutex deprecated_groups_mutex_;
+  mutable CollisionFilterGroups collision_filter_groups_;
 };
 
 }  // namespace multibody
 }  // namespace drake
-
