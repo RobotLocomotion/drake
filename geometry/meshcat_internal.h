@@ -7,7 +7,9 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
+#include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
 namespace geometry {
@@ -71,6 +73,13 @@ original file has disappeared in the meantime.
 [[nodiscard]] std::vector<std::shared_ptr<const FileStorage::Handle>>
 UnbundleGltfAssets(const std::filesystem::path& gltf_filename,
                    std::string* gltf_contents, FileStorage* storage);
+
+
+/* Converts a geometry names into a meshcat path. So, a geometry named
+ `my_scope::Mesh` becomes my_scope/Mesh. */
+template <typename T>
+std::string TransformGeometryName(
+    GeometryId geom_id, const SceneGraphInspector<T>& inspector);
 
 }  // namespace internal
 }  // namespace geometry

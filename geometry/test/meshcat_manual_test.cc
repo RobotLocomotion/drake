@@ -53,15 +53,20 @@ int do_main() {
   double x = start_x;
 
   Vector3d sphere_home{++x, 0, 0};
-  meshcat->SetObject("sphere", Sphere(0.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere", RigidTransformd(sphere_home));
+  // The weird name for the sphere is to confirm that meshcat collapses
+  // redundant slashes.
+  meshcat->SetObject("sphere//scoped_name", Sphere(0.25), Rgba(1.0, 0, 0, 1));
+  meshcat->SetTransform("sphere//scoped_name", RigidTransformd(sphere_home));
   // Note: this isn't the preferred means for setting opacity, but it is the
   // simplest way to exercise chained property names.
-  meshcat->SetProperty("sphere/<object>", "material.opacity", 0.5);
-  meshcat->SetProperty("sphere/<object>", "material.transparent", true);
+  meshcat->SetProperty("sphere//scoped_name/<object>", "material.opacity", 0.5);
+  meshcat->SetProperty("sphere//scoped_name/<object>", "material.transparent",
+                       true);
 
-  meshcat->SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
-  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{++x, 0, 0}));
+  // The weird name for the cylinder is to confirm that meshcat elides terminal
+  // slashes.
+  meshcat->SetObject("cylinder/", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
+  meshcat->SetTransform("cylinder/", RigidTransformd(Vector3d{++x, 0, 0}));
 
   // For animation, we'll aim the camera between the cylinder and ellipsoid.
   const Vector3d animation_target{x + 0.5, 0, 0};
@@ -247,7 +252,11 @@ Ignore those for now; we'll need to circle back and fix them later.
 - The background should be grey.
 - From left to right along the x axis, you should see:
   - a slightly transparent red sphere
+    In the controls, the sphere should expand through the path
+    `drake/sphere/scoped_name/<object>`.
   - a green cylinder (with the long axis in z)
+    In the controls, the cylinder should expand through the path
+    `drake/cylinder/<object>`.
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
   - an orange polytope (with a similary shaped textured polytope behind it).
@@ -279,10 +288,12 @@ Ignore those for now; we'll need to circle back and fix them later.
                "geometries:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
-  animation.SetTransform(0, "sphere", RigidTransformd(sphere_home));
-  animation.SetTransform(20, "sphere",
+  animation.SetTransform(0, "sphere//scoped_name",
+                         RigidTransformd(sphere_home));
+  animation.SetTransform(20, "sphere//scoped_name",
                          RigidTransformd(sphere_home + Vector3d::UnitZ()));
-  animation.SetTransform(40, "sphere", RigidTransformd(sphere_home));
+  animation.SetTransform(40, "sphere//scoped_name",
+                         RigidTransformd(sphere_home));
 
   std::cout << "- the blue box should spin clockwise about the +z axis.\n";
   animation.SetTransform(
@@ -296,9 +307,9 @@ Ignore those for now; we'll need to circle back and fix them later.
   animation.set_repetitions(4);
 
   std::cout << "- the green cylinder should appear and disappear.\n";
-  animation.SetProperty(0, "cylinder", "visible", true);
-  animation.SetProperty(20, "cylinder", "visible", false);
-  animation.SetProperty(40, "cylinder", "visible", true);
+  animation.SetProperty(0, "cylinder/", "visible", true);
+  animation.SetProperty(20, "cylinder/", "visible", false);
+  animation.SetProperty(40, "cylinder/", "visible", true);
   animation.set_repetitions(4);
 
   std::cout
