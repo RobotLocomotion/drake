@@ -19,6 +19,13 @@ const GeometryProperties::Group& GeometryProperties::GetPropertiesInGroup(
                   group_name));
 }
 
+bool GeometryProperties::IsEmpty() const {
+  for (const auto& [_, group] : values_) {
+    if (!group.empty()) { return false; }
+  }
+  return true;
+}
+
 std::set<string> GeometryProperties::GetGroupNames() const {
   std::set<string> group_names;
   for (const auto& pair : values_) {

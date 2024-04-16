@@ -239,6 +239,9 @@ class GeometryProperties {
   /** Reports the number of property groups in this set.  */
   int num_groups() const { return static_cast<int>(values_.size()); }
 
+  /** @returns true if all groups are empty. */
+  bool IsEmpty() const;
+
   /** Retrieves the indicated property group. The returned group is valid for
    as long as this instance.
    @throws std::exception if there is no group with the given name.  */
