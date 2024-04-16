@@ -22,6 +22,7 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.tree import (
     FixedOffsetFrame,
+    FrameIndex,
     default_model_instance,
 )
 from pydrake.planning import RobotDiagramBuilder
@@ -264,21 +265,15 @@ class ModelVisualizer:
             raise RuntimeError("Finalize has already been called.")
 
         if self._visualize_frames:
-            # Find all the frames and draw them.
-            # The frames are drawn using the parsed length.
-            # The world frame is drawn thicker than the rest.
-            inspector = self._builder.scene_graph().model_inspector()
-            for frame_id in inspector.GetAllFrameIds():
-                world_id = self._builder.scene_graph().world_frame_id()
-                radius = self._triad_radius * (
-                    3 if frame_id == world_id else 1
-                    )
+            # Find all the frames (except the world frame) and draw them.
+            # The frames are drawn using the configured length.
+            for i in range(1, self._builder.plant().num_frames()):
                 AddFrameTriadIllustration(
                     plant=self._builder.plant(),
                     scene_graph=self._builder.scene_graph(),
-                    frame_id=frame_id,
+                    frame_index=FrameIndex(i),
                     length=self._triad_length,
-                    radius=radius,
+                    radius=self._triad_radius,
                     opacity=self._triad_opacity,
                 )
 
