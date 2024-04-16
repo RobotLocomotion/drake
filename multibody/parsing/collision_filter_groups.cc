@@ -1,44 +1,80 @@
 #include "drake/multibody/parsing/collision_filter_groups.h"
 
-#include <utility>
-
-#include <fmt/format.h>
+#include "drake/multibody/parsing/detail_collision_filter_groups_impl.h"
 
 namespace drake {
 namespace multibody {
 
-bool CollisionFilterGroups::operator==(const CollisionFilterGroups& rhs) const {
-  return std::tie(groups_, pairs_) == std::tie(rhs.groups_, rhs.pairs_);
+using internal::CollisionFilterGroupsImpl;
+
+CollisionFilterGroups::CollisionFilterGroups()
+    : impl_(new CollisionFilterGroupsImpl<std::string>) {}
+CollisionFilterGroups::~CollisionFilterGroups() {}
+
+CollisionFilterGroups::CollisionFilterGroups(const CollisionFilterGroups&) =
+    default;
+CollisionFilterGroups& CollisionFilterGroups::operator=(
+    const CollisionFilterGroups&) = default;
+CollisionFilterGroups::CollisionFilterGroups(CollisionFilterGroups&&) = default;
+CollisionFilterGroups& CollisionFilterGroups::operator=(
+    CollisionFilterGroups&&) = default;
+
+bool CollisionFilterGroups::operator==(
+    const CollisionFilterGroups& that) const {
+  if (impl_.empty() != that.impl_.empty()) {
+    return false;
+  }
+  if (impl_.empty()) {
+    return true;
+  }
+  return *impl_ == *that.impl_;
+}
+std::weak_ordering CollisionFilterGroups::operator<=>(
+    const CollisionFilterGroups& that) const {
+  if (auto cmp = (!impl_.empty() <=> !that.impl_.empty()); cmp != 0) {
+    return cmp;
+  }
+  if (impl_.empty()) {
+    return std::weak_ordering::equivalent;
+  }
+  return *impl_ <=> *that.impl_;
 }
 
-void CollisionFilterGroups::AddGroup(std::string_view name,
-                                     const std::set<std::string> members) {
-  std::string name_str(name);
-  DRAKE_DEMAND(!groups_.contains(name_str));
-  groups_.insert({name_str, std::move(members)});
+void CollisionFilterGroups::AddGroup(const std::string& name,
+                                     const std::set<std::string>& members) {
+  DRAKE_THROW_UNLESS(!is_moved_from());
+  impl_->AddGroup(name, members);
 }
 
 void CollisionFilterGroups::AddExclusionPair(
-    const SortedPair<std::string> pair) {
-  pairs_.insert(std::move(pair));
+    const SortedPair<std::string>& pair) {
+  impl_->AddExclusionPair(pair);
+  DRAKE_THROW_UNLESS(!is_moved_from());
 }
 
 bool CollisionFilterGroups::empty() const {
-  return groups_.empty() && pairs_.empty();
+  return impl_.empty() || impl_->empty();
+}
+
+const std::map<std::string, std::set<std::string>>&
+CollisionFilterGroups::groups() const {
+  DRAKE_THROW_UNLESS(!is_moved_from());
+  return impl_->groups();
+}
+
+const std::set<SortedPair<std::string>>&
+CollisionFilterGroups::exclusion_pairs() const {
+  DRAKE_THROW_UNLESS(!is_moved_from());
+  return impl_->exclusion_pairs();
+}
+
+bool CollisionFilterGroups::is_moved_from() const {
+  return impl_.empty();
 }
 
 std::ostream& operator<<(std::ostream& os, const CollisionFilterGroups& g) {
-  os << "\nCollision filter groups:\n";
-  for (const auto&  [name, members] : g.groups()) {
-    os << fmt::format("    {}\n", name);
-    for (const auto& member : members) {
-      os << fmt::format("        {}\n", member);
-    }
-  }
-  os << "Collision filter exclusion pairs:\n";
-  for (const auto& pair : g.exclusion_pairs()) {
-    os << fmt::format("    {}, {}\n", pair.first(), pair.second());
-  }
+  DRAKE_THROW_UNLESS(!g.is_moved_from());
+  os << *g.impl_;
   return os;
 }
 

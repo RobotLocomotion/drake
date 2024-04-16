@@ -105,14 +105,28 @@ drake_cc_library(
     srcs = ["collision_filter_groups.cc"],
     hdrs = ["collision_filter_groups.h"],
     visibility = ["//visibility:public"],
+    interface_deps = [
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+    deps = [
+        ":detail_collision_filter_groups_impl",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_collision_filter_groups_impl",
+    hdrs = ["detail_collision_filter_groups_impl.h"],
+    tags = ["exclude_from_package"],
     deps = [
         "//common:essential",
         "//common:sorted_pair",
     ],
 )
+
 # For simplicity in dependency management (e.g., prevent exposing `sdformat`),
 # we make all `detail_*` libraries private. For more info, see #7451.
-
 drake_cc_library(
     name = "detail_misc",
     srcs = [
@@ -126,6 +140,7 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
+        "detail_instanced_name.h",
         "detail_strongly_connected_components.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
@@ -134,6 +149,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_filter_groups",
+        ":detail_collision_filter_groups_impl",
         ":package_map",
         "//common:diagnostic_policy",
         "//common:essential",
@@ -362,10 +378,12 @@ drake_cc_library(
     ],
     hdrs = [
         "detail_composite_parse.h",
+        "detail_parser_internal_data.h",
         "parser.h",
     ],
     install_hdrs_exclude = [
         "detail_composite_parse.h",
+        "detail_parser_internal_data.h",
     ],
     visibility = ["//visibility:public"],
     interface_deps = [
@@ -375,6 +393,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_misc",
         ":detail_parsing_workspace",
         ":detail_select_parser",
     ],
@@ -492,6 +511,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
@@ -728,6 +748,7 @@ drake_cc_googletest(
     name = "collision_filter_groups_test",
     deps = [
         ":collision_filter_groups",
+        ":detail_collision_filter_groups_impl",
     ],
 )
 
