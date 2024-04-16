@@ -59,7 +59,7 @@ struct DefaultProximityProperties {
 
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
-  std::optional<double> slab_thickness{10.0};
+  std::optional<double> slab_thickness;
   /// @}
 
   /** @name General Contact Properties

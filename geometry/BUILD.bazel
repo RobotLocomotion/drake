@@ -328,6 +328,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
         "//common:nice_type_name",
@@ -967,6 +968,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scene_graph_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":scene_graph",
         "//common/test_utilities:eigen_matrix_compare",
