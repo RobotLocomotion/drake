@@ -179,15 +179,15 @@ class QueryObject {
   const VectorX<T>& GetConfigurationsInWorld(
       GeometryId deformable_geometry_id) const;
 
-  /** Reports the configurations of the driven illustration meshes for the
-   deformable geometry indicated by `deformable_geometry_id` relative to the
-   world frame if the deformable geometry has illustration role. If the
-   geometry doesn't have illustration role, returns an empty vector.
+  /** Reports the configurations of the driven meshes associated with the given
+   role for the deformable geometry indicated by `deformable_geometry_id`
+   relative to the world frame if the deformable geometry has that role.
    @throws std::exception if the geometry associated with
    `deformable_geometry_id` is not a registered deformable geometry with
-   illustration role. */
-  std::vector<VectorX<T>> GetIllustrationMeshConfigurationsInWorld(
-      GeometryId deformable_geometry_id) const;
+   the given role.
+   @experimental */
+  std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
+      GeometryId deformable_geometry_id, Role role) const;
   //@}
 
   /**

@@ -671,17 +671,23 @@ const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
 }
 
 template <typename T>
-const std::vector<RenderMesh>&
-GeometryState<T>::GetDrivenIllustrationRenderMeshes(GeometryId id) const {
+const std::vector<RenderMesh>& GeometryState<T>::GetDrivenRenderMeshes(
+    GeometryId id, Role role) const {
   const InternalGeometry* geometry = GetGeometry(id);
-  if (geometry == nullptr ||
-      !driven_illustration_meshes_.driven_meshes().contains(id)) {
+  if (geometry == nullptr || !geometry->has_role(role)) {
     throw std::logic_error(
         fmt::format("Referenced geometry {} is not a registered deformable "
-                    "geometry with illustration role",
-                    id));
+                    "geometry with specified role {}",
+                    id, role));
   }
-  return driven_illustration_meshes_.render_meshes(id);
+  if (role == Role::kPerception) {
+    return driven_perception_meshes_.render_meshes(id);
+  } else if (role == Role::kIllustration) {
+    return driven_illustration_meshes_.render_meshes(id);
+  } else if (role == Role::kProximity) {
+    return driven_proximity_meshes_.render_meshes(id);
+  }
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>
@@ -827,25 +833,34 @@ const VectorX<T>& GeometryState<T>::get_configurations_in_world(
 }
 
 template <typename T>
-std::vector<VectorX<T>>
-GeometryState<T>::GetIllustrationMeshConfigurationsInWorld(
-    GeometryId geometry_id) const {
+std::vector<VectorX<T>> GeometryState<T>::GetDrivenMeshConfigurationsInWorld(
+    GeometryId geometry_id, Role role) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
-    return "No illustration mesh data available for invalid geometry id: " +
+    return "No mesh configurations available for invalid geometry id: " +
            to_string(geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   DRAKE_THROW_UNLESS(geometry.is_deformable());
-  DRAKE_THROW_UNLESS(geometry.has_illustration_role());
-  std::vector<VectorX<T>> result;
-  DRAKE_THROW_UNLESS(
-      driven_illustration_meshes_.driven_meshes().contains(geometry_id));
-  const std::vector<DrivenTriangleMesh>& driven_meshes =
-      driven_illustration_meshes_.driven_meshes().at(geometry_id);
-  for (const auto& mesh : driven_meshes) {
-    result.emplace_back(mesh.GetDrivenVertexPositions());
+  DRAKE_THROW_UNLESS(geometry.has_role(role));
+
+  auto calc_configuration = [&](const internal::DrivenMeshData& data) {
+    std::vector<VectorX<T>> result;
+    DRAKE_THROW_UNLESS(data.driven_meshes().contains(geometry_id));
+    for (const auto& mesh : data.driven_meshes().at(geometry_id)) {
+      result.emplace_back(mesh.GetDrivenVertexPositions());
+    }
+    return result;
+  };
+
+  if (role == Role::kPerception) {
+    return calc_configuration(driven_perception_meshes_);
+  } else if (role == Role::kIllustration) {
+    return calc_configuration(driven_illustration_meshes_);
+  } else if (role == Role::kProximity) {
+    return calc_configuration(driven_proximity_meshes_);
+  } else {
+    DRAKE_UNREACHABLE();
   }
-  return result;
 }
 
 template <typename T>
@@ -1199,6 +1214,13 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       break;
     default:
       DRAKE_UNREACHABLE();
+  }
+
+  // If the geometry is deformable, we need to register its driven meshes. We
+  // always blindly throw out the old driven mesh data and replace it with a new
+  // driven mesh data.
+  if (geometry.is_deformable()) {
+    RegisterDrivenProximityMesh(geometry_id);
   }
 }
 
@@ -1978,6 +2000,28 @@ void GeometryState<T>::RegisterDrivenIllustrationMesh(GeometryId geometry_id) {
       driven_meshes.back().triangle_surface_mesh(), illustration_properties));
   driven_illustration_meshes_.SetMeshes(geometry_id, std::move(driven_meshes),
                                       std::move(render_meshes));
+}
+
+template <typename T>
+void GeometryState<T>::RegisterDrivenProximityMesh(GeometryId geometry_id) {
+  InternalGeometry& geometry = geometries_[geometry_id];
+  DRAKE_DEMAND(geometry.is_deformable());
+  DRAKE_DEMAND(geometry.has_proximity_role());
+  const ProximityProperties& proximity_properties =
+      *geometry.proximity_properties();
+
+  const VolumeMesh<double>* control_mesh_ptr = geometry.reference_mesh();
+  DRAKE_DEMAND(control_mesh_ptr != nullptr);
+  const VolumeMesh<double>& control_mesh = *control_mesh_ptr;
+
+  std::vector<DrivenTriangleMesh> driven_meshes;
+  driven_meshes.emplace_back(internal::MakeDrivenSurfaceMesh(control_mesh));
+
+  std::vector<RenderMesh> render_meshes;
+  render_meshes.emplace_back(MakeRenderMeshFromTriangleSurfaceMesh(
+      driven_meshes.back().triangle_surface_mesh(), proximity_properties));
+  driven_proximity_meshes_.SetMeshes(geometry_id, std::move(driven_meshes),
+                                     std::move(render_meshes));
 }
 
 template <typename T>

@@ -95,14 +95,12 @@ const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
 }
 
 template <typename T>
-std::vector<VectorX<T>>
-QueryObject<T>::GetIllustrationMeshConfigurationsInWorld(
-    GeometryId geometry_id) const {
+std::vector<VectorX<T>> QueryObject<T>::GetDrivenMeshConfigurationsInWorld(
+    GeometryId geometry_id, Role role) const {
   ThrowIfNotCallable();
-
   FullConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.GetIllustrationMeshConfigurationsInWorld(geometry_id);
+  return state.GetDrivenMeshConfigurationsInWorld(geometry_id, role);
 }
 
 template <typename T>

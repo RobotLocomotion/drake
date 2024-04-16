@@ -252,7 +252,7 @@ int do_main() {
 
   /* Add a visualizer that emits LCM messages for visualization. */
   geometry::DrakeVisualizerParams params;
-  params.role = geometry::Role::kIllustration;
+  params.role = geometry::Role::kProximity;
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
                                            params);
   /* We want to look in the -Py direction so we line up Bz with -Py.*/

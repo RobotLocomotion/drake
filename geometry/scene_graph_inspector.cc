@@ -271,10 +271,10 @@ const VolumeMesh<double>* SceneGraphInspector<T>::GetReferenceMesh(
 
 template <typename T>
 const std::vector<internal::RenderMesh>&
-SceneGraphInspector<T>::GetDrivenIllustrationRenderMeshes(
-    GeometryId geometry_id) const {
+SceneGraphInspector<T>::GetDrivenRenderMeshes(GeometryId geometry_id,
+                                              Role role) const {
   DRAKE_DEMAND(state_ != nullptr);
-  return state_->GetDrivenIllustrationRenderMeshes(geometry_id);
+  return state_->GetDrivenRenderMeshes(geometry_id, role);
 }
 
 template <typename T>

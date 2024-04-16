@@ -33,18 +33,6 @@ struct DynamicFrameData {
   std::string name;
 };
 
-/* Helper data structure to hold the topology and material information necessary
- to visualize the surface of a volume mesh. */
-struct DeformableMeshData {
-  GeometryId geometry_id;
-  /* The name of the deformable mesh. Included in all lcm messages.  */
-  std::string name;
-  /* Mesh representation of the deformable geometry to be visualized, along with
-   its render material information. The vertex positions in `render_meshes`
-   represents the deformable meshes' intial vertex positions. */
-  std::vector<RenderMesh> render_meshes;
-};
-
 /* If requested in @p params, adds a suffix to the provided LCM channel name,
  based on the geometry role. If a suffix is requested, the passed role
  parameter cannot be kUnassigned. See also DrakeVisualizerParams. */
@@ -111,7 +99,7 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
  | :--------: | :------: | :-----------: | :-------------: | :------------------- |
  |    phong   | no       | diffuse       |     Rgba        | The rgba value of the object surface. |
 
- <h4>Appearance of OBJ files</h4>
+ <h4>Appearance of OBJ files for non-deformable geometries</h4>
 
  Meshes represented by OBJ are special. The OBJ file can reference a material
  file (.mtl). If the mtl file is found by the receiving application, values in
@@ -275,7 +263,6 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    configuration of all deformable geometries at a given time. */
   static void SendDeformableGeometriesMessage(
       const QueryObject<T>& query_object, const DrakeVisualizerParams& params,
-      const std::vector<internal::DeformableMeshData>& deformable_data,
       double time, lcm::DrakeLcmInterface* lcm);
 
   /* Identifies all of the frames with dynamic data and stores them (with
@@ -302,22 +289,6 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
       std::vector<internal::DynamicFrameData>* frame_data);
-
-  /* Identifies all of the deformable geometries to be visualized and adds the
-   required visualization data to the `deformable_data`.
-   @note `deformable_data` is cleared before any data is added.
-   @note There are no guarantees on the order of the entries in
-        `deformable_data`. */
-  void CalcDeformableMeshData(
-      const systems::Context<T>& context,
-      std::vector<internal::DeformableMeshData>* deformable_data) const;
-
-  /* Recalculates and returns the cached deformable geometry data.  */
-  const std::vector<internal::DeformableMeshData>& RefreshDeformableMeshData(
-      const systems::Context<T>& context) const;
-
-  const std::vector<internal::DeformableMeshData>& EvalDeformableMeshData(
-      const systems::Context<T>& context) const;
 
   typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
       const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
@@ -355,9 +326,6 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   /* The index of the cache entry that stores the dynamic frame data for
    non-deformable geometries. */
   systems::CacheIndex frame_data_cache_index_{};
-
-  /* The index of the cache entry that stores the deformable geometry data.  */
-  systems::CacheIndex deformable_data_cache_index_{};
 
   /* The parameters for the visualizer.  */
   DrakeVisualizerParams params_;

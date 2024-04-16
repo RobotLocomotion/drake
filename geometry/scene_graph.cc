@@ -544,6 +544,8 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
       state.mutable_driven_perception_meshes();
   internal::DrivenMeshData& driven_illustration_meshes =
       state.mutable_driven_illustration_meshes();
+  internal::DrivenMeshData& driven_proximity_meshes =
+      state.mutable_driven_proximity_meshes();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.
@@ -572,6 +574,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
 
   driven_perception_meshes.SetControlMeshPositions(kinematics_data.q_WGs);
   driven_illustration_meshes.SetControlMeshPositions(kinematics_data.q_WGs);
+  driven_proximity_meshes.SetControlMeshPositions(kinematics_data.q_WGs);
   state.FinalizeConfigurationUpdate(kinematics_data,
                                     driven_perception_meshes,
                                     &state.mutable_proximity_engine(),

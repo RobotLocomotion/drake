@@ -397,15 +397,15 @@ class SceneGraphInspector {
            geometry.  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;
 
-  /** Returns the render mesh representation of the driven illustration meshes
-   for the geometry with the given `geometry_id`.
+  /** Returns the render mesh representation of the driven meshes associated
+   with the given `role` of the geometry with the given `geometry_id`.
 
    @param geometry_id      The identifier for the queried geometry.
    @throws std::exception  if `geometry_id` does not map to a registered
-                           deformable geometry with illustration role.
+                           deformable geometry with the given `role`.
    @experimental */
-  const std::vector<internal::RenderMesh>& GetDrivenIllustrationRenderMeshes(
-      GeometryId geometry_id) const;
+  const std::vector<internal::RenderMesh>& GetDrivenRenderMeshes(
+      GeometryId geometry_id, Role role) const;
 
   /** Returns true if the geometry with the given `geometry_id` is deformable.
    @param geometry_id   The identifier for the queried geometry.

@@ -213,7 +213,9 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   geometry_data.string_data = name;
 
   // Right now we only support a single diffuse color as the visualization
-  // material. Textures are not supported.
+  // material. Textures are not supported. If a material is specified in the
+  // given render mesh, use its diffuse color; otherwise use the default diffuse
+  // color.
   const Rgba& diffuse_color = render_mesh.material.has_value()
                                   ? render_mesh.material->diffuse
                                   : default_diffuse;
@@ -262,18 +264,6 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   DRAKE_DEMAND(header_floats + 3 * num_verts == (v_index + 1));
   DRAKE_DEMAND(geometry_data.num_float_data == (t_index + 1));
   return geometry_data;
-}
-
-/* Builds DeformableMeshData for geometry with the given geometry id. See
- DeformableMeshData.
- @pre g_id corresponds to a deformable geometry with illustration role. */
-template <typename T>
-internal::DeformableMeshData MakeDeformableMeshData(
-    GeometryId g_id, const SceneGraphInspector<T>& inspector) {
-  DRAKE_DEMAND(inspector.IsDeformableGeometry(g_id));
-  DRAKE_DEMAND(inspector.GetIllustrationProperties(g_id) != nullptr);
-  return {g_id, inspector.GetName(g_id),
-          inspector.GetDrivenIllustrationRenderMeshes(g_id)};
 }
 
 // Simple class for converting shape specifications into LCM-compatible shapes.
@@ -537,11 +527,6 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                               &DrakeVisualizer<T>::CalcDynamicFrameData,
                               {this->nothing_ticket()})
           .cache_index();
-  deformable_data_cache_index_ =
-      this->DeclareCacheEntry("deformable_data",
-                              &DrakeVisualizer<T>::CalcDeformableMeshData,
-                              {this->nothing_ticket()})
-          .cache_index();
 }
 
 template <typename T>
@@ -564,15 +549,13 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
     SendLoadNonDeformableMessage(
         query_object.inspector(), params_, RefreshDynamicFrameData(context),
         ExtractDoubleOrThrow(context.get_time()), lcm_);
-    RefreshDeformableMeshData(context);
   }
 
   SendDrawNonDeformableMessage(query_object, params_,
                                EvalDynamicFrameData(context),
                                ExtractDoubleOrThrow(context.get_time()), lcm_);
   SendDeformableGeometriesMessage(
-      query_object, params_, EvalDeformableMeshData(context),
-      ExtractDoubleOrThrow(context.get_time()), lcm_);
+      query_object, params_, ExtractDoubleOrThrow(context.get_time()), lcm_);
 
   return EventStatus::Succeeded();
 }
@@ -710,20 +693,28 @@ void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
 template <typename T>
 void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
     const QueryObject<T>& query_object, const DrakeVisualizerParams& params,
-    const vector<internal::DeformableMeshData>& deformable_data, double time,
-    lcm::DrakeLcmInterface* lcm) {
+    double time, lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_link_data message{};
   message.name = "deformable_geometries";
   message.robot_num = 0;  // robot_num = 0 corresponds to world frame.
-  for (int i = 0; i < ssize(deformable_data); ++i) {
-    const internal::DeformableMeshData& data = deformable_data[i];
-    const GeometryId g_id = data.geometry_id;
+  const SceneGraphInspector<T>& inspector = query_object.inspector();
+  const std::vector<GeometryId> deformable_geometries =
+      inspector.GetAllDeformableGeometryIds();
+  for (const auto& g_id : deformable_geometries) {
+    // If there are no render meshes for this deformable geometry for the
+    // particular role that the visualizer wants to visualize, then there is
+    // nothing to draw. Go to the next geometry.
+    if (inspector.GetProperties(g_id, params.role) == nullptr) {
+      continue;
+    }
+    const std::vector<internal::RenderMesh>& render_meshes =
+        inspector.GetDrivenRenderMeshes(g_id, params.role);
     const std::vector<VectorX<T>> vertex_positions =
-        query_object.GetIllustrationMeshConfigurationsInWorld(g_id);
-    DRAKE_DEMAND(vertex_positions.size() == data.render_meshes.size());
+        query_object.GetDrivenMeshConfigurationsInWorld(g_id, params.role);
+    DRAKE_DEMAND(ssize(vertex_positions) == ssize(render_meshes));
     for (int j = 0; j < ssize(vertex_positions); ++j) {
       message.geom.emplace_back(MakeDeformableSurfaceMesh(
-          data.name, vertex_positions[j], data.render_meshes[j],
+          inspector.GetName(g_id), vertex_positions[j], render_meshes[j],
           params.default_color));
     }
   }
@@ -782,40 +773,6 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
                                     "::" + inspector.GetName(frame_id)});
     }
   }
-}
-
-template <typename T>
-void DrakeVisualizer<T>::CalcDeformableMeshData(
-    const Context<T>& context,
-    vector<internal::DeformableMeshData>* deformable_data) const {
-  DRAKE_DEMAND(deformable_data != nullptr);
-  deformable_data->clear();
-  const auto& query_object =
-      query_object_input_port().template Eval<QueryObject<T>>(context);
-  const auto& inspector = query_object.inspector();
-  const std::vector<GeometryId> deformable_geometries =
-      inspector.GetAllDeformableGeometryIds();
-  for (const auto g_id : deformable_geometries) {
-    deformable_data->emplace_back(MakeDeformableMeshData(g_id, inspector));
-  }
-}
-
-template <typename T>
-const vector<internal::DeformableMeshData>&
-DrakeVisualizer<T>::RefreshDeformableMeshData(const Context<T>& context) const {
-  // We'll need to make sure our knowledge of deformable data can get updated.
-  this->get_cache_entry(deformable_data_cache_index_)
-      .get_mutable_cache_entry_value(context)
-      .mark_out_of_date();
-
-  return EvalDeformableMeshData(context);
-}
-
-template <typename T>
-const vector<internal::DeformableMeshData>&
-DrakeVisualizer<T>::EvalDeformableMeshData(const Context<T>& context) const {
-  return this->get_cache_entry(deformable_data_cache_index_)
-      .template Eval<vector<internal::DeformableMeshData>>(context);
 }
 
 template <typename T>
