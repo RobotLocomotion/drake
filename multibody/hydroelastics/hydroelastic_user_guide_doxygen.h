@@ -27,6 +27,48 @@ hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
 theory and practice of contact models. For notes on implementation status, see
 @ref hydro_appendix_b. Also see @ref hydro_appendix_examples_and_tutorials.
 
+@subsubsection hug_quick_hydro Hydroelastic Quick-start
+
+The @ref drake::geometry::DefaultProximityProperties
+"proximity default configuration settings" of SceneGraph offer a quick-start
+path to using hydroelastic contact without the need to fully annotate the
+collision geometries of robot models. (The full annotation process is described
+in @ref creating_hydro_reps.)
+
+While it is unlikely that the homogeneous parameters set by automatic
+hydroelastic configuration will be sufficient to model diverse sets of
+collision geometries, it may be a good starting point for some. It allows an
+incremental approach to adding hydroelastic annotations as needed.
+
+To get very simple and quick hydroelastic configuration, all that is needed is
+to set the configuration for drake::geometry::SceneGraph:
+
+@code
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.default_proximity_properties.compliance_type = "compliant";
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
+@endcode
+
+For an example of a trivial conversion of an existing simulation, see the <a
+href="https://github.com/RobotLocomotion/drake/tree/master/examples/simple_gripper">examples/simple_gripper</a>
+program in the Drake source code. It offers a `--default_compliance_type`
+command line option, which permits trying various compliance types.
+
+All of the geometries in contexts created for the scene graph will be annotated
+with a default set of proximity properties.
+
+These transformations will allow hydroelastic contact to work, but the values
+of the properties may not be ideal. The default set of properties are
+controlled by drake::geometry::DefaultProximityProperties. They can be changed
+for each application.
+
+Having used scene graph configuration proximity defaults to get up and running,
+it may still be useful to add specific hydroelastic annotations to model
+files. Any explicit properties in model files (or applied by calling Drake
+APIs) will take precedence over the default proximity properties for the
+annotated geometries.
+
 @subsection hug_working_with_hydro Working with Hydroelastic Contact
 
 It is relatively simple to enable a simulation to use hydroelastic
@@ -89,7 +131,8 @@ Models @ref drake::multibody::ContactModel::kHydroelastic "kHydroelastic" and
 @ref drake::multibody::ContactModel::kHydroelasticWithFallback
 "kHydroelasticWithFallback" will both enable the hydroelastic contact. For
 forces to be created from hydroelastic contact, geometries need to have
-hydroelastic representations (see @ref creating_hydro_reps).
+hydroelastic representations (see @ref hug_quick_hydro,
+@ref creating_hydro_reps).
 
 @ref drake::multibody::ContactModel::kHydroelastic "kHydroelastic" is a strict
 contact model that will attempt to create a hydroelastic contact surface
@@ -116,10 +159,16 @@ point-contact fallback is applied will decrease.
 
 @subsubsection creating_hydro_reps Creating hydroelastic representations of collision geometries
 
-By default no geometry in drake::geometry::SceneGraph has a hydroelastic
-representation. So, enabling hydroelastic contact in `MultibodyPlant`, but
-forgetting to configure the geometries will lead to either simulation crashes
-or point contact-based forces.
+There are three ways to configure hydroelastic representations for collision
+geometries:
+- by using drake::geometry::DefaultProximityProperties (see @ref hug_quick_hydro)
+- by annotating model files (see @ref hug_file_specs)
+- programmatically (see @ref hug_code_properties)
+
+If none of the above are done, no geometry in drake::geometry::SceneGraph has a
+hydroelastic representation. So, enabling hydroelastic contact in
+`MultibodyPlant`, but forgetting to configure the geometries will lead to
+either simulation crashes or point contact-based forces.
 
 In order for a mesh to be given a hydroelastic representation, it must be
 assigned certain properties. The exact properties it needs depends on the Shape
@@ -383,9 +432,9 @@ does not have any contact patch.
 @subsection hug_pitfalls Pitfalls/Troubleshooting
 
 Here are various ways that hydroelastic contact may surprise you.
-- By default, a rigid body is not a rigid hydroelastic body until users say
-  so. Otherwise, it is ignored by the hydroelastic contact model and might get
-  point contact instead.
+- A rigid body is not a rigid hydroelastic body until users say so (see
+  @ref creating_hydro_reps). Otherwise, it is ignored by the hydroelastic
+  contact model and might get point contact instead.
   - Users need to call AddRigidHydroelasticProperties() or use the URDF or
     SDFormat tag <drake:rigid_hydroelastic/>.
 - Backface culling -- the visualized contact surface is not what you
