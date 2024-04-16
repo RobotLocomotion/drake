@@ -27,6 +27,7 @@ class TestProperties : public GeometryProperties {
 
 GTEST_TEST(GeometryProperties, ManagingGroups) {
   TestProperties properties;
+  ASSERT_TRUE(properties.IsEmpty());
   const string& group_name{"some_group"};
   // Only contains the default group.
   ASSERT_EQ(1, properties.num_groups());
@@ -35,6 +36,7 @@ GTEST_TEST(GeometryProperties, ManagingGroups) {
 
   // Add the group for the first time by adding a property.
   properties.AddProperty(group_name, "junk_value", 1);
+  ASSERT_FALSE(properties.IsEmpty());
   ASSERT_TRUE(properties.HasGroup(group_name));
   ASSERT_EQ(2, properties.num_groups());
 

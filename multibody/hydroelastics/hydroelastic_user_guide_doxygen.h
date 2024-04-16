@@ -27,6 +27,51 @@ hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
 theory and practice of contact models. For notes on implementation status, see
 @ref hydro_appendix_b. Also see @ref hydro_appendix_examples_and_tutorials.
 
+@subsubsection hug_quick_hydro Hydroelastic Quickstart
+
+The proximity default configuration settings of SceneGraph offer a quick-start
+path to using hydroelastic contact, without the need to fully annotate the
+collision geometries of robot models. (The full annotation process is described
+in the sections following this one.)
+
+While it is unlikely that the homogeneous parameters set by automatic
+hydroelastic configuration will be sufficient to model diverse sets of
+collision geometries, it may be a good starting point for some. It allows an
+incremental approach to adding hydroelastic annotations as needed.
+
+To get very simple and quick hydroelastic configuration, all that is needed is
+to set a configuration item for drake::geometry::SceneGraph:
+
+@code
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.default_proximity_properties.compliance_type = "compliant";
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
+@endcode
+
+For an example of a trivial conversion of an existing simulation, see the <a
+href="https://github.com/RobotLocomotion/drake/tree/master/examples/simple_gripper">examples/simple_gripper</a>
+program in the Drake source code. It offers a `--default_compliance_type`
+command line option, which permits trying various compliance types.
+
+All of the geometries in contexts created for the scene graph will be annotated
+with a default set of proximity properties. In addition, geometries that
+receive a compliance type of "compliant", and are too small to be compatible
+with generation of a volume mesh, will be ignored for collisions. This allows
+quick adaption of models that have been augmented with tiny collision spheres
+to operate with point contact.
+
+These transformations will allow hydroelastic contact to work, but the values
+of the properties may not be ideal. The default set of properties are
+controlled by drake::geometry::DefaultProximityProperties, and can be changed
+for each application.
+
+Having used scene graph configuration proximity defaults to get up and running,
+it may still be useful to add specific hydroelastic annotations to model
+files. Any explicit properties in model files (or applied by calling Drake
+APIs) will take precedence over the default proximity properties for the
+annotated geometries.
+
 @subsection hug_working_with_hydro Working with Hydroelastic Contact
 
 It is relatively simple to enable a simulation to use hydroelastic
