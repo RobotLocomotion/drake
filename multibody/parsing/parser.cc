@@ -2,10 +2,13 @@
 
 #include <optional>
 #include <set>
+#include <utility>
 
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_collision_filter_groups_impl.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_instanced_name.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_select_parser.h"
@@ -16,10 +19,20 @@ namespace multibody {
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using internal::CollisionFilterGroupResolver;
+using internal::CollisionFilterGroupsImpl;
 using internal::DataSource;
+using internal::InstancedName;
 using internal::ParserInterface;
 using internal::ParsingWorkspace;
 using internal::SelectParser;
+
+// Storage for internals that need to have the same lifetime as a Parser
+// instance, but avoid adding internal namespace details to parser.h.
+struct Parser::ParserInternalData {
+  // Collision filter groups that use InstancedName. This representation is
+  // invariant with respect to model renaming via the plant.
+  CollisionFilterGroupsImpl<InstancedName> collision_filter_groups_storage_;
+};
 
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph)
@@ -32,7 +45,7 @@ Parser::Parser(MultibodyPlant<double>* plant,
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph,
                std::string_view model_name_prefix)
-    : plant_(plant) {
+    : plant_(plant), data_(new Parser::ParserInternalData) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   if (!model_name_prefix.empty()) {
@@ -54,14 +67,40 @@ Parser::Parser(MultibodyPlant<double>* plant,
   diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
+Parser::~Parser() {}
+
+CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
+  // Convert the data from the internal type back to the user-visible type.
+  auto convert = [this](const internal::InstancedName& input) -> std::string {
+    std::string result;
+    if (input.index.has_value()) {
+      auto scoped = ScopedName::Join(plant_->GetModelInstanceName(*input.index),
+                                     input.name);
+      result = scoped.get_full();
+    } else {
+      result = input.name;
+    }
+    return result;
+  };
+
+  // Merge the internal data into an empty object of the user-visible type, and
+  // return it.
+  internal::CollisionFilterGroupsImpl<std::string> result;
+  internal::MergeCollisionFilterGroups<std::string, internal::InstancedName>(
+      &result, data_->collision_filter_groups_storage_, convert);
+  return CollisionFilterGroups(std::move(result));
+}
+
 std::vector<ModelInstanceIndex> Parser::AddModels(
     const std::filesystem::path& file_name) {
   const std::string filename_string{file_name.string()};
   DataSource data_source(DataSource::kFilename, &filename_string);
   ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  return parser.AddAllModels(data_source, model_name_prefix_,
-                             composite->workspace());
+  auto result = parser.AddAllModels(data_source, model_name_prefix_,
+                                    composite->workspace());
+  composite->Finish();
+  return result;
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
@@ -80,8 +119,36 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
   const std::string pseudo_name(data_source.GetStem() + "." + file_type);
   ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  return parser.AddAllModels(data_source, model_name_prefix_,
-                             composite->workspace());
+  auto result = parser.AddAllModels(data_source, model_name_prefix_,
+                                    composite->workspace());
+  composite->Finish();
+  return result;
+}
+
+void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
+    internal::CollisionFilterGroupResolver* resolver) {
+  DRAKE_DEMAND(resolver != nullptr);
+
+  resolver->Resolve(diagnostic_policy_);
+
+  // Convert scoped names into InstancedNames for storage in between parses.
+  auto convert = [this](const std::string& input)
+                 -> internal::InstancedName {
+    internal::InstancedName result;
+    auto scoped = ScopedName::Parse(input);
+    if (plant_->HasModelInstanceNamed(scoped.get_namespace())) {
+      result.index = plant_->GetModelInstanceByName(scoped.get_namespace());
+    }
+    result.name = scoped.get_element();
+    return result;
+  };
+
+  // Merge the groups found during a composite parse into the accumulated groups
+  // held by this parser.
+  MergeCollisionFilterGroups<internal::InstancedName, std::string>(
+      &data_->collision_filter_groups_storage_,
+      resolver->GetCollisionFilterGroups(),
+      convert);
 }
 
 }  // namespace multibody
