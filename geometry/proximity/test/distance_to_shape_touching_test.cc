@@ -151,6 +151,41 @@ GTEST_TEST(PointInBox, PointOnBoxSurfaceHelper) {
   }
 }
 
+// Test corner cases of PointOnBoxSurfaceHelper() due to numerical errors.
+// It is inspired by issue 21192. This test shows that we can get wrong
+// classification due to imperfect numerical precisions.
+GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) {
+  const fcl::Boxd box_B(0.25, 0.25, 0.25);
+  // See documentation of PointOnBoxSurfaceHelper() for the meaning of these
+  // return encoding vector.
+  const Vector3d kVertexXYZ(1, 1, 1);
+  const Vector3d kEdgeXY(1, 1, 0);
+  const Vector3d kFaceX(1, 0, 0);
+  const Vector3d kNone(0, 0, 0);
+  {
+    // Position of a corner vertex of the box.
+    const Vector3d p_BQ(0.125, 0.125, 0.125);
+
+    // With perfect precisions, it is classified as a vertex of the box.
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ, box_B), kVertexXYZ);
+  }
+  {
+    // Within an acceptable tolerance, it is still classified as a vertex.
+    const Vector3d p_BQ(0.125 - 1e-14, 0.125 - 1e-14, 0.125 - 1e-14);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ, box_B), kVertexXYZ);
+  }
+  {
+    // However, more numerical errors can trigger wrong classification in
+    // various ways.
+    const Vector3d p_BQ_edge(0.125, 0.125, 0.125 - 1e-13);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_edge, box_B), kEdgeXY);
+    const Vector3d p_BQ_face(0.125, 0.125 - 1e-13, 0.125 - 1e-13);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_face, box_B), kFaceX);
+    const Vector3d p_BQ_none(0.125 - 1e-13, 0.125 - 1e-13, 0.125 - 1e-13);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_none, box_B), kNone);
+  }
+}
+
 GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
   // This box spans [-2,2]x[-3,3]x[-6,6]. Half the length of its diagonal
   // is 7 because 2² + 3² + 6² = 4 + 9 + 36 = 49 = 7². We will use this fact
