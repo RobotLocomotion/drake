@@ -21,6 +21,11 @@ class CompositeParse {
   // Build and return a new composite parse object.
   static std::unique_ptr<CompositeParse> MakeCompositeParse(Parser* parser);
 
+  // Prior to destroying this object, users of this class should call Finish()
+  // exactly once, to complete our interaction with the Parser. This operation
+  // can throw an exception, so must NOT be done during stack unwinding.
+  void Finish();
+
   ~CompositeParse();
 
   // @returns a const reference to a workspace. Note that some objects pointed
@@ -31,6 +36,7 @@ class CompositeParse {
  private:
   explicit CompositeParse(Parser* parser);
 
+  Parser* const parser_;
   CollisionFilterGroupResolver resolver_;
   const ParsingOptions options_;
   const ParsingWorkspace workspace_;
