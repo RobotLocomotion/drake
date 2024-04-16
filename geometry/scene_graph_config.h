@@ -9,11 +9,9 @@ namespace drake {
 namespace geometry {
 
 
-// TODO(rpoyner-tri): adjust doc when implementation is ready.
-// TODO(rpoyner-tri): ref hydro user quick start doc when available.
-/** (FUTURE) These properties will be used as defaults when the geometry as
+/** These properties will be used as defaults when the geometry as
 added via API calls or parsed from model files doesn't say anything more
-specific.  @see @ref hug_title, @ref hug_properties,
+specific.  @see @ref hug_title, @ref hug_quick_hydro, @ref hug_properties,
 @ref stribeck_approximation. */
 struct DefaultProximityProperties {
   /** Passes this object to an Archive.
@@ -59,7 +57,7 @@ struct DefaultProximityProperties {
 
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
-  std::optional<double> slab_thickness{10.0};
+  std::optional<double> slab_thickness;
   /// @}
 
   /** @name General Contact Properties
@@ -87,7 +85,7 @@ struct DefaultProximityProperties {
 
   /** @name Point Contact Properties
 
-  These properties point contact only. For complete descriptions of
+  These properties affect point contact only. For complete descriptions of
   the numeric parameters, @see geometry::AddContactMaterial. */
   /// @{
   /** A measure of material stiffness, in units of Newtons per meter. */
@@ -98,8 +96,7 @@ struct DefaultProximityProperties {
   void ValidateOrThrow() const;
 };
 
-// TODO(rpoyner-tri): document SceneGraph integration when ready.
-/** (FUTURE) The set of configurable properties on a SceneGraph. */
+/** The set of configurable properties on a SceneGraph. */
 struct SceneGraphConfig {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -108,7 +105,6 @@ struct SceneGraphConfig {
     a->Visit(DRAKE_NVP(default_proximity_properties));
   }
 
-  // TODO(rpoyner-tri): ref hydro user quick start doc when available.
   /** Provides SceneGraph-wide contact material values to use when none have
   been otherwise specified. */
   DefaultProximityProperties default_proximity_properties;
