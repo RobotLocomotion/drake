@@ -9,6 +9,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
+#include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
 namespace drake {
@@ -18,6 +20,7 @@ namespace {
 using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
 using multibody::JointIndex;
+using multibody::QuaternionFloatingJoint;
 
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
                      const LinearDistanceAndInterpolationProvider& provider,
@@ -385,6 +388,118 @@ directives:
   {
     std::map<JointIndex, Eigen::VectorXd> invalid_quat_weights;
     invalid_quat_weights[get_index("flying_robot_base")] =
+        (Eigen::VectorXd(7) << 1, 2, 3, 4, 5, 6, 7).finished();
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LinearDistanceAndInterpolationProvider(model->plant(),
+                                               invalid_quat_weights),
+        ".* for quaternion dof .* must be .* instead.*");
+  }
+
+  // Invalid weights (vector).
+  {
+    Eigen::VectorXd invalid_quat_weights(14);
+    invalid_quat_weights << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LinearDistanceAndInterpolationProvider(model->plant(),
+                                               invalid_quat_weights),
+        ".* for quaternion dof .* must be .* instead.*");
+  }
+}
+
+GTEST_TEST(FloatingJointIiwaTest, Test) {
+  RobotDiagramBuilder<double> builder;
+
+  const std::string model_directives = R"""(
+directives:
+  - add_model:
+      name: ground_plane_box
+      file: package://drake/planning/test_utilities/collision_ground_plane.sdf
+  - add_weld:
+      parent: world
+      child: ground_plane_box::ground_plane_box
+  - add_model:
+      name: flying_robot_base
+      file: package://drake/planning/test_utilities/flying_robot_base.sdf
+  - add_model:
+      name: iiwa
+      file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+  - add_weld:
+      parent: flying_robot_base::flying_robot_base
+      child: iiwa::base
+)""";
+
+  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
+
+  auto joint = std::make_unique<multibody::QuaternionFloatingJoint<double>>(
+      "robot_base_floating_joint", builder.plant().GetFrameByName("world"),
+      builder.plant().GetFrameByName("flying_robot_base"));
+  builder.plant().AddJoint(std::move(joint));
+
+  std::unique_ptr<RobotDiagram<double>> model = builder.Build();
+
+  const auto get_index = [&](const std::string& joint_name) {
+    return model->plant().GetJointByName(joint_name).index();
+  };
+
+  // Default weights (none).
+  {
+    const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+    Eigen::VectorXd expected_weights(14);
+    expected_weights << 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
+
+    DoFloatingIiwaTest(*model, provider, expected_weights);
+  }
+
+  // Default weights (empty map).
+  {
+    const LinearDistanceAndInterpolationProvider provider(
+        model->plant(), std::map<JointIndex, Eigen::VectorXd>{});
+
+    Eigen::VectorXd expected_weights(14);
+    expected_weights << 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
+
+    DoFloatingIiwaTest(*model, provider, expected_weights);
+  }
+
+  // Non-default weights (map).
+  {
+    std::map<JointIndex, Eigen::VectorXd> joint_weights;
+    joint_weights[get_index("iiwa_joint_1")] = Vector1d(1.0);
+    joint_weights[get_index("iiwa_joint_2")] = Vector1d(2.0);
+    joint_weights[get_index("iiwa_joint_3")] = Vector1d(3.0);
+    joint_weights[get_index("iiwa_joint_4")] = Vector1d(4.0);
+    joint_weights[get_index("iiwa_joint_5")] = Vector1d(5.0);
+    joint_weights[get_index("iiwa_joint_6")] = Vector1d(6.0);
+    joint_weights[get_index("iiwa_joint_7")] = Vector1d(7.0);
+    joint_weights[get_index("robot_base_floating_joint")] =
+        (Eigen::VectorXd(7) << 11, 0, 0, 0, 12, 13, 14).finished();
+
+    const LinearDistanceAndInterpolationProvider provider(model->plant(),
+                                                          joint_weights);
+
+    Eigen::VectorXd expected_weights(14);
+    expected_weights << 11, 0, 0, 0, 12, 13, 14, 1, 2, 3, 4, 5, 6, 7;
+
+    DoFloatingIiwaTest(*model, provider, expected_weights);
+  }
+
+  // Non-default weights (vector).
+  {
+    Eigen::VectorXd weights(14);
+    weights << 11, 0, 0, 0, 12, 13, 14, 1, 2, 3, 4, 5, 6, 7;
+
+    const LinearDistanceAndInterpolationProvider provider(model->plant(),
+                                                          weights);
+
+    DoFloatingIiwaTest(*model, provider, weights);
+  }
+
+  // Invalid weights (map).
+  {
+    std::map<JointIndex, Eigen::VectorXd> invalid_quat_weights;
+    invalid_quat_weights[get_index("robot_base_floating_joint")] =
         (Eigen::VectorXd(7) << 1, 2, 3, 4, 5, 6, 7).finished();
     DRAKE_EXPECT_THROWS_MESSAGE(
         LinearDistanceAndInterpolationProvider(model->plant(),
