@@ -503,36 +503,6 @@ directives:
   }
 }
 
-// Reproduction case from issue #21215.
-GTEST_TEST(SceneGraphCollisionCheckerTest, QuaternionFloatingJoint) {
-  RobotDiagramBuilder<double> builder;
-  const std::string model_directives = R"""(
-directives:
-- add_model:
-    name: arm
-    file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
-- add_weld:
-    parent: world
-    child: arm::base
-- add_model:
-    name: cracker
-    file: package://drake_models/ycb/003_cracker_box.sdf
-    default_free_body_pose:
-        base_link_cracker:
-            base_frame: arm::iiwa_link_ee
-)""";
-  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
-
-  const auto& plant = builder.plant();
-  CollisionCheckerParams params;
-  params.model = builder.Build();
-  params.robot_model_instances.push_back(plant.GetModelInstanceByName("arm"));
-  params.edge_step_size = 0.05;
-
-  // The default LinearDistanceAndInterpolationProvider must not throw.
-  EXPECT_NO_THROW(SceneGraphCollisionChecker(std::move(params)));
-}
-
 }  // namespace test
 }  // namespace planning
 }  // namespace drake

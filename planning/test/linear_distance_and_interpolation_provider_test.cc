@@ -407,6 +407,36 @@ directives:
   }
 }
 
+// Reproduction case from issue #21215.
+GTEST_TEST(QuaternionFloatingJointTest, Test) {
+  const auto model = MakePlanningTestModel("dmd.yaml", R"""(
+directives:
+- add_model:
+    name: arm
+    file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: world
+    child: arm::base
+- add_model:
+    name: cracker
+    file: package://drake_models/ycb/003_cracker_box.sdf
+    default_free_body_pose:
+        base_link_cracker:
+            base_frame: arm::iiwa_link_ee
+)""");
+
+  const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+  // Make sure that the floating joint between iiwa_link_ee and cracker box has
+  // been identified as quaternion DoF by the interpolation provider.
+  const auto& cracker_floating_joint =
+      model->plant().GetJointByName("base_link_cracker");
+
+  EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
+  EXPECT_EQ(provider.quaternion_dof_start_indices().at(0),
+            cracker_floating_joint.position_start());
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace planning
