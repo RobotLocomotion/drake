@@ -9,6 +9,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
+#include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
 namespace drake {
@@ -18,6 +20,7 @@ namespace {
 using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
 using multibody::JointIndex;
+using multibody::QuaternionFloatingJoint;
 
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
                      const LinearDistanceAndInterpolationProvider& provider,
@@ -402,6 +405,36 @@ directives:
                                                invalid_quat_weights),
         ".* for quaternion dof .* must be .* instead.*");
   }
+}
+
+// Reproduction case from issue #21215.
+GTEST_TEST(QuaternionFloatingJointTest, Test) {
+  const auto model = MakePlanningTestModel("dmd.yaml", R"""(
+directives:
+- add_model:
+    name: arm
+    file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: world
+    child: arm::base
+- add_model:
+    name: cracker
+    file: package://drake_models/ycb/003_cracker_box.sdf
+    default_free_body_pose:
+        base_link_cracker:
+            base_frame: arm::iiwa_link_ee
+)""");
+
+  const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+  // Make sure that the floating joint between iiwa_link_ee and cracker box has
+  // been identified as quaternion DoF by the interpolation provider.
+  const auto& cracker_floating_joint =
+      model->plant().GetJointByName("base_link_cracker");
+
+  EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
+  EXPECT_EQ(provider.quaternion_dof_start_indices().at(0),
+            cracker_floating_joint.position_start());
 }
 
 }  // namespace
