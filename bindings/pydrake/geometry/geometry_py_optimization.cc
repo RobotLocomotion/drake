@@ -142,7 +142,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("CalcVolumeViaSampling", &ConvexSet::CalcVolumeViaSampling,
             py::arg("generator"), py::arg("desired_rel_accuracy") = 1e-2,
             py::arg("max_num_samples") = 1e4, cls_doc.CalcVolumeViaSampling.doc)
-        .def("Projection", &ConvexSet::Projection, py::arg("point"),
+        .def("Projection", &ConvexSet::Projection, py::arg("points"),
             cls_doc.Projection.doc);
   }
   // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
