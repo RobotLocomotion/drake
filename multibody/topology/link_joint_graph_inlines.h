@@ -40,7 +40,7 @@ inline auto LinkJointGraph::joints(JointIndex joint_index) const
 }
 
 inline auto LinkJointGraph::mutable_joint(JointIndex joint_index) -> Joint& {
-  return data_.joints[joint_index];
+  return data_.joints.at(joint_index);
 }
 
 inline void LinkJointGraph::set_mobod_for_joint(JointIndex joint_index,

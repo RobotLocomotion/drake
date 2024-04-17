@@ -92,57 +92,63 @@ ForestBuildingOptions (global or per-model instance) determine
   - what kind of Joint we use to mobilize unconnected root Links: 0 dof fixed,
     6 dof roll-pitch-yaw floating, or 6 dof quaternion floating.
 
-Here is an expansion of the above three phases:
+Here is an expansion of the above three phases. The code refers back to the
+numbering here for clarification.
 
 1. Construct a forest with good topology
-   - Add the World mobilized body to the forest at level 0.
-   - Add missing Joints to World if needed for (a) Static Links,
-     and (b) Links marked "MustBeBaseBody". (Links can be static due
-     to individual LinkFlags or membership in a static model instance.)
-   - ExtendTrees(all existing base bodies)   (see algorithm below)
-   - While there are unprocessed _jointed_ (articulated) Links
-       - Choose an unprocessed Link L and model it with a new Mobod B that is
-         to be the root node (base body) of a new tree. L is chosen by picking
-         the "best" base Link according to some policy.
-         (Heuristic: pick one that never appears as a child of a Joint.)
-       - ExtendTrees(B)  (just this one tree; see algorithm below)
-   - While there are unprocessed _unjointed_ Links (single bodies)
-       - Each of these can be the base body of a new one-Mobod tree
-       - If a Link is in a "use fixed base" model instance, weld it to World.
-         If we're combining welded links it just joins the World LinkComposite
-         and does not form a new Tree.
-       - Otherwise add a floating Joint to World (rpy or quaternion depending
-         on options) and start a new Tree.
-       - Note that any unjointed _static_ Link, or a Link in a static model
-         instance, had a weld joint added in the second step above so was
-         processed in the first call to ExtendTrees().
+   1.1 Add the World mobilized body to the forest at level 0.
+   1.2 Add missing Joints to World if needed for
+     a) Static Links, and
+     b) Links marked "MustBeBaseBody".
+     (Links can be static due to individual LinkFlags or membership in a static
+     model instance.)
+   1.3 ExtendTrees(all existing base bodies)   (see algorithm E below)
+   1.4 While there are unprocessed _jointed_ (articulated) Links
+     a) Choose an unprocessed Link L and model it with a new Mobod B that is
+        to be the root node (base body) of a new tree. L is chosen by picking
+        the "best" base Link according to some policy.
+        (Heuristic: pick one that never appears as a child of a Joint.)
+     b) ExtendTrees(B)  (just this one tree; see algorithm below)
+   1.5 While there are unprocessed _unjointed_ Links (single bodies)
+     a) Each of these can be the base body of a new one-Mobod tree
+     b) If a Link is in a "use fixed base" model instance, weld it to World.
+        If we're combining welded links it just joins the World LinkComposite
+        and does not form a new Tree.
+     c) Otherwise add a floating Joint to World (rpy or quaternion depending
+        on options) and start a new Tree.
+     d) Note that any unjointed _static_ Link, or a Link in a static model
+        instance, had a weld joint added in the second step above so was
+        processed in the first call to ExtendTrees().
 
-   Algorithm ExtendTrees(tree_base_bodies):
-       - Extend each tree one level at a time.
-       - Process all level 1 (base) Links directly jointed to World.
-       - Then process all level 2 Links jointed to level 1 Links, etc.
-       - Composites are (optionally) modeled with a single Mobod (one level).
-       - If we encounter a Link that has already been processed there is a
-         loop. Split the Link onto primary and shadow Mobods and add a loop
-         constraint to weld them back together.
+   E. Algorithm ExtendTrees(tree_base_bodies):
+      E.1 Extend each tree one level at a time.
+      E.2 Process all level 1 (base) Links directly jointed to World.
+      E.3 Then process all level 2 Links jointed to level 1 Links, etc.
+      E.4 Composites are (optionally) modeled with a single Mobod (one level).
+      E.5 If we encounter a Link that has already been processed there is a
+          loop. Split the Link onto primary and shadow Mobods and add a loop
+          constraint to weld them back together.
 
 2. Reorder depth first
-   - Determine the depth first re-ordering of the mobilized bodies.
-   - Use that reordering to update the SpanningForest in place.
+   2.1 Determine the depth first re-ordering of the mobilized bodies.
+   2.2 Use that reordering to update the SpanningForest in place.
 
 3. Assign coordinates q and velocities v
-   - Each tree gets a consecutive set of q's and a consecutive set of v's,
-     doled out following the depth-first ordering of the trees.
-   - Build maps from q and v to corresponding Mobod (includes fast q,v->Tree
-     also).
+   3.1 Each tree gets a consecutive set of q's and a consecutive set of v's,
+       doled out following the depth-first ordering of the trees.
+   3.2 Build maps from q and v to corresponding Mobod (includes fast q,v->Tree
+       also).
+   3.3 Precalculate for each Mobod the number of coordinates along its inboard
+       path to World and in the outboard subtree for which it is the root.
 */
 void SpanningForest::BuildForest() {
   Clear();  // In case we're reusing this forest.
 
   SetBaseBodyChoicePolicy();
 
-  // Model the World (Link 0) with mobilized body 0. This also starts the 0th
-  // LinkComposite in the graph and the 0th Welded Mobods group in the Forest.
+  /* Model the World (Link 0) with mobilized body 0. This also starts the 0th
+  LinkComposite in the graph and the 0th Welded Mobods group in the Forest.
+  (1.1) */
   data_.mobods.emplace_back(MobodIndex(0), BodyIndex(0));
   data_.welded_mobods.emplace_back(std::vector{MobodIndex(0)});
   data_.mobods[MobodIndex(0)].welded_mobods_index_ = WeldedMobodsIndex(0);
@@ -152,21 +158,22 @@ void SpanningForest::BuildForest() {
 
   data_.forest_height = 1;  // Just World so far.
 
-  // Decide on forward/reverse mobilizers; combine LinkComposites onto a single
-  // Mobod; choose links to serve as base (root) bodies and add 6dof mobilizers
-  // for them; split loops; add shadow bodies and weld constraints.
+  /* Decide on forward/reverse mobilizers; combine LinkComposites so that all
+  the Links in a LinkComposite follow a single Mobod; choose links to serve
+  as base (root) bodies and add 6dof mobilizers for them; split loops; add
+  shadow bodies and weld constraints. (1.2-1.5) */
   ChooseForestTopology();
 
-  // Determine the desired depth-first ordering and apply it.
+  /* Determine the desired depth-first ordering and apply it. (Phase 2) */
   const std::vector<MobodIndex> old_to_new = CreateDepthFirstReordering();
   FixupForestToUseNewNumbering(old_to_new);
 
-  // Dole out the q's and v's, depth-first.
+  /* Dole out the q's and v's, depth-first. (Phase 3) */
   AssignCoordinates();
 }
 
 void SpanningForest::ChooseForestTopology() {
-  // When this goes to zero, we're done (World is already done).
+  /* When this goes to zero, we're done (World is already done). */
   int num_unprocessed_links = ssize(links()) - 1;
 
   /* Every Static Link should be welded to World. If there is not an explicit
@@ -174,14 +181,14 @@ void SpanningForest::ChooseForestTopology() {
   won't be modeled since they will be be interior to the World LinkComposite,
   but they are necessary edges for graph analysis. */
 
-  // First, look through the model instances to see if any of them are static
-  // and if so weld all their bodies to World.
+  /* Look through the model instances to see if any of them are static and if so
+  weld all their bodies to World. (1.2a) */
   for (const auto& [instance, links] : graph().data_.model_instance_to_links) {
     if (!model_instance_is_static(instance)) continue;
     ConnectLinksToWorld(links, true /* use weld joint */);
   }
 
-  // Second, add welds for any links that were explicitly marked "static".
+  /* Add welds for any links that were explicitly marked "static". (1.2a) */
   ConnectLinksToWorld(graph().static_links(), true /* use weld joint */);
 
   /* Every MustBeBaseBody Link must have a Joint directly connecting it to
@@ -190,14 +197,14 @@ void SpanningForest::ChooseForestTopology() {
   to building the Forest because they are necessary edges for graph analysis.
   For example, they can create cycles in the graph that need to be removed in
   the Forest. Note that Static Links were processed above and are not repeated
-  on the must_be_base_body list even if they were so designated. */
+  on the must_be_base_body list even if they were so designated. (1.2b) */
   ConnectLinksToWorld(graph().non_static_must_be_base_body_links(),
                       false /* use floating joint */);
 
   /* Now grow all the trees whose base bodies have joints to World (or to the
   World LinkComposite). This includes: (a) Links which were explicitly jointed
   to World by the user, (b) Static Links for which we just added weld joints,
-  and (c) MustBeBaseBody Links for which we just added floating joints. */
+  and (c) MustBeBaseBody Links for which we just added floating joints. (1.3) */
   ExtendTrees(graph().world_link().joints(), &num_unprocessed_links);
 
   /* What's left unprocessed now (if anything) is a collection of disjoint
@@ -207,20 +214,20 @@ void SpanningForest::ChooseForestTopology() {
   of the non-trivial (articulated) subgraphs, we need to select one of its Links
   as the "best" base according to some policy, and then extend from there to
   build a spanning tree for that subgraph. Finally, we make each of the lone
-  free body "trees" last. */
+  free body "trees". (1.4-1.5) */
   ChooseBaseBodiesAndAddTrees(&num_unprocessed_links);
 
   DRAKE_DEMAND(num_unprocessed_links == 0);
 }
 
-/* Given the forest of mobilized bodies numbered in some arbitrary
-order, reorder them depth-first. (The arbitrary numbering was produced by the
-construction algorithm which may, for example, prefer to balance chain
-lengths when breaking loops.) Considering the result as a forest of trees
-rooted at their base bodies, the new numbering has the property that all mobods
-in tree i have lower indexes than any mobod in tree i+1. And within a tree,
-all mobods in the leftmost branch have lower numbers than any mobod in the
-next branch. */
+/* Given the forest of mobilized bodies numbered in some arbitrary order,
+reorder them depth-first. (The arbitrary numbering was produced by the
+construction algorithm which may, for example, prefer to balance chain lengths
+when breaking loops.) Considering the result as a forest of trees rooted at
+their base bodies, the new numbering has the property that all mobods in tree i
+have lower indexes than any mobod in tree i+1. And within a tree, all mobods in
+the leftmost branch have lower numbers than any mobod in the next branch.
+(2.1) */
 std::vector<MobodIndex> SpanningForest::CreateDepthFirstReordering() const {
   const int num_mobods = ssize(mobods());
 
@@ -235,8 +242,8 @@ std::vector<MobodIndex> SpanningForest::CreateDepthFirstReordering() const {
     old_to_new[top_index] = next++;
     to_process.pop();  // Done with this one.
 
-    // Push outboard bodies in reverse order so we'll process them in the
-    // order they were defined.
+    /* Push outboard bodies in reverse order so we'll process them in the
+    order they were defined. */
     const std::vector<MobodIndex>& outboard_mobods =
         mobods(top_index).outboard_mobods_;
     for (auto outboard = outboard_mobods.rbegin();
@@ -245,17 +252,17 @@ std::vector<MobodIndex> SpanningForest::CreateDepthFirstReordering() const {
     }
   }
 
-  // Every mobilized body should have been processed.
+  /* Every mobilized body should have been processed. */
   DRAKE_DEMAND(next == num_mobods);
   return old_to_new;
 }
 
 /* Applies the given mapping to renumber all Mobods and references to them
-within the forest and its owning graph. */
+within the forest and its owning graph. (2.2) */
 void SpanningForest::FixupForestToUseNewNumbering(
     const std::vector<MobodIndex>& old_to_new) {
-  // First update each Mobod to use only the new MobodIndex values, and
-  // record the highest-numbered Mobod in each tree.
+  /* First update each Mobod to use only the new MobodIndex values, and
+  record the highest-numbered Mobod in each tree. */
   for (auto& mobod : data_.mobods) {
     mobod.FixupAfterReordering(old_to_new);
     if (!mobod.is_world()) {
@@ -267,13 +274,18 @@ void SpanningForest::FixupForestToUseNewNumbering(
 
   const int num_mobods = ssize(mobods());
 
-  // Next, sort the Mobods into the proper order. Despite appearances, this
-  // is an O(n) algorithm, and usually num_swaps << n.
+  /* Next, sort the Mobods into the proper order. Despite appearances, this
+  is an O(n) algorithm, and usually num_swaps << n. */
   int num_swaps = 0;
   for (MobodIndex new_index(1);  // World is always right already.
        new_index < num_mobods && num_swaps < num_mobods; ++new_index) {
-    while (mobods(new_index).index_ != new_index) {
-      data_.mobods[new_index].Swap(data_.mobods[mobods(new_index).index_]);
+    // Work on the current Mobod until it holds the right one. Each iteration
+    // puts one Mobod in its right location so this must terminate.
+    Mobod& current_mobod = data_.mobods[new_index];
+    while (current_mobod.index() != new_index) {
+      // Move current_mobod to its final location; replace with whatever was
+      // there before.
+      current_mobod.Swap(data_.mobods[current_mobod.index()]);
       ++num_swaps;
     }
   }
@@ -284,17 +296,17 @@ void SpanningForest::FixupForestToUseNewNumbering(
   for (auto& welded_mobods : data_.welded_mobods)
     Mobod::RenumberMobodIndexVector(old_to_new, &welded_mobods);
 
-  // Fix up the Mobod references in the LinkJointGraph.
+  /* Fix up the Mobod references in the LinkJointGraph. */
   mutable_graph().RenumberMobodIndexes(old_to_new);
 }
 
 /* Dole out the q's and v's to each of the Mobods, following the depth-first
-ordering. */
+ordering. (Phase 3) */
 void SpanningForest::AssignCoordinates() {
   int next_q = 0, next_v = 0;
 
-  // O(n) outward pass assigns coordinates, counts inboard ones, and builds map
-  // from coordinates to Mobods.
+  /* O(n) outward pass assigns coordinates, counts inboard ones, and builds map
+  from coordinates to Mobods. (3.1, 3.2, and part of 3.3) */
   for (auto& mobod : data_.mobods) {
     mobod.q_start_ = next_q;
     mobod.v_start_ = next_v;
@@ -310,15 +322,15 @@ void SpanningForest::AssignCoordinates() {
     mobod.nq_ = joint_type.nq;
     mobod.nv_ = joint_type.nv;
 
-    // Keep a running count of inboard coordinates.
+    /* Keep a running count of inboard coordinates. */
     DRAKE_DEMAND(mobod.inboard().is_valid());  // Non-World must have inboard.
     const Mobod& parent = mobods(mobod.inboard());
-    // Parent should have been processed before child.
+    /* Parent should have been processed before child. */
     DRAKE_DEMAND(parent.nq_inboard_ >= 0 && parent.nv_inboard_ >= 0);
     mobod.nq_inboard_ = parent.nq_inboard_ + mobod.nq_;
     mobod.nv_inboard_ = parent.nv_inboard_ + mobod.nv_;
 
-    // Map coordinates to their Mobod.
+    /* Map coordinates to their Mobod. */
     DRAKE_DEMAND(ssize(data_.q_to_mobod) == next_q &&
                  ssize(data_.v_to_mobod) == next_v);
     for (int i = 0; i < mobod.nq_; ++i)
@@ -330,7 +342,8 @@ void SpanningForest::AssignCoordinates() {
     next_v += mobod.nv_;
   }
 
-  // O(n) inward pass counts outboard bodies and coordinates for each Mobod.
+  /* O(n) inward pass counts outboard bodies and coordinates for each Mobod.
+  (the rest of 3.3) */
   for (auto m = data_.mobods.rbegin(); m != data_.mobods.rend(); ++m) {
     m->nq_outboard_ = m->nv_outboard_ = 0;
     m->num_subtree_mobods_ = 1;  // Count this one.
@@ -346,33 +359,34 @@ void SpanningForest::AssignCoordinates() {
   }
 }
 
+/* Phase 1 steps 1.4 and 1.5. */
 void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
-  /* Use the active base body choice policy to create a priority queue of
-  links that could be base bodies. */
-  std::priority_queue<BodyIndex, std::vector<BodyIndex>,
-                      decltype(data_.base_body_policy)>
-      eligible_bases(data_.base_body_policy);
-
-  // This just collects up all the lone free links.
-  std::vector<BodyIndex> unjointed_links;
-
-  // Loop is O(j log j) + O(k); j: #remaining jointed links, k: #free links.
+  /* Partition the unmodeled links into jointed and unjointed. O(n) */
+  std::vector<BodyIndex> jointed_links, unjointed_links;
   for (const auto& link : links()) {
     const BodyIndex link_index = link.index();
     if (link_is_already_in_forest(link_index)) continue;
     if (ssize(link.joints()) == 0) {
-      unjointed_links.push_back(link_index);  // O(1)
+      unjointed_links.push_back(link_index);
     } else {
-      eligible_bases.push(link_index);  // O(log j)
+      jointed_links.push_back(link_index);
     }
   }
 
+  /* Use the active base body choice policy to create a priority queue of
+  links that could be base bodies. Complexity is O(j) to create a
+  priority_queue of j jointed links. */
+  std::priority_queue<BodyIndex, std::vector<BodyIndex>,
+                      decltype(data_.base_body_policy)>
+      eligible_bases(data_.base_body_policy, std::move(jointed_links));
+
   /* Process all the non-trivial (more than one link) subgraphs. Pop the top
-  off the priority queue to get the best base link, then grow that tree. */
+  off the priority queue to get the best base link, then grow that tree.
+  (1.4) Complexity is O(j log j). */
   while (*num_unprocessed_links > ssize(unjointed_links)) {
     DRAKE_DEMAND(!eligible_bases.empty());  // Must be something here!
     const BodyIndex next_base_link = eligible_bases.top();
-    eligible_bases.pop();
+    eligible_bases.pop();                                     // O(log j)
     if (link_is_already_in_forest(next_base_link)) continue;  // try another one
     const ModelInstanceIndex model_instance_index =
         links(next_base_link).model_instance();
@@ -389,7 +403,7 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
   Tree. Although static links and links belonging to a static model instance
   get welded to World at the start of forest building, it is still possible
   to need a weld here for a lone link that is in a "use fixed base" model
-  instance (that's not technically a static link). */
+  instance (that's not technically a static link). (1.5) */
   DRAKE_DEMAND(*num_unprocessed_links == ssize(unjointed_links));
 
   for (BodyIndex unjointed_link : unjointed_links) {
@@ -427,6 +441,7 @@ void SpanningForest::ExtendTreesOneLevel(
     std::vector<JointIndex>* joints_to_model_next) {
   DRAKE_DEMAND(!joints_to_model.empty());
   DRAKE_DEMAND(num_unprocessed_links != nullptr);
+  DRAKE_DEMAND(joints_to_model_next != nullptr);
   joints_to_model_next->clear();
 
   for (JointIndex joint_index : joints_to_model) {
@@ -476,20 +491,15 @@ void SpanningForest::ExtendTreesOneLevel(
   }
 }
 
-/* Adds a new mobilized body outboard of the given inboard body:
-   - sets the level to one higher than the inboard level
-   - if inboard is World, starts a new tree otherwise new Mobod is in
-     the same tree as inboard
-   - adds the new Mobod to the list of outboard Mobods in the inboard body
-   - updates maps of link-to-mobod and joint-to-mobod
-   - if joint type is Weld, we are creating or joining a WeldedMobods group;
-     if that is the World group then the Mobod is "anchored". */
+// See documentation in header before trying to decipher this.
 const SpanningForest::Mobod& SpanningForest::AddNewMobod(
     BodyIndex outboard_link_index, JointIndex joint_index,
     MobodIndex inboard_mobod_index, bool is_reversed) {
   const Joint& joint = joints(joint_index);
 
   // Careful -- don't hold Mobod references until _after_ we grow the vector.
+
+  // Create the new Mobod one level higher than the inboard Mobod.
   const int inboard_level = mobods(inboard_mobod_index).level();
   const MobodIndex new_mobod_index(ssize(mobods()));
   Mobod& new_mobod =
@@ -497,7 +507,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
                                 joint_index, inboard_level + 1, is_reversed);
   Mobod& inboard_mobod = data_.mobods[inboard_mobod_index];
 
-  // If the inboard body is World, start a new Tree.
+  // If the inboard Mobod is World, start a new Tree.
   TreeIndex tree_index = inboard_mobod.tree();
   if (!tree_index.is_valid()) {
     DRAKE_DEMAND(inboard_mobod.is_world());  // Otherwise should have a tree.
@@ -507,7 +517,8 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
     if (data_.forest_height < 2) data_.forest_height = 2;
   }
 
-  // At this point tree_index selects the valid Tree to put new_mobod in.
+  // At this point tree_index selects the right Tree. Put new_mobod in and
+  // update tree and forest stats.
   Tree& tree = data_.trees[tree_index];
   new_mobod.tree_index_ = tree_index;
   if (new_mobod.level_ > tree.height_) {
@@ -524,7 +535,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
   mutable_graph().set_mobod_for_joint(joint_index, new_mobod_index);
 
   // Build up both WeldedMobods group (in forest) and LinkComposite (in graph)
-  // if we have a Weld joint, starting new ones if necessary.
+  // if we have a Weld joint, starting a new group or composite as needed.
   if (joint.type_index() == LinkJointGraph::weld_joint_type_index()) {
     if (!inboard_mobod.welded_mobods_index_.is_valid()) {
       inboard_mobod.welded_mobods_index_ =

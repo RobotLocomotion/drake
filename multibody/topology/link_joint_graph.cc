@@ -421,18 +421,21 @@ JointIndex LinkJointGraph::AddEphemeralJointToWorld(
 }
 
 LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
-    BodyIndex existing_link_index, BodyIndex new_link_index) {
-  DRAKE_ASSERT(existing_link_index.is_valid() && new_link_index.is_valid());
-  Link& existing_link = data_.links[existing_link_index];
-  Link& new_link = data_.links[new_link_index];
+    BodyIndex maybe_composite_link_index, BodyIndex new_link_index) {
+  DRAKE_ASSERT(maybe_composite_link_index.is_valid() &&
+               new_link_index.is_valid());
+  Link& maybe_composite_link = mutable_link(maybe_composite_link_index);
+  Link& new_link = mutable_link(new_link_index);
   DRAKE_DEMAND(!new_link.is_world());
-  LinkCompositeIndex existing_composite = existing_link.link_composite_index_;
+
+  LinkCompositeIndex existing_composite =
+      maybe_composite_link.link_composite_index_;
   if (!existing_composite.is_valid()) {
-    // We're starting a new Link Composite. This must be the "active link"
+    // We're starting a new LinkComposite. This must be the "active link"
     // for this Composite because we saw it first while building the Forest.
-    existing_composite = existing_link.link_composite_index_ =
+    existing_composite = maybe_composite_link.link_composite_index_ =
         LinkCompositeIndex(ssize(data_.link_composites));
-    data_.link_composites.emplace_back(std::vector{existing_link_index});
+    data_.link_composites.emplace_back(std::vector{maybe_composite_link_index});
   }
   data_.link_composites[existing_composite].push_back(new_link_index);
   new_link.link_composite_index_ = existing_composite;
@@ -447,16 +450,16 @@ void LinkJointGraph::RenumberMobodIndexes(
 }
 
 std::tuple<BodyIndex, BodyIndex, bool> LinkJointGraph::FindInboardOutboardLinks(
-    MobodIndex mobod_index, JointIndex joint_index) const {
+    MobodIndex inboard_mobod_index, JointIndex joint_index) const {
   const Joint& joint = joints(joint_index);
   const Link& parent_link = links(joint.parent_link());
   if (parent_link.mobod_index().is_valid() &&
-      parent_link.mobod_index() == mobod_index) {
+      parent_link.mobod_index() == inboard_mobod_index) {
     return std::make_tuple(joint.parent_link(), joint.child_link(), false);
   }
   const LinkJointGraph::Link& child_link = links(joint.child_link());
   DRAKE_DEMAND(child_link.mobod_index().is_valid() &&
-               child_link.mobod_index() == mobod_index);
+               child_link.mobod_index() == inboard_mobod_index);
   return std::make_tuple(joint.child_link(), joint.parent_link(), true);
 }
 

@@ -446,14 +446,15 @@ class LinkJointGraph {
   // using the given map.
   void RenumberMobodIndexes(const std::vector<MobodIndex>& old_to_new);
 
-  // While building the Forest, we're trying to add the given Joint outboard of
-  // the given Mobod. At least one of the Joint's two Links must already be
-  // modeled with that Mobod. That one will be the inboard Link. If that's the
-  // parent Link then parent->child and inboard->outboard will match, otherwise
-  // the mobilizer must be reversed. The bool return is true if we're reversing.
-  // tuple is: inboard, outboard, is_reversed
+  // The Forest already has the given (inboard) Mobod, and we want to add a new
+  // Mobod outboard of that one to model the given Joint. At least one of the
+  // Joint's two Links must already be following the inboard Mobod. That one
+  // will be the inboard Link (that is, the Link following the more-inboard
+  // Mobod). If that's the Joint's parent Link then parent->child and
+  // inboard->outboard will match, otherwise the mobilizer must be reversed.
+  // Returned tuple is: inboard link, outboard link, is_reversed.
   std::tuple<BodyIndex, BodyIndex, bool> FindInboardOutboardLinks(
-      MobodIndex mobod_index, JointIndex joint_index) const;
+      MobodIndex inboard_mobod_index, JointIndex joint_index) const;
 
   // Adds the ephemeral Joint for a floating or fixed base Link to mirror a
   // mobilizer added during BuildForest(). World is the parent and the given
@@ -461,11 +462,11 @@ class LinkJointGraph {
   JointIndex AddEphemeralJointToWorld(JointTypeIndex type_index,
                                       BodyIndex child_link_index);
 
-  // Adds the new link to the composite of which the existing_link is a
-  // member. If the existing_link is not a member of any composite, then we
-  // create a new composite with the existing_link as the first (and hence
-  // "active") link.
-  LinkCompositeIndex AddToLinkComposite(BodyIndex existing_link_index,
+  // Adds the new Link to the LinkComposite of which maybe_composite_link is a
+  // member. If maybe_composite_link is not a member of any LinkComposite, then
+  // we create a new LinkComposite with maybe_composite_link as the first
+  // (and hence "active") Link.
+  LinkCompositeIndex AddToLinkComposite(BodyIndex maybe_composite_link_index,
                                         BodyIndex new_link_index);
 
   // Finds the assigned index for a joint type from the type name. Returns an
