@@ -108,7 +108,9 @@ class _DuplicateLoadMessageDetector:
     """
 
     def __init__(self):
-        self._prior_message = None
+        # The encoding and link count from the last unique load message.
+        self._prior_message_encoding = None
+        self._prior_link_count = 0
         self._path_hashes = {}
 
     def set_load_robot(self, *, message: lcmt_viewer_load_robot):
@@ -117,8 +119,9 @@ class _DuplicateLoadMessageDetector:
         assert isinstance(message, lcmt_viewer_load_robot)
 
         # The very first message is necessarily novel.
-        if self._prior_message is None:
-            self._prior_message = message
+        if self._prior_message_encoding is None:
+            self._prior_message_encoding = message.encode()
+            self._prior_link_count = message.num_links
             assert len(self._path_hashes) == 0
             return True
 
@@ -126,17 +129,20 @@ class _DuplicateLoadMessageDetector:
         # message, and all files used while processing the prior load message
         # remain unchanged. (The num_links check is redundant with the encode
         # check, but is a very fast way detect common kinds of novelty.)
-        if (message.num_links == self._prior_message.num_links
-                and message.encode() == self._prior_message.encode()
-                and all([
-                    self._hash(path=path) == old_hash
-                    for path, old_hash in self._path_hashes.items()
-                ])):
-            # This message is a no-op.
-            return False
+        encoding = None
+        if message.num_links == self._prior_link_count:
+            encoding = message.encode()
+            if (encoding == self._prior_message_encoding
+                    and all([
+                        self._hash(path=path) == old_hash
+                        for path, old_hash in self._path_hashes.items()
+                    ])):
+                # This message is a no-op.
+                return False
 
         # This is a novel message, so we'll reset everything.
-        self._prior_message = message
+        self._prior_message_encoding = encoding or message.encode()
+        self._prior_link_count = message.num_links
         self._path_hashes = {}
         return True
 

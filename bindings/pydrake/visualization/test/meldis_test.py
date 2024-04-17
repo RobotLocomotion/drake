@@ -351,7 +351,6 @@ class TestMeldis(unittest.TestCase):
         with open(mtl_filename, "w") as f:
             f.write("newmtl test_mat\n")
             f.write("Kd 1 0 0")
-        old_hashes = applet._load_deduplicator._path_hashes.copy()
         applet.on_viewer_load(load_message)
         self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
         applet.on_viewer_draw(draw_message)
