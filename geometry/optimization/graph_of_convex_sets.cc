@@ -782,8 +782,7 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
     prog->AddRotatedLorentzConeConstraint(A_cone,
                                           VectorXd::Zero(rc->A().rows()), vars);
-  } else if (PositiveSemidefiniteConstraint* pc =
-                 dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
+  } else if (typeid(*constraint) == typeid(PositiveSemidefiniteConstraint)) {
     // Since we have ϕ ≥ 0, we have S ≽ 0 ⇔ ϕS ≽ 0.
     // It is sufficient to add the original constraint to the program (with the
     // new variables).
