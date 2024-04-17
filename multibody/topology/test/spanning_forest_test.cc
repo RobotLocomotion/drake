@@ -442,7 +442,7 @@ We'll also verify that parent->child direction is preserved as inboard->outboard
 when possible, but reversed otherwise.
 
 To test we use these subgraphs, with no connections to World. The link that
-should be chose for the base body is marked with an asterisk:
+should be chosen for the base body is marked with an asterisk:
   -> gives joint's parent->child direction
 
            {Links}
@@ -501,13 +501,15 @@ or by having been specified with the Static link flag; we test both of those
 here. Forest building should add a weld joint to World for every static link
 unless there is already an explicit weld; we'll check that here.
 
-Link composites are always computed and consist of subgraphs of links that
-are mutually welded together. Depending on forest building options, we may
-use a single Mobod for a link composite, or we may use a Mobod for each of
-those welded-together links. In the latter case we also compute "welded
-Mobod" groups consisting of Mobods that are mutually connected by weld
-mobilizers. If we're not combining then there should be only a single
-welded Mobod group, consisting only of the World Mobod.
+LinkComposites are always computed and consist of subgraphs of links that are
+mutually welded together (directly or indirectly). Depending on forest building
+options, we may use a single Mobod for a LinkComposite, or we may use a Mobod
+for each of those welded-together links. In the latter case we also compute
+"welded Mobod" groups consisting of Mobods that are mutually interconnected by
+weld mobilizers (directly or indirectly). When we're modeling each
+LinkComposite with just one Mobod, there won't be any welded-together Mobods.
+By convention, there will still be one welded Mobod group, consisting just
+of the World Mobod.
 
 We'll also check that coordinates are assigned properly and that pre-calculated
 forest counts are correct.
@@ -528,8 +530,8 @@ The LinkJointGraph
     * link10 would be the preferred base link but link 11 "base11" is marked
       "must be base link" so we have to use a reversed mobilizer there
 
-SpanningForest 1 (don't combine link composites)
-------------------------------------------------
+SpanningForest 1 (don't combine LinkComposites)
+-----------------------------------------------
   ≡> added weld joint       [mobods]
   6> added floating joint   {links}
 
@@ -542,15 +544,18 @@ SpanningForest 1 (don't combine link composites)
      1 [6]    =>static7
      2 [7]    ≡>static6        (added weld)
      3 [8]    ≡>static8        (added weld)
-     4 [9-10] 6>base11<=link10 (added 6dof, reversed the user's weld)
+     4 [9-10] 6>base11=>link10 (added 6dof, reversed the user's weld)
      5 [11]   6>free9          (added 6dof, free bodies are always last)
 
-  Link Composites:  {0 7 6 8} {11 10}
+  LinkComposites:  {0 7 6 8} {11 10}
   Welded Mobods groups: [0 6 7 8] [9 10]
 
   The particular ordering results from (a) user-supplied Joints get processed
   before added ones, and (b) static model instance Links get welded prior
   to individually-specified static Links in non-static model instances.
+  However, note that we do not promise any particular ordering other than
+  (1) World is always present and is first, and (2) the active link comes first
+  in any LinkComposite.
 
   TODO(sherm1) Rebuild with CombineLinkComposites options and check the result.
 */
@@ -580,8 +585,9 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const BodyIndex static7_index =
       graph.AddLink("static7", static_model_instance);
   graph.AddLink("static8", model_instance, LinkFlags::kStatic);
-  graph.AddJoint("static7_weld", model_instance,  // OK
-                 "weld", graph.world_link().index(), static7_index);
+  // Manually adding a weld to World is allowable for a static Link.
+  graph.AddJoint("static7_weld", model_instance, "weld",
+                 graph.world_link().index(), static7_index);
   // Now add a free link and a free-floating pair.
   graph.AddLink("free9", model_instance);
 
@@ -611,8 +617,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const std::vector<BodyIndex> link_composites0{BodyIndex(0), BodyIndex(7),
                                                 BodyIndex(6), BodyIndex(8)};
   const std::vector<BodyIndex> link_composites1{BodyIndex(11), BodyIndex(10)};
-  const std::vector expected_link_composites{link_composites0,
-                                             link_composites1};
+  const std::vector<std::vector<BodyIndex>> expected_link_composites{
+      link_composites0, link_composites1};
   EXPECT_EQ(graph.link_composites(), expected_link_composites);
 
   EXPECT_EQ(ssize(forest.mobods()), 12);
