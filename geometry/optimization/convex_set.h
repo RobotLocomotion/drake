@@ -375,10 +375,19 @@ class ConvexSet {
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const;
 
-  /**
-   * A non-virtual interface implementation for PointInSet() that should be used
-   * when the PointInSet() can be computed more efficiently than solving a
-   * convex program.
+  /** A non-virtual interface implementation for PointInSet() that should be
+   used when the PointInSet() can be computed more efficiently than solving a
+   convex program.
+
+   @returns Returns true if and only if x is known to be in the set. Returns
+   false if and only if x is known to not be in the set. Returns std::nullopt
+   if a shortcut implementation is not provided (i.e. the method has not
+   elected to decide whether the point x is in the set).
+
+   For example, membership in a VPolytope cannot be verified without solving a
+   linear program and so no shortcut implementation should be provided. On the
+   other hand, membership in an HPolyhedron can be checked by checking the
+   inequality Ax ≤ b and so a shortcut is possible.
    */
   virtual std::optional<bool> DoPointInSetShortcut(
       const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const {
