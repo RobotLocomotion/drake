@@ -681,12 +681,6 @@ void GraphOfConvexSets::AddPerspectiveCost(
   }
 }
 
-/*
-Adds the perspective of the constraint in `binding` to `prog`.
-@param binding is a constraint bound to _placeholder_ variables for yz.
-@param vars` is a list of variables [phi, yz], where `phi` is the scaling
-variable to be used in the perspective.
-*/
 void GraphOfConvexSets::AddPerspectiveConstraint(
     MathematicalProgram* prog, const Binding<Constraint>& binding,
     const VectorXDecisionVariable& vars) const {
@@ -782,7 +776,8 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     A_cone.block(0, 1, rc->A().rows(), rc->A().cols()) = rc->A_dense();
     prog->AddRotatedLorentzConeConstraint(A_cone,
                                           VectorXd::Zero(rc->A().rows()), vars);
-  } else if (typeid(*constraint) == typeid(PositiveSemidefiniteConstraint)) {
+  } else if (dynamic_cast<PositiveSemidefiniteConstraint*>(constraint) !=
+             nullptr) {
     // Since we have ϕ ≥ 0, we have S ≽ 0 ⇔ ϕS ≽ 0.
     // It is sufficient to add the original constraint to the program (with the
     // new variables).
