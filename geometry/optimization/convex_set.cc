@@ -111,30 +111,33 @@ ConvexSet::Projection(const Eigen::Ref<const Eigen::MatrixXd>& points) const {
     if (this->IsEmpty()) {
       return std::nullopt;
     }
-    std::vector<double> distances(points.cols(), 0.0);
+    const std::vector<double> distances(points.cols(), 0.0);
     return std::make_pair(distances, points);
   }
   std::vector<double> distances(points.cols(), 0.0);
   Eigen::MatrixXd projected_points(points.rows(), points.cols());
-  std::vector<Eigen::VectorXd> unprojected_points_vect;
-  std::vector<int> unprojected_inds;
-  unprojected_points_vect.reserve(points.cols());
 
-  const auto [shortcut_distances, shortcut_projected_points] =
-      ProjectionShortcut(points);
-  for (int i = 0; i < points.cols(); ++i) {
-    if (shortcut_distances[i].has_value()) {
-      distances[i] = shortcut_distances[i].value();
-      projected_points.col(i) = shortcut_projected_points.col(i);
-    } else {
-      unprojected_inds.emplace_back(i);
-      unprojected_points_vect.push_back(points.col(i));
-    }
+  std::vector<std::optional<double>> shortcut_distances =
+      DoProjectionShortcut(points, &projected_points);
+  int num_unprojected =
+      std::count_if(shortcut_distances.begin(), shortcut_distances.end(),
+                    [](const std::optional<double>& opt) {
+                      return !opt.has_value();
+                    });
+  if (num_unprojected == points.cols()) {
+    // All projections need to be computed using the generic implementation.
+    return GenericDoProjection(points);
   }
-  Eigen::MatrixXd unprojected_points(projected_points.rows(),
-                                     ssize(unprojected_inds));
-  for (int i = 0; i < ssize(unprojected_points_vect); ++i) {
-    unprojected_points.col(i) = unprojected_points_vect[i];
+
+  // Compute the projections of the unprojected points.
+  Eigen::MatrixXd unprojected_points(projected_points.rows(), num_unprojected);
+  int unprojected_ind = 0;
+  for (int i = 0; i < points.cols(); ++i) {
+    if (!shortcut_distances.at(i).has_value()) {
+      unprojected_points.col(unprojected_ind++) = points.col(i);
+    } else {
+      distances.at(i) = shortcut_distances.at(i).value();
+    }
   }
   const auto maybe_project = GenericDoProjection(unprojected_points);
   if (!maybe_project.has_value()) {
@@ -142,10 +145,12 @@ ConvexSet::Projection(const Eigen::Ref<const Eigen::MatrixXd>& points) const {
   }
   const auto [remaining_distances, remaining_projected_points] =
       maybe_project.value();
-  for (int i = 0; i < ssize(unprojected_inds); ++i) {
-    distances[unprojected_inds[i]] = remaining_distances[i];
-    projected_points.col(unprojected_inds[i]) =
-        remaining_projected_points.col(i);
+  unprojected_ind = 0;
+  for (int i = 0; i < points.cols(); ++i) {
+    if (!shortcut_distances.at(i).has_value()) {
+      projected_points.col(i) = remaining_projected_points.col(unprojected_ind);
+      distances.at(i) = remaining_distances.at(unprojected_ind++);
+    }
   }
   return std::make_pair(distances, projected_points);
 }
@@ -190,42 +195,33 @@ ConvexSet::GenericDoProjection(
   return std::make_pair(distances, projected_points);
 }
 
-std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
-ConvexSet::ProjectionShortcut(
-    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+std::vector<std::optional<double>> ConvexSet::DoProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points,
+    Eigen::MatrixXd* projected_points) const {
+  DRAKE_DEMAND(projected_points != nullptr);
+  DRAKE_DEMAND(projected_points->rows() == points.rows() &&
+               projected_points->cols() == points.cols());
+
   // If we have a fast point in set shortcut, use it first.
   const double kTol =
       1e-12;  // This is below the tolerance of most convex solvers.
   std::vector<std::optional<double>> distances(points.cols(), std::nullopt);
-  Eigen::MatrixXd projected_points(points.rows(), points.cols());
-  std::vector<Eigen::VectorXd> unprojected_points_vect;
-  std::vector<int> unprojected_inds;
-  unprojected_points_vect.reserve(points.cols());
+
   for (int i = 0; i < points.cols(); ++i) {
     const auto point_in_set_shortcut =
         DoPointInSetShortcut(points.col(i), kTol);
-    if (point_in_set_shortcut.has_value() && point_in_set_shortcut.value()) {
+    if (!point_in_set_shortcut.has_value()) {
+      // If DoPointInSetShortcut returns nullopt, then it will return nullopt
+      // for all calls and therefore we can exit early.
+      break;
+    }
+    // The point known to be in the set.
+    if (point_in_set_shortcut.value()) {
       distances[i] = 0;
-      projected_points.col(i) = points.col(i);
-    } else {
-      unprojected_inds.push_back(i);
-      unprojected_points_vect.push_back(points.col(i));
+      projected_points->col(i) = points.col(i);
     }
   }
-
-  Eigen::MatrixXd unprojected_points(projected_points.rows(),
-                                     ssize(unprojected_inds));
-  for (int i = 0; i < ssize(unprojected_points_vect); ++i) {
-    unprojected_points.col(i) = unprojected_points_vect[i];
-  }
-  const auto [distances_shortcut, projected_points_shortcut] =
-      DoProjectionShortcut(unprojected_points);
-  for (int i = 0; i < ssize(unprojected_inds); ++i) {
-    distances[unprojected_inds[i]] = distances_shortcut[i];
-    projected_points.col(unprojected_inds[i]) =
-        projected_points_shortcut.col(i);
-  }
-  return {distances, projected_points};
+  return distances;
 }
 
 bool ConvexSet::DoIsEmpty() const {

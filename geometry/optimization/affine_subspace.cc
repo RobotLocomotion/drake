@@ -242,13 +242,14 @@ double AffineSubspace::DoCalcVolume() const {
 Eigen::MatrixXd AffineSubspace::Project(
     const Eigen::Ref<const Eigen::MatrixXd>& x) const {
   DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
-  const auto [_, projected_points] = DoProjectionShortcut(x);
+  Eigen::MatrixXd projected_points = Eigen::MatrixXd::Zero(x.rows(), x.cols());
+  DoProjectionShortcut(x, &projected_points);
   return projected_points;
 }
 
-std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
-AffineSubspace::DoProjectionShortcut(
-    const Eigen::Ref<const Eigen::MatrixXd>& points) const {
+std::vector<std::optional<double>> AffineSubspace::DoProjectionShortcut(
+    const Eigen::Ref<const Eigen::MatrixXd>& points,
+    Eigen::MatrixXd* projected_points) const {
   // If the set is a point, the projection is just that point. This also
   // directly handles the zero-dimensional case.
   const auto maybe_point = DoMaybeGetPoint();
@@ -258,23 +259,24 @@ AffineSubspace::DoProjectionShortcut(
     std::vector<std::optional<double>> distances(
         eigen_dists.data(), eigen_dists.data() + eigen_dists.size());
     if (points.cols() == 1) {
-      return {distances, maybe_point.value()};
+      projected_points->col(0) = maybe_point.value();
+      return distances;
     } else {
       // Outer product, which will return x.cols() copies of the feasible
       // point.
-      return {distances,
-              maybe_point.value() * Eigen::RowVectorXd::Ones(points.cols())};
+      *projected_points =
+          maybe_point.value() * Eigen::RowVectorXd::Ones(points.cols());
+      return distances;
     }
   }
   const Eigen::MatrixXd least_squares =
       basis_decomp_->solve(points.colwise() - translation_);
-  const Eigen::MatrixXd projected_points =
-      (basis_ * least_squares).colwise() + translation_;
+  *projected_points = (basis_ * least_squares).colwise() + translation_;
   const Eigen::VectorXd eigen_dists =
-      (points - projected_points).colwise().norm();
+      (points - *projected_points).colwise().norm();
   std::vector<std::optional<double>> distances(
       eigen_dists.data(), eigen_dists.data() + eigen_dists.size());
-  return {distances, projected_points};
+  return distances;
 }
 
 Eigen::MatrixXd AffineSubspace::ToLocalCoordinates(

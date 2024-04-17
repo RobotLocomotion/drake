@@ -282,7 +282,7 @@ class ConvexSet {
 
   /** Computes in the L₂ norm the distance and the nearest point in this convex
    set to every column of @p points. If this set is empty, we return nullopt.
-   @pre point.size() == ambient_dimension().
+   @pre points.rows() == ambient_dimension().
    @throws if the internal convex optimization solver fails. */
   std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>> Projection(
       const Eigen::Ref<const Eigen::MatrixXd>& points) const;
@@ -322,19 +322,33 @@ class ConvexSet {
     return std::nullopt;
   }
 
-  /** Provides an implementation for DoProjectionShortcut(). Trivially
-  returns std::nullopt for all the distances. This allows a derived class to
-  implement its own projection, to potentially avoid the more expensive base
-  class implementation.
-  @pre ambient_dimension() >= 0 */
-  virtual std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
-  DoProjectionShortcut(const Eigen::Ref<const Eigen::MatrixXd>& points) const {
-    std::vector<std::optional<double>> distances(points.cols(), std::nullopt);
-    // There is no need to initialize the values in this matrix since we don't
-    // promise that they are sensible.
-    Eigen::MatrixXd nearest_points(points.rows(), points.cols());
-    return {distances, nearest_points};
-  }
+  /** Non-virtual interface implementation for DoProjectionShortcut().
+
+  This allows a derived class to implement a method which computes the
+  projection of some, but not necessarily all, of the @p points more efficiently
+  than the generic implementation.
+
+  The default implementation checks whether each column of @p points is in the
+  set using DoPointInSetShortcut. Points in the set are given a distance of 0
+  and are projected to themselves.
+
+  @param[in] points are the points which we wish to project to the convex set.
+  @param[in/out] projected_points are the projection of @p points onto the
+  convex set.
+  @return A vector `distances` which is the same size as @p points.cols().These
+  are the distances from @p points to the convex set. If distances[i] has a
+  value, then projected_points->col(i) is the projection of points.col(i) onto
+  the set. If distances[i] is nullopt, then the projection of points.col(i) has
+  not yet been computed, and so the value at projected_points->col(i) is
+  meaningless.
+
+  @pre ambient_dimension() >= 0
+  @pre distances.size() == points.cols()
+   */
+
+  virtual std::vector<std::optional<double>> DoProjectionShortcut(
+      const Eigen::Ref<const Eigen::MatrixXd>& points,
+      Eigen::MatrixXd* projected_points) const;
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
@@ -443,20 +457,6 @@ class ConvexSet {
   @pre ambient_dimension() >= 0 */
   bool GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                            double tol) const;
-
-  /** This method tries to shortcut the number of convex programs needed to
-  compute the projection. First, it attempts to rapidily check if any of the
-  points are already in the set. Then, it will attempt to do a further
-  shortcutting method for computing the projection. Returns a vector `distances`
-  which is the same size as @p points.cols() and a matrix `projected_points` of
-  the same size as @p points. If distances[i] is nullopt, then the value of
-  `projected_points.col(i)` is meaningless and may be uninitialized. If
-  `distances[i]` has a value, the `projected_points.col(i)` will be the
-  projection of @p points.col(i) onto the convex set.
-   @pre ambient_dimension() >= 0
-   **/
-  std::pair<std::vector<std::optional<double>>, Eigen::MatrixXd>
-  ProjectionShortcut(const Eigen::Ref<const Eigen::MatrixXd>& points) const;
 
   /** Generic implementation for Projection() -- applicable for all convex sets.
    @pre ambient_dimension() >= 0
