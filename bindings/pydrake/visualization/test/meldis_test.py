@@ -257,102 +257,14 @@ class TestMeldis(unittest.TestCase):
             # The link always exists after a DRAW.
             self.assertTrue(meshcat.HasPath(link_path))
 
-    def test_geometry_file_hasher(self):
-        """Checks _GeometryFileHasher's computation of a hash set. Note: this
-        is only *part* of the meldis reload logic; what the viewer applet does
-        during loading contributes (see below).
-        """
-        # A tiny wrapper function to make it easy to compute the hash.
-        GeometryFileHasher = mut._meldis._GeometryFileHasher
+    def test_reload_detection(self):
+        """Tests the mechanism viewer applet uses to determine if it should
+        ignore a load message.
 
-        def dut(load_robot_message, old_hashes):
-            hasher = GeometryFileHasher()
-            hasher.on_viewer_load_robot(load_robot_message, old_hashes)
-            return hasher.hash_values()
-
-        # Empty (message, history) => empty hash set.
-        message = lcmt_viewer_load_robot()
-        self.assertDictEqual(dut(message, {}), {})
-
-        test_tmpdir = Path(os.environ["TEST_TMPDIR"])
-        # Note: _GeometryFileHasher doesn't depend on file name extension, only
-        # where it is in the load message.
-        file1 = test_tmpdir / "file1.ext"
-        with open(file1, "w") as f:
-            f.write("some contents in 1")
-        file2 = test_tmpdir / "file2.ext"
-        with open(file2, "w") as f:
-            f.write("some contents in 2")
-        fake_file = test_tmpdir / "fake.ext"
-
-        # Populate a fake history.
-        history = {}
-        GeometryFileHasher.add_file_hash(file1, history)
-        GeometryFileHasher.add_file_hash(file2, history)
-        history[fake_file] = "fake hash"
-        self.assertIn(file1, history)
-        self.assertIn(file2, history)
-        self.assertNotEqual(history[file1], history[file2])
-
-        # Empty message, history with present and absent files => set with
-        # present files.
-        test_hashes = dut(message, history)
-        self.assertEqual(len(test_hashes), 2)
-        del history[fake_file]
-        self.assertDictEqual(test_hashes, history)
-
-        # Message has primitive, empty history => empty hash set.
-        sphere = lcmt_viewer_geometry_data()
-        sphere.type = lcmt_viewer_geometry_data.SPHERE
-        link = lcmt_viewer_link_data()
-        link.geom = [sphere]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertDictEqual(dut(message, {}), {})
-
-        # Message has in-line mesh, empty history => empty hash set.
-        mesh = lcmt_viewer_geometry_data()
-        mesh.type = lcmt_viewer_geometry_data.MESH
-        mesh.float_data = [0.0, 0.0]
-        mesh.num_float_data = len(mesh.float_data)
-        link.geom = [mesh]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertDictEqual(dut(message, {}), {})
-
-        # Message with invalid mesh filename, empty history => empty hash set.
-        # (Invalid mesh filenames are not an error.)
-        mesh = lcmt_viewer_geometry_data()
-        mesh.type = lcmt_viewer_geometry_data.MESH
-        mesh.string_data = "no-such-file"
-        link.geom = [mesh]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertDictEqual(dut(message, {}), {})
-
-        # Message with existent named Mesh, empty history => hash of file.
-        mesh.string_data = str(file1)
-        mesh_hash_1 = dut(message, {})
-        self.assertDictEqual(mesh_hash_1, {file1: history[file1]})
-
-        # Message with existent named Mesh and history => hash of present
-        # files.
-        mesh_hash_2 = dut(message, history)
-        self.assertDictEqual(mesh_hash_2, history)
-
-    def test_reload_state(self):
-        """Tests the mechanisms viewer applets use to determine if it should
-        ignore a load message. The logic is split between the applet and the
-        geometry file hasher. The geometry file hasher's functionality is
-        tested above.
-
-        The applet's logic is split between two file handlers: on_viewer_load
-        and on_viewer_draw. The first determines if a redraw is necessary
-        (setting a flag indicating and storing intermediate hash calculations)
-        and the latter updates the hash values and clears the bit.
+        The loading is spread across on_viewer_load and on_viewer_draw. The
+        first determines if a redraw is necessary (by setting a flag), and
+        the latter actually performs the loading (lazily) while computing
+        file checksums.
 
         We'll successively execute both functions and peek into the applet's
         state to see how the redraw signal and hash values evolve.
@@ -363,7 +275,7 @@ class TestMeldis(unittest.TestCase):
                                            alpha_slider_name="ReloadTest")
 
         # The applet starts with no hash history.
-        self.assertDictEqual(applet._load_message_file_checksums, {})
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
 
         # We need to create an obj and mtl file so we can test changes to
         # referenced files.
@@ -413,52 +325,38 @@ class TestMeldis(unittest.TestCase):
         draw_message.position = [(0, 0, 0)]
         draw_message.quaternion = [(1, 0, 0, 0)]
 
-        # The first load message should load and report a need to redraw.
+        # The first load message should load and report a need to redraw. No
+        # files have been hashed yet, the only thing we did was memorize the
+        # load message.
         applet.on_viewer_load(load_message)
-        # The history was empty and GeometryFileHasher saw only the named obj
-        # file; so the checksums temporarily include only one value.
-        self.assertEqual(len(applet._load_message_file_checksums), 1)
         self.assertTrue(applet._waiting_for_first_draw_message)
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
 
         # After drawing, we should have all three files in the checksums.
         applet.on_viewer_draw(draw_message)
-        self.assertEqual(len(applet._load_message_file_checksums), 3)
-        self.assertIn(png_filename, applet._load_message_file_checksums)
-        self.assertIn(mtl_filename, applet._load_message_file_checksums)
-        self.assertIn(obj_filename, applet._load_message_file_checksums)
         self.assertFalse(applet._waiting_for_first_draw_message)
+        self.assertSetEqual(set(applet._load_deduplicator._path_hashes.keys()),
+                            {png_filename, mtl_filename, obj_filename})
 
         # Attempting to load the same load message without changes, means we
         # shouldn't be waiting for a first draw message and checksums are
         # unchanged.
-        checksum_copy = applet._load_message_file_checksums.copy()
+        checksum_copy = applet._load_deduplicator._path_hashes.copy()
         applet.on_viewer_load(load_message)
         self.assertFalse(applet._waiting_for_first_draw_message)
-        self.assertDictEqual(applet._load_message_file_checksums,
+        self.assertDictEqual(applet._load_deduplicator._path_hashes,
                              checksum_copy)
 
-        # Now we'll modify the mtl by removing the texture map. The applet's
-        # history will have the texture map, and it will be present after
-        # handling the load message, but will be gone after draw.
+        # Now we'll modify the mtl by removing the texture map.
         with open(mtl_filename, "w") as f:
             f.write("newmtl test_mat\n")
             f.write("Kd 1 0 0")
-        old_hashes = applet._load_message_file_checksums.copy()
-
+        old_hashes = applet._load_deduplicator._path_hashes.copy()
         applet.on_viewer_load(load_message)
-        self.assertEqual(len(applet._load_message_file_checksums), 3)
-        self.assertEqual(applet._load_message_file_checksums[png_filename],
-                         checksum_copy[png_filename])
-        self.assertNotEqual(applet._load_message_file_checksums[mtl_filename],
-                            checksum_copy[mtl_filename])
-        self.assertEqual(applet._load_message_file_checksums[obj_filename],
-                         checksum_copy[obj_filename])
-        self.assertTrue(applet._waiting_for_first_draw_message)
-
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
         applet.on_viewer_draw(draw_message)
-        self.assertEqual(len(applet._load_message_file_checksums), 2)
-        self.assertIn(mtl_filename, applet._load_message_file_checksums)
-        self.assertIn(obj_filename, applet._load_message_file_checksums)
+        self.assertSetEqual(set(applet._load_deduplicator._path_hashes.keys()),
+                            {mtl_filename, obj_filename})
 
     def test_viewer_applet_alpha_slider(self):
         # Create the device under test.
