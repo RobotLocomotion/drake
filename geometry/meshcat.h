@@ -308,7 +308,6 @@ class Meshcat {
   /** Sets the animated triangular mesh with per-vertex coloring at
    `path` in the scene tree at `time_in_recording`.
 
-
   During recording (started by StartRecording()), calling this function with
   `path`="/foo" will create the path "/foo/<animation>/frame#", where `frame#`
    is the frame index converted from `time_in_recording`.
