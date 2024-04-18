@@ -378,7 +378,7 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
         test_point = np.ones_like(self.b)
-        distance, projection = rect.Projection(points = test_point)
+        distance, projection = rect.Projection(points=test_point)
         self.assertEqual(distance[0], 0.0)
         np.testing.assert_array_equal(projection[:, 0], test_point)
 
