@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <string>
 #include <utility>
 
@@ -194,8 +195,19 @@ void MeshcatVisualizer<T>::SetObjects(
         continue;
       }
 
+      std::string geometry_name = inspector.GetName(geom_id);
+      if (frame_id != inspector.world_frame_id()) {
+        // TODO(SeanCurtis-TRI) When MbP no longer scopes geometry names
+        // indiscriminately, we can remove this bit of name de-mangling.
+
+        // If the geometry is not affixed to the world frame, we don't actually
+        // need the model:: prefix that will be added by MultibodyPlant. We'll
+        // trim everything before the last "::" we find.
+        const std::regex prefix_re(".*::");
+        geometry_name = std::regex_replace(geometry_name, prefix_re, "");
+      }
       const std::string path =
-          fmt::format("{}/{}", frame_path, inspector.GetName(geom_id));
+          fmt::format("{}/{}", frame_path, geometry_name);
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
 
