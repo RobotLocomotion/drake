@@ -173,7 +173,9 @@ std::optional<bool> AffineSubspace::DoPointInSetShortcut(
     return is_approx_equal_abstol(x, translation_, tol);
   }
   // Otherwise, project onto the flat, and compare to the input.
-  return is_approx_equal_abstol(x, Project(x), tol);
+  Eigen::VectorXd projected_points;
+  DoProjectionShortcut(x, &projected_points);
+  return is_approx_equal_abstol(x, projected_points, tol);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>

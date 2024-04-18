@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -86,7 +87,9 @@ class AffineSubspace final : public ConvexSet {
   should be a vector in the ambient space, and the corresponding column of the
   output will be its projection onto the affine subspace.
   @pre x.rows() == ambient_dimension() */
-  // TODO(Alexandre.Amice) Put deprecation.
+  DRAKE_DEPRECATED(
+      "2024-08-01",
+      "Projection has moved to `ConvexSet`; use `Projection()` instead.")
   Eigen::MatrixXd Project(const Eigen::Ref<const Eigen::MatrixXd>& x) const;
 
   /** Given a point x in the standard basis of the ambient space, returns the

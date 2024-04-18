@@ -195,8 +195,10 @@ void DefineGeometryOptimization(py::module m) {
             py_rvp::reference_internal, cls_doc.translation.doc)
         .def("AffineDimension", &AffineSubspace::AffineDimension,
             cls_doc.AffineDimension.doc)
-        .def("Project", &AffineSubspace::Project, py::arg("x"),
-            cls_doc.Project.doc)
+        .def("Project",
+            WrapDeprecated(
+                cls_doc.Project.doc_deprecated, &AffineSubspace::Project),
+            py::arg("x"), cls_doc.Project.doc_deprecated)
         .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
             py::arg("x"), cls_doc.ToLocalCoordinates.doc)
         .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,
