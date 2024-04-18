@@ -77,10 +77,14 @@ class InverseDynamicsControllerTest : public ::testing::Test {
                            (kd.array() * (v_r - v).array()).matrix() +
                            (ki.array() * q_int.array()).matrix() + vd_r;
 
+    std::unique_ptr<Context<double>> owned_robot_context;
+    if (robot_context == nullptr) {
+        // Use default context.
+        owned_robot_context = robot_plant.CreateDefaultContext();
+        robot_context = owned_robot_context.get();
+    }
     VectorX<double> expected_torque = controllers_test::ComputeTorque(
-        robot_plant, q, v, vd_d,
-        robot_context ? robot_context
-                      : robot_plant.CreateDefaultContext().get());
+        robot_plant, q, v, vd_d, robot_context);
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output->get_vector_data(0);

@@ -156,8 +156,6 @@ class InverseDynamics final : public LeafSystem<T> {
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
 
-  Context<T>* plant_context_;
-
   InputPortIndex estimated_state_;
   InputPortIndex desired_acceleration_;
   OutputPortIndex generalized_force_;

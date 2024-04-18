@@ -32,9 +32,12 @@ class InverseDynamicsTest : public ::testing::Test {
             const InverseDynamics<double>::InverseDynamicsMode mode,
             Context<double>* plant_context = nullptr) {
     multibody_plant_ = std::move(plant);
-    multibody_context_ = multibody_plant_->CreateDefaultContext();
+    if (plant_context == nullptr) {
+      owned_multibody_context_ = multibody_plant_->CreateDefaultContext();
+      multibody_context_ = owned_multibody_context_.get();
+    }
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        multibody_plant_.get(), mode, plant_context);
+        multibody_plant_.get(), mode, multibody_context_);
     FinishInit(mode);
   }
 
@@ -61,8 +64,7 @@ class InverseDynamicsTest : public ::testing::Test {
 
   void CheckTorque(const Eigen::VectorXd& position,
                    const Eigen::VectorXd& velocity,
-                   const Eigen::VectorXd& acceleration_desired,
-                   Context<double>* multibody_context = nullptr) {
+                   const Eigen::VectorXd& acceleration_desired) {
     // Desired acceleration.
     VectorXd vd_d = VectorXd::Zero(num_velocities());
     if (!inverse_dynamics_->is_pure_gravity_compensation()) {
@@ -85,13 +87,9 @@ class InverseDynamicsTest : public ::testing::Test {
     // Compute the expected torque.
     VectorXd expected_torque;
     ASSERT_TRUE(multibody_plant_.get());
-    ASSERT_TRUE(multibody_context || multibody_context_.get());
-    if (multibody_context == nullptr) {
-      // Use default context
-      multibody_context = multibody_context_.get();
-    }
+    ASSERT_TRUE(multibody_context_);
     expected_torque = controllers_test::ComputeTorque(
-        *multibody_plant_, position, velocity, vd_d, multibody_context);
+        *multibody_plant_, position, velocity, vd_d, multibody_context_);
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output_->get_vector_data(0);
@@ -102,7 +100,7 @@ class InverseDynamicsTest : public ::testing::Test {
   // Determines whether gravity is modeled by checking the generalized forces
   // due to gravity.
   bool GravityModeled(const VectorXd& q) const {
-    multibody_plant_->SetPositions(multibody_context_.get(), q);
+    multibody_plant_->SetPositions(multibody_context_, q);
     // Verify that gravitational forces are nonzero (validating that the tree
     // is put into the proper configuration and gravity is modeled).
     const VectorXd tau_g =
@@ -124,7 +122,8 @@ class InverseDynamicsTest : public ::testing::Test {
   std::unique_ptr<MultibodyPlant<double>> multibody_plant_;
   std::unique_ptr<InverseDynamics<double>> inverse_dynamics_;
   std::unique_ptr<Context<double>> inverse_dynamics_context_;
-  std::unique_ptr<Context<double>> multibody_context_;
+  std::unique_ptr<Context<double>> owned_multibody_context_;
+  Context<double>* multibody_context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
@@ -189,7 +188,7 @@ TEST_F(InverseDynamicsTest, InverseDynamicsWithCustomContextTest) {
   }
 
   // Check torques with the custom context.
-  CheckTorque(q, v, vd_d, custom_context.get());
+  CheckTorque(q, v, vd_d);
 }
 
 // Tests that the expected value of the gravity compensating torque and the

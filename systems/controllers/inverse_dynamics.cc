@@ -19,7 +19,6 @@ InverseDynamics<T>::InverseDynamics(
       owned_plant_(std::move(owned_plant)),
       plant_(owned_plant_ ? owned_plant_.get() : plant),
       mode_(mode),
-      plant_context_(plant_context),
       q_dim_(plant_->num_positions()),
       v_dim_(plant_->num_velocities()) {
   // Check that only one of owned_plant and plant where set.
@@ -27,10 +26,10 @@ InverseDynamics<T>::InverseDynamics(
   DRAKE_DEMAND(plant_ != nullptr);
   DRAKE_THROW_UNLESS(plant_->is_finalized());
 
-  std::unique_ptr<Context<T>> owned_plant_context_;
-  if (plant_context_ == nullptr) {
-    owned_plant_context_ = plant_->CreateDefaultContext();
-    plant_context_ = owned_plant_context_.get();
+  std::unique_ptr<Context<T>> owned_plant_context;
+  if (plant_context == nullptr) {
+    owned_plant_context = plant_->CreateDefaultContext();
+    plant_context = owned_plant_context.get();
   }
 
   estimated_state_ =
@@ -46,13 +45,13 @@ InverseDynamics<T>::InverseDynamics(
 
   // Gravity compensation mode requires velocities to be zero.
   if (this->is_pure_gravity_compensation()) {
-    plant_->SetVelocities(plant_context_,
+    plant_->SetVelocities(plant_context,
                           VectorX<T>::Zero(plant_->num_velocities()));
   }
 
   // Declare cache entry for the multibody plant context.
   plant_context_cache_index_ =
-      this->DeclareCacheEntry("plant_context_cache", *plant_context_,
+      this->DeclareCacheEntry("plant_context_cache", *plant_context,
                               &InverseDynamics<T>::SetMultibodyContext,
                               {this->input_port_ticket(estimated_state_)})
           .cache_index();
