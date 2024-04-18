@@ -103,7 +103,7 @@ class _Slider:
 
 
 class _DuplicateLoadMessageDetector:
-    """Remebers the most recently received lcmt_viewer_load_robot message and
+    """Remembers the most recently received lcmt_viewer_load_robot message and
     reports whether the next received load message is a no-op.
     """
 
@@ -118,9 +118,10 @@ class _DuplicateLoadMessageDetector:
         """
         assert isinstance(message, lcmt_viewer_load_robot)
 
+        message_encoding = message.encode()
         # The very first message is necessarily novel.
         if self._prior_message_encoding is None:
-            self._prior_message_encoding = message.encode()
+            self._prior_message_encoding = message_encoding
             self._prior_link_count = message.num_links
             assert len(self._path_hashes) == 0
             return True
@@ -129,10 +130,8 @@ class _DuplicateLoadMessageDetector:
         # message, and all files used while processing the prior load message
         # remain unchanged. (The num_links check is redundant with the encode
         # check, but is a very fast way detect common kinds of novelty.)
-        encoding = None
         if message.num_links == self._prior_link_count:
-            encoding = message.encode()
-            if (encoding == self._prior_message_encoding
+            if (message_encoding == self._prior_message_encoding
                     and all([
                         self._hash(path=path) == old_hash
                         for path, old_hash in self._path_hashes.items()
@@ -141,7 +140,7 @@ class _DuplicateLoadMessageDetector:
                 return False
 
         # This is a novel message, so we'll reset everything.
-        self._prior_message_encoding = encoding or message.encode()
+        self._prior_message_encoding = message_encoding
         self._prior_link_count = message.num_links
         self._path_hashes = {}
         return True
@@ -157,7 +156,8 @@ class _DuplicateLoadMessageDetector:
         return hasher.hexdigest()
 
     def add_dependencies(self, *, paths: typing.Iterable[Path]):
-        """Adds ...
+        """Adds a (path, hash_value) pair to this objects path hashes for each
+        path in `paths`.
         """
         for path in paths:
             if path not in self._path_hashes:
