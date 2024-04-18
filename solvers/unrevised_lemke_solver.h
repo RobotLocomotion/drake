@@ -46,7 +46,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-           (2 * std::numeric_limits<double>::epsilon());
+           (2.2 * std::numeric_limits<double>::epsilon());
   }
 
   /// Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
