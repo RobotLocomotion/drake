@@ -131,7 +131,7 @@ Point::DoToShapeWithPose() const {
 
 std::vector<std::optional<double>> Point::DoProjectionShortcut(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
-    Eigen::MatrixXd* projected_points) const {
+    EigenPtr<Eigen::MatrixXd> projected_points) const {
   *projected_points = x_ * Eigen::MatrixXd::Ones(1, points.cols());
   Eigen::VectorXd distances_eigen =
       (points - *projected_points).colwise().norm();

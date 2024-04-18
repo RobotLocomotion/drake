@@ -173,7 +173,7 @@ std::optional<bool> AffineSubspace::DoPointInSetShortcut(
     return is_approx_equal_abstol(x, translation_, tol);
   }
   // Otherwise, project onto the flat, and compare to the input.
-  Eigen::VectorXd projected_points;
+  Eigen::VectorXd projected_points(x.rows());
   DoProjectionShortcut(x, &projected_points);
   return is_approx_equal_abstol(x, projected_points, tol);
 }
@@ -251,7 +251,7 @@ Eigen::MatrixXd AffineSubspace::Project(
 
 std::vector<std::optional<double>> AffineSubspace::DoProjectionShortcut(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
-    Eigen::MatrixXd* projected_points) const {
+    EigenPtr<Eigen::MatrixXd> projected_points) const {
   // If the set is a point, the projection is just that point. This also
   // directly handles the zero-dimensional case.
   const auto maybe_point = DoMaybeGetPoint();

@@ -176,7 +176,7 @@ class AffineSubspace final : public ConvexSet {
 
   std::vector<std::optional<double>> DoProjectionShortcut(
       const Eigen::Ref<const Eigen::MatrixXd>& points,
-      Eigen::MatrixXd* projected_points) const final;
+      EigenPtr<Eigen::MatrixXd> projected_points) const final;
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

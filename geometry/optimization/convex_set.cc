@@ -197,7 +197,7 @@ ConvexSet::GenericDoProjection(
 
 std::vector<std::optional<double>> ConvexSet::DoProjectionShortcut(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
-    Eigen::MatrixXd* projected_points) const {
+    EigenPtr<Eigen::MatrixXd> projected_points) const {
   DRAKE_DEMAND(projected_points != nullptr);
   DRAKE_DEMAND(projected_points->rows() == points.rows() &&
                projected_points->cols() == points.cols());

@@ -348,7 +348,7 @@ class ConvexSet {
 
   virtual std::vector<std::optional<double>> DoProjectionShortcut(
       const Eigen::Ref<const Eigen::MatrixXd>& points,
-      Eigen::MatrixXd* projected_points) const;
+      EigenPtr<Eigen::MatrixXd> projected_points) const;
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived

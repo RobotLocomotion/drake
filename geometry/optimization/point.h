@@ -89,7 +89,7 @@ class Point final : public ConvexSet {
 
   std::vector<std::optional<double>> DoProjectionShortcut(
       const Eigen::Ref<const Eigen::MatrixXd>& points,
-      Eigen::MatrixXd* projected_points) const final;
+      EigenPtr<Eigen::MatrixXd> projected_points) const final;
 
   Eigen::VectorXd x_;
 };
