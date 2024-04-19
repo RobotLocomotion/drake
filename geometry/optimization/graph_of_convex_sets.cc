@@ -184,10 +184,12 @@ Edge::Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name)
       u_{u},
       v_{v},
       allowed_vars_{u_->x()},
-      phi_{"phi", symbolic::Variable::Type::BINARY},
+      phi_{name + "phi", symbolic::Variable::Type::BINARY},
       name_(std::move(name)),
-      y_{symbolic::MakeVectorContinuousVariable(u_->ambient_dimension(), "y")},
-      z_{symbolic::MakeVectorContinuousVariable(v_->ambient_dimension(), "z")},
+      y_{symbolic::MakeVectorContinuousVariable(u_->ambient_dimension(),
+                                                name_ + "y")},
+      z_{symbolic::MakeVectorContinuousVariable(v_->ambient_dimension(),
+                                                name_ + "z")},
       x_to_yz_{static_cast<size_t>(y_.size() + z_.size())} {
   DRAKE_DEMAND(u_ != nullptr);
   DRAKE_DEMAND(v_ != nullptr);
@@ -211,7 +213,8 @@ std::pair<Variable, Binding<Cost>> Edge::AddCost(const Binding<Cost>& binding) {
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
   const int n = ell_.size();
   ell_.conservativeResize(n + 1);
-  ell_[n] = Variable(fmt::format("ell{}", n), Variable::Type::CONTINUOUS);
+  ell_[n] =
+      Variable(fmt::format("{}ell{}", name_, n), Variable::Type::CONTINUOUS);
   costs_.emplace_back(binding);
   return std::pair<Variable, Binding<Cost>>(ell_[n], costs_.back());
 }
@@ -855,7 +858,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
     Variable phi;
     if (*options.convex_relaxation) {
-      phi = prog.NewContinuousVariables<1>("phi")[0];
+      phi = prog.NewContinuousVariables<1>(e->name() + "phi")[0];
       prog.AddBoundingBoxConstraint(0, 1, phi);
       relaxed_phi.emplace(edge_id, phi);
     } else {
@@ -865,7 +868,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (e->phi_value_.has_value()) {
       DRAKE_DEMAND(*e->phi_value_);
       double phi_value = *e->phi_value_ ? 1.0 : 0.0;
-      prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
+      prog.AddLinearEqualityConstraint(Vector1d(1.0), phi_value,
+                                       Vector1<Variable>(phi));
     }
     prog.AddDecisionVariables(e->y_);
     prog.AddDecisionVariables(e->z_);
