@@ -452,17 +452,17 @@ GTEST_TEST(TestZeroStepSize, ZeroStepSize) {
   // crash Drake) in version 0.6.0. In version 0.7.1, this configuration causes
   // the solver to report InsufficientProgress.
   ClarabelSolver solver;
+  MathematicalProgram prog;
+  const auto y = prog.NewContinuousVariables<2>("y");
+  MatrixX<symbolic::Expression> mat(2, 2);
+  mat << y(0, 0), 0.5, 0.5, y(1);
+  prog.AddPositiveSemidefiniteConstraint(mat);
+  prog.AddLogDeterminantLowerBoundConstraint(mat, 1);
+  prog.AddLinearCost(-y(0));
+  SolverOptions options;
+  options.SetOption(solver.id(), "max_step_fraction", 1e-10);
+  options.SetOption(CommonSolverOption::kPrintToConsole, true);
   if (solver.available()) {
-    MathematicalProgram prog;
-    const auto y = prog.NewContinuousVariables<2>("y");
-    MatrixX<symbolic::Expression> mat(2, 2);
-    mat << y(0, 0), 0.5, 0.5, y(1);
-    prog.AddPositiveSemidefiniteConstraint(mat);
-    prog.AddLogDeterminantLowerBoundConstraint(mat, 1);
-    prog.AddLinearCost(-y(0));
-    SolverOptions options;
-    options.SetOption(solver.id(), "max_step_fraction", 1e-10);
-    options.SetOption(CommonSolverOption::kPrintToConsole, true);
     auto result = solver.Solve(prog, std::nullopt, options);
     // The program has cost unbounded above and so the dual is infeasible, but
     // the step size fraction forces the solver to make insufficient progress.
