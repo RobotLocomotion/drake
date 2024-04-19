@@ -450,6 +450,11 @@ Ignore those for now; we'll need to circle back and fix them later.
     const double table_height = 0.7645;
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("link"),
                      RigidTransformd(Vector3d{0, 0, -table_height - 0.01}));
+    parser.AddModelsFromUrl(
+        "package://drake_models/ycb/006_mustard_bottle.sdf");
+    plant.WeldFrames(plant.world_frame(),
+                     plant.GetFrameByName("base_link_mustard"),
+                     RigidTransformd(Vector3d{0, -0.3, 0.01}));
     plant.Finalize();
 
     builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
@@ -469,7 +474,8 @@ Ignore those for now; we'll need to circle back and fix them later.
 
     diagram->ForcedPublish(*context);
     std::cout
-        << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
+        << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph) "
+           "and a mustard bottle lying on its side, with the label facing up."
         << std::endl;
 
     MaybePauseForUser();
@@ -508,6 +514,7 @@ Ignore those for now; we'll need to circle back and fix them later.
          "- the camera is focused on the contact point between the robot and "
          "table,\n"
          "- the iiwa is visible,\n"
+         "- the mustard bottle visible including its texture (front label),\n"
          "- the animation plays,\n"
          "- the environment map is present, and\n"
          "- the browser Console has no warnings nor errors\n"

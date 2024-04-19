@@ -77,7 +77,7 @@ GTEST_TEST(CalcGradientWhenTouching, box_touches_box) {
 }
 
 void PointOnBoxSurfaceHelperTester(
-    const fcl::Boxd box_B, const Vector3d p_BCb, int expected_sum,
+    const fcl::Boxd& box_B, const Vector3d& p_BCb, int expected_sum,
     std::optional<int> expected_axis_index,
     std::optional<const Vector3d> expected_normal) {
   const Vector3d v_B = PointOnBoxSurfaceHelper(p_BCb, box_B);
@@ -106,15 +106,12 @@ GTEST_TEST(PointInBox, PointOnBoxSurfaceHelper) {
   const fcl::Boxd box_B(2, 4, 8);
   {
     SCOPED_TRACE("This point is in the interior of the box.");
-    EXPECT_THROW(PointOnBoxSurfaceHelperTester(
-                     box_B, Vector3d(0.01, -0.02, 0.03), 0, {}, {}),
-                 std::exception);
+    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.01, -0.02, 0.03), 0, {},
+                                  {});
   }
   {
     SCOPED_TRACE("This point is outside the box.");
-    EXPECT_THROW(
-        PointOnBoxSurfaceHelperTester(box_B, Vector3d(10, 10, 10), 0, {}, {}),
-        std::exception);
+    PointOnBoxSurfaceHelperTester(box_B, Vector3d(10, 10, 10), 0, {}, {});
   }
   {
     SCOPED_TRACE("This point is strictly on -X face of the box.");
@@ -150,6 +147,44 @@ GTEST_TEST(PointInBox, PointOnBoxSurfaceHelper) {
   {
     SCOPED_TRACE("The point is at the -X+Y-Z vertex of the box.");
     PointOnBoxSurfaceHelperTester(box_B, Vector3d(-1, 2, -4), 3, {}, {});
+  }
+}
+
+// Test corner cases of PointOnBoxSurfaceHelper() due to numerical errors.
+// It is inspired by issue 21192. This test also shows that we can get
+// incorrect classification due to imperfect numerical precisions.
+GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) {
+  const fcl::Boxd box_B(0.25, 0.25, 0.25);
+  // See documentation of PointOnBoxSurfaceHelper() for the meaning of these
+  // encoding vectors.
+  const Vector3d kVertexXYZ(1, 1, 1);
+  const Vector3d kEdgeXY(1, 1, 0);
+  const Vector3d kFaceX(1, 0, 0);
+  const Vector3d kNone(0, 0, 0);
+  {
+    // A corner vertex of the box with perfect precisions.
+    const Vector3d p_BQ(0.125, 0.125, 0.125);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ, box_B), kVertexXYZ);
+  }
+  {
+    // Within an acceptable tolerance, it is still classified as a vertex.
+    // The noise 1e-14 is less than the internal tolerance of
+    // PointOnBoxSurfaceHelper().
+    constexpr double kEps = 1e-14;
+    const Vector3d p_BQ(0.125 - kEps, 0.125 - kEps, 0.125 - kEps);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ, box_B), kVertexXYZ);
+  }
+  {
+    // However, the noise 1e-13 is larger than the internal tolerance and
+    // triggers unexpected (but correct given the tolerances we've chosen)
+    // classification in various ways.
+    constexpr double kNoise = 1e-13;
+    const Vector3d p_BQ_edge(0.125, 0.125, 0.125 - kNoise);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_edge, box_B), kEdgeXY);
+    const Vector3d p_BQ_face(0.125, 0.125 - kNoise, 0.125 - kNoise);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_face, box_B), kFaceX);
+    const Vector3d p_BQ_none(0.125 - kNoise, 0.125 - kNoise, 0.125 - kNoise);
+    EXPECT_EQ(PointOnBoxSurfaceHelper(p_BQ_none, box_B), kNone);
   }
 }
 
@@ -492,6 +527,51 @@ GTEST_TEST(BoxBoxGradient, VertexVertexNeedCrossProduct) {
   EXPECT_TRUE(
       CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
                       -expect_gradient, 1e-14));
+}
+
+// This test is inspired by issue 21192: BoxBoxGradient() got two witness
+// points that passed the co-location test but failed to compute the
+// signed-distance gradient. At that time, PointOnBoxSurfaceHelper()
+// classified one of the witness points as being strictly inside the box
+// instead of being on the surface, and an exception was thrown.
+// Now PointOnBoxSurfaceHelper() does not throw exception, but
+// BoxBoxGradient() has to support witness points that are not on the
+// surfaces of the boxes due to numerical errors.
+//
+//        Y
+//        ↑
+//        | +----+
+//        | | B  |
+//     +---(*)---+                    (*) Witness point
+//     | A  |  --------→ X
+//     +----+
+//
+GTEST_TEST(BoxBoxGradient, InputWithNumericalErrors) {
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const fcl::Boxd box_A(0.2, 0.2, 0.2);
+  // Translate diagonally in X-Y plane
+  const RigidTransformd X_WB(Vector3d(0.2, 0.2, 0));
+  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  // The witness point of box_A is in the middle of an edge parallel to Az axis.
+  const Vector3d p_ACa(0.1 - 1e-13, 0.1 - 1e-13, 0);
+  // The witness point of box_B is in the middle of an edge parallel to Bz axis.
+  const Vector3d p_BCb(-0.1 - 1e-13, -0.1 - 1e-13, 0);
+
+  // Confirm that the witness points co-locate in World's frame.
+  ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
+  // Confirm that PointOnBoxSurfaceHelper() classified the witness points as
+  // non-surface points.
+  ASSERT_EQ(PointOnBoxSurfaceHelper(p_ACa, box_A), Vector3d(0, 0, 0));
+  ASSERT_EQ(PointOnBoxSurfaceHelper(p_BCb, box_B), Vector3d(0, 0, 0));
+
+  // Non-surface witness points go to the catch-all case in BoxBoxGradient().
+  // It searches all the fifteen possible directions of Ax, Ay, Az, Bx, By,
+  // Bz, Ax.cross(Bx), Ax.cross(By), Ax.cross(Bz), Ay.cross(Bx), Ay.cross(By),
+  // Ay.cross(Bz), Az.cross(Bx), Az.cross(By), and Az.cross(Bz). The solution
+  // is not unique, and Ax happened to be the first one that we found.
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      -Vector3d::UnitX()));
 }
 
 }  // namespace

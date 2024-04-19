@@ -19,13 +19,15 @@ namespace internal {
 // This Mobilizer allows two frames to move freely relatively to one another.
 // To fully specify this mobilizer a user must provide an inboard frame F and
 // an outboard frame M. This mobilizer introduces six degrees of freedom which
-// allow frame M to freely move with respect to frame F. This mobilizer
-// introduces four generalized positions to describe the orientation `R_FM` of
-// frame M in F with a quaternion `q_FM`, and three generalized positions to
-// describe the position of frame M's origin in F with a position vector
-// `p_FM`. As generalized velocities, this mobilizer introduces the angular
-// velocity `w_FM` of frame M in F and the linear velocity `v_FM` of frame M's
-// origin in frame F.
+// allow frame M to freely move with respect to frame F.  This mobilizer
+// introduces four generalized positions to describe the orientation R_FM of
+// frame M in F with a quaternion q_FM, and three generalized positions to
+// describe the translation of frame M's origin in F with a position vector
+// p_FM. The seven entries of the configuration vector q are ordered
+// (q_FM, p_FM) with the quaternion, ordered wxyz (scalar then vector),
+// preceding the translation vector. As generalized velocities, this mobilizer
+// introduces the angular velocity w_FM of frame M in F and the linear
+// velocity v_FM of frame M's origin in frame F, ordered (w_FM, v_FM).
 //
 // @tparam_default_scalar
 template <typename T>

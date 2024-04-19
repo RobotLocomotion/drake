@@ -33,3 +33,34 @@ This prevents ODR violations in case downstream code also links to json.
  #endif
 
  // #include <nlohmann/detail/conversions/from_json.hpp>
+--- single_include/nlohmann/json_fwd.hpp
++++ single_include/nlohmann/json_fwd.hpp
+@@ -131,19 +131,21 @@
+ #endif
+
+ #ifndef NLOHMANN_JSON_NAMESPACE_BEGIN
+-#define NLOHMANN_JSON_NAMESPACE_BEGIN                \
+-    namespace nlohmann                               \
+-    {                                                \
+-    inline namespace NLOHMANN_JSON_NAMESPACE_CONCAT( \
+-                NLOHMANN_JSON_ABI_TAGS,              \
+-                NLOHMANN_JSON_NAMESPACE_VERSION)     \
++#define NLOHMANN_JSON_NAMESPACE_BEGIN                                       \
++    inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) { \
++    namespace nlohmann                                                      \
++    {                                                                       \
++    inline namespace NLOHMANN_JSON_NAMESPACE_CONCAT(                        \
++                NLOHMANN_JSON_ABI_TAGS,                                     \
++                NLOHMANN_JSON_NAMESPACE_VERSION)                            \
+     {
+ #endif
+
+ #ifndef NLOHMANN_JSON_NAMESPACE_END
+ #define NLOHMANN_JSON_NAMESPACE_END                                     \
+     }  /* namespace (inline namespace) NOLINT(readability/namespace) */ \
+-    }  // namespace nlohmann
++    }  /* namespace nlohmann         */                                 \
++    }  // namespace drake_vendor
+ #endif
+
+ // #include <nlohmann/detail/conversions/from_json.hpp>

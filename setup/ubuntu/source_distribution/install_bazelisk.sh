@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# On Ubuntu, installs either Bazel or Bazelisk at /usr/bin/bazel.
+# On Ubuntu, installs bazelisk at /usr/bin/bazel{,isk}.
 #
 # This script does not accept any command line arguments.
 
@@ -45,32 +45,23 @@ dpkg_install_from_wget() {
   rm "${tmpdeb}"
 }
 
-# Install bazel package dependencies (these may duplicate dependencies of
-# drake).
-apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
-g++
-unzip
-zlib1g-dev
-EOF
-)
+# If bazel.deb is already installed, we'll need to remove it first because
+# the Debian package of bazelisk will take over the `/usr/bin/bazel` path.
+apt-get remove bazel || true
 
-# Install bazel.
+# Install bazelisk.
+#
+# TODO(jeremy.nimmer) Once there's a bazelisk >= 1.20 that incorporates
+# https://github.com/bazelbuild/bazelisk/pull/563, we should switch to
+# official release downloads instead of our Drake-custom Debian packages.
 if [[ $(arch) = "aarch64" ]]; then
-  # Check if bazel is already installed.
-  if [[ "$(which bazel)" ]]; then
-    echo "Bazel(isk) is already installed." >&2
-  else
-    # TODO(jeremy.nimmer) Once there's a bazelisk 1.20 that incorporates pr563,
-    # we should switch to using that here.
-    dpkg_install_from_wget \
-      bazelisk 1.19.0-9-g58a850f \
-      https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_arm64.deb \
-      5501a44ba1f51298d186e4e66966b0556d03524381a967667696f032e292d719
-  fi
-else
-  # Keep this version number in sync with the drake/.bazeliskrc version number.
   dpkg_install_from_wget \
-    bazel 7.0.2 \
-    https://github.com/bazelbuild/bazel/releases/download/7.0.2/bazel_7.0.2-linux-x86_64.deb \
-    f336e7287de99e2d03953a1b2182785a94936dec6e4c1b4158457c41c509acd7
+    bazelisk 1.19.0-9-g58a850f \
+    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_arm64.deb \
+    5501a44ba1f51298d186e4e66966b0556d03524381a967667696f032e292d719
+else
+  dpkg_install_from_wget \
+    bazelisk 1.19.0-9-g58a850f \
+    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_amd64.deb \
+    c2bfd15d6c3422ae540cda9facc0ac395005e2701c09dbb15d40447b53e831d4
 fi

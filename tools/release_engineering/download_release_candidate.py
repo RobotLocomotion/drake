@@ -154,10 +154,10 @@ def _download_binaries(*, timestamp, staging, version):
 
         binaries = {
             "https://drake-packages.csail.mit.edu/drake/nightly": [
-                f"drake-{timestamp}-jammy.tar.gz",
+                f"drake-0.0.{timestamp}-jammy.tar.gz",
                 # TODO(jwnimmer-tri) This package is not yet available.
                 # f"drake-{timestamp}-noble.tar.gz",
-                f"drake-{timestamp}-mac-arm64.tar.gz",
+                f"drake-0.0.{timestamp}-mac-arm64.tar.gz",
             ],
         }
 

@@ -85,6 +85,7 @@ std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
 
 TEST_F(LinearProgramBoundingBox1, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -105,6 +106,7 @@ TEST_F(LinearProgramBoundingBox1, Solve) {
 
 TEST_F(CsdpLinearProgram2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -124,6 +126,7 @@ TEST_F(CsdpLinearProgram2, Solve) {
 
 TEST_F(CsdpLinearProgram3, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -143,6 +146,7 @@ TEST_F(CsdpLinearProgram3, Solve) {
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.is_available()) {
       SolverOptions solver_options;
@@ -155,6 +159,7 @@ TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
 
 TEST_F(TrivialSDP2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -174,6 +179,7 @@ TEST_F(TrivialSDP2, Solve) {
 
 TEST_F(TrivialSOCP1, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -192,6 +198,7 @@ TEST_F(TrivialSOCP1, Solve) {
 
 TEST_F(TrivialSOCP2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -211,6 +218,7 @@ TEST_F(TrivialSOCP2, Solve) {
 
 TEST_F(TrivialSOCP3, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -231,6 +239,7 @@ TEST_F(TrivialSOCP3, Solve) {
 
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -243,6 +252,7 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -257,6 +267,7 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
 namespace test {
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -273,6 +284,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -286,6 +298,7 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -298,6 +311,7 @@ GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -310,6 +324,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -322,6 +337,7 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -338,6 +354,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -355,6 +372,7 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -369,6 +387,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -382,6 +401,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     SolverOptions solver_options;
     solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
@@ -394,6 +414,7 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
 GTEST_TEST(TestSOS, UnivariateQuarticSos) {
   UnivariateQuarticSos dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -408,6 +429,7 @@ GTEST_TEST(TestSOS, UnivariateQuarticSos) {
 GTEST_TEST(TestSOS, BivariateQuarticSos) {
   BivariateQuarticSos dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -422,6 +444,7 @@ GTEST_TEST(TestSOS, BivariateQuarticSos) {
 GTEST_TEST(TestSOS, SimpleSos1) {
   SimpleSos1 dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -436,6 +459,7 @@ GTEST_TEST(TestSOS, SimpleSos1) {
 GTEST_TEST(TestSOS, MotzkinPolynomial) {
   MotzkinPolynomial dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;
@@ -450,6 +474,7 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
 GTEST_TEST(TestSOS, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
     CsdpSolver solver;
     if (solver.available()) {
       SolverOptions solver_options;

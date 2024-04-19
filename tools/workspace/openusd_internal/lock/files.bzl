@@ -113,6 +113,7 @@ FILES = {
             "declare.h",
             "ilmbase_halfLimits.h",
             "limits.h",
+            "numericCast.h",
             "traits.h",
         ],
         "PRIVATE_CLASSES": [
@@ -288,6 +289,7 @@ FILES = {
             "callContext.h",
             "cxxCast.h",
             "declarePtrs.h",
+            "delegatedCountPtr.h",
             "diagnosticLite.h",
             "functionTraits.h",
             "functionRef.h",
@@ -303,7 +305,6 @@ FILES = {
             "pxrTslRobinMap/robin_hash.h",
             "pxrTslRobinMap/robin_map.h",
             "pxrTslRobinMap/robin_set.h",
-            "preprocessorUtils.h",
             "preprocessorUtilsLite.h",
             "safeTypeCompare.h",
             "span.h",
@@ -337,7 +338,6 @@ FILES = {
         ],
         "CPPFILES": [
             "initConfig.cpp",
-            "preprocessorUtils.cpp",
             "pxrDoubleConversion/bignum-dtoa.cc",
             "pxrDoubleConversion/bignum.cc",
             "pxrDoubleConversion/cached-powers.cc",

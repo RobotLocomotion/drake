@@ -12,7 +12,8 @@ hood.
 
 Follow Drake's
 [platform-specific setup instructions](/from_source.html#mandatory-platform-specific-instructions)
-to install Bazel.
+to install bazelisk at ``/usr/bin/bazel``, which will then automatically
+download the correct version of Bazel necessary for the build.
 
 # Drake clone and platform setup
 
