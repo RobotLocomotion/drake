@@ -39,6 +39,17 @@ inline auto LinkJointGraph::joints(JointIndex joint_index) const
   return joints().at(joint_index);
 }
 
+inline auto LinkJointGraph::mutable_joint(JointIndex joint_index) -> Joint& {
+  return data_.joints.at(joint_index);
+}
+
+inline void LinkJointGraph::set_mobod_for_joint(JointIndex joint_index,
+                                                MobodIndex mobod_index) {
+  Joint& joint = mutable_joint(joint_index);
+  DRAKE_DEMAND(joint.how_modeled_.index() == 0);  // I.e., empty.
+  joint.how_modeled_ = mobod_index;
+}
+
 // LinkJointGraph definitions deferred until LoopConstraint defined.
 
 inline auto LinkJointGraph::loop_constraints(
