@@ -10,7 +10,7 @@ from os.path import join, relpath
 import shutil
 import sys
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 from drake.doc.defs import (
     check_call,

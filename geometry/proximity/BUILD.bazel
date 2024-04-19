@@ -1623,7 +1623,7 @@ drake_py_unittest(
         "//geometry:test_vtk_files",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

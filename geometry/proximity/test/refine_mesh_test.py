@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 class TestRefineMesh(unittest.TestCase):

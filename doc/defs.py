@@ -16,7 +16,7 @@ import sys
 import tempfile
 import traceback
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 # This global variable can be toggled by our main() function.
 _verbose = False

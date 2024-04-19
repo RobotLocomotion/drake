@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 def _read(pathname):

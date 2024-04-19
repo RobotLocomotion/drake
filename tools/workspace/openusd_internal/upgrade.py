@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 import re
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 # This is the full list of OpenUSD libraries that Drake cares about.
 SUBDIRS = [

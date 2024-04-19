@@ -36,7 +36,7 @@ drake_py_unittest(
         "@nlopt_internal//:genrule/nlopt.hpp",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

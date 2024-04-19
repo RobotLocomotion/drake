@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Iterator
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 from pydrake.planning import RobotDiagramBuilder
 
