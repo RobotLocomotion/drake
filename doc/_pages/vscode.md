@@ -29,4 +29,4 @@ on code formatting work well. Take note of "Format Document",
 
 In the VS Code Options configuration, check that the option for
 ``C_Cpp: Clang_format_path`` is set to Drake's preferred value
-``clang-format-12``.
+``clang-format-15``.
