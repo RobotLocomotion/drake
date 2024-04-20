@@ -62,7 +62,7 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
       2 * x_* x_,
       6 * x_* y_,
       3 * x_* x_* y_ + 4 * pow(y_, 3) * z_ + 2,
-      y_*(3 * x_ * x_ + 4 * y_ * y_ * z_) + 2,
+      y_ * (3 * x_ * x_ + 4 * y_ * y_ * z_) + 2,
       6 * pow(x_, 3) * pow(y_, 2),
       2 * pow(x_, 3) * 3 * pow(y_, 2),
       pow(x_, 3) - 4 * x_* y_* y_ + 2 * x_* x_* y_ - 8 * pow(y_, 3),

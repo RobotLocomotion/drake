@@ -176,7 +176,7 @@ CLion such that the modification may not be immediately apparent. When in doubt,
 select away from the target file and back; this will cause the file to refresh
 and you can confirm that the file has been modified as expected.
 
-First, make sure you have installed ``clang-format-12``
+First, make sure you have installed ``clang-format-15``
 (see [Tools for Code Style Compliance](/code_style_tools.html)).
 
 ### Clang format selected file
@@ -186,7 +186,7 @@ following values for the fields:
 
 * **Name:** ``Clang Format Full File``
 * **Description:** ``Apply clang-format to the active file``
-* **Program:** ``clang-format-12``
+* **Program:** ``clang-format-15``
 * **Arguments:** ``-i $FileName$``
 * **Working directory:** ``$FileDir$``
 * **Advanced Options:** Uncheck ``Open console for tool output``
@@ -200,7 +200,7 @@ following values for the fields:
 
 * **Name:** ``Clang Format Selected Lines``
 * **Description:** ``Apply clang-format to the selected lines``
-* **Program:** ``clang-format-12``
+* **Program:** ``clang-format-15``
 * **Arguments:** ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
 * **Working directory:** ``$FileDir$``
 * **Advanced Options:** Uncheck ``Open console for tool output``
