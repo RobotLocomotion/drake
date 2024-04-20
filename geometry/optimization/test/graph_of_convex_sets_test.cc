@@ -1443,7 +1443,9 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 0.5 * Vector2d(1, -1), 1e-6));
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
                                 0.5 * Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1.0, 1e-6);
+    // Gurobi's error is *slightly* larger than 1e-6. This puts in a healthy
+    // margin to account for it.
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1.0, 1.1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
     EXPECT_TRUE(
         CompareMatrices(v[1]->GetSolution(result), Vector2d(1, -1), 1e-6));
