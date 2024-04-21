@@ -14,6 +14,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/specific_options.h"
 
 namespace drake {
 namespace solvers {
@@ -355,17 +356,12 @@ class MosekSolverProgram {
                                MSKint32t>& psd_barvar_indices,
       MathematicalProgramResult* result) const;
 
-  // @param[out] print_to_console Set to true if solver options requires
-  // printing the log to the console.
-  // @param[out] print_file_name Set to the name of the print file store in
-  // solver options. If solver options doesn't store the print file name, then
-  // set *print_file_name to an empty string.
+  // @param[out] is_printing Set to true if solver is printing to console or
+  // file, to indicate we want more details when possible.
   // @param[out] msk_writedata If solver options stores the file for writing
   // data, then put the file name to msk_writedata for later use.
-  MSKrescodee UpdateOptions(const SolverOptions& solver_options,
-                            SolverId mosek_id, bool* print_to_console,
-                            std::string* print_file_name,
-                            std::optional<std::string>* msk_writedata);
+  void UpdateOptions(internal::SpecificOptions* options, bool* is_printing,
+                     std::optional<std::string>* msk_writedata);
 
   MSKtask_t task() const { return task_; }
 

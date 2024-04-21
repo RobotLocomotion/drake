@@ -11,9 +11,9 @@ bool ScsSolver::is_available() {
   return false;
 }
 
-void ScsSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-                        const SolverOptions&,
-                        MathematicalProgramResult*) const {
+void ScsSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                         internal::SpecificOptions*,
+                         MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The SCS bindings were not compiled.  You'll need to use a different "
       "solver.");
