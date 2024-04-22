@@ -23,9 +23,6 @@ namespace internal {
 
 using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 
-// TODO(sherm1) The following describes the aspirational SpanningForest but
-//  some functionality is missing. See PR #20225 for the full implementation.
-
 /** SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
 inboard (closer to World) to outboard. The nodes are mobilized bodies (Mobods)
@@ -158,6 +155,12 @@ class SpanningForest {
   /** Returns `true` if this forest is up to date with respect to its owning
   graph. */
   bool is_valid() const { return graph().forest_is_valid(); }
+
+  bool no_dynamics() const { return data_.no_dynamics; }
+  const std::string& why_no_dynamics() const { return data_.why_no_dynamics; }
+
+  bool has_loops() const;
+  bool has_combined_composites() const;
 
   /** Provides convenient access to the owning graph's links. */
   const std::vector<Link>& links() const { return graph().links(); }
@@ -354,7 +357,9 @@ class SpanningForest {
   // to call _after_ it has cleaned out its own ephemeral elements and
   // out-of-date modeling information. New ephemeral elements and modeling info
   // will be written to the graph.
-  void BuildForest();
+  // @returns true if the forest can be used for anything
+  //          false if it can't be used for dynamics.
+  bool BuildForest();
 
   // Restores this SpanningTree to the state it has immediately after
   // construction. The owning LinkJointGraph remains unchanged.
@@ -417,6 +422,22 @@ class SpanningForest {
 
   // Sets the comparison function to be used in making the "best" choice.
   void SetBaseBodyChoicePolicy();
+
+  // This not-yet-modeled Joint connects two Links both of which are already
+  // modeled in the Forest. We will model the Joint either directly as a
+  // Constraint or by splitting off a shadow of one of the Links and
+  // mobilizing the shadow with a forward or reversed Mobilizer of the Joint's
+  // type. Then we add a Weld Constraint to attach the shadow to its primary.
+  // Some details:
+  //  - we can only use a direct constraint if both Links are massful
+  //  - if one is massless, split the other one
+  //  - if both are massless we have an invalid forest
+  //  - either or both Links may be composites; it is the mass properties
+  //    of the whole composite that determines masslessness.
+  void HandleLoopClosure(JointIndex loop_joint_index);
+
+  const Mobod& AddShadowMobod(BodyIndex outboard_link_index,
+                              JointIndex joint_index);
 
   bool model_instance_is_static(ModelInstanceIndex index) const {
     return static_cast<bool>(options(index) & ForestBuildingOptions::kStatic);
@@ -500,6 +521,11 @@ class SpanningForest {
     // std::priority_queue. It should return true if the left argument is a
     // worse choice than the right argument, according to the policy.
     std::function<bool(const BodyIndex&, const BodyIndex&)> base_body_policy;
+
+    // True if we had to end a branch with a massless body.
+    bool no_dynamics{false};
+    // Human-readable explanation for the above.
+    std::string why_no_dynamics;
   } data_;
 };
 

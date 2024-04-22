@@ -32,6 +32,19 @@ inline void LinkJointGraph::set_primary_mobod_for_link(
   link.joint_ = primary_joint_index;
 }
 
+inline void LinkJointGraph::change_link_flags(BodyIndex link_index,
+                                              LinkFlags flags) {
+  InvalidateForest();
+  mutable_link(link_index).set_flags(flags);
+}
+
+inline bool LinkJointGraph::must_treat_as_massless(BodyIndex link_index) const {
+  const Link& link = links(link_index);
+  // TODO(sherm1) If part of a Composite then this is only massless if the
+  //  entire Composite is composed of massless Links.
+  return link.treat_as_massless();
+}
+
 // LinkJointGraph definitions deferred until Joint defined.
 
 inline auto LinkJointGraph::joints(JointIndex joint_index) const
@@ -48,6 +61,12 @@ inline void LinkJointGraph::set_mobod_for_joint(JointIndex joint_index,
   Joint& joint = mutable_joint(joint_index);
   DRAKE_DEMAND(joint.how_modeled_.index() == 0);  // I.e., empty.
   joint.how_modeled_ = mobod_index;
+}
+
+inline void LinkJointGraph::change_joint_flags(JointIndex joint_index,
+                                               JointFlags flags) {
+  InvalidateForest();
+  mutable_joint(joint_index).set_flags(flags);
 }
 
 // LinkJointGraph definitions deferred until LoopConstraint defined.

@@ -23,9 +23,6 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) The class comment describes the complete functionality of
-//  PR #20225; only part of that code is actually here.
-
 /** Represents a graph consisting of Links (user-defined rigid bodies)
 interconnected by Joints.
 
@@ -177,11 +174,21 @@ class LinkJointGraph {
   forest building options are used. This is done unconditionally; if there
   was already a valid forest it is cleared and then rebuilt. If you don't want
   to rebuild unnecessarily, call forest_is_valid() first to check.
+
+  If there are massless links in the graph, it is possible that one of them
+  ends as the terminal link in a branch. In that case the resulting system will
+  have a singular mass matrix and be unsuited for dynamics. However, it can
+  still be used for kinematics, visualization, and some other analyses so the
+  forest is still produced but we return false here. A human-readable message
+  explaining what happened is available in case you want to report it.
+
+  @returns false if the resulting forest can't be used for dynamics
   @see forest_is_valid() to check whether the SpanningForest is already up
     to date with the graph's contents.
   @see forest() for access to the SpanningForest object.
+  @see forest().why_no_dynamics() for a human-readable explanation.
   @see InvalidateForest() */
-  void BuildForest();
+  bool BuildForest();
 
   /** Invalidates this LinkJointGraph's SpanningForest and removes ephemeral
   "as-built" Link, Joint, and Constraint elements that were added to the graph
@@ -394,6 +401,23 @@ class LinkJointGraph {
   JointIndex MaybeGetJointBetween(BodyIndex link1_index,
                                   BodyIndex link2_index) const;
 
+  /** Returns true if the given Link should be treated as massless. That
+  requires that the Link was marked TreatAsMassless and is not connected by
+  a Weld Joint to a massful Link or Composite. */
+  bool must_treat_as_massless(BodyIndex link_index) const;
+
+  /** (Internal use only) For testing -- invalidates the Forest. */
+  void change_link_flags(BodyIndex link_index, LinkFlags flags);
+
+  /** (Internal use only) For testing -- invalidates the Forest. */
+  void change_joint_flags(JointIndex joint_index, JointFlags flags);
+
+  /** (Internal use only) Change the type of an existing Joint without making
+  any other changes. Invalidates the Forest. Forbids adding a non-weld Joint
+  to a static Link. */
+  void ChangeJointType(JointIndex existing_joint_index,
+                       const std::string& name_of_new_type);
+
   // Forest building requires these joint types so they are predefined.
 
   /** The predefined index for the "weld" joint type. */
@@ -471,6 +495,14 @@ class LinkJointGraph {
   LinkCompositeIndex AddToLinkComposite(BodyIndex maybe_composite_link_index,
                                         BodyIndex new_link_index);
 
+  // While building the Forest, add a new Shadow Link to the given Primary Link,
+  // with the Shadow mobilized by the given Joint. We'll derive a name for the
+  // shadow from the primary, create the Link with appropriate bookkeeping, and
+  // add a Loop Weld Constraint between the primary and shadow (primary will be
+  // Weld's "parent").
+  BodyIndex AddShadowLink(BodyIndex primary_link_index,
+                          JointIndex shadow_joint_index);
+
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
   // call to RegisterJointType().
@@ -487,6 +519,10 @@ class LinkJointGraph {
   const std::vector<BodyIndex>& non_static_must_be_base_body_links() const {
     return data_.non_static_must_be_base_body_links;
   }
+
+  // A link is static if it is in a static model instance or if it has been
+  // explicitly marked static.
+  bool link_is_static(const Link& link) const;
 
   // Group data members so we can have the compiler generate most of the
   // copy/move/assign methods for us while still permitting pointer fixup.
