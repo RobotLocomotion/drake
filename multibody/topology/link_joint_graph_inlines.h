@@ -32,6 +32,13 @@ inline void LinkJointGraph::set_primary_mobod_for_link(
   link.joint_ = primary_joint_index;
 }
 
+inline bool LinkJointGraph::must_treat_as_massless(BodyIndex link_index) const {
+  const Link& link = links(link_index);
+  // TODO(sherm1) If part of a Composite then this is only massless if the
+  //  entire Composite is composed of massless Links.
+  return link.treat_as_massless();
+}
+
 // LinkJointGraph definitions deferred until Joint defined.
 
 inline auto LinkJointGraph::joints(JointIndex joint_index) const

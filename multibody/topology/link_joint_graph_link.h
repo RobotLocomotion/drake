@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -63,7 +64,7 @@ class LinkJointGraph::Link {
   World). */
   bool is_anchored() const {
     return is_world() || is_static() ||
-           (composite().is_valid() && composite() == LinkCompositeIndex(0));
+           (composite().has_value() && composite() == LinkCompositeIndex(0));
   }
 
   /** Returns `true` if this %Link was added with LinkFlags::kStatic. */
@@ -110,9 +111,12 @@ class LinkJointGraph::Link {
   modeled by the Mobod returned by mobod_index(). */
   JointIndex inboard_joint_index() const { return joint_; }
 
-  /** Returns the index of the Composite this %Link is part of, if any.
-  Otherwise returns an invalid index. */
-  LinkCompositeIndex composite() const { return link_composite_index_; }
+  /** Returns the index of the LinkComposite this %Link is part of, if any.
+  World is always in LinkComposite 0; any other link is in a Composite only if
+  it is connected by a weld joint to another link. */
+  std::optional<LinkCompositeIndex> composite() const {
+    return link_composite_index_;
+  }
 
  private:
   friend class LinkJointGraph;
@@ -148,29 +152,18 @@ class LinkJointGraph::Link {
     loop_constraints_.push_back(constraint);
   }
 
-  void clear_model(int num_user_joints) {
-    loop_constraints_.clear();
-    mobod_ = {};
-    joint_ = {};
-    primary_link_ = {};
-    shadow_links_.clear();
-    link_composite_index_ = {};
-
-    auto remove_model_joints =
-        [num_user_joints](std::vector<JointIndex>& joints) {
-          while (!joints.empty() && joints.back() >= num_user_joints)
-            joints.pop_back();
-        };
-
-    remove_model_joints(joints_as_parent_);
-    remove_model_joints(joints_as_child_);
-    remove_model_joints(joints_);
-  }
+  // Removes any as-modeled information added to this user link during forest
+  // building. Forgets any connections with ephemeral links, joints, and
+  // constraints. Preserves only the as-constructed information: index, name,
+  // model instance, flags, and primary_link (= index for a user link).
+  // @pre this is a user link, not a shadow.
+  void ClearModel(int num_user_joints);
 
   BodyIndex index_;
   std::string name_;
   ModelInstanceIndex model_instance_;
   LinkFlags flags_{LinkFlags::kDefault};
+  BodyIndex primary_link_;  // Same as index_ unless this is a shadow link.
 
   // Members below here may contain as-modeled information that has to be
   // removed when the SpanningForest is cleared or rebuilt. The joint
@@ -186,10 +179,11 @@ class LinkJointGraph::Link {
   MobodIndex mobod_;  // Mobod that mobilizes this Link.
   JointIndex joint_;  // Joint that connects us to the Mobod (invalid if World).
 
-  BodyIndex primary_link_;  // Same as index_ if this is a primary link.
   std::vector<BodyIndex> shadow_links_;
 
-  LinkCompositeIndex link_composite_index_;  // Invalid if not in composite.
+  // World is always in a composite; other links are in a composite only
+  // if they are welded to another link.
+  std::optional<LinkCompositeIndex> link_composite_index_;
 };
 
 }  // namespace internal
