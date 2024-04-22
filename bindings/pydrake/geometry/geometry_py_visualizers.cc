@@ -370,13 +370,13 @@ void DoScalarIndependentDefinitions(py::module m) {
     // the GIL during the call (because the member function blocks to wait for a
     // worker thread) and then copies the result into py::bytes while holding
     // the GIL.
-    auto wrap_get_packed_foo = []<typename... Args>(
-        std::string(Class::*member_function)(Args...) const) {
-      return [member_function](const Class& self, Args... args) {
+    auto wrap_get_packed_foo =
+        []<typename... Args>(std::string(Class::*member_func)(Args...) const) {
+      return [member_func](const Class& self, Args... args) {
         std::string result;
         {
           py::gil_scoped_release unlock;
-          result = (self.*member_function)(args...);
+          result = (self.*member_func)(args...);
         }
         return py::bytes(result);
       };
