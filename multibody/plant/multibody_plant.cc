@@ -324,6 +324,7 @@ MultibodyPlant<T>::MultibodyPlant(
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
 
+  AddDeformableModel();
   DeclareSceneGraphPorts();
 }
 
@@ -398,22 +399,12 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     time_step_ = other.time_step_;
     // discrete_update_manager_ is copied below after FinalizePlantOnly().
 
-    // Copy over physical_models_.
+    // Copy over physical models.
     // Note: The physical models must be cloned before `FinalizePlantOnly()` is
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
-    for (auto& model : other.physical_models_) {
-      auto cloned_model = model->template CloneToScalar<T>(this);
-      // TODO(xuchenhan-tri): Rework physical model and discrete update manager
-      //  to eliminate the requirement on the order that they are called with
-      //  respect to Finalize().
-
-      // AddPhysicalModel can't be called here because it's post-finalize. We
-      // have to manually disable scalars that the cloned physical model do not
-      // support.
-      RemoveUnsupportedScalars(*cloned_model);
-      physical_models_.emplace_back(std::move(cloned_model));
-    }
+    physical_models_ = other.physical_models_->template CloneToScalar<T>(this);
+    this->RemoveUnsupportedScalars(*physical_models_);
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_specs_ = other.distance_constraints_specs_;
@@ -1492,22 +1483,21 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 }
 
 template <typename T>
-void MultibodyPlant<T>::AddPhysicalModel(
-    std::unique_ptr<PhysicalModel<T>> model) {
-  // TODO(xuchenhan-tri): Guard against the same type of model being registered
-  //  more than once.
+internal::DummyPhysicalModel<T>* MultibodyPlant<T>::AddDummyModel(
+    std::unique_ptr<internal::DummyPhysicalModel<T>> model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_DEMAND(model != nullptr);
-  auto& added_model = physical_models_.emplace_back(std::move(model));
-  RemoveUnsupportedScalars(*added_model);
+  DRAKE_THROW_UNLESS(model->plant() == this);
+  internal::DummyPhysicalModel<T>* result =
+      physical_models_->AddDummyModel(std::move(model));
+  return result;
 }
 
 template <typename T>
 std::vector<const PhysicalModel<T>*> MultibodyPlant<T>::physical_models()
     const {
   std::vector<const PhysicalModel<T>*> result;
-  for (const std::unique_ptr<PhysicalModel<T>>& model : physical_models_) {
-    result.emplace_back(model.get());
+  for (const auto& model : physical_models_->owned_models()) {
+    result.push_back(model.get());
   }
   return result;
 }
@@ -3100,9 +3090,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
-  for (auto& physical_model : physical_models_) {
-    physical_model->DeclareSystemResources();
-  }
+  physical_models_->DeclareSystemResources();
 }
 
 template <typename T>
@@ -3395,6 +3383,7 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
                                       &MultibodyPlant<T>::CalcFramePoseOutput,
                                       {this->configuration_ticket()})
           .get_index();
+  physical_models_->DeclareSceneGraphPorts();
 }
 
 template <typename T>
@@ -3622,21 +3611,11 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
 template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
-  // TODO(xuchenhan-tri): enforce that there's only ever going to be one
-  // DeformableModel as part of #21355.
-  for (const std::unique_ptr<PhysicalModel<T>>& physical_model :
-       physical_models_) {
-    if (std::holds_alternative<const DeformableModel<T>*>(
-            physical_model->ToPhysicalModelPointerVariant())) {
-      const DeformableModel<T>* deformable_model =
-          std::get<const DeformableModel<T>*>(
-              physical_model->ToPhysicalModelPointerVariant());
-      DRAKE_DEMAND(deformable_model != nullptr);
-      return systems::System<T>::get_output_port(
-          deformable_model->configuration_output_port_index());
-    }
-  }
-  throw std::runtime_error("No deformable body in the plant.");
+  const DeformableModel<T>* deformable_model =
+      physical_models_->deformable_model();
+  DRAKE_DEMAND(deformable_model != nullptr);
+  return systems::System<T>::get_output_port(
+      deformable_model->configuration_output_port_index());
 }
 
 template <typename T>
@@ -3701,6 +3680,17 @@ void MultibodyPlant<T>::set_gravity_enabled(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+DeformableModel<T>* MultibodyPlant<T>::AddDeformableModel() {
+  // TODO(xuchenhan-tri): We should verify that the plant is not finalized yet.
+  // Right now, we can do exactly just that yet because is_finalized() returns
+  // true iff the MultibodyTree is finalized. There's no easy way to confirm
+  // that a plant is not yet finalized when the tree is already finalized.
+  DRAKE_DEMAND(physical_models_->deformable_model() == nullptr);
+  return physical_models_->AddDeformableModel(
+      std::make_unique<DeformableModel<T>>(this));
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc, const CoulombFriction<double>& friction) const {
   DRAKE_ASSERT(speed_BcAc >= 0);
@@ -3743,6 +3733,9 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                        plant_ptr->get_source_id().value()));
   builder->Connect(scene_graph_ptr->get_query_output_port(),
                    plant_ptr->get_geometry_query_input_port());
+  builder->Connect(plant_ptr->get_deformable_body_configuration_output_port(),
+                   scene_graph_ptr->get_source_configuration_port(
+                       plant_ptr->get_source_id().value()));
   return {plant_ptr, scene_graph_ptr};
 }
 

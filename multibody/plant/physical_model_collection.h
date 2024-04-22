@@ -133,6 +133,10 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
     return clone;
   }
 
+  /** Lets all owned models declare output ports in the owning MultibodyPlant to
+   communicate with a SceneGraph. */
+  void DeclareSceneGraphPorts();
+
  private:
   const MultibodyPlant<T>* owning_plant_{nullptr};
   /* We maintain the invariant such that each `model` in `owned_models_`

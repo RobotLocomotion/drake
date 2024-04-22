@@ -54,6 +54,12 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
     return discrete_state_index_;
   }
 
+  bool is_cloneable_to_double() const final { return true; }
+
+  bool is_cloneable_to_autodiff() const final { return true; }
+
+  bool is_cloneable_to_symbolic() const final { return true; }
+
  private:
   /* Allow different specializations to access each other's private data for
    cloning to a different scalar type. */
@@ -81,12 +87,6 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
       MultibodyPlant<symbolic::Expression>* plant) const final {
     return CloneImpl<symbolic::Expression>(plant);
   }
-
-  bool is_cloneable_to_double() const final { return true; }
-
-  bool is_cloneable_to_autodiff() const final { return true; }
-
-  bool is_cloneable_to_symbolic() const final { return true; }
 
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneImpl(

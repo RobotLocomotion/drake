@@ -28,24 +28,7 @@ using fem::MaterialModel;
 
 template <typename T>
 DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
-    : PhysicalModel<T>(plant) {
-  /* Declare the deformable body configuration output port. This port copies the
-   discrete states of all deformable body configurations and put it into a
-   format that's easier for downstream parsing. */
-  configuration_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-              "deformable_body_configuration",
-              []() {
-                return AbstractValue::Make<
-                    geometry::GeometryConfigurationVector<T>>();
-              },
-              [this](const systems::Context<T>& context,
-                     AbstractValue* output) {
-                this->CopyVertexPositions(context, output);
-              },
-              {systems::System<double>::xd_ticket()})
-          .get_index();
-}
+    : PhysicalModel<T>(plant) {}
 
 template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
@@ -323,7 +306,8 @@ template <typename T>
 std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
-  DRAKE_THROW_UNLESS(is_empty());
+  /* We can't throw here even if the model isn't empty because the owning plant
+   transmogrifies to symbolic to check for algebraic loops. */
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 
@@ -459,6 +443,26 @@ void DeformableModel<T>::DoDeclareSystemResources() {
        force_densities_) {
     force_density->DeclareSystemResources(this->mutable_plant());
   }
+}
+
+template <typename T>
+void DeformableModel<T>::DoDeclareSceneGraphPorts() {
+  /* Declare the deformable body configuration output port. This port copies
+   the discrete states of all deformable body configurations and put it into a
+   format that's easier for downstream parsing. */
+  configuration_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              "deformable_body_configuration",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
 }
 
 template <typename T>

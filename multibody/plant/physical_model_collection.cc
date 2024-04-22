@@ -63,6 +63,13 @@ void PhysicalModelCollection<T>::DeclareSystemResources() {
   owning_plant_ = nullptr;
 }
 
+template <typename T>
+void PhysicalModelCollection<T>::DeclareSceneGraphPorts() {
+  for (std::unique_ptr<PhysicalModel<T>>& model : owned_models_) {
+    model->DeclareSceneGraphPorts();
+  }
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
