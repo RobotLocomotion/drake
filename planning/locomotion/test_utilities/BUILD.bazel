@@ -1,0 +1,29 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":zmp_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_test_util",
+    testonly = 1,
+    srcs = ["zmp_test_util.cc"],
+    hdrs = ["zmp_test_util.h"],
+    deps = [
+        "//planning/locomotion:zmp_planner",
+    ],
+)
+
+add_lint_tests()
