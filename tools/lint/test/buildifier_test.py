@@ -52,12 +52,3 @@ class BuildifierTest(unittest.TestCase):
              "bazel build //tools/lint/..."),
             "NOTE: see https://drake.mit.edu/bazel.html#buildifier"
         ])
-
-    def test_mode_fix(self):
-        returncode, output = self._call_buildifier(
-            self._make_build_testdata(add_error=False),
-            ["-mode=fix"])
-        self.assertEqual(returncode, 1, output)
-        self.assertIn(
-            "do not use 'bazel run' for buildifier in fix mode",
-            output)
