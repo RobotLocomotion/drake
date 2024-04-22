@@ -14,6 +14,9 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/solver_interface.h"
+#include "drake/solvers/solver_options.h"
 
 namespace drake {
 namespace geometry {
@@ -284,6 +287,18 @@ class ConvexSet {
   HPolyhedron, then the exact volume cannot be computed. */
   bool has_exact_volume() const { return has_exact_volume_; }
 
+  void set_solver(std::shared_ptr<solvers::SolverInterface> solver) {
+    solver_ = std::move(solver);
+  }
+
+  void set_solver(const solvers::SolverInterface& solver) {
+    solver_ = std::make_shared<solvers::SolverInterface>(solver);
+  }
+
+  void set_solver_options(const solvers::SolverOptions& solver_options) {
+    solver_options_ = solver_options;
+  }
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
@@ -397,6 +412,21 @@ class ConvexSet {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
+  /** Many methods in convex set require solving an optimization program. This
+   is the solver used to solve these programs. If this is a nullptr, Drake will
+   select the best solver.*/
+  std::shared_ptr<solvers::SolverInterface> solver_{nullptr};
+
+  /** Many methods in convex set require solving an optimization program. These
+   options are forwarded to internal calls of Solve() when optimization
+   programs are solved.*/
+  solvers::SolverOptions solver_options_{};
+
+  /** Internal solves of optimization programs should use this method to
+   solve with the user's preferred solver and options if they are set.*/
+  solvers::MathematicalProgramResult DoSolve(
+      const solvers::MathematicalProgram& prog) const;
+
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
@@ -425,9 +455,9 @@ class ConvexSet {
 instances. */
 typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
-/** Helper function that allows the ConvexSets to be initialized from arguments
-containing ConvexSet references, or unique_ptr<ConvexSet> instances, or any
-object that can be assigned to ConvexSets::value_type. */
+/** Helper function that allows the ConvexSets to be initialized from
+arguments containing ConvexSet references, or unique_ptr<ConvexSet> instances,
+or any object that can be assigned to ConvexSets::value_type. */
 template <typename... Args>
 ConvexSets MakeConvexSets(Args&&... args) {
   ConvexSets sets;
