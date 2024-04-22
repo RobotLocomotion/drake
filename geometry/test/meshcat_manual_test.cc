@@ -250,7 +250,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
-  - an orange polytopes (with a similary shaped textured polytope behind it).
+  - an orange polytope (with a similary shaped textured polytope behind it).
     The textured shape has a hole through. The orange polytope is its convex
     hull.
   - a teal capsule (long axis in z)
