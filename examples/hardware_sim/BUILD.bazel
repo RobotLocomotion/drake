@@ -88,7 +88,7 @@ drake_py_library(
     testonly = True,
     srcs = ["test/hardware_sim_test_common.py"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

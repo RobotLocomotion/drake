@@ -27,7 +27,7 @@ set(lapack_md5 "d70fc27a8bdebe00481c97c728184f09")
 list(APPEND ALL_PROJECTS lapack)
 
 # ipopt (requires mumps)
-if(APPLE)
+if(APPLE_ARM64)
     set(mumps_version 5.4.1)  # Latest available in Ubuntu.
     set(mumps_url
         "http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/mumps_${mumps_version}.orig.tar.gz"

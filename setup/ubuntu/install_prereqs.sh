@@ -35,11 +35,11 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
       ;;
-    # Install Bazel from a deb package.
+    # Install bazelisk from a deb package.
     --with-bazel)
       source_distribution_args+=(--with-bazel)
       ;;
-    # Do NOT install bazel.
+    # Do NOT install bazelisk.
     --without-bazel)
       source_distribution_args+=(--without-bazel)
       ;;

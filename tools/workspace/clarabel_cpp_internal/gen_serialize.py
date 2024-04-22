@@ -5,7 +5,7 @@ Generates the serialize.h header file, containing Clarabel's settings names.
 import argparse
 from pathlib import Path
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 _PROLOGUE = """\
 #pragma once

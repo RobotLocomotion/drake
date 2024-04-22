@@ -23,7 +23,7 @@ import tempfile
 from textwrap import dedent
 from typing import Dict, Union
 
-from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
+from python.runfiles import Create as CreateRunfiles
 from flask import Flask, request, send_file
 
 """The main flask application."""

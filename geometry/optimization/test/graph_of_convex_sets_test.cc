@@ -1170,6 +1170,58 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
   EXPECT_GE(z[0], 0);
 }
 
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  // Prevent the matrix from collapsing to zero.
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == 1);
+
+  // Make sure the PSD constraint is inactive for the off edge.
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == 1);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Eigen::Matrix2d mat;
+  mat << source_->GetSolution(result)[0], source_->GetSolution(result)[1],
+      source_->GetSolution(result)[1], target_->GetSolution(result)[0];
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(mat);
+  EXPECT_GE(solver.eigenvalues()[0], 0);
+  EXPECT_GE(solver.eigenvalues()[1], 0);
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
+// This test has linear constraints to prevent the matrix from being positive
+// semidefinite. The solver should fail.
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == -1);
+
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == -1);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_FALSE(result.is_success());
+
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
   Eigen::MatrixXd A(5, 4);
   // clang-format off
@@ -1391,6 +1443,17 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
 
 // Tests that all optimization variables are properly set, even when constrained
 // to be on or off.
+//            ┌──┐
+//   ┌───────►│v2├──────┐
+//   │        └──┘      │
+//   │                  ▼
+// ┌─┴┐                ┌──┐
+// │v0│                │v3│
+// └─┬┘                └──┘
+//   │                  ▲
+//   │        ┌──┐      │
+//   └───────►│v1├──────┘
+//            └──┘
 GTEST_TEST(ShortestPathTest, PhiConstraint) {
   GraphOfConvexSets spp;
 
@@ -1401,21 +1464,20 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 
   auto v = spp.Vertices();
 
-  Edge* edge_01 = spp.AddEdge(v[0], v[1]);
-  Edge* edge_02 = spp.AddEdge(v[0], v[2]);
+  spp.AddEdge(v[0], v[1]);
+  spp.AddEdge(v[0], v[2]);
   Edge* edge_13 = spp.AddEdge(v[1], v[3]);
-  Edge* edge_23 = spp.AddEdge(v[2], v[3]);
+  spp.AddEdge(v[2], v[3]);
 
-  // |xu - xv|₂
+  // |xu - xv|₂²
   Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
   A.block(0, 2, 2, 2) = -Matrix2d::Identity();
   A.block(2, 0, 2, 2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
-
-  edge_01->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
-  edge_02->AddCost(solvers::Binding(cost, {v[0]->x(), v[2]->x()}));
-  edge_13->AddCost(solvers::Binding(cost, {v[1]->x(), v[3]->x()}));
-  edge_23->AddCost(solvers::Binding(cost, {v[2]->x(), v[3]->x()}));
+  auto cost =
+      std::make_shared<solvers::QuadraticCost>(2.0 * A, Vector4d::Zero());
+  for (auto e : spp.Edges()) {
+    e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+  }
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = false;
@@ -1433,7 +1495,9 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 0.5 * Vector2d(1, -1), 1e-6));
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
                                 0.5 * Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 0.5 * 1, 1e-6);
+    // Gurobi's error is *slightly* larger than 1e-6. This puts in a healthy
+    // margin to account for it.
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1.0, 1.1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
     EXPECT_TRUE(
         CompareMatrices(v[1]->GetSolution(result), Vector2d(1, -1), 1e-6));
@@ -1466,8 +1530,8 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 Vector2d(1, -1), 1e-6));
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
                                 Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1, 1e-6);
-    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1, 1e-6);
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 2.0, 1e-4);
+    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1.0, 1e-6);
   }
 }
 

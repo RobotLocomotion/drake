@@ -39,7 +39,7 @@ drake_py_binary(
         "//multibody/parsing:drake_models.json",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

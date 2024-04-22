@@ -1148,7 +1148,7 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_touching",
         "//common:essential",
-        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities",
         "//math:geometric_transform",
     ],
 )
@@ -1623,7 +1623,7 @@ drake_py_unittest(
         "//geometry:test_vtk_files",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

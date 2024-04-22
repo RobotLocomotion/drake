@@ -186,7 +186,7 @@ drake_py_unittest(
         ":initialization_sequence_test_stub",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

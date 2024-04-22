@@ -1154,13 +1154,14 @@ class MathematicalProgram {
    */
   Binding<L2NormCost> AddCost(const Binding<L2NormCost>& binding);
 
+  // TODO(hongkai.dai): support L2NormCost in each solver.
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
-   * @note Currently only the SnoptSolver and IpoptSolver support kL2NormCost.
+   * @note Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
+   * GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
-  // TODO(hongkai.dai): support L2NormCost in each solver.
   Binding<L2NormCost> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -1177,6 +1178,7 @@ class MathematicalProgram {
     return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
   }
 
+  // TODO(hongkai.dai) Decide whether to deprecate this.
   /**
    * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
    * on the slack variable s, together with a Lorentz cone constraint

@@ -25,7 +25,7 @@ import tempfile
 
 import lsb_release
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 def _rlocation(relative_path):

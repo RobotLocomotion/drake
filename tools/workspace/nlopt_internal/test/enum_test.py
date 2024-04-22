@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 class TestEnum(unittest.TestCase):

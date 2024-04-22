@@ -141,7 +141,7 @@ the main body of the document:
    5. Click "Build"; each build will take around an hour, give or take.
    6. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
-      tag the release until all seven builds have succeeded.
+      tag the release until all five builds have succeeded.
 3. Update the release notes to have the ``YYYY-MM-DD`` we choose.
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
