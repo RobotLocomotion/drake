@@ -61,6 +61,8 @@ namespace controllers {
 template <typename T>
 class InverseDynamics final : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics);
+
   enum InverseDynamicsMode {
     /// Full inverse computation mode.
     kInverseDynamics,
@@ -79,14 +81,16 @@ class InverseDynamics final : public LeafSystem<T> {
    * input port.
    * @param plant_context A specific context of `plant` to use for computing
    * inverse dynamics. For example, you can use this to pass in a context with
-   * modified mass parameters. The constructor takes ownership of this context.
-   * If `nullptr`, a default context will be created.
+   * modified mass parameters.  If `nullptr`, the default context of the given
+   * `plant` is used. Note that this will be copied at time of construction, so
+   * there are no lifetime constraints.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
-   * `true`). Also, `plant` and `plant_context` must be compatible.
+   * `true`). Also, `plant_context`, if provided, must be compatible with
+   * `plant`.
    */
   explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
                            InverseDynamicsMode mode = kInverseDynamics,
-                           std::unique_ptr<Context<T>> plant_context = nullptr);
+                           const Context<T>* plant_context = nullptr);
 
   /**
    * Constructs the InverseDynamics system and takes the ownership of the
@@ -96,15 +100,11 @@ class InverseDynamics final : public LeafSystem<T> {
    */
   explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
                            InverseDynamicsMode mode = kInverseDynamics,
-                           std::unique_ptr<Context<T>> plant_context = nullptr);
+                           const Context<T>* plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit InverseDynamics(const InverseDynamics<U>& other);
-
-  InverseDynamics& operator=(const InverseDynamics&) = delete;
-  InverseDynamics& operator=(InverseDynamics&&) = delete;
-  InverseDynamics(InverseDynamics&&) = delete;
 
   ~InverseDynamics() override;
 
@@ -137,16 +137,26 @@ class InverseDynamics final : public LeafSystem<T> {
   }
 
  private:
-  InverseDynamics(const InverseDynamics& other);
-
   // Other constructors delegate to this private constructor.
   InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
                   const multibody::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode,
-                  std::unique_ptr<Context<T>> plant_context);
+                  InverseDynamicsMode mode, const Context<T>* plant_context);
 
-  template<typename U>
-  static InverseDynamics<T> ScalarConvert(const InverseDynamics<U>& other);
+  // Helper data structure for scalar conversion.
+  struct ScalarConversionData {
+    std::unique_ptr<multibody::MultibodyPlant<T>> plant;
+    InverseDynamicsMode mode;
+    std::unique_ptr<Context<T>> plant_context;
+  };
+
+  // Helper function for the scalar conversion constructor that extracts the
+  // plant context from `other` and scalar converts it to this scalar type, T.
+  template <typename U>
+  static ScalarConversionData ScalarConvertHelper(
+      const InverseDynamics<U>& other);
+
+  // Delegate constructor for scalar conversion.
+  explicit InverseDynamics(ScalarConversionData&& data);
 
   template <typename>
   friend class InverseDynamics;

@@ -89,7 +89,7 @@ PYBIND11_MODULE(controllers, m) {
     }
     cls  // BR
         .def(py::init<const MultibodyPlant<double>*, Class::InverseDynamicsMode,
-                 std::unique_ptr<systems::Context<double>>>(),
+                 const systems::Context<double>*>(),
             py::arg("plant"), py::arg("mode") = Class::kInverseDynamics,
             py::arg("plant_context") = nullptr, cls_doc.ctor.doc)
         .def("is_pure_gravity_compensation",
@@ -117,7 +117,7 @@ PYBIND11_MODULE(controllers, m) {
         m, "InverseDynamicsController", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
                  const VectorX<double>&, const VectorX<double>&, bool,
-                 std::unique_ptr<systems::Context<double>>>(),
+                 const systems::Context<double>*>(),
             py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("has_reference_acceleration"),
             py::arg("plant_context") = nullptr,
