@@ -159,6 +159,15 @@ class SpanningForest {
   graph. */
   bool is_valid() const { return graph().forest_is_valid(); }
 
+  /** Returns `true` if this forest can be used for dynamics (the usual case).
+  Otherwise, the presence of a terminal massless body will make the resulting
+  mass matrix singular, restricting use to kinematic operations. */
+  bool dynamics_ok() const { return data_.dynamics_ok; }
+
+  /** If dynamics_ok() returns `false`, returns a human-readable message
+  explaining why. Otherwise returns the empty string. */
+  const std::string& why_no_dynamics() const { return data_.why_no_dynamics; }
+
   /** Provides convenient access to the owning graph's links. */
   const std::vector<Link>& links() const { return graph().links(); }
 
@@ -351,7 +360,11 @@ class SpanningForest {
   // to call _after_ it has cleaned out its own ephemeral elements and
   // out-of-date modeling information. New ephemeral elements and modeling info
   // will be written to the graph.
-  void BuildForest();
+  // @returns true if the forest can be used for anything
+  //          false if it can't be used for dynamics.
+  // @see LinkJointGraph::BuildForest() documentation for more about whether
+  //      the result can be used for dynamics.
+  bool BuildForest();
 
   // Restores this SpanningTree to the state it has immediately after
   // construction. The owning LinkJointGraph remains unchanged.
@@ -415,6 +428,24 @@ class SpanningForest {
   // Sets the comparison function to be used in making the "best" choice.
   void SetBaseBodyChoicePolicy();
 
+  // The not-yet-modeled Joint given by `loop_joint_index` connects two Links
+  // both of which are already modeled in the Forest. We will model the Joint by
+  // splitting off a shadow of one of the Links and mobilizing the shadow with a
+  // forward or reversed Mobilizer of the Joint's type. Then we add a Weld
+  // Constraint to attach the shadow to its primary. Some details:
+  //  - if one link is massless, split the other one
+  //  - if both are massless we have an invalid forest
+  //  - either or both Links may be composites; it is the mass properties
+  //    of the whole composite that determines masslessness.
+  void HandleLoopClosure(JointIndex loop_joint_index);
+
+  // Adds a shadow Link of the given primary and mobilizes the shadow with
+  // the given joint which was originally connected to the primary. Adds a
+  // weld constraint to reattach the shadow to the primary. The shadow and
+  // weld are added to the graph as ephemeral elements.
+  const Mobod& AddShadowMobod(BodyIndex primary_link_index,
+                              JointIndex shadow_joint_index);
+
   bool model_instance_is_static(ModelInstanceIndex index) const {
     return static_cast<bool>(options(index) & ForestBuildingOptions::kStatic);
   }
@@ -429,16 +460,17 @@ class SpanningForest {
                              ForestBuildingOptions::kUseRpyFloatingJoints);
   }
 
-  // Returns the appropriate joint type to use for this model instance when
-  // attaching a base body to World. Can be fixed or floating, and floating
-  // can be rpy or quaternion, depending on modeling options.
-  JointTypeIndex base_joint_type_index(
+  // Returns the index to the traits for the appropriate joint type to use for
+  // this model instance when attaching a base body to World. Can be fixed or
+  // floating, and floating can be rpy or quaternion, depending on modeling
+  // options.
+  JointTraitsIndex base_joint_traits_index(
       ModelInstanceIndex model_instance_index) const {
     if (use_fixed_base(model_instance_index))
-      return LinkJointGraph::weld_joint_type_index();
+      return LinkJointGraph::weld_joint_traits_index();
     return use_rpy_floating_joint(model_instance_index)
-               ? LinkJointGraph::rpy_floating_joint_type_index()
-               : LinkJointGraph::quaternion_floating_joint_type_index();
+               ? LinkJointGraph::rpy_floating_joint_traits_index()
+               : LinkJointGraph::quaternion_floating_joint_traits_index();
   }
 
   bool link_is_already_in_forest(BodyIndex link_index) const {
@@ -497,6 +529,11 @@ class SpanningForest {
     // std::priority_queue. It should return true if the left argument is a
     // worse choice than the right argument, according to the policy.
     std::function<bool(const BodyIndex&, const BodyIndex&)> base_body_policy;
+
+    // Set to false if we had to end a branch with a massless body.
+    bool dynamics_ok{true};
+    // Human-readable explanation for the above.
+    std::string why_no_dynamics;
   } data_;
 };
 
