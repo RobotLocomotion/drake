@@ -148,24 +148,7 @@ class LinkJointGraph::Link {
     loop_constraints_.push_back(constraint);
   }
 
-  void clear_model(int num_user_joints) {
-    loop_constraints_.clear();
-    mobod_ = {};
-    joint_ = {};
-    primary_link_ = {};
-    shadow_links_.clear();
-    link_composite_index_ = {};
-
-    auto remove_model_joints =
-        [num_user_joints](std::vector<JointIndex>& joints) {
-          while (!joints.empty() && joints.back() >= num_user_joints)
-            joints.pop_back();
-        };
-
-    remove_model_joints(joints_as_parent_);
-    remove_model_joints(joints_as_child_);
-    remove_model_joints(joints_);
-  }
+  void clear_model(int num_user_joints);
 
   BodyIndex index_;
   std::string name_;

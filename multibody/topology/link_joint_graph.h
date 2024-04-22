@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -16,6 +17,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/ssize.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/multibody/topology/link_joint_graph_defs.h"
 
 namespace drake {
@@ -90,7 +92,13 @@ class LinkJointGraph {
   class Joint;
   class LoopConstraint;
 
-  struct JointType;  // Defined below.
+  /** This is all we need to know about joint types for topological purposes. */
+  struct JointTraits {
+    std::string name;
+    int nq{-1};
+    int nv{-1};
+    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
+  };
 
   /** Default construction defines well-known joint types and World. */
   LinkJointGraph();
@@ -103,10 +111,7 @@ class LinkJointGraph {
   instance that does not have its own forest building options set. Invalidates
   the current forest.
   @see SetForestBuildingOptions() */
-  void SetGlobalForestBuildingOptions(ForestBuildingOptions global_options) {
-    InvalidateForest();
-    data_.global_forest_building_options = global_options;
-  }
+  void SetGlobalForestBuildingOptions(ForestBuildingOptions global_options);
 
   /** Gets the forest building options to be used for elements of any model
   instance that does not have its own forest building options set. If no call
@@ -125,44 +130,44 @@ class LinkJointGraph {
   world_model_instance() and default_model_instance() respectively.
   @see SetGlobalForestBuildingOptions() */
   void SetForestBuildingOptions(ModelInstanceIndex model_instance,
-                                ForestBuildingOptions options) {
-    InvalidateForest();
-    data_.model_instance_forest_building_options[model_instance] = options;
-  }
+                                ForestBuildingOptions options);
 
   /** Gets the forest building options to be used for elements of the given
-  `model_instance`. Returns the options set explicitly for this
-  `model_instance`, if any. Otherwise, returns what
-  get_global_forest_building_options() returns. */
+  model instance. Returns the options set explicitly for this model instance,
+  if any. Otherwise, returns what get_global_forest_building_options() returns.
+  @pre `instance_index` is any valid index */
   ForestBuildingOptions get_forest_building_options_in_use(
-      ModelInstanceIndex model_instance) const {
-    DRAKE_DEMAND(model_instance.is_valid());
-    auto instance_options =
-        data_.model_instance_forest_building_options.find(model_instance);
-    return instance_options ==
-                   data_.model_instance_forest_building_options.end()
-               ? get_global_forest_building_options()  // Use global default.
-               : instance_options->second;
+      ModelInstanceIndex instance_index) const {
+    return get_model_instance_options(instance_index)
+        .value_or(get_global_forest_building_options());
   }
 
   /** Resets the global forest building options to kDefault and removes any
   per-model instance options that were set. */
-  void ResetForestBuildingOptions() {
-    InvalidateForest();
-    data_.global_forest_building_options = ForestBuildingOptions::kDefault;
-    data_.model_instance_forest_building_options.clear();
-  }
+  void ResetForestBuildingOptions();
 
   /** Models this LinkJointGraph as a spanning forest, records the result
   into this graph's SpanningForest object, and marks it valid. The currently-set
   forest building options are used. This is done unconditionally; if there
   was already a valid forest it is cleared and then rebuilt. If you don't want
   to rebuild unnecessarily, call forest_is_valid() first to check.
+
+  If there are massless links in the graph, it is possible that one of them
+  ends as the terminal link in a branch. In that case the resulting system will
+  have a singular mass matrix and be unsuited for dynamics. However, it can
+  still be used for kinematics, visualization, and some other analyses so the
+  forest is still considered valid. In that case we return `false` here and
+  a human-readable message explaining what happened is available in case you
+  want to report it.
+
+  @returns true if the resulting forest can be used for dynamics.
   @see forest_is_valid() to check whether the SpanningForest is already up
     to date with the graph's contents.
   @see forest() for access to the SpanningForest object.
+  @see forest().why_no_dynamics() for a human-readable explanation if
+    BuildForest() returned `false`.
   @see InvalidateForest() */
-  void BuildForest();
+  bool BuildForest();
 
   /** Invalidates this LinkJointGraph's SpanningForest and removes ephemeral
   "as-built" Link, Joint, and Constraint elements that were added to the graph
@@ -203,14 +208,16 @@ class LinkJointGraph {
   @param[in] model_instance
     The model instance to which this Link belongs.
   @param[in] flags
-    Optional LinkFlags requesting special handling for this Link.
+    Optional LinkFlags requesting special handling for this Link. Don't set
+    any flags marked "internal use only" (currently just `Shadow`).
   @note The World Link is always predefined with name "world" (case sensitive),
     model instance world_model_instance(), and index 0.
   @returns The unique BodyIndex for the added Link in the graph.
   @throws std::exception if `name` is duplicated within `model_instance`.
   @throws std::exception if an attempt is made to add a link into the World's
     model instance
-  @throws std::exception if the internal-only Shadow flag is set. */
+  @throws std::exception if the `flags` parameter has any internal-only flags
+    set (currently just `Shadow`). */
   BodyIndex AddLink(const std::string& name, ModelInstanceIndex model_instance,
                     LinkFlags flags = LinkFlags::kDefault);
 
@@ -244,7 +251,7 @@ class LinkJointGraph {
   @throws std::exception if a static Link is connected to World by anything
       other than a "weld" Joint. */
   JointIndex AddJoint(const std::string& name,
-                      ModelInstanceIndex model_instance,
+                      ModelInstanceIndex model_instance_index,
                       const std::string& type, BodyIndex parent_link_index,
                       BodyIndex child_link_index,
                       JointFlags flags = JointFlags::kDefault);
@@ -252,7 +259,7 @@ class LinkJointGraph {
   /** Returns the Link that corresponds to World (always predefined). */
   const Link& world_link() const;
 
-  /** Registers a joint type by name.
+  /** Registers a joint type by name and provides the joint traits for it.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "revolute" or
     "prismatic". Should match the MultibodyPlant name for the Joint it
@@ -265,31 +272,33 @@ class LinkJointGraph {
     of this type of Joint.
   @param[in] has_quaternion
     Whether the first four q values represent a quaternion (in w[xyz] order).
-  @retval joint_type_index
+  @retval joint_traits_index
     Unique index assigned to the new joint type.
   @throws std::exception if `joint_type_name` was already used for a
     previously registered joint type.
   @pre 0 ≤ nq ≤ 7, 0 ≤ nv ≤ 6, nv ≤ nq, !has_quaternion or nq ≥ 4.
 
-  @note LinkJointGraph is preloaded with Drake-specific Joint types it needs to
-  know about including "weld", "quaternion_floating", and "rpy_floating". */
-  JointTypeIndex RegisterJointType(const std::string& joint_type_name, int nq,
-                                   int nv, bool has_quaternion = false);
+  @note LinkJointGraph is preloaded with the traits for Drake-specific Joint
+  types it needs to know about including "weld", "quaternion_floating", and
+  "rpy_floating". */
+  JointTraitsIndex RegisterJointType(const std::string& joint_type_name, int nq,
+                                     int nv, bool has_quaternion = false);
 
   /** Returns `true` if the given `joint_type_name` was previously registered
   via a call to RegisterJointType(), or is one of the pre-registered names. */
   bool IsJointTypeRegistered(const std::string& joint_type_name) const;
 
-  /** Returns a reference to the vector of known and registered Joint types. */
-  const std::vector<JointType>& joint_types() const {
-    return data_.joint_types;
+  /** Returns a reference to the vector of traits for the known and registered
+  Joint types. */
+  const std::vector<JointTraits>& joint_traits() const {
+    return data_.joint_traits;
   }
 
-  /** Returns a reference to a particular JointType using one of the
+  /** Returns a reference to a particular JointTraits object using one of the
   predefined indices or an index returned by RegisterJointType(). Requires a
-  JointTypeIndex, not a plain integer.*/
-  const JointType& joint_types(JointTypeIndex index) const {
-    return joint_types().at(index);
+  JointTraitsIndex, not a plain integer.*/
+  const JointTraits& joint_traits(JointTraitsIndex index) const {
+    return joint_traits().at(index);
   }
 
   /** Returns a reference to the vector of Link objects. World is always the
@@ -305,11 +314,13 @@ class LinkJointGraph {
   const std::vector<Joint>& joints() const { return data_.joints; }
 
   /** Returns a reference to a particular Joint using the index returned by
-  AddJoint(). Joints added by BuildForest() are indexed last. Requires a
-  JointIndex, not a plain integer. */
+  AddJoint(). Ephemeral joints added by BuildForest() are indexed last. Requires
+  a JointIndex, not a plain integer. */
   inline const Joint& joints(JointIndex joint_index) const;
 
-  /** Returns a reference to the vector of LoopConstraint objects. */
+  /** Returns a reference to the vector of LoopConstraint objects. These are
+  always "ephemeral" (added during forest-building) so this will return empty
+  if there is no valid Forest. See the class comment for more information. */
   const std::vector<LoopConstraint>& loop_constraints() const {
     return data_.loop_constraints;
   }
@@ -319,17 +330,20 @@ class LinkJointGraph {
   inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex constraint_index) const;
 
-  /** Links with this index or higher were added during modeling. */
+  /** Links with this index or higher are "ephemeral" (added during
+  forest-building). See the class comment for more information. */
   int num_user_links() const { return data_.num_user_links; }
 
-  /** Joints with this index or higher were added during modeling. */
+  /** Joints with this index or higher are "ephemeral" (added during
+  forest-building). See the class comment for more information. */
   int num_user_joints() const { return data_.num_user_joints; }
 
-  /** After the Forest has been built, returns the mobilized body (Mobod)
-  followed by this Link. If the Link is part of a composite, this will be the
-  mobilized body for the whole composite. If the Link was split into a primary
-  and shadows, this is the mobilized body followed by the primary. */
-  MobodIndex link_to_mobod(BodyIndex index) const;  // See below
+  /** After the SpanningForest has been built, returns the mobilized body
+  (Mobod) followed by this Link. If the Link is part of a composite, this will
+  be the mobilized body for the whole composite. If the Link was split into a
+  primary and shadows, this is the mobilized body followed by the primary. If
+  there is no valid Forest, the returned index will be invalid. */
+  MobodIndex link_to_mobod(BodyIndex index) const;
 
   /** After the SpanningForest has been built, returns groups of Links that are
   welded together, which we call "LinkComposites". Each group may be modeled
@@ -337,18 +351,23 @@ class LinkJointGraph {
   depending on modeling options, but that doesn't change anything here. The
   first entry in each LinkComposite is the "active link", the one whose
   (non-weld) Joint moves the whole LinkComposite due to its modeling in the
-  Spanning Forest. The rest of the Links in the composite are listed in no
+  SpanningForest. The rest of the Links in the composite are listed in no
   particular order.
 
-  The 0th LinkComposite is always present and its first entry is World
-  (Link 0), even if nothing else is welded to World. Otherwise, composites
-  are present here if they contain two or more welded Links; Links that aren't
-  welded to any other Links are not included here at all. LinkComposites
-  are discovered as a side effect of Forest-building; there is no cost to
-  accessing them here. */
+  The 0th LinkComposite is always present (if there is a valid SpanningForest)
+  and its first entry is World (Link 0), even if nothing else is welded to
+  World. Otherwise, composites are present here if they contain two or more
+  welded Links; Links that aren't welded to any other Links are not included
+  here at all. LinkComposites are discovered as a side effect of
+  forest-building; there is no cost to accessing them here.
+
+  If there is no valid Forest, the returned vector is empty. */
   const std::vector<std::vector<BodyIndex>>& link_composites() const {
     return data_.link_composites;
   }
+
+  /** Returns a reference to a particular LinkComposite. Requires a
+  LinkCompositeIndex, not a plain integer.*/
   const std::vector<BodyIndex>& link_composites(
       LinkCompositeIndex composite_link_index) const {
     return link_composites().at(composite_link_index);
@@ -356,15 +375,15 @@ class LinkJointGraph {
 
   /** @returns `true` if a Link named `name` was added to `model_instance`.
   @see AddLink().
-  @throws std::exception if `model_instance` is not a valid index. */
-  bool HasLinkNamed(const std::string& name,
-                    ModelInstanceIndex model_instance) const;
+  @throws std::exception if `model_instance_index` is not a valid index. */
+  bool HasLinkNamed(std::string_view name,
+                    ModelInstanceIndex model_instance_index) const;
 
   /** @returns `true` if a Joint named `name` was added to `model_instance`.
   @see AddJoint().
-  @throws std::exception if `model_instance` is not a valid index. */
-  bool HasJointNamed(const std::string& name,
-                     ModelInstanceIndex model_instance) const;
+  @throws std::exception if `model_instance_index` is not a valid index. */
+  bool HasJointNamed(std::string_view name,
+                     ModelInstanceIndex model_instance_index) const;
 
   /** If there is a Joint connecting the given Links, returns its index.
   Otherwise the returned index will be invalid. You can call this any time and
@@ -375,28 +394,44 @@ class LinkJointGraph {
   JointIndex MaybeGetJointBetween(BodyIndex link1_index,
                                   BodyIndex link2_index) const;
 
+  /** Returns true if the given Link should be treated as massless. That
+  requires that the Link was marked TreatAsMassless and is not connected by
+  a Weld Joint to a massful Link or Composite. */
+  bool must_treat_as_massless(BodyIndex link_index) const;
+
+  /** (Internal use only) For testing -- invalidates the Forest. */
+  void ChangeLinkFlags(BodyIndex link_index, LinkFlags flags);
+
+  /** (Internal use only) For testing -- invalidates the Forest. */
+  void ChangeJointFlags(JointIndex joint_index, JointFlags flags);
+
+  /** (Internal use only) Changes the type of an existing user-defined Joint
+  without making any other changes. Invalidates the Forest, even if the new
+  type is the same as the current type.
+  @throws std::exception if called on an ephemeral (added) joint.
+  @throws std::exception if an attempt is made to change a static link's joint
+   to anything other than a weld.
+  @pre the joint index is in range and the type name is of a registered or
+    predefined joint type. */
+  void ChangeJointType(JointIndex existing_joint_index,
+                       const std::string& name_of_new_type);
+
   // Forest building requires these joint types so they are predefined.
 
-  /** The predefined index for the "weld" joint type. */
-  static JointTypeIndex weld_joint_type_index() { return JointTypeIndex(0); }
-
-  /** The predefined index for the "quaternion_floating" joint type. */
-  static JointTypeIndex quaternion_floating_joint_type_index() {
-    return JointTypeIndex(1);
+  /** The predefined index for the "weld" joint type's traits. */
+  static JointTraitsIndex weld_joint_traits_index() {
+    return JointTraitsIndex(0);
   }
 
-  /** The predefined index for the "rpy_floating" joint type. */
-  static JointTypeIndex rpy_floating_joint_type_index() {
-    return JointTypeIndex(2);
+  /** The predefined index for the "quaternion_floating" joint type's traits. */
+  static JointTraitsIndex quaternion_floating_joint_traits_index() {
+    return JointTraitsIndex(1);
   }
 
-  /** This is all we need to know about joint types for topological purposes. */
-  struct JointType {
-    std::string name;
-    int nq{-1};
-    int nv{-1};
-    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
-  };
+  /** The predefined index for the "rpy_floating" joint type's traits. */
+  static JointTraitsIndex rpy_floating_joint_traits_index() {
+    return JointTraitsIndex(2);
+  }
 
  private:
   friend class SpanningForest;
@@ -442,7 +477,7 @@ class LinkJointGraph {
   // Adds the ephemeral Joint for a floating or fixed base Link to mirror a
   // mobilizer added during BuildForest(). World is the parent and the given
   // base Link is the child for the new Joint.
-  JointIndex AddEphemeralJointToWorld(JointTypeIndex type_index,
+  JointIndex AddEphemeralJointToWorld(JointTraitsIndex type_index,
                                       BodyIndex child_link_index);
 
   // Adds the new Link to the LinkComposite of which maybe_composite_link is a
@@ -452,10 +487,21 @@ class LinkJointGraph {
   LinkCompositeIndex AddToLinkComposite(BodyIndex maybe_composite_link_index,
                                         BodyIndex new_link_index);
 
-  // Finds the assigned index for a joint type from the type name. Returns an
-  // invalid index if `joint_type_name` was not previously registered with a
-  // call to RegisterJointType().
-  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;
+  // While building the Forest, add a new Shadow Link to the given Primary Link,
+  // with the Shadow mobilized by the given Joint. We'll derive a name for the
+  // shadow from the primary, create the Link with appropriate bookkeeping, and
+  // add a Loop Weld Constraint between the primary and shadow (primary will be
+  // Weld's "parent"). The shadow link's Mobod is always terminal in the forest
+  // but the shadow link may serve as the parent link for the joint if the
+  // sense of the joint is reversed from the implementing mobilizer.
+  BodyIndex AddShadowLink(BodyIndex primary_link_index,
+                          JointIndex shadow_joint_index, bool shadow_is_parent);
+
+  // Finds the assigned index for a joint's traits from the joint's type name.
+  // Returns an invalid index if `joint_type_name` was not previously registered
+  // with a call to RegisterJointType().
+  JointTraitsIndex GetJointTraitsIndex(
+      const std::string& joint_type_name) const;
 
   // Links that were explicitly flagged LinkFlags::kStatic in AddLink().
   const std::vector<BodyIndex>& static_links() const {
@@ -467,6 +513,20 @@ class LinkJointGraph {
   // definition they are welded to World).
   const std::vector<BodyIndex>& non_static_must_be_base_body_links() const {
     return data_.non_static_must_be_base_body_links;
+  }
+
+  // A link is static if it is in a static model instance or if it has been
+  // explicitly marked static.
+  bool link_is_static(const Link& link) const;
+
+  // For any valid index: if in range, returns the stored model instance options
+  // (which will be nullopt if never set), otherwise nullopt.
+  std::optional<ForestBuildingOptions> get_model_instance_options(
+      ModelInstanceIndex instance_index) const {
+    DRAKE_ASSERT(instance_index);
+    return instance_index < ssize(data_.model_instance_forest_building_options)
+               ? data_.model_instance_forest_building_options[instance_index]
+               : std::nullopt;
   }
 
   // Group data members so we can have the compiler generate most of the
@@ -481,7 +541,7 @@ class LinkJointGraph {
     Data& operator=(const Data&);
     Data& operator=(Data&&);
 
-    std::vector<JointType> joint_types;
+    std::vector<JointTraits> joint_traits;
 
     // The first entry in links is the World Link with BodyIndex(0) and name
     // world_link().name(). Ephemeral "as-built" links and joints are placed
@@ -506,15 +566,15 @@ class LinkJointGraph {
     std::map<ModelInstanceIndex, std::vector<BodyIndex>>
         model_instance_to_links;
 
-    // This must always have the same number of entries as joint_types_.
-    std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index;
+    // This must always have the same number of entries as joint_traits_.
+    string_unordered_map<JointTraitsIndex> joint_type_name_to_index;
 
     // The xxx_name_to_index_ structures are multimaps because
     // links/joints/actuators/etc may appear with the same name in different
     // model instances. The index values are still unique across the graph.
     // These include only user-supplied links and joints.
-    std::unordered_multimap<std::string, BodyIndex> link_name_to_index;
-    std::unordered_multimap<std::string, JointIndex> joint_name_to_index;
+    string_unordered_multimap<BodyIndex> link_name_to_index;
+    string_unordered_multimap<JointIndex> joint_name_to_index;
 
     // The 0th composite always exists and contains World (listed first)
     // and any links welded (recursively) to World. The other composites are
@@ -527,14 +587,14 @@ class LinkJointGraph {
     // These parallel {link,joint}_name_to_index except they hold mappings
     // for ephemeral links and joints added during forest-building. We keep
     // them separately so they are easy to get rid of.
-    std::unordered_multimap<std::string, BodyIndex>
-        ephemeral_link_name_to_index;
-    std::unordered_multimap<std::string, JointIndex>
-        ephemeral_joint_name_to_index;
+    string_unordered_multimap<BodyIndex> ephemeral_link_name_to_index;
+    string_unordered_multimap<JointIndex> ephemeral_joint_name_to_index;
 
     ForestBuildingOptions global_forest_building_options{
         ForestBuildingOptions::kDefault};
-    std::map<ModelInstanceIndex, ForestBuildingOptions>
+
+    // Indexed by ModelInstanceIndex.
+    std::vector<std::optional<ForestBuildingOptions>>
         model_instance_forest_building_options;
 
     // Contains a back pointer to the graph so needs fixup post copy or move.
