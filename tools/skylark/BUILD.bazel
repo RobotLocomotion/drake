@@ -29,7 +29,7 @@ drake_py_unittest(
         ":pathutils.bzl",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

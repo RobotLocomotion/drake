@@ -3,7 +3,7 @@ import sys
 import time
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 # On macOS, we don't want to support this (somewhat tricky) test case on an
 # ongoing basis, we'll skip it.  (Thus, we also don't try to install psutil

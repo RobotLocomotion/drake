@@ -90,6 +90,6 @@ def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
             "//tools/performance:benchmark_tool",
         ],
         deps = [
-            "@bazel_tools//tools/python/runfiles",
+            "@rules_python//python/runfiles",
         ],
     )

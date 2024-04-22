@@ -12,7 +12,7 @@ py_binary(
         "manual",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

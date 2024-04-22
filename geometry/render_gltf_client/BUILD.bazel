@@ -257,7 +257,7 @@ drake_py_binary(
     srcs = ["test/server_demo.py"],
     data = [":server_vtk_backend"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -338,7 +338,7 @@ drake_py_unittest(
         ":server_vtk_backend",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -360,7 +360,7 @@ drake_py_unittest(
         "cpu:2",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -404,7 +404,7 @@ drake_py_unittest(
         ":all_gltfs_and_images",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

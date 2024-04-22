@@ -16,7 +16,7 @@ import sys
 
 import yaml
 
-from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
+from python.runfiles import Create as CreateRunfiles
 
 
 class HardwareSimTest:

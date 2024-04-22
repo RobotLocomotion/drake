@@ -2,7 +2,7 @@ import glob
 import os
 import unittest
 
-from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
+from python.runfiles import Create as CreateRunfiles
 
 MAXIMUM_FILE_SIZE = 50000  # 50KB.
 

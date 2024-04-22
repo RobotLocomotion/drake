@@ -43,7 +43,7 @@ drake_py_unittest(
     ],
     deps = [
         ":module_py",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

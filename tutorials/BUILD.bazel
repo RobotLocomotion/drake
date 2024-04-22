@@ -179,7 +179,7 @@ drake_py_test(
     data = _NOTEBOOKS,
     tags = ["lint"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
