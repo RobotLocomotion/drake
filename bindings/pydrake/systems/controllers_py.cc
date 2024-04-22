@@ -89,7 +89,7 @@ PYBIND11_MODULE(controllers, m) {
     }
     cls  // BR
         .def(py::init<const MultibodyPlant<double>*, Class::InverseDynamicsMode,
-                 std::unique_ptr<systems::Context<double>>>(),
+                 const systems::Context<double>*>(),
             py::arg("plant"), py::arg("mode") = Class::kInverseDynamics,
             py::arg("plant_context") = nullptr, cls_doc.ctor.doc)
         .def("is_pure_gravity_compensation",

@@ -101,7 +101,7 @@ class InverseDynamicsController final
       const VectorX<double>& ki,
       const VectorX<double>& kd,
       bool has_reference_acceleration,
-      std::unique_ptr<Context<T>> = nullptr);
+      const Context<T>* plant_context = nullptr);
 
   /**
    * Constructs an inverse dynamics controller and takes the ownership of the
@@ -114,7 +114,7 @@ class InverseDynamicsController final
                             const VectorX<double>& ki,
                             const VectorX<double>& kd,
                             bool has_reference_acceleration,
-                            std::unique_ptr<Context<T>> = nullptr);
+                            const Context<T>* plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -170,7 +170,7 @@ class InverseDynamicsController final
   void SetUp(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
              const VectorX<double>& kp, const VectorX<double>& ki,
              const VectorX<double>& kd,
-             std::unique_ptr<Context<T>> plant_context);
+             const Context<T>* plant_context);
 
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};

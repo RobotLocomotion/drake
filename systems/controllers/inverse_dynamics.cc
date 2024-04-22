@@ -14,7 +14,7 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(
     std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
     const MultibodyPlant<T>* plant, const InverseDynamicsMode mode,
-    std::unique_ptr<Context<T>> plant_context)
+    const Context<T>* plant_context)
     : LeafSystem<T>(SystemTypeTag<InverseDynamics>{}),
       owned_plant_(std::move(owned_plant)),
       plant_(owned_plant_ ? owned_plant_.get() : plant),
@@ -25,13 +25,6 @@ InverseDynamics<T>::InverseDynamics(
   DRAKE_DEMAND(owned_plant_ == nullptr || plant == nullptr);
   DRAKE_DEMAND(plant_ != nullptr);
   DRAKE_THROW_UNLESS(plant_->is_finalized());
-
-  if (plant_context == nullptr) {
-    plant_context = plant_->CreateDefaultContext();
-  } else {
-    // Validate that `plant` and `plant_context` are compatible.
-    plant_->ValidateContext(plant_context.get());
-  }
 
   estimated_state_ =
       this->DeclareInputPort("estimated_state", kVectorValued, q_dim_ + v_dim_)
@@ -44,15 +37,22 @@ InverseDynamics<T>::InverseDynamics(
                                     {this->all_input_ports_ticket()})
           .get_index();
 
+  if (plant_context != nullptr) {
+    plant_->ValidateContext(*plant_context);
+  }
+  std::unique_ptr<Context<T>> model_plant_context =
+      plant_context == nullptr ? plant_->CreateDefaultContext()
+                               : plant_context->Clone();
+
   // Gravity compensation mode requires velocities to be zero.
   if (this->is_pure_gravity_compensation()) {
-    plant_->SetVelocities(plant_context.get(),
+    plant_->SetVelocities(model_plant_context.get(),
                           VectorX<T>::Zero(plant_->num_velocities()));
   }
 
   // Declare cache entry for the multibody plant context.
   plant_context_cache_index_ =
-      this->DeclareCacheEntry("plant_context_cache", *plant_context,
+      this->DeclareCacheEntry("plant_context_cache", *model_plant_context,
                               &InverseDynamics<T>::SetMultibodyContext,
                               {this->input_port_ticket(estimated_state_)})
           .cache_index();
@@ -76,47 +76,51 @@ InverseDynamics<T>::InverseDynamics(
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     const InverseDynamicsMode mode,
-                                    std::unique_ptr<Context<T>> plant_context)
-    : InverseDynamics(nullptr, plant, mode, std::move(plant_context)) {}
+                                    const Context<T>* plant_context)
+    : InverseDynamics(nullptr, plant, mode, plant_context) {}
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(
     std::unique_ptr<multibody::MultibodyPlant<T>> plant,
-    const InverseDynamicsMode mode, std::unique_ptr<Context<T>> plant_context)
-    : InverseDynamics(std::move(plant), nullptr, mode,
-                      std::move(plant_context)) {}
+    const InverseDynamicsMode mode, const Context<T>* plant_context)
+    : InverseDynamics(std::move(plant), nullptr, mode, plant_context) {}
 
 template <typename T>
 template <typename U>
-InverseDynamics<T> InverseDynamics<T>::ScalarConvert(
-    const InverseDynamics<U>& other) {
+InverseDynamics<T>::ScalarConversionData
+InverseDynamics<T>::ScalarConvertHelper(const InverseDynamics<U>& other) {
   // Convert plant.
-  auto T_plant = systems::System<U>::template ToScalarType<T>(*other.plant_);
-  auto T_plant_context = T_plant->CreateDefaultContext();
+  auto this_plant = systems::System<U>::template ToScalarType<T>(*other.plant_);
+  auto this_plant_context = this_plant->CreateDefaultContext();
 
   // Create context and connect required port.
-  auto U_context = other.CreateDefaultContext();
+  auto other_context = other.CreateDefaultContext();
   const int num_states = other.get_input_port_estimated_state().size();
   other.get_input_port_estimated_state().FixValue(
-      U_context.get(), Eigen::Matrix<U, Eigen::Dynamic, 1>::Zero(num_states));
+      other_context.get(),
+      Eigen::Matrix<U, Eigen::Dynamic, 1>::Zero(num_states));
 
   // Convert plant context.
-  const auto& U_plant_context =
+  const auto& other_plant_context =
       other.get_cache_entry(other.plant_context_cache_index_)
-          .template Eval<Context<U>>(*U_context);
-  T_plant_context->SetStateAndParametersFrom(U_plant_context);
-
-  return InverseDynamics<T>(std::move(T_plant),
-                            other.is_pure_gravity_compensation()
-                                ? kGravityCompensation
-                                : kInverseDynamics,
-                            std::move(T_plant_context));
+          .template Eval<Context<U>>(*other_context);
+  this_plant_context->SetStateAndParametersFrom(other_plant_context);
+  InverseDynamicsMode mode = other.is_pure_gravity_compensation()
+                                 ? kGravityCompensation
+                                 : kInverseDynamics;
+  return ScalarConversionData{std::move(this_plant), mode,
+                              std::move(this_plant_context)};
 }
 
 template <typename T>
 template <typename U>
 InverseDynamics<T>::InverseDynamics(const InverseDynamics<U>& other)
-    : InverseDynamics(ScalarConvert(other)) {}
+    : InverseDynamics(ScalarConvertHelper(other)) {}
+
+template <typename T>
+InverseDynamics<T>::InverseDynamics(ScalarConversionData&& data)
+    : InverseDynamics(std::move(data.plant), data.mode,
+                      data.plant_context.get()) {}
 
 template <typename T>
 InverseDynamics<T>::~InverseDynamics() = default;
