@@ -74,10 +74,11 @@ void LinkJointGraph::Clear() {
   DRAKE_DEMAND(world_index == BodyIndex(0));
 }
 
-void LinkJointGraph::BuildForest() {
+bool LinkJointGraph::BuildForest() {
   InvalidateForest();
-  data_.forest->BuildForest();  // (Re)build
+  const bool dynamics_ok = data_.forest->BuildForest();  // (Re)build
   data_.forest_is_valid = true;
+  return dynamics_ok;
 }
 
 void LinkJointGraph::InvalidateForest() {
@@ -285,12 +286,12 @@ JointIndex LinkJointGraph::AddJoint(const std::string& name,
   // joint only if it is a weld.
   const Link& new_parent = links(parent_link_index);
   const Link& new_child = links(child_link_index);
-  const bool anchoring = (new_parent.is_world() && new_child.is_static()) ||
-                         (new_child.is_world() && new_parent.is_static());
-  if (anchoring && type_index != weld_joint_type_index()) {
+  const bool is_static = (new_parent.is_world() && link_is_static(new_child)) ||
+                         (new_child.is_world() && link_is_static(new_parent));
+  if (is_static && type_index != weld_joint_type_index()) {
     const std::string static_link_name =
         new_parent.is_world() ? new_child.name() : new_parent.name();
-    throw std::runtime_error(
+    throw std::logic_error(
         fmt::format("{}(): can't connect static link '{}' to World "
                     "using a {} joint; only a weld is permitted. "
                     "(Joint '{}' in model instance {}.)",
@@ -393,6 +394,45 @@ JointTypeIndex LinkJointGraph::GetJointTypeIndex(
                                                     : it->second;
 }
 
+void LinkJointGraph::ChangeJointType(JointIndex existing_joint_index,
+                                     const std::string& name_of_new_type) {
+  DRAKE_DEMAND(existing_joint_index.is_valid() &&
+               existing_joint_index < ssize(joints()));
+  const JointTypeIndex new_type_index = GetJointTypeIndex(name_of_new_type);
+  DRAKE_DEMAND(new_type_index.is_valid());
+
+  const Joint& joint = joints(existing_joint_index);
+
+  if (existing_joint_index >= num_user_joints()) {
+    throw std::logic_error(
+        fmt::format("{}(): can't change the type of ephemeral joint {}; only "
+                    "user-defined joints are changeable.",
+                    __func__, joint.name()));
+  }
+
+  // If this is a joint between a static link and world, it can only be a
+  // weld (see AddJoint()).
+  const Link& parent_link = links(joint.parent_link());
+  const Link& child_link = links(joint.child_link());
+  const bool is_static =
+      (parent_link.is_world() && link_is_static(child_link)) ||
+      (child_link.is_world() && link_is_static(parent_link));
+  if (is_static && new_type_index != weld_joint_type_index()) {
+    const std::string static_link_name =
+        parent_link.is_world() ? child_link.name() : parent_link.name();
+    throw std::logic_error(
+        fmt::format("{}(): can't change type of joint {} (in model instance "
+                    "{}) from {} to {} because it connects static link {} to "
+                    "World; only a weld is permitted for a static link.",
+                    __func__, joint.name(), joint.model_instance(),
+                    joint_types(joint.type_index()).name, name_of_new_type,
+                    static_link_name));
+  }
+
+  InvalidateForest();
+  mutable_joint(existing_joint_index).type_index_ = new_type_index;
+}
+
 JointIndex LinkJointGraph::AddEphemeralJointToWorld(
     JointTypeIndex type_index, BodyIndex child_link_index) {
   const LinkJointGraph::Link& child = links(child_link_index);
@@ -444,6 +484,30 @@ LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
   return existing_composite;
 }
 
+// While modeling, add a shadow link
+BodyIndex LinkJointGraph::AddShadowLink(BodyIndex primary_link_index,
+                                        JointIndex shadow_joint_index) {
+  /* Caution: this Link reference will be invalid after the emplace. */
+  const Link& primary_link = links(primary_link_index);
+  const int shadow_num = primary_link.num_shadows() + 1;
+  const std::string shadow_link_name =
+      fmt::format("{}${}", primary_link.name(), shadow_num);
+  // TODO(sherm1) Consider whether to modify name until unique.
+  DRAKE_DEMAND(!HasLinkNamed(shadow_link_name, primary_link.model_instance()));
+  const BodyIndex shadow_link_index(ssize(links()));
+  data_.ephemeral_link_name_to_index.insert(
+      {shadow_link_name, shadow_link_index});
+  data_.links.emplace_back(Link(shadow_link_index, shadow_link_name,
+                                primary_link.model_instance(),
+                                LinkFlags::kShadow));
+  Link& shadow_link = data_.links.back();
+  shadow_link.primary_link_ = primary_link_index;
+  shadow_link.add_joint_as_child(shadow_joint_index);  // Always a child.
+  mutable_link(primary_link_index).shadow_links_.push_back(shadow_link_index);
+
+  return shadow_link.index();
+}
+
 void LinkJointGraph::RenumberMobodIndexes(
     const std::vector<MobodIndex>& old_to_new) {
   for (auto& link : data_.links) link.renumber_mobod_indexes(old_to_new);
@@ -458,10 +522,17 @@ std::tuple<BodyIndex, BodyIndex, bool> LinkJointGraph::FindInboardOutboardLinks(
       parent_link.mobod_index() == inboard_mobod_index) {
     return std::make_tuple(joint.parent_link(), joint.child_link(), false);
   }
-  const LinkJointGraph::Link& child_link = links(joint.child_link());
+  const Link& child_link = links(joint.child_link());
   DRAKE_DEMAND(child_link.mobod_index().is_valid() &&
                child_link.mobod_index() == inboard_mobod_index);
   return std::make_tuple(joint.child_link(), joint.parent_link(), true);
+}
+
+bool LinkJointGraph::link_is_static(const Link& link) const {
+  if (link.is_static()) return true;  // The flag is set.
+  return static_cast<bool>(
+      get_forest_building_options_in_use(link.model_instance()) &
+      ForestBuildingOptions::kStatic);
 }
 
 LinkJointGraph::Data::Data() = default;
