@@ -165,11 +165,11 @@ GTEST_TEST(LinkJointGraph, CopyMoveAssignTest) {
   // These first checks don't use copy/move/assign but are here to make it
   // clear what we have before we start with those.
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();
+  EXPECT_TRUE(graph.BuildForest());
   EXPECT_TRUE(graph.forest_is_valid());
   graph.AddLink("link1", ModelInstanceIndex(19));  // Should invalidate forest.
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();  // Update the forest.
+  EXPECT_TRUE(graph.BuildForest());  // Update the forest.
 
   // Remember the memory address of link1 so we can see if we're re-using
   // the same memory when we expect to be.
@@ -270,7 +270,7 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   // With no forest built, there are no composites.
   EXPECT_TRUE(graph.link_composites().empty());
 
-  graph.BuildForest();
+  EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_TRUE(graph.forest_is_valid());
 
@@ -305,7 +305,7 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   const SpanningForest& same_forest = graph.forest();
   EXPECT_EQ(&same_forest, &forest);
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();  // OK to build even with just World in graph.
+  EXPECT_TRUE(graph.BuildForest());  // OK to build even if just World in graph.
   EXPECT_TRUE(graph.forest_is_valid());
 }
 

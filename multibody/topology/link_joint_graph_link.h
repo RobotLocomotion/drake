@@ -152,7 +152,6 @@ class LinkJointGraph::Link {
     loop_constraints_.clear();
     mobod_ = {};
     joint_ = {};
-    primary_link_ = {};
     shadow_links_.clear();
     link_composite_index_ = {};
 
