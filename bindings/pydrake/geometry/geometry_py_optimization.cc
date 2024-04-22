@@ -194,11 +194,16 @@ void DefineGeometryOptimization(py::module m) {
         .def("translation", &AffineSubspace::translation,
             py_rvp::reference_internal, cls_doc.translation.doc)
         .def("AffineDimension", &AffineSubspace::AffineDimension,
-            cls_doc.AffineDimension.doc)
+            cls_doc.AffineDimension.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("Project",
             WrapDeprecated(
                 cls_doc.Project.doc_deprecated, &AffineSubspace::Project),
-            py::arg("x"), cls_doc.Project.doc_deprecated)
+            py::arg("x"), cls_doc.Project.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
             py::arg("x"), cls_doc.ToLocalCoordinates.doc)
         .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,
