@@ -140,9 +140,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clarabel"
-version = "0.6.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb77b79847293795eb71eb995ea2222af9c67c6f13c8734bd56b02b8415164b6"
+checksum = "e4c0e3ebbd6441dcc7f879e89e727fe90b4e4fcecf6295f283a0d02077fb8365"
 dependencies = [
  "amd",
  "blas",

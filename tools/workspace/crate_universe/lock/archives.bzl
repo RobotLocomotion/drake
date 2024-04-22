@@ -41,15 +41,15 @@ ARCHIVES = [
         build_file = Label("@drake//tools/workspace/crate_universe/lock/details:BUILD.cfg-if-1.0.0.bazel"),
     ),
     dict(
-        name = "crate__clarabel-0.6.0",
+        name = "crate__clarabel-0.7.1",
         patches = [
             "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",
         ],
-        sha256 = "fb77b79847293795eb71eb995ea2222af9c67c6f13c8734bd56b02b8415164b6",
+        sha256 = "e4c0e3ebbd6441dcc7f879e89e727fe90b4e4fcecf6295f283a0d02077fb8365",
         type = "tar.gz",
-        urls = ["https://static.crates.io/crates/clarabel/0.6.0/download"],
-        strip_prefix = "clarabel-0.6.0",
-        build_file = Label("@drake//tools/workspace/crate_universe/lock/details:BUILD.clarabel-0.6.0.bazel"),
+        urls = ["https://static.crates.io/crates/clarabel/0.7.1/download"],
+        strip_prefix = "clarabel-0.7.1",
+        build_file = Label("@drake//tools/workspace/crate_universe/lock/details:BUILD.clarabel-0.7.1.bazel"),
     ),
     dict(
         name = "crate__darling-0.14.4",
