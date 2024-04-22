@@ -133,6 +133,14 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
     return clone;
   }
 
+  /* For each PhysicalModel in `this` collection, declares zero or more output
+   ports in the MultibodyPlant owning the PhysicalModel to communicate with a
+   SceneGraph.
+   @throw std::exception if called after call to DeclareSystemResources().
+   @throws std::exception if called more than when at least one output port is
+   created. */
+  void DeclareSceneGraphPorts();
+
  private:
   const MultibodyPlant<T>* owning_plant_{nullptr};
   /* We maintain the invariant such that each `model` in `owned_models_`

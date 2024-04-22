@@ -25,14 +25,11 @@ using systems::BasicVector;
 class DeformableModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    constexpr double kDt = 0.01;
     MultibodyPlantConfig plant_config;
-    plant_config.time_step = kDt;
+    plant_config.time_step = 0.01;
     plant_config.discrete_contact_approximation = "sap";
     std::tie(plant_, scene_graph_) = AddMultibodyPlant(plant_config, &builder_);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_model_ptr_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    deformable_model_ptr_ = plant_->mutable_deformable_model();
   }
 
   systems::DiagramBuilder<double> builder_;
@@ -235,12 +232,6 @@ TEST_F(DeformableModelTest, GetBodyIdFromGeometryId) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->GetBodyId(fake_geometry_id),
       ".*GeometryId.*not.*registered.*");
-}
-
-TEST_F(DeformableModelTest, ToPhysicalModelPointerVariant) {
-  PhysicalModelPointerVariant<double> variant =
-      deformable_model_ptr_->ToPhysicalModelPointerVariant();
-  EXPECT_TRUE(std::holds_alternative<const DeformableModel<double>*>(variant));
 }
 
 TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
@@ -502,10 +493,16 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
   EXPECT_THROW(
       deformable_model_ptr_->CloneToScalar<AutoDiffXd>(&autodiff_plant),
       std::exception);
-  /* double -> symbolic */
-  EXPECT_THROW(deformable_model_ptr_->CloneToScalar<symbolic::Expression>(
-                   &symbolic_plant),
-               std::exception);
+  /* double -> symbolic: we can't throw here because scalar conversion to
+   symbolic happens when the diagram checks for algebraic loops. Instead, we
+   silently clone to an empty model. */
+  std::unique_ptr<PhysicalModel<symbolic::Expression>> symbolic_model =
+      deformable_model_ptr_->CloneToScalar<symbolic::Expression>(
+          &symbolic_plant);
+  EXPECT_EQ(
+      static_cast<DeformableModel<symbolic::Expression>*>(symbolic_model.get())
+          ->num_bodies(),
+      0);
 
   /* Now verify the double clone is indeed a copy of the original. */
   const DeformableModel<double>* double_clone_ptr =
@@ -533,8 +530,6 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->fixed_constraint_spec(constraint_id));
   EXPECT_EQ(double_clone_ptr->fixed_constraint_ids(body_id),
             deformable_model_ptr_->fixed_constraint_ids(body_id));
-  EXPECT_EQ(double_clone_ptr->configuration_output_port_index(),
-            deformable_model_ptr_->configuration_output_port_index());
 }
 
 /* An empty DeformableModel doesn't get in the way of a TAMSI plant. */

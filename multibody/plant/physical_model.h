@@ -131,6 +131,16 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     owning_plant_ = nullptr;
   }
 
+  /** (Internal only) Declares zero or more output ports in the owning
+   MultibodyPlant to communicate with a SceneGraph.
+   @throws std::exception if called after call to DeclareSystemResources().
+   @throws std::exception if called more than when at least one output port is
+   created. */
+  void DeclareSceneGraphPorts() {
+    DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
+    DoDeclareSceneGraphPorts();
+  }
+
   /** Returns (a const pointer to) the specific model variant of `this`
    PhysicalModel. Note that the variant contains a pointer to the concrete model
    and therefore should not persist longer than the lifespan of this model.  */
@@ -176,6 +186,10 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources() = 0;
+
+  /* Derived class may choose to override this to declare ports in the owning
+   MultibodyPlant to communicate with SceneGraph. */
+  virtual void DoDeclareSceneGraphPorts() {}
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should

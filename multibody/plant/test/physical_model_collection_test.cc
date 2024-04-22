@@ -121,9 +121,12 @@ GTEST_TEST(PhysicalModelCollectionTest, NonEmptyDeformableModel) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model_collection.CloneToScalar<AutoDiffXd>(&autodiff_plant),
       ".*CloneToAutoDiffXd.*is_empty.*failed.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model_collection.CloneToScalar<symbolic::Expression>(&symbolic_plant),
-      ".*CloneToSymbolic.*is_empty.*failed.*");
+  /* double -> symbolic: we can't throw here because scalar conversion to
+   symbolic happens when the diagram checks for algebraic loops. Instead, we
+   silently clone and drop all the deformable bodies. */
+  auto symbolic_collection =
+      model_collection.CloneToScalar<symbolic::Expression>(&symbolic_plant);
+  EXPECT_TRUE(symbolic_collection->deformable_model()->is_empty());
 }
 
 GTEST_TEST(PhysicalModelCollectionTest, IncompatibleModel) {
@@ -145,6 +148,20 @@ GTEST_TEST(PhysicalModelCollectionTest, IncompatibleModel) {
       model_collection.AddDummyModel(std::move(finalized_model)),
       ".*AddDummyModel.*model->plant.*==.*plant.*failed.*");
   EXPECT_NO_THROW(model_collection.AddDummyModel(std::move(ok_model)));
+}
+
+GTEST_TEST(PhysicalModelCollectionTest, DeclareSceneGraphPorts) {
+  MultibodyPlant<double> plant(0.01);
+  PhysicalModelCollection<double> model_collection(&plant);
+
+  model_collection.AddDummyModel(
+      std::make_unique<DummyPhysicalModel<double>>(&plant));
+  const DummyPhysicalModel<double>& dummy_model =
+      *model_collection.dummy_model();
+  DRAKE_ASSERT_THROWS_MESSAGE(dummy_model.GetSceneGraphPortOrThrow(),
+                              ".*SceneGraph.*port.*not.*declared.*");
+  model_collection.DeclareSceneGraphPorts();
+  EXPECT_NO_THROW(dummy_model.GetSceneGraphPortOrThrow());
 }
 
 }  // namespace
