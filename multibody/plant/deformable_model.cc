@@ -27,9 +27,10 @@ using fem::DeformableBodyConfig;
 using fem::MaterialModel;
 
 template <typename T>
-DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant) : plant_(plant) {
-  DRAKE_DEMAND(plant_ != nullptr);
-  DRAKE_DEMAND(!plant_->is_finalized());
+DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
+    : plant_prefinalize_(plant) {
+  DRAKE_DEMAND(plant_prefinalize_ != nullptr);
+  DRAKE_DEMAND(!plant_prefinalize_->is_finalized());
 }
 
 template <typename T>
@@ -39,8 +40,8 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   this->ThrowIfSystemResourcesDeclared(__func__);
 
   /* Register the geometry with SceneGraph. */
-  SceneGraph<T>& scene_graph = this->mutable_scene_graph(plant_);
-  SourceId source_id = plant_->get_source_id().value();
+  SceneGraph<T>& scene_graph = this->mutable_scene_graph(plant_prefinalize_);
+  SourceId source_id = plant_prefinalize_->get_source_id().value();
   /* All deformable bodies are registered with the world frame at the moment. */
   const FrameId world_frame_id = scene_graph.world_frame_id();
   GeometryId geometry_id = scene_graph.RegisterDeformableGeometry(
@@ -111,7 +112,7 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
     const math::RigidTransform<double>& X_BG) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowUnlessRegistered(__func__, body_A_id);
-  if (&plant_->get_body(body_B.index()) != &body_B) {
+  if (&plant_prefinalize_->get_body(body_B.index()) != &body_B) {
     throw std::logic_error(
         fmt::format("The rigid body with name {} is not registered with the "
                     "MultibodyPlant owning the deformable model.",
@@ -138,8 +139,9 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
           *context);
   /* The deformable mesh in its geometry frame. */
   const geometry::VolumeMesh<T>* mesh_A =
-      this->mutable_scene_graph(plant_).model_inspector().GetReferenceMesh(
-          GetGeometryId(body_A_id));
+      this->mutable_scene_graph(plant_prefinalize_)
+          .model_inspector()
+          .GetReferenceMesh(GetGeometryId(body_A_id));
   int vertex_index = 0;
   for (const Vector3<T>& p_APi : mesh_A->vertices()) {
     /* Note that `shape` is also registered in the A frame in the throw-away
@@ -309,7 +311,7 @@ void DeformableModel<T>::BuildLinearVolumetricModelHelper(
 template <typename T>
 void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   /* Ensure that the owning plant is the one declaring system resources. */
-  DRAKE_DEMAND(plant == plant_);
+  DRAKE_DEMAND(plant == plant_prefinalize_);
   /* Declare discrete states. */
   for (const auto& [deformable_id, fem_model] : fem_models_) {
     std::unique_ptr<fem::FemState<T>> default_fem_state =
@@ -325,7 +327,7 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   }
 
   /* Declare the vertex position output port. */
-  vertex_positions_port_index_ =
+  configuration_output_port_index_ =
       this->DeclareAbstractOutputPort(
               plant, "vertex_positions",
               []() {
@@ -369,8 +371,12 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
    them. */
   for (std::unique_ptr<ForceDensityField<T>>& force_density :
        force_densities_) {
-    force_density->DeclareSystemResources(plant_);
+    force_density->DeclareSystemResources(plant_prefinalize_);
   }
+
+  /* The plant pointer is used pre-finalize only. Set it to nullptr after all
+   the system resources have been declared. */
+  plant_prefinalize_ = nullptr;
 }
 
 template <typename T>

@@ -1086,8 +1086,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_adjacent_bodies_collision_filters",
             &Class::get_adjacent_bodies_collision_filters,
             cls_doc.get_adjacent_bodies_collision_filters.doc)
-        .def("AddPhysicalModel", &Class::AddPhysicalModel, py::arg("model"),
-            cls_doc.AddPhysicalModel.doc)
+        .def("AddDeformableModel", &Class::AddDeformableModel, py::arg("model"),
+            cls_doc.AddDeformableModel.doc)
         .def("physical_models", &Class::physical_models,
             py_rvp::reference_internal, cls_doc.physical_models.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
@@ -1595,9 +1595,7 @@ PYBIND11_MODULE(plant, m) {
             [](const Class* self, geometry::GeometryId geometry_id) {
               return self->GetBodyId(geometry_id);
             },
-            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
-        .def("vertex_positions_port", &Class::vertex_positions_port,
-            py_rvp::reference_internal, cls_doc.vertex_positions_port.doc);
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
   }
   // Deformable identifier.
   {
