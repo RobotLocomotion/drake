@@ -59,6 +59,19 @@ constexpr double kDummyTau = 6.0;
 constexpr double kDummyVdot = 7.0;
 constexpr double kDt = 0.1;
 
+/* Returns a pointer to the DummyPhysicalModel owned by the given
+ MultibodyPlant. Returns the nullptr if no DummyPhysicalModel exists. */
+template <typename T>
+const DummyPhysicalModel<T>* GetDummyModel(const MultibodyPlant<T>& plant) {
+  for (const auto* model : plant.physical_models()) {
+    const auto* dummy_model = dynamic_cast<const DummyPhysicalModel<T>*>(model);
+    if (dummy_model != nullptr) {
+      return dummy_model;
+    }
+  }
+  return nullptr;
+}
+
 /* A dummy manager class derived from DiscreteUpdateManager for testing
  purpose. It implements the interface in DiscreteUpdateManager by filling in
  dummy data.
@@ -112,11 +125,7 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
   /* Extracts information about the additional discrete state that
    DummyPhysicalModel declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
-    /* For unit testing we verify there is a single physical model of type
-     DummyPhysicalModel. */
-    DRAKE_DEMAND(this->plant().physical_models().size() == 1);
-    const auto* dummy_model = dynamic_cast<const DummyPhysicalModel<T>*>(
-        this->plant().physical_models()[0]);
+    const DummyPhysicalModel<T>* dummy_model = GetDummyModel(this->plant());
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
   }
@@ -201,7 +210,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
     plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
     auto dummy_model = std::make_unique<DummyPhysicalModel<double>>(&plant_);
     dummy_model_ = dummy_model.get();
-    plant_.AddPhysicalModel(std::move(dummy_model));
+    plant_.AddDummyModel(std::move(dummy_model));
     dummy_model_->AppendDiscreteState(dummy_discrete_state());
     plant_.Finalize();
     // MultibodyPlant::num_velocities() only reports the number of rigid
@@ -277,10 +286,7 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   auto context = autodiff_plant->CreateDefaultContext();
   auto simulator =
       systems::Simulator<AutoDiffXd>(*autodiff_plant, std::move(context));
-  ASSERT_EQ(autodiff_plant->physical_models().size(), 1);
-  const DummyPhysicalModel<AutoDiffXd>* model =
-      dynamic_cast<const DummyPhysicalModel<AutoDiffXd>*>(
-          autodiff_plant->physical_models()[0]);
+  const DummyPhysicalModel<AutoDiffXd>* model = GetDummyModel(*autodiff_plant);
   ASSERT_NE(model, nullptr);
 
   const int time_steps = 2;

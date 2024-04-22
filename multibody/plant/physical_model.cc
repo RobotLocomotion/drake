@@ -49,6 +49,21 @@ bool PhysicalModel<T>::is_cloneable_to_symbolic() const {
 }
 
 template <typename T>
+void PhysicalModel<T>::DeclareSystemResources() {
+  DRAKE_DEMAND(owning_plant_ != nullptr);
+  DoDeclareSystemResources();
+  owning_plant_ = nullptr;
+}
+
+template <typename T>
+void PhysicalModel<T>::DeclareSceneGraphPorts() {
+  ThrowIfSystemResourcesDeclared(__func__);
+  /* Note that DoDeclareSceneGraphPorts throws an exception when a port (with
+   the same name) is declared for the second time. */
+  DoDeclareSceneGraphPorts();
+}
+
+template <typename T>
 void PhysicalModel<T>::ThrowIfSystemResourcesDeclared(
     const char* function_name) const {
   if (owning_plant_ == nullptr) {

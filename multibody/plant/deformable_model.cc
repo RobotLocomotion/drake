@@ -28,24 +28,7 @@ using fem::MaterialModel;
 
 template <typename T>
 DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
-    : PhysicalModel<T>(plant) {
-  /* Declare the deformable body configuration output port. This port copies the
-   discrete states of all deformable body configurations and put it into a
-   format that's easier for downstream parsing. */
-  configuration_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-              "deformable_body_configuration",
-              []() {
-                return AbstractValue::Make<
-                    geometry::GeometryConfigurationVector<T>>();
-              },
-              [this](const systems::Context<T>& context,
-                     AbstractValue* output) {
-                this->CopyVertexPositions(context, output);
-              },
-              {systems::System<double>::xd_ticket()})
-          .get_index();
-}
+    : PhysicalModel<T>(plant) {}
 
 template <typename T>
 DeformableModel<T>::~DeformableModel() = default;
@@ -309,7 +292,9 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     result->body_id_to_index_ = body_id_to_index_;
     result->body_ids_ = body_ids_;
     result->fixed_constraint_specs_ = fixed_constraint_specs_;
-    result->configuration_output_port_index_ = configuration_output_port_index_;
+    /* `configuration_output_port_index_` is set in `DeclareSceneGraphPorts()`;
+     because callers to `PhysicalModel::CloneToScalar` are required to
+     subsequently call `DeclareSceneGraphPorts`. */
   }
 
   return result;
@@ -318,7 +303,6 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 template <typename T>
 std::unique_ptr<PhysicalModel<AutoDiffXd>>
 DeformableModel<T>::CloneToAutoDiffXd(MultibodyPlant<AutoDiffXd>* plant) const {
-  DRAKE_THROW_UNLESS(is_empty());
   return std::make_unique<DeformableModel<AutoDiffXd>>(plant);
 }
 
@@ -326,7 +310,6 @@ template <typename T>
 std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
-  DRAKE_THROW_UNLESS(is_empty());
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 
@@ -462,6 +445,26 @@ void DeformableModel<T>::DoDeclareSystemResources() {
        force_densities_) {
     force_density->DeclareSystemResources(this->mutable_plant());
   }
+}
+
+template <typename T>
+void DeformableModel<T>::DoDeclareSceneGraphPorts() {
+  /* Declare the deformable body configuration output port. This port copies
+   the discrete states of all deformable body configurations and puts them into
+   a format that's easier for downstream parsing. */
+  configuration_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              "deformable_body_configuration",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
 }
 
 template <typename T>

@@ -25,8 +25,9 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
-#include "drake/multibody/plant/physical_model.h"
+#include "drake/multibody/plant/physical_model_collection.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -1084,13 +1085,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return get_geometry_pose_output_port();
   }
 
-  // TODO(xuchenhan-tri): Remove the throw condition once DeformableModel is
-  //  added by default as part of #21355.
   /// Returns the output port for vertex positions (configurations), measured
   /// and expressed in the World frame, of the deformable bodies in `this` plant
   /// as a GeometryConfigurationVector.
-  /// @throws std::exception if `this` %MultibodyPlant doesn't have a
-  /// DeformableModel. See AddPhysicalModel().
   const systems::OutputPort<T>& get_deformable_body_configuration_output_port()
       const;
   /// @} <!-- Input and output ports -->
@@ -2201,28 +2198,45 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
-  /// For use only by advanced developers wanting to try out their new physical
-  /// models.
-  ///
-  /// @experimental
-  ///
-  /// With this method MultibodyPlant takes ownership of `model` and
-  /// calls its DeclareSystemResources() method at Finalize(), giving specific
-  /// physical model implementations a chance to declare the system resources it
-  /// needs. Each type of PhysicalModel can be added at most once.
-  ///
-  /// @param model After this call the model is owned by `this` MultibodyPlant.
-  /// @pre model != nullptr.
-  /// @throws std::exception if called post-finalize. See Finalize().
-  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
-  /// from symbolic::Expression after a call to this method.
-  void AddPhysicalModel(std::unique_ptr<PhysicalModel<T>> model);
+#ifndef DRAKE_DOXYGEN_CXX
+  // (For testing only) Adds a DummyPhysicalModel to this plant and returns the
+  // added model if successful. With this method, MultibodyPlant takes ownership
+  // of `model` and calls its DeclareSystemResources() method at Finalize(),
+  // allowing the DummyPhysicalModel to declare the system resources it needs.
+  //
+  // @param model After this call the model is owned by `this` MultibodyPlant.
+  // @returns a mutable reference to the added DummyPhysicalModel that's valid
+  // for the life time of this MultibodyPlant.
+  // @throws std::exception if called post-finalize. See Finalize().
+  // @throws std::exception if model is nullptr or a DummyPhysicalModel is
+  // already added.
+  internal::DummyPhysicalModel<T>& AddDummyModel(
+      std::unique_ptr<internal::DummyPhysicalModel<T>> model);
 
-  /// Returns a vector of pointers to all physical models registered with this
-  /// %MultibodyPlant. For use only by advanced developers.
-  ///
-  /// @experimental
+  // (Internal only) Returns a vector of pointers to all physical models
+  // registered with `this` MultibodyPlant.
   std::vector<const PhysicalModel<T>*> physical_models() const;
+#endif
+
+  /// Returns the DeformableModel owned by this plant.
+  /// @throw std::exception if this plant doesn't own a %DeformableModel.
+  /// @experimental
+  const DeformableModel<T>& deformable_model() const {
+    const DeformableModel<T>* model = physical_models_->deformable_model();
+    DRAKE_THROW_UNLESS(model != nullptr);
+    return *model;
+  }
+
+  /// Returns a mutable reference to the DeformableModel owned by this plant.
+  /// @throws std::exception if the plant is finalized.
+  /// @experimental
+  DeformableModel<T>& mutable_deformable_model() {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DeformableModel<T>* model = physical_models_->mutable_deformable_model();
+    // A DeformableModel is always added to the plant at construction time.
+    DRAKE_DEMAND(model != nullptr);
+    return *model;
+  }
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
   // deprecate/remove this method altogether or at least promote to proper
@@ -5456,6 +5470,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void RemoveUnsupportedScalars(
       const internal::ScalarConvertibleComponent<T>& component);
 
+  // Adds a DeformableModel to this plant. The added DeformableModel is owned
+  // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method
+  // when `this` MultibodyPlant is finalized to declare the system resources it
+  // needs.
+  // @returns a mutable reference to the added DeformableModel that's valid for
+  // the life time of this MultibodyPlant.
+  // @throws std::exception if called post-finalize. See Finalize().
+  // @throws std::exception if a DeformableModel is already added.
+  // @note DeformableModel only meaningfully supports double as a scalar type.
+  // Adding a non-double DeformableModel is allowed, but registering
+  // deformable bodies with non-double scalar types is not supported yet.
+  DeformableModel<T>& AddDeformableModel();
+
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
@@ -5602,8 +5629,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // resolution into a default contact manager.
   std::unique_ptr<internal::DiscreteUpdateManager<T>> discrete_update_manager_;
 
-  // (Experimental) The vector of physical models owned by MultibodyPlant.
-  std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
+  // (Experimental) The collection of all physical models owned by
+  // this MultibodyPlant.
+  std::unique_ptr<internal::PhysicalModelCollection<T>> physical_models_{
+      std::make_unique<internal::PhysicalModelCollection<T>>()};
 
   // Map of coupler constraints specifications.
   std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>

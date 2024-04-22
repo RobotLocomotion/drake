@@ -30,19 +30,10 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModelCollection);
 
-  /* Constructs a PhysicalModelCollection owned by the given `plant`. The given
-   `plant` must outlive `this` PhysicalModelCollection.
-   @pre plant != nullptr */
-  explicit PhysicalModelCollection(const MultibodyPlant<T>* plant)
-      : owning_plant_(plant) {
-    DRAKE_DEMAND(plant != nullptr);
-  }
+  /* Constructs an empty PhysicalModelCollection. */
+  PhysicalModelCollection() = default;
 
   ~PhysicalModelCollection() override;
-
-  /* Returns the back pointer to the MultibodyPlant owning `this` PhysicalModel
-   before DeclareSystemResources() are called and nullptr after. */
-  const MultibodyPlant<T>* plant() const { return owning_plant_; }
 
   /* Adds a DeformableModel to the collection and returns the added model if
    successful.
@@ -103,6 +94,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
    @param[in] new_plant pointer to the MultibodyPlant that will own the cloned
    PhysicalModelCollection. Note that we take a mutable pointer to
    MultibodyPlant here as required by cloning each individual PhysicalModel.
+   @pre is_cloneable_to_<ScalarType>() returns true.
    @throw std::exception if plant is nullptr.
    @throw std::exception if DeclareSystemResources() has not been called on
    `this` PhysicalModelCollection
@@ -111,9 +103,9 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
   template <typename ScalarType>
   std::unique_ptr<PhysicalModelCollection<ScalarType>> CloneToScalar(
       MultibodyPlant<ScalarType>* new_plant) const {
-    DRAKE_THROW_UNLESS(owning_plant_ == nullptr);
+    DRAKE_THROW_UNLESS(system_resources_declared_);
     std::unique_ptr<PhysicalModelCollection<ScalarType>> clone =
-        std::make_unique<PhysicalModelCollection<ScalarType>>(new_plant);
+        std::make_unique<PhysicalModelCollection<ScalarType>>();
     if (deformable_model_) {
       auto deformable_model_clone =
           std::unique_ptr<DeformableModel<ScalarType>>(
@@ -133,10 +125,20 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
     return clone;
   }
 
+  /* For each PhysicalModel in `this` collection, declares zero or more output
+   ports in the MultibodyPlant owning the PhysicalModel to communicate with a
+   SceneGraph.
+   @throw std::exception if called after call to DeclareSystemResources().
+   @throws std::exception if called more than when at least one output port is
+   created. */
+  void DeclareSceneGraphPorts();
+
+  /* Throws an std::exception if the given `model` belongs to a different
+   MultibodyPlant from that of existing models. */
+  void ThrowForIncompatibleModel(const PhysicalModel<T>& model) const;
+
  private:
-  const MultibodyPlant<T>* owning_plant_{nullptr};
-  /* We maintain the invariant such that each `model` in `owned_models_`
-   satisfies `model->plant() == owning_plant_`. */
+  bool system_resources_declared_{false};
   std::vector<std::unique_ptr<PhysicalModel<T>>> owned_models_;
   DeformableModel<T>* deformable_model_{nullptr};
   DummyPhysicalModel<T>* dummy_model_{nullptr};

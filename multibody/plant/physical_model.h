@@ -125,11 +125,14 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    declare additional system resources. This method is only meant to be called
    by MultibodyPlant. The pointer to the owning plant is nulled after call to
    this function. */
-  void DeclareSystemResources() {
-    DRAKE_DEMAND(owning_plant_ != nullptr);
-    DoDeclareSystemResources();
-    owning_plant_ = nullptr;
-  }
+  void DeclareSystemResources();
+
+  /** (Internal only) Declares zero or more output ports in the owning
+   MultibodyPlant to communicate with a SceneGraph.
+   @throws std::exception if called after call to DeclareSystemResources().
+   @throws std::exception if called more than once when at least one output port
+   is created. */
+  void DeclareSceneGraphPorts();
 
   /** Returns (a const pointer to) the specific model variant of `this`
    PhysicalModel. Note that the variant contains a pointer to the concrete model
@@ -155,27 +158,34 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
    as the scalar type. It should copy all members except for those overwritten
-   in `DeclareSystemResources()`. */
+   in `DeclareSystemResources()`.
+   @pre is_cloneable_to_double() == true. */
   virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble(
       MultibodyPlant<double>* plant) const;
 
   /* Derived classes that support making a clone that uses AutoDiffXd as a
    scalar type must implement this so that it creates a copy of the object with
    AutoDiffXd as the scalar type. It should copy all members except for those
-   overwritten in `DeclareSystemResources()`. */
+   overwritten in `DeclareSystemResources()`.
+   @pre is_cloneable_to_autodiff() == true. */
   virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
       MultibodyPlant<AutoDiffXd>* plant) const;
 
   /* Derived classes that support making a clone that uses symbolic::Expression
    as a scalar type must implement this so that it creates a copy of the object
    with symbolic::Expression as the scalar type. It should copy all members
-   except for those overwritten in `DeclareSystemResources()`. */
+   except for those overwritten in `DeclareSystemResources()`.
+   @pre is_cloneable_to_symbolic() == true. */
   virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
       MultibodyPlant<symbolic::Expression>* plant) const;
 
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources() = 0;
+
+  /* Derived class may choose to override this to declare ports in the owning
+   MultibodyPlant to communicate with SceneGraph. */
+  virtual void DoDeclareSceneGraphPorts() {}
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should
