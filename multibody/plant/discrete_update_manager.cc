@@ -1307,21 +1307,17 @@ void DiscreteUpdateManager<T>::ExtractConcreteModel(
     const DeformableModel<T>* model) {
   if constexpr (std::is_same_v<T, double>) {
     DRAKE_DEMAND(model != nullptr);
-    // TODO(xuchenhan-tri): Demote this to a DRAKE_DEMAND when we check for
-    //  duplicated model with MbP::AddPhysicalModel.
-    if (deformable_driver_ != nullptr) {
-      throw std::logic_error(
-          fmt::format("{}: A deformable model has already been registered. "
-                      "Repeated registration is not allowed.",
-                      __func__));
+    DRAKE_DEMAND(deformable_driver_ == nullptr);
+    if (model->num_bodies() > 0) {
+      deformable_driver_ =
+          std::make_unique<DeformableDriver<double>>(model, this);
     }
-    deformable_driver_ =
-        std::make_unique<DeformableDriver<double>>(model, this);
   } else {
-    unused(model);
-    throw std::logic_error(
-        "Only T = double is supported for the simulation of deformable "
-        "bodies.");
+    if (!model->is_empty()) {
+      throw std::logic_error(
+          "Only T = double is supported for the simulation of deformable "
+          "bodies.");
+    }
   }
 }
 

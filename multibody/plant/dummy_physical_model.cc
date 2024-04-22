@@ -40,6 +40,15 @@ void DummyPhysicalModel<T>::DoDeclareSystemResources() {
       {systems::System<T>::xd_ticket()});
 }
 
+template <typename T>
+void DummyPhysicalModel<T>::DoDeclareSceneGraphPorts() {
+  scene_graph_output_port_ = &this->DeclareVectorOutputPort(
+      "dummy_scene_graph_port", systems::BasicVector<T>(1),
+      [](const systems::Context<T>&, systems::BasicVector<T>* output) {
+        output->set_value(VectorX<T>::Constant(1, 42.0));
+      });
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
