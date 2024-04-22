@@ -107,7 +107,7 @@ class DeformableDriverContactKinematicsTest
     deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
                                                        "deformable", X_WF_);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    plant_->AddDeformableModel(std::move(deformable_model));
 
     /* Define proximity properties for all rigid geometries. */
     geometry::ProximityProperties rigid_proximity_props;
@@ -166,7 +166,7 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
     diagram_ = builder.Build();
@@ -229,7 +229,7 @@ class DeformableDriverContactKinematicsTest
         deformable_model.get(), "deformable2",
         X_WF_ * RigidTransformd(Vector3d(0, 0, -1.25)));
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    plant_->AddDeformableModel(std::move(deformable_model));
 
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
@@ -238,7 +238,7 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
     diagram_ = builder.Build();
@@ -602,7 +602,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   /* Put the bottom vertex under bc. */
   model->SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
                                   Vector3d(0, 0, 1));
-  plant.AddPhysicalModel(std::move(deformable_model));
+  plant.AddDeformableModel(std::move(deformable_model));
 
   /* Define proximity properties for all rigid geometries. */
   geometry::ProximityProperties rigid_proximity_props;
@@ -633,7 +633,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   ASSERT_NE(driver, nullptr);
 
   builder.Connect(
-      model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -672,7 +672,7 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   DeformableBodyId body_id = RegisterDeformableOctahedron(
       deformable_model.get(), "deformable", RigidTransformd::Identity());
   DeformableModel<double>* model = deformable_model.get();
-  plant.AddPhysicalModel(std::move(deformable_model));
+  plant.AddDeformableModel(std::move(deformable_model));
   /* Use a large box geometry to ensure that all deformable vertices are placed
    under fixed constraints. */
   model->AddFixedConstraint(
@@ -691,7 +691,7 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   // TODO(xuchenhan-tri): AddMultibodyPlant and AddMultibodyPlantSceneGraph
   // should connect this port automatically.
   builder.Connect(
-      model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

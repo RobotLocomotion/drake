@@ -28,7 +28,7 @@ class DeformableModelTest : public ::testing::Test {
         AddMultibodyPlantSceneGraph(&builder_, kDt);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
     deformable_model_ptr_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    plant_->AddDeformableModel(std::move(deformable_model));
   }
 
   systems::DiagramBuilder<double> builder_;
@@ -226,12 +226,6 @@ TEST_F(DeformableModelTest, GetBodyIdFromGeometryId) {
       ".*GeometryId.*not.*registered.*");
 }
 
-TEST_F(DeformableModelTest, ToPhysicalModelPointerVariant) {
-  PhysicalModelPointerVariant<double> variant =
-      deformable_model_ptr_->ToPhysicalModelPointerVariant();
-  EXPECT_TRUE(std::holds_alternative<const DeformableModel<double>*>(variant));
-}
-
 TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   Sphere sphere(1.0);
   auto geometry = make_unique<GeometryInstance>(
@@ -244,10 +238,10 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   std::unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
   std::unique_ptr<AbstractValue> output_value =
-      deformable_model_ptr_->vertex_positions_port().Allocate();
+      plant_->get_deformable_body_configuration_output_port().Allocate();
   /* Compute the configuration for each geometry in the model. */
-  deformable_model_ptr_->vertex_positions_port().Calc(*context,
-                                                      output_value.get());
+  plant_->get_deformable_body_configuration_output_port().Calc(
+      *context, output_value.get());
   const geometry::GeometryConfigurationVector<double>& configurations =
       output_value->get_value<geometry::GeometryConfigurationVector<double>>();
 

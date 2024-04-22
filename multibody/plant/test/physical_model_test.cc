@@ -1,7 +1,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/test/dummy_model.h"
 
 namespace drake {
 namespace multibody {
@@ -19,9 +19,9 @@ class PhysicalModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(xuchenhan-tri): Add a test with more than one physical model.
-    auto dummy_model = std::make_unique<DummyModel<double>>();
+    auto dummy_model = std::make_unique<DummyPhysicalModel<double>>();
     dummy_model_ = dummy_model.get();
-    plant_.AddPhysicalModel(std::move(dummy_model));
+    plant_.AddDummyModel(std::move(dummy_model));
     // An artificial scenario where the state is added in multiple passes.
     dummy_model_->AppendDiscreteState(dummy_state1());
     dummy_model_->AppendDiscreteState(dummy_state2());
@@ -36,8 +36,9 @@ class PhysicalModelTest : public ::testing::Test {
     return VectorXd::Ones(kState2Dofs) * kState2Value;
   }
 
-  MultibodyPlant<double> plant_{kDt};         // A discrete MbP.
-  DummyModel<double>* dummy_model_{nullptr};  // The PhysicalModel under test.
+  MultibodyPlant<double> plant_{kDt};  // A discrete MbP.
+  DummyPhysicalModel<double>* dummy_model_{
+      nullptr};  // The PhysicalModel under test.
 };
 
 // Tests that the state and output ports are properly set up.

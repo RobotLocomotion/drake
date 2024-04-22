@@ -82,7 +82,7 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
                                                        X_WD, 0.1, "deformable");
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    plant_->AddDeformableModel(std::move(deformable_model));
 
     rigid_body_index_ =
         plant_
@@ -119,7 +119,7 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
 

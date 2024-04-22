@@ -229,7 +229,7 @@ int do_main() {
   teddy_instance->set_illustration_properties(teddy_illustration_props);
   deformable_model->RegisterDeformableBody(std::move(teddy_instance),
                                            teddy_config, 1.0);
-  plant.AddPhysicalModel(std::move(owned_deformable_model));
+  plant.AddDeformableModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
@@ -238,7 +238,7 @@ int do_main() {
    the source configuration port in SceneGraph when deformable bodies are
    present in the plant. */
   builder.Connect(
-      deformable_model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Set the width between the fingers for open and closed states as well as the
