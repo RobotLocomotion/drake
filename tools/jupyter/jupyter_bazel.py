@@ -7,6 +7,7 @@ from jupyter_core.command import main as _jupyter_main
 # http://nbconvert.readthedocs.io/en/latest/execute_api.html
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+from python import runfiles
 
 _ISSUE_12536_NOTES = """
 
@@ -33,9 +34,12 @@ class _ExecutePreprocessorNoWidgets(ExecutePreprocessor):
         return super().preprocess_cell(*args, **kwargs)
 
 
-def _jupyter_bazel_notebook_main(notebook_path, argv):
+def _jupyter_bazel_notebook_main(notebook_respath, argv):
     # This should *ONLY* be called by targets generated via `jupyter_py_*`
     # rules.
+    manifest = runfiles.Create()
+    notebook_path = manifest.Rlocation(notebook_respath)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--test", action="store_true", help="Run as a test (non-interactive)")
