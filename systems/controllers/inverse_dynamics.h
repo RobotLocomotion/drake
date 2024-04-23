@@ -145,7 +145,7 @@ class InverseDynamics final : public LeafSystem<T> {
   // Helper data structure for scalar conversion.
   struct ScalarConversionData {
     std::unique_ptr<multibody::MultibodyPlant<T>> plant;
-    InverseDynamicsMode mode;
+    InverseDynamicsMode mode{InverseDynamicsMode::kGravityCompensation};
     std::unique_ptr<Context<T>> plant_context;
   };
 

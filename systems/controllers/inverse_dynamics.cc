@@ -25,6 +25,9 @@ InverseDynamics<T>::InverseDynamics(
   DRAKE_DEMAND(owned_plant_ == nullptr || plant == nullptr);
   DRAKE_DEMAND(plant_ != nullptr);
   DRAKE_THROW_UNLESS(plant_->is_finalized());
+  if (plant_context != nullptr) {
+    plant_->ValidateContext(*plant_context);
+  }
 
   estimated_state_ =
       this->DeclareInputPort("estimated_state", kVectorValued, q_dim_ + v_dim_)
@@ -37,9 +40,6 @@ InverseDynamics<T>::InverseDynamics(
                                     {this->all_input_ports_ticket()})
           .get_index();
 
-  if (plant_context != nullptr) {
-    plant_->ValidateContext(*plant_context);
-  }
   std::unique_ptr<Context<T>> model_plant_context =
       plant_context == nullptr ? plant_->CreateDefaultContext()
                                : plant_context->Clone();
