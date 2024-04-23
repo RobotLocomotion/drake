@@ -3,11 +3,10 @@
 #include <functional>
 #include <vector>
 
-#include "drake/systems/controllers/zmp_planner.h"
+#include "drake/planning/locomotion/zmp_planner.h"
 
 namespace drake {
-namespace systems {
-namespace controllers {
+namespace planning {
 
 /** A structure for storing trajectories from simulating a linear inverted
  * pendulum model (LIPM) using the policy from a ZmpPlanner.
@@ -68,6 +67,5 @@ std::vector<trajectories::PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration, double single_support_duration);
 
-}  // namespace controllers
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

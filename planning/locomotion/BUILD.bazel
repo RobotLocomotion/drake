@@ -1,0 +1,40 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "locomotion",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":zmp_planner",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_planner",
+    srcs = ["zmp_planner.cc"],
+    hdrs = ["zmp_planner.h"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/controllers:linear_quadratic_regulator",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "zmp_planner_test",
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//planning/locomotion/test_utilities",
+    ],
+)
+
+add_lint_tests()

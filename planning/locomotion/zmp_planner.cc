@@ -1,4 +1,4 @@
-#include "drake/systems/controllers/zmp_planner.h"
+#include "drake/planning/locomotion/zmp_planner.h"
 
 #include <vector>
 
@@ -8,9 +8,10 @@
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 namespace drake {
-namespace systems {
-namespace controllers {
+namespace planning {
 
+using systems::controllers::LinearQuadraticRegulator;
+using systems::controllers::LinearQuadraticRegulatorResult;
 using trajectories::ExponentialPlusPiecewisePolynomial;
 using trajectories::PiecewisePolynomial;
 
@@ -31,8 +32,7 @@ bool ZmpPlanner::CheckStationaryEndPoint(
   PiecewisePolynomial<double> derivative = last_segment.derivative();
   int degree = last_segment.getSegmentPolynomialDegree(0);
   for (int d = degree; d >= 0; d--) {
-    if (derivative.value(derivative.end_time()).norm() >
-        kStationaryThreshold) {
+    if (derivative.value(derivative.end_time()).norm() > kStationaryThreshold) {
       return false;
     }
     derivative = derivative.derivative();
@@ -48,7 +48,8 @@ void ZmpPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   // If the user use the policy / nominal trajectory past the end point, the
   // system diverges exponentially fast.
   if (!CheckStationaryEndPoint(zmp_d)) {
-    drake::log()->warn("ZmpPlanner: The desired zmp trajectory does not end "
+    drake::log()->warn(
+        "ZmpPlanner: The desired zmp trajectory does not end "
         "in a stationary condition.");
   }
 
@@ -247,6 +248,5 @@ void ZmpPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   planned_ = true;
 }
 
-}  // namespace controllers
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake
