@@ -23,7 +23,8 @@ VectorX<double> ComputeTorque(
   // Compute inverse dynamics.
   multibody::MultibodyForces<double> external_forces(plant);
   plant.CalcForceElementsContribution(*context, &external_forces);
-  return plant.CalcInverseDynamics(*context, vd_d, external_forces);
+  Eigen::MatrixXd B_inv = plant.MakeActuationMatrix().inverse();
+  return B_inv * plant.CalcInverseDynamics(*context, vd_d, external_forces);
 }
 
 }  // namespace controllers_test
