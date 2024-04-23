@@ -234,6 +234,43 @@ GTEST_TEST(PointTest, NonnegativeScalingTest2) {
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 }
 
+GTEST_TEST(PointTest, Projection) {
+  Eigen::Vector4d p{1.0, 2.0, 3.0, 4.0};
+  Point P(p);
+
+  // clang-format off
+  const Eigen::Matrix4d test_points{
+      { 0.12,  0.41, -2.81, 2.17},
+      { 3.06, -0.75, -1.16, 0.55},
+      { 0.54,  4.26,  0.85, 0.02},
+      { 2.99,  0.47,  3.99, 3.29}
+  };
+  const Eigen::Matrix4d expected_projection{
+      { 1.0, 1.0, 1.0, 1.0},
+      { 2.0, 2.0, 2.0, 2.0},
+      { 3.0, 3.0, 3.0, 3.0},
+      { 4.0, 4.0, 4.0, 4.0}
+  };
+  // clang-format on
+  std::vector<double> expected_distances;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    double expected_distance = 0.0;
+    for (int j = 0; j < p.rows(); ++j) {
+      expected_distance += std::pow((p[j] - test_points(j, i)), 2);
+    }
+    expected_distances.push_back(std::sqrt(expected_distance));
+  }
+  const auto projection_result = P.Projection(test_points);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  const double kTol = 1e-12;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(projections.col(i), expected_projection.col(i), kTol));
+    EXPECT_NEAR(distances.at(i), expected_distances.at(i), kTol);
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

@@ -110,7 +110,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
-        self.assertTrue(dut.PointInSet(dut.Project([])))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(dut.PointInSet(dut.Project([])))
         self.assertEqual(dut.AffineDimension(), 0)
         self.assertTrue(dut.ContainedIn(mut.AffineSubspace()))
         self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace()))
@@ -133,10 +134,12 @@ class TestGeometryOptimization(unittest.TestCase):
 
         test_point = np.array([43, 43, 0])
         self.assertFalse(dut.PointInSet(test_point))
-        self.assertTrue(dut.PointInSet(dut.Project(test_point)))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(dut.PointInSet(dut.Project(test_point)))
 
-        np.testing.assert_array_equal(dut.ToGlobalCoordinates(
-            dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
+        with catch_drake_warnings(expected_count=1) as w:
+            np.testing.assert_array_equal(dut.ToGlobalCoordinates(
+                dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
         local_coords = np.array([1, -1])
         np.testing.assert_array_equal(dut.ToLocalCoordinates(
             dut.ToGlobalCoordinates(local_coords)),
@@ -148,7 +151,8 @@ class TestGeometryOptimization(unittest.TestCase):
         test_point_batch = np.zeros((3, 5))
         self.assertEqual(dut.ToLocalCoordinates(x=test_point_batch).shape,
                          (2, 5))
-        self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
         local_coords_batch = np.zeros((2, 5))
         self.assertEqual(dut.ToGlobalCoordinates(y=local_coords_batch).shape,
                          (3, 5))
@@ -394,6 +398,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(isinstance(shape, Box))
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
+        test_point = np.ones_like(self.b)
+        distance, projection = rect.Projection(points=test_point)
+        self.assertEqual(distance[0], 0.0)
+        np.testing.assert_array_equal(projection[:, 0], test_point)
 
         # Methods specific to Hyperrectangle
         np.testing.assert_array_equal(rect.lb(), -self.b)

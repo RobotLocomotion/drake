@@ -135,8 +135,8 @@ class AffineBall final : public ConvexSet {
     return center_;
   };
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>

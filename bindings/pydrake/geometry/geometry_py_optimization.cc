@@ -141,8 +141,9 @@ void DefineGeometryOptimization(py::module m) {
         .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc)
         .def("CalcVolumeViaSampling", &ConvexSet::CalcVolumeViaSampling,
             py::arg("generator"), py::arg("desired_rel_accuracy") = 1e-2,
-            py::arg("max_num_samples") = 1e4,
-            cls_doc.CalcVolumeViaSampling.doc);
+            py::arg("max_num_samples") = 1e4, cls_doc.CalcVolumeViaSampling.doc)
+        .def("Projection", &ConvexSet::Projection, py::arg("points"),
+            cls_doc.Projection.doc);
   }
   // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.
@@ -193,9 +194,16 @@ void DefineGeometryOptimization(py::module m) {
         .def("translation", &AffineSubspace::translation,
             py_rvp::reference_internal, cls_doc.translation.doc)
         .def("AffineDimension", &AffineSubspace::AffineDimension,
-            cls_doc.AffineDimension.doc)
-        .def("Project", &AffineSubspace::Project, py::arg("x"),
-            cls_doc.Project.doc)
+            cls_doc.AffineDimension.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("Project",
+            WrapDeprecated(
+                cls_doc.Project.doc_deprecated, &AffineSubspace::Project),
+            py::arg("x"), cls_doc.Project.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
             py::arg("x"), cls_doc.ToLocalCoordinates.doc)
         .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,

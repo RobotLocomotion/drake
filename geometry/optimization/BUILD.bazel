@@ -79,6 +79,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
+        "//math:matrix_util",
     ],
     deps = [
         "//geometry:read_obj",
@@ -278,6 +279,7 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

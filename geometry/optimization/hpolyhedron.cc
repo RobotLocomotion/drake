@@ -1093,8 +1093,8 @@ std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {
   return std::make_unique<HPolyhedron>(*this);
 }
 
-bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
-                               double tol) const {
+std::optional<bool> HPolyhedron::DoPointInSetShortcut(
+    const Eigen::Ref<const VectorXd>& x, double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
   return ((A_ * x).array() <= b_.array() + tol).all();
 }
