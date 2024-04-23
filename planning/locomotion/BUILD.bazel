@@ -32,8 +32,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "zmp_planner_test",
     deps = [
-        "//planning/locomotion/test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//planning/locomotion/test_utilities",
     ],
 )
 
