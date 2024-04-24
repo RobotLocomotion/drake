@@ -3257,7 +3257,8 @@ class TestPlant(unittest.TestCase):
 
         # Post-finalize operations.
         self.assertIsInstance(
-            plant.get_deformable_body_configuration_output_port(), OutputPort_[float])
+            plant.get_deformable_body_configuration_output_port(),
+            OutputPort_[float])
         builder.Connect(plant.get_deformable_body_configuration_output_port(),
                         scene_graph.get_source_configuration_port(
                             plant.get_source_id()))

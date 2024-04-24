@@ -35,6 +35,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     std::unique_ptr<geometry::GeometryInstance> geometry_instance,
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
   this->ThrowIfSystemResourcesDeclared(__func__);
+  ThrowIfNotDouble(__func__);
 
   /* Register the geometry with SceneGraph. */
   SceneGraph<T>& scene_graph = this->mutable_scene_graph();
@@ -117,6 +118,7 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
     const math::RigidTransform<double>& X_BG) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowUnlessRegistered(__func__, body_A_id);
+  ThrowIfNotDouble(__func__);
   if (&this->plant()->get_body(body_B.index()) != &body_B) {
     throw std::logic_error(
         fmt::format("The rigid body with name {} is not registered with the "
@@ -186,6 +188,7 @@ template <typename T>
 void DeformableModel<T>::AddExternalForce(
     std::unique_ptr<ForceDensityField<T>> force_density) {
   this->ThrowIfSystemResourcesDeclared(__func__);
+  ThrowIfNotDouble(__func__);
   force_densities_.push_back(std::move(force_density));
 }
 
@@ -419,6 +422,15 @@ void DeformableModel<T>::ThrowUnlessRegistered(const char* source_method,
     throw std::logic_error(std::string(source_method) +
                            "(): No deformable body with id " + to_string(id) +
                            " has been registered.");
+  }
+}
+
+template <typename T>
+void DeformableModel<T>::ThrowIfNotDouble(const char* source_method) const {
+  if (!std::is_same_v<T, double>) {
+    throw std::logic_error(
+        "Calls to '" + std::string(source_method) +
+        "()' with a DeformableModel of type T != double is not allowed.");
   }
 }
 
