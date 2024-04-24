@@ -21,6 +21,7 @@ class TestTriad(unittest.TestCase):
         self._frame = builder.plant().AddFrame(
             FixedOffsetFrame(
                 "frame", builder.plant().GetFrameByName("Link2"), self._X_PF))
+        self._frame_index = self._frame.index()
         robot = builder.Build()
         self._plant = robot.plant()
         self._scene_graph = robot.scene_graph()
@@ -65,7 +66,8 @@ class TestTriad(unittest.TestCase):
             geom_id = [x, y, z][i]
             frame_name = inspect.GetName(inspect.GetFrameId(geom_id))
             self.assertEqual(frame_name, "acrobot::Link2")
-            self.assertEqual(inspect.GetName(geom_id), f"foo {char}-axis")
+            self.assertEqual(inspect.GetName(geom_id),
+                             f"_frames::foo::{char}-axis")
             self.assertEqual(inspect.GetShape(geom_id).length(), 0.2)
             self.assertEqual(inspect.GetShape(geom_id).radius(), 0.001)
             props = inspect.GetIllustrationProperties(geom_id)
@@ -78,6 +80,26 @@ class TestTriad(unittest.TestCase):
         x, y, z = mut.AddFrameTriadIllustration(
             scene_graph=self._scene_graph,
             frame=self._frame,
+            length=0.2,
+            X_FT=X_FT)
+
+        # Check the geometry pose of each axis.
+        inspect = self._scene_graph.model_inspector()
+        X_PT = self._X_PF @ X_FT
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(x), X_PT @ self._axis_offsets["x"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(y), X_PT @ self._axis_offsets["y"])
+        self._assert_equal_transform(
+            inspect.GetPoseInFrame(z), X_PT @ self._axis_offsets["z"])
+
+    def test_via_frame_index(self):
+        # Illustrate our custom added frame.
+        X_FT = RigidTransform([0.1, 0.2, 0.3])
+        x, y, z = mut.AddFrameTriadIllustration(
+            plant=self._plant,
+            scene_graph=self._scene_graph,
+            frame_index=self._frame_index,
             length=0.2,
             X_FT=X_FT)
 

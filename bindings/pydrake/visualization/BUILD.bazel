@@ -173,6 +173,7 @@ drake_py_unittest(
         ":model_visualizer",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/parsing:test_models",
     ],
     deps = [
         ":model_visualizer",
