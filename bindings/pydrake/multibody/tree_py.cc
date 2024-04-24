@@ -890,8 +890,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("R_FM"), cls_doc.SetOrientation.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
-        .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.set_translation.doc)
+        .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
+            py::arg("p_FM"), cls_doc.SetTranslation.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_translation",
+            WrapDeprecated(cls_doc.set_translation.doc_deprecated,
+                &Class::set_translation),
+            py::arg("context"), py::arg("p_FM"),
+            cls_doc.set_translation.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def(
             "GetPose", &Class::GetPose, py::arg("context"), cls_doc.GetPose.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
