@@ -70,17 +70,12 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   const MultibodyPlant<T>* plant() const { return plant_prefinalize_; }
   MultibodyPlant<T>* mutable_plant() { return plant_prefinalize_; }
 
-  bool owning_plant_is_finalized() const {
-    return plant_prefinalize_ == nullptr;
-  }
-
   /** Creates a clone of `this` concrete PhysicalModel object with the scalar
    type `ScalarType` that is owned by the given `plant`. The clone should be a
    deep copy of the original PhysicalModel with the exception of members
    overwritten in `DeclareSystemResources()`. This method is meant to be called
    by the scalar-converting copy constructor of MultibodyPlant only and thus is
    only called from a finalized MultibodyPlant.
-   @throws std::exception if `plant` is finalized.
    @tparam_default_scalar */
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
@@ -90,7 +85,6 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     DRAKE_THROW_UNLESS(this->plant() == nullptr);
     /* The plant owning the cloned model must not be finalized yet. */
     DRAKE_THROW_UNLESS(plant != nullptr);
-    DRAKE_THROW_UNLESS(!plant->is_finalized());
 
     if constexpr (std::is_same_v<ScalarType, double>) {
       return CloneToDouble(plant);

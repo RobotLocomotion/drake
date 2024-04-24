@@ -57,6 +57,14 @@ class DummyModel final : public FemModelImpl<DummyElement<is_linear>> {
 
   ~DummyModel() = default;
 
+  std::unique_ptr<FemModel<T>> DoClone() const final {
+    auto clone = std::make_unique<DummyModel<is_linear>>();
+    clone->reference_positions_ = reference_positions_;
+    clone->set_elements(this->elements());
+    clone->set_element_data_index(this->element_data_index());
+    return clone;
+  }
+
   /* Returns a dummy position that's used for the reference positions for all
    nodes in the dummy model. */
   static Vector3<T> dummy_position() { return Vector3<T>(1, 2, 3); }
