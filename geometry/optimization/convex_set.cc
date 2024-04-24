@@ -173,13 +173,14 @@ ConvexSet::GenericDoProjection(
   const auto result = solvers::Solve(prog);
   if (!result.is_success()) {
     if (result.get_solution_result() !=
-            solvers::SolutionResult::kInfeasibleConstraints ||
+            solvers::SolutionResult::kInfeasibleConstraints &&
         result.get_solution_result() !=
             solvers::SolutionResult::kInfeasibleOrUnbounded) {
       log()->warn(
           "ConvexSet Projection failed with result {} which indicates "
           "numerical difficulties. Projections should always be feasible if "
-          "the set is non-empty, and infeasible otherwise.");
+          "the set is non-empty, and infeasible otherwise.",
+          result.get_solution_result());
     }
     return std::nullopt;
   }
