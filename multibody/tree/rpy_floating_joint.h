@@ -211,10 +211,17 @@ class RpyFloatingJoint final : public Joint<T> {
     The desired position of frame M's origin in frame F, to be stored in
     `context`.
   @returns a constant reference to this joint. */
-  const RpyFloatingJoint<T>& set_translation(systems::Context<T>* context,
-                                             const Vector3<T>& p_FM) const {
+  const RpyFloatingJoint<T>& SetTranslation(systems::Context<T>* context,
+                                            const Vector3<T>& p_FM) const {
     get_mobilizer().set_translation(context, p_FM);
     return *this;
+  }
+
+  DRAKE_DEPRECATED("2024-08-01",
+      "Use RpyFloatingJoint::SetTranslation()")
+  const RpyFloatingJoint<T>& set_translation(systems::Context<T>* context,
+                                             const Vector3<T>& p_FM) const {
+    return SetTranslation(context, p_FM);
   }
 
   /** Returns the pose `X_FM` of the outboard frame M as measured and expressed
