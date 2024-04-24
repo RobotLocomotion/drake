@@ -19,7 +19,7 @@ class PhysicalModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(xuchenhan-tri): Add a test with more than one physical model.
-    auto dummy_model = std::make_unique<DummyPhysicalModel<double>>();
+    auto dummy_model = std::make_unique<DummyPhysicalModel<double>>(&plant_);
     dummy_model_ = dummy_model.get();
     plant_.AddDummyModel(std::move(dummy_model));
     // An artificial scenario where the state is added in multiple passes.

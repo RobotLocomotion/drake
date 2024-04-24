@@ -232,7 +232,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
   /** Returns true if MultibodyPlant::Finalize() has been called. */
-  bool is_cloneable_to_double() const final { return plant_prefinalize_ == nullptr; }
+  bool is_cloneable_to_double() const final { return this->plant() == nullptr; }
   /** Returns true if MultibodyPlant::Finalize() has been called. */
   bool is_cloneable_to_autodiff() const final { return fem_models_.empty(); }
   bool is_cloneable_to_symbolic() const final { return fem_models_.empty(); }
@@ -242,12 +242,16 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return PhysicalModelPointerVariant<T>(this);
   }
 
-  std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final;
-  std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const final;
-  std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
-      const final;
+  std::unique_ptr<PhysicalModel<double>> CloneToDouble(
+      MultibodyPlant<double>* plant) const final;
 
-  void DoDeclareSystemResources(MultibodyPlant<T>* plant) final;
+  std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
+      MultibodyPlant<AutoDiffXd>* plant) const final;
+
+  std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
+      MultibodyPlant<symbolic::Expression>* plant) const final;
+
+  void DoDeclareSystemResources() final;
 
   /* Builds a FEM model for the body with `id` with linear tetrahedral elements
    and a single quadrature point. The reference positions as well as the
@@ -293,9 +297,6 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       body_index_to_force_densities_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
-  /* Pre-finalize, this is the MultibodyPlant that owns `this` DeformableModel.
-   This is nulled out post-finalize. */
-  MultibodyPlant<T>* plant_prefinalize_{nullptr};
   /* Only used pre-finalize. Empty post-finalize. */
   std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;

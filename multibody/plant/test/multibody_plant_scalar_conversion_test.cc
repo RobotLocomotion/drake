@@ -201,7 +201,7 @@ class DoubleOnlyDiscreteUpdateManager final
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
   std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
-      std::make_unique<internal::DummyPhysicalModel<double>>();
+      std::make_unique<internal::DummyPhysicalModel<double>>(&plant);
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_symbolic());

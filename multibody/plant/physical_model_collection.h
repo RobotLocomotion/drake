@@ -72,15 +72,17 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
   bool is_cloneable_to_symbolic() const override;
 
   template <typename ScalarType>
-  std::unique_ptr<PhysicalModelCollection<ScalarType>> CloneToScalar() const {
+  std::unique_ptr<PhysicalModelCollection<ScalarType>> CloneToScalar(
+      MultibodyPlant<ScalarType>* plant) const {
     std::unique_ptr<PhysicalModelCollection<ScalarType>> clone =
         std::make_unique<PhysicalModelCollection<ScalarType>>();
     if (deformable_model_) {
       clone->AddDeformableModel(
-          deformable_model_->template CloneToScalar<ScalarType>());
+          deformable_model_->template CloneToScalar<ScalarType>(plant));
     }
     if (dummy_model_) {
-      clone->AddDummyModel(dummy_model_->template CloneToScalar<ScalarType>());
+      clone->AddDummyModel(
+          dummy_model_->template CloneToScalar<ScalarType>(plant));
     }
     return clone;
   }
