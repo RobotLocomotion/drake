@@ -56,9 +56,20 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
-  PhysicalModel() = default;
+  explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
+      : plant_prefinalize_(owning_plant) {
+    DRAKE_DEMAND(owning_plant != nullptr);
+  }
 
   ~PhysicalModel() override = default;
+
+  void set_plant(MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    plant_prefinalize_ = plant;
+  }
+
+  const MultibodyPlant<T>* plant() const { return plant_prefinalize_; }
+  MultibodyPlant<T>* mutable_plant() { return plant_prefinalize_; }
 
   /** Creates a clone of the concrete PhysicalModel object with the scalar type
    `ScalarType`. The clone should be a deep copy of the original PhysicalModel
@@ -67,13 +78,15 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    MultibodyPlant only.
    @tparam_default_scalar */
   template <typename ScalarType>
-  std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar() const {
+  std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
+      MultibodyPlant<ScalarType>* plant) const {
+    DRAKE_THROW_UNLESS(plant != nullptr);
     if constexpr (std::is_same_v<ScalarType, double>) {
-      return CloneToDouble();
+      return CloneToDouble(plant);
     } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
-      return CloneToAutoDiffXd();
+      return CloneToAutoDiffXd(plant);
     } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
-      return CloneToSymbolic();
+      return CloneToSymbolic(plant);
     }
     DRAKE_UNREACHABLE();
   }
@@ -90,15 +103,14 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    symbolic::Expression as a scalar type must override this to return true. */
   bool is_cloneable_to_symbolic() const override;
 
-  /** MultibodyPlant calls this from within Finalize() to declare additional
-   system resources. This method is only meant to be called by MultibodyPlant.
-   We pass in a MultibodyPlant pointer so that derived PhysicalModels can use
-   specific MultibodyPlant cache tickets.
-   @pre plant != nullptr. */
-  void DeclareSystemResources(MultibodyPlant<T>* plant) {
-    DRAKE_DEMAND(plant != nullptr);
-    DoDeclareSystemResources(plant);
-    system_resources_declared_ = true;
+  /** (Internal only) MultibodyPlant calls this from within Finalize() to
+   declare additional system resources. This method is only meant to be called
+   by MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
+   PhysicalModels can use specific MultibodyPlant cache tickets. */
+  void DeclareSystemResources() {
+    DRAKE_DEMAND(plant_prefinalize_ != nullptr);
+    DoDeclareSystemResources();
+    plant_prefinalize_ = nullptr;
   }
 
   /** Returns (a const pointer to) the specific model variant of `this`
@@ -118,30 +130,32 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    type must implement this so that it creates a copy of the object with double
    as the scalar type. It should copy all members except for those overwritten
    in `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const;
+  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble(
+      MultibodyPlant<double>* plant) const;
 
   /* Derived classes that support making a clone that uses AutoDiffXd as a
    scalar type must implement this so that it creates a copy of the object with
    AutoDiffXd as the scalar type. It should copy all members except for those
    overwritten in `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const;
+  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
+      MultibodyPlant<AutoDiffXd>* plant) const;
 
   /* Derived classes that support making a clone that uses symbolic::Expression
    as a scalar type must implement this so that it creates a copy of the object
    with symbolic::Expression as the scalar type. It should copy all members
    except for those overwritten in `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
-      const;
+  virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
+      MultibodyPlant<symbolic::Expression>* plant) const;
 
   /* Derived class must override this to declare system resources for its
    specific model. */
-  virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
+  virtual void DoDeclareSystemResources() = 0;
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should
    pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesDeclared(const char* source_method) const {
-    if (system_resources_declared_) {
+    if (plant_prefinalize_ == nullptr) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' after system resources have been declared are not allowed.");
@@ -152,7 +166,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    not be called before system resources are declared. The invoking method
    should pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesNotDeclared(const char* source_method) const {
-    if (!system_resources_declared_) {
+    if (plant_prefinalize_ != nullptr) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' before system resources have been declared are not allowed.");
@@ -160,34 +174,32 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   }
 
   /* Returns the SceneGraph with which the given `plant` has been registered.
-   @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`.
    @pre `plant` has been registered with some SceneGraph. */
-  geometry::SceneGraph<T>& mutable_scene_graph(MultibodyPlant<T>* plant);
+  geometry::SceneGraph<T>& mutable_scene_graph();
 
   /* Protected LeafSystem methods exposed through MultibodyPlant. */
-  static systems::DiscreteStateIndex DeclareDiscreteState(
-      MultibodyPlant<T>* plant, const VectorX<T>& model_value);
+  systems::DiscreteStateIndex DeclareDiscreteState(
+      const VectorX<T>& model_value);
 
-  static systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
-      MultibodyPlant<T>* plant, std::string name,
+  systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
+      std::string name,
       typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
       typename systems::LeafOutputPort<T>::CalcCallback calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
           systems::System<T>::all_sources_ticket()});
 
-  static systems::LeafOutputPort<T>& DeclareVectorOutputPort(
-      MultibodyPlant<T>* plant, std::string name,
-      const systems::BasicVector<T>& model_vector,
+  systems::LeafOutputPort<T>& DeclareVectorOutputPort(
+      std::string name, const systems::BasicVector<T>& model_vector,
       typename systems::LeafOutputPort<T>::CalcVectorCallback
           vector_calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
           systems::System<T>::all_sources_ticket()});
 
  private:
-  /* Flag to track whether the system resources requested by `this`
-   PhysicalModel have been declared. */
-  bool system_resources_declared_{false};
+  /* Back pointer to the MultibodyPlant owning `this` PhysicalModel. Only valid
+   pre-finalize and nulled out post-finalize. */
+  MultibodyPlant<T>* plant_prefinalize_{nullptr};
 };
 
 }  // namespace multibody

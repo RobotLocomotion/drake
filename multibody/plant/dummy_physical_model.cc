@@ -1,13 +1,11 @@
 #include "drake/multibody/plant/dummy_physical_model.h"
 
-#include "drake/multibody/plant/multibody_plant.h"
-
 namespace drake {
 namespace multibody {
 namespace internal {
 
 template <typename T>
-void DummyPhysicalModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
+void DummyPhysicalModel<T>::DoDeclareSystemResources() {
   /* Declares the single group of discrete state. */
   VectorX<T> model_state(num_dofs_);
   int dof_offset = 0;
@@ -16,11 +14,11 @@ void DummyPhysicalModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
     model_state.segment(dof_offset, s.size()) = s;
     dof_offset += s.size();
   }
-  discrete_state_index_ = this->DeclareDiscreteState(plant, model_state);
+  discrete_state_index_ = this->DeclareDiscreteState(model_state);
 
   /* Declare output ports. */
   abstract_output_port_ = &this->DeclareAbstractOutputPort(
-      plant, "dummy_abstract_output_port",
+      "dummy_abstract_output_port",
       [=]() {
         return AbstractValue::Make(model_state);
       },
@@ -30,7 +28,7 @@ void DummyPhysicalModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
       },
       {systems::System<T>::xd_ticket()});
   vector_output_port_ = &this->DeclareVectorOutputPort(
-      plant, "dummy_vector_output_port", systems::BasicVector<T>(num_dofs_),
+      "dummy_vector_output_port", systems::BasicVector<T>(num_dofs_),
       [this](const systems::Context<T>& context,
              systems::BasicVector<T>* output) {
         auto data = output->get_mutable_value();

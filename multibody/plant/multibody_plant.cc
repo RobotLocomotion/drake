@@ -402,7 +402,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // Note: The physical models must be cloned before `FinalizePlantOnly()` is
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
-    physical_models_ = other.physical_models_->template CloneToScalar<T>();
+    physical_models_ = other.physical_models_->template CloneToScalar<T>(this);
     physical_models_->RemoveUnsupportedScalars(this);
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
@@ -1485,6 +1485,7 @@ template <typename T>
 DeformableModel<T>* MultibodyPlant<T>::AddDeformableModel(
     std::unique_ptr<PhysicalModel<T>> model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(model->plant() == this);
   DeformableModel<T>* result =
       physical_models_->AddDeformableModel(std::move(model));
   RemoveUnsupportedScalars(*result);
@@ -1495,6 +1496,7 @@ template <typename T>
 internal::DummyPhysicalModel<T>* MultibodyPlant<T>::AddDummyModel(
     std::unique_ptr<PhysicalModel<T>> model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(model->plant() == this);
   internal::DummyPhysicalModel<T>* result =
       physical_models_->AddDummyModel(std::move(model));
   RemoveUnsupportedScalars(*result);
@@ -3100,7 +3102,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
   for (auto& physical_model : physical_models_->owned_models()) {
-    physical_model->DeclareSystemResources(this);
+    physical_model->DeclareSystemResources();
   }
 }
 

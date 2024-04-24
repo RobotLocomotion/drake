@@ -25,7 +25,8 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyPhysicalModel);
 
-  DummyPhysicalModel() = default;
+  explicit DummyPhysicalModel(MultibodyPlant<T>* plant)
+      : PhysicalModel<T>(plant) {}
 
   ~DummyPhysicalModel() final = default;
 
@@ -65,17 +66,19 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
     return std::monostate();
   }
 
-  std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final {
-    return CloneImpl<double>();
+  std::unique_ptr<PhysicalModel<double>> CloneToDouble(
+      MultibodyPlant<double>* plant) const final {
+    return CloneImpl<double>(plant);
   }
 
-  std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const final {
-    return CloneImpl<AutoDiffXd>();
+  std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
+      MultibodyPlant<AutoDiffXd>* plant) const final {
+    return CloneImpl<AutoDiffXd>(plant);
   }
 
-  std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
-      const final {
-    return CloneImpl<symbolic::Expression>();
+  std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
+      MultibodyPlant<symbolic::Expression>* plant) const final {
+    return CloneImpl<symbolic::Expression>(plant);
   }
 
   bool is_cloneable_to_double() const final { return true; }
@@ -85,8 +88,9 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
   bool is_cloneable_to_symbolic() const final { return true; }
 
   template <typename ScalarType>
-  std::unique_ptr<PhysicalModel<ScalarType>> CloneImpl() const {
-    auto clone = std::make_unique<DummyPhysicalModel<ScalarType>>();
+  std::unique_ptr<PhysicalModel<ScalarType>> CloneImpl(
+      MultibodyPlant<ScalarType>* plant) const {
+    auto clone = std::make_unique<DummyPhysicalModel<ScalarType>>(plant);
     clone->num_dofs_ = this->num_dofs_;
     clone->discrete_states_.resize(this->discrete_states_.size());
     for (size_t i = 0; i < discrete_states_.size(); ++i) {
@@ -101,7 +105,7 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
    dummy discrete state: one abstract output port with underlying value type
    VectorX<T> and one plain-old vector port. We can verify the two ports report
    the same results as a sanity check. */
-  void DoDeclareSystemResources(MultibodyPlant<T>* plant) final;
+  void DoDeclareSystemResources() final;
 
   std::vector<VectorX<T>> discrete_states_{};
   int num_dofs_{0};
