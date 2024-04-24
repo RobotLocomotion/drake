@@ -172,13 +172,25 @@ class QueryObject {
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
 
   /** Reports the configuration of the deformable geometry indicated by
-   `geometry_id` relative to the world frame.
+   `deformable_geometry_id` relative to the world frame.
    @sa GetPoseInWorld().
-   @throws std::exception if the geometry `geometry_id` is not valid or is not
-   a deformable geometry.  */
+   @throws std::exception if the geometry `deformable_geometry_id` is not valid
+   or is not a deformable geometry.  */
   const VectorX<T>& GetConfigurationsInWorld(
       GeometryId deformable_geometry_id) const;
 
+  // TODO(xuchenhan-tri): This should cross reference the concept of driven
+  // meshes when it is nicely written up somewhere (e.g., in the SceneGraph
+  // documentation).
+  /** Reports the configurations of the driven meshes associated with the given
+   role for the deformable geometry indicated by `deformable_geometry_id`
+   relative to the world frame if the deformable geometry has that role.
+   @throws std::exception if the geometry associated with
+   `deformable_geometry_id` is not a registered deformable geometry with
+   the given role.
+   @experimental */
+  std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
+      GeometryId deformable_geometry_id, Role role) const;
   //@}
 
   /**

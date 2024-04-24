@@ -53,6 +53,8 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
         geometry.proximity_properties()->HasProperty("group1", "value"));
     EXPECT_TRUE(
         geometry.proximity_properties()->HasProperty("group2", "value"));
+    EXPECT_EQ(geometry.proximity_properties(),
+              geometry.properties(Role::kProximity));
   }
 
   {
@@ -71,6 +73,8 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
         geometry.illustration_properties()->HasProperty("group1", "value"));
     EXPECT_TRUE(
         geometry.illustration_properties()->HasProperty("group2", "value"));
+    EXPECT_EQ(geometry.illustration_properties(),
+              geometry.properties(Role::kIllustration));
   }
 
   {
@@ -83,6 +87,8 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
         geometry.SetRole(PerceptionProperties()),
         "Geometry already has perception role assigned");
     EXPECT_TRUE(geometry.has_perception_role());
+    EXPECT_EQ(geometry.perception_properties(),
+              geometry.properties(Role::kPerception));
   }
 }
 
