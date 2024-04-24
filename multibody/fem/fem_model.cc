@@ -102,5 +102,5 @@ void FemModel<T>::UpdateFemStateSystem() {
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::fem::FemModel<double>;
-template class drake::multibody::fem::FemModel<drake::AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::fem::FemModel);

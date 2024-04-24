@@ -75,7 +75,7 @@ namespace fem {
  deformable solids." Synthesis Lectures on Visual Computing: Computer Graphics,
  Animation, Computational Photography, and Imaging 1.1 (2015): 1-69.
 
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class FemModel {
  public:

@@ -62,6 +62,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
                                  corresponds to a typical edge length in the
                                  resulting mesh for a primitive shape.
    @pre resolution_hint > 0.
+   @throws std::exception if `this` %DeformableModel is not of scalar type
+   double.
    @throws std::exception if Finalize() has been called on the multibody plant
    owning this deformable model. */
   DeformableBodyId RegisterDeformableBody(
@@ -126,6 +128,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            Sphere.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model.
+   @throws std::exception if `this` %DeformableModel is not of scalar type
+           double.
    @throws std::exception if no constraint is added (i.e. no vertex of the
            deformable body is inside the given `shape` with the given poses). */
   MultibodyConstraintId AddFixedConstraint(
@@ -142,6 +146,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   /** Registers an external force density field that applies external force to
    all deformable bodies.
+   @throws std::exception if `this` %DeformableModel is not of scalar type
+           double.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model. */
   void AddExternalForce(std::unique_ptr<ForceDensityField<T>> external_force);
@@ -231,11 +237,29 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return configuration_output_port_index_;
   }
 
-  /** Returns true if MultibodyPlant::Finalize() has been called. */
-  bool is_cloneable_to_double() const final { return this->plant() == nullptr; }
-  /** Returns true if MultibodyPlant::Finalize() has been called. */
-  bool is_cloneable_to_autodiff() const final { return fem_models_.empty(); }
-  bool is_cloneable_to_symbolic() const final { return fem_models_.empty(); }
+  /** Returns true if there's no deformable body or external force registered to
+   `this` %DeformableModel. */
+  bool is_empty() const {
+    return body_ids_.empty() && force_densities_.empty();
+  }
+
+  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
+   finalized. */
+  bool is_cloneable_to_double() const final {
+    return this->owning_plant_is_finalized();
+  }
+
+  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
+   finalized _and_ this %DeformableModel is empty. */
+  bool is_cloneable_to_autodiff() const final {
+    return is_empty() && this->owning_plant_is_finalized();
+  }
+
+  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
+   finalized _and_ this %DeformableModel is empty. */
+  bool is_cloneable_to_symbolic() const final {
+    return is_empty() && this->owning_plant_is_finalized();
+  }
 
  private:
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
@@ -276,6 +300,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    doesn't exist. */
   void ThrowUnlessRegistered(const char* source_method,
                              DeformableBodyId id) const;
+
+  /* Helper to throw a useful message if the given `source_method` is called on
+   a DeformableModel that doesn't have scalar type double. doesn't exist. */
+  void ThrowIfNotDouble(const char* source_method) const;
 
   /* The positions of each vertex of deformable body at reference configuration.
    */

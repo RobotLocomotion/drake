@@ -248,8 +248,6 @@ int do_main() {
     owned_deformable_model->AddExternalForce(std::move(suction_force));
   }
 
-  const DeformableModel<double>* deformable_model =
-      owned_deformable_model.get();
   plant.AddDeformableModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */

@@ -33,6 +33,7 @@ template <typename T>
 using PhysicalModelPointerVariant =
     std::variant<const DeformableModel<T>*, std::monostate>;
 
+// TODO(xuchenhan-tri): Move PhysicalModel into internal namespace.
 /** (Internal) PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
  PhysicalModel to incorporate additional model elements coupled with the
@@ -56,6 +57,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
+  /* Constructs a PhysicalModel owned by the given `owning_plant`. */
   explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
       : plant_prefinalize_(owning_plant) {
     DRAKE_DEMAND(owning_plant != nullptr);
@@ -63,24 +65,33 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   ~PhysicalModel() override = default;
 
-  void set_plant(MultibodyPlant<T>* plant) {
-    DRAKE_DEMAND(plant != nullptr);
-    plant_prefinalize_ = plant;
-  }
-
+  /** Returns the back pointer to the MultibodyPlant owning `this`
+   PhysicalModel pre-finalize and nullptr post-finalize. */
   const MultibodyPlant<T>* plant() const { return plant_prefinalize_; }
   MultibodyPlant<T>* mutable_plant() { return plant_prefinalize_; }
 
-  /** Creates a clone of the concrete PhysicalModel object with the scalar type
-   `ScalarType`. The clone should be a deep copy of the original PhysicalModel
-   with the exception of members overwritten in `DeclareSystemResources()`. This
-   method is meant to be called by the scalar-converting copy constructor of
-   MultibodyPlant only.
+  bool owning_plant_is_finalized() const {
+    return plant_prefinalize_ == nullptr;
+  }
+
+  /** Creates a clone of `this` concrete PhysicalModel object with the scalar
+   type `ScalarType` that is owned by the given `plant`. The clone should be a
+   deep copy of the original PhysicalModel with the exception of members
+   overwritten in `DeclareSystemResources()`. This method is meant to be called
+   by the scalar-converting copy constructor of MultibodyPlant only and thus is
+   only called from a finalized MultibodyPlant.
+   @throws std::exception if `plant` is finalized.
    @tparam_default_scalar */
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
       MultibodyPlant<ScalarType>* plant) const {
+    /* The plant owning `this` PhysicalModel must be finalized and consequently
+     the plant back pointer is nulled out. */
+    DRAKE_THROW_UNLESS(this->plant() == nullptr);
+    /* The plant owning the cloned model must not be finalized yet. */
     DRAKE_THROW_UNLESS(plant != nullptr);
+    DRAKE_THROW_UNLESS(!plant->is_finalized());
+
     if constexpr (std::is_same_v<ScalarType, double>) {
       return CloneToDouble(plant);
     } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
