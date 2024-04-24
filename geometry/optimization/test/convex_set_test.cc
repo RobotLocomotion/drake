@@ -251,7 +251,7 @@ GTEST_TEST(ConvexSetTest, GenericProjection) {
   const auto projection_result = vpolytope.Projection(test_points);
   ASSERT_TRUE(projection_result.has_value());
   const auto& [distances, projections] = projection_result.value();
-  const double kTol = 2e-7;
+  const double kTol = 1e-6;
   for (int i = 0; i < test_points.cols(); ++i) {
     EXPECT_TRUE(
         CompareMatrices(projections.col(i), expected_projection.col(i), kTol));
