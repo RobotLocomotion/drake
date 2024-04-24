@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -185,6 +186,14 @@ class VolumetricModel : public FemModelImpl<Element> {
   }
 
  private:
+  std::unique_ptr<FemModel<T>> DoClone() const final {
+    auto clone = std::make_unique<VolumetricModel<Element>>();
+    clone->reference_positions_ = reference_positions_;
+    clone->set_elements(this->elements());
+    clone->set_element_data_index(this->element_data_index());
+    return clone;
+  }
+
   // TODO(xuchenhan-tri): Consider renaming to GetReferencePositions.
   /* Implements FemModel::MakeReferencePositions(). The reference positions are
    the positions of the input mesh vertices. */

@@ -120,6 +120,14 @@ class FemModel {
 
   virtual ~FemModel() = default;
 
+  // TODO(xuchenhan-tri): Meaningfully support Clone().
+  std::unique_ptr<FemModel<T>> Clone() const {
+    std::unique_ptr<FemModel<T>> result = this->DoClone();
+    result->UpdateFemStateSystem();
+    result->dirichlet_bc_ = this->dirichlet_bc_;
+    return result;
+  }
+
   /* The `num_dofs()` is always a multiple of 3. It is enforced by
    FemStateSystem. */
   /** The number of nodes that are associated with this model. */
@@ -218,6 +226,10 @@ class FemModel {
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
+
+  /** FemModelImpl must override this method to provide an implementation to
+   make a deep copy of the concrete FemModel. */
+  virtual std::unique_ptr<FemModel<T>> DoClone() const = 0;
 
   /** Returns the reference positions of this model. */
   virtual VectorX<T> MakeReferencePositions() const = 0;

@@ -243,23 +243,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return body_ids_.empty() && force_densities_.empty();
   }
 
-  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
-   finalized. */
-  bool is_cloneable_to_double() const final {
-    return this->owning_plant_is_finalized();
-  }
+  bool is_cloneable_to_double() const final { return true; }
 
-  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
-   finalized _and_ this %DeformableModel is empty. */
-  bool is_cloneable_to_autodiff() const final {
-    return is_empty() && this->owning_plant_is_finalized();
-  }
+  /** Returns true if this %DeformableModel is empty. */
+  bool is_cloneable_to_autodiff() const final { return is_empty(); }
 
-  /** Returns true if the MultibodyPlant owning this %DeformableModel has been
-   finalized _and_ this %DeformableModel is empty. */
-  bool is_cloneable_to_symbolic() const final {
-    return is_empty() && this->owning_plant_is_finalized();
-  }
+  /** Returns true if this %DeformableModel is empty. */
+  bool is_cloneable_to_symbolic() const final { return is_empty(); }
 
  private:
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
@@ -269,9 +259,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   std::unique_ptr<PhysicalModel<double>> CloneToDouble(
       MultibodyPlant<double>* plant) const final;
 
+  /* Since %DeformableModel is only cloneable to AutoDiffXd if the model is
+   empty, the clone simply returns an empty model. */
   std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
       MultibodyPlant<AutoDiffXd>* plant) const final;
 
+  /* Since %DeformableModel is only cloneable to symbolic if the model is
+   empty, the clone simply returns an empty model. */
   std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
       MultibodyPlant<symbolic::Expression>* plant) const final;
 
@@ -326,7 +320,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
   /* Only used pre-finalize. Empty post-finalize. */
-  std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;
+  std::unordered_map<DeformableBodyId, T> body_id_to_density_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
   std::vector<DeformableBodyId> body_ids_;
   std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>

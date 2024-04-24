@@ -68,7 +68,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
   geometry_id_to_body_id_.emplace(geometry_id, body_id);
   body_ids_.emplace_back(body_id);
-  body_id_to_density_prefinalize_.emplace(body_id, config.mass_density());
+  body_id_to_density_.emplace(body_id, config.mass_density());
   return body_id;
 }
 
@@ -243,7 +243,43 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 template <typename T>
 std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     MultibodyPlant<double>* plant) const {
-  return std::make_unique<DeformableModel<double>>(plant);
+  auto result = std::make_unique<DeformableModel<double>>(plant);
+  /* If this plant is not double, then it's necessarily empty because we don't
+   allow non-empty models yet. In that case, return an empty double model. */
+  if constexpr (!std::is_same_v<T, double>) {
+    DRAKE_DEMAND(this->is_empty());
+  } else {
+    /* Here we step through every member field one by one, in the exact order
+     they are declared in the header, so that a reader could mindlessly compare
+     this function to the private fields, and check that every single field got
+     a mention.
+     For each field, this function will either:
+     1. Copy the field directly.
+     2. Place a disclaimer comment why that field does not need to be copied. */
+
+    result->reference_positions_ = reference_positions_;
+    result->discrete_state_indexes_ = discrete_state_indexes_;
+    result->body_id_to_geometry_id_ = body_id_to_geometry_id_;
+    result->geometry_id_to_body_id_ = geometry_id_to_body_id_;
+    for (const auto& [deformable_id, fem_model] : fem_models_) {
+      // TODO(xuchenhan-tri): meaningfully clone the FEM model.
+      result->fem_models_.emplace(deformable_id, fem_model->Clone());
+    }
+    for (const auto& force_density : force_densities_) {
+      result->force_densities_.emplace_back(force_density->Clone());
+    }
+    result->body_index_to_force_densities_ = body_index_to_force_densities_;
+    result->body_id_to_constraint_ids_ = body_id_to_constraint_ids_;
+    // TODO(xuchenhan-tri): check if this is needed.
+    result->body_id_to_density_ = body_id_to_density_;
+    result->body_id_to_index_ = body_id_to_index_;
+    result->body_ids_ = body_ids_;
+    result->fixed_constraint_specs_ = fixed_constraint_specs_;
+    /* configuration_output_port_index_ doesn't need to be copied because it's
+     computed in DeclareSystemResources(). */
+  }
+
+  return result;
 }
 
 template <typename T>
@@ -373,7 +409,7 @@ void DeformableModel<T>::DoDeclareSystemResources() {
 
   /* Add gravity to each body. */
   for (const auto& [deformable_id, fem_model] : fem_models_) {
-    const T& density = body_id_to_density_prefinalize_.at(deformable_id);
+    const T& density = body_id_to_density_.at(deformable_id);
     const Vector3<T>& gravity = this->plant()->gravity_field().gravity_vector();
     auto gravity_force =
         std::make_unique<GravityForceField<T>>(gravity, density);
@@ -381,7 +417,7 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     body_index_to_force_densities_[index].emplace_back(gravity_force.get());
     AddExternalForce(std::move(gravity_force));
   }
-  body_id_to_density_prefinalize_.clear();
+  body_id_to_density_.clear();
 
   /* Declare cache entries and input ports for force density fields that need
    them. */
