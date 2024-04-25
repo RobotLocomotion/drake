@@ -258,6 +258,15 @@ Eigen::MatrixXd MakeRandomLorentzPositiveMap(const int r, const int m,
         svd.matrixU() * regularized_singular_values.asDiagonal() *
         svd.matrixV().transpose();
   }
+  else if (m == 1) {
+    // Make the last r entries of the column matrix have norm A(0,0) / 2
+    A.col(0).tail(r - 1) =
+        A.col(0).tail(r - 1) / A.col(0).tail(r - 1).norm() * (A(0, 0) / 2);
+  }
+  else if (r == 1) {
+    // Make the last m entries of row matrix have norm A(0,0) / 2
+    A.row(0).tail(m-1) = A.row(0).tail(m - 1) / A.row(0).tail(m - 1).norm() * (A(0, 0) / 2);
+  }
   return A;
 }
 
@@ -317,7 +326,7 @@ class Cone1ByCone2SeparabilityTest
 
     // Y is required to be equal to something not that is not
     // cone1-cone2 separable, therefore this should be infeasible.
-    test_matrix = zr_not_conic_ * zc_not_conic_.transpose();
+    test_matrix = -100 * zr_not_conic_ * zc_not_conic_.transpose();
     EXPECT_EQ(DoTestCase(Y, test_matrix), false);
 
     // A tensor between a cone1 vector, and non-conic vector.
@@ -471,26 +480,19 @@ class Cone1ByCone2SeparabilityTest
     };
     zr_not_conic_ = Eigen::VectorXd::Random(A.rows());
     // Note that all supported cones occupy less (and typically much less) than
-    // 1/2 the ambient dimension and therefore this loop is unlikely to take
-    // very long.
+    // 1/2 the volume of the ambient space and therefore this loop is unlikely
+    // to take very long.
     while (is_conic_vector(zr_not_conic_, cone1_) ||
            is_conic_vector(zr_not_conic_, cone2_)) {
       zr_not_conic_ = Eigen::VectorXd::Random(A.rows());
     }
-    zc_not_conic_ = Eigen::VectorXd::Random(A.rows());
+    zc_not_conic_ = Eigen::VectorXd::Random(B.cols());
     // Note that all supported cones occupy less (and typically much less) than
-    // 1/2 the ambient dimension and therefore this loop is unlikely to take
-    // very long.
+    // 1/2 the volume of the ambient space and therefore this loop is unlikely
+    // to take very long.
     while (is_conic_vector(zc_not_conic_, cone1_) ||
            is_conic_vector(zc_not_conic_, cone2_)) {
-      zc_not_conic_ = Eigen::VectorXd::Random(A.rows());
-    }
-    if (zr_not_conic_(0) > 0) {
-      zr_not_conic_(0) *= -1;
-    }
-    zc_not_conic_ = Eigen::VectorXd::Random(B.cols());
-    if (zc_not_conic_(0) > 0) {
-      zc_not_conic_(0) *= -1;
+      zc_not_conic_ = Eigen::VectorXd::Random(B.cols());
     }
   }
 
@@ -498,19 +500,9 @@ class Cone1ByCone2SeparabilityTest
                   const Eigen::Ref<const Eigen::MatrixXd>& test_mat) {
     auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
     auto result = Solve(prog_);
-    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
-      SolverOptions options;
-      options.SetOption(CommonSolverOption::kPrintToConsole, true);
-      ClarabelSolver solver{};
-      result = solver.Solve(prog_, std::nullopt, options);
-    }
     prog_.RemoveConstraint(constraint);
-    //    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
-    //      std::cout << prog_ << std::endl;
-    //      std::cout << fmt::format("test_mat=\n{}", fmt_eigen(test_mat))
-    //                << std::endl;
-    //    }
-    assert(ProgramSolvedWithoutError(result.get_solution_result()));
+    DRAKE_DEMAND(ProgramSolvedWithoutError(result.get_solution_result()));
+
     return result.is_success();
   }
 

@@ -1254,6 +1254,7 @@ drake_cc_googletest(
         "//solvers:clarabel_solver",
         "//solvers:mosek_solver",
     ],
+timeout = "moderate",
 )
 
 drake_cc_googletest(
