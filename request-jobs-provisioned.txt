@@ -11,7 +11,6 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-valgrind-memcheck please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-address-sanitizer please
-@drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-release please
@@ -21,7 +20,6 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-address-sanitizer please
-@drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-release please
@@ -30,7 +28,6 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-mosek-valgrind-memcheck please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-address-sanitizer please
-@drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-snopt-release please
@@ -45,14 +42,11 @@
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-jammy-gcc-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-gurobi-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-gurobi-release please
-@drake-jenkins-bot linux-jammy-gcc-bazel-experimental-mosek-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-mosek-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-mosek-release please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-release please
-@drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-coverage please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-snopt-release please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-debug please
