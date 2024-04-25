@@ -461,19 +461,18 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("path"), py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
         .def("SetProperty",
             // Note: overload_cast and overload_cast_explicit did not work here.
-            static_cast<void (Class::*)(int, const std::string&,
-                const std::string&, bool)>(&Class::SetProperty),
+            static_cast<void (Class::*)(int, std::string_view, std::string_view,
+                bool)>(&Class::SetProperty),
             py::arg("frame"), py::arg("path"), py::arg("property"),
             py::arg("value"), cls_doc.SetProperty.doc_bool)
         .def("SetProperty",
-            static_cast<void (Class::*)(int, const std::string&,
-                const std::string&, double)>(&Class::SetProperty),
+            static_cast<void (Class::*)(int, std::string_view, std::string_view,
+                double)>(&Class::SetProperty),
             py::arg("frame"), py::arg("path"), py::arg("property"),
             py::arg("value"), cls_doc.SetProperty.doc_double)
         .def("SetProperty",
-            static_cast<void (Class::*)(int, const std::string&,
-                const std::string&, const std::vector<double>&)>(
-                &Class::SetProperty),
+            static_cast<void (Class::*)(int, std::string_view, std::string_view,
+                const std::vector<double>&)>(&Class::SetProperty),
             py::arg("frame"), py::arg("path"), py::arg("property"),
             py::arg("value"), cls_doc.SetProperty.doc_vector_double);
     // Note: We don't bind get_key_frame and get_javascript_type (at least

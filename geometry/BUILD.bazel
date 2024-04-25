@@ -482,6 +482,7 @@ drake_cc_library(
     srcs = ["meshcat_animation.cc"],
     hdrs = ["meshcat_animation.h"],
     deps = [
+        "//common:string_container",
         "//math:geometric_transform",
     ],
 )
