@@ -2599,7 +2599,7 @@ void Meshcat::SetTransform(std::string_view path,
   if (recording_ && time_in_recording.has_value()) {
     const double time = *time_in_recording;
     const int frame = animation_->frame(time);
-    animation_->SetTransform(frame, std::string(path), X_ParentPath);
+    animation_->SetTransform(frame, path, X_ParentPath);
   }
   if (!recording_ || !time_in_recording.has_value() ||
       set_visualizations_while_recording_) {
@@ -2629,7 +2629,7 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
   if (recording_ && time_in_recording.has_value()) {
     const double time = *time_in_recording;
     const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, std::string(path), property, value);
+    animation_->SetProperty(frame, path, property, value);
   }
   if (!recording_ || !time_in_recording.has_value() ||
       set_visualizations_while_recording_) {
@@ -2643,7 +2643,7 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
   if (recording_ && time_in_recording.has_value()) {
     const double time = *time_in_recording;
     const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, std::string(path), property, value);
+    animation_->SetProperty(frame, path, property, value);
   }
   // TODO(jwnimmer-tri) Why isn't time_in_recording part of this guard?
   // That's inconsistent with everywhere else and seems like a bug.
@@ -2658,7 +2658,7 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
   if (recording_ && time_in_recording.has_value()) {
     const double time = *time_in_recording;
     const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, std::string(path), property, value);
+    animation_->SetProperty(frame, path, property, value);
   }
   // TODO(jwnimmer-tri) Why isn't time_in_recording part of this guard?
   // That's inconsistent with everywhere else and seems like a bug.
