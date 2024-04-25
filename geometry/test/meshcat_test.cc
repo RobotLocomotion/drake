@@ -1049,10 +1049,22 @@ bool has_frame(const MeshcatAnimation& animation, int frame) {
       .has_value();
 }
 
+// The hard-coded default values for the original recording and newly-started
+// recordings should match.
+GTEST_TEST(MeshcatTest, RecordingDefaults) {
+  Meshcat meshcat;
+  const double constructor_fps =
+      meshcat.get_mutable_recording().frames_per_second();
+  meshcat.StartRecording();
+  const double start_fps = meshcat.get_mutable_recording().frames_per_second();
+  EXPECT_EQ(start_fps, constructor_fps);
+}
+
 GTEST_TEST(MeshcatTest, Recording) {
   Meshcat meshcat;
-  DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
-                              ".*You must create a recording.*");
+  EXPECT_NO_THROW(meshcat.get_mutable_recording());
+  EXPECT_NO_THROW(meshcat.StopRecording());
+  EXPECT_NO_THROW(meshcat.PublishRecording());
 
   const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
                                      Vector3d{0.9, -2.0, 0.12}};
