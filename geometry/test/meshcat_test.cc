@@ -466,9 +466,9 @@ GTEST_TEST(MeshcatTest, SetTriangleColorMeshForRecording) {
 
   // clang-format off
   Eigen::Matrix3Xd vertices(3, 4);
-  vertices << 0, 0.5, 0.5, 0,
-              0, 0,   0.5, 0.5,
-              0, 0,   0,   0.5;
+  vertices << 0.0, 0.5, 0.5, 0.0,
+              0.0, 0.0, 0.5, 0.5,
+              0.0, 0.0, 0.5, 0.5;
   Eigen::Matrix3Xi faces(3, 2);
   faces << 0, 2,
            1, 3,
