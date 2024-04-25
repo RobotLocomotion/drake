@@ -101,7 +101,7 @@ endif()
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 14)
-set(MINIMUM_CLANG_VERSION 14)
+set(MINIMUM_CLANG_VERSION 15)
 set(MINIMUM_GNU_VERSION 11)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
