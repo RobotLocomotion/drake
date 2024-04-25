@@ -35,6 +35,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel)
 
+  // TODO(xuchenhan-tri): The prerequisite isn't very precise. It's ok to call
+  // the constructor in the middle of finalizing a plant, as long as this
+  // DeformableModel has a chance to declare the system resources it needs.
+  // Consider making the constructor private and only allow construction via
+  // plant.AddDeformableModel().
   /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
@@ -229,11 +234,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
   /** Returns the output port index of the vertex positions port for all
-   registered deformable bodies.
-   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
-  */
+   registered deformable bodies. */
   const systems::OutputPortIndex& configuration_output_port_index() const {
-    this->ThrowIfSystemResourcesNotDeclared(__func__);
     return configuration_output_port_index_;
   }
 
@@ -252,6 +254,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   bool is_cloneable_to_symbolic() const final { return is_empty(); }
 
  private:
+  /** Allow different specializations to access each other's private data for
+   scalar conversion. */
+  template <typename U>
+  friend class DeformableModel;
+
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
   }
@@ -276,14 +283,17 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    connectivity of the elements are given by `mesh`, and physical properties
    such as the material model of the body are given by `config`.
    @throws exception if an FEM model corresponding to `id` already exists. */
-  void BuildLinearVolumetricModel(DeformableBodyId id,
-                                  const geometry::VolumeMesh<double>& mesh,
-                                  const fem::DeformableBodyConfig<T>& config);
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  BuildLinearVolumetricModel(DeformableBodyId id,
+                             const geometry::VolumeMesh<double>& mesh,
+                             const fem::DeformableBodyConfig<T>& config);
 
-  template <template <class, int> class Model>
-  void BuildLinearVolumetricModelHelper(
-      DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
-      const fem::DeformableBodyConfig<T>& config);
+  template <template <class, int> class Model, typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  BuildLinearVolumetricModelHelper(DeformableBodyId id,
+                                   const geometry::VolumeMesh<double>& mesh,
+                                   const fem::DeformableBodyConfig<T>& config);
 
   /* Copies the vertex positions of all deformable bodies to the output port
    value which is guaranteed to be of type GeometryConfigurationVector. */

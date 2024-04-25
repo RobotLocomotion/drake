@@ -47,17 +47,17 @@ bool PhysicalModel<T>::is_cloneable_to_symbolic() const {
 
 template <typename T>
 geometry::SceneGraph<T>& PhysicalModel<T>::mutable_scene_graph() {
-  DRAKE_THROW_UNLESS(plant_prefinalize_ != nullptr);
+  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
   return internal::MultibodyPlantModelAttorney<T>::mutable_scene_graph(
-      plant_prefinalize_);
+      owning_plant_);
 }
 
 template <typename T>
 systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
     const VectorX<T>& model_value) {
-  DRAKE_THROW_UNLESS(plant_prefinalize_ != nullptr);
+  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
   return internal::MultibodyPlantModelAttorney<T>::DeclareDiscreteState(
-      plant_prefinalize_, model_value);
+      owning_plant_, model_value);
 }
 
 template <typename T>
@@ -66,9 +66,9 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareAbstractOutputPort(
     typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
     typename systems::LeafOutputPort<T>::CalcCallback calc_function,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
-  DRAKE_THROW_UNLESS(plant_prefinalize_ != nullptr);
+  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
   return internal::MultibodyPlantModelAttorney<T>::DeclareAbstractOutputPort(
-      plant_prefinalize_, std::move(name), std::move(alloc_function),
+      owning_plant_, std::move(name), std::move(alloc_function),
       std::move(calc_function), std::move(prerequisites_of_calc));
 }
 
@@ -78,9 +78,9 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareVectorOutputPort(
     typename systems::LeafOutputPort<T>::CalcVectorCallback
         vector_calc_function,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
-  DRAKE_THROW_UNLESS(plant_prefinalize_ != nullptr);
+  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
   return internal::MultibodyPlantModelAttorney<T>::DeclareVectorOutputPort(
-      plant_prefinalize_, std::move(name), model_vector,
+      owning_plant_, std::move(name), model_vector,
       std::move(vector_calc_function), std::move(prerequisites_of_calc));
 }
 

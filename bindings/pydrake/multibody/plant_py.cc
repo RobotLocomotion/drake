@@ -922,6 +922,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_geometry_poses_output_port",
             &Class::get_geometry_poses_output_port, py_rvp::reference_internal,
             cls_doc.get_geometry_poses_output_port.doc)
+        .def("get_deformable_body_configuration_output_port",
+            &Class::get_deformable_body_configuration_output_port,
+            py_rvp::reference_internal,
+            cls_doc.get_deformable_body_configuration_output_port.doc)
         .def("geometry_source_is_registered",
             &Class::geometry_source_is_registered,
             cls_doc.geometry_source_is_registered.doc)
@@ -1086,9 +1090,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_adjacent_bodies_collision_filters",
             &Class::get_adjacent_bodies_collision_filters,
             cls_doc.get_adjacent_bodies_collision_filters.doc)
-        .def("AddDeformableModel", &Class::AddDeformableModel, py::arg("model"),
-            cls_doc.AddDeformableModel.doc)
-        .def("physical_models", &Class::physical_models,
+        .def("deformable_model", &Class::deformable_model,
+            py_rvp::reference_internal, cls_doc.physical_models.doc)
+        .def("mutable_deformable_model", &Class::mutable_deformable_model,
             py_rvp::reference_internal, cls_doc.physical_models.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,

@@ -29,15 +29,6 @@ internal::DummyPhysicalModel<T>* PhysicalModelCollection<T>::AddDummyModel(
       static_cast<internal::DummyPhysicalModel<T>*>(owned_models_.back().get());
   return dummy_model_;
 }
-
-template <typename T>
-void PhysicalModelCollection<T>::RemoveUnsupportedScalars(
-    MultibodyPlant<T>* plant) {
-  for (const auto& model : owned_models_) {
-    plant->RemoveUnsupportedScalars(*model);
-  }
-}
-
 template <typename T>
 bool PhysicalModelCollection<T>::is_cloneable_to_double() const {
   for (const auto& model : owned_models_) {

@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -23,12 +24,11 @@ using systems::BasicVector;
 class DeformableModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    constexpr double kDt = 0.01;
-    std::tie(plant_, scene_graph_) =
-        AddMultibodyPlantSceneGraph(&builder_, kDt);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_model_ptr_ = deformable_model.get();
-    plant_->AddDeformableModel(std::move(deformable_model));
+    MultibodyPlantConfig plant_config;
+    plant_config.time_step = 0.01;
+    plant_config.discrete_contact_approximation = "sap";
+    std::tie(plant_, scene_graph_) = AddMultibodyPlant(plant_config, &builder_);
+    deformable_model_ptr_ = plant_->mutable_deformable_model();
   }
 
   systems::DiagramBuilder<double> builder_;

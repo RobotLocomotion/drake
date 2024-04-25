@@ -28,7 +28,22 @@ using fem::MaterialModel;
 
 template <typename T>
 DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
-    : PhysicalModel<T>(plant) {}
+    : PhysicalModel<T>(plant) {
+  /* Declare the vertex position output port. */
+  configuration_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              "vertex_positions",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
+}
 
 template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
@@ -36,48 +51,53 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowIfNotDouble(__func__);
+  if constexpr (std::is_same_v<T, double>) {
+    /* Register the geometry with SceneGraph. */
+    SceneGraph<T>& scene_graph = this->mutable_scene_graph();
+    SourceId source_id = this->plant()->get_source_id().value();
+    /* All deformable bodies are registered with the world frame at the moment.
+     */
+    const FrameId world_frame_id = scene_graph.world_frame_id();
 
-  /* Register the geometry with SceneGraph. */
-  SceneGraph<T>& scene_graph = this->mutable_scene_graph();
-  SourceId source_id = this->plant()->get_source_id().value();
-  /* All deformable bodies are registered with the world frame at the moment. */
-  const FrameId world_frame_id = scene_graph.world_frame_id();
-  // TODO(xuchenhan-tri): Consider allowing users to opt out of illustration
-  // property for the deformable body if that's ever useful.
-  /* If the geometry doesn't have illustration properties, add an empty one so
-   that it can at least be visualized. */
-  if (geometry_instance->illustration_properties() == nullptr) {
-    geometry_instance->set_illustration_properties(
-        geometry::IllustrationProperties{});
+    // TODO(xuchenhan-tri): Consider allowing users to opt out of illustration
+    // property for the deformable body if that's ever useful.
+    /* If the geometry doesn't have illustration properties, add an empty one so
+     that it can at least be visualized. */
+    if (geometry_instance->illustration_properties() == nullptr) {
+      geometry_instance->set_illustration_properties(
+          geometry::IllustrationProperties{});
+    }
+    GeometryId geometry_id = scene_graph.RegisterDeformableGeometry(
+        source_id, world_frame_id, std::move(geometry_instance),
+        resolution_hint);
+    /* Record the reference positions. */
+    const geometry::SceneGraphInspector<T>& inspector =
+        scene_graph.model_inspector();
+    const geometry::VolumeMesh<double>* mesh_G =
+        inspector.GetReferenceMesh(geometry_id);
+    DRAKE_DEMAND(mesh_G != nullptr);
+    const math::RigidTransform<double>& X_WG =
+        inspector.GetPoseInFrame(geometry_id);
+    geometry::VolumeMesh<double> mesh_W = *mesh_G;
+    mesh_W.TransformVertices(X_WG);
+    VectorX<T> reference_position(3 * mesh_W.num_vertices());
+    for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+      reference_position.template segment<3>(3 * v) = mesh_W.vertex(v);
+    }
+
+    const DeformableBodyId body_id = DeformableBodyId::get_new_id();
+    /* Build FEM model for the deformable body. */
+    BuildLinearVolumetricModel(body_id, mesh_W, config);
+
+    /* Do the book-keeping. */
+    reference_positions_.emplace(body_id, std::move(reference_position));
+    body_id_to_geometry_id_.emplace(body_id, geometry_id);
+    geometry_id_to_body_id_.emplace(geometry_id, body_id);
+    body_ids_.emplace_back(body_id);
+    body_id_to_density_.emplace(body_id, config.mass_density());
+    return body_id;
   }
-  GeometryId geometry_id = scene_graph.RegisterDeformableGeometry(
-      source_id, world_frame_id, std::move(geometry_instance), resolution_hint);
-
-  /* Record the reference positions. */
-  const geometry::SceneGraphInspector<T>& inspector =
-      scene_graph.model_inspector();
-  const geometry::VolumeMesh<double>* mesh_G =
-      inspector.GetReferenceMesh(geometry_id);
-  DRAKE_DEMAND(mesh_G != nullptr);
-  const math::RigidTransform<T>& X_WG = inspector.GetPoseInFrame(geometry_id);
-  geometry::VolumeMesh<double> mesh_W = *mesh_G;
-  mesh_W.TransformVertices(X_WG);
-  VectorX<T> reference_position(3 * mesh_W.num_vertices());
-  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
-    reference_position.template segment<3>(3 * v) = mesh_W.vertex(v);
-  }
-
-  const DeformableBodyId body_id = DeformableBodyId::get_new_id();
-  /* Build FEM model for the deformable body. */
-  BuildLinearVolumetricModel(body_id, mesh_W, config);
-
-  /* Do the book-keeping. */
-  reference_positions_.emplace(body_id, std::move(reference_position));
-  body_id_to_geometry_id_.emplace(body_id, geometry_id);
-  geometry_id_to_body_id_.emplace(geometry_id, body_id);
-  body_ids_.emplace_back(body_id);
-  body_id_to_density_.emplace(body_id, config.mass_density());
-  return body_id;
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>
@@ -145,17 +165,17 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
       scene_graph.get_query_output_port().Eval<geometry::QueryObject<double>>(
           *context);
   /* The deformable mesh in its geometry frame. */
-  const geometry::VolumeMesh<T>* mesh_A =
+  const geometry::VolumeMesh<double>* mesh_A =
       this->mutable_scene_graph().model_inspector().GetReferenceMesh(
           GetGeometryId(body_A_id));
   int vertex_index = 0;
-  for (const Vector3<T>& p_APi : mesh_A->vertices()) {
+  for (const Vector3<double>& p_APi : mesh_A->vertices()) {
     /* Note that `shape` is also registered in the A frame in the throw-away
      scene graph. */
-    const std::vector<geometry::SignedDistanceToPoint<T>> signed_distances =
-        query.ComputeSignedDistanceToPoint(p_APi);
+    const std::vector<geometry::SignedDistanceToPoint<double>>
+        signed_distances = query.ComputeSignedDistanceToPoint(p_APi);
     DRAKE_DEMAND(ssize(signed_distances) == 1);
-    const T& signed_distance = signed_distances[0].distance;
+    const double signed_distance = signed_distances[0].distance;
     if (signed_distance <= 0.0) {
       spec.vertices.push_back(vertex_index);
       /* Qi is conincident with Pi. */
@@ -278,13 +298,11 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     }
     result->body_index_to_force_densities_ = body_index_to_force_densities_;
     result->body_id_to_constraint_ids_ = body_id_to_constraint_ids_;
-    // TODO(xuchenhan-tri): check if this is needed.
     result->body_id_to_density_ = body_id_to_density_;
     result->body_id_to_index_ = body_id_to_index_;
     result->body_ids_ = body_ids_;
     result->fixed_constraint_specs_ = fixed_constraint_specs_;
-    /* configuration_output_port_index_ doesn't need to be copied because it's
-     computed in DeclareSystemResources(). */
+    result->configuration_output_port_index_ = configuration_output_port_index_;
   }
 
   return result;
@@ -304,7 +322,9 @@ DeformableModel<T>::CloneToSymbolic(
 }
 
 template <typename T>
-void DeformableModel<T>::BuildLinearVolumetricModel(
+template <typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableModel<T>::BuildLinearVolumetricModel(
     DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
   if (fem_models_.find(id) != fem_models_.end()) {
@@ -328,8 +348,9 @@ void DeformableModel<T>::BuildLinearVolumetricModel(
 }
 
 template <typename T>
-template <template <typename, int> class Model>
-void DeformableModel<T>::BuildLinearVolumetricModelHelper(
+template <template <typename, int> class Model, typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableModel<T>::BuildLinearVolumetricModelHelper(
     DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
   constexpr int kNaturalDimension = 3;
@@ -372,6 +393,20 @@ void DeformableModel<T>::BuildLinearVolumetricModelHelper(
 
 template <typename T>
 void DeformableModel<T>::DoDeclareSystemResources() {
+  if (!is_empty()) {
+    if (this->plant()->get_discrete_contact_approximation() ==
+        DiscreteContactApproximation::kTamsi) {
+      throw std::runtime_error(
+          "DeformableModel does not support TAMSI contact approximation. "
+          "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete contact "
+          "approximation for the MultibodyPlant containing deformable bodies.");
+    }
+    if (!this->plant()->is_discrete()) {
+      throw std::runtime_error(
+          "Deformable body simulation is only supported "
+          "with discrete time MultibodyPlant.");
+    }
+  }
   /* Declare discrete states. */
   for (const auto& [deformable_id, fem_model] : fem_models_) {
     std::unique_ptr<fem::FemState<T>> default_fem_state =
@@ -385,21 +420,6 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     discrete_state_indexes_.emplace(deformable_id,
                                     this->DeclareDiscreteState(model_state));
   }
-
-  /* Declare the vertex position output port. */
-  configuration_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-              "vertex_positions",
-              []() {
-                return AbstractValue::Make<
-                    geometry::GeometryConfigurationVector<T>>();
-              },
-              [this](const systems::Context<T>& context,
-                     AbstractValue* output) {
-                this->CopyVertexPositions(context, output);
-              },
-              {systems::System<double>::xd_ticket()})
-          .get_index();
 
   std::sort(body_ids_.begin(), body_ids_.end());
   for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {
@@ -473,4 +493,5 @@ void DeformableModel<T>::ThrowIfNotDouble(const char* source_method) const {
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::DeformableModel<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::DeformableModel)

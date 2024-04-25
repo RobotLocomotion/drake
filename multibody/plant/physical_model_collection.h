@@ -30,7 +30,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
   /* Adds a DeformableModel to the collection and returns the added model if
    successful.
    @throws std::exception if a DeformableModel is already in the collection.
-   @throws std::exception if `model` is not a DeformableModel. */
+   @throws std::exception if `model` is a nullptr. */
   DeformableModel<T>* AddDeformableModel(
       std::unique_ptr<PhysicalModel<T>> model);
 
@@ -40,10 +40,6 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
    @throws std::exception if `model` is not a DummyPhysicalModel. */
   internal::DummyPhysicalModel<T>* AddDummyModel(
       std::unique_ptr<PhysicalModel<T>> model);
-
-  /* For the given `plant`, removes support for scalars that are not supported
-   any of the PhysicalModels owned by `this` PhysicalModelCollection. */
-  void RemoveUnsupportedScalars(MultibodyPlant<T>* plant);
 
   /* Returns a pointer to the stored DeformableModel if one exists and nullptr
    otherwise. */

@@ -53,8 +53,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
   plant.RegisterCollisionGeometry(body2, RigidTransformd(Vector3d(-5, -5, 5)),
                                   geometry::Box(1, 1, 1), "point contact box",
                                   point_proximity_properties);
-
-  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
+  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
   /* Add a deformable sphere that collides with the ground but not with any
    other rigid bodies. */
   auto deformable_geometry = std::make_unique<GeometryInstance>(
@@ -69,11 +68,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
   constexpr double kRezHint = 10.0;
   deformable_model->RegisterDeformableBody(std::move(deformable_geometry),
                                            body_config, kRezHint);
-  plant.AddDeformableModel(std::move(deformable_model));
   plant.Finalize();
-  builder.Connect(
-      plant.get_deformable_body_configuration_output_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

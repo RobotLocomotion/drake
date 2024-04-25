@@ -106,6 +106,9 @@ void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
   EXPECT_EQ(plant_t.get_geometry_poses_output_port().get_index(),
             plant_u.get_geometry_poses_output_port().get_index());
   EXPECT_EQ(
+      plant_t.get_deformable_body_configuration_output_port().get_index(),
+      plant_u.get_deformable_body_configuration_output_port().get_index());
+  EXPECT_EQ(
       plant_t.get_state_output_port(default_model_instance()).get_index(),
       plant_u.get_state_output_port(default_model_instance()).get_index());
   EXPECT_EQ(

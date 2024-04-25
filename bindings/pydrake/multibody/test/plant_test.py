@@ -3223,7 +3223,7 @@ class TestPlant(unittest.TestCase):
     def test_deformable_model(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
-        dut = DeformableModel(plant)
+        dut = plant.deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
         # Add a deformable body to the model.
         deformable_body_config = DeformableBodyConfig_[float]()
@@ -3245,24 +3245,18 @@ class TestPlant(unittest.TestCase):
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
-        # Add the model to the plant.
-        plant.AddDeformableModel(dut)
-        registered_models = plant.physical_models()
-        self.assertEqual(len(registered_models), 1)
-        self.assertEqual(registered_models[0].num_bodies(), 1)
+
+        deformable_model = plant.deformable_model()
+        self.assertEqual(deformable_model.num_bodies(), 1)
         # Turn on SAP and finalize.
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
         plant.Finalize()
 
-        # Post-finalize operations.
         self.assertIsInstance(
             plant.get_deformable_body_configuration_output_port(),
             OutputPort_[float])
-        builder.Connect(plant.get_deformable_body_configuration_output_port(),
-                        scene_graph.get_source_configuration_port(
-                            plant.get_source_id()))
-        self.assertEqual(dut.GetDiscreteStateIndex(body_id), 1)
+        self.assertEqual(deformable_model.GetDiscreteStateIndex(body_id), 1)
 
         diagram = builder.Build()
         # Ensure we can simulate this system.

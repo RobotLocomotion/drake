@@ -1084,10 +1084,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
 
   /// Returns the output port for vertex positions of the deformable bodies in
-  /// `this` plant.
-  /// @throws std::exception if called pre-finalize, see Finalize().
-  /// @throws std::exception if no deformable bodies are present in `this`
-  /// plant.
+  /// `this` plant as GeometryConfigurationVector.
   const systems::OutputPort<T>& get_deformable_body_configuration_output_port()
       const;
   /// @} <!-- Input and output ports -->
@@ -2373,27 +2370,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
-  /// Adds a DeformableModel to this plant.
-  ///
-  /// @experimental
-  ///
-  /// With this method, MultibodyPlant takes ownership of `model` and calls its
-  /// DeclareSystemResources() method at Finalize(), allowing the
-  /// %DeformableModel to declare the system resources it needs.
-  ///
-  /// @param model After this call the model is owned by `this` MultibodyPlant.
-  /// @throws std::exception if called post-finalize. See Finalize().
-  /// @throws std::exception if model is nullptr or a %DeformableModel is
-  /// already added.
-  /// @note DeformableModel only meaningfully supports double as a scalar type.
-  /// Adding a non-double DeformableModel is allowed, but registering
-  /// deformable bodies with non-double scalar types is not supported yet.
-  DeformableModel<T>* AddDeformableModel(
-      std::unique_ptr<PhysicalModel<T>> model);
-
 #ifndef DRAKE_DOXYGEN_CXX
   // (For testing only) Adds a DummyPhysicalModel to this plant and returns the
-  // added model if successful With this method, MultibodyPlant takes ownership
+  // added model if successful. With this method, MultibodyPlant takes ownership
   // of `model` and calls its DeclareSystemResources() method at Finalize(),
   // allowing the %DeformableModel to declare the system resources it needs.
   //
@@ -2404,17 +2383,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   internal::DummyPhysicalModel<T>* AddDummyModel(
       std::unique_ptr<PhysicalModel<T>> model);
 
-  // Removes `this` MultibodyPlant's ability to convert to the scalar types
-  // unsupported by the given `component`.
+  // (Internal only) Removes `this` MultibodyPlant's ability to convert to the
+  // scalar types unsupported by the given `component`.
   void RemoveUnsupportedScalars(
       const internal::ScalarConvertibleComponent<T>& component);
-#endif
 
-  /// Returns a vector of pointers to all physical models registered with this
-  /// %MultibodyPlant. For use only by advanced developers.
-  ///
-  /// @experimental
+  // (Internal only) Returns a vector of pointers to all physical models
+  // registered with `this` MultibodyPlant.
   std::vector<const PhysicalModel<T>*> physical_models() const;
+#endif
 
   /// Returns a const pointer to the DeformableModel owned by this plant or
   /// nullptr if this plant doesn't own a %DeformableModel.
@@ -5608,8 +5585,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const contact_solvers::internal::ContactSolverResults<T>&,
       ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
-  // Helper method to declare output ports used by this plant to communicate
-  // with a SceneGraph.
+  // Helper method to declare the "geometry_query" port and the `geometry_pose`
+  // port used by this plant to communicate with a SceneGraph.
   void DeclareSceneGraphPorts();
 
   void CalcFramePoseOutput(const systems::Context<T>& context,
@@ -5683,6 +5660,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             parameter_indices_.constraint_active_status)
         .map;
   }
+
+  // Adds a DeformableModel to this plant. The added DeformableModel is owned
+  // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method at
+  // when `this` MultibodyPlant is finalized to declare the system resources it
+  // needs.
+  // @returns a pointer to the added DeformableModel that's valid for the life
+  // time of this MultibodyPlant.
+  // @throws std::exception if called post-finalize. See Finalize().
+  // @throws std::exception if a DeformableModel is already added.
+  // @note DeformableModel only meaningfully supports double as a scalar type.
+  // Adding a non-double DeformableModel is allowed, but registering
+  // deformable bodies with non-double scalar types is not supported yet.
+  DeformableModel<T>* AddDeformableModel();
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
