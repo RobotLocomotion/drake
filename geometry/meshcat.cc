@@ -2480,16 +2480,27 @@ void Meshcat::SetTriangleColorMesh(
   const double time = *time_in_recording;
   const int frame = animation_->frame(time);
 
-  if (last_frame_.contains(std::string(path)) &&
-      last_frame_[std::string(path)] > frame) {
+  // Check if this path was already set in a prior animation frame, and then
+  // update the last_frames_ bookkeeping to this frame.
+  auto last_frame_iter = last_frames_.find(path);
+  const std::optional<int> last_frame =
+      last_frame_iter != last_frames_.end()
+          ? std::optional<int>(last_frame_iter->second)
+          : std::nullopt;
+  if (last_frame.has_value() && *last_frame > frame) {
     throw std::runtime_error(
         "SetTriangleColorMesh with time_in_recording that corresponds to an "
         "earlier frame than the last frame.");
   }
+  if (last_frame.has_value()) {
+    last_frame_iter->second = frame;
+  } else {
+    last_frames_.emplace(path, frame);
+  }
 
-  if (last_frame_.contains(std::string(path))) {
+  if (last_frame.has_value()) {
     const std::string path_animation_last_frame =
-        fmt::format("{}/<animation>/{}", path, last_frame_[std::string(path)]);
+        fmt::format("{}/<animation>/{}", path, *last_frame);
     SetProperty(path_animation_last_frame, "visible", false, time);
   } else {
     // This is the first frame. Make sure the unanimated object is visible
@@ -2508,8 +2519,6 @@ void Meshcat::SetTriangleColorMesh(
   SetProperty(path_animation_frame, "visible", true, time);
   impl().SetTriangleColorMesh(path_animation_frame, vertices, faces, colors,
                               wireframe, wireframe_line_width, side);
-
-  last_frame_[std::string(path)] = frame;
 }
 
 void Meshcat::PlotSurface(std::string_view path,
@@ -2746,7 +2755,7 @@ void Meshcat::StartRecording(double frames_per_second,
   animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
   recording_ = true;
   set_visualizations_while_recording_ = set_visualizations_while_recording;
-  last_frame_.clear();
+  last_frames_.clear();
 }
 
 void Meshcat::StopRecording() {

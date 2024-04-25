@@ -522,6 +522,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:essential",
         "//common:name_value",
+        "//common:string_container",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",

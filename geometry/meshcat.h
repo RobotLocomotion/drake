@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_params.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -953,7 +954,7 @@ class Meshcat {
   frame in the animation. */
   bool recording_{false};
   bool set_visualizations_while_recording_{true};
-  std::unordered_map<std::string, int> last_frame_{};
+  string_unordered_map<int> last_frames_{};
 };
 
 }  // namespace geometry
