@@ -95,6 +95,15 @@ const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
 }
 
 template <typename T>
+std::vector<VectorX<T>> QueryObject<T>::GetDrivenMeshConfigurationsInWorld(
+    GeometryId geometry_id, Role role) const {
+  ThrowIfNotCallable();
+  FullConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.GetDrivenMeshConfigurationsInWorld(geometry_id, role);
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();

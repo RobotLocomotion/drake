@@ -62,6 +62,12 @@ int SceneGraphInspector<T>::NumGeometriesWithRole(Role role) const {
 }
 
 template <typename T>
+int SceneGraphInspector<T>::NumDeformableGeometriesWithRole(Role role) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->NumDeformableGeometriesWithRole(role);
+}
+
+template <typename T>
 int SceneGraphInspector<T>::NumDynamicGeometries() const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->NumDynamicGeometries();
@@ -261,6 +267,14 @@ const VolumeMesh<double>* SceneGraphInspector<T>::GetReferenceMesh(
     GeometryId geometry_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->GetReferenceMesh(geometry_id);
+}
+
+template <typename T>
+const std::vector<internal::RenderMesh>&
+SceneGraphInspector<T>::GetDrivenRenderMeshes(GeometryId geometry_id,
+                                              Role role) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetDrivenRenderMeshes(geometry_id, role);
 }
 
 template <typename T>

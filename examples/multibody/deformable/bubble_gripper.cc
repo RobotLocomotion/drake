@@ -35,6 +35,7 @@ using drake::geometry::Mesh;
 using drake::geometry::PerceptionProperties;
 using drake::geometry::ProximityProperties;
 using drake::geometry::RenderEngineGlParams;
+using drake::geometry::Rgba;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
 using drake::math::RotationMatrixd;
@@ -220,6 +221,12 @@ int do_main() {
                       Vector3d(-0.17, 0, 0)),
       std::move(teddy_mesh), "teddy");
   teddy_instance->set_proximity_properties(deformable_proximity_props);
+  /* Give the teddy bear a brown color for illustration to better distinguish it
+   from the bubble gripper in the visualizer. */
+  IllustrationProperties teddy_illustration_props;
+  teddy_illustration_props.AddProperty("phong", "diffuse",
+                                       Rgba(0.82, 0.71, 0.55, 1.0));
+  teddy_instance->set_illustration_properties(teddy_illustration_props);
   deformable_model->RegisterDeformableBody(std::move(teddy_instance),
                                            teddy_config, 1.0);
   plant.AddPhysicalModel(std::move(owned_deformable_model));

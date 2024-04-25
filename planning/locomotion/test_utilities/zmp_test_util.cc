@@ -1,10 +1,9 @@
-#include "drake/systems/controllers/test/zmp_test_util.h"
+#include "drake/planning/locomotion/test_utilities/zmp_test_util.h"
 
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace systems {
-namespace controllers {
+namespace planning {
 
 using trajectories::PiecewisePolynomial;
 
@@ -13,8 +12,7 @@ ZmpTestTraj SimulateZmpPolicy(const ZmpPlanner& zmp_planner,
                               double extra_time_at_the_end) {
   const PiecewisePolynomial<double>& zmp_d = zmp_planner.get_desired_zmp();
   int N = static_cast<int>(
-      (zmp_d.end_time() + extra_time_at_the_end - zmp_d.start_time())
-      / dt);
+      (zmp_d.end_time() + extra_time_at_the_end - zmp_d.start_time()) / dt);
 
   ZmpTestTraj traj(N);
 
@@ -52,7 +50,6 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(
   std::vector<double> time_steps;
   std::vector<Eigen::MatrixXd> zmp_d;
 
-  Eigen::Vector4d x0(0, 0, 0, 0);
   double time = 0;
 
   time_steps.push_back(time);
@@ -89,12 +86,10 @@ const std::function<ZmpTestTraj(const ZmpPlanner&, const Eigen::Vector4d&,
                                 double, double)>
     SimulateZMPPolicy = SimulateZmpPolicy;
 
-const std::function<
-    std::vector<trajectories::PiecewisePolynomial<double>>(
-        const std::vector<Eigen::Vector2d>&, double, double)>
+const std::function<std::vector<trajectories::PiecewisePolynomial<double>>(
+    const std::vector<Eigen::Vector2d>&, double, double)>
     GenerateDesiredZMPTrajs = GenerateDesiredZmpTrajs;
 #pragma GCC diagnostic pop
 
-}  // namespace controllers
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

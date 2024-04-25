@@ -166,6 +166,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(
       default_object.GetConfigurationsInWorld(GeometryId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object.GetDrivenMeshConfigurationsInWorld(
+      GeometryId::get_new_id(), Role::kIllustration));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());

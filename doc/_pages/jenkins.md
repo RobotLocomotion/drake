@@ -152,7 +152,6 @@ comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-wheel-experimental-release please``
 * ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)

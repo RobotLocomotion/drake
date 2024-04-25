@@ -1,15 +1,14 @@
-#include "drake/systems/controllers/zmp_planner.h"
+#include "drake/planning/locomotion/zmp_planner.h"
 
 #include <typeinfo>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/systems/controllers/test/zmp_test_util.h"
+#include "drake/planning/locomotion/test_utilities/zmp_test_util.h"
 
 namespace drake {
-namespace systems {
-namespace controllers {
+namespace planning {
 
 using trajectories::ExponentialPlusPiecewisePolynomial;
 using trajectories::PiecewisePolynomial;
@@ -256,6 +255,5 @@ TEST_F(ZmpPlannerTest, TestOptimalControl) {
 }
 
 }  // namespace
-}  // namespace controllers
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

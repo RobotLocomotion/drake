@@ -7,6 +7,7 @@
 #include <msgpack.hpp>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -18,6 +19,7 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using internal::TransformGeometryName;
 using multibody::AddMultibodyPlantSceneGraph;
 
 // The tests in this file require a dependency on MultibodyPlant.  One could
@@ -138,7 +140,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
         plant_->GetBodyByName("iiwa_link_7").index());
     for (GeometryId geom_id : inspector.GetGeometries(iiwa_link_7, role)) {
       EXPECT_TRUE(meshcat_->HasPath(
-          fmt::format("visualizer/iiwa14/iiwa_link_7/{}", geom_id)));
+          fmt::format("visualizer/iiwa14/iiwa_link_7/{}",
+                      TransformGeometryName(geom_id, inspector))));
     }
     meshcat_->Delete();
   }
@@ -399,8 +402,9 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
     // tell us whether or not hydro was used -- the normal representation is
     // just the ellipse axes (very small); the hydro representation is all
     // of the tessellated faces (very large).
-    const std::string data = meshcat->GetPackedObject(fmt::format(
-        "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
+    const std::string data = meshcat->GetPackedObject(
+        fmt::format("/drake/{}/two_bodies/body1/{}", prefix,
+                    TransformGeometryName(sphere1, inspector)));
     if (show_hydroelastic) {
       EXPECT_GT(data.size(), 5000);
       // The BufferGeometry has explicitly declared its material to be flat
@@ -455,8 +459,9 @@ GTEST_TEST(MeshcatVisualizerTest, ConvexHull) {
   // Read back the mesh shape. The message would have type _meshfile_object if
   // the obj had been sent. If, however, the generated convex hull is sent, the
   // type will be BufferGeometry.
-  const std::string data = meshcat->GetPackedObject(fmt::format(
-      "/drake/{}/box/box/{}", params.prefix, box_id.get_value()));
+  const std::string data = meshcat->GetPackedObject(
+      fmt::format("/drake/{}/box/box/{}", params.prefix,
+                  TransformGeometryName(box_id, inspector)));
   EXPECT_THAT(data, testing::HasSubstr("BufferGeometry"));
 }
 
@@ -552,8 +557,8 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
       auto context = diagram->CreateDefaultContext();
 
       // Publish geometry. Check whether the shape was published.
-      const std::string geom_path =
-          fmt::format("prefix/box/box/{}", geom_id.get_value());
+      const std::string geom_path = fmt::format(
+          "prefix/box/box/{}", TransformGeometryName(geom_id, inspector));
       const bool should_show =
           (accepting == "prefix") ||
           (include_unspecified_accepting && accepting.empty());
@@ -624,8 +629,8 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
       inspector.GetGeometries(body_frame, Role::kIllustration);
   DRAKE_DEMAND(geom_ids.size() == 1);
   const GeometryId geom_id = *geom_ids.begin();
-  const std::string geom_path =
-      fmt::format("visualizer/box/box/{}", geom_id.get_value());
+  const std::string geom_path = fmt::format(
+      "visualizer/box/box/{}", TransformGeometryName(geom_id, inspector));
 
   // Create the visualizer.
   MeshcatVisualizerParams params;

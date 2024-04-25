@@ -540,8 +540,6 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
   // needed and is correct.
   internal::KinematicsData<T>& kinematics_data =
       state.mutable_kinematics_data();
-  internal::DrivenMeshData& driven_perception_meshes =
-      state.mutable_driven_perception_meshes();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.
@@ -568,11 +566,14 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
     }
   }
 
-  driven_perception_meshes.SetControlMeshPositions(kinematics_data.q_WGs);
-  state.FinalizeConfigurationUpdate(kinematics_data,
-                                    driven_perception_meshes,
-                                    &state.mutable_proximity_engine(),
-                                    state.GetMutableRenderEngines());
+  for (const auto role : std::vector<Role>{
+           Role::kIllustration, Role::kPerception, Role::kProximity}) {
+    state.mutable_driven_mesh_data(role).SetControlMeshPositions(
+        kinematics_data.q_WGs);
+  }
+  state.FinalizeConfigurationUpdate(
+      kinematics_data, state.mutable_driven_mesh_data(Role::kPerception),
+      &state.mutable_proximity_engine(), state.GetMutableRenderEngines());
 }
 
 template <typename T>

@@ -1,12 +1,20 @@
 #include "drake/geometry/meshcat_internal.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/sha256.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
+#include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -14,6 +22,7 @@ namespace internal {
 namespace {
 
 using nlohmann::json;
+using math::RigidTransformd;
 
 GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
   // This matches the list of URLs in the API doc.
@@ -140,6 +149,29 @@ GTEST_TEST(UnbundleGltfAssetsTest, JsonParseError) {
   EXPECT_EQ(assets.size(), 0);
   EXPECT_EQ(storage.size(), 0);
   EXPECT_EQ(gltf_contents, orig);
+}
+
+GTEST_TEST(TransformGeometryNameTest, SampledResults) {
+  SceneGraph<double> scene_graph;
+  const SourceId s_id = scene_graph.RegisterSource("test");
+  const RigidTransformd I = RigidTransformd::Identity();
+
+  // Test pairs: (registered geometry name, expected transformed name).
+  std::vector<std::pair<std::string, std::string>> test_names{
+      {"unchanged", "unchanged"},
+      {"::prefixed", "/prefixed"},
+      {"single:colon", "single:colon"},
+      {"simple::path", "simple/path"},
+      {"extra:::colon", "extra/:colon"},
+      {"empty::::slash", "empty//slash"},
+      {"suffixed::", "suffixed/"},
+      {"final_trio:::", "final_trio/:"}};
+  for (const auto& [name, transformed] : test_names) {
+    const GeometryId id = scene_graph.RegisterAnchoredGeometry(
+        s_id, std::make_unique<GeometryInstance>(I, Sphere(1.0), name));
+    EXPECT_EQ(TransformGeometryName(id, scene_graph.model_inspector()),
+              transformed);
+  }
 }
 
 }  // namespace
