@@ -290,7 +290,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.GetTrackedCameraPose.doc)
         .def("SetTransform",
             py::overload_cast<std::string_view, const math::RigidTransformd&,
-                const std::optional<double>&>(&Class::SetTransform),
+                std::optional<double>>(&Class::SetTransform),
             py::arg("path"), py::arg("X_ParentPath"),
             py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetTransform.doc_RigidTransform)
@@ -305,19 +305,19 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.GetRealtimeRate.doc)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool,
-                const std::optional<double>&>(&Class::SetProperty),
+                std::optional<double>>(&Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetProperty.doc_bool)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, double,
-                const std::optional<double>&>(&Class::SetProperty),
+                std::optional<double>>(&Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetProperty.doc_double)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string,
-                const std::vector<double>&, const std::optional<double>&>(
+                const std::vector<double>&, std::optional<double>>(
                 &Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             py::arg("time_in_recording") = std::nullopt,

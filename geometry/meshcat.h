@@ -515,9 +515,9 @@ class Meshcat {
 
   @pydrake_mkdoc_identifier{RigidTransform}
   */
-  void SetTransform(
-      std::string_view path, const math::RigidTransformd& X_ParentPath,
-      const std::optional<double>& time_in_recording = std::nullopt);
+  void SetTransform(std::string_view path,
+                    const math::RigidTransformd& X_ParentPath,
+                    std::optional<double> time_in_recording = std::nullopt);
 
   /** Set the homogeneous transform for a given path in the scene tree relative
   to its parent path. An object's pose is the concatenation of all of the
@@ -578,9 +578,8 @@ class Meshcat {
 
   @pydrake_mkdoc_identifier{bool}
   */
-  void SetProperty(
-      std::string_view path, std::string property, bool value,
-      const std::optional<double>& time_in_recording = std::nullopt);
+  void SetProperty(std::string_view path, std::string property, bool value,
+                   std::optional<double> time_in_recording = std::nullopt);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -600,9 +599,8 @@ class Meshcat {
 
   @pydrake_mkdoc_identifier{double}
   */
-  void SetProperty(
-      std::string_view path, std::string property, double value,
-      const std::optional<double>& time_in_recording = std::nullopt);
+  void SetProperty(std::string_view path, std::string property, double value,
+                   std::optional<double> time_in_recording = std::nullopt);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -622,10 +620,9 @@ class Meshcat {
 
   @pydrake_mkdoc_identifier{vector_double}
   */
-  void SetProperty(
-      std::string_view path, std::string property,
-      const std::vector<double>& value,
-      const std::optional<double>& time_in_recording = std::nullopt);
+  void SetProperty(std::string_view path, std::string property,
+                   const std::vector<double>& value,
+                   std::optional<double> time_in_recording = std::nullopt);
 
   /** Sets the *environment* texture. For objects with physically-based
    rendering (PBR) material properties (e.g., metallic surfaces), this defines
