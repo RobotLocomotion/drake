@@ -28,7 +28,22 @@ using fem::MaterialModel;
 
 template <typename T>
 DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
-    : PhysicalModel<T>(plant) {}
+    : PhysicalModel<T>(plant) {
+  /* Declare the vertex position output port. */
+  configuration_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              "vertex_positions",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
+}
 
 template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
@@ -270,13 +285,11 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     }
     result->body_index_to_force_densities_ = body_index_to_force_densities_;
     result->body_id_to_constraint_ids_ = body_id_to_constraint_ids_;
-    // TODO(xuchenhan-tri): check if this is needed.
     result->body_id_to_density_ = body_id_to_density_;
     result->body_id_to_index_ = body_id_to_index_;
     result->body_ids_ = body_ids_;
     result->fixed_constraint_specs_ = fixed_constraint_specs_;
-    /* configuration_output_port_index_ doesn't need to be copied because it's
-     computed in DeclareSystemResources(). */
+    result->configuration_output_port_index_ = configuration_output_port_index_;
   }
 
   return result;
@@ -377,21 +390,6 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     discrete_state_indexes_.emplace(deformable_id,
                                     this->DeclareDiscreteState(model_state));
   }
-
-  /* Declare the vertex position output port. */
-  configuration_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-              "vertex_positions",
-              []() {
-                return AbstractValue::Make<
-                    geometry::GeometryConfigurationVector<T>>();
-              },
-              [this](const systems::Context<T>& context,
-                     AbstractValue* output) {
-                this->CopyVertexPositions(context, output);
-              },
-              {systems::System<double>::xd_ticket()})
-          .get_index();
 
   std::sort(body_ids_.begin(), body_ids_.end());
   for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {

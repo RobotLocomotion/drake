@@ -75,18 +75,26 @@ class SapDriverTest {
   }
 };
 
-// Tests that in SetDiscreteUpdateManager, a registered DeformableModel will
+// Tests that in SetDiscreteUpdateManager, a non-empty DeformableModel will
 // cause a DeformableDriver to be instantiated in the manager.
 GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   CompliantContactManager<double> manager;
   EXPECT_EQ(manager.deformable_driver(), nullptr);
-  MultibodyPlant<double> plant(0.01);
-  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
-  plant.AddDeformableModel(std::move(deformable_model));
+
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = 0.01;
   // N.B. Deformables are only supported with the SAP solver.
-  // Thus for testing we choose one arbitrary contact approximation that uses
-  // the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  // Thus for testing we choose one arbitrary contact approximation that
+  // uses the SAP solver.
+  plant_config.discrete_contact_approximation = "sap";
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+
+  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
+  auto geometry_instance = std::make_unique<geometry::GeometryInstance>(
+      math::RigidTransformd::Identity(), geometry::Sphere(1.0), "sphere");
+  deformable_model->RegisterDeformableBody(
+      std::move(geometry_instance), fem::DeformableBodyConfig<double>{}, 10.0);
   plant.Finalize();
   auto contact_manager = std::make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* contact_manager_ptr =

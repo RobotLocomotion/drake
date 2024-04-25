@@ -324,6 +324,11 @@ MultibodyPlant<T>::MultibodyPlant(
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
 
+  // TODO(xuchenhan-tri): Now that we add a deformable model by default, we need
+  // to make sure that the deformable model is always empty for an incompatible
+  // plant (not sap + discrete).
+  AddDeformableModel(std::make_unique<DeformableModel<T>>(this));
+
   DeclareSceneGraphPorts();
 }
 
@@ -1484,6 +1489,7 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 template <typename T>
 DeformableModel<T>* MultibodyPlant<T>::AddDeformableModel(
     std::unique_ptr<PhysicalModel<T>> model) {
+  DRAKE_DEMAND(!is_finalized());
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(model->plant() == this);
   DeformableModel<T>* result =
@@ -3623,12 +3629,9 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
 template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   const DeformableModel<T>* deformable_model =
       physical_models_->deformable_model();
-  if (deformable_model == nullptr) {
-    throw std::logic_error("This plant does not have deformable bodies.");
-  }
+  DRAKE_DEMAND(deformable_model != nullptr);
   return systems::System<T>::get_output_port(
       deformable_model->configuration_output_port_index());
 }
@@ -3737,6 +3740,9 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                        plant_ptr->get_source_id().value()));
   builder->Connect(scene_graph_ptr->get_query_output_port(),
                    plant_ptr->get_geometry_query_input_port());
+  builder->Connect(plant_ptr->get_deformable_body_configuration_output_port(),
+                   scene_graph_ptr->get_source_configuration_port(
+                       plant_ptr->get_source_id().value()));
   return {plant_ptr, scene_graph_ptr};
 }
 

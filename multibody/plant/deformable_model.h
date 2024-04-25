@@ -35,6 +35,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel)
 
+  // TODO(xuchenhan-tri): The prerequisite isn't very precise. It's ok to call
+  // the constructor in the middle of finalizing a plant, as long as this
+  // DeformableModel has a chance to declare the system resources it needs.
+  // Consider making the constructor private and only allow construction via
+  // plant.AddDeformableModel().
   /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
@@ -229,11 +234,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
   /** Returns the output port index of the vertex positions port for all
-   registered deformable bodies.
-   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
-  */
+   registered deformable bodies. */
   const systems::OutputPortIndex& configuration_output_port_index() const {
-    this->ThrowIfSystemResourcesNotDeclared(__func__);
     return configuration_output_port_index_;
   }
 

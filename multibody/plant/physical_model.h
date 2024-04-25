@@ -59,7 +59,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   /* Constructs a PhysicalModel owned by the given `owning_plant`. */
   explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
-      : plant_prefinalize_(owning_plant) {
+      : owning_plant_(owning_plant) {
     DRAKE_DEMAND(owning_plant != nullptr);
   }
 
@@ -67,8 +67,8 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   /** Returns the back pointer to the MultibodyPlant owning `this`
    PhysicalModel pre-finalize and nullptr post-finalize. */
-  const MultibodyPlant<T>* plant() const { return plant_prefinalize_; }
-  MultibodyPlant<T>* mutable_plant() { return plant_prefinalize_; }
+  const MultibodyPlant<T>* plant() const { return owning_plant_; }
+  MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
 
   /** Creates a clone of `this` concrete PhysicalModel object with the scalar
    type `ScalarType` that is owned by the given `plant`. The clone should be a
@@ -113,9 +113,9 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    by MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
    PhysicalModels can use specific MultibodyPlant cache tickets. */
   void DeclareSystemResources() {
-    DRAKE_DEMAND(plant_prefinalize_ != nullptr);
+    DRAKE_DEMAND(owning_plant_ != nullptr);
     DoDeclareSystemResources();
-    plant_prefinalize_ = nullptr;
+    owning_plant_ = nullptr;
   }
 
   /** Returns (a const pointer to) the specific model variant of `this`
@@ -160,7 +160,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    not be called after system resources are declared. The invoking method should
    pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesDeclared(const char* source_method) const {
-    if (plant_prefinalize_ == nullptr) {
+    if (owning_plant_ == nullptr) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' after system resources have been declared are not allowed.");
@@ -171,7 +171,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    not be called before system resources are declared. The invoking method
    should pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesNotDeclared(const char* source_method) const {
-    if (plant_prefinalize_ != nullptr) {
+    if (owning_plant_ != nullptr) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' before system resources have been declared are not allowed.");
@@ -204,7 +204,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
  private:
   /* Back pointer to the MultibodyPlant owning `this` PhysicalModel. Only valid
    pre-finalize and nulled out post-finalize. */
-  MultibodyPlant<T>* plant_prefinalize_{nullptr};
+  MultibodyPlant<T>* owning_plant_{nullptr};
 };
 
 }  // namespace multibody

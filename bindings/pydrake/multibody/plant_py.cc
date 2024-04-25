@@ -1086,8 +1086,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_adjacent_bodies_collision_filters",
             &Class::get_adjacent_bodies_collision_filters,
             cls_doc.get_adjacent_bodies_collision_filters.doc)
-        .def("AddDeformableModel", &Class::AddDeformableModel, py::arg("model"),
-            cls_doc.AddDeformableModel.doc)
         .def("physical_models", &Class::physical_models,
             py_rvp::reference_internal, cls_doc.physical_models.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,

@@ -3223,7 +3223,7 @@ class TestPlant(unittest.TestCase):
     def test_deformable_model(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
-        dut = DeformableModel(plant)
+        dut = plant.deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
         # Add a deformable body to the model.
         deformable_body_config = DeformableBodyConfig_[float]()
@@ -3245,8 +3245,7 @@ class TestPlant(unittest.TestCase):
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
-        # Add the model to the plant.
-        plant.AddDeformableModel(dut)
+
         registered_models = plant.physical_models()
         self.assertEqual(len(registered_models), 1)
         self.assertEqual(registered_models[0].num_bodies(), 1)

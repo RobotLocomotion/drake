@@ -1085,9 +1085,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the output port for vertex positions of the deformable bodies in
   /// `this` plant.
-  /// @throws std::exception if called pre-finalize, see Finalize().
-  /// @throws std::exception if no deformable bodies are present in `this`
-  /// plant.
   const systems::OutputPort<T>& get_deformable_body_configuration_output_port()
       const;
   /// @} <!-- Input and output ports -->
@@ -5608,8 +5605,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const contact_solvers::internal::ContactSolverResults<T>&,
       ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
-  // Helper method to declare output ports used by this plant to communicate
-  // with a SceneGraph.
+  // Helper method to declare the "geometry_query" port and the `geometry_pose`
+  // port used by this plant to communicate with a SceneGraph.
   void DeclareSceneGraphPorts();
 
   void CalcFramePoseOutput(const systems::Context<T>& context,

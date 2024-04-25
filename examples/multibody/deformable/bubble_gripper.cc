@@ -125,9 +125,7 @@ int do_main() {
       "schunk_wsg_50_deformable_bubble.sdf")[0];
 
   /* Add in the bubbles. */
-  auto owned_deformable_model =
-      std::make_unique<DeformableModel<double>>(&plant);
-  DeformableModel<double>* deformable_model = owned_deformable_model.get();
+  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
 
   DeformableBodyConfig<double> bubble_config;
   bubble_config.set_youngs_modulus(1e4);                  // [Pa]
@@ -222,17 +220,9 @@ int do_main() {
   teddy_instance->set_proximity_properties(deformable_proximity_props);
   deformable_model->RegisterDeformableBody(std::move(teddy_instance),
                                            teddy_config, 1.0);
-  plant.AddDeformableModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
-
-  /* It's essential to connect the vertex position port in DeformableModel to
-   the source configuration port in SceneGraph when deformable bodies are
-   present in the plant. */
-  builder.Connect(
-      plant.get_deformable_body_configuration_output_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Set the width between the fingers for open and closed states as well as the
    height to which the gripper lifts the manipuland. */

@@ -26,9 +26,7 @@ class DeformableModelTest : public ::testing::Test {
     constexpr double kDt = 0.01;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder_, kDt);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_model_ptr_ = deformable_model.get();
-    plant_->AddDeformableModel(std::move(deformable_model));
+    deformable_model_ptr_ = plant_->mutable_deformable_model();
   }
 
   systems::DiagramBuilder<double> builder_;
