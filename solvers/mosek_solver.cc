@@ -83,10 +83,10 @@ bool MosekSolver::is_available() {
   return true;
 }
 
-void MosekSolver::DoSolve(const MathematicalProgram& prog,
-                          const Eigen::VectorXd& initial_guess,
-                          const SolverOptions& merged_options,
-                          MathematicalProgramResult* result) const {
+void MosekSolver::DoSolve2(const MathematicalProgram& prog,
+                           const Eigen::VectorXd& initial_guess,
+                           internal::SpecificOptions* options,
+                           MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "MosekSolver doesn't support the feature of variable scaling.");
@@ -109,12 +109,10 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
       impl.decision_variable_to_mosek_nonmatrix_variable().size();
 
   // Set the options (parameters).
-  bool print_to_console{false};
-  std::string print_file_name{};
+  bool is_printing{};
   std::optional<std::string> msk_writedata;
   if (rescode == MSK_RES_OK) {
-    rescode = impl.UpdateOptions(merged_options, id(), &print_to_console,
-                                 &print_file_name, &msk_writedata);
+    impl.UpdateOptions(options, &is_printing, &msk_writedata);
   }
 
   // Always check if rescode is MSK_RES_OK before we call any Mosek functions.
@@ -273,7 +271,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     // Refer to
     // https://docs.mosek.com/latest/capi/debugging-tutorials.html#debugging-tutorials
     // on printing the solution summary.
-    if (print_to_console || !print_file_name.empty()) {
+    if (is_printing) {
       if (rescode == MSK_RES_OK) {
         rescode = MSK_solutionsummary(impl.task(), MSK_STREAM_LOG);
       }

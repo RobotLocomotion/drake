@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <string>
 
 #include "drake/common/fmt_ostream.h"
 
@@ -31,6 +32,16 @@ enum class CommonSolverOption {
 
 std::ostream& operator<<(std::ostream& os,
                          CommonSolverOption common_solver_option);
+
+namespace internal {
+
+/* Aggregated values for CommonSolverOption, for Drake-internal use only. */
+struct CommonSolverOptionValues {
+  std::string print_file_name;
+  bool print_to_console{false};
+};
+
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake
 

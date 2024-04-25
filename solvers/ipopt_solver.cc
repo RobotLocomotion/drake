@@ -758,7 +758,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index_;
 };
 
-void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
+void SetAppOptions(internal::SpecificOptions* options,
+                   Ipopt::IpoptApplication* app) {
   // Turn off the banner.
   app->Options()->SetStringValue("sb", "yes");
 
@@ -781,30 +782,31 @@ void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
 
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
 
-  // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
-  // useful for debugging. Otherwise, we default to printing nothing. The user
-  // can always select an arbitrary print level, by setting the ipopt-specific
-  // option name directly.
-  const int verbose_level = 4;
-  const int print_level = options.get_print_to_console() ? verbose_level : 0;
-  app->Options()->SetIntegerValue("print_level", print_level);
-  const std::string& output_file = options.get_print_file_name();
-  if (!output_file.empty()) {
-    app->Options()->SetStringValue("output_file", output_file);
-    app->Options()->SetIntegerValue("file_print_level", verbose_level);
-  }
-
-  // The solver-specific options will trump our defaults.
-  const SolverId self = IpoptSolver::id();
-  for (const auto& [name, value] : options.GetOptionsDouble(self)) {
-    app->Options()->SetNumericValue(name, value);
-  }
-  for (const auto& [name, value] : options.GetOptionsInt(self)) {
-    app->Options()->SetIntegerValue(name, value);
-  }
-  for (const auto& [name, value] : options.GetOptionsStr(self)) {
-    app->Options()->SetStringValue(name, value);
-  }
+  // Any user-supplied options will trump the above defaults.
+  options->Respell([](const auto& common) {
+    // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
+    // useful for debugging. Otherwise, we default to printing nothing. The user
+    // can always select an arbitrary print level, by setting the ipopt-specific
+    // option name directly.
+    const int verbose = 4;
+    string_unordered_map<SolverOptions::OptionValue> respelled;
+    respelled.emplace("print_level", common.print_to_console ? verbose : 0);
+    if (!common.print_file_name.empty()) {
+      respelled.emplace("output_file", common.print_file_name);
+      respelled.emplace("file_print_level", verbose);
+    }
+    return respelled;
+  });
+  options->CopyToCallbacks(
+      [&app](const std::string& key, double value) {
+        app->Options()->SetNumericValue(key, value);
+      },
+      [&app](const std::string& key, int value) {
+        app->Options()->SetIntegerValue(key, value);
+      },
+      [&app](const std::string& key, const std::string& value) {
+        app->Options()->SetStringValue(key, value);
+      });
 }
 
 }  // namespace
@@ -870,10 +872,10 @@ bool IpoptSolver::is_available() {
   return true;
 }
 
-void IpoptSolver::DoSolve(const MathematicalProgram& prog,
-                          const Eigen::VectorXd& initial_guess,
-                          const SolverOptions& merged_options,
-                          MathematicalProgramResult* result) const {
+void IpoptSolver::DoSolve2(const MathematicalProgram& prog,
+                           const Eigen::VectorXd& initial_guess,
+                           internal::SpecificOptions* options,
+                           MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "IpoptSolver doesn't support the feature of variable scaling.");
@@ -882,7 +884,7 @@ void IpoptSolver::DoSolve(const MathematicalProgram& prog,
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetAppOptions(merged_options, &(*app));
+  SetAppOptions(options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
