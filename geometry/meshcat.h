@@ -121,6 +121,18 @@ or
 The AR/VR mode is not currently supported in offline mode (i.e., when saving as
 StaticHtml()).
 
+@section meshcat_animation_objects Changing objects while recording
+
+The threejs animation capability provides "tracks" (i.e., trajectories) for
+properties (e.g., a geometry's transform), but it can neither add nor remove
+objects. Instead, all objects must be added in an untimed manner, and then
+during the animation we can toggle their visibility at the appropriate time(s).
+
+Therefore, when %Meshcat is recording (see StartRecording()), any calls to add
+or delete objects with a non-null `time_in_recording` will be automatically
+re-spelled to be compatible with the threejs capability. Specifically, adding a
+timed object with `path`="/foo" will create the path "/foo/<animation>/frame#".
+
 @section network_access Network access
 
 See MeshcatParams for options to control the hostname and port to bind to.
@@ -297,57 +309,19 @@ class Meshcat {
   @param wireframe_line_width is the width in pixels.  Due to limitations in
                               WebGL implementations, the line width may be 1
                               regardless of the set value.
-  @pydrake_mkdoc_identifier{no_recording}  */
-  void SetTriangleColorMesh(std::string_view path,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
-                            bool wireframe = false,
-                            double wireframe_line_width = 1.0,
-                            SideOfFaceToRender side = kDoubleSide);
+  @param time_in_recording If recording (see StartRecording()), then this mesh
+                           is saved to the current animation at the given time.
+                           If not recording, then this argument is ignored.
+                           See @ref meshcat_animation_objects for more details.
 
-  /** Sets the "object" at `path` in the scene tree at `time_in_recording`
-  to a triangular mesh with per-vertex coloring.
-
-  @experimental
-
-  This is an experimental API that extends `SetTriangleColorMesh` to
-  support recording of an animation.
-
-  @param time_in_recording the time at which the triangular mesh is recorded,
-   if Meshcat is currently recording (see StartRecording()). If Meshcat is
-   not currently recording, then this value is ignored.
-
-  See the stable API of `SetTriangleColorMesh` for the meaning of other
-  parameters.
-
-  During recording, calling this function with `path`="/foo" will create
-  the path "/foo/<animation>/frame#", where `frame#` is the frame index
-  converted from `time_in_recording`.  If there is no recording,
-  the `time_in_recording` is ignored, and the path "/foo/<object>" is created.
-
-  @note For a `path`="/foo", we recommend the usage like this:
-  @code
-  meshcat.StartRecording();
-  meshcat.SetTriangleColorMesh("/foo", vertices1, faces1, colors1, time1);
-  meshcat.SetTriangleColorMesh("/foo", vertices2, faces2, colors2, time2);
-  meshcat.SetTriangleColorMesh("/foo", vertices3, faces3, colors3, time3);
-  ...
-  meshcat.StopRecording();
-  meshcat.PublishRecording();
-  @endcode
-
-  @throws std::exception if `time_in_recording` corresponds to an earlier
-  frame than the last frame.
-
-  @pydrake_mkdoc_identifier{for_recording}  */
-  void SetTriangleColorMesh(std::string_view path,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
-                            double time_in_recording, bool wireframe = false,
-                            double wireframe_line_width = 1.0,
-                            SideOfFaceToRender side = kDoubleSide);
+  @throws std::exception if `time_in_recording` for a given `path` ever moves
+  backwards in time for two subsequent calls. */
+  void SetTriangleColorMesh(
+      std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+      const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+      const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe = false,
+      double wireframe_line_width = 1.0, SideOfFaceToRender side = kDoubleSide,
+      std::optional<double> time_in_recording = std::nullopt);
 
   // TODO(russt): Add support for per vertex colors / colormaps.
   /** Sets the "object" at `path` to be a triangle surface mesh representing a

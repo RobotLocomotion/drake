@@ -2470,24 +2470,18 @@ void Meshcat::SetTriangleColorMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
     const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
-    double wireframe_line_width, SideOfFaceToRender side) {
-  impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
-                              wireframe_line_width, side);
-}
-
-void Meshcat::SetTriangleColorMesh(
-    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-    const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-    const Eigen::Ref<const Eigen::Matrix3Xd>& colors, double time_in_recording,
-    bool wireframe, double wireframe_line_width, SideOfFaceToRender side) {
-  if (!animation_ || recording_ == false) {
+    double wireframe_line_width, SideOfFaceToRender side,
+    std::optional<double> time_in_recording) {
+  if (!time_in_recording || recording_ == false) {
     impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
                                 wireframe_line_width, side);
     return;
   }
+  const double time = *time_in_recording;
+  const int frame = animation_->frame(time);
 
   if (last_frame_.contains(std::string(path)) &&
-      last_frame_[std::string(path)] > animation_->frame(time_in_recording)) {
+      last_frame_[std::string(path)] > frame) {
     throw std::runtime_error(
         "SetTriangleColorMesh with time_in_recording that corresponds to an "
         "earlier frame than the last frame.");
@@ -2496,7 +2490,7 @@ void Meshcat::SetTriangleColorMesh(
   if (last_frame_.contains(std::string(path))) {
     const std::string path_animation_last_frame =
         fmt::format("{}/<animation>/{}", path, last_frame_[std::string(path)]);
-    SetProperty(path_animation_last_frame, "visible", false, time_in_recording);
+    SetProperty(path_animation_last_frame, "visible", false, time);
   } else {
     // This is the first frame. Make sure the unanimated object is visible
     // only from the start time to `time_in_recording`. It is possible that
@@ -2504,16 +2498,14 @@ void Meshcat::SetTriangleColorMesh(
     // without the object.
     SetProperty(fmt::format("{}/<object>", path), "visible", true,
                 animation_->start_time());
-    SetProperty(fmt::format("{}/<object>", path), "visible", false,
-                time_in_recording);
+    SetProperty(fmt::format("{}/<object>", path), "visible", false, time);
   }
 
-  const int frame = animation_->frame(time_in_recording);
   const std::string path_animation_frame =
       fmt::format("{}/<animation>/{}", path, frame);
 
   SetProperty(path_animation_frame, "visible", false, animation_->start_time());
-  SetProperty(path_animation_frame, "visible", true, time_in_recording);
+  SetProperty(path_animation_frame, "visible", true, time);
   impl().SetTriangleColorMesh(path_animation_frame, vertices, faces, colors,
                               wireframe, wireframe_line_width, side);
 

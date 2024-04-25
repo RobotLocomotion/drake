@@ -479,18 +479,26 @@ GTEST_TEST(MeshcatTest, SetTriangleColorMeshForRecording) {
             0, 0, 1, 0;
   // clang-format on
 
+  // We'll use the same value of these for all calls.
+  const bool wireframe = false;
+  const double wireframe_line_width = 1.0;
+  const Meshcat::SideOfFaceToRender side = Meshcat::kDoubleSide;
+
   // No recording yet.
   const double time1 = 1.0;
-  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time1);
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, wireframe,
+                               wireframe_line_width, side, time1);
 
   meshcat.StartRecording();
   const MeshcatAnimation& animation = meshcat.get_mutable_recording();
 
   const double time2 = 2.0;
-  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time2);
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, wireframe,
+                               wireframe_line_width, side, time2);
 
   const double time3 = 3.0;
-  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, time3);
+  meshcat.SetTriangleColorMesh("foo", vertices, faces, colors, wireframe,
+                               wireframe_line_width, side, time3);
 
   const int frame0 = animation.frame(animation.start_time());
   const int frame1 = animation.frame(time1);
