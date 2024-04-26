@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -11,17 +12,16 @@ load(
     "drake_py_unittest",
 )
 load(
+    "//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
+load(
     ":defs.bzl",
     "drake_cc_optional_googletest",
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "gurobi_test_tags",
-    "mosek_test_tags",
-)
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -1249,11 +1249,11 @@ drake_cc_googletest(
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//solvers:csdp_solver",
-        "//solvers:scs_solver",
         "//solvers:clarabel_solver",
+        "//solvers:csdp_solver",
         "//solvers:mosek_solver",
-    ]
+        "//solvers:scs_solver",
+    ],
 )
 
 drake_cc_googletest(

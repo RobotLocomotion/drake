@@ -1,7 +1,5 @@
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/ssize.h"
@@ -171,7 +169,7 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestWAdj) {
 
 namespace {
 // Makes a random vector with all positive entries that is not in the Lorentz
-// cone.
+// cone. This method does not sample uniformly over all such vectors.
 Eigen::VectorXd MakeRandomPositiveOrthantNonLorentzVector(const int r,
                                                           const double scale) {
   Eigen::VectorXd ret =
@@ -203,7 +201,8 @@ Eigen::MatrixXd MakeRandomPositiveOrthantPositiveMap(const int r, const int m,
 }
 
 // Constructs a random vector that is in the Lorentz cone, but is not in the
-// positive orthant.
+// positive orthant. This method does not sample uniformly over all such
+// vectors.
 Eigen::VectorXd MakeRandomLorentzNonPositiveOrthantVector(const int r,
                                                           const double scale) {
   Eigen::VectorXd ret(r);
@@ -373,20 +372,19 @@ class Cone1ByCone2SeparabilityTest
   }
 
  protected:
-  //   Add the constraint that Z is Cone 1 by Cone 2 separable to prog_ and
-  //  ensure
-  // that the right number of constraints and variables have been added to
-  // prog_.
+  // Adds the constraint that Z is Cone 1 by Cone 2 separable to prog_ and
+  // ensures that the right number of constraints and variables have been added
+  // to prog_.
   virtual void AddCone1ByCone2SeparableConstraint(
       const MatrixX<Variable>& Z) = 0;
 
-  // Add the constraint that Z is Cone 1 by Cone 2 separable to prog_ and ensure
-  // that the right number of constraints and variables have been added to
-  // prog_.
+  // Adds the constraint that Z is Cone 1 by Cone 2 separable to prog_ and
+  // ensures that the right number of constraints and variables have been added
+  // to prog_.
   virtual void AddCone1ByCone2SeparableConstraint(
       const MatrixX<Expression>& Z) = 0;
 
-  // Check that prog_ has the right number of constraints and variables to
+  // Checks that prog_ has the right number of constraints and variables to
   // indicate that a matrix is constrained to be Cone1 by Cone2 separable.
   virtual void CheckCone1ByCone2SeparableConstraintsAdded(
       const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) = 0;
@@ -501,14 +499,6 @@ class Cone1ByCone2SeparabilityTest
                   const Eigen::Ref<const Eigen::MatrixXd>& test_mat) {
     auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
     auto result = Solve(prog_);
-    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
-      SolverOptions options;
-      options.SetOption(CommonSolverOption::kPrintToConsole, 1);
-      result = Solve(prog_, std::nullopt, options);
-      std::cout << fmt::format("Solution result is {}",
-                               result.get_solution_result())
-                << std::endl;
-    }
     prog_.RemoveConstraint(constraint);
     DRAKE_DEMAND(ProgramSolvedWithoutError(result.get_solution_result()));
 
@@ -655,15 +645,12 @@ TEST_P(LorentzByPositiveOrthantSeparabilityTest,
   this->DoTest(A2, B2);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    test, LorentzByPositiveOrthantSeparabilityTest,
-    ::testing::Values(
-        std::pair<int, int>{4, 5}  // m < n
-        //                                           std::pair<int, int>{5, 4},
-        //                                           // m > n std::pair<int,
-        //                                           int>{6, 6}   // m == n
-        // There are no special cases
-        ));  // NOLINT
+INSTANTIATE_TEST_SUITE_P(test, LorentzByPositiveOrthantSeparabilityTest,
+                         ::testing::Values(std::pair<int, int>{4, 5},  // m < n
+                                           std::pair<int, int>{5, 4},  // m > n
+                                           std::pair<int, int>{6, 6}   // m == n
+                                           // There are no special cases
+                                           ));  // NOLINT
 
 class LorentzByLorentzSeparabilityTest : public Cone1ByCone2SeparabilityTest {
  public:
@@ -765,9 +752,9 @@ INSTANTIATE_TEST_SUITE_P(
                       std::pair<int, int>{1, 2},  // special case m = 1, m = 1
                       std::pair<int, int>{2, 2},  // special case m = 2, m = 2
                       std::pair<int, int>{1, 4},  // special case m = 1, n ≥ 3
-                      std::pair<int, int>{2, 5},  // special case m =  2, n ≥ 3
+                      std::pair<int, int>{2, 5},  // special case m = 2, n ≥ 3
                       std::pair<int, int>{3, 1},  // special case m ≥ 3, n = 1
-                      std::pair<int, int>{7, 2}   // special case m ≥ 3,n = 2
+                      std::pair<int, int>{7, 2}   // special case m ≥ 3, n = 2
                       ));                         // NOLINT
 
 }  // namespace internal
