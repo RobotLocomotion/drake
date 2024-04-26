@@ -179,6 +179,65 @@ std::string TransformGeometryName(
   return geometry_name;
 }
 
+MeshcatRecording::MeshcatRecording() = default;
+
+MeshcatRecording::~MeshcatRecording() = default;
+
+void MeshcatRecording::StartRecording(double frames_per_second,
+                                      bool set_visualizations_while_recording) {
+  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  recording_ = true;
+  set_visualizations_while_recording_ = set_visualizations_while_recording;
+}
+
+void MeshcatRecording::StopRecording() {
+  recording_ = false;
+}
+
+void MeshcatRecording::DeleteRecording() {
+  const double frames_per_second = animation_->frames_per_second();
+  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+}
+
+template <typename T>
+bool MeshcatRecording::SetProperty(std::string_view path,
+                                   std::string_view property, const T& value,
+                                   std::optional<double> time_in_recording) {
+  const auto [frame, show_live] = frame_and_show_live(time_in_recording);
+  if (frame.has_value()) {
+    animation_->SetProperty(*frame, path, property, value);
+  }
+  return show_live;
+}
+
+template bool MeshcatRecording::SetProperty(std::string_view, std::string_view,
+                                            const bool&, std::optional<double>);
+template bool MeshcatRecording::SetProperty(std::string_view, std::string_view,
+                                            const double&,
+                                            std::optional<double>);
+template bool MeshcatRecording::SetProperty(std::string_view, std::string_view,
+                                            const std::vector<double>&,
+                                            std::optional<double>);
+
+bool MeshcatRecording::SetTransform(std::string_view path,
+                                    const math::RigidTransformd& X_ParentPath,
+                                    std::optional<double> time_in_recording) {
+  const auto [frame, show_live] = frame_and_show_live(time_in_recording);
+  if (frame.has_value()) {
+    animation_->SetTransform(*frame, path, X_ParentPath);
+  }
+  return show_live;
+}
+
+std::pair<std::optional<int>, bool> MeshcatRecording::frame_and_show_live(
+    std::optional<double> time_in_recording) const {
+  if (!(recording_ && time_in_recording.has_value())) {
+    return {std::nullopt, true};
+  }
+  const int frame = animation_->frame(*time_in_recording);
+  return {frame, set_visualizations_while_recording_};
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&TransformGeometryName<T>))
 

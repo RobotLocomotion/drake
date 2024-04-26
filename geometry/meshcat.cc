@@ -2385,9 +2385,9 @@ Meshcat::Meshcat(std::optional<int> port)
     : Meshcat(MeshcatParams{.port = port}) {}
 
 Meshcat::Meshcat(const MeshcatParams& params)
-    // Creates the server thread, bind to the port, etc.
+    // The Impl constructor creates the server thread, binds to the port, etc.
     : impl_{new Impl(params)},
-      animation_{std::make_unique<MeshcatAnimation>(64.0)} {
+      recording_{std::make_unique<internal::MeshcatRecording>()} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
@@ -2551,13 +2551,9 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath,
                            std::optional<double> time_in_recording) {
-  if (recording_ && time_in_recording.has_value()) {
-    const double time = *time_in_recording;
-    const int frame = animation_->frame(time);
-    animation_->SetTransform(frame, path, X_ParentPath);
-  }
-  if (!recording_ || !time_in_recording.has_value() ||
-      set_visualizations_while_recording_) {
+  const bool show_live =
+      recording_->SetTransform(path, X_ParentPath, time_in_recording);
+  if (show_live) {
     impl().SetTransform(path, X_ParentPath);
   }
 }
@@ -2581,13 +2577,9 @@ double Meshcat::GetRealtimeRate() const {
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value, std::optional<double> time_in_recording) {
-  if (recording_ && time_in_recording.has_value()) {
-    const double time = *time_in_recording;
-    const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, path, property, value);
-  }
-  if (!recording_ || !time_in_recording.has_value() ||
-      set_visualizations_while_recording_) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
@@ -2595,14 +2587,9 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value,
                           std::optional<double> time_in_recording) {
-  if (recording_ && time_in_recording.has_value()) {
-    const double time = *time_in_recording;
-    const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, path, property, value);
-  }
-  // TODO(jwnimmer-tri) Why isn't time_in_recording part of this guard?
-  // That's inconsistent with everywhere else and seems like a bug.
-  if (!recording_ || set_visualizations_while_recording_) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
@@ -2610,14 +2597,9 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value,
                           std::optional<double> time_in_recording) {
-  if (recording_ && time_in_recording.has_value()) {
-    const double time = *time_in_recording;
-    const int frame = animation_->frame(time);
-    animation_->SetProperty(frame, path, property, value);
-  }
-  // TODO(jwnimmer-tri) Why isn't time_in_recording part of this guard?
-  // That's inconsistent with everywhere else and seems like a bug.
-  if (!recording_ || set_visualizations_while_recording_) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
@@ -2707,27 +2689,24 @@ std::string Meshcat::StaticHtml() {
 
 void Meshcat::StartRecording(double frames_per_second,
                              bool set_visualizations_while_recording) {
-  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
-  recording_ = true;
-  set_visualizations_while_recording_ = set_visualizations_while_recording;
+  recording_->StartRecording(frames_per_second,
+                             set_visualizations_while_recording);
 }
 
 void Meshcat::StopRecording() {
-  recording_ = false;
+  recording_->StopRecording();
 }
 
 void Meshcat::PublishRecording() {
-  impl().SetAnimation(*animation_);
+  impl().SetAnimation(recording_->get_animation());
 }
 
 void Meshcat::DeleteRecording() {
-  // Reset the recording.
-  const double frames_per_second = animation_->frames_per_second();
-  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  recording_->DeleteRecording();
 }
 
 MeshcatAnimation& Meshcat::get_mutable_recording() {
-  return *animation_;
+  return recording_->get_mutable_animation();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
