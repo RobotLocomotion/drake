@@ -394,26 +394,26 @@ class Cone1ByCone2SeparabilityTest
   // and cone2.
   MatrixX<Variable> X_;
 
-  // A vector guaranteed to be in cone one and in the range A.
+  // A vector guaranteed to be in cone one and in the range of A.
   Eigen::VectorXd xr_cone1_;
-  // A vector guaranteed to be in cone one and in the range A.
+  // A vector guaranteed to be in cone one and in the range of A.
   Eigen::VectorXd yr_cone1_;
   // A vector that is in cone one but NOT guaranteed to
   // be in the range A.
   Eigen::VectorXd wr_cone1_;
   // A vector that is in cone one but NOT guaranteed to be in
-  // the range Bᵀ.
+  // the range of Bᵀ.
   Eigen::VectorXd wc_cone1_;
 
-  // A vector guaranteed to be in cone two and in the range Bᵀ.
+  // A vector guaranteed to be in cone two and in the range of Bᵀ.
   Eigen::VectorXd xc_cone2_;
-  // A vector guaranteed to be in cone two and in the range Bᵀ.
+  // A vector guaranteed to be in cone two and in the range of Bᵀ.
   Eigen::VectorXd yc_cone2_;
   // A vector that is in cone two but NOT guaranteed to
   // be in the range A.
   Eigen::VectorXd wr_cone2_;
   // A vector that is in cone two but NOT guaranteed to
-  // be in the range Bᵀ.
+  // be in the range of Bᵀ.
   Eigen::VectorXd wc_cone2_;
 
   // Two vectors in neither cone.
@@ -553,25 +553,31 @@ TEST_P(
 
 TEST_P(PositiveOrthantByLorentzSeparabilityTest,
        AddMatrixIsPositiveOrthantByLorentzSeparableConstraintChangeSize) {
-  int m, n;
-  std::tie(m, n) = GetParam();
-  const int r1 = m + 5;
-  const int r2 = m - 1;
-  const int c1 = n + 3;
-  const int c2 = n - 2;
+  // The subspaces in some of these tests have small dimension, making them
+  // numerically difficult for SDP solvers which do no preprocessing. Therefore,
+  // we only solve these with Mosek as it is the only one which currently gives
+  // reliable results.
+  if (MosekSolver().enabled() && MosekSolver().available()) {
+    int m, n;
+    std::tie(m, n) = GetParam();
+    const int r1 = m + 5;
+    const int r2 = m - 1;
+    const int c1 = n + 3;
+    const int c2 = n - 2;
 
-  const double scale = 0.75;
-  // These maps need to be positive, positive-orthant maps.
-  Eigen::MatrixXd A1 = MakeRandomPositiveOrthantPositiveMap(r1, m, scale);
-  Eigen::MatrixXd A2 = MakeRandomPositiveOrthantPositiveMap(r2, m, scale);
-  // These maps need to be positive Lorentz maps.
-  Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
-  Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
+    const double scale = 0.75;
+    // These maps need to be positive, positive-orthant maps.
+    Eigen::MatrixXd A1 = MakeRandomPositiveOrthantPositiveMap(r1, m, scale);
+    Eigen::MatrixXd A2 = MakeRandomPositiveOrthantPositiveMap(r2, m, scale);
+    // These maps need to be positive Lorentz maps.
+    Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
+    Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
 
-  this->DoTest(A1, B1);
-  this->DoTest(A1, B2);
-  this->DoTest(A2, B1);
-  this->DoTest(A2, B2);
+    this->DoTest(A1, B1);
+    this->DoTest(A1, B2);
+    this->DoTest(A2, B1);
+    this->DoTest(A2, B2);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(test, PositiveOrthantByLorentzSeparabilityTest,
@@ -624,25 +630,31 @@ TEST_P(
 
 TEST_P(LorentzByPositiveOrthantSeparabilityTest,
        AddMatrixIsLorentzByPositiveOrthantSeparableConstraintChangeSize) {
-  int m, n;
-  std::tie(m, n) = GetParam();
-  const int r1 = m + 5;
-  const int r2 = m - 1;
-  const int c1 = n + 3;
-  const int c2 = n - 2;
+  // The subspaces in some of these tests have small dimension, making them
+  // numerically difficult for SDP solvers which do no preprocessing. Therefore,
+  // we only solve these with Mosek as it is the only one which currently gives
+  // reliable results.
+  if (MosekSolver().enabled() && MosekSolver().available()) {
+    int m, n;
+    std::tie(m, n) = GetParam();
+    const int r1 = m + 5;
+    const int r2 = m - 1;
+    const int c1 = n + 3;
+    const int c2 = n - 2;
 
-  const double scale = 3;
-  // These maps need to be positive, positive-orthant maps.
-  Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
-  Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
-  // These maps need to be positive Lorentz maps.
-  Eigen::MatrixXd B1 = MakeRandomPositiveOrthantPositiveMap(n, c1, scale);
-  Eigen::MatrixXd B2 = MakeRandomPositiveOrthantPositiveMap(n, c2, scale);
+    const double scale = 3;
+    // These maps need to be positive, positive-orthant maps.
+    Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
+    Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
+    // These maps need to be positive Lorentz maps.
+    Eigen::MatrixXd B1 = MakeRandomPositiveOrthantPositiveMap(n, c1, scale);
+    Eigen::MatrixXd B2 = MakeRandomPositiveOrthantPositiveMap(n, c2, scale);
 
-  this->DoTest(A1, B1);
-  this->DoTest(A1, B2);
-  this->DoTest(A2, B1);
-  this->DoTest(A2, B2);
+    this->DoTest(A1, B1);
+    this->DoTest(A1, B2);
+    this->DoTest(A2, B1);
+    this->DoTest(A2, B2);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(test, LorentzByPositiveOrthantSeparabilityTest,
