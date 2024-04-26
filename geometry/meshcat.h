@@ -872,15 +872,12 @@ class Meshcat {
   void DeleteRecording();
 
   /** Returns a mutable pointer to this Meshcat's unique MeshcatAnimation
-  object, if it exists, in which the frames will be recorded. This pointer can
-  be used to set animation properties (like autoplay, the loop mode, number of
-  repetitions, etc).
+  object, in which the frames will be recorded. This pointer can be used to set
+  animation properties (like autoplay, the loop mode, number of repetitions,
+  etc).
 
   The MeshcatAnimation object will only remain valid for the lifetime of `this`
-  or until DeleteRecording() is called.
-
-  @throws std::exception if meshcat does not have a recording.
-  */
+  or until DeleteRecording() is called. */
   MeshcatAnimation& get_mutable_recording();
 
   /* These remaining public methods are intended to primarily for testing. These

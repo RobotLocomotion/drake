@@ -439,7 +439,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.MeshcatAnimation;
     py::class_<Class> cls(m, "MeshcatAnimation", cls_doc.doc);
     cls  // BR
-        .def(py::init<double>(), py::arg("frames_per_second") = 32.0,
+        .def(py::init<double>(), py::arg("frames_per_second") = 64.0,
             cls_doc.ctor.doc)
         .def("frames_per_second", &Class::frames_per_second,
             cls_doc.frames_per_second.doc)

@@ -2386,7 +2386,8 @@ Meshcat::Meshcat(std::optional<int> port)
 
 Meshcat::Meshcat(const MeshcatParams& params)
     // Creates the server thread, bind to the port, etc.
-    : impl_{new Impl(params)} {
+    : impl_{new Impl(params)},
+      animation_{std::make_unique<MeshcatAnimation>(64.0)} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
@@ -2767,19 +2768,12 @@ void Meshcat::PublishRecording() {
 }
 
 void Meshcat::DeleteRecording() {
-  if (animation_) {
-    // Reset the recording.
-    double frames_per_second = animation_->frames_per_second();
-    animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
-  }
+  // Reset the recording.
+  const double frames_per_second = animation_->frames_per_second();
+  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
 }
 
 MeshcatAnimation& Meshcat::get_mutable_recording() {
-  if (!animation_) {
-    throw std::runtime_error(
-        "You must create a recording (via StartRecording) before calling "
-        "get_mutable_recording");
-  }
   return *animation_;
 }
 
