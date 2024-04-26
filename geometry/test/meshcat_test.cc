@@ -964,7 +964,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       "animations": [{
           "path": "/drake/cylinder",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".visible",
@@ -984,7 +984,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       }, {
           "path": "/drake/ellipsoid/<object>",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".material.opacity",
@@ -1004,7 +1004,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       }, {
           "path": "/drake/sphere",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".position",
@@ -1049,10 +1049,23 @@ bool has_frame(const MeshcatAnimation& animation, int frame) {
       .has_value();
 }
 
+// The hard-coded default values for Meshcat's default recording and a newly-
+// started recording should match the MeshcatAnimation constructor's default.
+GTEST_TEST(MeshcatTest, RecordingDefaults) {
+  const double default_fps = MeshcatAnimation().frames_per_second();
+
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.get_mutable_recording().frames_per_second(), default_fps);
+
+  meshcat.StartRecording();
+  EXPECT_EQ(meshcat.get_mutable_recording().frames_per_second(), default_fps);
+}
+
 GTEST_TEST(MeshcatTest, Recording) {
   Meshcat meshcat;
-  DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
-                              ".*You must create a recording.*");
+  EXPECT_NO_THROW(meshcat.get_mutable_recording());
+  EXPECT_NO_THROW(meshcat.StopRecording());
+  EXPECT_NO_THROW(meshcat.PublishRecording());
 
   const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
                                      Vector3d{0.9, -2.0, 0.12}};
