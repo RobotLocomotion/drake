@@ -752,6 +752,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
+        kMIP = mut.GraphOfConvexSets.Transcription.kMIP
+        kRelaxation = mut.GraphOfConvexSets.Transcription.kRelaxation
+        kRestriction = mut.GraphOfConvexSets.Transcription.kRestriction
         self.assertIsNone(options.convex_relaxation)
         self.assertIsNone(options.preprocessing)
         self.assertIsNone(options.max_rounded_paths)
@@ -762,14 +765,15 @@ class TestGeometryOptimization(unittest.TestCase):
         options.flow_tolerance = 1e-6
         options.rounding_seed = 1
         options.solver = ClpSolver()
+        options.restriction_solver = ClpSolver()
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
-        options.rounding_solver_options = SolverOptions()
-        options.rounding_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.restriction_solver_options = SolverOptions()
+        options.restriction_solver_options.SetOption(ClpSolver.id(), "dual", 0)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
-        self.assertIn(
-            "dual", options.rounding_solver_options.GetOptions(ClpSolver.id()))
+        self.assertIn("dual", options.restriction_solver_options.GetOptions(
+            ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()
@@ -818,9 +822,46 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(source.GetCosts()), 2)
         binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = source.AddConstraint(binding=binding)
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(source.GetConstraints()), 2)
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(
+            len(source.GetConstraints(used_in_transcription={kMIP})),
+            len(source.GetConstraints(used_in_transcription={kRelaxation}))
+        )
+        self.assertEqual(
+            len(source.GetConstraints(used_in_transcription={kRelaxation})),
+            len(source.GetConstraints(used_in_transcription={kRestriction}))
+        )
+        self.assertNotEqual(
+            len(source.GetConstraints(used_in_transcription={kRestriction})),
+            len(source.GetConstraints())
+        )
         self.assertEqual(len(source.incoming_edges()), 0)
         self.assertEqual(len(source.outgoing_edges()), 2)
         self.assertEqual(len(target.incoming_edges()), 2)
@@ -848,9 +889,46 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(edge0.GetCosts()), 2)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = edge0.AddConstraint(binding=binding)
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(edge0.GetConstraints()), 2)
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(
+            len(edge0.GetConstraints(used_in_transcription={kMIP})),
+            len(edge0.GetConstraints(used_in_transcription={kRelaxation}))
+        )
+        self.assertEqual(
+            len(edge0.GetConstraints(used_in_transcription={kRelaxation})),
+            len(edge0.GetConstraints(used_in_transcription={kRestriction}))
+        )
+        self.assertNotEqual(
+            len(edge0.GetConstraints(used_in_transcription={kRestriction})),
+            len(edge0.GetConstraints())
+        )
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
         edge1.AddPhiConstraint(phi_value=True)
