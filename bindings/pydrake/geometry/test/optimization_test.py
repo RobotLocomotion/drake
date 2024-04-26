@@ -853,11 +853,12 @@ class TestGeometryOptimization(unittest.TestCase):
         # Even though we are adding each constraint four times, only the two
         # unique constraints will be retained.
         self.assertEqual(len(source.GetConstraints(
-            used_in_transcription={kMIP})), 2)
+            used_in_transcription={kMIP})), 4)
         self.assertEqual(len(source.GetConstraints(
-            used_in_transcription={kRelaxation})), 2)
+            used_in_transcription={kRelaxation})), 4)
         self.assertEqual(len(source.GetConstraints(
-            used_in_transcription={kRestriction})), 2)
+            used_in_transcription={kRestriction})), 4)
+        self.assertEqual(len(source.GetConstraints()), 8)
         self.assertEqual(len(source.incoming_edges()), 0)
         self.assertEqual(len(source.outgoing_edges()), 2)
         self.assertEqual(len(target.incoming_edges()), 2)
@@ -916,11 +917,12 @@ class TestGeometryOptimization(unittest.TestCase):
         # Even though we are adding each constraint four times, only the two
         # unique constraints will be retained.
         self.assertEqual(len(edge0.GetConstraints(
-            used_in_transcription={kMIP})), 2)
+            used_in_transcription={kMIP})), 4)
         self.assertEqual(len(edge0.GetConstraints(
-            used_in_transcription={kRelaxation})), 2)
+            used_in_transcription={kRelaxation})), 4)
         self.assertEqual(len(edge0.GetConstraints(
-            used_in_transcription={kRestriction})), 2)
+            used_in_transcription={kRestriction})), 4)
+        self.assertEqual(len(edge0.GetConstraints()), 8)
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
         edge1.AddPhiConstraint(phi_value=True)

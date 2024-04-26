@@ -323,14 +323,6 @@ TEST_F(TwoPoints, AddConstraint) {
   EXPECT_THROW(u_->AddConstraint(Binding(constraint, u_->x()), {}),
                std::exception);
 
-  // Since we only retain unique constraint, adding the same constraint again
-  // should not increase the number of constraints, which is checked later.
-  // This only works for bindings, but not for the expression constraints.
-  for (int i = 0; i < 10; ++i) {
-    e_->AddConstraint(Binding(constraint, e_->xu()));
-    u_->AddConstraint(Binding(constraint, u_->x()));
-  }
-
   // Confirm that they are down-castable.
   auto linear_equality =
       dynamic_cast<LinearEqualityConstraint*>(b0.evaluator().get());
@@ -370,15 +362,6 @@ TEST_F(TwoPoints, AddConstraint) {
   // If no transcription is specified, nothing will be returned.
   EXPECT_THROW(e_->GetConstraints({}), std::exception);
   EXPECT_THROW(u_->GetConstraints({}), std::exception);
-
-  // Since each expression creates a new binding, we won't be able to
-  // de-duplicate the constraints.
-  for (int i = 0; i < 10; ++i) {
-    e_->AddConstraint(e_->xv().head<2>() == e_->xu());
-    u_->AddConstraint(u_->x() == pu_.x());
-  }
-  EXPECT_EQ(e_->GetConstraints().size(), 12);
-  EXPECT_EQ(u_->GetConstraints().size(), 12);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddConstraint(other_var == 1),

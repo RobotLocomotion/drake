@@ -160,19 +160,7 @@ Binding<Constraint> Vertex::AddConstraint(
   DRAKE_THROW_UNLESS(
       Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
   DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
-  auto constraint_iterator = std::find_if(
-      constraints_.begin(), constraints_.end(), [&binding](const auto& pair) {
-        return pair.first == binding;
-      });
-
-  if (constraint_iterator != constraints_.end()) {
-    // Constraint already exists, add the new transcriptions to the set.
-    constraint_iterator->second.insert(use_in_transcription.begin(),
-                                       use_in_transcription.end());
-  } else {
-    // Add a new constraint.
-    constraints_.push_back({binding, use_in_transcription});
-  }
+  constraints_.push_back({binding, use_in_transcription});
   return binding;
 }
 
@@ -277,19 +265,7 @@ Binding<Constraint> Edge::AddConstraint(
   DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
   DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
-  auto constraint_iterator = std::find_if(
-      constraints_.begin(), constraints_.end(), [&binding](const auto& pair) {
-        return pair.first == binding;
-      });
-
-  if (constraint_iterator != constraints_.end()) {
-    // Constraint already exists, add the new transcriptions to the set.
-    constraint_iterator->second.insert(use_in_transcription.begin(),
-                                       use_in_transcription.end());
-  } else {
-    // Add a new constraint.
-    constraints_.push_back({binding, use_in_transcription});
-  }
+  constraints_.push_back({binding, use_in_transcription});
   return binding;
 }
 

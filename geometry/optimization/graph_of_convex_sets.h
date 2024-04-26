@@ -237,7 +237,6 @@ class GraphOfConvexSets {
         const solvers::Binding<solvers::Cost>& binding);
 
     /** Adds a constraint to this vertex.
-    Since each formula results in a new binding, duplicates can be created.
     @param f must contain *only* elements of x() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
@@ -253,7 +252,6 @@ class GraphOfConvexSets {
             Transcription::kRestriction});
 
     /** Adds a constraint to this vertex.
-    Duplicate bindings will not be added.
     @param bindings must contain *only* elements of x() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
@@ -419,7 +417,6 @@ class GraphOfConvexSets {
         const solvers::Binding<solvers::Cost>& binding);
 
     /** Adds a constraint to this edge.
-    Since each formula results in a new binding, duplicates can be created.
     @param f must contain *only* elements of xu() and xv() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
@@ -438,7 +435,6 @@ class GraphOfConvexSets {
             Transcription::kRestriction});
 
     /** Adds a constraint to this edge.
-    Duplicate bindings will not be added.
     @param bindings must contain *only* elements of xu() and xv() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
