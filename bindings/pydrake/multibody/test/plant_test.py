@@ -2300,7 +2300,10 @@ class TestPlant(unittest.TestCase):
                 joint.SetOrientation(context=context,
                                      R_FM=RotationMatrix_[T]())
                 joint.get_translation(context=context)
-                joint.set_translation(context=context, p_FM=[0, 0, 0])
+                joint.SetTranslation(context=context, p_FM=[0, 0, 0])
+                # Deprecated RpyFloatingJoint.set_translationposition().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_translation(context=context, p_FM=[0, 0, 0])
                 joint.GetPose(context=context)
                 joint.SetPose(context=context, X_FM=RigidTransform_[T]())
                 joint.get_angular_velocity(context=context)
