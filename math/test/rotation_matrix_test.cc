@@ -1139,7 +1139,13 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     const double angle = inverse_angle_axis.angle();
     ASSERT_TRUE(0 <= angle && angle <= M_PI);
   }
+}
 
+// Clang 15 hits an ICE when compiling this function with optimizations.
+#ifdef __clang__
+#pragma clang optimize off
+#endif
+GTEST_TEST(RotationMatrixConversionTest, AngleAxisToRotationMatrixBad) {
   if (kDrakeAssertIsArmed) {
     // An AngleAxis with a zero unit vector should throw an exception.
     const Eigen::AngleAxisd aa_zero(5, Vector3d(0, 0, 0));
@@ -1151,6 +1157,9 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::exception);
   }
 }
+#ifdef __clang__
+#pragma clang optimize on
+#endif
 
 // This utility test function helps verify results from MakeFromOneUnitVector().
 // 1. Verifies rotation matrix R_AB is a valid rotation matrix.
