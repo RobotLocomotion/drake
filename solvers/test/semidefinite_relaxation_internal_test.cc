@@ -257,15 +257,16 @@ Eigen::MatrixXd MakeRandomLorentzPositiveMap(const int r, const int m,
     A.bottomRightCorner(r - 1, m - 1) =
         svd.matrixU() * regularized_singular_values.asDiagonal() *
         svd.matrixV().transpose();
-  }
-  else if (m == 1) {
+  } else if (m == 1) {
     // Make the last r entries of the column matrix have norm A(0,0) / 2
+    A.col(0).tail(r - 1) = Eigen::VectorXd::Random(r - 1);
     A.col(0).tail(r - 1) =
         A.col(0).tail(r - 1) / A.col(0).tail(r - 1).norm() * (A(0, 0) / 2);
-  }
-  else if (r == 1) {
+  } else if (r == 1) {
     // Make the last m entries of row matrix have norm A(0,0) / 2
-    A.row(0).tail(m-1) = A.row(0).tail(m - 1) / A.row(0).tail(m - 1).norm() * (A(0, 0) / 2);
+    A.row(0).tail(m - 1) = Eigen::VectorXd::Random(m - 1);
+    A.row(0).tail(m - 1) =
+        A.row(0).tail(m - 1) / A.row(0).tail(m - 1).norm() * (A(0, 0) / 2);
   }
   return A;
 }
@@ -500,6 +501,14 @@ class Cone1ByCone2SeparabilityTest
                   const Eigen::Ref<const Eigen::MatrixXd>& test_mat) {
     auto constraint = prog_.AddLinearEqualityConstraint(Y == test_mat);
     auto result = Solve(prog_);
+    if (!ProgramSolvedWithoutError(result.get_solution_result())) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+      result = Solve(prog_, std::nullopt, options);
+      std::cout << fmt::format("Solution result is {}",
+                               result.get_solution_result())
+                << std::endl;
+    }
     prog_.RemoveConstraint(constraint);
     DRAKE_DEMAND(ProgramSolvedWithoutError(result.get_solution_result()));
 
@@ -721,32 +730,29 @@ TEST_P(LorentzByLorentzSeparabilityTest,
 
 TEST_P(LorentzByLorentzSeparabilityTest,
        AddMatrixIsLorentzByLorentzSeparableConstraintExpressionChangeSize) {
-  int m, n;
-  std::tie(m, n) = GetParam();
-  const int r1 = m + 5;
-  const int r2 = std::max(m - 1, 1);
-  const int c1 = n + 3;
-  const int c2 = std::max(n - 2, 1);
+  // The subspaces in some of these tests have small dimension, making them
+  // numerically difficult for SDP solvers which do no preprocessing. Therefore,
+  // we only solve these with Mosek as it is the only one which currently gives
+  // reliable results.
+  if (MosekSolver().enabled() && MosekSolver().available()) {
+    int m, n;
+    std::tie(m, n) = GetParam();
+    const int r1 = m + 5;
+    const int r2 = std::max(m - 1, 1);
+    const int c1 = n + 3;
+    const int c2 = std::max(n - 2, 1);
 
-  const double scale = 3;
-  // These maps need to be positive Lorentz maps. When the domain dimension is
-  // less than or equal to 2, positive Lorentz maps are positive-orthant maps.
-  Eigen::MatrixXd A1 = m > 2
-                           ? MakeRandomLorentzPositiveMap(r1, m, scale)
-                           : MakeRandomPositiveOrthantPositiveMap(r1, m, scale);
-  Eigen::MatrixXd A2 = m > 2
-                           ? MakeRandomLorentzPositiveMap(r2, m, scale)
-                           : MakeRandomPositiveOrthantPositiveMap(r2, m, scale);
-  Eigen::MatrixXd B1 = n > 2
-                           ? MakeRandomLorentzPositiveMap(n, c1, scale)
-                           : MakeRandomPositiveOrthantPositiveMap(n, c1, scale);
-  Eigen::MatrixXd B2 = n > 2
-                           ? MakeRandomLorentzPositiveMap(n, c2, scale)
-                           : MakeRandomPositiveOrthantPositiveMap(n, c2, scale);
-  this->DoTest(A1, B1);
-  this->DoTest(A2, B1);
-  this->DoTest(A1, B2);
-  this->DoTest(A2, B2);
+    const double scale = 2;
+    // These maps need to be positive Lorentz maps.
+    Eigen::MatrixXd A1 = MakeRandomLorentzPositiveMap(r1, m, scale);
+    Eigen::MatrixXd A2 = MakeRandomLorentzPositiveMap(r2, m, scale);
+    Eigen::MatrixXd B1 = MakeRandomLorentzPositiveMap(n, c1, scale);
+    Eigen::MatrixXd B2 = MakeRandomLorentzPositiveMap(n, c2, scale);
+    this->DoTest(A1, B1);
+    this->DoTest(A2, B1);
+    this->DoTest(A1, B2);
+    this->DoTest(A2, B2);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
