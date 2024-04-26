@@ -32,7 +32,7 @@ class MeshcatAnimation {
   /** Constructs the animation object.
   @param frames_per_second a positive integer specifying the timing at which the
   frames are played back. */
-  explicit MeshcatAnimation(double frames_per_second = 32.0);
+  explicit MeshcatAnimation(double frames_per_second = 64.0);
 
   ~MeshcatAnimation();
 
