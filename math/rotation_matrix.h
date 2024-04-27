@@ -102,13 +102,45 @@ class RotationMatrix {
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
-    // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
-    // known to be normalized apriori or calling site does not want
-    // normalization.
-    const Vector3<T>& lambda = theta_lambda.axis();
-    const T norm = lambda.norm();
+    using std::cos;
+    using std::sin;
+    // TODO(mitiguy) Consider adding an optional second argument if lambda is
+    // known to be normalized apriori or the caller does not want normalization.
     const T& theta = theta_lambda.angle();
-    set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
+    const Vector3<T>& lambda = theta_lambda.axis();
+    // We won't use AngleAxis<T>::toRotationMatrix because somtimes it is
+    // miscompiled by Clang 15. Instead, we'll follow the derivation here:
+    // https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm
+    const T norm = lambda.norm();
+    const T x = lambda.x() / norm;
+    const T y = lambda.y() / norm;
+    const T z = lambda.z() / norm;
+    const T s = sin(theta);
+    const T c = cos(theta);
+    const T t = 1 - c;
+    const T sx = s * x;
+    const T sy = s * y;
+    const T sz = s * z;
+    const T tx = t * x;
+    const T ty = t * y;
+    const T tz = t * z;
+    const T txx = tx * x;
+    const T tyy = ty * y;
+    const T tzz = tz * z;
+    const T txy = tx * y;
+    const T txz = tx * z;
+    const T tyz = ty * z;
+    Matrix3<T> R;
+    R.coeffRef(0, 0) = txx + c;
+    R.coeffRef(1, 1) = tyy + c;
+    R.coeffRef(2, 2) = tzz + c;
+    R.coeffRef(0, 1) = txy - sz;
+    R.coeffRef(1, 0) = txy + sz;
+    R.coeffRef(0, 2) = txz + sy;
+    R.coeffRef(2, 0) = txz - sy;
+    R.coeffRef(1, 2) = tyz - sx;
+    R.coeffRef(2, 1) = tyz + sx;
+    set(R);
   }
 
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
