@@ -81,6 +81,43 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
   }
 }
 
+/* Decodes the most recent SetTransform message for Meshcat on the given path
+and returns the message's decoded path and transform data. If no message has
+ever been sent, returns a default-constructed value. */
+std::pair<std::string, Eigen::Matrix4d> GetDecodedTransform(
+    const Meshcat& meshcat, std::string_view path) {
+  std::string message = meshcat.GetPackedTransform(path);
+  if (message.empty()) {
+    return {};
+  }
+
+  msgpack::object_handle oh = msgpack::unpack(message.data(), message.size());
+  internal::SetTransformData decoded;
+  EXPECT_NO_THROW(decoded = oh.get().as<internal::SetTransformData>());
+  EXPECT_EQ(decoded.type, "set_transform");
+  Eigen::Map<Eigen::Matrix4d> matrix(decoded.matrix);
+  return {decoded.path, Eigen::Matrix4d{matrix}};
+}
+
+/* Decodes the most recent SetProperty message for Meshcat on the given path
+and returns the message's decoded path and property value. If no message has
+ever been sent, returns a default-constructed value. */
+template <typename T>
+std::pair<std::string, T> GetDecodedProperty(const Meshcat& meshcat,
+                                             std::string_view path,
+                                             std::string_view property) {
+  std::string message = meshcat.GetPackedProperty(path, std::string{property});
+  if (message.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(message.data(), message.size());
+  internal::SetPropertyData<T> decoded;
+  EXPECT_NO_THROW(decoded = oh.get().as<internal::SetPropertyData<T>>());
+  EXPECT_EQ(decoded.type, "set_property");
+  EXPECT_EQ(decoded.property, property);
+  return {decoded.path, decoded.value};
+}
+
 GTEST_TEST(MeshcatTest, TestHttp) {
   Meshcat meshcat;
   // Note: The server doesn't respect all requests; unfortunately we can't use
@@ -469,14 +506,10 @@ GTEST_TEST(MeshcatTest, SetTransform) {
                                      Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath);
 
-  std::string transform = meshcat.GetPackedTransform("frame");
-  msgpack::object_handle oh =
-      msgpack::unpack(transform.data(), transform.size());
-  auto data = oh.get().as<internal::SetTransformData>();
-  EXPECT_EQ(data.type, "set_transform");
-  EXPECT_EQ(data.path, "/drake/frame");
-  Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
-  EXPECT_TRUE(CompareMatrices(matrix, X_ParentPath.GetAsMatrix4()));
+  const auto [actual_path, actual_value] =
+      GetDecodedTransform(meshcat, "frame");
+  EXPECT_EQ(actual_path, "/drake/frame");
+  EXPECT_TRUE(CompareMatrices(actual_value, X_ParentPath.GetAsMatrix4()));
 }
 
 GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
@@ -492,14 +525,10 @@ GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
   // clang-format on
   meshcat.SetTransform("frame", matrix);
 
-  std::string transform = meshcat.GetPackedTransform("frame");
-  msgpack::object_handle oh =
-      msgpack::unpack(transform.data(), transform.size());
-  auto data = oh.get().as<internal::SetTransformData>();
-  EXPECT_EQ(data.type, "set_transform");
-  EXPECT_EQ(data.path, "/drake/frame");
-  Eigen::Map<Eigen::Matrix4d> actual(data.matrix);
-  EXPECT_TRUE(CompareMatrices(matrix, actual));
+  const auto [actual_path, actual_value] =
+      GetDecodedTransform(meshcat, "frame");
+  EXPECT_EQ(actual_path, "/drake/frame");
+  EXPECT_TRUE(CompareMatrices(actual_value, matrix));
 }
 
 GTEST_TEST(MeshcatTest, Delete) {
@@ -583,73 +612,61 @@ GTEST_TEST(MeshcatTest, Paths) {
 
 GTEST_TEST(MeshcatTest, SetPropertyBool) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Grid"));
-  EXPECT_TRUE(meshcat.GetPackedProperty("/Grid", "visible").empty());
-  meshcat.SetProperty("/Grid", "visible", false);
-  EXPECT_TRUE(meshcat.HasPath("/Grid"));
+  const std::string path{"/Grid"};
+  const std::string property{"visible"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  EXPECT_TRUE(meshcat.GetPackedProperty(path, property).empty());
 
-  std::string property = meshcat.GetPackedProperty("/Grid", "visible");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<bool>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Grid");
-  EXPECT_EQ(data.property, "visible");
-  EXPECT_FALSE(data.value);
+  meshcat.SetProperty(path, property, false);
+  EXPECT_TRUE(meshcat.HasPath(path));
+  const auto [actual_path, actual_value] =
+      GetDecodedProperty<bool>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_FALSE(actual_value);
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyDouble) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
-  EXPECT_TRUE(
-      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom")
-          .empty());
-  meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
-  EXPECT_TRUE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
+  const std::string path{"/Cameras/default/rotated/<object>"};
+  const std::string property{"zoom"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  EXPECT_TRUE(meshcat.GetPackedProperty(path, property).empty());
 
-  std::string property =
-      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<double>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
-  EXPECT_EQ(data.property, "zoom");
-  EXPECT_EQ(data.value, 2.0);
+  meshcat.SetProperty(path, property, 2.0);
+  EXPECT_TRUE(meshcat.HasPath(path));
+  const auto [actual_path, actual_value] =
+      GetDecodedProperty<double>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_EQ(actual_value, 2.0);
 }
 
 GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Background/<object>"));
-  EXPECT_TRUE(
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map")
-          .empty());
+  const std::string path{"/Background/<object>"};
+  const std::string property{"environment_map"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  auto [actual_path, actual_value] =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, "");
+  EXPECT_EQ(actual_value, "");
 
   // Set the map to a valid image.
   const std::filesystem::path env_map(
       FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(env_map));
-  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
-
-  std::string property =
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<std::string>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Background/<object>");
-  EXPECT_EQ(data.property, "environment_map");
-  EXPECT_THAT(data.value, testing::StartsWith("cas-"));
+  EXPECT_TRUE(meshcat.HasPath(path));
+  std::tie(actual_path, actual_value) =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_THAT(actual_value, testing::StartsWith("cas-"));
 
   // Clear the map with an empty string.
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));
-  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
-
-  property =
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
-  oh = msgpack::unpack(property.data(), property.size());
-  data = oh.get().as<internal::SetPropertyData<std::string>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Background/<object>");
-  EXPECT_EQ(data.property, "environment_map");
-  EXPECT_EQ(data.value, "");
+  EXPECT_TRUE(meshcat.HasPath(path));
+  std::tie(actual_path, actual_value) =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_EQ(actual_value, "");
 
   // An invalid map throws.
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.SetEnvironmentMap("invalid_file.png"),
@@ -675,13 +692,10 @@ GTEST_TEST(MeshcatTest, InitialPropeties) {
   auto check_property = [&meshcat](auto path, auto property, auto value) {
     SCOPED_TRACE(fmt::format("property = {}", property));
     using T = decltype(value);
-    std::string packed = meshcat.GetPackedProperty(path, property);
-    msgpack::object_handle oh = msgpack::unpack(packed.data(), packed.size());
-    internal::SetPropertyData<T> message;
-    ASSERT_NO_THROW(message = oh.get().as<internal::SetPropertyData<T>>());
-    EXPECT_EQ(message.path, path);
-    EXPECT_EQ(message.property, property);
-    EXPECT_EQ(message.value, value);
+    const auto [actual_path, actual_value] =
+        GetDecodedProperty<T>(meshcat, path, property);
+    EXPECT_EQ(actual_path, path);
+    EXPECT_EQ(actual_value, value);
   };
   check_property("/a", "p1", some_vector);
   check_property("/b", "p2", some_string);
@@ -1227,28 +1241,20 @@ GTEST_TEST(MeshcatTest, SetCameraPose) {
 
   // /Cameras/default should have an identity transform.
   {
-    std::string transform = meshcat.GetPackedTransform("/Cameras/default");
-    msgpack::object_handle oh =
-        msgpack::unpack(transform.data(), transform.size());
-    auto data = oh.get().as<internal::SetTransformData>();
-    EXPECT_EQ(data.type, "set_transform");
-    EXPECT_EQ(data.path, "/Cameras/default");
-    Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
-    EXPECT_TRUE(CompareMatrices(matrix, Eigen::Matrix4d::Identity()));
+    const auto [actual_path, actual_value] =
+        GetDecodedTransform(meshcat, "/Cameras/default");
+    EXPECT_EQ(actual_path, "/Cameras/default");
+    EXPECT_TRUE(CompareMatrices(actual_value, Eigen::Matrix4d::Identity()));
   }
 
   // /Cameras/default/rotated/<object> should have a position value equal to
   // <1, 3, -2>.
   {
-    std::string property = meshcat.GetPackedProperty(
-        "/Cameras/default/rotated/<object>", "position");
-    msgpack::object_handle oh =
-        msgpack::unpack(property.data(), property.size());
-    auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
-    EXPECT_EQ(data.type, "set_property");
-    EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
-    EXPECT_EQ(data.property, "position");
-    EXPECT_EQ(data.value, std::vector({1.0, 3.0, -2.0}));
+    const auto [actual_path, actual_value] =
+        GetDecodedProperty<std::vector<double>>(
+            meshcat, "/Cameras/default/rotated/<object>", "position");
+    EXPECT_EQ(actual_path, "/Cameras/default/rotated/<object>");
+    EXPECT_EQ(actual_value, std::vector({1.0, 3.0, -2.0}));
   }
 }
 

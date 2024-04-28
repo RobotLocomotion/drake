@@ -2726,6 +2726,10 @@ void Meshcat::DeleteRecording() {
   animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
 }
 
+const MeshcatAnimation& Meshcat::get_recording() const {
+  return *animation_;
+}
+
 MeshcatAnimation& Meshcat::get_mutable_recording() {
   return *animation_;
 }
