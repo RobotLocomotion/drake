@@ -1,4 +1,4 @@
-drake ({debian_version}-1) experimental; urgency=low
+drake ({drake_version}-1) experimental; urgency=low
 
   * New upstream version, built from git sha {git_sha}
 
