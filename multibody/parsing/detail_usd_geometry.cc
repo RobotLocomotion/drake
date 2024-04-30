@@ -55,6 +55,11 @@ CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
   return default_friction();
 }
 
+double GetPrimMass(const pxr::UsdPrim& prim) {
+  // TODO(hong-nvidia): Use the prim's mass
+  return 1.0;
+}
+
 Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
   pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
   pxr::VtArray<pxr::GfVec3f> colors;
@@ -150,7 +155,7 @@ void WriteMeshToObjFile(
   out_file.close();
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryCube(
+Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w, true);
@@ -163,7 +168,14 @@ std::unique_ptr<geometry::Shape> CreateGeometryCube(
 
   Eigen::Vector3d cube_dimension = GetPrimScale(prim) * cube_size;
   cube_dimension *= meters_per_unit;
-  return std::make_unique<geometry::Box>(cube_dimension);
+  return cube_dimension;
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryBox(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
+  Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
+  return std::make_unique<geometry::Box>(dimension);
 }
 
 std::unique_ptr<geometry::Shape> CreateGeometrySphere(
@@ -177,15 +189,16 @@ std::unique_ptr<geometry::Shape> CreateGeometrySphere(
     RaiseFailedToReadAttributeError("radius", prim, w);
   }
   sphere_radius *= meters_per_unit;
-
+  
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
-  if (prim_scale[0] == prim_scale[1] && prim_scale[1] == prim_scale[2]) {
-    return std::make_unique<geometry::Sphere>(sphere_radius * prim_scale[0]);
+  Eigen::Vector3d sphere_dimension = sphere_radius * prim_scale;
+
+  if (sphere_dimension[0] == sphere_dimension[1] &&
+      sphere_dimension[1] == sphere_dimension[2]) {
+    return std::make_unique<geometry::Sphere>(sphere_dimension[0]);
   } else {
     return std::make_unique<geometry::Ellipsoid>(
-      sphere_radius * prim_scale[0],
-      sphere_radius * prim_scale[1],
-      sphere_radius * prim_scale[2]);
+      sphere_dimension[0], sphere_dimension[1], sphere_dimension[2]);
   }
 }
 
@@ -309,6 +322,14 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 
   return std::make_unique<geometry::Mesh>(
     obj_filename, prim_scale[0] * meters_per_unit);
+}
+
+SpatialInertia<double> CreateSptialInertiaForBox(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
+  Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
+  return SpatialInertia<double>::SolidBoxWithMass(
+    GetPrimMass(prim), dimension[0], dimension[1], dimension[2]);
 }
 
 }  // namespace internal

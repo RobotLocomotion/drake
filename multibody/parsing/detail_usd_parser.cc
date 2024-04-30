@@ -45,12 +45,13 @@ class UsdParser {
 
  private:
   void ProcessPrim(const pxr::UsdPrim& prim);
-  void ProcessStaticCollider(const pxr::UsdPrim& prim);
+  void ProcessRigidBody(const pxr::UsdPrim& prim, bool is_static);
   UsdStageMetadata GetStageMetadata(const pxr::UsdStageRefPtr stage);
   std::unique_ptr<geometry::Shape> CreateCollisionGeometry(
     const pxr::UsdPrim& prim);
   std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     const pxr::UsdPrim& prim);
+  const RigidBody<double>& CreateRigidBody(const pxr::UsdPrim& prim);
 
   inline static std::vector<std::string> mesh_filenames_;
   const ParsingWorkspace& w_;
@@ -90,11 +91,7 @@ UsdParserWrapper::UsdParserWrapper() {
   unused(ignored);
 }
 
-UsdParserWrapper::~UsdParserWrapper() {
-  // TODO(hong-nvidia):
-  // Delete all the temporary files (UsdParserWrapper::mesh_filenames_)
-  // generated during the parsing process
-}
+UsdParserWrapper::~UsdParserWrapper() = default;
 
 std::optional<ModelInstanceIndex> UsdParserWrapper::AddModel(
     const DataSource& data_source, const std::string& model_name,
@@ -118,7 +115,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   const pxr::UsdPrim& prim) {
   double mpu = metadata_.meters_per_unit;
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    return CreateGeometryCube(prim, mpu, w_);
+    return CreateGeometryBox(prim, mpu, w_);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     return CreateGeometrySphere(prim, mpu, w_);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
@@ -143,37 +140,57 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
   return CreateVisualGeometry(prim);
 }
 
-void UsdParser::ProcessStaticCollider(const pxr::UsdPrim& prim) {
-  math::RigidTransform<double> transform = GetPrimRigidTransform(prim,
-    metadata_.meters_per_unit);
+const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
+  auto si = CreateSptialInertiaForBox(prim, metadata_.meters_per_unit, w_);
+  return w_.plant->AddRigidBody("TestBody", si);
+}
 
+void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
+  bool is_static) {
   auto collision_geometry = CreateCollisionGeometry(prim);
   auto visual_geometry = CreateVisualGeometry(prim);
-
-  if (collision_geometry && visual_geometry) {
-    w_.plant->RegisterCollisionGeometry(
-      w_.plant->world_body(),
-      transform,
-      *collision_geometry,
-      fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-      GetPrimFriction(prim));
-
-    w_.plant->RegisterVisualGeometry(
-      w_.plant->world_body(),
-      transform,
-      *visual_geometry,
-      fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-      GetGeomPrimColor(prim));
+  if (!collision_geometry || !visual_geometry) {
+    w_.diagnostic.Error(fmt::format("Failed to create collision or visual "
+      "geometry for prim at {}", prim.GetPath().GetString()));
+    return;
   }
+
+  const RigidBody<double>* rigid_body;
+  math::RigidTransform<double> transform_relative_to_rigid_body;
+  math::RigidTransform<double> prim_transform =
+    GetPrimRigidTransform(prim, metadata_.meters_per_unit);
+  if (is_static) {
+    rigid_body = &w_.plant->world_body();
+    transform_relative_to_rigid_body = prim_transform;
+  } else {
+    rigid_body = &CreateRigidBody(prim);
+    w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform);
+    transform_relative_to_rigid_body =
+      math::RigidTransform<double>::Identity();
+  }
+
+  w_.plant->RegisterCollisionGeometry(
+    *rigid_body,
+    transform_relative_to_rigid_body,
+    *collision_geometry,
+    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+    GetPrimFriction(prim));
+
+  w_.plant->RegisterVisualGeometry(
+    *rigid_body,
+    transform_relative_to_rigid_body,
+    *visual_geometry,
+    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+    GetGeomPrimColor(prim));
 }
 
 void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
   drake::log()->info(fmt::format("Processing {}", prim.GetPath().GetString()));
   if (prim.HasAPI(pxr::TfToken("PhysicsCollisionAPI"))) {
     if (prim.HasAPI(pxr::TfToken("PhysicsRigidBodyAPI"))) {
-      // ProcessRigidBody(prim, plant);
+      ProcessRigidBody(prim, false);
     } else {
-      ProcessStaticCollider(prim);
+      ProcessRigidBody(prim, true);
     }
   }
 }

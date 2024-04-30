@@ -9,7 +9,11 @@ namespace internal {
 
 struct ParsingWorkspace;
 
-std::unique_ptr<geometry::Shape> CreateGeometryCube(
+Eigen::Vector3d GetBoxDimension(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w);
+
+std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
@@ -29,7 +33,13 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   const std::string obj_filename, const pxr::UsdPrim& prim,
   double meters_per_unit, const ParsingWorkspace& w);
 
+SpatialInertia<double> CreateSptialInertiaForBox(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w);
+
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
+
+double GetPrimMass(const pxr::UsdPrim& prim);
 
 Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim);
 
