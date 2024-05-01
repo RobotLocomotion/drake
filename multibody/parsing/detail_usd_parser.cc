@@ -117,12 +117,15 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   if (prim.IsA<pxr::UsdGeomCube>()) {
     return CreateGeometryBox(prim, mpu, w_);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    return CreateGeometrySphere(prim, mpu, w_);
+    return CreateGeometryEllipsoid(prim, mpu, w_);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
     return CreateGeometryCapsule(prim, mpu, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     return CreateGeometryCylinder(prim, mpu, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
+    // Create an obj file for each mesh and pass the filename into
+    // the constructor of geometry::Mesh. This is a temporary solution while
+    // https://github.com/RobotLocomotion/drake/issues/15263 is being worked on
     std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
     mesh_filenames_.push_back(obj_filename);
     return CreateGeometryMesh(obj_filename, prim, mpu, w_);
@@ -141,8 +144,26 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
 }
 
 const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
-  auto si = CreateSptialInertiaForBox(prim, metadata_.meters_per_unit, w_);
-  return w_.plant->AddRigidBody("TestBody", si);
+  double mpu = metadata_.meters_per_unit;
+  SpatialInertia<double> si;
+  if (prim.IsA<pxr::UsdGeomCube>()) {
+    si = CreateSpatialInertiaForBox(prim, mpu, w_);
+  } else if (prim.IsA<pxr::UsdGeomSphere>()) {
+    si = CreateSpatialInertiaForEllipsoid(prim, mpu, w_);
+  } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
+    si = CreateSpatialInertiaForCapsule(prim, mpu, metadata_.up_axis, w_);
+  } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
+    si = CreateSpatialInertiaForCylinder(prim, mpu, metadata_.up_axis, w_);
+  } else if (prim.IsA<pxr::UsdGeomMesh>()) {
+    // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh
+    si = SpatialInertia<double>::MakeUnitary();
+  } else {
+    si.SetNaN();
+    pxr::TfToken prim_type = prim.GetTypeName();
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
+  }
+  return w_.plant->AddRigidBody(
+    fmt::format("{}-RigidBody", prim.GetPath().GetString()), si);
 }
 
 void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
@@ -164,9 +185,9 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
     transform_relative_to_rigid_body = prim_transform;
   } else {
     rigid_body = &CreateRigidBody(prim);
-    w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform);
     transform_relative_to_rigid_body =
       math::RigidTransform<double>::Identity();
+    w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform);
   }
 
   w_.plant->RegisterCollisionGeometry(

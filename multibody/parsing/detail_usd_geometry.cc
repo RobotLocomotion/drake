@@ -60,15 +60,15 @@ double GetPrimMass(const pxr::UsdPrim& prim) {
   return 1.0;
 }
 
-Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim) {
+Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
   pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
   pxr::VtArray<pxr::GfVec3f> colors;
   if (gprim.GetDisplayColorAttr().Get(&colors)) {
     pxr::GfVec3f color = colors[0];
-    return Vector4<double>(color[0], color[1], color[2], 1.0);
+    return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
     // Prim does not contain color attribute, use default color instead
-    return Vector4<double>(0.5, 0.5, 0.5, 1.0);
+    return Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
   }
 }
 
@@ -171,7 +171,7 @@ Eigen::Vector3d GetBoxDimension(
   return cube_dimension;
 }
 
-Eigen::Vector3d GetSphereDimension(
+Eigen::Vector3d GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w, true);
@@ -192,11 +192,7 @@ Eigen::Vector2d GetCylinderDimension(
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w);
 
-  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
-  pxr::TfToken cylinder_axis;
-  if (!cylinder.GetAxisAttr().Get(&cylinder_axis)) {
-    RaiseFailedToReadAttributeError("axis", prim, w);
-  }
+  pxr::TfToken cylinder_axis = GetUsdGeomAxis(prim, w);
   if (cylinder_axis != stage_up_axis) {
     w.diagnostic.Error(fmt::format(
       "Only upright cylinders are supported at the moment. The cylinder at {} "
@@ -214,6 +210,7 @@ Eigen::Vector2d GetCylinderDimension(
       "not supported", prim.GetPath().GetString()));
   }
 
+  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
   double cylinder_raw_height, cylinder_raw_radius;
   if (!cylinder.GetRadiusAttr().Get(&cylinder_raw_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
@@ -231,11 +228,7 @@ Eigen::Vector2d GetCapsuleDimension(
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w);
 
-  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
-  pxr::TfToken capsule_axis;
-  if (!capsule.GetAxisAttr().Get(&capsule_axis)) {
-    RaiseFailedToReadAttributeError("axis", prim, w);
-  }
+  pxr::TfToken capsule_axis = GetUsdGeomAxis(prim, w);
   if (capsule_axis != stage_up_axis) {
     w.diagnostic.Error(fmt::format(
       "Only upright capsules are supported at the moment. The capsule at {} "
@@ -253,6 +246,7 @@ Eigen::Vector2d GetCapsuleDimension(
       "not supported", prim.GetPath().GetString()));
   }
 
+  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
   double capsule_raw_radius, capsule_raw_height;
   if (!capsule.GetRadiusAttr().Get(&capsule_raw_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
@@ -285,10 +279,10 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
   return std::make_unique<geometry::Box>(dimension);
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometrySphere(
+std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
-  Eigen::Vector3d dimension = GetSphereDimension(prim, meters_per_unit, w);
+  Eigen::Vector3d dimension = GetEllipsoidDimension(prim, meters_per_unit, w);
   if (dimension[0] == dimension[1] &&
       dimension[1] == dimension[2]) {
     return std::make_unique<geometry::Sphere>(dimension[0]);
@@ -347,12 +341,80 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   return std::make_unique<geometry::Mesh>(obj_filename, prim_scale);
 }
 
-SpatialInertia<double> CreateSptialInertiaForBox(
+SpatialInertia<double> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
   return SpatialInertia<double>::SolidBoxWithMass(
     GetPrimMass(prim), dimension[0], dimension[1], dimension[2]);
+}
+
+SpatialInertia<double> CreateSpatialInertiaForEllipsoid(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
+  Eigen::Vector3d dimension = GetEllipsoidDimension(prim, meters_per_unit, w);
+  if (dimension[0] == dimension[1] &&
+      dimension[1] == dimension[2]) {
+    return SpatialInertia<double>::SolidSphereWithMass(
+      GetPrimMass(prim), dimension[0]);
+  } else {
+    return SpatialInertia<double>::SolidEllipsoidWithMass(
+      GetPrimMass(prim), dimension[0], dimension[1], dimension[2]);
+  }
+}
+
+SpatialInertia<double> CreateSpatialInertiaForCylinder(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  Eigen::Vector2d dimension = GetCylinderDimension(
+    prim, meters_per_unit, stage_up_axis, w);
+  Eigen::Vector3d cylinder_axis = GetUsdGeomAxisUnitVector(prim, w);
+  return SpatialInertia<double>::SolidCylinderWithMass(
+    GetPrimMass(prim), dimension[0], dimension[1], cylinder_axis);
+}
+
+SpatialInertia<double> CreateSpatialInertiaForCapsule(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  Eigen::Vector2d dimension = GetCapsuleDimension(
+    prim, meters_per_unit, stage_up_axis, w);
+  Eigen::Vector3d capsule_axis = GetUsdGeomAxisUnitVector(prim, w);
+  return SpatialInertia<double>::SolidCapsuleWithMass(
+    GetPrimMass(prim), dimension[0], dimension[1], capsule_axis);
+}
+
+pxr::TfToken GetUsdGeomAxis(
+  const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
+  pxr::TfToken axis;
+  bool success = false;
+  if (prim.IsA<pxr::UsdGeomCylinder>()) {
+    pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
+    success = cylinder.GetAxisAttr().Get(&axis);
+  } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
+    pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
+    success = capsule.GetAxisAttr().Get(&axis);
+  }
+
+  if (!success) {
+    RaiseFailedToReadAttributeError("axis", prim, w);
+  }
+  return axis;
+}
+
+Eigen::Vector3d GetUsdGeomAxisUnitVector(
+  const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
+  pxr::TfToken axis = GetUsdGeomAxis(prim, w);
+  if (axis == "X") {
+    return Eigen::Vector3d(1.0, 0.0, 0.0);
+  } else if (axis == "Y") {
+    return Eigen::Vector3d(0.0, 1.0, 0.0);
+  } else if (axis == "Z") {
+    return Eigen::Vector3d(0.0, 0.0, 1.0);
+  } else {
+    w.diagnostic.Error(fmt::format(
+      "The axis of cylinder at {} is invalid", prim.GetPath().GetString()));
+    return Eigen::Vector3d(0.0, 0.0, 0.0);
+  }
 }
 
 }  // namespace internal

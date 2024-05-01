@@ -13,7 +13,7 @@ Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
-Eigen::Vector3d GetSphereDimension(
+Eigen::Vector3d GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
@@ -33,7 +33,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
-std::unique_ptr<geometry::Shape> CreateGeometrySphere(
+std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
@@ -49,15 +49,33 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   const std::string obj_filename, const pxr::UsdPrim& prim,
   double meters_per_unit, const ParsingWorkspace& w);
 
-SpatialInertia<double> CreateSptialInertiaForBox(
+SpatialInertia<double> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
+
+SpatialInertia<double> CreateSpatialInertiaForEllipsoid(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w);
+
+SpatialInertia<double> CreateSpatialInertiaForCylinder(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
+
+SpatialInertia<double> CreateSpatialInertiaForCapsule(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
+
+pxr::TfToken GetUsdGeomAxis(
+  const pxr::UsdPrim& prim, const ParsingWorkspace& w);
+
+Eigen::Vector3d GetUsdGeomAxisUnitVector(
+  const pxr::UsdPrim& prim, const ParsingWorkspace& w);
 
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
 
 double GetPrimMass(const pxr::UsdPrim& prim);
 
-Vector4<double> GetGeomPrimColor(const pxr::UsdPrim& prim);
+Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim);
 
 math::RigidTransform<double> GetPrimRigidTransform(const pxr::UsdPrim& prim,
   double meters_per_unit);
