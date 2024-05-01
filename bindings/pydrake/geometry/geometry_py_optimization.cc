@@ -976,19 +976,6 @@ void DefineGeometryOptimization(py::module m) {
                 &FindSeparationCertificateOptions::terminate_at_failure)
             .def_readwrite("solver_options",
                 &FindSeparationCertificateOptions::solver_options);
-    constexpr char kNumThreadsDeprecated[] =
-        "FindSeparationCertificateOptions.num_threads is deprecated and will "
-        "be removed on or after 2024-05-01. Use options.parallelism instead.";
-    find_options_cls.def_property("num_threads",
-        WrapDeprecated(kNumThreadsDeprecated,
-            [](const FindSeparationCertificateOptions& self) {
-              return self.parallelism.num_threads();
-            }),
-        WrapDeprecated(kNumThreadsDeprecated,
-            [](FindSeparationCertificateOptions& self, int num_threads) {
-              self.parallelism =
-                  (num_threads > 0) ? num_threads : Parallelism::Max();
-            }));
   }
   {
     using BaseClass = CspaceFreePolytopeBase;

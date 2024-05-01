@@ -240,7 +240,6 @@ drake_cc_googletest_linux_only(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
-        "//systems/sensors:color_palette",
         "@gflags",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",

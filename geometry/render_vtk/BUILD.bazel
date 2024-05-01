@@ -65,7 +65,6 @@ drake_cc_library(
         "//geometry/render:render_mesh",
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:render_engine_vtk_params",
-        "//systems/sensors:color_palette",
         "//systems/sensors:vtk_diagnostic_event_observer",
         "@eigen",
         "@vtk_internal//:vtkCommonCore",

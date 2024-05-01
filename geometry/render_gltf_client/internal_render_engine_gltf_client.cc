@@ -32,8 +32,6 @@ using render::RenderCameraCore;
 using render::RenderEngine;
 using render_vtk::internal::ImageType;
 using render_vtk::internal::RenderEngineVtk;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
