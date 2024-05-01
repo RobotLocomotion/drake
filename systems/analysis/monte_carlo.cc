@@ -128,51 +128,6 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 
 }  // namespace
 
-namespace internal {
-
-// Remove this on 2024-05-01 along with the other deprecations.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
-  const int hardware_concurrency =
-      static_cast<int>(std::thread::hardware_concurrency());
-
-  int num_threads = 0;
-
-  if (num_parallel_executions > 1) {
-    num_threads = num_parallel_executions;
-    if (num_threads > hardware_concurrency) {
-      drake::log()->warn(
-          "Provided num_parallel_executions value of {} is greater than the "
-          "value of hardware concurrency {} for this computer, this is likely "
-          "to result in poor performance",
-          num_threads, hardware_concurrency);
-    } else {
-      drake::log()->debug(
-          "Using provided value of {} parallel executions", num_threads);
-    }
-  } else if (num_parallel_executions == kNoConcurrency) {
-    num_threads = 1;
-    drake::log()->debug("kNoConcurrency specified, using a single thread");
-  } else if (num_parallel_executions == kUseHardwareConcurrency) {
-    num_threads = hardware_concurrency;
-    drake::log()->debug(
-        "kUseHardwareConcurrency specified, using hardware concurrency {}",
-        num_threads);
-  } else {
-    throw std::runtime_error(fmt::format(
-        "Specified num_parallel_executions {} is not valid. Valid options are "
-        "kNoConcurrency, kUseHardwareConcurrency, or num_parallel_executions "
-        ">= 1",
-        num_parallel_executions));
-  }
-
-  return num_threads;
-}
-#pragma GCC diagnostic push
-
-}  // namespace internal
-
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     const double final_time, const int num_samples, RandomGenerator* generator,
@@ -195,18 +150,6 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     return MonteCarloSimulationSerial(
         make_simulator, output, final_time, num_samples, generator);
   }
-}
-
-std::vector<RandomSimulationResult> MonteCarloSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, const int num_samples, RandomGenerator* generator,
-    const int num_parallel_executions) {
-  // Convert the deprecated argument to the new spelling.
-  const Parallelism parallelism(
-      internal::SelectNumberOfThreadsToUse(num_parallel_executions));
-  // Delegate to the the non-deprecated overload.
-  return MonteCarloSimulation(make_simulator, output, final_time, num_samples,
-                              generator, parallelism);
 }
 
 }  // namespace analysis

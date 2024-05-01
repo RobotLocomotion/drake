@@ -28,8 +28,6 @@ using geometry::render::LightType;
 using geometry::render::RenderEngine;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
 using systems::sensors::Image;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -92,10 +90,7 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   // Expose these protected methods (which are either virtual methods with
   // default implementations, or helper functions) so that Python
   // implementations can access them.
-  using Base::GetColorDFromLabel;
-  using Base::GetColorIFromLabel;
   using Base::GetRenderLabelOrThrow;
-  using Base::LabelFromColor;
   using Base::SetDefaultLightPosition;
 
   template <typename ImageType>
@@ -287,24 +282,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     // Note that we do not bind MakeRgbFromLabel nor MakeLabelFromRgb, because
     // crossing the C++ <=> Python boundary one pixel at a time would be
     // extraordinarily inefficient.
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // To be removed on 2024-05-01.
-    cls  // BR
-        .def_static("LabelFromColor",
-            static_cast<RenderLabel (*)(ColorI const&)>(
-                &PyRenderEngine::LabelFromColor),
-            py::arg("color"))
-        .def_static("GetColorIFromLabel",
-            static_cast<ColorI (*)(RenderLabel const&)>(
-                &PyRenderEngine::GetColorIFromLabel),
-            py::arg("label"))
-        .def_static("GetColorDFromLabel",
-            static_cast<ColorD (*)(RenderLabel const&)>(
-                &PyRenderEngine::GetColorDFromLabel),
-            py::arg("label"));
-#pragma GCC diagnostic pop
   }
 
   {
