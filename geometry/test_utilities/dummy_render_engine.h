@@ -153,9 +153,6 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
 
   // Promote these to be public to facilitate testing.
-  using RenderEngine::GetColorDFromLabel;
-  using RenderEngine::GetColorIFromLabel;
-  using RenderEngine::LabelFromColor;
   using RenderEngine::MakeLabelFromRgb;
   using RenderEngine::MakeRgbFromLabel;
 
