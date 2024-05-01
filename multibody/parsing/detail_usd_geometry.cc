@@ -159,8 +159,8 @@ Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w, true);
+  
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
-
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
     RaiseFailedToReadAttributeError("size", prim, w);
@@ -171,19 +171,12 @@ Eigen::Vector3d GetBoxDimension(
   return cube_dimension;
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryBox(
-  const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
-  return std::make_unique<geometry::Box>(dimension);
-}
-
-std::unique_ptr<geometry::Shape> CreateGeometrySphere(
+Eigen::Vector3d GetSphereDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w, true);
-  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
 
+  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
@@ -191,66 +184,15 @@ std::unique_ptr<geometry::Shape> CreateGeometrySphere(
   sphere_radius *= meters_per_unit;
   
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
-  Eigen::Vector3d sphere_dimension = sphere_radius * prim_scale;
-
-  if (sphere_dimension[0] == sphere_dimension[1] &&
-      sphere_dimension[1] == sphere_dimension[2]) {
-    return std::make_unique<geometry::Sphere>(sphere_dimension[0]);
-  } else {
-    return std::make_unique<geometry::Ellipsoid>(
-      sphere_dimension[0], sphere_dimension[1], sphere_dimension[2]);
-  }
+  return prim_scale * sphere_radius;
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
+Eigen::Vector2d GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
-  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
-
   ValidatePrimExtent(prim, w);
 
-  pxr::TfToken capsule_axis;
-  if (!capsule.GetAxisAttr().Get(&capsule_axis)) {
-    RaiseFailedToReadAttributeError("axis", prim, w);
-  }
-  if (capsule_axis != stage_up_axis) {
-    w.diagnostic.Error(fmt::format(
-      "Only upright capsules are supported at the moment. The capsule at {} "
-      "is not upright because its axis ({}) differs from the axis of the "
-      "stage ({})", prim.GetPath().GetString(), capsule_axis.GetString(),
-      stage_up_axis.GetString()));
-  }
-
-  // Makes the assumption that axis X/Y scales the radius of the capsule
-  // and axis Z scales the height of the capsule
-  if (prim_scale[0] != prim_scale[1]) {
-    w.diagnostic.Error(fmt::format(
-      "The capsule at {} has different scaling in X and Y axis, and that is "
-      "not supported", prim.GetPath().GetString()));
-  }
-
-  double capsule_height, capsule_radius;
-  if (!capsule.GetHeightAttr().Get(&capsule_height)) {
-    RaiseFailedToReadAttributeError("height", prim, w);
-  }
-  if (!capsule.GetRadiusAttr().Get(&capsule_radius)) {
-    RaiseFailedToReadAttributeError("radius", prim, w);
-  }
-
-  return std::make_unique<geometry::Capsule>(
-    capsule_radius * prim_scale[0] * meters_per_unit,
-    capsule_height * prim_scale[2] * meters_per_unit);
-}
-
-std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
-  const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
-
-  ValidatePrimExtent(prim, w);
-
   pxr::TfToken cylinder_axis;
   if (!cylinder.GetAxisAttr().Get(&cylinder_axis)) {
     RaiseFailedToReadAttributeError("axis", prim, w);
@@ -263,6 +205,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
       stage_up_axis.GetString()));
   }
 
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
   // Makes the assumption that axis X/Y scales the radius of the cylinder
   // and axis Z scales the height of the cylinder
   if (prim_scale[0] != prim_scale[1]) {
@@ -271,30 +214,111 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
       "not supported", prim.GetPath().GetString()));
   }
 
-  double cylinder_height, cylinder_radius;
-  if (!cylinder.GetHeightAttr().Get(&cylinder_height)) {
-    RaiseFailedToReadAttributeError("height", prim, w);
-  }
-  if (!cylinder.GetRadiusAttr().Get(&cylinder_radius)) {
+  double cylinder_raw_height, cylinder_raw_radius;
+  if (!cylinder.GetRadiusAttr().Get(&cylinder_raw_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
   }
-
-  return std::make_unique<geometry::Cylinder>(
-    cylinder_radius * prim_scale[0] * meters_per_unit,
-    cylinder_height * prim_scale[2] * meters_per_unit);
+  if (!cylinder.GetHeightAttr().Get(&cylinder_raw_height)) {
+    RaiseFailedToReadAttributeError("height", prim, w);
+  }
+  double cylinder_radius = cylinder_raw_radius * prim_scale[0] * meters_per_unit;
+  double cylinder_height = cylinder_raw_height * prim_scale[2] * meters_per_unit;
+  return Eigen::Vector2d(cylinder_radius, cylinder_height);
 }
 
-std::unique_ptr<geometry::Shape> CreateGeometryMesh(
-  const std::string obj_filename, const pxr::UsdPrim& prim,
-  double meters_per_unit, const ParsingWorkspace& w) {
-  pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(prim);
+Eigen::Vector2d GetCapsuleDimension(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  ValidatePrimExtent(prim, w);
 
+  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
+  pxr::TfToken capsule_axis;
+  if (!capsule.GetAxisAttr().Get(&capsule_axis)) {
+    RaiseFailedToReadAttributeError("axis", prim, w);
+  }
+  if (capsule_axis != stage_up_axis) {
+    w.diagnostic.Error(fmt::format(
+      "Only upright capsules are supported at the moment. The capsule at {} "
+      "is not upright because its axis ({}) differs from the axis of the "
+      "stage ({})", prim.GetPath().GetString(), capsule_axis.GetString(),
+      stage_up_axis.GetString()));
+  }
+
+  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  // Makes the assumption that axis X/Y scales the radius of the capsule
+  // and axis Z scales the height of the capsule
+  if (prim_scale[0] != prim_scale[1]) {
+    w.diagnostic.Error(fmt::format(
+      "The capsule at {} has different scaling in X and Y axis, and that is "
+      "not supported", prim.GetPath().GetString()));
+  }
+
+  double capsule_raw_radius, capsule_raw_height;
+  if (!capsule.GetRadiusAttr().Get(&capsule_raw_radius)) {
+    RaiseFailedToReadAttributeError("radius", prim, w);
+  }
+  if (!capsule.GetHeightAttr().Get(&capsule_raw_height)) {
+    RaiseFailedToReadAttributeError("height", prim, w);
+  }
+  
+  double capsule_radius = capsule_raw_radius * prim_scale[0] * meters_per_unit;
+  double capsule_height = capsule_raw_height * prim_scale[2] * meters_per_unit;
+  return Eigen::Vector2d(capsule_radius, capsule_height);
+}
+
+double GetMeshScale(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
   if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
     w.diagnostic.Error(fmt::format(
       "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
       "of a mesh is not supported", prim.GetPath().GetString()));
   }
+  return prim_scale[0] * meters_per_unit;
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryBox(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
+  Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
+  return std::make_unique<geometry::Box>(dimension);
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometrySphere(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
+  Eigen::Vector3d dimension = GetSphereDimension(prim, meters_per_unit, w);
+  if (dimension[0] == dimension[1] &&
+      dimension[1] == dimension[2]) {
+    return std::make_unique<geometry::Sphere>(dimension[0]);
+  } else {
+    return std::make_unique<geometry::Ellipsoid>(
+      dimension[0], dimension[1], dimension[2]);
+  }
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  Eigen::Vector2d dimension = GetCapsuleDimension(
+    prim, meters_per_unit, stage_up_axis, w);
+  return std::make_unique<geometry::Capsule>(dimension);
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  Eigen::Vector2d dimension = GetCylinderDimension(
+    prim, meters_per_unit, stage_up_axis, w);
+  return std::make_unique<geometry::Cylinder>(dimension);
+}
+
+std::unique_ptr<geometry::Shape> CreateGeometryMesh(
+  const std::string obj_filename, const pxr::UsdPrim& prim,
+  double meters_per_unit, const ParsingWorkspace& w) {
+  pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(prim);
+  double prim_scale = GetMeshScale(prim, meters_per_unit, w);
 
   pxr::VtArray<int> face_vertex_counts;
   if (!mesh.GetFaceVertexCountsAttr().Get(&face_vertex_counts)) {
@@ -320,8 +344,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   
   WriteMeshToObjFile(obj_filename, vertices, indices, w);
 
-  return std::make_unique<geometry::Mesh>(
-    obj_filename, prim_scale[0] * meters_per_unit);
+  return std::make_unique<geometry::Mesh>(obj_filename, prim_scale);
 }
 
 SpatialInertia<double> CreateSptialInertiaForBox(

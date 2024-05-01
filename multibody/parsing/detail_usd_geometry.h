@@ -13,6 +13,22 @@ Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
+Eigen::Vector3d GetSphereDimension(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w);
+
+Eigen::Vector2d GetCylinderDimension(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
+
+Eigen::Vector2d GetCapsuleDimension(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
+
+double GetMeshScale(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w);
+
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
