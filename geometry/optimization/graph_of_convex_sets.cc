@@ -4,7 +4,6 @@
 
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
