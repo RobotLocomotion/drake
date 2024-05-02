@@ -2206,7 +2206,7 @@ class TestPlant(unittest.TestCase):
                 # Deprecate QuaternionFloatingJoint.set_quaternion().
                 with catch_drake_warnings(expected_count=1):
                     joint.set_quaternion(context=context,
-                                         R_FM=RotationMatrix_[T]())
+                                         q_FM=Quaternion_[T]())
                 joint.SetOrientation(context=context, R=RotationMatrix_[T]())
                 # Deprecate QuaternionFloatingJoint.SetFromRotationMatrix().
                 with catch_drake_warnings(expected_count=1):
