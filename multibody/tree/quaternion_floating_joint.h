@@ -221,10 +221,17 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] q_FM
   ///   Quaternion relating frames F and M to be stored in `context`.
   /// @returns a constant reference to `this` joint.
+  const QuaternionFloatingJoint<T>& SetQuaternion(
+      systems::Context<T>* context, const Quaternion<T>& q_FM) const {
+    get_mobilizer().SetQuaternion(context, q_FM);
+    return *this;
+  }
+
+  DRAKE_DEPRECATED("2024-08-01",
+      "Use QuaternionFloatingJoint::SetQuaternion()")
   const QuaternionFloatingJoint<T>& set_quaternion(
       systems::Context<T>* context, const Quaternion<T>& q_FM) const {
-    get_mobilizer().set_quaternion(context, q_FM);
-    return *this;
+    return SetQuaternion(context, q_FM);
   }
 
   /// Sets the quaternion in `context` so this joint's orientation is consistent
@@ -255,7 +262,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& SetTranslation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const {
-    get_mobilizer().set_translation(context, p_FM);
+    get_mobilizer().SetTranslation(context, p_FM);
     return *this;
   }
 

@@ -105,7 +105,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   θ₂, described in this class's documentation, at entries angles(0),
   //   angles(1) and angles(2), respectively.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angles(
+  const RpyBallMobilizer<T>& SetAngles(
       systems::Context<T>* context,
       const Vector3<T>& angles) const;
 

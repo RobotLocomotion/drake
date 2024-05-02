@@ -2202,7 +2202,11 @@ class TestPlant(unittest.TestCase):
                     joint.get_pose(context=context)
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
-                joint.set_quaternion(context=context, q_FM=Quaternion_[T]())
+                joint.SetQuaternion(context=context, q_FM=Quaternion_[T]())
+                # Deprecate QuaternionFloatingJoint.set_quaternion().
+                with catch_drake_warnings(expected_count=1):
+                    joint.set_quaternion(context=context,
+                                         R_FM=RotationMatrix_[T]())
                 joint.SetOrientation(context=context, R=RotationMatrix_[T]())
                 # Deprecate QuaternionFloatingJoint.SetFromRotationMatrix().
                 with catch_drake_warnings(expected_count=1):

@@ -701,10 +701,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
-        .def("set_quaternion", &Class::set_quaternion, py::arg("context"),
-            py::arg("q_FM"), cls_doc.set_quaternion.doc)
-        .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R"), cls_doc.SetOrientation.doc);
+        .def("SetQuaternion", &Class::SetQuaternion, py::arg("context"),
+            py::arg("q_FM"), cls_doc.SetQuaternion.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("set_quaternion",
+            WrapDeprecated(
+                cls_doc.set_quaternion.doc_deprecated, &Class::set_quaternion),
+            py::arg("context"), py::arg("q_FM"),
+            cls_doc.set_quaternion.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.def("SetOrientation", &Class::SetOrientation, py::arg("context"),
+        py::arg("R"), cls_doc.SetOrientation.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR

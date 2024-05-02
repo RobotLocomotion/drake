@@ -134,7 +134,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angles(Context<T>* context,
                                     const Vector3<T>& angles) const {
-    get_mobilizer()->set_angles(context, angles);
+    get_mobilizer()->SetAngles(context, angles);
     return *this;
   }
 

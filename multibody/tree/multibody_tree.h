@@ -1054,7 +1054,7 @@ class MultibodyTree {
   // See MultibodyPlant::SetFreeBodyRandomTranslationDistribution.
   void SetFreeBodyRandomTranslationDistributionOrThrow(
       const RigidBody<T>& body,
-      const Vector3<symbolic::Expression>& position);
+      const Vector3<symbolic::Expression>& translation);
 
   // See MultibodyPlant::SetFreeBodyRandomRotationDistribution.
   void SetFreeBodyRandomRotationDistributionOrThrow(

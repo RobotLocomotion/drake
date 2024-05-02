@@ -154,9 +154,15 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   const RigidTransformd transform_A(quaternion_A, position);
   const RotationMatrixd rotation_matrix_B(quaternion_B);
 
-  // Position access (orientation and translation):
-  joint_->set_quaternion(context_.get(), quaternion_A);
+  // Test configuration (orientation and translation).
+  joint_->SetQuaternion(context_.get(), quaternion_A);
   EXPECT_EQ(joint_->get_quaternion(*context_).coeffs(), quaternion_A.coeffs());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  joint_->set_quaternion(context_.get(), quaternion_B);
+  EXPECT_EQ(joint_->get_quaternion(*context_).coeffs(), quaternion_B.coeffs());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   joint_->SetOrientation(context_.get(), rotation_matrix_B);
   EXPECT_TRUE(math::AreQuaternionsEqualForOrientation(

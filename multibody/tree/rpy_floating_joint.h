@@ -175,7 +175,7 @@ class RpyFloatingJoint final : public Joint<T> {
   @see get_angles() for details */
   const RpyFloatingJoint<T>& set_angles(Context<T>* context,
                                         const Vector3<T>& angles) const {
-    get_mobilizer().set_angles(context, angles);
+    get_mobilizer().SetAngles(context, angles);
     return *this;
   }
 
@@ -189,8 +189,7 @@ class RpyFloatingJoint final : public Joint<T> {
   @returns a constant reference to this joint. */
   const RpyFloatingJoint<T>& SetOrientation(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    set_angles(context, math::RollPitchYaw(R_FM).vector());
-    return *this;
+    return set_angles(context, math::RollPitchYaw(R_FM).vector());
   }
 
   /** Returns the translation (position vector) `p_FM` of the child frame M's
@@ -213,7 +212,7 @@ class RpyFloatingJoint final : public Joint<T> {
   @returns a constant reference to this joint. */
   const RpyFloatingJoint<T>& SetTranslation(systems::Context<T>* context,
                                             const Vector3<T>& p_FM) const {
-    get_mobilizer().set_translation(context, p_FM);
+    get_mobilizer().SetTranslation(context, p_FM);
     return *this;
   }
 
@@ -246,8 +245,8 @@ class RpyFloatingJoint final : public Joint<T> {
   const RpyFloatingJoint<T>& SetPose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
     const math::RotationMatrix<T>& R_FM = X_FM.rotation();
-    get_mobilizer().set_angles(context, math::RollPitchYaw<T>(R_FM).vector());
-    get_mobilizer().set_translation(context, X_FM.translation());
+    get_mobilizer().SetAngles(context, math::RollPitchYaw<T>(R_FM).vector());
+    get_mobilizer().SetTranslation(context, X_FM.translation());
     return *this;
   }
 

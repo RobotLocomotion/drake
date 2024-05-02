@@ -109,12 +109,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Unit test QuaternionFloatingMobilizer quaternion setters/getters.
   const math::RotationMatrixd R_WB_test2(AngleAxisd(M_PI / 5.0, axis));
   const Quaterniond q_WB_test2 = R_WB_test2.ToQuaternion();
-  mobilizer.set_quaternion(&context, q_WB_test2);
+  mobilizer.SetQuaternion(&context, q_WB_test2);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_quaternion(context).coeffs(),
                               q_WB_test2.coeffs(), kEpsilon,
                               MatrixCompareType::relative));
   const Vector3d p_WB_test(1, 2, 3);
-  mobilizer.set_translation(&context, p_WB_test);
+  mobilizer.SetTranslation(&context, p_WB_test);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_translation(context), p_WB_test,
                               kEpsilon, MatrixCompareType::relative));
 
