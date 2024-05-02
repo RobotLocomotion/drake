@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
         ":visibility_graph",
+        ":fast_iris"
     ],
 )
 
