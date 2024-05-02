@@ -242,6 +242,17 @@ GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
                               ".*tol should be non-negative");
 }
 
+GTEST_TEST(TestBoundingBoxConstraint, RemoveVariableBounds) {
+  // Test BoundingBoxConstraint::RemoveVariableBounds
+  BoundingBoxConstraint dut(Eigen::Vector3d(1, 2, 3), Eigen::Vector3d(4, 5, 6));
+  dut.RemoveVariableBounds(1);
+  EXPECT_EQ(dut.num_constraints(), 2);
+  EXPECT_EQ(dut.num_outputs(), 2);
+  EXPECT_EQ(dut.num_vars(), 2);
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), Eigen::Vector2d(1, 3)));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), Eigen::Vector2d(4, 6)));
+}
+
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Check if the getters in the QuadraticConstraint are right.
   Eigen::Matrix2d Q;

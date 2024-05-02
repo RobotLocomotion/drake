@@ -359,7 +359,10 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def(py::init([](const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
         return std::make_unique<BoundingBoxConstraint>(lb, ub);
       }),
-          py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
+          py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc)
+      .def("RemoveVariableBounds", &BoundingBoxConstraint::RemoveVariableBounds,
+          py::arg("var_index"),
+          doc.BoundingBoxConstraint.RemoveVariableBounds.doc);
 
   py::class_<QuadraticConstraint, Constraint,
       std::shared_ptr<QuadraticConstraint>>

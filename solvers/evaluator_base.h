@@ -203,9 +203,16 @@ class EvaluatorBase {
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits
   // to change the number of outputs. One example is LinearConstraint in
-  // solvers/Constraint.h, which can change the number of outputs, if the
+  // solvers/constraint.h, which can change the number of outputs, if the
   // matrix in the linear constraint is resized.
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
+
+  // Setter for the number of variables.
+  // This method is only meant to be called, if the sub-class structure permits
+  // to change the number of variables. One example is BoundingBoxConstraint in
+  // solvers/constraint.h, which can change the number of variables (such as
+  // removing a variable and its bounds).
+  void set_num_vars(int num_vars) { num_vars_ = num_vars; }
 
  private:
   int num_vars_{};

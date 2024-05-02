@@ -813,6 +813,15 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   ~BoundingBoxConstraint() override {}
 
+  /**
+   * Removes the bounds lb(var_index) <= x(var_index) <= ub(var_index).
+   * @note This function will change the number of variables and number of
+   * constraints.
+   * @param var_index This row of the bounds will be removed. @pre 0 <=
+   * var_index < this->num_constraints()
+   */
+  void RemoveVariableBounds(int var_index);
+
  private:
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,

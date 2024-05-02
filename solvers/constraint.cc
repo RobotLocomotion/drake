@@ -532,6 +532,21 @@ BoundingBoxConstraint::BoundingBoxConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& ub)
     : LinearConstraint(internal::ConstructSparseIdentity(lb.rows()), lb, ub) {}
 
+void BoundingBoxConstraint::RemoveVariableBounds(int var_index) {
+  DRAKE_ASSERT(var_index >= 0 && var_index < this->num_constraints());
+  this->set_num_vars(this->num_vars() - 1);
+  this->set_num_outputs(this->num_outputs() - 1);
+  Eigen::VectorXd new_lb(this->num_outputs());
+  Eigen::VectorXd new_ub(this->num_outputs());
+  new_lb.head(var_index) = this->lower_bound().head(var_index);
+  new_ub.head(var_index) = this->upper_bound().head(var_index);
+  new_lb.tail(this->num_outputs() - var_index) =
+      this->lower_bound().tail(this->num_outputs() - var_index);
+  new_ub.tail(this->num_outputs() - var_index) =
+      this->upper_bound().tail(this->num_outputs() - var_index);
+  this->set_bounds(new_lb, new_ub);
+}
+
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {

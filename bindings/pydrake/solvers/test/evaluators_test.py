@@ -105,6 +105,9 @@ class TestConstraints(unittest.TestCase):
             constraint.lower_bound(), np.array([1., 2.]))
         np.testing.assert_array_equal(
             constraint.upper_bound(), np.array([2., 3.]))
+        constraint.RemoveVariableBounds(var_index=0)
+        np.testing.assert_array_equal(constraint.lower_bound(), np.array([2.]))
+        np.testing.assert_array_equal(constraint.upper_bound(), np.array([3.]))
 
     def test_linear_constraint(self):
         A_sparse = scipy.sparse.csc_matrix(
