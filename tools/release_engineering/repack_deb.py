@@ -150,10 +150,6 @@ def main():
     parser.add_argument(
         '--output-dir', metavar='DIR', default=output_default,
         help=f'directory to place *.deb output (default: {output_default})')
-    # TODO(mwoehlke-kitware) remove this once CI no longer uses it.
-    parser.add_argument(
-        '--version', type=str, required=False, default=None,
-        help='ignored; for compatibility only')
     args = parser.parse_args()
     args.tgz = os.path.realpath(args.tgz)
     args.output_dir = os.path.realpath(args.output_dir)
