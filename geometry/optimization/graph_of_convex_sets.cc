@@ -1393,10 +1393,6 @@ GraphOfConvexSets::GetRandomizedSolutionPath(
       result.is_success()) {
     DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
     GraphOfConvexSetsOptions rounding_options = options;
-    if (rounding_options.rounding_solver_options) {
-      rounding_options.solver_options =
-          *rounding_options.rounding_solver_options;
-    }
 
     RandomGenerator generator(options.rounding_seed);
     std::uniform_real_distribution<double> uniform;
