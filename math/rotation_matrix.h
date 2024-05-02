@@ -124,22 +124,22 @@ class RotationMatrix {
     const T tx = t * x;
     const T ty = t * y;
     const T tz = t * z;
-    const T txx = tx * x;
-    const T tyy = ty * y;
-    const T tzz = tz * z;
-    const T txy = tx * y;
-    const T txz = tx * z;
-    const T tyz = ty * z;
+    const T txx = tx * x;  // (1 - cos(θ)) x²
+    const T tyy = ty * y;  // (1 - cos(θ)) y²
+    const T tzz = tz * z;  // (1 - cos(θ)) z²
+    const T txy = tx * y;  // (1 - cos(θ)) x y
+    const T txz = tx * z;  // (1 - cos(θ)) x z
+    const T tyz = ty * z;  // (1 - cos(θ)) y z
     Matrix3<T> R;
-    R.coeffRef(0, 0) = txx + c;
-    R.coeffRef(1, 1) = tyy + c;
-    R.coeffRef(2, 2) = tzz + c;
-    R.coeffRef(0, 1) = txy - sz;
-    R.coeffRef(1, 0) = txy + sz;
-    R.coeffRef(0, 2) = txz + sy;
-    R.coeffRef(2, 0) = txz - sy;
-    R.coeffRef(1, 2) = tyz - sx;
-    R.coeffRef(2, 1) = tyz + sx;
+    R.coeffRef(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
+    R.coeffRef(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
+    R.coeffRef(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
+    R.coeffRef(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
+    R.coeffRef(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
+    R.coeffRef(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
+    R.coeffRef(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
+    R.coeffRef(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
+    R.coeffRef(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
     set(R);
   }
 
