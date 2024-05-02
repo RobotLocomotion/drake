@@ -1363,6 +1363,14 @@ class TestMathematicalProgram(unittest.TestCase):
         scaling = prog.GetVariableScaling()
         self.assertEqual(len(scaling), 0)
 
+    def test_remove_decision_variable(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        x1_index = prog.FindDecisionVariableIndex(x[1])
+        x1_index_removed = prog.RemoveDecisionVariable(x[1])
+        self.assertEqual(x1_index, x1_index_removed)
+        self.assertEqual(prog.num_vars(), 2)
+
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)

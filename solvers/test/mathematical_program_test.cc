@@ -4378,6 +4378,54 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariable) {
+  // A program where x(1) is not associated with any cost/constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddLinearCost(x(0) + x(2));
+  prog.AddBoundingBoxConstraint(0, 2, x(0));
+  prog.AddLinearConstraint(x(0) + 2 * x(2) <= 1);
+  prog.SetInitialGuess(x, Eigen::Vector3d(0, 1, 2));
+  prog.SetVariableScaling(x(1), 3);
+  prog.SetVariableScaling(x(0), 0.5);
+  prog.SetVariableScaling(x(2), 4);
+
+  const int x1_index = prog.FindDecisionVariableIndex(x(1));
+  const int x1_index_removed = prog.RemoveDecisionVariable(x(1));
+  EXPECT_EQ(x1_index, x1_index_removed);
+  EXPECT_EQ(prog.num_vars(), 2);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(0)), 0);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(2)), 1);
+  EXPECT_EQ(prog.decision_variables().size(), 2);
+  EXPECT_EQ(prog.decision_variables()(0).get_id(), x(0).get_id());
+  EXPECT_EQ(prog.decision_variables()(1).get_id(), x(2).get_id());
+  EXPECT_TRUE(CompareMatrices(prog.initial_guess(), Eigen::Vector2d(0, 2)));
+  const auto& var_scaling = prog.GetVariableScaling();
+  EXPECT_EQ(var_scaling.size(), 2);
+  EXPECT_EQ(var_scaling.at(prog.FindDecisionVariableIndex(x(0))), 0.5);
+  EXPECT_EQ(var_scaling.at(prog.FindDecisionVariableIndex(x(2))), 4);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariableError) {
+  // Test RemoveDecisionVariable with erroneous input.
+  // Remove an indeterminate.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(y(0)),
+                              ".*is an indeterminate.");
+
+  // Remove a variable associated with a cost.
+  prog.AddLinearCost(x(0));
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(0)),
+                              ".* is associated with a LinearCost.");
+
+  // Remove a variable associated with a constraint.
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(1)),
+                              ".* is associated with a LinearConstraint.");
+}
+
 GTEST_TEST(TestMathematicalProgram, TestToLatex) {
   MathematicalProgram prog;
   std::string empty_prog = prog.ToLatex();

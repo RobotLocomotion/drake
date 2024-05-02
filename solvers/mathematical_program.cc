@@ -18,10 +18,12 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -1840,6 +1842,156 @@ void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
     // Add a new scaling factor
     var_scaling_map_.insert(std::pair<int, double>(idx, s));
   }
+}
+
+namespace {
+template <typename C>
+[[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
+                                   const Binding<C>& binding) {
+  for (int i = 0; i < binding.variables().rows(); ++i) {
+    if (binding.variables()(i).equal_to(var)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename C>
+[[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
+                                   const std::vector<Binding<C>>& bindings,
+                                   std::string* binding_description) {
+  for (const auto& binding : bindings) {
+    if (IsVariableBound(var, binding)) {
+      *binding_description = NiceTypeName::RemoveNamespaces(
+          NiceTypeName::Get(*(binding.evaluator())));
+      if (!binding.evaluator()->get_description().empty()) {
+        binding_description->append(binding.evaluator()->get_description());
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+// Return true if the variable is bound with a cost or constraint (except for a
+// bounding box constraint); false otherwise.
+[[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
+                                   const MathematicalProgram& prog,
+                                   std::string* binding_description) {
+  if (IsVariableBound(var, prog.generic_costs(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.quadratic_costs(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.linear_costs(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.l2norm_costs(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.generic_constraints(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.linear_constraints(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.linear_equality_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.bounding_box_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.quadratic_constraints(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.lorentz_cone_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.rotated_lorentz_cone_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.positive_semidefinite_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.linear_matrix_inequality_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.exponential_cone_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.linear_complementarity_constraints(),
+                      binding_description)) {
+    return true;
+  }
+  return false;
+}
+}  // namespace
+
+int MathematicalProgram::RemoveDecisionVariable(const symbolic::Variable& var) {
+  for (const auto& indeterminate : indeterminates_) {
+    if (indeterminate.equal_to(var)) {
+      throw std::invalid_argument(fmt::format(
+          "RemoveDecisionVariable: {} is an indeterminate.", var.get_name()));
+    }
+  }
+  std::string binding_description;
+  if (IsVariableBound(var, *this, &binding_description)) {
+    throw std::invalid_argument(
+        fmt::format("RemoveDecisionVariable: {} is associated with a {}.",
+                    var.get_name(), binding_description));
+  }
+  const auto var_it = decision_variable_index_.find(var.get_id());
+  if (var_it == decision_variable_index_.end()) {
+    return -1;
+  }
+  const int var_index = var_it->second;
+  // Update decision_variable_index_.
+  for (auto it = decision_variable_index_.begin();
+       it != decision_variable_index_.end();) {
+    // Remove the entry that maps var.get_id() to its index.
+    if (it->first == var.get_id()) {
+      it = decision_variable_index_.erase(it);
+    } else {
+      // Decrement the index of the variable after `var`.
+      if (it->second > var_index) {
+        it->second--;
+      }
+      ++it;
+    }
+  }
+  // Remove the variable from decision_variables_.
+  for (auto it = decision_variables_.begin();
+       it != decision_variables_.end();) {
+    if (it->equal_to(var)) {
+      it = decision_variables_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  // Remove from var_scaling_map_.
+  std::unordered_map<int, double> new_var_scaling_map;
+  for (auto it = var_scaling_map_.begin(); it != var_scaling_map_.end(); ++it) {
+    if (it->first < var_index) {
+      new_var_scaling_map.emplace(it->first, it->second);
+    } else if (it->first > var_index) {
+      new_var_scaling_map.emplace(it->first - 1, it->second);
+    }
+  }
+  var_scaling_map_ = new_var_scaling_map;
+  // Update x_initial_guess_;
+  for (int i = var_index; i < x_initial_guess_.rows() - 1; ++i) {
+    x_initial_guess_(i) = x_initial_guess_(i + 1);
+  }
+  x_initial_guess_.conservativeResize(x_initial_guess_.rows() - 1);
+  return var_index;
 }
 
 template <typename C>

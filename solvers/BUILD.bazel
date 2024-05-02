@@ -372,6 +372,7 @@ drake_cc_library(
         ":solver_options",
         "//common:autodiff",
         "//common:essential",
+        "//common:nice_type_name",
         "//common:polynomial",
         "//common/symbolic:expression",
         "//common/symbolic:monomial_util",
