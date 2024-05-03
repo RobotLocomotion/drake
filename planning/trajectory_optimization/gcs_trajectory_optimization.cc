@@ -457,7 +457,7 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         prog.AddLinearConstraint(
             hpoly_A,
             Eigen::VectorXd::Constant(hpoly_b.size(),
-                                      std::numeric_limits<double>::infinity()),
+                                      -std::numeric_limits<double>::infinity()),
             hpoly_b - (hpoly_A * sets_A_subspace_offset[i]), x);
         for (const auto& binding : prog.GetAllConstraints()) {
           const std::shared_ptr<Constraint>& constraint = binding.evaluator();
