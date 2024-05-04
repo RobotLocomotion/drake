@@ -92,6 +92,15 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   }
 }
 
+// Test MakeUnchecked().
+GTEST_TEST(RotationMatrix, MakeUnchecked) {
+  Matrix3d M;
+  M.setIdentity();
+  M(0, 1) = std::numeric_limits<double>::quiet_NaN();
+  const auto R = RotationMatrix<double>::MakeUnchecked(M);
+  EXPECT_TRUE(CompareMatrices(R.matrix(), M));
+}
+
 // Test IsIdentity() and IsNearlyIdentity().
 GTEST_TEST(RotationMatrix, IsIdentity) {
   RotationMatrix<double> R;  // Default constructor is identity matrix.

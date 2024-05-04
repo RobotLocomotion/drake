@@ -376,6 +376,16 @@ GTEST_TEST(RigidTransform, Isometry3) {
   }
 }
 
+// Test MakeUnchecked().
+GTEST_TEST(RigidTransform, MakeUnchecked) {
+  Eigen::Matrix<double, 3, 4> M;
+  M.setZero();
+  M.block<3, 3>(0, 0) = GetBadRotationMatrix();
+  M(2, 3) = std::numeric_limits<double>::quiet_NaN();
+  const auto R = RigidTransform<double>::MakeUnchecked(M);
+  EXPECT_TRUE(CompareMatrices(R.GetAsMatrix34(), M));
+}
+
 // Tests method Identity (identity rotation matrix and zero vector).
 GTEST_TEST(RigidTransform, Identity) {
   const RigidTransform<double>& X = RigidTransform<double>::Identity();
