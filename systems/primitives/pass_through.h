@@ -37,7 +37,8 @@ namespace systems {
 /// - y
 /// @endsystem
 ///
-/// @tparam_default_scalar @ingroup primitive_systems
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
 template <typename T>
 class PassThrough final : public LeafSystem<T> {
  public:

@@ -58,6 +58,7 @@ class LuenbergerObserver final: public LeafSystem<T> {
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
   /// Constructs the observer, taking ownership of `observed_system`.
+  /// @exclude_from_pydrake_mkdoc{This constructor is not bound.}
   LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
                      const Context<T>& observed_system_context,
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
