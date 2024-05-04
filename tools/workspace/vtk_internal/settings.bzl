@@ -100,7 +100,7 @@ MODULE_SETTINGS = {
             # use generate_common_core_sources() from rules.bzl to handle it.
             "Common/Core/vtkArrayDispatchArrayList.h.in",
             "Common/Core/vtkTypeListMacros.h.in",
-            "Common/Core/vtkTypedArray.h.in",
+            "Common/Core/vtk*TypedArray.h.in",
         ],
         "hdrs_extra": [
             # These are the hdrs outputs of generate_common_core_sources() from
