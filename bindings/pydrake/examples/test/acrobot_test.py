@@ -7,6 +7,7 @@ from pydrake.examples import (
     AcrobotPlant,
     AcrobotSpongController,
     AcrobotState,
+    AcrobotWEncoder,
     SpongControllerParams,
 )
 from pydrake.geometry import SceneGraph
@@ -110,6 +111,15 @@ class TestAcrobot(unittest.TestCase):
         self.assertLessEqual(acrobot.EvalPotentialEnergy(context)
                              + acrobot.EvalKineticEnergy(context),
                              initial_total_energy)
+
+    def test_acrobot_w_encoder(self):
+        acrobot_w_encoder = AcrobotWEncoder(
+            acrobot_state_as_second_output=False)
+        self.assertIsInstance(acrobot_w_encoder.acrobot_plant(), AcrobotPlant)
+        context = acrobot_w_encoder.CreateDefaultContext()
+        self.assertIsInstance(
+            acrobot_w_encoder.get_mutable_acrobot_state(context=context),
+            AcrobotState)
 
 
 class TestAcrobotSpongController(unittest.TestCase):

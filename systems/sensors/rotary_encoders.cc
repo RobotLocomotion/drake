@@ -99,7 +99,7 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
 template <typename T>
 void RotaryEncoders<T>::set_calibration_offsets(
     Context<T>* context,
-    const Eigen::Ref<VectorX<T>>& calibration_offsets) const {
+    const Eigen::Ref<const VectorX<T>>& calibration_offsets) const {
   DRAKE_DEMAND(calibration_offsets.rows() == num_encoders_);
   context->get_mutable_numeric_parameter(0).set_value(calibration_offsets);
 }
