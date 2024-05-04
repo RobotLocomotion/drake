@@ -371,6 +371,7 @@ MODULE_SETTINGS = {
             "IO/Geometry/vtkGLTFDocumentLoader.cxx",
             "IO/Geometry/vtkGLTFDocumentLoaderInternals.cxx",
             "IO/Geometry/vtkGLTFReader.cxx",
+            "IO/Geometry/vtkGLTFTexture.cxx",
             "IO/Geometry/vtkGLTFUtils.cxx",
             "IO/Geometry/vtkGLTFWriter.cxx",
             "IO/Geometry/vtkGLTFWriterUtils.cxx",
