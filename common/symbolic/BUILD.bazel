@@ -183,6 +183,8 @@ drake_cc_library(
     ],
     deps = [
         ":expression",
+        "//math:matrix_util",
+        "//math:quadratic_form",
     ],
 )
 
