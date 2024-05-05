@@ -1178,6 +1178,18 @@ class MathematicalProgram {
     return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
   }
 
+  /**
+   * Adds an L2 norm cost |Ax+b|₂ from a symbolic expression which can be
+   * decomposed into sqrt((Ax+b)'(Ax+b)). See
+   * symbolic::DecomposeL2NormExpression for details on the tolerance
+   * parameters.
+   * @throws std::exception if @p e cannot be decomposed into an L2 norm.
+   * @pydrake_mkdoc_identifier{expression}
+   */
+  Binding<L2NormCost> AddL2NormCost(const symbolic::Expression& e,
+                                    double psd_tol = 1e-8,
+                                    double constant_term_tol = 1e-8);
+
   // TODO(hongkai.dai) Decide whether to deprecate this.
   /**
    * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s

@@ -95,8 +95,27 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
                        var_vec);
 }
 
+Binding<L2NormCost> ParseL2NormCost(const symbolic::Expression& e,
+                                    double psd_tol, double constant_term_tol) {
+  auto [is_l2norm, A, b, vars] =
+      DecomposeL2NormExpression(e, psd_tol, constant_term_tol);
+  if (!is_l2norm) {
+    throw runtime_error("Expression " + e.to_string() +
+                        " is not an L2 norm. ParseL2NormCost only supports "
+                        "expressions that are the square root of a quadratic.");
+  }
+  return CreateBinding(make_shared<L2NormCost>(A, b), vars);
+}
+
 Binding<Cost> ParseCost(const symbolic::Expression& e) {
   if (!e.is_polynomial()) {
+    // First try an L2-norm cost.
+    auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+    if (is_l2norm) {
+      return CreateBinding(make_shared<L2NormCost>(A, b), vars);
+    }
+
+    // Otherwise make an ExpressionCost.
     auto cost = make_shared<ExpressionCost>(e);
     return CreateBinding(cost, cost->vars());
   }

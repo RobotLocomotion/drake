@@ -1164,7 +1164,11 @@ void DefineSymbolicMonolith(py::module m) {
           doc.DecomposeAffineExpression.doc)
       .def("DecomposeLumpedParameters", &DecomposeLumpedParameters,
           py::arg("f"), py::arg("parameters"),
-          doc.DecomposeLumpedParameters.doc);
+          doc.DecomposeLumpedParameters.doc)
+      .def("DecomposeL2NormExpression", &DecomposeL2NormExpression,
+          py::arg("e"), py::arg("psd_tol") = 1e-8,
+          py::arg("constant_term_tol") = 1e-8,
+          doc.DecomposeL2NormExpression.doc);
 
   // Bind free function in replace_bilinear_terms.
   m.def("ReplaceBilinearTerms", &ReplaceBilinearTerms, py::arg("e"),

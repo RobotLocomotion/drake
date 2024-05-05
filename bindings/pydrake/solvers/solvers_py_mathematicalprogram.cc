@@ -812,6 +812,13 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddL2NormCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc_3args_A_b_vars)
+      .def("AddL2NormCost",
+          overload_cast_explicit<Binding<L2NormCost>,
+              const symbolic::Expression&, double, double>(
+              &MathematicalProgram::AddL2NormCost),
+          py::arg("e"), py::arg("psd_tol") = 1e-8,
+          py::arg("constant_term_tol") = 1e-8,
+          doc.MathematicalProgram.AddL2NormCost.doc_expression)
       .def("AddL2NormCostUsingConicConstraint",
           &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
           py::arg("b"), py::arg("vars"),
