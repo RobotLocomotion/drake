@@ -523,7 +523,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   m  // BR
       .def("DecomposePSDmatrixIntoXtransposeTimesX",
           &DecomposePSDmatrixIntoXtransposeTimesX, py::arg("Y"),
-          py::arg("zero_tol"), doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
+          py::arg("zero_tol"), py::arg("return_empty_if_not_psd") = false,
+          doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
       .def("DecomposePositiveQuadraticForm", &DecomposePositiveQuadraticForm,
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("tol") = 0,
           doc.DecomposePositiveQuadraticForm.doc)

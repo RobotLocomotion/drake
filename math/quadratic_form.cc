@@ -11,7 +11,8 @@
 namespace drake {
 namespace math {
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
-    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol) {
+    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
+    bool return_empty_if_not_psd) {
   if (Y.rows() != Y.cols()) {
     throw std::runtime_error("Y is not square.");
   }
@@ -31,6 +32,9 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
       int X_row_count = 0;
       for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
         if (es_Y.eigenvalues()(i) < -zero_tol) {
+          if (return_empty_if_not_psd) {
+            return Eigen::MatrixXd::Zero(0, Y.cols());
+          }
           throw std::runtime_error(fmt::format(
               "Y is not positive semidefinite. It has an eigenvalue {} "
               "that is less than the tolerance {}.",
@@ -42,6 +46,9 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
       }
       return X.topRows(X_row_count);
     }
+  }
+  if (return_empty_if_not_psd) {
+    return Eigen::MatrixXd::Zero(0, Y.cols());
   }
   throw std::runtime_error("Y is not PSD.");
 }
