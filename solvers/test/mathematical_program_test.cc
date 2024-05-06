@@ -4425,13 +4425,12 @@ GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariableError) {
   // Remove a variable associated with a cost.
   prog.AddLinearCost(x(0));
   DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(0)),
-                              ".* is associated with a LinearCost..*");
+                              ".* is associated with a LinearCost.*");
 
   // Remove a variable associated with a constraint.
   prog.AddLinearConstraint(x(0) + x(1) <= 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.RemoveDecisionVariable(x(1)),
-      ".* is associated with a LinearConstraint\n.*\n.");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(1)),
+                              ".* is associated with a LinearConstraint[^]*");
 }
 
 GTEST_TEST(TestMathematicalProgram, TestToLatex) {
