@@ -56,6 +56,7 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::test::PolyEqual;
 using drake::symbolic::test::PolyNotEqual;
+using drake::symbolic::test::TupleVarEqual;
 
 using std::all_of;
 using std::cref;
@@ -4386,24 +4387,23 @@ GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariable) {
   prog.AddBoundingBoxConstraint(0, 2, x(0));
   prog.AddLinearConstraint(x(0) + 2 * x(2) <= 1);
   prog.SetInitialGuess(x, Eigen::Vector3d(0, 1, 2));
-  prog.SetVariableScaling(x(1), 3);
   prog.SetVariableScaling(x(0), 0.5);
-  prog.SetVariableScaling(x(2), 4);
+  prog.SetVariableScaling(x(1), 3.0);
+  prog.SetVariableScaling(x(2), 4.0);
 
+  // Remove x(1) and check that all accessors remain in sync.
   const int x1_index = prog.FindDecisionVariableIndex(x(1));
   const int x1_index_removed = prog.RemoveDecisionVariable(x(1));
   EXPECT_EQ(x1_index, x1_index_removed);
   EXPECT_EQ(prog.num_vars(), 2);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x(0)), 0);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x(2)), 1);
-  EXPECT_EQ(prog.decision_variables().size(), 2);
-  EXPECT_EQ(prog.decision_variables()(0).get_id(), x(0).get_id());
-  EXPECT_EQ(prog.decision_variables()(1).get_id(), x(2).get_id());
+  EXPECT_THAT(prog.decision_variables(),
+              testing::Pointwise(testing::Truly(TupleVarEqual), {x(0), x(2)}));
   EXPECT_TRUE(CompareMatrices(prog.initial_guess(), Eigen::Vector2d(0, 2)));
-  const auto& var_scaling = prog.GetVariableScaling();
-  EXPECT_EQ(var_scaling.size(), 2);
-  EXPECT_EQ(var_scaling.at(prog.FindDecisionVariableIndex(x(0))), 0.5);
-  EXPECT_EQ(var_scaling.at(prog.FindDecisionVariableIndex(x(2))), 4);
+  EXPECT_THAT(prog.GetVariableScaling(),
+              testing::WhenSorted(testing::ElementsAre(
+                  std::make_pair(0, 0.5), std::make_pair(1, 4.0))));
 }
 
 GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariableError) {
