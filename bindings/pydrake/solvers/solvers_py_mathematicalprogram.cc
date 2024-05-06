@@ -1440,6 +1440,9 @@ void BindMathematicalProgram(py::module m) {
       .def("linear_complementarity_constraints",
           &MathematicalProgram::linear_complementarity_constraints,
           doc.MathematicalProgram.linear_complementarity_constraints.doc)
+      .def("visualization_callbacks",
+          &MathematicalProgram::visualization_callbacks,
+          doc.MathematicalProgram.visualization_callbacks.doc)
       .def("GetAllCosts", &MathematicalProgram::GetAllCosts,
           doc.MathematicalProgram.GetAllCosts.doc)
       .def("GetLinearConstraints",
@@ -1587,7 +1590,11 @@ for every column of ``prog_var_vals``. )""")
       .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
-          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc);
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def("RemoveVisualizationCallback",
+          &MathematicalProgram::RemoveVisualizationCallback,
+          py::arg("callback"),
+          doc.MathematicalProgram.RemoveVisualizationCallback.doc);
 
   py::enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);
