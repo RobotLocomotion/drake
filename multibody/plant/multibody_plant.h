@@ -1349,6 +1349,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   // clang-format on
 
+  /// Removes and deletes `joint` from this %MultibodyPlant. Any existing
+  /// references to `joint` will become invalid, and future calls to
+  /// `get_joint_actuator(joint_index)` will throw an exception.
+  ///
+  /// @throws std::exception if the plant is already finalized.
+  /// @see AddJoint()
+  void RemoveJoint(const Joint<T>& joint);
+
   /// Welds `frame_on_parent_F` and `frame_on_child_M` with relative pose
   /// `X_FM`. That is, the pose of frame M in frame F is fixed, with value
   /// `X_FM`.  If `X_FM` is omitted, the identity transform will be used. The
@@ -4627,6 +4635,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJoint().
   int num_joints() const { return internal_tree().num_joints(); }
 
+  /// Returns true if plant has a joint  with unique index `joint_index`. The
+  /// value could be false if the joint was removed using RemoveJoint().
+  bool has_joint(JointIndex joint_index) const {
+    return internal_tree().has_joint(joint_index);
+  }
+
   /// Returns a constant reference to the joint with unique index `joint_index`.
   /// @throws std::exception when `joint_index` does not correspond to a
   /// joint in this model.
@@ -4655,6 +4669,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// joint in this model.
   Joint<T>& get_mutable_joint(JointIndex joint_index) {
     return this->mutable_tree().get_mutable_joint(joint_index);
+  }
+
+  /// Returns a list of all joint indices. The vector is ordered by
+  /// monotonically increasing @ref JointIndex, but the indexes will in
+  /// general not be consecutive due to joints that were removed.
+  const std::vector<JointIndex>& GetJointIndices() const {
+    return internal_tree().GetJointIndices();
   }
 
   /// Returns a list of joint indices associated with `model_instance`.

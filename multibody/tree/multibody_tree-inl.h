@@ -241,6 +241,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   RegisterJointInGraph(*joint);
 
   joint->set_parent_tree(this, joints_.next_index());
+  joint->set_port_index(joints_.num_elements());
   JointType<T>* result = joint.get();
   joints_.Add(std::move(joint));
   return *result;

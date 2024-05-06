@@ -92,6 +92,12 @@ class MultibodyElement {
     return ElementIndexType{index_};
   }
 
+  /// Returns this element's unique port index.
+  int port_index_impl() const {
+    DRAKE_ASSERT(port_index_ >= 0);
+    return port_index_;
+  }
+
   /// Returns a constant reference to the parent MultibodyTree that
   /// owns this element.
   const internal::MultibodyTree<T>& get_parent_tree() const {
@@ -153,6 +159,8 @@ class MultibodyElement {
     parent_tree_ = tree;
   }
 
+  void set_port_index(int port_index) { port_index_ = port_index; }
+
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
   }
@@ -174,6 +182,15 @@ class MultibodyElement {
   // The default index value is *invalid*. This must be set to a valid index
   // value before the element is released to the wild.
   int64_t index_{-1};
+
+  // Keeps track of the index into input/output ports that have an entry
+  // for each of a concrete MultibodyElement type (Joint, RigidBody, etc.)
+  // Default port index value is *invalid*. Concrete MultibodyElements may
+  // choose to not expose this index if not needed (e.g. if MultibodyPlant does
+  // not expose any port that has an entry per concrete MultibodyElement type.)
+  // This must be set to a valid index valud before the element is released to
+  // the wild.
+  int port_index_{-1};
 
   // The default model instance id is *invalid*. This must be set to a
   // valid index value before the element is released to the wild.

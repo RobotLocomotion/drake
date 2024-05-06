@@ -178,6 +178,9 @@ class Joint : public MultibodyElement<T> {
   /// Returns this element's unique index.
   JointIndex index() const { return this->template index_impl<JointIndex>(); }
 
+  /// Returns this element's unique port index.
+  int port_index() const { return this->port_index_impl(); }
+
   /// Returns the name of this joint.
   const std::string& name() const { return name_; }
 
