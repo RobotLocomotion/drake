@@ -3619,6 +3619,17 @@ class MathematicalProgram {
   //@}
 
   /**
+   * Remove `var` from this program's decision variable.
+   * @note after removing the variable, the indices of some remaining variables
+   * inside this MathematicalProgram will change.
+   * @return the index of `var` in this optimization program. return -1 if `var`
+   * is not a decision variable.
+   * @throw exception if `var` is bound with any cost or constraint.
+   * @throw exception if `var` is not a decision variable of the program.
+   */
+  int RemoveDecisionVariable(const symbolic::Variable& var);
+
+  /**
    * @anchor remove_cost_constraint
    * @name    Remove costs or constraints
    * Removes costs or constraints from this program. If this program contains

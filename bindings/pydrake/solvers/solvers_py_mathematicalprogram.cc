@@ -1581,6 +1581,9 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.SetVariableScaling.doc)
       .def("ClearVariableScaling", &MathematicalProgram::ClearVariableScaling,
           doc.MathematicalProgram.ClearVariableScaling.doc)
+      .def("RemoveDecisionVariable",
+          &MathematicalProgram::RemoveDecisionVariable, py::arg("var"),
+          doc.MathematicalProgram.RemoveDecisionVariable.doc)
       .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
