@@ -1326,8 +1326,8 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
 std::vector<int> GetContinuousRevoluteJointIndices(
     const multibody::MultibodyPlant<double>& plant) {
   std::vector<int> indices;
-  for (int i = 0; i < plant.num_joints(); ++i) {
-    const Joint<double>& joint = plant.get_joint(JointIndex(i));
+  for (JointIndex i : plant.GetJointIndices()) {
+    const Joint<double>& joint = plant.get_joint(i);
     // The first possibility we check for is a revolute joint with no joint
     // limits.
     if (joint.type_name() == "revolute") {

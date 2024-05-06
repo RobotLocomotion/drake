@@ -74,7 +74,7 @@ void CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
 TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   // Sanity check basic invariants.
   // Seven dofs for the arm plus floating base.
-  EXPECT_EQ(plant_->num_joints(), kNumJoints);
+  EXPECT_EQ(plant_->num_joints(), kNumRevoluteJoints + kNumFloatingJoints);
   EXPECT_EQ(plant_->num_positions(), kNumPositions);
   EXPECT_EQ(plant_->num_velocities(), kNumVelocities);
 }
