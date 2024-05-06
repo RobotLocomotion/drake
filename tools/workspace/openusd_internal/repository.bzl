@@ -32,6 +32,7 @@ cc_library(
         "-lusd_sdr",
         "-lusd_usd",
         "-lusd_usdGeom",
+        "-lusd_usdPhysics",
         "-lusd_usdShade",
         "-lusd_usdUtils",
     ],

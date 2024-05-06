@@ -11,6 +11,7 @@
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdPhysics/massAPI.h"
 
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 
@@ -55,9 +56,19 @@ CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
   return default_friction();
 }
 
-double GetPrimMass(const pxr::UsdPrim& prim) {
-  // TODO(hong-nvidia): Use the prim's mass
-  return 1.0;
+double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
+  if (prim.HasAPI(pxr::TfToken("PhysicsMassAPI"))) {
+    float mass = 0.f;
+    auto mass_api = pxr::UsdPhysicsMassAPI(prim);
+    if (mass_api.GetMassAttr().Get(&mass)) {
+      return static_cast<double>(mass);
+    }
+  }
+  const double default_mass = 1.0;
+  w.diagnostic.Warning(fmt::format(
+    "Failed to read the mass of the prim at {}. Using the "
+    "default value ({}) instead", prim.GetPath().GetString(), default_mass));
+  return default_mass;
 }
 
 Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
@@ -68,7 +79,8 @@ Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
     return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
     // Prim does not contain color attribute, use default color instead
-    return Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
+    auto default_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
+    return default_color;
   }
 }
 
@@ -346,7 +358,7 @@ SpatialInertia<double> CreateSpatialInertiaForBox(
   const ParsingWorkspace& w) {
   Eigen::Vector3d dimension = GetBoxDimension(prim, meters_per_unit, w);
   return SpatialInertia<double>::SolidBoxWithMass(
-    GetPrimMass(prim), dimension[0], dimension[1], dimension[2]);
+    GetPrimMass(prim, w), dimension[0], dimension[1], dimension[2]);
 }
 
 SpatialInertia<double> CreateSpatialInertiaForEllipsoid(
@@ -356,10 +368,10 @@ SpatialInertia<double> CreateSpatialInertiaForEllipsoid(
   if (dimension[0] == dimension[1] &&
       dimension[1] == dimension[2]) {
     return SpatialInertia<double>::SolidSphereWithMass(
-      GetPrimMass(prim), dimension[0]);
+      GetPrimMass(prim, w), dimension[0]);
   } else {
     return SpatialInertia<double>::SolidEllipsoidWithMass(
-      GetPrimMass(prim), dimension[0], dimension[1], dimension[2]);
+      GetPrimMass(prim, w), dimension[0], dimension[1], dimension[2]);
   }
 }
 
@@ -370,7 +382,7 @@ SpatialInertia<double> CreateSpatialInertiaForCylinder(
     prim, meters_per_unit, stage_up_axis, w);
   Eigen::Vector3d cylinder_axis = GetUsdGeomAxisUnitVector(prim, w);
   return SpatialInertia<double>::SolidCylinderWithMass(
-    GetPrimMass(prim), dimension[0], dimension[1], cylinder_axis);
+    GetPrimMass(prim, w), dimension[0], dimension[1], cylinder_axis);
 }
 
 SpatialInertia<double> CreateSpatialInertiaForCapsule(
@@ -380,7 +392,7 @@ SpatialInertia<double> CreateSpatialInertiaForCapsule(
     prim, meters_per_unit, stage_up_axis, w);
   Eigen::Vector3d capsule_axis = GetUsdGeomAxisUnitVector(prim, w);
   return SpatialInertia<double>::SolidCapsuleWithMass(
-    GetPrimMass(prim), dimension[0], dimension[1], capsule_axis);
+    GetPrimMass(prim, w), dimension[0], dimension[1], capsule_axis);
 }
 
 pxr::TfToken GetUsdGeomAxis(

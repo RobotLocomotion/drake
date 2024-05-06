@@ -73,7 +73,7 @@ Eigen::Vector3d GetUsdGeomAxisUnitVector(
 
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
 
-double GetPrimMass(const pxr::UsdPrim& prim);
+double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w);
 
 Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim);
 

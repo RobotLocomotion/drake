@@ -32,11 +32,12 @@ def Xform "World"
     }
 
     def Sphere "RigidBodyEllipsoid" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
         float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double radius = 50
+        float physics:mass = 2
         color3f[] primvars:displayColor = [(0.7, 0.7, 0.4)]
         custom bool refinementEnableOverride = 1
         custom int refinementLevel = 2
@@ -47,13 +48,14 @@ def Xform "World"
     }
 
     def Cylinder "RigidBodyCylinder" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
         uniform token axis = "Z"
         float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double height = 100
         double radius = 50
+        float physics:mass = 3
         color3f[] primvars:displayColor = [(0.2, 0.5, 0.9)]
         custom bool refinementEnableOverride = 1
         custom int refinementLevel = 2
@@ -64,13 +66,14 @@ def Xform "World"
     }
 
     def Capsule "RigidBodyCapsule" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
         uniform token axis = "Z"
         float3[] extent = [(-25, -25, -50), (25, 25, 50)]
         double height = 50
         double radius = 25
+        float physics:mass = 4
         color3f[] primvars:displayColor = [(0.5, 0.2, 0.5)]
         custom bool refinementEnableOverride = 1
         custom int refinementLevel = 2
