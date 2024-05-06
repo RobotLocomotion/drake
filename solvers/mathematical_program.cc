@@ -18,12 +18,10 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
-#include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -1863,56 +1861,13 @@ template <typename C>
 [[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
                                    const MathematicalProgram& prog,
                                    std::string* binding_description) {
-  if (IsVariableBound(var, prog.generic_costs(), binding_description)) {
+  if (IsVariableBound(var, prog.GetAllCosts(), binding_description)) {
     return true;
   }
-  if (IsVariableBound(var, prog.quadratic_costs(), binding_description)) {
+  if (IsVariableBound(var, prog.GetAllConstraints(), binding_description)) {
     return true;
   }
-  if (IsVariableBound(var, prog.linear_costs(), binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.l2norm_costs(), binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.generic_constraints(), binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.linear_constraints(), binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.linear_equality_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.bounding_box_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.quadratic_constraints(), binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.lorentz_cone_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.rotated_lorentz_cone_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.positive_semidefinite_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.linear_matrix_inequality_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.exponential_cone_constraints(),
-                      binding_description)) {
-    return true;
-  }
-  if (IsVariableBound(var, prog.linear_complementarity_constraints(),
+  if (IsVariableBound(var, prog.visualization_callbacks(),
                       binding_description)) {
     return true;
   }
@@ -1940,7 +1895,7 @@ int MathematicalProgram::RemoveDecisionVariable(const symbolic::Variable& var) {
   for (auto& [variable_id, variable_index] : decision_variable_index_) {
     // Decrement the index of the variable after `var`.
     if (variable_index > var_index) {
-      variable_index--;
+      --variable_index;
     }
   }
   // Remove the variable from decision_variables_.
