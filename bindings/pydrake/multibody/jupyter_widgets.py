@@ -74,7 +74,7 @@ class JointSliders(VectorSystem):
         self._default_position = robot.GetPositions(context)
 
         k = 0
-        for i in range(0, robot.num_joints()):
+        for i in robot.GetJointIndices():
             joint = robot.get_joint(JointIndex(i))
             low = joint.position_lower_limits()
             upp = joint.position_upper_limits()
@@ -214,7 +214,7 @@ def MakeJointSlidersThatPublishOnCallback(
 
     slider_widgets = []
     slider_num = 0
-    for i in range(plant.num_joints()):
+    for i in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(i))
         low = joint.position_lower_limits()
         upp = joint.position_upper_limits()

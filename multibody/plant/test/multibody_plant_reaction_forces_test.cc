@@ -359,7 +359,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
         plant_->get_reaction_forces_output_port()
             .Eval<std::vector<SpatialForce<double>>>(*plant_context);
     ASSERT_EQ(reaction_forces.size(), 2u);
-    const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->index()];
+    const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->port_index()];
     const RigidTransformd X_WBl =
         ladder_lower_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double> F_Bl_W = X_WBl.rotation() * F_Bl_Bl;
@@ -459,7 +459,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const Vector3d p_WBucm = X_WBu * p_BuBucm;
     // Reaction forces at X_WBu in W.
     const SpatialForce<double>& F_Bu_W =
-        X_WBu.rotation() * reaction_forces[joint_->index()];
+        X_WBu.rotation() * reaction_forces[joint_->port_index()];
     // Apart from reaction forces, two forces act on the upper half:
     // Contact force fc_x and gravity.
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
@@ -710,7 +710,7 @@ class SpinningRodTest : public ::testing::Test {
         plant_->get_reaction_forces_output_port()
             .Eval<std::vector<SpatialForce<double>>>(*context_);
     ASSERT_EQ(reaction_forces.size(), 1u);
-    const SpatialForce<double>& F_BJb_Jb = reaction_forces[pin_->index()];
+    const SpatialForce<double>& F_BJb_Jb = reaction_forces[pin_->port_index()];
 
     // Verify that the value of the reaction force includes the centripetal
     // component (along Jb's y axis) and the weight component (along Jb's z
@@ -801,7 +801,7 @@ class WeldedBoxesTest : public ::testing::Test {
     //   2. Moreover, A is coincident with the world and its origin is located
     //      at A's center of mass Acm.
     // Therefore the reaction at weld1 corresponds to F_Acm_W.
-    const SpatialForce<double>& F_Acm_W = reaction_forces[weld1_->index()];
+    const SpatialForce<double>& F_Acm_W = reaction_forces[weld1_->port_index()];
 
     // Verify the reaction force balances the weight of the two boxes.
     const double box_weight = kBoxMass * kGravity;
@@ -819,7 +819,7 @@ class WeldedBoxesTest : public ::testing::Test {
     //   2. There is no rotation between B and the world frame.
     //   3. Frame B's origin is located at B's center of mass Bcm.
     // Therefore the reaction at weld2 corresponds to F_Bcm_W.
-    const SpatialForce<double>& F_Bcm_W = reaction_forces[weld2_->index()];
+    const SpatialForce<double>& F_Bcm_W = reaction_forces[weld2_->port_index()];
     const Vector3d f_Bcm_W_expected = box_weight * Vector3d::UnitZ();
     const Vector3d t_Bcm_W_expected = Vector3d::Zero();
     EXPECT_EQ(F_Bcm_W.translational(), f_Bcm_W_expected);

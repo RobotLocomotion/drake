@@ -109,7 +109,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   DRAKE_EXPECT_THROWS_MESSAGE(graph.get_body(BodyIndex(9)),
                               ".*index < num_bodies\\(\\).*");
   DRAKE_EXPECT_THROWS_MESSAGE(graph.get_joint(JointIndex(9)),
-                              ".*index < num_joints\\(\\).*");
+                              ".*condition 'has_joint\\(index\\)' failed.*");
 
   // Verify we can query if a body/joint is in the graph.
   const ModelInstanceIndex kInvalidModelInstance(666);

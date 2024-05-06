@@ -84,14 +84,16 @@ class KukaIiwaModelTests : public ::testing::Test {
   void SetState(const VectorX<double>& x_joints) {
     EXPECT_EQ(plant_->num_joints(), kNumJoints);
     // The last joint is the free body's joint so we skip it.
-    for (JointIndex joint_index(0); joint_index < kNumJoints - 1;
-         ++joint_index) {
+    for (JointIndex joint_index : plant_->GetJointIndices()) {
+      if (plant_->get_joint(joint_index).port_index() >= kNumJoints - 1) {
+        continue;
+      }
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
-      joint.set_angle(context_.get(), x_joints[joint_index]);
+      joint.set_angle(context_.get(), x_joints[joint.port_index()]);
       joint.set_angular_rate(context_.get(),
-                             x_joints[kNumJoints + joint_index - 1]);
+                             x_joints[kNumJoints + joint.port_index() - 1]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.

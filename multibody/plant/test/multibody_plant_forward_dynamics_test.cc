@@ -171,8 +171,7 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-  for (JointIndex joint_index(0); joint_index < plant.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(joint_index);
     // This model only has weld, revolute, and floating joints. Set the revolute
     // joints to an arbitrary angle.

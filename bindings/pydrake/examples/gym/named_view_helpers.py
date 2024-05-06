@@ -23,7 +23,7 @@ def MakeNamedViewPositions(plant,
                            view_name,
                            add_suffix_if_single_position=False):
     names = [None] * plant.num_positions()
-    for ind in range(plant.num_joints()):
+    for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
         if joint.num_positions() == 1 and not add_suffix_if_single_position:
             names[joint.position_start()] = joint.name()
@@ -44,7 +44,7 @@ def MakeNamedViewVelocities(plant,
                             view_name,
                             add_suffix_if_single_velocity=False):
     names = [None] * plant.num_velocities()
-    for ind in range(plant.num_joints()):
+    for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
         if joint.num_velocities() == 1 and not add_suffix_if_single_velocity:
             names[joint.velocity_start()] = joint.name()
