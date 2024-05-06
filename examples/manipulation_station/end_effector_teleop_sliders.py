@@ -21,8 +21,7 @@ from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 
-from drake.examples.manipulation_station.schunk_wsg_buttons import \
-    SchunkWsgButtons
+from examples.manipulation_station.schunk_wsg_buttons import SchunkWsgButtons
 
 from drake import lcmt_image_array
 

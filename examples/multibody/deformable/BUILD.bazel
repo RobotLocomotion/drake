@@ -6,10 +6,12 @@ load(
     "drake_cc_library",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 filegroup(
     name = "torus_tet_mesh",
     data = ["models/torus.vtk"],
-    visibility = ["//geometry:__subpackages__"],
+    visibility = ["//geometry:__pkg__"],
 )
 
 filegroup(
@@ -17,7 +19,7 @@ filegroup(
     srcs = glob(["models/**"]) + [
         "@drake_models//:wsg_50_description",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_library(

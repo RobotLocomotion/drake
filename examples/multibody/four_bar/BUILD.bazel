@@ -4,12 +4,17 @@ load(
     "drake_cc_binary",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 filegroup(
     name = "models",
     srcs = glob([
         "**/*.sdf",
     ]),
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//:__pkg__",
+        "//bindings/pydrake/multibody:__pkg__",
+    ],
 )
 
 drake_cc_binary(

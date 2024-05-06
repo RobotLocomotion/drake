@@ -14,7 +14,7 @@ drake_cc_library(
     hdrs = ["add_fixed_objects_to_plant.h"],
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
     ],
     deps = [
         "//common:find_resource",

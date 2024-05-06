@@ -2,7 +2,8 @@ import numpy as np
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from drake.examples.acrobot.acrobot_io import (
+
+from examples.acrobot.acrobot_io import (
     load_scenario, save_scenario,
     load_output, save_output)
 

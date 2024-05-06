@@ -6,6 +6,8 @@ load(
     "drake_cc_library",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 drake_cc_binary(
     name = "inclined_plane_with_body",
     srcs = [

@@ -335,7 +335,7 @@ drake_py_binary(
     srcs = ["drawing_graphviz_example.py"],
     add_test_rule = 1,
     data = [
-        "//examples/multibody/cart_pole:cart_pole.sdf",
+        "//examples/multibody/cart_pole:models",
     ],
     test_rule_timeout = "moderate",
     deps = [

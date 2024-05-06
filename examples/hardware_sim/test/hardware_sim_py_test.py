@@ -1,8 +1,6 @@
 import unittest
 
-from drake.examples.hardware_sim.test.hardware_sim_test_common import (
-    HardwareSimTest,
-)
+from examples.hardware_sim.test.hardware_sim_test_common import HardwareSimTest
 
 
 class HardwareSimPyTest(HardwareSimTest, unittest.TestCase):

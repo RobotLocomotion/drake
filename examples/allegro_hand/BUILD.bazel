@@ -6,14 +6,13 @@ load(
     "drake_cc_library",
 )
 
-package(
-    default_visibility = [":__subpackages__"],
-)
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
     name = "allegro_common",
     srcs = ["allegro_common.cc"],
     hdrs = ["allegro_common.h"],
+    visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
         "//lcmtypes:allegro",
         "//multibody/plant",
@@ -24,7 +23,7 @@ drake_cc_library(
     name = "allegro_lcm",
     srcs = ["allegro_lcm.cc"],
     hdrs = ["allegro_lcm.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
         ":allegro_common",
         "//lcmtypes:allegro",
