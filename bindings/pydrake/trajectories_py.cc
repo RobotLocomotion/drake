@@ -168,9 +168,9 @@ struct Impl {
     using Base::value;
   };
 
-  class PyTrajectory : public py::wrapper<TrajectoryPublic> {
+  class PyTrajectory : public wrapper<TrajectoryPublic> {
    public:
-    using Base = py::wrapper<TrajectoryPublic>;
+    using Base = wrapper<TrajectoryPublic>;
     using Base::Base;
 
     // Trampoline virtual methods.
@@ -210,15 +210,21 @@ struct Impl {
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const override {
+#if 0
       PYBIND11_OVERLOAD_INT(std::unique_ptr<Trajectory<T>>, Trajectory<T>,
           "DoMakeDerivative", derivative_order);
+#endif
       // If the macro did not return, use default functionality.
       return Base::DoMakeDerivative(derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> Clone() const override {
+#if 1
+      throw std::runtime_error("PyTrajectory::Clone() is not implemented");
+#else
       PYBIND11_OVERLOAD_PURE(
           std::unique_ptr<Trajectory<T>>, Trajectory<T>, Clone);
+#endif
     }
   };
 

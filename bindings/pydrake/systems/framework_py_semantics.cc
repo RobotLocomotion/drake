@@ -14,16 +14,10 @@
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/system_output.h"
 
-using std::string;
-using std::unique_ptr;
-using std::vector;
-
 namespace drake {
 namespace pydrake {
 
 namespace {
-
-using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
 
 // Given an InputPort or OutputPort as self, return self.Eval(context).  In
 // python, always returns either a numpy.ndarray (when vector-valued) or the
@@ -102,7 +96,10 @@ void DoScalarIndependentDefinitions(py::module m) {
   DefClone(&abstract_values);
   abstract_values  // BR
       .def(py::init<>(), doc.AbstractValues.ctor.doc_0args)
-      .def(py::init<AbstractValuePtrList>(), doc.AbstractValues.ctor.doc_1args)
+#if 0
+      .def(py::init<std::vector<std::shared_ptr<AbstractValue>>>(),
+          doc.AbstractValues.ctor.doc_1args)
+#endif
       .def("size", &AbstractValues::size, doc.AbstractValues.size.doc)
       .def("get_value", &AbstractValues::get_value, py::arg("index"),
           py_rvp::reference_internal, doc.AbstractValues.get_value.doc)
@@ -203,11 +200,13 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     py::class_<Class>(m, "ValueProducer", cls_doc.doc)
+#if 0
         .def(py::init(WrapCallbacks([](ValueProducer::AllocateCallback allocate,
                                         ValueProducer::CalcCallback calc) {
           return Class(allocate, calc);
         })),
             py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
+#endif
         .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
   }
 
@@ -587,8 +586,13 @@ void DoScalarDependentDefinitions(py::module m) {
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
-          [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+          [](DiagramBuilder<T>* self, std::shared_ptr<System<T>> system) {
+#if 1
+            (void)(self);
+            (void)(system);
+#else
             return self->AddSystem(std::move(system));
+#endif
           },
           py::arg("system"),
           // TODO(eric.cousineau): These two keep_alive's purposely form a
@@ -601,8 +605,14 @@ void DoScalarDependentDefinitions(py::module m) {
       .def(
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
-              unique_ptr<System<T>> system) {
+              std::shared_ptr<System<T>> system) {
+#if 1
+            (void)(self);
+            (void)(name);
+            (void)(system);
+#else
             return self->AddNamedSystem(name, std::move(system));
+#endif
           },
           py::arg("name"), py::arg("system"),
           // TODO(eric.cousineau): These two keep_alive's purposely form a
@@ -838,24 +848,26 @@ void DoScalarDependentDefinitions(py::module m) {
   auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
       m, "Parameters", GetPyParam<T>(), doc.Parameters.doc);
   DefClone(&parameters);
-  using BasicVectorPtrList = vector<unique_ptr<BasicVector<T>>>;
   parameters
       .def(py::init<>(), doc.Parameters.ctor.doc_0args)
+#if 0
       // TODO(eric.cousineau): Ensure that we can respect keep alive behavior
       // with lists of pointers.
-      .def(py::init<BasicVectorPtrList, AbstractValuePtrList>(),
+      .def(py::init<std::vector<std::shared_ptr<BasicVector<T>>>,
+               std::vector<std::shared_ptr<AbstractValue>>>(),
           py::arg("numeric"), py::arg("abstract"),
           doc.Parameters.ctor.doc_2args_numeric_abstract)
-      .def(py::init<BasicVectorPtrList>(), py::arg("numeric"),
-          doc.Parameters.ctor.doc_1args_numeric)
-      .def(py::init<AbstractValuePtrList>(), py::arg("abstract"),
-          doc.Parameters.ctor.doc_1args_abstract)
-      .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("vec"),
+      .def(py::init<std::vector<std::shared_ptr<BasicVector<T>>>>(),
+          py::arg("numeric"), doc.Parameters.ctor.doc_1args_numeric)
+      .def(py::init<std::vector<std::shared_ptr<AbstractValue>>>(),
+          py::arg("abstract"), doc.Parameters.ctor.doc_1args_abstract)
+      .def(py::init<shared_ptr<BasicVector<T>>>(), py::arg("vec"),
           // Keep alive, ownership: `vec` keeps `self` alive.
           py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_vec)
-      .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
+      .def(py::init<shared_ptr<AbstractValue>>(), py::arg("value"),
           // Keep alive, ownership: `value` keeps `self` alive.
           py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_value)
+#endif
       .def("num_numeric_parameter_groups",
           &Parameters<T>::num_numeric_parameter_groups,
           doc.Parameters.num_numeric_parameter_groups.doc)
@@ -870,6 +882,7 @@ void DoScalarDependentDefinitions(py::module m) {
           doc.Parameters.get_mutable_numeric_parameter.doc)
       .def("get_numeric_parameters", &Parameters<T>::get_numeric_parameters,
           py_rvp::reference_internal, doc.Parameters.get_numeric_parameters.doc)
+#if 0
       // TODO(eric.cousineau): Should this C++ code constrain the number of
       // parameters???
       .def("set_numeric_parameters", &Parameters<T>::set_numeric_parameters,
@@ -878,6 +891,7 @@ void DoScalarDependentDefinitions(py::module m) {
           // Keep alive, ownership: `value` keeps `self` alive.
           py::keep_alive<2, 1>(), py::arg("numeric_params"),
           doc.Parameters.set_numeric_parameters.doc)
+#endif
       .def(
           "get_abstract_parameter",
           [](const Parameters<T>* self, int index) -> auto& {
@@ -895,12 +909,14 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("get_abstract_parameters", &Parameters<T>::get_abstract_parameters,
           py_rvp::reference_internal,
           doc.Parameters.get_abstract_parameters.doc)
+#if 0
       .def("set_abstract_parameters", &Parameters<T>::set_abstract_parameters,
           // WARNING: This will DELETE the existing parameters. See C++
           // `AddValueInstantiation` for more information.
           // Keep alive, ownership: `value` keeps `self` alive.
           py::keep_alive<2, 1>(), py::arg("abstract_params"),
           doc.Parameters.set_abstract_parameters.doc)
+#endif
       .def(
           "SetFrom",
           [](Parameters<T>* self, const Parameters<double>& other) {
@@ -961,12 +977,14 @@ void DoScalarDependentDefinitions(py::module m) {
       m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc);
   DefClone(&continuous_state);
   continuous_state
+#if 0
       .def(py::init<unique_ptr<VectorBase<T>>>(), py::arg("state"),
           doc.ContinuousState.ctor.doc_1args_state)
       .def(py::init<unique_ptr<VectorBase<T>>, int, int, int>(),
           py::arg("state"), py::arg("num_q"), py::arg("num_v"),
           py::arg("num_z"),
           doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
+#endif
       .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
       .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
       .def("num_q", &ContinuousState<T>::num_q, doc.ContinuousState.num_q.doc)
@@ -1026,10 +1044,12 @@ void DoScalarDependentDefinitions(py::module m) {
       m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
   DefClone(&discrete_values);
   discrete_values
+#if 0
       .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("datum"),
           doc.DiscreteValues.ctor.doc_1args_datum)
       .def(py::init<std::vector<std::unique_ptr<BasicVector<T>>>&&>(),
           py::arg("data"), doc.DiscreteValues.ctor.doc_1args_data)
+#endif
       .def(py::init<>(), doc.DiscreteValues.ctor.doc_0args)
       .def("num_groups", &DiscreteValues<T>::num_groups,
           doc.DiscreteValues.num_groups.doc)

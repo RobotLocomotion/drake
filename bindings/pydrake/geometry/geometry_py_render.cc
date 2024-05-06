@@ -36,10 +36,10 @@ using systems::sensors::PixelType;
 
 namespace {
 
-class PyRenderEngine : public py::wrapper<RenderEngine> {
+class PyRenderEngine : public wrapper<RenderEngine> {
  public:
   using Base = RenderEngine;
-  using BaseWrapper = py::wrapper<Base>;
+  using BaseWrapper = wrapper<Base>;
   PyRenderEngine() : BaseWrapper() {}
 
   void UpdateViewpoint(RigidTransformd const& X_WR) override {
@@ -62,7 +62,11 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   }
 
   std::unique_ptr<RenderEngine> DoClone() const override {
+#if 1
+    return nullptr;
+#else
     PYBIND11_OVERLOAD_PURE(std::unique_ptr<RenderEngine>, Base, DoClone);
+#endif
   }
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
