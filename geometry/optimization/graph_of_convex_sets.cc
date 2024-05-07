@@ -263,6 +263,22 @@ Edge::Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name)
 
 Edge::~Edge() = default;
 
+VectorXDecisionVariable Edge::NewSlackVariables(int rows,
+                                                const std::string& name = "s") {
+  auto s = symbolic::MakeVectorContinuousVariable(rows, name_ + name);
+  for (int i = 0; i < rows; ++i) {
+    allowed_vars_.insert(s[i]);
+  }
+
+  // Add this slack variable to the x_to_yz map, so that it can
+  // be looked up like any other variable in the vertices.
+  for (int i = 0; i < rows; ++i) {
+    x_to_yz_.emplace(s[i], s[i]);
+  }
+
+  return s;
+}
+
 std::pair<Variable, Binding<Cost>> Edge::AddCost(
     const symbolic::Expression& e,
     const std::unordered_set<Transcription>& use_in_transcription) {
