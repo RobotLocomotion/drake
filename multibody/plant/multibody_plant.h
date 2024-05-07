@@ -279,6 +279,7 @@ output_ports:
   model_instance_name[i]</em>_generalized_contact_forces'
 - <em style="color:gray">model_instance_name[i]</em>_net_actuation
 - <span style="color:green">geometry_pose</span>
+- <span style="color:green">deformable_body_configuration</span>
 @endsystem
 
 The ports whose names begin with <em style="color:gray">
@@ -1081,6 +1082,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
+
+  // TODO(xuchenhan-tri): Remove the throw condition once DeformableModel is
+  //  added by default as part of #21355.
+  /// Returns the output port for vertex positions (configurations), measured
+  /// and expressed in the World frame, of the deformable bodies in `this` plant
+  /// as a GeometryConfigurationVector.
+  /// @throws std::exception if `this` %MultibodyPlant doesn't have a
+  /// DeformableModel. See AddPhysicalModel().
+  const systems::OutputPort<T>& get_deformable_body_configuration_output_port()
+      const;
   /// @} <!-- Input and output ports -->
 
   /// @anchor mbp_construction
