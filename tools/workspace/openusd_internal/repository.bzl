@@ -16,10 +16,11 @@ def openusd_internal_repository(
         patches = [
             ":patches/cmake_rapidjson.patch",
             ":patches/cmake_usd_usd_shared.patch",
+            ":patches/dlopen_forbidden.patch",
             ":patches/namespace.patch",
             ":patches/no_gnu_ext.patch",
             ":patches/onetbb.patch",
-            ":patches/stage_operatoreq_cxx20.patch",
+            ":patches/weakptrfacade_cxx20.patch",
         ],
         mirrors = mirrors,
     )
