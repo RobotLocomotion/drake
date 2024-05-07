@@ -9,8 +9,6 @@ clear if this is the best or ultimate fix (or something that we should
 upstream), but it seems to make Clang happy for now.
 
 
-diff --git pxr/usd/usd/stage.cpp pxr/usd/usd/stage.cpp
-index 6b06547b5..c6fcf17e5 100644
 --- pxr/usd/usd/stage.cpp
 +++ pxr/usd/usd/stage.cpp
 @@ -1161,7 +1161,9 @@ public:

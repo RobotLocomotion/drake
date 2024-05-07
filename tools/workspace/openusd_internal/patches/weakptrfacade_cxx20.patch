@@ -1,0 +1,22 @@
+[openusd_internal] Fix operator== infinite recursion in C++20 mode
+
+Something to do with "rewritten comparison operators" causes this
+function to be a self-call in C++20, which means infinite recursion
+and crash.
+
+We should check out this problem in more detail and maybe submit this
+fix upstream. It's also possible our stage_operatoreq_cxx20.patch file
+is buggy and causing the problem. More investigation is required.
+
+
+--- pxr/base/tf/weakPtrFacade.h
++++ pxr/base/tf/weakPtrFacade.h
+@@ -137,7 +137,7 @@ public:
+ 
+     template <class T>
+     friend bool operator == (const TfRefPtr<T>& p1, Derived const &p2) {
+-        return p2 == p1;
++        return get_pointer(p1) == get_pointer(p2);
+     }
+ 
+     template <class T>

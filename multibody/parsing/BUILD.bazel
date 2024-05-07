@@ -28,6 +28,7 @@ filegroup(
         "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
+        "test/**/*.usda",
         "test/**/*.xml",
         "test/**/*.zip",
         "test/**/COLCON_IGNORE",
@@ -781,10 +782,13 @@ drake_cc_googletest(
             "--gtest_filter=-*",
         ],
     }),
+    data = [
+        ":test_models",
+    ],
     deps = [
         ":detail_usd_parser",
+        "//common:find_resource",
         "//common/test_utilities:diagnostic_policy_test_base",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
