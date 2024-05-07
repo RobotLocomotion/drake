@@ -144,9 +144,14 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
   std::vector<Eigen::VectorXd> particles;
 
   // upper bound on number of particles required if we hit max iterations
-  double delta_min = options.delta * 6 /
+  double outer_delta_min =
+      options.delta * 6 /
+      (M_PI * M_PI * options.max_iterations * options.max_iterations);
+
+  double delta_min = outer_delta_min * 6 /
                      (M_PI * M_PI * options.max_iterations_separating_planes *
                       options.max_iterations_separating_planes);
+
   int N_max = unadaptive_test_samples(
       options.admissible_proportion_in_collision, delta_min, options.tau);
 
@@ -196,12 +201,14 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
     // track maximum relaxation of cspace margin if containment of points is
     // requested
     double max_relaxation = 0;
+    double outer_delta =
+        options.delta * 6 / (M_PI * M_PI * (iteration + 1) * (iteration + 1));
 
     while (num_iterations_separating_planes <
            options.max_iterations_separating_planes) {
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
-      double delta_k = options.delta * 6 / (M_PI * M_PI * k_squared);
+      double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
       int N_k = unadaptive_test_samples(
           options.admissible_proportion_in_collision, delta_k, options.tau);
 
