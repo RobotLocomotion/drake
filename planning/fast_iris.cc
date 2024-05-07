@@ -203,6 +203,11 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
     double max_relaxation = 0;
     double outer_delta =
         options.delta * 6 / (M_PI * M_PI * (iteration + 1) * (iteration + 1));
+    
+    //no need for the union bound if we are running a single iteration.
+    if(options.max_iterations == 1){
+        outer_delta = options.delta;
+    }
 
     while (num_iterations_separating_planes <
            options.max_iterations_separating_planes) {
