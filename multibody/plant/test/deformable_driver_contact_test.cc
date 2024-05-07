@@ -63,7 +63,7 @@ class DeformableDriverContactTest : public ::testing::Test {
     const RigidTransformd X_WD1(Vector3d(0, 0, -1.25));
     body_id1_ =
         RegisterDeformableOctahedron(X_WD1, deformable_model, "deformable1");
-    model_ = plant_->deformable_model();
+    model_ = &plant_->deformable_model();
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.

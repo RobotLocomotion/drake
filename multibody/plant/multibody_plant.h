@@ -2393,11 +2393,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<const PhysicalModel<T>*> physical_models() const;
 #endif
 
-  /// Returns a const pointer to the DeformableModel owned by this plant or
-  /// nullptr if this plant doesn't own a %DeformableModel.
+  /// Returns the DeformableModel owned by this plant.
+  /// @throw std::exception if this plant doesn't own a %DeformableModel.
   /// @experimental
-  const DeformableModel<T>* deformable_model() const {
-    return physical_models_->deformable_model();
+  const DeformableModel<T>& deformable_model() const {
+    const DeformableModel<T>* model = physical_models_->deformable_model();
+    DRAKE_THROW_UNLESS(model != nullptr);
+    return *model;
   }
 
   /// Returns a mutable pointer to the DeformableModel owned by this plant or
@@ -5662,7 +5664,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   // Adds a DeformableModel to this plant. The added DeformableModel is owned
-  // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method at
+  // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method
   // when `this` MultibodyPlant is finalized to declare the system resources it
   // needs.
   // @returns a pointer to the added DeformableModel that's valid for the life

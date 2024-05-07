@@ -107,7 +107,7 @@ class DeformableDriverContactKinematicsTest
         plant_->mutable_deformable_model();
     deformable_body_id_ =
         RegisterDeformableOctahedron(deformable_model, "deformable", X_WF_);
-    model_ = plant_->deformable_model();
+    model_ = &plant_->deformable_model();
 
     /* Define proximity properties for all rigid geometries. */
     geometry::ProximityProperties rigid_proximity_props;
@@ -227,7 +227,7 @@ class DeformableDriverContactKinematicsTest
     deformable_body_id2_ = RegisterDeformableOctahedron(
         deformable_model, "deformable2",
         X_WF_ * RigidTransformd(Vector3d(0, 0, -1.25)));
-    model_ = plant_->deformable_model();
+    model_ = &plant_->deformable_model();
 
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();

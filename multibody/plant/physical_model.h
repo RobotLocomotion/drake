@@ -74,20 +74,25 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   const MultibodyPlant<T>* plant() const { return owning_plant_; }
   MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
 
-  /** Creates a clone of `this` concrete PhysicalModel object with the scalar
-   type `ScalarType` that is owned by the given `plant`. The clone should be a
-   deep copy of the original PhysicalModel with the exception of members
-   overwritten in `DeclareSystemResources()`. This method is meant to be called
-   by the scalar-converting copy constructor of MultibodyPlant only and thus is
-   only called from a finalized MultibodyPlant.
-   @tparam_default_scalar */
+  /** (Internal only) Creates a clone of `this` concrete PhysicalModel object
+   with the scalar type `ScalarType` to be owned by the given `plant`. The clone
+   should be a deep copy of the original PhysicalModel with the exception of
+   members overwritten in `DeclareSystemResources()`. This method is meant to be
+   called by the scalar-converting copy constructor of MultibodyPlant only and
+   thus is only called from a finalized MultibodyPlant.
+   @tparam_default_scalar
+   @pre plant != nullptr.
+   @param[in] plant pointer to the MultibodyPlant owning the clone. This needs
+   to be a mutable pointer because constructor of the clone requires a mutable
+   pointer to the owning plant.
+   @note `DeclareSystemResources()` is not called on the clone and needs to be
+   called from the plant owning the clone. */
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
       MultibodyPlant<ScalarType>* plant) const {
     /* The plant owning `this` PhysicalModel must be finalized and consequently
      the plant back pointer is nulled out. */
     DRAKE_THROW_UNLESS(this->plant() == nullptr);
-    /* The plant owning the cloned model must not be finalized yet. */
     DRAKE_THROW_UNLESS(plant != nullptr);
 
     if constexpr (std::is_same_v<ScalarType, double>) {
@@ -114,12 +119,10 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   /** (Internal only) MultibodyPlant calls this from within Finalize() to
    declare additional system resources. This method is only meant to be called
-   by MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
-   PhysicalModels can use specific MultibodyPlant cache tickets. */
+   by MultibodyPlant. */
   void DeclareSystemResources() {
     DRAKE_DEMAND(owning_plant_ != nullptr);
     DoDeclareSystemResources();
-    owning_plant_->RemoveUnsupportedScalars(*this);
     owning_plant_ = nullptr;
   }
 
@@ -188,7 +191,9 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    @pre `plant` has been registered with some SceneGraph. */
   geometry::SceneGraph<T>& mutable_scene_graph();
 
-  /* Protected LeafSystem methods exposed through MultibodyPlant. */
+  /* Protected LeafSystem methods exposed through MultibodyPlant.
+   @throws std::exception if called after DeclareSystemResources() has finished.
+  */
   systems::DiscreteStateIndex DeclareDiscreteState(
       const VectorX<T>& model_value);
 

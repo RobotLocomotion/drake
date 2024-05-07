@@ -404,6 +404,10 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
     physical_models_ = other.physical_models_->template CloneToScalar<T>(this);
+    // Remove unsupported scalar types due to the cloned physical models.
+    for (const auto& physical_model : physical_models_->owned_models()) {
+      this->RemoveUnsupportedScalars(*physical_model);
+    }
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_specs_ = other.distance_constraints_specs_;
@@ -3685,7 +3689,7 @@ DeformableModel<T>* MultibodyPlant<T>::AddDeformableModel() {
   // Right now, we can do exactly just that yet because is_finalized() returns
   // true iff the MultibodyTree is finalized. There's no easy way to confirm
   // that a plant is not yet finalized when the tree is already finalized.
-  DRAKE_DEMAND(deformable_model() == nullptr);
+  DRAKE_DEMAND(physical_models_->deformable_model() == nullptr);
   return physical_models_->AddDeformableModel(
       std::make_unique<DeformableModel<T>>(this));
 }
