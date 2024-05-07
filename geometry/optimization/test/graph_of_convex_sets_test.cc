@@ -1692,16 +1692,17 @@ TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
 }
 
 TEST_F(ThreeBoxes, NewSlackVariablesCost) {
-  auto s = e_on_->NewSlackVariables(1, "s")[0];
-
   std::cout << "### RUNNING TEST ###" << std::endl;
-  auto x = e_on_->xu()[0];
-  // We minimize the cost 1/x, which we formulate with a slack
-  // variable and a RotatedLorentzConeConstraint as:
+
+  // We minimize the cost 1/x for each coordinate x, y in the source
+  // vertex, which we formulate with a slack variable and a
+  // RotatedLorentzConeConstraint as:
   // min 1/x
   // ⇔ min s st. s ≥ 1/x
   // ⇔ min s st. s * x ≥ 1
   // ⇔ min s st. [s; x; 1] ∈ RotatedLorentzCone
+  auto x = e_on_->xu()[0];
+  auto s = e_on_->NewSlackVariables(1, "s")[0];
   e_on_->AddCost(s);
   Eigen::MatrixXd A(3, 2);
   // clang-format off
@@ -1714,17 +1715,57 @@ TEST_F(ThreeBoxes, NewSlackVariablesCost) {
   auto constraint =
       std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
 
-  solvers::VectorXDecisionVariable z(2);
-  z << s, x;
-  e_on_->AddConstraint(solvers::Binding(constraint, z));
+  solvers::VectorXDecisionVariable z_1(2);
+  z_1 << s, x;
+  e_on_->AddConstraint(solvers::Binding(constraint, z_1));
+
+  auto y = e_on_->xu()[1];
+  auto t = e_on_->NewSlackVariables(1, "t")[0];
+  e_on_->AddCost(t);
+  solvers::VectorXDecisionVariable z_2(2);
+  z_2 << t, y;
+  e_on_->AddConstraint(solvers::Binding(constraint, z_2));
+
+  // We minimize the cost max(1/x, 1/y) for the x and y coordinate in the
+  // target vertex, which we formulate with a slack variable and two
+  // RotatedLorentzConeConstraints as:
+  // min max(1/x, 1/y)
+  // ⇔ min k st. k ≥ 1/x, k ≥ 1/y
+  // ⇔ min k st. k * x ≥ 1, k * y ≥ 1
+  // ⇔ min k st. [k; x; 1] ∈ RotatedLorentzCone, [k; y; 1] ∈ RotatedLorentzCone,
+  auto k = e_on_->NewSlackVariables(1, "k")[0];
+  e_on_->AddCost(k);
+
+  auto target_x = e_on_->xv()[0];
+  auto target_y = e_on_->xv()[1];
+
+  // Add a small cost on the point in the target, so that these are kept
+  // at -1 unless another cost affects them.
+  e_on_->AddCost(1e-4 * target_x + 1e-4 * target_y);
+
+  solvers::VectorXDecisionVariable target_z_1(2);
+  target_z_1 << k, target_x;
+  e_on_->AddConstraint(solvers::Binding(constraint, target_z_1));
+
+  solvers::VectorXDecisionVariable target_z_2(2);
+  target_z_2 << k, target_y;
+  e_on_->AddConstraint(solvers::Binding(constraint, target_z_1));
 
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
 
-  auto res = source_->GetSolution(result);
-  for (int i = 0; i < res.size(); ++i) {
-    std::cout << res[i] << std::endl;
-  }
+  auto source_res = source_->GetSolution(result);
+  // Both coordinates should be pushed towards 1
+  ASSERT_TRUE(source_res.isApproxToConstant(1.0, 1e-5));
+
+  auto target_res = target_->GetSolution(result);
+  // We expect that the cost will only push one of the coordinates to the
+  // positive side of the set.
+  ASSERT_NEAR(target_res.maxCoeff(), 1, 1e-5);
+
+  // The other one should still be kept at -1 due to the linear cost added
+  // above.
+  ASSERT_NEAR(target_res.minCoeff(), -1, 1e-5);
 }
 
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
