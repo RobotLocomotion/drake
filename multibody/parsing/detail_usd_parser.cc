@@ -16,7 +16,6 @@ namespace multibody {
 namespace internal {
 
 namespace fs = std::filesystem;
-namespace pxr = drake_vendor_pxr;
 
 namespace {
 void InitializeOpenUsdLibrary() {
