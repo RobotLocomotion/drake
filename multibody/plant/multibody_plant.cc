@@ -403,7 +403,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
     for (auto& model : other.physical_models_) {
-      auto cloned_model = model->template CloneToScalar<T>();
+      auto cloned_model = model->template CloneToScalar<T>(this);
       // TODO(xuchenhan-tri): Rework physical model and discrete update manager
       //  to eliminate the requirement on the order that they are called with
       //  respect to Finalize().
@@ -3101,7 +3101,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
   for (auto& physical_model : physical_models_) {
-    physical_model->DeclareSystemResources(this);
+    physical_model->DeclareSystemResources();
   }
 }
 
@@ -3617,6 +3617,24 @@ template <typename T>
 const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
     const {
   return systems::System<T>::get_input_port(geometry_query_port_);
+}
+
+template <typename T>
+const OutputPort<T>&
+MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
+  for (const std::unique_ptr<PhysicalModel<T>>& physical_model :
+       physical_models_) {
+    if (std::holds_alternative<const DeformableModel<T>*>(
+            physical_model->ToPhysicalModelPointerVariant())) {
+      const DeformableModel<T>* deformable_model =
+          std::get<const DeformableModel<T>*>(
+              physical_model->ToPhysicalModelPointerVariant());
+      DRAKE_DEMAND(deformable_model != nullptr);
+      return systems::System<T>::get_output_port(
+          deformable_model->configuration_output_port_index());
+    }
+  }
+  throw std::runtime_error("No deformable body in the plant.");
 }
 
 template <typename T>

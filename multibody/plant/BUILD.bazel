@@ -88,9 +88,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "dummy_model",
+    name = "dummy_physical_model",
     testonly = 1,
-    hdrs = ["test/dummy_model.h"],
+    srcs = ["dummy_physical_model.cc"],
+    hdrs = ["dummy_physical_model.h"],
     visibility = ["//visibility:private"],
     deps = [
         ":multibody_plant_core",
@@ -1052,6 +1053,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_model_test",
     deps = [
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:diagram_builder",
@@ -1172,7 +1174,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
-        ":dummy_model",
+        ":dummy_physical_model",
         ":plant",
     ],
 )
@@ -1211,7 +1213,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
-        ":dummy_model",
+        ":dummy_physical_model",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1228,7 +1230,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "physical_model_test",
     deps = [
-        ":dummy_model",
+        ":dummy_physical_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

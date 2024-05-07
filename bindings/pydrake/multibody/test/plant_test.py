@@ -3257,8 +3257,9 @@ class TestPlant(unittest.TestCase):
 
         # Post-finalize operations.
         self.assertIsInstance(
-            dut.vertex_positions_port(), OutputPort_[float])
-        builder.Connect(dut.vertex_positions_port(),
+            plant.get_deformable_body_configuration_output_port(),
+            OutputPort_[float])
+        builder.Connect(plant.get_deformable_body_configuration_output_port(),
                         scene_graph.get_source_configuration_port(
                             plant.get_source_id()))
         self.assertEqual(dut.GetDiscreteStateIndex(body_id), 1)
