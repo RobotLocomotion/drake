@@ -166,7 +166,7 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
     diagram_ = builder.Build();
@@ -238,7 +238,7 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
     diagram_ = builder.Build();
@@ -633,7 +633,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   ASSERT_NE(driver, nullptr);
 
   builder.Connect(
-      model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -691,7 +691,7 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   // TODO(xuchenhan-tri): AddMultibodyPlant and AddMultibodyPlantSceneGraph
   // should connect this port automatically.
   builder.Connect(
-      model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

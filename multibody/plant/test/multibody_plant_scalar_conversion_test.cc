@@ -5,8 +5,8 @@
 
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -201,10 +201,11 @@ class DoubleOnlyDiscreteUpdateManager final
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
   std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
-      std::make_unique<internal::test::DummyModel<double>>();
+      std::make_unique<internal::DummyPhysicalModel<double>>(&plant);
+  // The dummy model supports all scalar types.
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
-  EXPECT_FALSE(dummy_physical_model->is_cloneable_to_symbolic());
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_symbolic());
   plant.AddPhysicalModel(std::move(dummy_physical_model));
   plant.Finalize();
 
@@ -215,13 +216,11 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
   // double -> Expression
   std::unique_ptr<MultibodyPlant<Expression>> plant_double_to_symbolic;
-  EXPECT_THROW(plant_double_to_symbolic = System<double>::ToSymbolic(plant),
-               std::exception);
+  EXPECT_NO_THROW(plant_double_to_symbolic = System<double>::ToSymbolic(plant));
   // double -> Expression
   std::unique_ptr<MultibodyPlant<Expression>> plant_autodiff_to_symbolic;
-  EXPECT_THROW(plant_autodiff_to_symbolic =
-                   System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
-               std::exception);
+  EXPECT_NO_THROW(plant_autodiff_to_symbolic =
+                      System<AutoDiffXd>::ToSymbolic(*plant_autodiff));
 
   // Verify that adding a component that doesn't allow scalar conversion to
   // autodiff does not prevent scalar conversion to double.
