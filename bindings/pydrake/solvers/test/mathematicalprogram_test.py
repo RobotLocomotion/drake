@@ -1459,6 +1459,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.RemoveConstraint(constraint=lcp_con)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
 
+    def test_remove_visualization_callback(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        callback = prog.AddVisualizationCallback(
+            lambda x_val: print(x_val[0]), x)
+        count = prog.RemoveVisualizationCallback(callback=callback)
+        self.assertEqual(count, 1)
+        self.assertEqual(len(prog.visualization_callbacks()), 0)
+
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2)

@@ -4560,6 +4560,24 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
                        ProgramAttribute::kLinearComplementarityConstraint);
 }
 
+GTEST_TEST(TestMathematicalProgram, RemoveVisualizationCallback) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto callback = prog.AddVisualizationCallback(
+      [](const Eigen::VectorXd& vars) {
+        drake::log()->info("{}", vars(0) + vars(1));
+      },
+      x);
+  EXPECT_FALSE(prog.visualization_callbacks().empty());
+  EXPECT_TRUE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
+  int count = prog.RemoveVisualizationCallback(callback);
+  EXPECT_EQ(count, 1);
+  EXPECT_TRUE(prog.visualization_callbacks().empty());
+  EXPECT_FALSE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
+}
+
 class ApproximatePSDConstraint : public ::testing::Test {
   // An arbitrary semidefinite program with 2 PSD constraints, 2 linear
   // constraints, and 1 equality constraint for testing the
