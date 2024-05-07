@@ -1685,10 +1685,10 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
 
 TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
   auto s = e_on_->NewSlackVariables(3, "s");
-  ASSERT_TRUE(s.size() == 3);
+  ASSERT_EQ(s.size(), 3);
 
   auto t = e_off_->NewSlackVariables(6, "t");
-  ASSERT_TRUE(t.size() == 6);
+  ASSERT_EQ(t.size(), 6);
 }
 
 TEST_F(ThreeBoxes, NewSlackVariablesCost) {
