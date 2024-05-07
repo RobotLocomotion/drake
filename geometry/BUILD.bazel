@@ -502,17 +502,20 @@ drake_cc_library(
         "meshcat.cc",
         "meshcat_file_storage_internal.cc",
         "meshcat_internal.cc",
+        "meshcat_recording_internal.cc",
     ],
     hdrs = [
         "meshcat.h",
         "meshcat_file_storage_internal.h",
         "meshcat_internal.h",
         "meshcat_params.h",
+        "meshcat_recording_internal.h",
         "meshcat_types_internal.h",
     ],
     data = [":meshcat_resources"],
     install_hdrs_exclude = [
         "meshcat_internal.h",
+        "meshcat_recording_internal.h",
         "meshcat_types_internal.h",
     ],
     interface_deps = [
@@ -615,6 +618,13 @@ drake_cc_googletest(
         ":shape_specification",
         "//math:geometric_transform",
         "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_recording_internal_test",
+    deps = [
+        ":meshcat",
     ],
 )
 
