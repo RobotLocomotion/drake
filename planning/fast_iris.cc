@@ -204,7 +204,8 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
     double outer_delta =
         options.delta * 6 / (M_PI * M_PI * (iteration + 1) * (iteration + 1));
     
-    //no need for the union bound if we are running a single iteration.
+    //No need for decaying outer delta if we are guaranteed to terminate after one step.
+    //In this case we can be less conservative and set it to our total accepted error probability.
     if(options.max_iterations == 1){
         outer_delta = options.delta;
     }
