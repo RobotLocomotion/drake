@@ -584,6 +584,7 @@ class GraphOfConvexSets {
     std::vector<std::pair<solvers::Binding<solvers::Cost>,
                           std::unordered_set<Transcription>>>
         costs_{};
+    solvers::VectorXDecisionVariable slacks_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
