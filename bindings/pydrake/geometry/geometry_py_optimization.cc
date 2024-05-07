@@ -892,11 +892,10 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,
             cls_doc.GetSolutionPath.doc)
-        .def("GetRandomizedSolutionPath",
-            &GraphOfConvexSets::GetRandomizedSolutionPath, py::arg("source"),
+        .def("SamplePaths", &GraphOfConvexSets::SamplePaths, py::arg("source"),
             py::arg("target"), py::arg("result"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            py_rvp::reference_internal, cls_doc.GetSolutionPath.doc)
+            py_rvp::reference_internal, cls_doc.SamplePaths.doc)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
