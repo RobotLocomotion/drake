@@ -2304,13 +2304,13 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   }
 
   auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
-  ASSERT_TRUE(paths.size() == kNumPaths);
+  ASSERT_EQ(paths.size(), kNumPaths);
 
   // Check that all the paths start at the source and end at the target
   for (const auto& p : paths) {
-    ASSERT_TRUE(p.size() > 0);
-    ASSERT_TRUE(p.front()->u().id() == source->id());
-    ASSERT_TRUE(p.back()->v().id() == target->id());
+    ASSERT_GE(p.size(), 0);
+    ASSERT_EQ(p.front()->u().id(), source->id());
+    ASSERT_EQ(p.back()->v().id(), target->id());
   }
 }
 
