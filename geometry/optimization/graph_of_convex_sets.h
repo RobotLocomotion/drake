@@ -381,6 +381,12 @@ class GraphOfConvexSets {
     */
     const VectorX<symbolic::Variable>& xv() const { return v_->x(); }
 
+    /**
+     TODO bernhardpg add documentation
+     */
+    solvers::VectorXDecisionVariable NewSlackVariables(int rows,
+                                                       const std::string& name);
+
     /** Adds a cost to this edge, described by a symbolic::Expression @p e
     containing *only* elements of xu() and xv() as variables.  For technical
     reasons relating to being able to "turn-off" the cost on inactive edges, all
