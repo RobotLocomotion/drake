@@ -624,9 +624,17 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult& result,
       double tolerance = 1e-3) const;
 
-  /**
-   TODO(bernhardpg): Write some doc
+  /** Samples a collection of paths from `source` to `target`, where the
+   flow values in `result` are interpreted as the probabilities of transitioning
+   an edge. This function implements the first part of the rounding scheme put
+   forth in Section 4.2 of "Motion Planning around Obstacles with Convex
+   Optimization": https://arxiv.org/abs/2205.04422
    */
+  std::vector<std::vector<const Edge*>> SamplePaths(
+      const Vertex& source, const Vertex& target,
+      const solvers::MathematicalProgramResult& result,
+      const GraphOfConvexSetsOptions& options) const;
+
   std::pair<std::vector<std::vector<const Edge*>>,
             std::vector<solvers::MathematicalProgramResult>>
   GetRandomizedSolutionPath(
