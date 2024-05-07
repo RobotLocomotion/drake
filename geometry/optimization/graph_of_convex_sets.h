@@ -521,6 +521,7 @@ class GraphOfConvexSets {
     std::unordered_map<symbolic::Variable, symbolic::Variable> x_to_yz_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
+    solvers::VectorXDecisionVariable slacks_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>

@@ -236,7 +236,12 @@ Edge::~Edge() = default;
 
 VectorXDecisionVariable Edge::NewSlackVariables(int rows,
                                                 const std::string& name = "s") {
-  auto s = symbolic::MakeVectorContinuousVariable(rows, name_ + name);
+  auto s = symbolic::MakeVectorContinuousVariable(rows, name_ + "_" + name);
+
+  const int n = slacks_.size();
+  slacks_.conservativeResize(n + rows);
+  slacks_.segment(n, rows) = s;
+
   for (int i = 0; i < rows; ++i) {
     allowed_vars_.insert(s[i]);
   }
@@ -951,6 +956,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     prog.AddDecisionVariables(e->y_);
     prog.AddDecisionVariables(e->z_);
     prog.AddDecisionVariables(e->ell_);
+    prog.AddDecisionVariables(e->slacks_);
     prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
 
     // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
