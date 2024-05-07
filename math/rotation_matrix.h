@@ -178,6 +178,14 @@ class RotationMatrix {
   /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy);
 
+  /// (Advanced) Makes a %RotationMatrix from a Matrix3. No check is performed
+  /// to test whether or not the parameter R is a valid rotation matrix.
+  static RotationMatrix<T> MakeUnchecked(const Matrix3<T>& R) {
+    RotationMatrix<T> result(internal::DoNotInitializeMemberFields{});
+    result.R_AB_ = R;
+    return result;
+  }
+
   /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
   /// unit vectors `Bx`, `By`, `Bz` so the columns of `R_AB` are `[Bx, By, Bz]`.
   /// @param[in] Bx first unit vector in right-handed orthogonal set.
@@ -358,7 +366,7 @@ class RotationMatrix {
   /// @throws std::exception in debug builds if R fails IsValid(R).
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
-    SetUnchecked(R);
+    R_AB_ = R;
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
@@ -440,7 +448,9 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, this);
     } else {
-      SetUnchecked(matrix() * other.matrix());
+      // We specifically avoid checking ThrowIfNotValid here, because it would
+      // be inordinately expensive even in debug builds.
+      R_AB_ = matrix() * other.matrix();
     }
     return *this;
   }
@@ -737,11 +747,6 @@ class RotationMatrix {
   // @note The second parameter is just a dummy to distinguish this constructor
   // from any of the other constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
-
-  // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
-  // test whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid rotation matrix.
-  void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
