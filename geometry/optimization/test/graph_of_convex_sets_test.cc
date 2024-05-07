@@ -1823,6 +1823,50 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
+TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
+  auto s = e_on_->NewSlackVariables(3, "s");
+  ASSERT_TRUE(s.size() == 3);
+
+  auto t = e_off_->NewSlackVariables(6, "t");
+  ASSERT_TRUE(t.size() == 6);
+}
+
+TEST_F(ThreeBoxes, NewSlackVariablesCost) {
+  auto s = e_on_->NewSlackVariables(1, "s")[0];
+
+  std::cout << "### RUNNING TEST ###" << std::endl;
+  auto x = e_on_->xu()[0];
+  // We minimize the cost 1/x, which we formulate with a slack
+  // variable and a RotatedLorentzConeConstraint as:
+  // min 1/x
+  // ⇔ min s st. s ≥ 1/x
+  // ⇔ min s st. s * x ≥ 1
+  // ⇔ min s st. [s; x; 1] ∈ RotatedLorentzCone
+  e_on_->AddCost(s);
+  Eigen::MatrixXd A(3, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       0, 0;
+  // clang-format on
+  Eigen::VectorXd b(3);
+  b << 0, 0, 1;
+  auto constraint =
+      std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
+
+  solvers::VectorXDecisionVariable z(2);
+  z << s, x;
+  e_on_->AddConstraint(solvers::Binding(constraint, z));
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto res = source_->GetSolution(result);
+  for (int i = 0; i < res.size(); ++i) {
+    std::cout << res[i] << std::endl;
+  }
+}
+
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
   Eigen::MatrixXd A(5, 4);
   // clang-format off
