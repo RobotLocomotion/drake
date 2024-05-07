@@ -382,7 +382,10 @@ class GraphOfConvexSets {
     const VectorX<symbolic::Variable>& xv() const { return v_->x(); }
 
     /**
-     TODO bernhardpg add documentation
+    Creates continuous slack variables for this edge, appending them to
+    an internal vector of existing slack variables. These slack variables
+    can be used in any cost or constraint on this edge only, and allows for
+    modelling more complex costs and constraints.
      */
     solvers::VectorXDecisionVariable NewSlackVariables(int rows,
                                                        const std::string& name);
