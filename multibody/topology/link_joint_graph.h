@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -88,7 +89,13 @@ class LinkJointGraph {
   class Joint;
   class LoopConstraint;
 
-  struct JointType;  // Defined below.
+  /** This is all we need to know about joint types for topological purposes. */
+  struct JointTraits {
+    std::string name;
+    int nq{-1};
+    int nv{-1};
+    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
+  };
 
   // This Doxygen text is intended to mimic the text generated for
   // DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN. There is some extra information
@@ -122,10 +129,7 @@ class LinkJointGraph {
   instance that does not have its own forest building options set. Invalidates
   the current forest.
   @see SetForestBuildingOptions() */
-  void SetGlobalForestBuildingOptions(ForestBuildingOptions global_options) {
-    InvalidateForest();
-    data_.global_forest_building_options = global_options;
-  }
+  void SetGlobalForestBuildingOptions(ForestBuildingOptions global_options);
 
   /** Gets the forest building options to be used for elements of any model
   instance that does not have its own forest building options set. If no call
@@ -144,33 +148,21 @@ class LinkJointGraph {
   world_model_instance() and default_model_instance() respectively.
   @see SetGlobalForestBuildingOptions() */
   void SetForestBuildingOptions(ModelInstanceIndex model_instance,
-                                ForestBuildingOptions options) {
-    InvalidateForest();
-    data_.model_instance_forest_building_options[model_instance] = options;
-  }
+                                ForestBuildingOptions options);
 
   /** Gets the forest building options to be used for elements of the given
-  `model_instance`. Returns the options set explicitly for this
-  `model_instance`, if any. Otherwise, returns what
-  get_global_forest_building_options() returns. */
+  model instance. Returns the options set explicitly for this model instance,
+  if any. Otherwise, returns what get_global_forest_building_options() returns.
+  @pre `instance_index` is any valid index */
   ForestBuildingOptions get_forest_building_options_in_use(
-      ModelInstanceIndex model_instance) const {
-    DRAKE_DEMAND(model_instance.is_valid());
-    auto instance_options =
-        data_.model_instance_forest_building_options.find(model_instance);
-    return instance_options ==
-                   data_.model_instance_forest_building_options.end()
-               ? get_global_forest_building_options()  // Use global default.
-               : instance_options->second;
+      ModelInstanceIndex instance_index) const {
+    return get_model_instance_options(instance_index)
+        .value_or(get_global_forest_building_options());
   }
 
   /** Resets the global forest building options to kDefault and removes any
   per-model instance options that were set. */
-  void ResetForestBuildingOptions() {
-    InvalidateForest();
-    data_.global_forest_building_options = ForestBuildingOptions::kDefault;
-    data_.model_instance_forest_building_options.clear();
-  }
+  void ResetForestBuildingOptions();
 
   /** Models this LinkJointGraph as a spanning forest, records the result
   into this graph's SpanningForest object, and marks it valid. The currently-set
@@ -283,7 +275,7 @@ class LinkJointGraph {
   /** Returns the Link that corresponds to World (always predefined). */
   const Link& world_link() const;
 
-  /** Registers a joint type by name.
+  /** Registers a joint type by name and provides the joint traits for it.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "revolute" or
     "prismatic". Should match the MultibodyPlant name for the Joint it
@@ -296,31 +288,33 @@ class LinkJointGraph {
     of this type of Joint.
   @param[in] has_quaternion
     Whether the first four q values represent a quaternion (in w[xyz] order).
-  @retval joint_type_index
+  @retval joint_traits_index
     Unique index assigned to the new joint type.
   @throws std::exception if `joint_type_name` was already used for a
     previously registered joint type.
   @pre 0 ≤ nq ≤ 7, 0 ≤ nv ≤ 6, nv ≤ nq, !has_quaternion or nq ≥ 4.
 
-  @note LinkJointGraph is preloaded with Drake-specific Joint types it needs to
-  know about including "weld", "quaternion_floating", and "rpy_floating". */
-  JointTypeIndex RegisterJointType(const std::string& joint_type_name, int nq,
-                                   int nv, bool has_quaternion = false);
+  @note LinkJointGraph is preloaded with the traits for Drake-specific Joint
+  types it needs to know about including "weld", "quaternion_floating", and
+  "rpy_floating". */
+  JointTraitsIndex RegisterJointType(const std::string& joint_type_name, int nq,
+                                     int nv, bool has_quaternion = false);
 
   /** Returns `true` if the given `joint_type_name` was previously registered
   via a call to RegisterJointType(), or is one of the pre-registered names. */
   bool IsJointTypeRegistered(const std::string& joint_type_name) const;
 
-  /** Returns a reference to the vector of known and registered Joint types. */
-  const std::vector<JointType>& joint_types() const {
-    return data_.joint_types;
+  /** Returns a reference to the vector of traits for the known and registered
+  Joint types. */
+  const std::vector<JointTraits>& joint_traits() const {
+    return data_.joint_traits;
   }
 
-  /** Returns a reference to a particular JointType using one of the
+  /** Returns a reference to a particular JointTraits object using one of the
   predefined indices or an index returned by RegisterJointType(). Requires a
-  JointTypeIndex, not a plain integer.*/
-  const JointType& joint_types(JointTypeIndex index) const {
-    return joint_types().at(index);
+  JointTraitsIndex, not a plain integer.*/
+  const JointTraits& joint_traits(JointTraitsIndex index) const {
+    return joint_traits().at(index);
   }
 
   /** Returns a reference to the vector of Link objects. World is always the
@@ -430,26 +424,20 @@ class LinkJointGraph {
 
   // Forest building requires these joint types so they are predefined.
 
-  /** The predefined index for the "weld" joint type. */
-  static JointTypeIndex weld_joint_type_index() { return JointTypeIndex(0); }
-
-  /** The predefined index for the "quaternion_floating" joint type. */
-  static JointTypeIndex quaternion_floating_joint_type_index() {
-    return JointTypeIndex(1);
+  /** The predefined index for the "weld" joint type's traits. */
+  static JointTraitsIndex weld_joint_traits_index() {
+    return JointTraitsIndex(0);
   }
 
-  /** The predefined index for the "rpy_floating" joint type. */
-  static JointTypeIndex rpy_floating_joint_type_index() {
-    return JointTypeIndex(2);
+  /** The predefined index for the "quaternion_floating" joint type's traits. */
+  static JointTraitsIndex quaternion_floating_joint_traits_index() {
+    return JointTraitsIndex(1);
   }
 
-  /** This is all we need to know about joint types for topological purposes. */
-  struct JointType {
-    std::string name;
-    int nq{-1};
-    int nv{-1};
-    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
-  };
+  /** The predefined index for the "rpy_floating" joint type's traits. */
+  static JointTraitsIndex rpy_floating_joint_traits_index() {
+    return JointTraitsIndex(2);
+  }
 
  private:
   friend class SpanningForest;
@@ -495,7 +483,7 @@ class LinkJointGraph {
   // Adds the ephemeral Joint for a floating or fixed base Link to mirror a
   // mobilizer added during BuildForest(). World is the parent and the given
   // base Link is the child for the new Joint.
-  JointIndex AddEphemeralJointToWorld(JointTypeIndex type_index,
+  JointIndex AddEphemeralJointToWorld(JointTraitsIndex type_index,
                                       BodyIndex child_link_index);
 
   // Adds the new Link to the LinkComposite of which maybe_composite_link is a
@@ -515,10 +503,11 @@ class LinkJointGraph {
   BodyIndex AddShadowLink(BodyIndex primary_link_index,
                           JointIndex shadow_joint_index, bool shadow_is_parent);
 
-  // Finds the assigned index for a joint type from the type name. Returns an
-  // invalid index if `joint_type_name` was not previously registered with a
-  // call to RegisterJointType().
-  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;
+  // Finds the assigned index for a joint's traits from the joint's type name.
+  // Returns an invalid index if `joint_type_name` was not previously registered
+  // with a call to RegisterJointType().
+  JointTraitsIndex GetJointTraitsIndex(
+      const std::string& joint_type_name) const;
 
   // Links that were explicitly flagged LinkFlags::kStatic in AddLink().
   const std::vector<BodyIndex>& static_links() const {
@@ -536,6 +525,16 @@ class LinkJointGraph {
   // explicitly marked static.
   bool link_is_static(const Link& link) const;
 
+  // For any valid index: if in range, returns the stored model instance options
+  // (which will be nullopt if never set), otherwise nullopt.
+  const std::optional<ForestBuildingOptions> get_model_instance_options(
+      ModelInstanceIndex instance_index) const {
+    DRAKE_ASSERT(instance_index);
+    return instance_index < ssize(data_.model_instance_forest_building_options)
+               ? data_.model_instance_forest_building_options[instance_index]
+               : std::nullopt;
+  }
+
   // Group data members so we can have the compiler generate most of the
   // copy/move/assign methods for us while still permitting pointer fixup.
   struct Data {
@@ -548,7 +547,7 @@ class LinkJointGraph {
     Data& operator=(const Data&);
     Data& operator=(Data&&);
 
-    std::vector<JointType> joint_types;
+    std::vector<JointTraits> joint_traits;
 
     // The first entry in links is the World Link with BodyIndex(0) and name
     // world_link().name(). Ephemeral "as-built" links and joints are placed
@@ -573,8 +572,8 @@ class LinkJointGraph {
     std::map<ModelInstanceIndex, std::vector<BodyIndex>>
         model_instance_to_links;
 
-    // This must always have the same number of entries as joint_types_.
-    std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index;
+    // This must always have the same number of entries as joint_traits_.
+    std::unordered_map<std::string, JointTraitsIndex> joint_type_name_to_index;
 
     // The xxx_name_to_index_ structures are multimaps because
     // links/joints/actuators/etc may appear with the same name in different
@@ -601,7 +600,9 @@ class LinkJointGraph {
 
     ForestBuildingOptions global_forest_building_options{
         ForestBuildingOptions::kDefault};
-    std::map<ModelInstanceIndex, ForestBuildingOptions>
+
+    // Indexed by ModelInstanceIndex.
+    std::vector<std::optional<ForestBuildingOptions>>
         model_instance_forest_building_options;
 
     // Contains a back pointer to the graph so needs fixup post copy or move.

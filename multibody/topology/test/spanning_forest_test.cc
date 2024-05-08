@@ -564,7 +564,7 @@ TODO(sherm1) Retest with "combine composites" option on (currently stubbed).
 GTEST_TEST(SpanningForest, SerialChainAndMore) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
-  EXPECT_EQ(ssize(graph.joint_types()), 4);  // Built-ins plus "revolute".
+  EXPECT_EQ(ssize(graph.joint_traits()), 4);  // Built-ins plus "revolute".
   EXPECT_TRUE(graph.IsJointTypeRegistered("revolute"));
   EXPECT_FALSE(graph.IsJointTypeRegistered("prismatic"));
 
@@ -636,10 +636,10 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_EQ(ssize(graph.joints()), 11);
   const JointIndex base11_joint_index(9);  // See above picture.
   const JointIndex free9_joint_index(10);
-  EXPECT_EQ(graph.joints(base11_joint_index).type_index(),
-            LinkJointGraph::quaternion_floating_joint_type_index());
-  EXPECT_EQ(graph.joints(free9_joint_index).type_index(),
-            LinkJointGraph::quaternion_floating_joint_type_index());
+  EXPECT_EQ(graph.joints(base11_joint_index).traits_index(),
+            LinkJointGraph::quaternion_floating_joint_traits_index());
+  EXPECT_EQ(graph.joints(free9_joint_index).traits_index(),
+            LinkJointGraph::quaternion_floating_joint_traits_index());
 
   const std::vector<BodyIndex> link_composites0{BodyIndex(0), BodyIndex(7),
                                                 BodyIndex(6), BodyIndex(8)};
@@ -800,7 +800,7 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
   graph.RegisterJointType("prismatic", 1, 1);
-  EXPECT_EQ(ssize(graph.joint_types()), 5);  // Predefined, revolute, prismatic.
+  EXPECT_EQ(ssize(graph.joint_traits()), 5);  // Predefined+revolute+prismatic.
 
   const ModelInstanceIndex model_instance(5);  // Arbitrary.
 

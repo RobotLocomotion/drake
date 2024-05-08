@@ -463,16 +463,17 @@ class SpanningForest {
                              ForestBuildingOptions::kUseRpyFloatingJoints);
   }
 
-  // Returns the appropriate joint type to use for this model instance when
-  // attaching a base body to World. Can be fixed or floating, and floating
-  // can be rpy or quaternion, depending on modeling options.
-  JointTypeIndex base_joint_type_index(
+  // Returns the index to the traits for the appropriate joint type to use for
+  // this model instance when attaching a base body to World. Can be fixed or
+  // floating, and floating can be rpy or quaternion, depending on modeling
+  // options.
+  JointTraitsIndex base_joint_traits_index(
       ModelInstanceIndex model_instance_index) const {
     if (use_fixed_base(model_instance_index))
-      return LinkJointGraph::weld_joint_type_index();
+      return LinkJointGraph::weld_joint_traits_index();
     return use_rpy_floating_joint(model_instance_index)
-               ? LinkJointGraph::rpy_floating_joint_type_index()
-               : LinkJointGraph::quaternion_floating_joint_type_index();
+               ? LinkJointGraph::rpy_floating_joint_traits_index()
+               : LinkJointGraph::quaternion_floating_joint_traits_index();
   }
 
   bool link_is_already_in_forest(BodyIndex link_index) const {
