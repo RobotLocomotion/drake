@@ -31,23 +31,21 @@ namespace internal {
 class SapSolverTester {
  public:
   static std::unique_ptr<SuperNodalSolver> MakeSuperNodalSolver(
-      const SapSolver<double>& sap) {
-    return sap.MakeSuperNodalSolver();
+      const SapSolver<double>& sap, const SapModel<double>& model) {
+    return sap.MakeSuperNodalSolver(model);
   }
 
   static void UpdateSuperNodalSolver(const SapSolver<double>& sap,
+                                     const SapModel<double>& model,
                                      const Context<double>& context,
                                      SuperNodalSolver* supernodal_solver) {
-    sap.UpdateSuperNodalSolver(context, supernodal_solver);
-  }
-
-  static const SapModel<double>& model(const SapSolver<double>& sap) {
-    return *sap.model_;
+    sap.UpdateSuperNodalSolver(model, context, supernodal_solver);
   }
 
   static MatrixX<double> CalcDenseHessian(
-      const SapSolver<double>& sap, const systems::Context<double>& context) {
-    return sap.CalcDenseHessian(context);
+      const SapSolver<double>& sap, const SapModel<double>& model,
+      const systems::Context<double>& context) {
+    return sap.CalcDenseHessian(model, context);
   }
 };
 
@@ -284,7 +282,7 @@ class PizzaSaverTest
       q += problem.time_step() * v;
 
       // Verify the number of times cache entries were updated.
-      const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+      const SapSolverStats& stats = sap.get_statistics();
 
       if (cost_criterion_reached) {
         EXPECT_TRUE(stats.cost_criterion_reached);
@@ -439,7 +437,7 @@ TEST_P(PizzaSaverTest, ConvergenceWithExactGuess) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapSolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
 
   // The guess was not even touched but directly copied into the results.
@@ -665,7 +663,7 @@ TEST_P(PizzaSaverTest, NoConstraints) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapSolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
 
   // The solution is trivial since constraint impulses are zero and v = v*.
@@ -854,17 +852,17 @@ class SapNewtonIterationTest
   void VerifySupernodalHessian(const SapSolver<double>& sap,
                                const VectorXd& v_guess) const {
     // Verify Hessian obtained with sparse supernodal algebra.
+    auto model = std::make_unique<SapModel<double>>(sap_problem_.get());
     std::unique_ptr<SuperNodalSolver> supernodal_solver =
-        SapSolverTester::MakeSuperNodalSolver(sap);
-    const SapModel<double>& model = SapSolverTester::model(sap);
-    const auto context = model.MakeContext();
-    auto v = model.GetMutableVelocities(context.get());
-    model.velocities_permutation().Apply(v_guess, &v);
-    SapSolverTester::UpdateSuperNodalSolver(sap, *context,
+        SapSolverTester::MakeSuperNodalSolver(sap, *model);
+    const auto context = model->MakeContext();
+    auto v = model->GetMutableVelocities(context.get());
+    model->velocities_permutation().Apply(v_guess, &v);
+    SapSolverTester::UpdateSuperNodalSolver(sap, *model, *context,
                                             supernodal_solver.get());
     const MatrixXd H = supernodal_solver->MakeFullMatrix();
     const MatrixXd H_expected =
-        SapSolverTester::CalcDenseHessian(sap, *context);
+        SapSolverTester::CalcDenseHessian(sap, *model, *context);
     EXPECT_TRUE(CompareMatrices(H, H_expected, 3.0 * kEps,
                                 MatrixCompareType::relative));
   }
@@ -929,7 +927,7 @@ TEST_P(SapNewtonIterationTest, GuessIsTheSolution) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify optimality is satisfied but no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapSolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
   EXPECT_TRUE(stats.optimality_criterion_reached);
 
@@ -976,7 +974,7 @@ TEST_P(SapNewtonIterationTest, GuessWithinLimits) {
   // Since we provide the guess to be within the limits, and we know the
   // solution is v = v*, we expect the solver achieve convergence in a single
   // Newton iteration.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapSolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 1);
   // We expect two backtracking line search iterations given alpha_max != 1.
   // Since the problem is quadratic, we expect the exact line search to
@@ -1037,7 +1035,7 @@ TEST_P(SapNewtonIterationTest, GuessOutsideLimits) {
   // Since the initial guess is outside the constraint's bounds, and we know the
   // solution is v = v* inside the bounds, we expect several Newton iterations
   // to achieve convergence.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapSolverStats& stats = sap.get_statistics();
   EXPECT_GT(stats.num_iters, 1);
   EXPECT_GT(stats.num_line_search_iters, 1);
   // This problem is very well conditioned, we expect convergence on the
@@ -1144,7 +1142,7 @@ GTEST_TEST(SapSolver, ConstraintWithNegativeCost) {
   // Since the cost is a combination of a quadratic term (from A) and a linear
   // term (from the constant impulse constraint), we expect the solver to
   // achieve convergence in a single Newton iteration.
-  const SapSolver<double>::SolverStats& stats = solver.get_statistics();
+  const SapSolverStats& stats = solver.get_statistics();
   EXPECT_EQ(stats.num_iters, 1);
 
   // The whole purpose of this test is to verify the behavior of SAP when the
