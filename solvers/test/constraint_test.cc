@@ -108,7 +108,7 @@ GTEST_TEST(TestConstraint, LinearConstraintInfiniteEntries) {
   DRAKE_EXPECT_THROWS_MESSAGE(LinearConstraint(A_sparse_bad, lb, ub),
                               ".*IsFinite().*");
   DRAKE_EXPECT_THROWS_MESSAGE(LinearConstraint(A_sparse_bad.toDense(), lb, ub),
-               ".*allFinite().*");
+                              ".*allFinite().*");
 }
 
 GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
@@ -143,10 +143,8 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintInfiniteEntries) {
   A_sparse_bad.setFromTriplets(A_triplets.begin(), A_triplets.end());
   Eigen::Vector2d bound(0, 1);
   Eigen::Vector3d bound_bad(0, 1, kInf);
-  EXPECT_THROW(LinearEqualityConstraint(A_sparse_bad, bound),
-               std::exception);
-  EXPECT_THROW(LinearEqualityConstraint(A_sparse, bound_bad),
-               std::exception);
+  EXPECT_THROW(LinearEqualityConstraint(A_sparse_bad, bound), std::exception);
+  EXPECT_THROW(LinearEqualityConstraint(A_sparse, bound_bad), std::exception);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse_bad.toDense(), bound),
                std::exception);
   EXPECT_THROW(LinearEqualityConstraint(A_sparse.toDense(), bound_bad),
@@ -321,6 +319,26 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Construct a constraint with psd Hessian and lower bound being -inf.
   QuadraticConstraint constraint3(Eigen::Matrix2d::Identity(), b, -kInf, 1);
   EXPECT_TRUE(constraint3.is_convex());
+}
+
+GTEST_TEST(testConstraint, QudraticConstraintLDLtFailute) {
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  // This matrix has eigenvalues 0.5 and -0.5 and so is indefinite. However, if
+  // we use Eigen's LDLT to determine whether the matrix is definiteness of this
+  // matrix, the LDLT construction fails due to numerical issues.
+  // clang-format off
+  Q << 0, 0.5,
+       0.5, 0;
+  // clang-format on
+  b << 0, 0;
+  QuadraticConstraint constraint4(Q, b, -kInf, 1);
+
+  Eigen::LDLT<Eigen::MatrixXd> ldlt_solver;
+  ldlt_solver.compute(Q);
+  // Check that the LDLT solver fails.
+  EXPECT_EQ(ldlt_solver.info(), Eigen::NumericalIssue);
+  EXPECT_FALSE(constraint4.is_convex());
 }
 
 void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
