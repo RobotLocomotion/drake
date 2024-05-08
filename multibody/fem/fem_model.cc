@@ -22,6 +22,17 @@ void FemModel<T>::Builder::ThrowIfBuilt() const {
 }
 
 template <typename T>
+FemModel<T>::~FemModel() = default;
+
+template <typename T>
+std::unique_ptr<FemModel<T>> FemModel<T>::Clone() const {
+  std::unique_ptr<FemModel<T>> result = this->DoClone();
+  result->UpdateFemStateSystem();
+  result->dirichlet_bc_ = this->dirichlet_bc_;
+  return result;
+}
+
+template <typename T>
 std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
   return std::make_unique<FemState<T>>(fem_state_system_.get());
 }
@@ -102,5 +113,5 @@ void FemModel<T>::UpdateFemStateSystem() {
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::fem::FemModel<double>;
-template class drake::multibody::fem::FemModel<drake::AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::fem::FemModel);

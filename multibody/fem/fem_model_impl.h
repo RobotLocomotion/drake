@@ -70,6 +70,12 @@ class FemModelImpl : public FemModel<typename Element::T> {
   /** Returns the cache index for the per-element data in this model. */
   systems::CacheIndex element_data_index() const { return element_data_index_; }
 
+  /** Copies all data members, except those modified in DeclareCacheEntries(),
+   from the `other` FemModelImpl to `this` FemModelImpl . */
+  void SetFrom(const FemModelImpl<Element>& other) {
+    elements_ = other.elements_;
+  }
+
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
                       const FemPlantData<T>& plant_data,
