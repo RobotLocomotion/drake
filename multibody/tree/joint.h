@@ -178,8 +178,14 @@ class Joint : public MultibodyElement<T> {
   /// Returns this element's unique index.
   JointIndex index() const { return this->template index_impl<JointIndex>(); }
 
-  /// Returns this element's unique port index.
-  int port_index() const { return this->port_index_impl(); }
+  /// Returns this element's unique ordinal. The joint's ordinal is a unique
+  /// index into input/output ports that have an entry for each Joint, such as
+  /// reaction forces (see MultibodyPlant::get_reaction_forces_output_port()).
+  /// The ordinal value will be update (if needed) when joints are removed from
+  /// the parent plant so that the set of ordinal values is a bijection with [0,
+  /// num_joints()). If joints have been removed from the plant, do *not* use
+  /// index() to access input/output ports with entries per Joint.
+  int ordinal() const { return this->ordinal_impl(); }
 
   /// Returns the name of this joint.
   const std::string& name() const { return name_; }

@@ -134,7 +134,7 @@ void MultibodyTree<T>::RemoveJoint(const Joint<T>& joint) {
   for (JointIndex index : joints_.indices()) {
     if (index > joint_index) {
       Joint<T>& mutable_joint = joints_.get_mutable_element(index);
-      mutable_joint.set_port_index(mutable_joint.port_index() - 1);
+      mutable_joint.set_ordinal(mutable_joint.ordinal() - 1);
     }
   }
 }

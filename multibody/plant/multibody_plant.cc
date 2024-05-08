@@ -24,10 +24,12 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
+#include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-
+#include "drake/multibody/tree/revolute_spring.h"
 namespace drake {
 namespace multibody {
 
@@ -779,6 +781,74 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
 
 template <typename T>
 void MultibodyPlant<T>::RemoveJoint(const Joint<T>& joint) {
+  // Check for dependent modelling elements in the plant. Throw if any element
+  // depends on the joint to be removed.
+  std::vector<std::string> dependent_elements;
+
+  // Check JointActuators.
+  for (JointActuatorIndex index : GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = get_joint_actuator(index);
+    if (actuator.joint().index() == joint.index()) {
+      dependent_elements.push_back(
+          fmt::format("JointActuator(name: {}, index: {})", actuator.name(),
+                      actuator.index()));
+    }
+  }
+
+  // Check ForceElements. Internal force elements that reference joints include:
+  // DoorHinge, PrismaticSpring, RevoluteSpring.
+  for (ForceElementIndex index{0}; index < num_force_elements(); ++index) {
+    const ForceElement<T>* force_element = &get_force_element(index);
+
+    const DoorHinge<T>* doorhinge_force_element =
+        dynamic_cast<const DoorHinge<T>*>(force_element);
+    if (doorhinge_force_element != nullptr) {
+      if (doorhinge_force_element->joint().index() == joint.index()) {
+        dependent_elements.push_back(
+            fmt::format("DoorHinge(index: {})", index));
+      }
+      continue;
+    }
+
+    const PrismaticSpring<T>* prismatic_spring_force_element =
+        dynamic_cast<const PrismaticSpring<T>*>(force_element);
+    if (prismatic_spring_force_element != nullptr) {
+      if (prismatic_spring_force_element->joint().index() == joint.index()) {
+        dependent_elements.push_back(
+            fmt::format("PrismaticSpring(index: {})", index));
+      }
+      continue;
+    }
+
+    const RevoluteSpring<T>* revolute_spring_force_element =
+        dynamic_cast<const RevoluteSpring<T>*>(force_element);
+    if (revolute_spring_force_element != nullptr) {
+      if (revolute_spring_force_element->joint().index() == joint.index()) {
+        dependent_elements.push_back(
+            fmt::format("RevoluteSpring(index: {})", index));
+      }
+      continue;
+    }
+  }
+
+  // Check MultibodyConstraints. Currently only coupler constraints reference
+  // joints.
+  for (auto const& [id, constraint_spec] : get_coupler_constraint_specs()) {
+    if (constraint_spec.joint0_index == joint.index() ||
+        constraint_spec.joint1_index == joint.index()) {
+      dependent_elements.push_back(fmt::format(
+          "CouplerConstraint(id: {}, joint0: {}, joint1: {})",
+          constraint_spec.id, get_joint(constraint_spec.joint0_index).name(),
+          get_joint(constraint_spec.joint1_index).name()));
+    }
+  }
+
+  if (dependent_elements.size() > 0) {
+    throw std::logic_error(fmt::format(
+        "{}: joint with index {} has dependent model elements: [{}].", __func__,
+        joint.index(), fmt::join(dependent_elements, ", ")));
+  }
+
   this->mutable_tree().RemoveJoint(joint);
 }
 
@@ -977,8 +1047,10 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   for (const JointIndex& joint : joint_indexes) {
     if (!has_joint(joint)) {
-      throw std::logic_error(fmt::format(
-          "{}: No joint with index {} has been registered.", __func__, joint));
+      throw std::logic_error(
+          fmt::format("{}: No joint with index {} has been registered or it "
+                      "has been removed.",
+                      __func__, joint));
     }
     if (get_joint(joint).num_velocities() == 0) {
       throw std::logic_error(
@@ -3589,7 +3661,7 @@ void MultibodyPlant<T>::CalcReactionForces(
     // Re-express in the joint's child frame Jc.
     const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
     const RotationMatrix<T> R_JcW = R_WJc.inverse();
-    F_CJc_Jc_array->at(joint.port_index()) = R_JcW * F_CJc_W;
+    F_CJc_Jc_array->at(joint.ordinal()) = R_JcW * F_CJc_W;
   }
 }
 

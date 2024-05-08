@@ -35,8 +35,10 @@
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
+#include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -1698,7 +1700,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
   // Test throw condition: unregistered joint.
   std::vector<JointIndex> joint100{JointIndex(100)};
   DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joint100),
-                              ".*No joint with index.*registered.");
+                              ".*No joint with index.*registered.*removed.");
 }
 
 // Regression test for unhelpful error message -- see #14641.
@@ -2729,10 +2731,15 @@ GTEST_TEST(KukaModel, JointIndexes) {
   EXPECT_EQ(weld.num_positions(), 0);
   EXPECT_EQ(weld.num_velocities(), 0);
 
-  // We verify that the joints that have degrees of freedom cover all of the
-  // expected indices into q and v.
-  std::unordered_set<int> q_starts;
-  std::unordered_set<int> v_starts;
+  // We know all joints in our model, besides the last joint welding the
+  // model to the world, are revolute joints with the name `iiwa_joint_X`,
+  // where X = [1, 7]. MultibodyPlant gives no guarantees about correlation of
+  // joint indices and state indices. The mapping can be obtained via
+  // MultibodyPlant::StateSelectorMatrix(). However, for this simple model we
+  // know that state indices will be assigned in the same order as joint
+  // indices.
+  std::vector<int> q_starts;
+  std::vector<int> v_starts;
   for (JointIndex joint_index : plant.GetJointIndices()) {
     // Skip "weld" joint.
     if (joint_index == weld.index()) continue;
@@ -2743,27 +2750,20 @@ GTEST_TEST(KukaModel, JointIndexes) {
     EXPECT_EQ(joint.num_positions(), expected_num_q);
     EXPECT_EQ(joint.num_velocities(), expected_num_v);
     EXPECT_EQ(joint.position_start(), joint.velocity_start());
-    q_starts.insert(joint.position_start());
-    v_starts.insert(joint.velocity_start());
+    q_starts.push_back(joint.position_start());
+    v_starts.push_back(joint.velocity_start());
 
     // Confirm that the mutable accessor returns the same object.
     Joint<double>& mutable_joint = plant.get_mutable_joint(joint_index);
     EXPECT_EQ(&mutable_joint, &joint);
   }
-  EXPECT_THAT(q_starts, testing::UnorderedElementsAre(0, 1, 2, 3, 4, 5, 6));
-  EXPECT_THAT(v_starts, testing::UnorderedElementsAre(0, 1, 2, 3, 4, 5, 6));
+  EXPECT_THAT(q_starts, testing::ElementsAre(0, 1, 2, 3, 4, 5, 6));
+  EXPECT_THAT(v_starts, testing::ElementsAre(0, 1, 2, 3, 4, 5, 6));
 
   // Verify that the indexes above point to the right entries in the state
   // stored in the context.
   auto context = plant.CreateDefaultContext();
 
-  // We know all joints in our model, besides the last joint welding the
-  // model to the world, are revolute joints with the name `iiwa_joint_X`,
-  // where X = [1, 7]. MultibodyPlant gives no guarantees about correlation of
-  // joint indices and state indices. The mapping can be obtained via
-  // MultibodyPlant::StateSelectorMatrix(). However, for this simple model we
-  // know that state indices will be assigned in the same order as joint
-  // indices.
   for (int joint_number : {1, 2, 3, 4, 5, 6, 7}) {
     const auto& joint = plant.GetJointByName<RevoluteJoint>(
         "iiwa_joint_" + std::to_string(joint_number));
@@ -2807,6 +2807,8 @@ GTEST_TEST(KukaModel, ActuationMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 has been removed.
@@ -2829,6 +2831,8 @@ TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 ("actuator1") has been removed.
@@ -2852,6 +2856,8 @@ TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 has been removed.
@@ -2868,6 +2874,184 @@ TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
   MultibodyPlantTester::AddJointActuationForces(*plant_, *plant_context_,
                                                 &forces);
   EXPECT_TRUE(CompareMatrices(forces, forces_expected));
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, true /* remove joint */);
+  // Before finalize we remove `joint1`. This makes body1 a free
+  // body, but it will not have a joint until after finalize.
+  EXPECT_EQ(plant_->num_joints(), 2);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_FALSE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2)));
+
+  // Validate that port indices are assigned and updated contiguously.
+  const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
+  const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
+  EXPECT_EQ(joint0.ordinal(), 0);
+  EXPECT_EQ(joint2.ordinal(), 1);
+
+  FinalizeAndBuild();
+
+  // After finalize, `body1` is given a 6-dof joint.
+  // The newly added joint should get the next available joint index.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(3)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_FALSE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_TRUE(plant_->HasJointNamed("body1"));
+  EXPECT_THAT(
+      plant_->GetJointIndices(),
+      testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
+
+  const QuaternionFloatingJoint<double>& body1_floating_joint =
+      plant_->GetJointByName<QuaternionFloatingJoint>("body1");
+  EXPECT_EQ(body1_floating_joint.index(), JointIndex(3));
+
+  EXPECT_EQ(joint0.ordinal(), 0);
+  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(body1_floating_joint.ordinal(), 2);
+
+  // Confirm that removed joint logic is preserved after cloning.
+  std::unique_ptr<MultibodyPlant<double>> clone =
+      systems::System<double>::Clone(*plant_);
+  EXPECT_EQ(clone->num_joints(), 3);
+  EXPECT_TRUE(clone->has_joint(JointIndex(0)));
+  EXPECT_FALSE(clone->has_joint(JointIndex(1)));
+  EXPECT_TRUE(clone->has_joint(JointIndex(2)));
+  EXPECT_TRUE(clone->has_joint(JointIndex(3)));
+  EXPECT_TRUE(clone->HasJointNamed("joint0"));
+  EXPECT_FALSE(clone->HasJointNamed("joint1"));
+  EXPECT_TRUE(clone->HasJointNamed("joint2"));
+  EXPECT_TRUE(clone->HasJointNamed("body1"));
+  EXPECT_THAT(
+      clone->GetJointIndices(),
+      testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
+  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), 0);
+  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), 1);
+  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), 2);
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, true /* remove joint */);
+  constexpr int num_replacements = 100;
+  // Exercise replacement of the joint multiple times. Each time will result
+  // in a new joint index, it's ordinal should remain the same.
+  for (int i = 1; i < num_replacements; ++i) {
+    const RevoluteJoint<double>& joint1 = plant_->AddJoint<RevoluteJoint>(
+        "joint1", plant_->GetBodyByName("body0"), {},
+        plant_->GetBodyByName("body1"), {}, Vector3d::UnitZ());
+    EXPECT_EQ(joint1.index(), JointIndex(2 + i));
+    EXPECT_EQ(joint1.ordinal(), 2);
+    plant_->RemoveJoint(joint1);
+  }
+
+  // Replace the joint with a different joint type.
+  const WeldJoint<double>& joint1 = plant_->AddJoint<WeldJoint>(
+      "joint1", plant_->GetBodyByName("body0"), {},
+      plant_->GetBodyByName("body1"), {}, RigidTransformd::Identity());
+  EXPECT_EQ(joint1.index(), JointIndex(2 + num_replacements));
+
+  // Check expected plant invariants.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2 + num_replacements)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2),
+                                   JointIndex(2 + num_replacements)));
+  // Validate that port indices are assigned and updated contiguously.
+  const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
+  const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
+  EXPECT_EQ(joint0.ordinal(), 0);
+  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(joint1.ordinal(), 2);
+
+  FinalizeAndBuild();
+
+  // Check the same invariants post finalize.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2 + num_replacements)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2),
+                                   JointIndex(2 + num_replacements)));
+  EXPECT_EQ(joint0.ordinal(), 0);
+  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(joint1.ordinal(), 2);
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
+  BuildModel();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoRemoval(false /* do not remove actuator */, true /* remove joint */),
+      "RemoveJoint: joint with index.*has dependent model elements.*"
+      "JointActuator.*");
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJointWithCoupler) {
+  BuildModel();
+  // Add a coupler constraint between joint0 and joint1 before removal.
+  plant_->AddCouplerConstraint(plant_->GetJointByName<RevoluteJoint>("joint0"),
+                               plant_->GetJointByName<RevoluteJoint>("joint1"),
+                               2.0 /* gear ratio */, 1.0 /* offset */);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoRemoval(true /* remove actuator */, true /* remove joint */),
+      "RemoveJoint: joint with index.*has dependent model elements.*"
+      "CouplerConstraint.*");
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJointWithDoorHinge) {
+  BuildModel();
+  // Add a DoorHinge with joint1 before removal.
+  plant_->AddForceElement<DoorHinge>(
+      plant_->GetJointByName<RevoluteJoint>("joint1"), DoorHingeConfig());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoRemoval(true /* remove actuator */, true /* remove joint */),
+      "RemoveJoint: joint with index.*has dependent model elements.*"
+      "DoorHinge.*");
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJointWithRevoluteSpring) {
+  BuildModel();
+  // Add a RevoluteSpring with joint1 before removal.
+  plant_->AddForceElement<RevoluteSpring>(
+      plant_->GetJointByName<RevoluteJoint>("joint1"), 0 /* nominal angle */,
+      10 /* stiffness */);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoRemoval(true /* remove actuator */, true /* remove joint */),
+      "RemoveJoint: joint with index.*has dependent model elements.*"
+      "RevoluteSpring.*");
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJointWithPrismaticSpring) {
+  BuildModel<PrismaticJoint>();
+  // Add a PrismaticSpring with joint1 before removal.
+  plant_->AddForceElement<PrismaticSpring>(
+      plant_->GetJointByName<PrismaticJoint>("joint1"), 0 /* nominal angle */,
+      10 /* stiffness */);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoRemoval(true /* remove actuator */, true /* remove joint */),
+      "RemoveJoint: joint with index.*has dependent model elements.*"
+      "PrismaticSpring.*");
 }
 
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
@@ -2917,8 +3101,8 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 
       // For this simple model we do know the order in which variables are
       // stored in the state vector.
-      const double angle = xc[joint.port_index()];
-      const double angle_rate = xc[nq + joint.port_index()];
+      const double angle = xc[joint.ordinal()];
+      const double angle_rate = xc[nq + joint.ordinal()];
 
       // We simply set each entry in the state with the value of its index.
       joint.set_angle(context_.get(), angle);

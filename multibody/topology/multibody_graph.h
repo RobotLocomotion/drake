@@ -262,10 +262,7 @@ class MultibodyGraph::RigidBody {
   // Notes that this body is connected by `joint`.
   void add_joint(JointIndex joint) { joints_.push_back(joint); }
 
-  void remove_joint(JointIndex joint) {
-    joints_.erase(std::remove(joints_.begin(), joints_.end(), joint),
-                  joints_.end());
-  }
+  void remove_joint(JointIndex joint) { std::erase(joints_, joint); }
 
   BodyIndex index_;
   std::string name_;

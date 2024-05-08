@@ -2246,7 +2246,7 @@ class MultibodyTree {
     DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
 
     // Fill the `joints_` collection with nulls. This is to preserve the
-    // removed index structure of the ElementCollection when adding the clones
+    // removed index structure of the ElementCollection when adding the clone's
     // joints.
     tree_clone->joints_.ResizeToMatch(joints_);
 

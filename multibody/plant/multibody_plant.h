@@ -1354,7 +1354,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `get_joint_actuator(joint_index)` will throw an exception.
   ///
   /// @throws std::exception if the plant is already finalized.
+  /// @throws std::exception if `joint` has any dependent modeling elements that
+  /// have not been removed from the plant. These include: JointActuators,
+  /// ForceElements and MultibodyConstraints.
   /// @see AddJoint()
+  /// @note It is important to note that the JointIndex assigned to a joint is
+  /// immutable. New joint indices are assigned in increasing order, even if a
+  /// joint with a lower index has been removed. This has the consequence that
+  /// when a joint is removed from the plant, the sequence `[0, num_joints())`
+  /// is not necessarily the correct set of un-removed joint indices in the
+  /// plant. Thus, it is important *NOT* to loop over joint indices sequentially
+  /// from `0` to `num_joints() - 1`. Instead users should use the provided
+  /// GetJointIndices() and GetJointIndices(ModelIndex) functions:
+  /// ```
+  /// for (JointIndex index : plant.GetJointIndices()) {
+  ///   const Joint<double>& joint = plant.get_joint(index);
+  ///   ...
+  ///  }
+  /// ```
   void RemoveJoint(const Joint<T>& joint);
 
   /// Welds `frame_on_parent_F` and `frame_on_child_M` with relative pose
@@ -4635,7 +4652,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJoint().
   int num_joints() const { return internal_tree().num_joints(); }
 
-  /// Returns true if plant has a joint  with unique index `joint_index`. The
+  /// Returns true if plant has a joint with unique index `joint_index`. The
   /// value could be false if the joint was removed using RemoveJoint().
   bool has_joint(JointIndex joint_index) const {
     return internal_tree().has_joint(joint_index);
