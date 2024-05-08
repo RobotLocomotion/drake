@@ -32,7 +32,7 @@ DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
   /* Declare the vertex position output port. */
   configuration_output_port_index_ =
       this->DeclareAbstractOutputPort(
-              "vertex_positions",
+              "deformable_body_configuration",
               []() {
                 return AbstractValue::Make<
                     geometry::GeometryConfigurationVector<T>>();
@@ -136,9 +136,9 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
     DeformableBodyId body_A_id, const RigidBody<T>& body_B,
     const math::RigidTransform<double>& X_BA, const geometry::Shape& shape,
     const math::RigidTransform<double>& X_BG) {
+  ThrowIfNotDouble(__func__);
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowUnlessRegistered(__func__, body_A_id);
-  ThrowIfNotDouble(__func__);
   if (&this->plant()->get_body(body_B.index()) != &body_B) {
     throw std::logic_error(
         fmt::format("The rigid body with name {} is not registered with the "
@@ -398,10 +398,10 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
 template <typename T>
 void DeformableModel<T>::DoDeclareSystemResources() {
   if (!is_empty()) {
-    if (this->plant()->get_discrete_contact_approximation() ==
-        DiscreteContactApproximation::kTamsi) {
+    if (this->plant()->get_discrete_contact_solver() !=
+        DiscreteContactSolver::kSap) {
       throw std::runtime_error(
-          "DeformableModel does not support TAMSI contact approximation. "
+          "DeformableModel is only supported by the SAP contact solver. "
           "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete contact "
           "approximation for the MultibodyPlant containing deformable bodies.");
     }

@@ -60,7 +60,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Constructs a PhysicalModel owned by the given `owning_plant`. The lifespan
    of the `owning_plant` must outlast `this` PhysicalModel. This PhysicalModel
    declares System resources from the `owning_plant` in the call to
-   `DeclareSystemResources()`.
+   `DeclareSystemResources()` through the call to `MultibodyPlant::Finalize()`.
    @pre owning_plant != nullptr. */
   explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
       : owning_plant_(owning_plant) {
@@ -69,11 +69,6 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   ~PhysicalModel() override = default;
 
-  /** Returns the back pointer to the MultibodyPlant owning `this`
-   PhysicalModel pre-finalize and nullptr post-finalize. */
-  const MultibodyPlant<T>* plant() const { return owning_plant_; }
-  MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
-
   /** (Internal only) Creates a clone of `this` concrete PhysicalModel object
    with the scalar type `ScalarType` to be owned by the given `plant`. The clone
    should be a deep copy of the original PhysicalModel with the exception of
@@ -81,7 +76,9 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    called by the scalar-converting copy constructor of MultibodyPlant only and
    thus is only called from a finalized MultibodyPlant.
    @tparam_default_scalar
-   @pre plant != nullptr.
+   @throw std::exception unless plant != nullptr.
+   @throw std::exception unless the owning plant of `this` PhysicalModel is
+   finalized.
    @param[in] plant pointer to the MultibodyPlant owning the clone. This needs
    to be a mutable pointer because constructor of the clone requires a mutable
    pointer to the owning plant.
@@ -90,11 +87,14 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
       MultibodyPlant<ScalarType>* plant) const {
+    DRAKE_THROW_UNLESS(plant != nullptr);
     /* The plant owning `this` PhysicalModel must be finalized and consequently
      the plant back pointer is nulled out. */
-    DRAKE_THROW_UNLESS(this->plant() == nullptr);
-    DRAKE_THROW_UNLESS(plant != nullptr);
-
+    if (this->plant() != nullptr) {
+      throw std::logic_error(
+          "The owning plant of the PhysicalModel to be cloned must be "
+          "finalized.");
+    }
     if constexpr (std::is_same_v<ScalarType, double>) {
       return CloneToDouble(plant);
     } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
@@ -119,7 +119,8 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
 
   /** (Internal only) MultibodyPlant calls this from within Finalize() to
    declare additional system resources. This method is only meant to be called
-   by MultibodyPlant. */
+   by MultibodyPlant. The pointer to the owning plant is nulled after call to
+   this function. */
   void DeclareSystemResources() {
     DRAKE_DEMAND(owning_plant_ != nullptr);
     DoDeclareSystemResources();
@@ -134,6 +135,11 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   }
 
  protected:
+  /* Returns the back pointer to the MultibodyPlant owning `this`
+   PhysicalModel pre-finalize and nullptr post-finalize. */
+  const MultibodyPlant<T>* plant() const { return owning_plant_; }
+  MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
+
   /* Derived classes must override this function to return their specific model
    variant. */
   virtual PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()

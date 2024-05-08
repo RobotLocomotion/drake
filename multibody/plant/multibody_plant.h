@@ -279,6 +279,7 @@ output_ports:
   model_instance_name[i]</em>_generalized_contact_forces'
 - <em style="color:gray">model_instance_name[i]</em>_net_actuation
 - <span style="color:green">geometry_pose</span>
+- <span style="color:green">deformable_body_configuration</span>
 @endsystem
 
 The ports whose names begin with <em style="color:gray">

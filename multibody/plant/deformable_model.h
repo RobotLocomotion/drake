@@ -242,10 +242,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   bool is_cloneable_to_double() const final { return true; }
 
-  /** Returns true if this %DeformableModel is empty. */
+  /** Returns true if and only if this %DeformableModel is empty. */
   bool is_cloneable_to_autodiff() const final { return is_empty(); }
 
-  /** Returns true if this %DeformableModel is empty. */
+  /** Returns true if and only if this %DeformableModel is empty. */
   bool is_cloneable_to_symbolic() const final { return is_empty(); }
 
  private:
