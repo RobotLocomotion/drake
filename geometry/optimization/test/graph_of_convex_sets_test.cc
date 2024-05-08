@@ -1832,8 +1832,6 @@ TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
 }
 
 TEST_F(ThreeBoxes, NewSlackVariablesCost) {
-  std::cout << "### RUNNING TEST ###" << std::endl;
-
   // We minimize the cost 1/x for each coordinate x, y in the source
   // vertex, which we formulate with a slack variable and a
   // RotatedLorentzConeConstraint as:
