@@ -10,7 +10,8 @@ using Eigen::Vector3d;
 using systems::DiagramBuilder;
 using systems::Simulator;
 
-void MultibodyPlantRemodeling::SetUp() {
+void MultibodyPlantRemodeling::BuildModel(bool remove_actuator,
+                                          bool remove_joint) {
   builder_ = std::make_unique<DiagramBuilder<double>>();
   MultibodyPlantConfig config = {.time_step = kTimeStep,
                                  .discrete_contact_approximation = "sap"};
@@ -35,8 +36,13 @@ void MultibodyPlantRemodeling::SetUp() {
   plant_->AddJointActuator("actuator2",
                            plant_->GetJointByName<RevoluteJoint>("joint2"), 1);
 
-  // Remove an actuator in the middle of the array.
-  plant_->RemoveJointActuator(plant_->GetJointActuatorByName("actuator1"));
+  if (remove_actuator) {
+    plant_->RemoveJointActuator(plant_->GetJointActuatorByName("actuator1"));
+  }
+
+  if (remove_joint) {
+    plant_->RemoveJoint(plant_->GetJointByName("joint1"));
+  }
 }
 
 void MultibodyPlantRemodeling::FinalizeAndBuild() {

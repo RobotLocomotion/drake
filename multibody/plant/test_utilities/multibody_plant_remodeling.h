@@ -24,9 +24,10 @@ namespace multibody {
 class MultibodyPlantRemodeling : public ::testing::Test {
  public:
   // This fixture sets up a plant with a serial chain of 3 bodies connected by
-  // revolute joints. An actuator is added to each joint. Then the actuator
-  // controlling `joint1` is removed.
-  void SetUp() override;
+  // revolute joints. An actuator is added to each joint.
+  // If `remove_actuator` is true, actuator1 will be removed.
+  // If `remove_joint` is true, joint1 will be removed.
+  void BuildModel(bool remove_actuator, bool remove_joint);
 
   // Finalize the plant, build the diagram and initialize `simulator_`
   void FinalizeAndBuild();

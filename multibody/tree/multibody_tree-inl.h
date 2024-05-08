@@ -409,6 +409,7 @@ template <typename FromScalar>
 Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
   auto joint_clone = joint.CloneToScalar(this);
   joint_clone->set_parent_tree(this, joint.index());
+  joint_clone->set_port_index(joint.port_index());
   joint_clone->set_model_instance(joint.model_instance());
   return &joints_.Add(std::move(joint_clone));
 }

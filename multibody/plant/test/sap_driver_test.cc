@@ -510,6 +510,7 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
 }
 
 TEST_F(MultibodyPlantRemodeling, AddPdControllerConstraints) {
+  BuildModel(true /* remove actuator */, false /* do not remove joint */);
   // Set up actuators with pd controllers.
   for (JointActuatorIndex actuator_index : plant_->GetJointActuatorIndices()) {
     JointActuator<double>& actuator =

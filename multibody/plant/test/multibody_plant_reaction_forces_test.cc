@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -849,6 +850,173 @@ TEST_F(WeldedBoxesTest, ReactionForcesContinuous) {
   ASSERT_FALSE(plant_->is_discrete());
   VerifyBodyReactionForces();
 }
+
+class WeldedAndFloatingTest : public ::testing::TestWithParam<bool> {
+ public:
+  void SetUp() {
+    const bool replace_joints = GetParam();
+
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.01);
+
+    // Create four rigid bodies.
+    const RigidBody<double>& sphere0 = plant_->AddRigidBody(
+        "sphere0",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[0], 1.0));
+    const RigidBody<double>& sphere1 = plant_->AddRigidBody(
+        "sphere1",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[1], 1.0));
+    const RigidBody<double>& sphere2 = plant_->AddRigidBody(
+        "sphere2",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[2], 1.0));
+    const RigidBody<double>& sphere3 = plant_->AddRigidBody(
+        "sphere3",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[3], 1.0));
+
+    // Make sphere0 and sphere1 floating and weld sphere2 and sphere3 to world.
+    floating0_ = &plant_->AddJoint<QuaternionFloatingJoint>(
+        "floating0", plant_->world_body(), {}, sphere0, {});
+    floating1_ = &plant_->AddJoint<QuaternionFloatingJoint>(
+        "floating1", plant_->world_body(), {}, sphere1, {});
+    weld2_ =
+        &plant_->AddJoint<WeldJoint>("weld2", plant_->world_body(), {}, sphere2,
+                                     {}, RigidTransformd::Identity());
+    weld3_ =
+        &plant_->AddJoint<WeldJoint>("weld3", plant_->world_body(), {}, sphere3,
+                                     {}, RigidTransformd::Identity());
+
+    // If specified, replace the floating joints with welds.
+    if (replace_joints) {
+      plant_->RemoveJoint(*floating0_);
+      plant_->RemoveJoint(*floating1_);
+      floating0_ = nullptr;
+      floating1_ = nullptr;
+      weld0_ = &plant_->AddJoint<WeldJoint>("weld0", plant_->world_body(), {},
+                                            sphere0, {},
+                                            RigidTransformd::Identity());
+      weld1_ = &plant_->AddJoint<WeldJoint>("weld1", plant_->world_body(), {},
+                                            sphere1, {},
+                                            RigidTransformd::Identity());
+    }
+    plant_->mutable_gravity_field().set_gravity_vector(
+        Vector3d(0.0, 0.0, -kGravity));
+    plant_->Finalize();
+    plant_context_ = plant_->CreateDefaultContext();
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> plant_context_;
+  const QuaternionFloatingJoint<double>* floating0_{nullptr};
+  const QuaternionFloatingJoint<double>* floating1_{nullptr};
+  const WeldJoint<double>* weld0_{nullptr};
+  const WeldJoint<double>* weld1_{nullptr};
+  const WeldJoint<double>* weld2_{nullptr};
+  const WeldJoint<double>* weld3_{nullptr};
+  // Mass of each body in Kg.
+  const std::array<double, 4> kBodyMasses{1.0, 2.0, 3.0, 4.0};
+  // We round off gravity for simpler numbers.
+  const double kGravity{10.0};  // [m/s²]
+};
+
+TEST_P(WeldedAndFloatingTest, ReactionForcesPortIndexing) {
+  const bool replace_joints = GetParam();
+  const auto& reaction_forces =
+      plant_->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*plant_context_);
+
+  ASSERT_EQ(reaction_forces.size(), 4);
+  ASSERT_EQ(plant_->num_joints(), 4);
+
+  if (replace_joints) {
+    // Replace the floating joints with welds. This should shift indices around.
+    // We confirm that reaction forces are using the correct indexing from the
+    // joints.
+
+    // Floating joints were replaced with weld joints.
+    EXPECT_FALSE(plant_->HasJointNamed("floating0"));
+    EXPECT_FALSE(plant_->HasJointNamed("floating1"));
+    EXPECT_FALSE(plant_->has_joint(JointIndex(0)));
+    EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+    EXPECT_TRUE(plant_->HasJointNamed("weld0"));
+    EXPECT_TRUE(plant_->HasJointNamed("weld1"));
+
+    // Because we removed and replaced the floating joints after all four
+    // joints were originally added, they receive joint indices 4 and 5. The
+    // port indices should have been updated during the removal, so the joints
+    // should be ordered as: ["weld2", "weld3", "weld0", "weld1"] and reaction
+    // forces should correspond to that order.
+    EXPECT_EQ(weld0_->index(), JointIndex(4));
+    EXPECT_EQ(weld0_->port_index(), 2);
+    EXPECT_EQ(weld1_->index(), JointIndex(5));
+    EXPECT_EQ(weld1_->port_index(), 3);
+    EXPECT_EQ(weld2_->index(), JointIndex(2));
+    EXPECT_EQ(weld2_->port_index(), 0);
+    EXPECT_EQ(weld3_->index(), JointIndex(3));
+    EXPECT_EQ(weld3_->port_index(), 1);
+
+    // All joints are welded, so we expect the reation forces to
+    // oppose gravity on the bodies.
+    const SpatialForce<double>& F_B0cm_W =
+        reaction_forces[weld0_->port_index()];
+    EXPECT_EQ(F_B0cm_W.translational(),
+              kBodyMasses[0] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B0cm_W.rotational(), Vector3d::Zero());
+    const SpatialForce<double>& F_B1cm_W =
+        reaction_forces[weld1_->port_index()];
+    EXPECT_EQ(F_B1cm_W.translational(),
+              kBodyMasses[1] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B0cm_W.rotational(), Vector3d::Zero());
+    const SpatialForce<double>& F_B2cm_W =
+        reaction_forces[weld2_->port_index()];
+    EXPECT_EQ(F_B2cm_W.translational(),
+              kBodyMasses[2] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B2cm_W.rotational(), Vector3d::Zero());
+    const SpatialForce<double>& F_B3cm_W =
+        reaction_forces[weld3_->port_index()];
+    EXPECT_EQ(F_B3cm_W.translational(),
+              kBodyMasses[3] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B3cm_W.rotational(), Vector3d::Zero());
+
+  } else {
+    // Do not replace the floating joints, nominal case.
+
+    // Joints will have assigned continguous indices and port indices in the
+    // order they were created.
+    EXPECT_EQ(floating0_->index(), JointIndex(0));
+    EXPECT_EQ(floating0_->port_index(), 0);
+    EXPECT_EQ(floating1_->index(), JointIndex(1));
+    EXPECT_EQ(floating1_->port_index(), 1);
+    EXPECT_EQ(weld2_->index(), JointIndex(2));
+    EXPECT_EQ(weld2_->port_index(), 2);
+    EXPECT_EQ(weld3_->index(), JointIndex(3));
+    EXPECT_EQ(weld3_->port_index(), 3);
+
+    // Joints with index 0 and 1 are floating, so we expect no reaction forces.
+    const SpatialForce<double>& F_B0cm_W =
+        reaction_forces[floating0_->port_index()];
+    EXPECT_EQ(F_B0cm_W.translational(), Vector3d::Zero());
+    EXPECT_EQ(F_B0cm_W.rotational(), Vector3d::Zero());
+    const SpatialForce<double>& F_B1cm_W =
+        reaction_forces[floating1_->port_index()];
+    EXPECT_EQ(F_B1cm_W.translational(), Vector3d::Zero());
+    EXPECT_EQ(F_B1cm_W.rotational(), Vector3d::Zero());
+    // Joints with index 2 and 3 are welded, so we expect the reation forces to
+    // oppose gravity on the bodies.
+    const SpatialForce<double>& F_B2cm_W =
+        reaction_forces[weld2_->port_index()];
+    EXPECT_EQ(F_B2cm_W.translational(),
+              kBodyMasses[2] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B2cm_W.rotational(), Vector3d::Zero());
+    const SpatialForce<double>& F_B3cm_W =
+        reaction_forces[weld3_->port_index()];
+    EXPECT_EQ(F_B3cm_W.translational(),
+              kBodyMasses[3] * kGravity * Vector3d::UnitZ());
+    EXPECT_EQ(F_B3cm_W.rotational(), Vector3d::Zero());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(ReactionForcesTests, WeldedAndFloatingTest,
+                         testing::ValuesIn({false, true}));
 
 }  // namespace
 }  // namespace multibody

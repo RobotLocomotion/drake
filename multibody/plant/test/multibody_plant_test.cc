@@ -2807,6 +2807,7 @@ GTEST_TEST(KukaModel, ActuationMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
+  BuildModel(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 has been removed.
@@ -2829,6 +2830,7 @@ TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
+  BuildModel(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 ("actuator1") has been removed.
@@ -2852,6 +2854,7 @@ TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
 }
 
 TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
+  BuildModel(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
   // Actuator with index 1 has been removed.
@@ -2868,6 +2871,127 @@ TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
   MultibodyPlantTester::AddJointActuationForces(*plant_, *plant_context_,
                                                 &forces);
   EXPECT_TRUE(CompareMatrices(forces, forces_expected));
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
+  BuildModel(true /* remove actuator */, true /* remove joint */);
+  // Before finalize we remove `joint1`. This makes body1 a free
+  // body, but it will not have a joint until after finalize.
+  EXPECT_EQ(plant_->num_joints(), 2);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_FALSE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2)));
+
+  // Validate that port indices are assigned and updated contiguously.
+  const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
+  const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
+  EXPECT_EQ(joint0.port_index(), 0);
+  EXPECT_EQ(joint2.port_index(), 1);
+
+  FinalizeAndBuild();
+
+  // After finalize, `body1` is given a 6-dof joint.
+  // The newly added joint should get the next available joint index.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(3)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_FALSE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_TRUE(plant_->HasJointNamed("body1"));
+  EXPECT_THAT(
+      plant_->GetJointIndices(),
+      testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
+
+  const QuaternionFloatingJoint<double>& body1_floating_joint =
+      plant_->GetJointByName<QuaternionFloatingJoint>("body1");
+  EXPECT_EQ(body1_floating_joint.index(), JointIndex(3));
+
+  EXPECT_EQ(joint0.port_index(), 0);
+  EXPECT_EQ(joint2.port_index(), 1);
+  EXPECT_EQ(body1_floating_joint.port_index(), 2);
+
+  // Confirm that removed joint logic is preserved after cloning.
+  std::unique_ptr<MultibodyPlant<double>> clone =
+      systems::System<double>::Clone(*plant_);
+  EXPECT_EQ(clone->num_joints(), 3);
+  EXPECT_TRUE(clone->has_joint(JointIndex(0)));
+  EXPECT_FALSE(clone->has_joint(JointIndex(1)));
+  EXPECT_TRUE(clone->has_joint(JointIndex(2)));
+  EXPECT_TRUE(clone->has_joint(JointIndex(3)));
+  EXPECT_TRUE(clone->HasJointNamed("joint0"));
+  EXPECT_FALSE(clone->HasJointNamed("joint1"));
+  EXPECT_TRUE(clone->HasJointNamed("joint2"));
+  EXPECT_TRUE(clone->HasJointNamed("body1"));
+  EXPECT_THAT(
+      clone->GetJointIndices(),
+      testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
+  EXPECT_EQ(clone->get_joint(JointIndex(0)).port_index(), 0);
+  EXPECT_EQ(clone->get_joint(JointIndex(2)).port_index(), 1);
+  EXPECT_EQ(clone->get_joint(JointIndex(3)).port_index(), 2);
+}
+
+TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
+  BuildModel(true /* remove actuator */, true /* remove joint */);
+  constexpr int num_replacements = 100;
+  // Exercise replacement of the joint multiple times. Each time will result
+  // in a new joint index, it's port index should remain the same.
+  for (int i = 1; i < num_replacements; ++i) {
+    const RevoluteJoint<double>& joint1 = plant_->AddJoint<RevoluteJoint>(
+        "joint1", plant_->GetBodyByName("body0"), {},
+        plant_->GetBodyByName("body1"), {}, Vector3d::UnitZ());
+    EXPECT_EQ(joint1.index(), JointIndex(2 + i));
+    EXPECT_EQ(joint1.port_index(), 2);
+    plant_->RemoveJoint(joint1);
+  }
+
+  // Replace the joint with a different joint type.
+  const WeldJoint<double>& joint1 = plant_->AddJoint<WeldJoint>(
+      "joint1", plant_->GetBodyByName("body0"), {},
+      plant_->GetBodyByName("body1"), {}, RigidTransformd::Identity());
+  EXPECT_EQ(joint1.index(), JointIndex(2 + num_replacements));
+
+  // Check expected plant invariants.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2 + num_replacements)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2),
+                                   JointIndex(2 + num_replacements)));
+  // Validate that port indices are assigned and updated contiguously.
+  const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
+  const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
+  EXPECT_EQ(joint0.port_index(), 0);
+  EXPECT_EQ(joint2.port_index(), 1);
+  EXPECT_EQ(joint1.port_index(), 2);
+
+  FinalizeAndBuild();
+
+  // Check the same invariants post finalize.
+  EXPECT_EQ(plant_->num_joints(), 3);
+  EXPECT_TRUE(plant_->has_joint(JointIndex(0)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2)));
+  EXPECT_TRUE(plant_->has_joint(JointIndex(2 + num_replacements)));
+  EXPECT_TRUE(plant_->HasJointNamed("joint0"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint1"));
+  EXPECT_TRUE(plant_->HasJointNamed("joint2"));
+  EXPECT_THAT(plant_->GetJointIndices(),
+              testing::ElementsAre(JointIndex(0), JointIndex(2),
+                                   JointIndex(2 + num_replacements)));
+  EXPECT_EQ(joint0.port_index(), 0);
+  EXPECT_EQ(joint2.port_index(), 1);
+  EXPECT_EQ(joint1.port_index(), 2);
 }
 
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic

@@ -496,6 +496,7 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
 /* Tests that actuation forces are accumulated using the correct indexing from
  JointActuaton::input_start() */
 TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+  BuildModel(true /* remove actuator */, false /* do not remove joint */);
   // Set gravity vector to zero so there is no force element contribution.
   plant_->mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
 
