@@ -3158,16 +3158,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                                       state);
   }
 
-  // TODO(sherm1) Rename this SetFreeBodyRandomTranslationDistribution()
-
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's x-y-z `position` with respect to World.
+  /// body's x-y-z `translation` with respect to World.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyRandomTranslationDistribution(
+      const RigidBody<T>& body,
+      const Vector3<symbolic::Expression>& translation) {
+    this->mutable_tree().SetFreeBodyRandomTranslationDistributionOrThrow(
+        body, translation);
+  }
+
+  DRAKE_DEPRECATED(
+      "2024-08-01",
+      "Use MultibodyPlant::SetFreeBodyRandomTranslationDistribution()")
   void SetFreeBodyRandomPositionDistribution(
       const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
-    this->mutable_tree().SetFreeBodyRandomTranslationDistributionOrThrow(
-        body, position);
+    return SetFreeBodyRandomTranslationDistribution(body, position);
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free

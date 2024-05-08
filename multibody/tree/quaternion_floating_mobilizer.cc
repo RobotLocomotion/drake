@@ -84,16 +84,16 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_translation(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_quaternion(
+QuaternionFloatingMobilizer<T>::SetQuaternion(
     systems::Context<T>* context, const Quaternion<T>& q_FM) const {
   DRAKE_DEMAND(context != nullptr);
-  set_quaternion(*context, q_FM, &context->get_mutable_state());
+  SetQuaternion(*context, q_FM, &context->get_mutable_state());
   return *this;
 }
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_quaternion(
+QuaternionFloatingMobilizer<T>::SetQuaternion(
     const systems::Context<T>&, const Quaternion<T>& q_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
@@ -108,16 +108,15 @@ QuaternionFloatingMobilizer<T>::set_quaternion(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
-                                                const Vector3<T>& p_FM) const {
+QuaternionFloatingMobilizer<T>::SetTranslation(systems::Context<T>* context,
+                                               const Vector3<T>& p_FM) const {
   DRAKE_DEMAND(context != nullptr);
-  set_translation(*context, p_FM, &context->get_mutable_state());
-  return *this;
+  return SetTranslation(*context, p_FM, &context->get_mutable_state());
 }
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_translation(
+QuaternionFloatingMobilizer<T>::SetTranslation(
     const systems::Context<T>&, const Vector3<T>& p_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
@@ -142,8 +141,7 @@ void QuaternionFloatingMobilizer<T>::set_random_translation_distribution(
 }
 
 template <typename T>
-void QuaternionFloatingMobilizer<
-    T>::set_random_quaternion_distribution(
+void QuaternionFloatingMobilizer<T>::set_random_quaternion_distribution(
         const Eigen::Quaternion<symbolic::Expression>& q_FM) {
   Vector<symbolic::Expression, kNq> positions;
   if (this->get_random_state_distribution()) {
