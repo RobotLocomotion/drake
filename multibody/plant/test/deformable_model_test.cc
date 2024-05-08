@@ -437,8 +437,9 @@ TEST_F(DeformableModelTest, ExternalForces) {
 
 TEST_F(DeformableModelTest, CloneBeforeFinalizeThrows) {
   MultibodyPlant<double> double_plant(0.01);
-  EXPECT_THROW(deformable_model_ptr_->CloneToScalar<double>(&double_plant),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->CloneToScalar<double>(&double_plant),
+      ".*owning plant.*must be finalized.*");
   plant_->Finalize();
   EXPECT_NO_THROW(deformable_model_ptr_->CloneToScalar<double>(&double_plant));
 }
@@ -552,7 +553,7 @@ TEST_F(DeformableModelTest, NonEmptyDeformableModelOnlyWorksWithSap) {
   RegisterSphere(0.5);
   EXPECT_FALSE(deformable_model_ptr_->is_empty());
   DRAKE_EXPECT_THROWS_MESSAGE(plant_->Finalize(),
-                              ".*DeformableModel does not support TAMSI.*");
+                              ".*DeformableModel is only supported by.*SAP.*");
 }
 
 TEST_F(DeformableModelTest, RegistrationNotAllowedForNonDoubleModel) {
