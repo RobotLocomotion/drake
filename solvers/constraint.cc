@@ -511,18 +511,18 @@ std::ostream& LinearConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
 }
 
-std::string LinearConstraint::DoToLatex(const VectorX<symbolic::Variable>& vars,
-                                        int precision) const {
+std::string LinearConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
   if (num_constraints() == 1) {
     return fmt::format(
         "{}{}{}", ToLatexLowerBound(*this, precision),
         symbolic::ToLatex((A_.get_as_sparse() * vars)[0], precision),
         ToLatexUpperBound(*this, precision));
   }
-  return fmt::format("{}{} {}{}", ToLatexLowerBound(*this, precision),
-                     symbolic::ToLatex(GetDenseA(), precision),
-                     symbolic::ToLatex(vars),
-                     ToLatexUpperBound(*this, precision));
+  return fmt::format(
+      "{}{} {}{}", ToLatexLowerBound(*this, precision),
+      symbolic::ToLatex(GetDenseA(), precision), symbolic::ToLatex(vars),
+      ToLatexUpperBound(*this, precision));
 }
 
 std::ostream& LinearEqualityConstraint::DoDisplay(
@@ -677,8 +677,8 @@ void PositiveSemidefiniteConstraint::DoEval(
 
 std::string PositiveSemidefiniteConstraint::DoToLatex(
     const VectorX<symbolic::Variable>& vars, int precision) const {
-  Eigen::Map<const MatrixX<symbolic::Variable>> S(vars.data(), matrix_rows(),
-                                                  matrix_rows());
+  Eigen::Map<const MatrixX<symbolic::Variable>> S(
+      vars.data(), matrix_rows(), matrix_rows());
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
 
