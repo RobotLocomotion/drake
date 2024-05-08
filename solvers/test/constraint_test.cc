@@ -325,8 +325,8 @@ GTEST_TEST(testConstraint, QudraticConstraintLDLtFailute) {
   Eigen::Matrix2d Q;
   Eigen::Vector2d b;
   // This matrix has eigenvalues 0.5 and -0.5 and so is indefinite. However, if
-  // we use Eigen's LDLT to determine whether the matrix is definiteness of this
-  // matrix, the LDLT construction fails due to numerical issues.
+  // we use Eigen's LDLT to determine the definiteness of this matrix, the
+  // LDLT construction fails due to numerical issues.
   // clang-format off
   Q << 0, 0.5,
        0.5, 0;

@@ -166,7 +166,8 @@ void QuadraticConstraint::UpdateHessianType(
     // Fall back to an indefinite Hessian type if we cannot determine the
     // Hessian type.
     drake::log()->warn(
-        "Unable to determine Hessian type of the Quadratic Constraint. Falling "
+        "UpdateHessianType(): Unable to determine Hessian type of the "
+        "Quadratic Constraint. Falling "
         "back to indefinite Hessian type.");
     hessian_type_ = HessianType::kIndefinite;
   } else {
