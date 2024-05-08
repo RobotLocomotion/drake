@@ -63,15 +63,42 @@ void LinkJointGraph::Clear() {
   // Joint type names used here must match the kTypeName members of the
   // matching Drake Joint types. Order matters here so we match the
   // predefined joint type indices.
-  DRAKE_DEMAND(RegisterJointType("weld", 0, 0) == weld_joint_type_index());
+  DRAKE_DEMAND(RegisterJointType("weld", 0, 0) == weld_joint_traits_index());
   DRAKE_DEMAND(RegisterJointType("quaternion_floating", 7, 6, true) ==
-               quaternion_floating_joint_type_index());
+               quaternion_floating_joint_traits_index());
   DRAKE_DEMAND(RegisterJointType("rpy_floating", 6, 6) ==
-               rpy_floating_joint_type_index());
+               rpy_floating_joint_traits_index());
 
   // Define the World Link.
   const BodyIndex world_index = AddLink("world", world_model_instance());
   DRAKE_DEMAND(world_index == BodyIndex(0));
+}
+
+void LinkJointGraph::SetGlobalForestBuildingOptions(
+    ForestBuildingOptions global_options) {
+  InvalidateForest();
+  data_.global_forest_building_options = global_options;
+}
+
+// Note that we're implicitly assuming that model instance indices will be
+// reasonably small integers. They don't have to be contiguous but we're
+// allocating an array big enough to hold everything up to the largest index
+// we've seen. This enables O(1) access to an element's options during forest
+// building.
+void LinkJointGraph::SetForestBuildingOptions(ModelInstanceIndex instance_index,
+                                              ForestBuildingOptions options) {
+  InvalidateForest();
+  if (instance_index >= ssize(data_.model_instance_forest_building_options)) {
+    data_.model_instance_forest_building_options.resize(instance_index + 1,
+                                                        std::nullopt);
+  }
+  data_.model_instance_forest_building_options[instance_index] = options;
+}
+
+void LinkJointGraph::ResetForestBuildingOptions() {
+  InvalidateForest();
+  data_.global_forest_building_options = ForestBuildingOptions::kDefault;
+  data_.model_instance_forest_building_options.clear();
 }
 
 bool LinkJointGraph::BuildForest() {
@@ -275,7 +302,7 @@ JointIndex LinkJointGraph::AddJoint(const std::string& name,
                     __func__, name, model_instance));
   }
 
-  const JointTypeIndex type_index = GetJointTypeIndex(type);
+  const JointTraitsIndex type_index = GetJointTraitsIndex(type);
   if (!type_index.is_valid()) {
     throw std::logic_error(fmt::format(
         "{}(): Unrecognized type '{}' for joint '{}' (model instance {}).",
@@ -288,7 +315,7 @@ JointIndex LinkJointGraph::AddJoint(const std::string& name,
   const Link& new_child = links(child_link_index);
   const bool is_static = (new_parent.is_world() && link_is_static(new_child)) ||
                          (new_child.is_world() && link_is_static(new_parent));
-  if (is_static && type_index != weld_joint_type_index()) {
+  if (is_static && type_index != weld_joint_traits_index()) {
     const std::string static_link_name =
         new_parent.is_world() ? new_child.name() : new_parent.name();
     throw std::logic_error(
@@ -331,7 +358,7 @@ JointIndex LinkJointGraph::AddJoint(const std::string& name,
   return joint_index;
 }
 
-JointTypeIndex LinkJointGraph::RegisterJointType(
+JointTraitsIndex LinkJointGraph::RegisterJointType(
     const std::string& joint_type_name, int nq, int nv, bool has_quaternion) {
   // Reject duplicate type name.
   const auto it = data_.joint_type_name_to_index.find(joint_type_name);
@@ -344,15 +371,15 @@ JointTypeIndex LinkJointGraph::RegisterJointType(
   DRAKE_DEMAND(0 <= nq && nq <= 7 && 0 <= nv && nv <= 6 && nv <= nq);
   DRAKE_DEMAND(!has_quaternion || nq >= 4);
 
-  const JointTypeIndex joint_type_index(data_.joint_types.size());
-  data_.joint_types.push_back({.name = joint_type_name,
-                               .nq = nq,
-                               .nv = nv,
-                               .has_quaternion = has_quaternion});
-  data_.joint_type_name_to_index[joint_type_name] = joint_type_index;
+  const JointTraitsIndex joint_traits_index(data_.joint_traits.size());
+  data_.joint_traits.push_back({.name = joint_type_name,
+                                .nq = nq,
+                                .nv = nv,
+                                .has_quaternion = has_quaternion});
+  data_.joint_type_name_to_index[joint_type_name] = joint_traits_index;
   DRAKE_DEMAND(data_.joint_type_name_to_index.size() ==
-               data_.joint_types.size());
-  return joint_type_index;
+               data_.joint_traits.size());
+  return joint_traits_index;
 }
 
 bool LinkJointGraph::IsJointTypeRegistered(
@@ -387,10 +414,10 @@ LoopConstraintIndex LinkJointGraph::AddLoopClosingWeldConstraint(
   return index;
 }
 
-JointTypeIndex LinkJointGraph::GetJointTypeIndex(
+JointTraitsIndex LinkJointGraph::GetJointTraitsIndex(
     const std::string& joint_type_name) const {
   const auto it = data_.joint_type_name_to_index.find(joint_type_name);
-  return it == data_.joint_type_name_to_index.end() ? JointTypeIndex()
+  return it == data_.joint_type_name_to_index.end() ? JointTraitsIndex()
                                                     : it->second;
 }
 
@@ -398,8 +425,9 @@ void LinkJointGraph::ChangeJointType(JointIndex existing_joint_index,
                                      const std::string& name_of_new_type) {
   DRAKE_DEMAND(existing_joint_index.is_valid() &&
                existing_joint_index < ssize(joints()));
-  const JointTypeIndex new_type_index = GetJointTypeIndex(name_of_new_type);
-  DRAKE_DEMAND(new_type_index.is_valid());
+  const JointTraitsIndex new_traits_index =
+      GetJointTraitsIndex(name_of_new_type);
+  DRAKE_DEMAND(new_traits_index.is_valid());
 
   const Joint& joint = joints(existing_joint_index);
 
@@ -417,7 +445,7 @@ void LinkJointGraph::ChangeJointType(JointIndex existing_joint_index,
   const bool is_static =
       (parent_link.is_world() && link_is_static(child_link)) ||
       (child_link.is_world() && link_is_static(parent_link));
-  if (is_static && new_type_index != weld_joint_type_index()) {
+  if (is_static && new_traits_index != weld_joint_traits_index()) {
     const std::string static_link_name =
         parent_link.is_world() ? child_link.name() : parent_link.name();
     throw std::logic_error(
@@ -425,16 +453,16 @@ void LinkJointGraph::ChangeJointType(JointIndex existing_joint_index,
                     "{}) from {} to {} because it connects static link {} to "
                     "World; only a weld is permitted for a static link.",
                     __func__, joint.name(), joint.model_instance(),
-                    joint_types(joint.type_index()).name, name_of_new_type,
+                    joint_traits(joint.traits_index()).name, name_of_new_type,
                     static_link_name));
   }
 
   InvalidateForest();
-  mutable_joint(existing_joint_index).type_index_ = new_type_index;
+  mutable_joint(existing_joint_index).traits_index_ = new_traits_index;
 }
 
 JointIndex LinkJointGraph::AddEphemeralJointToWorld(
-    JointTypeIndex type_index, BodyIndex child_link_index) {
+    JointTraitsIndex type_index, BodyIndex child_link_index) {
   const LinkJointGraph::Link& child = links(child_link_index);
   const JointIndex new_joint_index(ssize(joints()));
   const ModelInstanceIndex model_instance = child.model_instance();
@@ -562,19 +590,19 @@ LinkJointGraph::Link::Link(BodyIndex index, std::string name,
 
 LinkJointGraph::Joint::Joint(JointIndex index, std::string name,
                              ModelInstanceIndex model_instance,
-                             JointTypeIndex joint_type_index,
+                             JointTraitsIndex joint_traits_index,
                              BodyIndex parent_link_index,
                              BodyIndex child_link_index, JointFlags flags)
     : index_(index),
       name_(std::move(name)),
       model_instance_(model_instance),
       flags_(flags),
-      type_index_(joint_type_index),
+      traits_index_(joint_traits_index),
       parent_link_index_(parent_link_index),
       child_link_index_(child_link_index) {
   DRAKE_DEMAND(index_.is_valid() && !name_.empty() &&
                model_instance_.is_valid());
-  DRAKE_DEMAND(type_index_.is_valid() && parent_link_index_.is_valid() &&
+  DRAKE_DEMAND(traits_index_.is_valid() && parent_link_index_.is_valid() &&
                child_link_index_.is_valid());
   DRAKE_DEMAND(parent_link_index_ != child_link_index_);
 }

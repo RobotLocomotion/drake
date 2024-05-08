@@ -321,12 +321,13 @@ void SpanningForest::AssignCoordinates() {
       mobod.nq_inboard_ = mobod.nv_inboard_ = 0;
       continue;
     }
-    const JointTypeIndex joint_type_index = joints(mobod.joint()).type_index();
-    const LinkJointGraph::JointType& joint_type =
-        graph().joint_types()[joint_type_index];
+    const JointTraitsIndex joint_traits_index =
+        joints(mobod.joint()).traits_index();
+    const LinkJointGraph::JointTraits& joint_traits =
+        graph().joint_traits()[joint_traits_index];
 
-    mobod.nq_ = joint_type.nq;
-    mobod.nv_ = joint_type.nv;
+    mobod.nq_ = joint_traits.nq;
+    mobod.nv_ = joint_traits.nv;
 
     /* Keep a running count of inboard coordinates. */
     DRAKE_DEMAND(mobod.inboard().is_valid());  // Non-World must have inboard.
@@ -398,7 +399,7 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
         links(next_base_link).model_instance();
     const JointIndex next_joint_index =
         mutable_graph().AddEphemeralJointToWorld(
-            base_joint_type_index(model_instance_index), next_base_link);
+            base_joint_traits_index(model_instance_index), next_base_link);
     ExtendTrees({next_joint_index}, &*num_unprocessed_links);
   }
 
@@ -415,8 +416,8 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
   for (BodyIndex unjointed_link : unjointed_links) {
     const ModelInstanceIndex model_instance_index =
         links(unjointed_link).model_instance();
-    const JointTypeIndex joint_type_to_use =
-        base_joint_type_index(model_instance_index);
+    const JointTraitsIndex joint_type_to_use =
+        base_joint_traits_index(model_instance_index);
     const JointIndex next_joint_index =
         mutable_graph().AddEphemeralJointToWorld(joint_type_to_use,
                                                  unjointed_link);
@@ -508,8 +509,8 @@ void SpanningForest::ExtendTreesOneLevel(
       /* We just added an articulated massless body. If the only joint it has
       is the one we just processed, it's terminal. */
       if (ssize(modeled_outboard_link.joints()) == 1 && data_.dynamics_ok) {
-        const LinkJointGraph::JointType& modeled_joint_type =
-            graph().joint_types(modeled_joint.type_index());
+        const LinkJointGraph::JointTraits& modeled_joint_type =
+            graph().joint_traits(modeled_joint.traits_index());
         data_.dynamics_ok = false;
         data_.why_no_dynamics = fmt::format(
             "Link {} on {} joint {} is a terminal, articulated, massless link. "
@@ -573,7 +574,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
 
   /* Build up both WeldedMobods group (in forest) and LinkComposite (in graph)
   if we have a Weld joint, starting a new group or composite as needed. */
-  if (joint.type_index() == LinkJointGraph::weld_joint_type_index()) {
+  if (joint.traits_index() == LinkJointGraph::weld_joint_traits_index()) {
     if (!inboard_mobod.welded_mobods_index_.is_valid()) {
       inboard_mobod.welded_mobods_index_ =
           WeldedMobodsIndex(ssize(welded_mobods()));
@@ -604,10 +605,10 @@ void SpanningForest::ConnectLinksToWorld(
       }
     }
     if (!found_joint_to_world) {
-      const JointTypeIndex joint_type_index =
-          use_weld ? LinkJointGraph::weld_joint_type_index()
-                   : base_joint_type_index(link.model_instance());
-      mutable_graph().AddEphemeralJointToWorld(joint_type_index, link_index);
+      const JointTraitsIndex joint_traits_index =
+          use_weld ? LinkJointGraph::weld_joint_traits_index()
+                   : base_joint_traits_index(link.model_instance());
+      mutable_graph().AddEphemeralJointToWorld(joint_traits_index, link_index);
     }
   }
 }
