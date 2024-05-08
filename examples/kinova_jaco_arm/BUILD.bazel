@@ -6,9 +6,7 @@ load(
     "drake_cc_library",
 )
 
-package(
-    default_visibility = [":__subpackages__"],
-)
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_binary(
     name = "jaco_controller",

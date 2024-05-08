@@ -6,16 +6,19 @@ load(
     "drake_cc_library",
 )
 
-# Place model files for this example within their own group.
-# We can use these models in other bazel projects by adding the dependency
-# "//examples/simple_gripper:simple_gripper_models".
+package(default_visibility = ["//visibility:private"])
+
 filegroup(
-    name = "simple_gripper_models",
+    name = "models",
     srcs = [
         "simple_gripper.sdf",
         "simple_mug.sdf",
     ],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//:__pkg__",
+        "//multibody/plant:__pkg__",
+        "//multibody/test_utilities:__pkg__",
+    ],
 )
 
 drake_cc_binary(
@@ -23,7 +26,7 @@ drake_cc_binary(
     srcs = ["simple_gripper.cc"],
     add_test_rule = 1,
     data = [
-        ":simple_gripper_models",
+        ":models",
     ],
     test_rule_args = [
         "--simulator_integration_scheme=runge_kutta2",

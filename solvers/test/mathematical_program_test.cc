@@ -56,6 +56,7 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::test::PolyEqual;
 using drake::symbolic::test::PolyNotEqual;
+using drake::symbolic::test::TupleVarEqual;
 
 using std::all_of;
 using std::cref;
@@ -4378,6 +4379,70 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariable) {
+  // A program where x(1) is not associated with any cost/constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddLinearCost(x(0) + x(2));
+  prog.AddBoundingBoxConstraint(0, 2, x(0));
+  prog.AddLinearConstraint(x(0) + 2 * x(2) <= 1);
+  prog.SetInitialGuess(x, Eigen::Vector3d(0, 1, 2));
+  prog.SetVariableScaling(x(0), 0.5);
+  prog.SetVariableScaling(x(1), 3.0);
+  prog.SetVariableScaling(x(2), 4.0);
+
+  // Remove x(1) and check that all accessors remain in sync.
+  const int x1_index = prog.FindDecisionVariableIndex(x(1));
+  const int x1_index_removed = prog.RemoveDecisionVariable(x(1));
+  EXPECT_EQ(x1_index, x1_index_removed);
+  EXPECT_EQ(prog.num_vars(), 2);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(0)), 0);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(2)), 1);
+  EXPECT_THAT(prog.decision_variables(),
+              testing::Pointwise(testing::Truly(TupleVarEqual), {x(0), x(2)}));
+  EXPECT_TRUE(CompareMatrices(prog.initial_guess(), Eigen::Vector2d(0, 2)));
+  EXPECT_THAT(prog.GetVariableScaling(),
+              testing::WhenSorted(testing::ElementsAre(
+                  std::make_pair(0, 0.5), std::make_pair(1, 4.0))));
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariableError) {
+  // Test RemoveDecisionVariable with erroneous input.
+  // Remove an indeterminate.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(y(0)),
+      ".*is not a decision variable of this MathematicalProgram.");
+
+  // Remove a variable not in Mathematical program.
+  const symbolic::Variable dummy("dummy");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(dummy),
+      ".*is not a decision variable of this MathematicalProgram.");
+
+  // Remove a variable associated with a cost.
+  prog.AddLinearCost(x(0));
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(0)),
+                              ".* is associated with a LinearCost.*");
+
+  // Remove a variable associated with a constraint.
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(1)),
+                              ".* is associated with a LinearConstraint[^]*");
+
+  // Remove a variable associated with a visualization callback.
+  prog.AddVisualizationCallback(
+      [](const Eigen::VectorXd& vars) {
+        drake::log()->info("{}", vars(0));
+      },
+      Vector1<symbolic::Variable>(x(2)));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(x(2)),
+      ".* is associated with a VisualizationCallback[^]*");
+}
+
 GTEST_TEST(TestMathematicalProgram, TestToLatex) {
   MathematicalProgram prog;
   std::string empty_prog = prog.ToLatex();
@@ -4493,6 +4558,24 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
   TestRemoveConstraint(&prog, lcp_con,
                        &(prog.linear_complementarity_constraints()),
                        ProgramAttribute::kLinearComplementarityConstraint);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveVisualizationCallback) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto callback = prog.AddVisualizationCallback(
+      [](const Eigen::VectorXd& vars) {
+        drake::log()->info("{}", vars(0) + vars(1));
+      },
+      x);
+  EXPECT_FALSE(prog.visualization_callbacks().empty());
+  EXPECT_TRUE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
+  int count = prog.RemoveVisualizationCallback(callback);
+  EXPECT_EQ(count, 1);
+  EXPECT_TRUE(prog.visualization_callbacks().empty());
+  EXPECT_FALSE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
 }
 
 class ApproximatePSDConstraint : public ::testing::Test {

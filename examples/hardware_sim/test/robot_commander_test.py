@@ -2,8 +2,9 @@ import unittest
 
 from python.runfiles import Create as CreateRunfiles
 
-import drake.examples.hardware_sim.robot_commander as mut
 from pydrake.common.yaml import yaml_load
+
+import examples.hardware_sim.robot_commander as mut
 
 
 class RobotCommanderTest(unittest.TestCase):

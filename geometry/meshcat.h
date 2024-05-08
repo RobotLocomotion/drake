@@ -11,7 +11,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
-#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_params.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -23,6 +22,13 @@
 
 namespace drake {
 namespace geometry {
+
+// Forward-declare a helper class from meshcat_recording_internal.h.
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+class MeshcatRecording;
+}  // namespace internal
+#endif
 
 /** Provides an interface to %Meshcat (https://github.com/meshcat-dev/meshcat).
 
@@ -871,13 +877,16 @@ class Meshcat {
   *not* currently remove the animation from Meshcat. */
   void DeleteRecording();
 
-  /** Returns a mutable pointer to this Meshcat's unique MeshcatAnimation
-  object, in which the frames will be recorded. This pointer can be used to set
-  animation properties (like autoplay, the loop mode, number of repetitions,
-  etc).
+  /** Returns a const reference to this Meshcat's MeshcatAnimation object. This
+  can be used to check animation properties (e.g., autoplay). The return value
+  will only remain valid for the lifetime of `this` or until DeleteRecording()
+  is called. */
+  const MeshcatAnimation& get_recording() const;
 
-  The MeshcatAnimation object will only remain valid for the lifetime of `this`
-  or until DeleteRecording() is called. */
+  /** Returns a mutable reference to this Meshcat's MeshcatAnimation object.
+  This can be used to set animation properties (like autoplay, the loop mode,
+  number of repetitions, etc). The return value will only remain valid for the
+  lifetime of `this` or until DeleteRecording() is called. */
   MeshcatAnimation& get_mutable_recording();
 
   /* These remaining public methods are intended to primarily for testing. These
@@ -943,15 +952,8 @@ class Meshcat {
   // impl() accessors are always used.
   void* const impl_{};
 
-  /* MeshcatAnimation object for recording. It must be mutable to allow the set
-  methods to be otherwise const. */
-  std::unique_ptr<MeshcatAnimation> animation_;
-
-  /* Recording status.  True means that each new Publish event will record a
-  frame in the animation. */
-  bool recording_{false};
-  bool set_visualizations_while_recording_{true};
-  string_unordered_map<int> last_frames_{};
+  /* Encapsulated recording logic. The value is never nullptr. */
+  std::unique_ptr<internal::MeshcatRecording> recording_;
 };
 
 }  // namespace geometry

@@ -49,7 +49,6 @@ drake_cc_library(
 drake_cc_binary(
     name = "hardware_sim_cc",
     srcs = ["hardware_sim.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":scenario",
         "//common:add_text_logging_gflags",
@@ -110,7 +109,9 @@ drake_py_unittest(
 drake_py_binary(
     name = "hardware_sim_py",
     srcs = ["hardware_sim.py"],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//bindings/pydrake/visualization:__pkg__",
+    ],
     deps = [
         "//bindings/pydrake",
     ],

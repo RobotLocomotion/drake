@@ -3,6 +3,8 @@ load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_filegroup")
 
+package(default_visibility = ["//visibility:private"])
+
 xacro_filegroup(
     name = "StrandbeestModels",
     srcs = [
