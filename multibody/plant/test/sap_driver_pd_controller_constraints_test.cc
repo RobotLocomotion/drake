@@ -31,23 +31,6 @@ using Configuration = SapPdControllerConstraint<double>::Configuration;
 
 namespace drake {
 namespace multibody {
-
-namespace contact_solvers {
-namespace internal {
-// N.B. What namespace this operator is in is important for ADL.
-bool operator==(const Configuration& a, const Configuration& b) {
-  if (a.clique != b.clique) return false;
-  if (a.clique_dof != b.clique_dof) return false;
-  if (a.clique_nv != b.clique_nv) return false;
-  if (a.q0 != b.q0) return false;
-  if (a.qd != b.qd) return false;
-  if (a.vd != b.vd) return false;
-  if (a.u0 != b.u0) return false;
-  return true;
-}
-}  // namespace internal
-}  // namespace contact_solvers
-
 namespace internal {
 
 // Friend class used to provide access to a selection of private functions in

@@ -79,6 +79,7 @@ drake_cc_library(
     hdrs = ["contact_configuration.h"],
     deps = [
         "//common:essential",
+        "//math:autodiff",
         "//math:geometric_transform",
         "//multibody/plant:discrete_contact_pair",
     ],

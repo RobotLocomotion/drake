@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -182,6 +183,20 @@ void SapHolonomicConstraint<T>::DoCalcCostHessian(
       (*G)(i, i) = R_inv(i);
     }
   }
+}
+
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapHolonomicConstraint<T>::DoToDouble()
+    const {
+  const typename SapHolonomicConstraint<T>::Parameters& p = parameters_;
+  SapHolonomicConstraint<double>::Parameters p_to_double(
+      math::DiscardGradient(p.impulse_lower_limits()),
+      math::DiscardGradient(p.impulse_upper_limits()),
+      math::DiscardGradient(p.stiffnesses()),
+      math::DiscardGradient(p.relaxation_times()), p.beta());
+  return std::make_unique<SapHolonomicConstraint<double>>(
+      math::DiscardGradient(constraint_function()), this->jacobian().ToDouble(),
+      math::DiscardGradient(bias()), std::move(p_to_double));
 }
 
 }  // namespace internal

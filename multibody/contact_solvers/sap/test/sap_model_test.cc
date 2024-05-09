@@ -100,6 +100,10 @@ class SpringConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SpringConstraint<T>>(new SpringConstraint<T>(*this));
   }
 
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
+  }
+
   VectorX<T> x0_;  // Previous time step configuration.
   T k_{0.0};       // Stiffness, in N/m.
   T tau_d_{0.0};   // Dissipation time scale, in seconds.
@@ -300,6 +304,10 @@ class DummyConstraint final : public SapConstraint<T> {
  private:
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<DummyConstraint<T>>(new DummyConstraint<T>(*this));
+  }
+
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
 
   VectorX<T> R_;
