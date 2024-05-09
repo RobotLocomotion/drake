@@ -50,7 +50,7 @@ Vector3<T> RpyBallMobilizer<T>::get_angles(
 }
 
 template <typename T>
-const RpyBallMobilizer<T>& RpyBallMobilizer<T>::set_angles(
+const RpyBallMobilizer<T>& RpyBallMobilizer<T>::SetAngles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
   auto q = this->GetMutablePositions(context);
   q = angles;

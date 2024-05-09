@@ -91,12 +91,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] q_FM
   //   The desired orientation of M in F to be stored in `context`.
   // @returns a constant reference to `this` mobilizer.
-  const QuaternionFloatingMobilizer<T>& set_quaternion(
+  const QuaternionFloatingMobilizer<T>& SetQuaternion(
       systems::Context<T>* context, const Quaternion<T>& q_FM) const;
 
-  // Alternative signature to set_quaternion(context, q_FM) to set `state` to
+  // Alternative signature to SetQuaternion(context, q_FM) to set `state` to
   // store the orientation of M in F given by the quaternion `q_FM`.
-  const QuaternionFloatingMobilizer<T>& set_quaternion(
+  const QuaternionFloatingMobilizer<T>& SetQuaternion(
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
 
@@ -113,12 +113,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] p_FM
   //   The desired position of frame M in F to be stored in `context`.
   // @returns a constant reference to `this` mobilizer.
-  const QuaternionFloatingMobilizer<T>& set_translation(
+  const QuaternionFloatingMobilizer<T>& SetTranslation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
 
-  // Alternative signature to set_translation(context, p_FM) to set `state` to
+  // Alternative signature to SetTranslation(context, p_FM) to set `state` to
   // store the position `p_FM` of M in F.
-  const QuaternionFloatingMobilizer<T>& set_translation(
+  const QuaternionFloatingMobilizer<T>& SetTranslation(
       const systems::Context<T>& context, const Vector3<T>& p_FM,
       systems::State<T>* state) const;
 
@@ -137,7 +137,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& SetOrientation(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
     const Eigen::Quaternion<T> q_FM = R_FM.ToQuaternion();
-    return set_quaternion(context, q_FM);
+    return SetQuaternion(context, q_FM);
   }
 
   // Returns the angular velocity `w_FM` of frame M in F stored in `context`.

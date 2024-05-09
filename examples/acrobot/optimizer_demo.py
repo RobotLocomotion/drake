@@ -13,10 +13,10 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 
-from drake.examples.acrobot.acrobot_io import (
+from examples.acrobot.acrobot_io import (
     load_output, load_scenario, save_scenario)
 
-from drake.examples.acrobot.metrics import (
+from examples.acrobot.metrics import (
     ensemble_cost, success_rate)
 
 try:

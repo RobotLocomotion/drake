@@ -1363,6 +1363,14 @@ class TestMathematicalProgram(unittest.TestCase):
         scaling = prog.GetVariableScaling()
         self.assertEqual(len(scaling), 0)
 
+    def test_remove_decision_variable(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        x1_index = prog.FindDecisionVariableIndex(x[1])
+        x1_index_removed = prog.RemoveDecisionVariable(x[1])
+        self.assertEqual(x1_index, x1_index_removed)
+        self.assertEqual(prog.num_vars(), 2)
+
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
@@ -1450,6 +1458,15 @@ class TestMathematicalProgram(unittest.TestCase):
             np.eye(3), np.ones((3,)), x)
         prog.RemoveConstraint(constraint=lcp_con)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
+
+    def test_remove_visualization_callback(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        callback = prog.AddVisualizationCallback(
+            lambda x_val: print(x_val[0]), x)
+        count = prog.RemoveVisualizationCallback(callback=callback)
+        self.assertEqual(count, 1)
+        self.assertEqual(len(prog.visualization_callbacks()), 0)
 
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()

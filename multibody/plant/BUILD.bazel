@@ -673,7 +673,7 @@ drake_cc_googletest(
     data = [
         "test/split_pendulum.sdf",
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/benchmarks/free_body:models",
         "//multibody/parsing:test_models",
@@ -703,7 +703,7 @@ drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
         "@drake_models//:atlas",
     ],
     deps = [
@@ -737,7 +737,7 @@ drake_cc_googletest(
     name = "multibody_plant_tamsi_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
     ],
     deps = [
         ":plant",

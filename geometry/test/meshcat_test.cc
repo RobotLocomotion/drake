@@ -1058,133 +1058,124 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
   })""");
 }
 
-bool has_frame(const MeshcatAnimation& animation, int frame) {
-  return animation.get_key_frame<std::vector<double>>(0, "frame", "position")
+GTEST_TEST(MeshcatTest, RecordingFps) {
+  // The hard-coded default values for Meshcat's default recording and a newly-
+  // started recording should match the MeshcatAnimation constructor's default,
+  // and retain that value throughout the whole lifecycle.
+  const double default_fps = MeshcatAnimation().frames_per_second();
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.StartRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.StopRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.PublishRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.DeleteRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+
+  // When the user provides a specific fps, it's likewise retained.
+  const double new_fps = 22.22;
+  meshcat.StartRecording(new_fps);
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.StopRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.PublishRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.DeleteRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+}
+
+GTEST_TEST(MeshcatTest, RecordingSafety) {
+  // It's safe to call recording-related functions without starting recording.
+  Meshcat meshcat;
+  EXPECT_NO_THROW(meshcat.get_recording());
+  EXPECT_NO_THROW(meshcat.get_mutable_recording());
+  EXPECT_NO_THROW(meshcat.DeleteRecording());
+  EXPECT_NO_THROW(meshcat.PublishRecording());
+  EXPECT_NO_THROW(meshcat.StopRecording());
+}
+
+template <typename T>
+bool has_animation_property(const Meshcat& meshcat, std::string_view property,
+                            int frame) {
+  return meshcat.get_recording()
+      .get_key_frame<T>(frame, "foo", property)
       .has_value();
 }
 
-// The hard-coded default values for Meshcat's default recording and a newly-
-// started recording should match the MeshcatAnimation constructor's default.
-GTEST_TEST(MeshcatTest, RecordingDefaults) {
-  const double default_fps = MeshcatAnimation().frames_per_second();
-
-  Meshcat meshcat;
-  EXPECT_EQ(meshcat.get_mutable_recording().frames_per_second(), default_fps);
-
-  meshcat.StartRecording();
-  EXPECT_EQ(meshcat.get_mutable_recording().frames_per_second(), default_fps);
-}
-
+// The unit test for MeshcatRecording covers the details of recording logic, so
+// we can rely on it for most of the test coverage. Here, we only need to cover
+// the few implementation details that sit within meshcat.cc using some basic
+// acceptance tests.
 GTEST_TEST(MeshcatTest, Recording) {
-  Meshcat meshcat;
-  EXPECT_NO_THROW(meshcat.get_mutable_recording());
-  EXPECT_NO_THROW(meshcat.StopRecording());
-  EXPECT_NO_THROW(meshcat.PublishRecording());
+  // We'll use two devices under test, with set_visualizations_while_recording
+  // configured differently in each. This helps us highlight & verify what's the
+  // same vs different under that setting.
+  Meshcat dut_live;  // Will use `true` for set_visualizations_while_recording.
+  Meshcat dut_mute;  // Will use `false` for set_visualizations_while_recording.
 
-  const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
-                                     Vector3d{0.9, -2.0, 0.12}};
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  meshcat.StartRecording();
-  MeshcatAnimation* animation = &meshcat.get_mutable_recording();
-  // No transforms have been published since recording started.
-  EXPECT_FALSE(has_frame(*animation, 0));
+  // Cycle through various Meshcat operations while in a sequence of different
+  // recording states, to see what happens in each. We'll stop testing when we
+  // hit the first error, because they tend to cascade so future errors aren't
+  // that interesting.
+  for (auto* dut : {&dut_live, &dut_mute}) {
+    const bool is_live = dut == &dut_live;
+    for (int sequence = 0; sequence <= 5; ++sequence) {
+      SCOPED_TRACE(fmt::format("live = {}, sequence = {}", is_live, sequence));
+      const double kFps = 64.0;
+      if (sequence == 0) {
+        // Prior to starting a recording.
+      } else if (sequence == 1) {
+        dut->StartRecording(kFps, is_live);
+      } else if (sequence == 2) {
+        // No change; keep recording.
+      } else if (sequence == 3) {
+        dut->StopRecording();
+      } else if (sequence == 4) {
+        dut->PublishRecording();
+      } else if (sequence == 5) {
+        dut->DeleteRecording();
+      }
 
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_TRUE(has_frame(*animation, 0));
+      // Set one of each type of property on the current frame.
+      const double time = sequence / kFps;
+      using Vec = std::vector<double>;
+      dut->SetProperty("foo", "bravo", (sequence % 2) == 1, time);
+      dut->SetProperty("foo", "delta", time, time);
+      dut->SetProperty("foo", "victor", Vec{time, time, time}, time);
+      dut->SetTransform("foo", RigidTransformd{Vector3d::Constant(time)}, time);
 
-  // Deleting the recording removes that frame.
-  meshcat.DeleteRecording();
-  animation = &meshcat.get_mutable_recording();
-  EXPECT_FALSE(has_frame(*animation, 0));
+      // Check exactly which properties and frames have been recorded. (Note
+      // that nothing here is affected by `is_live`; the recording should be the
+      // same whether live or not.)
+      for (int i = 0; i <= 5; ++i) {
+        SCOPED_TRACE(fmt::format("i = {}", i));
+        const bool has_reached = (sequence >= i);
+        const bool should_record = (i >= 1) && (i <= 2);
+        const bool not_deleted = (sequence < 5);
+        const bool expected = has_reached && should_record && not_deleted;
+        ASSERT_EQ(has_animation_property<bool>(*dut, "bravo", i), expected);
+        ASSERT_EQ(has_animation_property<double>(*dut, "delta", i), expected);
+        ASSERT_EQ(has_animation_property<Vec>(*dut, "victor", i), expected);
+        ASSERT_EQ(has_animation_property<Vec>(*dut, "position", i), expected);
+      }
 
-  // We are still recording, so SetTransform *will* add it.
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_TRUE(has_frame(*animation, 0));
-
-  // But if we stop recording, then it's not added.
-  meshcat.StopRecording();
-  meshcat.DeleteRecording();
-  animation = &meshcat.get_mutable_recording();
-  EXPECT_FALSE(has_frame(*animation, 0));
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_FALSE(has_frame(*animation, 0));
-
-  // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
-  const double kFrameRate = 64.0;
-  meshcat.StartRecording(kFrameRate);
-  animation = &meshcat.get_mutable_recording();
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  meshcat.SetTransform("frame", X_ParentPath, 1);
-  EXPECT_TRUE(has_frame(*animation, 0));
-  EXPECT_TRUE(has_frame(*animation, std::floor(kFrameRate)));
-
-  const double kTime = 0.5;
-  const int kFrame = std::floor(kFrameRate * kTime);
-  EXPECT_FALSE(
-      animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
-          .has_value());
-  meshcat.SetProperty("bool_property", "visible", false, kTime);
-  EXPECT_TRUE(animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
-                  .has_value());
-
-  EXPECT_FALSE(
-      animation
-          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
-          .has_value());
-  meshcat.SetProperty("double_property", "material.opacity", 0.5, kTime);
-  EXPECT_TRUE(
-      animation
-          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
-          .has_value());
-
-  EXPECT_FALSE(animation
-                   ->get_key_frame<std::vector<double>>(
-                       kFrame, "vector_double_property", "position")
-                   .has_value());
-  meshcat.SetProperty("vector_double_property", "position", {0.1, 0.2, 0.3},
-                      kTime);
-  EXPECT_TRUE(animation
-                  ->get_key_frame<std::vector<double>>(
-                      kFrame, "vector_double_property", "position")
-                  .has_value());
-
-  // Confirm that PublishRecording runs.  Its correctness is established by
-  // meshcat_manual_test.
-  meshcat.PublishRecording();
-}
-
-GTEST_TEST(MeshcatTest, RecordingWithoutSetTransform) {
-  Meshcat meshcat;
-
-  const RigidTransformd X_0{RollPitchYawd(0.5, 0.26, -3),
-                            Vector3d{0.9, -2.0, 0.12}};
-  const RigidTransformd X_1{RollPitchYawd(0.75, 0.21, 2.4),
-                            Vector3d{6.9, -2.2, 1.12}};
-
-  const double kFrameRate = 64.0;
-  bool set_visualizations_while_recording = false;
-  meshcat.SetTransform("frame", X_0);
-  std::string X_0_message = meshcat.GetPackedTransform("frame");
-
-  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
-  // This SetTransform should *not* change the transform in the Meshcat scene
-  // tree.
-  meshcat.SetTransform("frame", X_1, 0);
-  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
-
-  // This SetTransform *should* change the transform in the Meshcat scene tree,
-  // because it doesn't pass the time_in_recording argument.
-  meshcat.SetTransform("frame", X_1);
-  EXPECT_NE(meshcat.GetPackedTransform("frame"), X_0_message);
-
-  set_visualizations_while_recording = true;
-  // This publish *should* change the transform in the Meshcat scene tree.
-  meshcat.SetTransform("frame", X_0);
-  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
-  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
-  // This publish *should* change the transform in the Meshcat scene tree.
-  meshcat.SetTransform("frame", X_1, 0);
-  EXPECT_NE(meshcat.GetPackedTransform("frame"), X_0_message);
+      // Check the live property values. The dut_live will update all the time,
+      // but the dut_mute will not update when the sequence number is 1 or 2.
+      const bool bravo = GetDecodedProperty<bool>(*dut, "foo", "bravo").second;
+      const double delta =
+          GetDecodedProperty<double>(*dut, "foo", "delta").second;
+      const Vec victor = GetDecodedProperty<Vec>(*dut, "foo", "victor").second;
+      const Eigen::Matrix4d transform = GetDecodedTransform(*dut, "foo").second;
+      const int live_sequence = (is_live || sequence >= 3) ? sequence : 0;
+      const double live_time = live_sequence / kFps;
+      EXPECT_EQ(bravo, (live_sequence % 2) == 1);
+      EXPECT_EQ(delta, live_time);
+      EXPECT_EQ(victor.at(0), live_time);
+      EXPECT_EQ(transform(0, 3), live_time);
+    }
+  }
 }
 
 GTEST_TEST(MeshcatTest, Set2dRenderMode) {

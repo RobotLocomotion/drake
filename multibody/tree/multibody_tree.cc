@@ -1031,7 +1031,7 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
   DRAKE_DEMAND(quaternion_floating_joint != nullptr);
   quaternion_floating_joint->set_default_quaternion(
       X_WB.rotation().ToQuaternion());
-  quaternion_floating_joint->set_default_position(X_WB.translation());
+  quaternion_floating_joint->set_default_translation(X_WB.translation());
 }
 
 template <typename T>
@@ -1085,8 +1085,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
   const RotationMatrix<T>& R_WB = X_WB.rotation();
-  mobilizer.set_quaternion(context, R_WB.ToQuaternion(), state);
-  mobilizer.set_translation(context, X_WB.translation(), state);
+  mobilizer.SetQuaternion(context, R_WB.ToQuaternion(), state);
+  mobilizer.SetTranslation(context, X_WB.translation(), state);
 }
 
 template <typename T>

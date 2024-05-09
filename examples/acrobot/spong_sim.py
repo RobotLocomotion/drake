@@ -14,7 +14,7 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import LogVectorOutput
 
-from drake.examples.acrobot.acrobot_io import load_scenario, save_output
+from examples.acrobot.acrobot_io import load_scenario, save_output
 
 
 def simulate(*, initial_state, controller_params, t_final, tape_period):

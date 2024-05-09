@@ -4,6 +4,8 @@ load(
     "drake_cc_binary",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 drake_cc_binary(
     name = "zmp_example",
     testonly = 1,

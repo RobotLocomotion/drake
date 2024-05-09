@@ -31,7 +31,7 @@ drake_py_library(
     name = "cart_pole_passive_simulation_py",
     srcs = ["cart_pole_passive_simulation.py"],
     data = [
-        "//examples/multibody/cart_pole:cart_pole.sdf",
+        "//examples/multibody/cart_pole:models",
     ],
     deps = [
         ":module_py",

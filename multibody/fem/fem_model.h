@@ -75,7 +75,7 @@ namespace fem {
  deformable solids." Synthesis Lectures on Visual Computing: Computer Graphics,
  Animation, Computational Photography, and Imaging 1.1 (2015): 1-69.
 
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class FemModel {
  public:
@@ -118,7 +118,9 @@ class FemModel {
     bool built_{false};
   };
 
-  virtual ~FemModel() = default;
+  virtual ~FemModel();
+
+  std::unique_ptr<FemModel<T>> Clone() const;
 
   /* The `num_dofs()` is always a multiple of 3. It is enforced by
    FemStateSystem. */
@@ -218,6 +220,10 @@ class FemModel {
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
+
+  /** FemModelImpl must override this method to provide an implementation to
+   make a deep copy of the concrete FemModel. */
+  virtual std::unique_ptr<FemModel<T>> DoClone() const = 0;
 
   /** Returns the reference positions of this model. */
   virtual VectorX<T> MakeReferencePositions() const = 0;

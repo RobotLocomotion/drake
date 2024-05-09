@@ -10,6 +10,8 @@ load(
     "drake_cc_vector_gen_library",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 drake_cc_library(
     name = "cloth_spring_model",
     srcs = [

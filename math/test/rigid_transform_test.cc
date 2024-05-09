@@ -198,7 +198,8 @@ GTEST_TEST(RigidTransform, ConstructorAngleAxisPositionVector) {
   EXPECT_TRUE(X.translation() == position);
 }
 
-// Test constructing a RigidTransform from a 3x4 matrix.
+// Test constructing a RigidTransform from a 3x4 matrix, both via the
+// constructor and the MakeUnchecked factory function.
 GTEST_TEST(RigidTransform, ConstructorFromMatrix34) {
   const RotationMatrixd R = GetRotationMatrixB();
   const Vector3<double> position(4, 5, 6);
@@ -211,6 +212,10 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix34) {
     pose(2, 2) += 1E-5;  // Corrupt the last element of the rotation matrix.
     EXPECT_THROW(RigidTransformd XX(pose), std::exception);
   }
+
+  // The corrupt matrix survives MakeUnchecked() without error.
+  const auto X2 = RigidTransform<double>::MakeUnchecked(pose);
+  EXPECT_TRUE(CompareMatrices(X2.GetAsMatrix34(), pose));
 }
 
 // Test constructing a RigidTransform from a 4x4 matrix.
