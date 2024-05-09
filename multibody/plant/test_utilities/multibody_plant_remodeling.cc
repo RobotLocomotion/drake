@@ -10,7 +10,7 @@ using Eigen::Vector3d;
 using systems::DiagramBuilder;
 using systems::Simulator;
 
-template <template <typename> class JointType = RevoluteJoint>
+template <template <typename> class JointType>
 void MultibodyPlantRemodeling::BuildModel() {
   builder_ = std::make_unique<DiagramBuilder<double>>();
   MultibodyPlantConfig config = {.time_step = kTimeStep,

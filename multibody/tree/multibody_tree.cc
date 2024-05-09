@@ -129,7 +129,7 @@ void MultibodyTree<T>::RemoveJoint(const Joint<T>& joint) {
   joints_.Remove(joint_index);
   multibody_graph_.RemoveJoint(joint_index);
 
-  // Update the port indices for all joints with higher indices than the
+  // Update the ordinals for all joints with higher indices than the
   // one being removed.
   for (JointIndex index : joints_.indices()) {
     if (index > joint_index) {

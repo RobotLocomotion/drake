@@ -296,7 +296,7 @@ GTEST_TEST(MultibodyGraph, RemoveJoint) {
   graph.RemoveJoint(joint5);
 
   // Check that the joint was removed from the graph and from the body
-  // references. Check that the joint with the same name in a difference model
+  // references. Check that the joint with the same name in a different model
   // instance still exists.
   EXPECT_FALSE(graph.HasJointNamed("joint", model_instance5));
   EXPECT_TRUE(graph.HasJointNamed("joint", model_instance9));

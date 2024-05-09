@@ -781,8 +781,12 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
 
 template <typename T>
 void MultibodyPlant<T>::RemoveJoint(const Joint<T>& joint) {
-  // Check for dependent modelling elements in the plant. Throw if any element
+  // Check for dependent modeling elements in the plant. Throw if any element
   // depends on the joint to be removed.
+  // TODO(joemasterjohn): These checks are very brittle. Developers adding
+  // new constraints or elements have no way of knowing that they must be
+  // checked here. Find a way to make checking an element for dependency on a
+  // Joint more robust and uniform across all MultibodyElements and constraints.
   std::vector<std::string> dependent_elements;
 
   // Check JointActuators.

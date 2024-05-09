@@ -918,7 +918,7 @@ class WeldedAndFloatingTest : public ::testing::TestWithParam<bool> {
   const double kGravity{10.0};  // [m/s²]
 };
 
-TEST_P(WeldedAndFloatingTest, ReactionForcesPortIndexing) {
+TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
   const bool replace_joints = GetParam();
   const auto& reaction_forces =
       plant_->get_reaction_forces_output_port()
@@ -942,7 +942,7 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesPortIndexing) {
 
     // Because we removed and replaced the floating joints after all four
     // joints were originally added, they receive joint indices 4 and 5. The
-    // port indices should have been updated during the removal, so the joints
+    // ordinals should have been updated during the removal, so the joints
     // should be ordered as: ["weld2", "weld3", "weld0", "weld1"] and reaction
     // forces should correspond to that order.
     EXPECT_EQ(weld0_->index(), JointIndex(4));
@@ -954,7 +954,7 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesPortIndexing) {
     EXPECT_EQ(weld3_->index(), JointIndex(3));
     EXPECT_EQ(weld3_->ordinal(), 1);
 
-    // All joints are welded, so we expect the reation forces to
+    // All joints are welded, so we expect the reaction forces to
     // oppose gravity on the bodies.
     const SpatialForce<double>& F_B0cm_W = reaction_forces[weld0_->ordinal()];
     EXPECT_EQ(F_B0cm_W.translational(),
@@ -976,7 +976,7 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesPortIndexing) {
   } else {
     // Do not replace the floating joints, nominal case.
 
-    // Joints will have assigned continguous indices and port indices in the
+    // Joints will have assigned continguous indices and ordinals in the
     // order they were created.
     EXPECT_EQ(floating0_->index(), JointIndex(0));
     EXPECT_EQ(floating0_->ordinal(), 0);

@@ -2891,7 +2891,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   EXPECT_THAT(plant_->GetJointIndices(),
               testing::ElementsAre(JointIndex(0), JointIndex(2)));
 
-  // Validate that port indices are assigned and updated contiguously.
+  // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
   EXPECT_EQ(joint0.ordinal(), 0);
@@ -2974,7 +2974,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   EXPECT_THAT(plant_->GetJointIndices(),
               testing::ElementsAre(JointIndex(0), JointIndex(2),
                                    JointIndex(2 + num_replacements)));
-  // Validate that port indices are assigned and updated contiguously.
+  // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
   EXPECT_EQ(joint0.ordinal(), 0);
