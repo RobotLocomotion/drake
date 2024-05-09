@@ -332,13 +332,21 @@ GTEST_TEST(testConstraint, QudraticConstraintLDLtFailute) {
        0.5, 0;
   // clang-format on
   b << 0, 0;
-  QuadraticConstraint constraint4(Q, b, -kInf, 1);
 
   Eigen::LDLT<Eigen::MatrixXd> ldlt_solver;
   ldlt_solver.compute(Q);
-  // Check that the LDLT solver fails.
+  // Check that the LDLT solver fails. If Eigen were to update in such a way
+  // that the LDLT construction were to succeed, then this test would become
+  // irrelevant and thus we could either remove it, or would need to find a new
+  // Q matrix which causes the LDLT to fail.
   EXPECT_EQ(ldlt_solver.info(), Eigen::NumericalIssue);
-  EXPECT_FALSE(constraint4.is_convex());
+
+  // The construction of the constraint calls UpdateHessian() which currently
+  // calls Eigen's LDLT solver which fails on this simplex example.
+  QuadraticConstraint constraint(Q, b, -kInf, 1);
+  EXPECT_FALSE(constraint.is_convex());
+  EXPECT_EQ(constraint.hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
 }
 
 void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
