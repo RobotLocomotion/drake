@@ -25,8 +25,7 @@ drake_cc_package_library(
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
-        ":visibility_graph",
-        ":fast_iris"
+        ":visibility_graph"
     ],
 )
 
@@ -213,23 +212,6 @@ drake_cc_library(
         "@common_robotics_utilities",
     ],
 )
-drake_cc_library(
-    name = "fast_iris",
-    srcs = ["fast_iris.cc"],
-    hdrs = ["fast_iris.h"],
-    deps = [
-        ":collision_checker",
-        "//common:parallelism",
-        "//geometry:meshcat",
-        "//geometry/optimization:convex_set",
-        "//solvers:choose_best_solver",
-        "//solvers:clarabel_solver",
-        "//solvers:mathematical_program",
-        "//solvers:mosek_solver",
-        "//solvers:solve",
-        "@common_robotics_utilities",
-    ],
-)
 
 # === test/ ===
 
@@ -357,29 +339,6 @@ drake_cc_googletest(
         ":scene_graph_collision_checker",
         ":visibility_graph",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "fast_iris_test",
-    timeout = "moderate",
-    data = ["//multibody/parsing:test_models"],
-    num_threads = 8,
-    # Most of these tests take an exceptionally long time under
-    # instrumentation, resulting in timeouts, and so are excluded.
-    tags = [
-        "no_asan",
-        "no_memcheck",
-    ],
-    deps = [
-        ":fast_iris",
-        ":robot_diagram_builder",
-        ":scene_graph_collision_checker",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:maybe_pause_for_user",
-        "//geometry:meshcat",
-        "//geometry/test_utilities:meshcat_environment",
-        "//multibody/inverse_kinematics",
     ],
 )
 

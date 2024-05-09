@@ -1,4 +1,4 @@
-#include "drake/planning/fast_iris.h"
+#include "drake/planning/iris/fast_iris.h"
 
 #include <chrono>
 #include <thread>
