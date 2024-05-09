@@ -36,6 +36,30 @@ class Foo {
   Classname(Classname&&) = delete;                 \
   void operator=(Classname&&) = delete;
 
+/** DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN declares the special member functions
+for copy-construction, copy-assignment, move-construction, and move-assignment.
+Use this macro when these functions are available, but require non-default
+implementations. (Use DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN instead if you can
+use the compiler-generated default implementations.) Drake's Doxygen is
+customized to render the declarations in detail, with appropriate comments
+assuming _unsurprising_ behavior of your hand-written functions. Invoke this
+macro in the public section of the class declaration, e.g.:
+<pre>
+class Foo {
+ public:
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo)
+
+  // ...
+};
+</pre>
+Then the matching definitions should be placed in the associated .cc file.
+*/
+#define DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Classname) \
+  Classname(const Classname&);            \
+  Classname& operator=(const Classname&);       \
+  Classname(Classname&&);                 \
+  Classname& operator=(Classname&&);
+
 /** DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN defaults the special member
 functions for copy-construction, copy-assignment, move-construction, and
 move-assignment.  This macro should be used only when copy-construction and

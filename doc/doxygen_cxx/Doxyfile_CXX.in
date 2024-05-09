@@ -326,10 +326,10 @@ X& operator=(X&&) = default; \
 PREDEFINED            += DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(X):=" \
 /** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
 /** \{ */ \
-X(const X&) = default; \
-X& operator=(const X&) = default; \
-X(X&&) = default; \
-X& operator=(X&&) = default; \
+X(const X&); \
+X& operator=(const X&); \
+X(X&&); \
+X& operator=(X&&); \
 /** \} */"
 PREDEFINED            += "DRAKE_DEPRECATED(removal_date,message):= \
 /** (Deprecated.) \deprecated message <br> \
