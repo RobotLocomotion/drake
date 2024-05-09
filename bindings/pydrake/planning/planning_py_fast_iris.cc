@@ -1,6 +1,6 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/planning/fast_iris.h"
+#include "drake/planning/iris/fast_iris.h"
 
 namespace drake {
 namespace pydrake {
