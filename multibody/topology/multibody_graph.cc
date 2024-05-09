@@ -167,12 +167,12 @@ void MultibodyGraph::RemoveJoint(JointIndex joint_index) {
   DRAKE_THROW_UNLESS(has_joint(joint_index));
   const Joint& joint = get_joint(joint_index);
   bodies_to_joint_.erase({joint.parent_body(), joint.child_body()});
-  std::erase_if(joint_name_to_index_, [&](const auto& item) {
+  std::erase_if(joint_name_to_index_, [&](auto const& item) {
     auto const& [name, index] = item;
     return index == joint_index && name == joint.name();
   });
-  get_mutable_body(joint.parent_body()).remove_joint(joint_index);
-  get_mutable_body(joint.child_body()).remove_joint(joint_index);
+  get_mutable_body(joint.parent_body()).RemoveJoint(joint_index);
+  get_mutable_body(joint.child_body()).RemoveJoint(joint_index);
   joints_[joint_index] = std::nullopt;
   --num_joints_;
 }

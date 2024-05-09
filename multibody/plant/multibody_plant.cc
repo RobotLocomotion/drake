@@ -783,7 +783,7 @@ template <typename T>
 void MultibodyPlant<T>::RemoveJoint(const Joint<T>& joint) {
   // Check for dependent modeling elements in the plant. Throw if any element
   // depends on the joint to be removed.
-  // TODO(joemasterjohn): These checks are very brittle. Developers adding
+  // TODO(#21415): These checks are very brittle. Developers adding
   // new constraints or elements have no way of knowing that they must be
   // checked here. Find a way to make checking an element for dependency on a
   // Joint more robust and uniform across all MultibodyElements and constraints.
@@ -837,7 +837,7 @@ void MultibodyPlant<T>::RemoveJoint(const Joint<T>& joint) {
 
   // Check MultibodyConstraints. Currently only coupler constraints reference
   // joints.
-  for (auto const& [id, constraint_spec] : get_coupler_constraint_specs()) {
+  for (const auto& [id, constraint_spec] : get_coupler_constraint_specs()) {
     if (constraint_spec.joint0_index == joint.index() ||
         constraint_spec.joint1_index == joint.index()) {
       dependent_elements.push_back(fmt::format(

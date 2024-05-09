@@ -1351,7 +1351,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Removes and deletes `joint` from this %MultibodyPlant. Any existing
   /// references to `joint` will become invalid, and future calls to
-  /// `get_joint_actuator(joint_index)` will throw an exception.
+  /// `get_joint(joint_index)` will throw an exception.
   ///
   /// @throws std::exception if the plant is already finalized.
   /// @throws std::exception if `joint` has any dependent modeling elements that

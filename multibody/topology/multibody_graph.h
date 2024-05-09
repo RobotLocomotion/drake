@@ -217,6 +217,8 @@ class MultibodyGraph {
   // bodies_ includes the world body at world_index() with name
   // world_body_name().
   std::vector<RigidBody> bodies_;
+  // Stores the joints in the graph at their JointIndex. If a nullopt value is
+  // found at index i, then the joint with index i was removed from the graph.
   std::vector<std::optional<Joint>> joints_;
 
   // Keeps track of the number of non-nullopt entries in `joints_`
@@ -262,7 +264,7 @@ class MultibodyGraph::RigidBody {
   // Notes that this body is connected by `joint`.
   void add_joint(JointIndex joint) { joints_.push_back(joint); }
 
-  void remove_joint(JointIndex joint) { std::erase(joints_, joint); }
+  void RemoveJoint(JointIndex joint) { std::erase(joints_, joint); }
 
   BodyIndex index_;
   std::string name_;

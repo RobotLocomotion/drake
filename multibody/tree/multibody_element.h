@@ -183,13 +183,15 @@ class MultibodyElement {
   // value before the element is released to the wild.
   int64_t index_{-1};
 
-  // Keeps track of the index into input/output ports that have an entry
+  // Keeps track of the index into contiguous containers that have an entry
   // for each of a concrete MultibodyElement type (Joint, RigidBody, etc.)
-  // Default ordinal value is *invalid*. Concrete MultibodyElements may
-  // choose to not expose this ordinal if not needed (e.g. if MultibodyPlant
-  // does not expose any port that has an entry per concrete MultibodyElement
-  // type.) This must be set to a valid ordinal value before the element is
-  // released to the wild.
+  // Ordinals should be updated upon element removal so that the ordinals always
+  // form a contiguous sequence from 0 to N-1, where N is the number of a
+  // particular element type. Default ordinal value is *invalid*. Concrete
+  // MultibodyElements may choose to not expose this ordinal if not needed (e.g.
+  // if MultibodyPlant does not expose any port that has an entry per concrete
+  // MultibodyElement type.) This must be set to a valid ordinal value before
+  // the element is released to the wild.
   int ordinal_{-1};
 
   // The default model instance id is *invalid*. This must be set to a
