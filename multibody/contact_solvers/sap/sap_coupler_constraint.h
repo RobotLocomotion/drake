@@ -42,6 +42,8 @@ class SapCouplerConstraint final : public SapHolonomicConstraint<T> {
   /* Struct to store the kinematics of the the constraint in its current
    configuration, when it gets constructed. */
   struct Kinematics {
+    bool operator==(const Kinematics&) const = default;
+
     /* Index of clique 0. */
     int clique0;
     /* Clique local index of dof 0. */
@@ -107,6 +109,7 @@ class SapCouplerConstraint final : public SapHolonomicConstraint<T> {
     return std::unique_ptr<SapCouplerConstraint<T>>(
         new SapCouplerConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   Kinematics kinematics_;
 };

@@ -137,6 +137,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parameters);
 
+    bool operator==(const Parameters&) const = default;
+
     /* Constructs a valid set of parameters.
      @pre lower_limit < +∞
      @pre upper_limit > -∞
@@ -190,6 +192,13 @@ class SapLimitConstraint final : public SapConstraint<T> {
   /* Returns the position provided at construction. */
   const T& position() const { return q0_; }
 
+  /* Returns the value of the constraint function computed at construction.
+   Of size at most two, the first entry contains the lower limit constraint
+   function iff the lower limit is finite.
+   The next entry contains the upper limit constraint
+   function iff the upper limit is finite. */
+  const VectorX<T>& constraint_function() const { return g_; }
+
  private:
   /* Private copy construction is enabled to use in the implementation of
     DoClone(). */
@@ -222,6 +231,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapLimitConstraint<T>>(
         new SapLimitConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
   void DoAccumulateGeneralizedImpulses(
       int c, const Eigen::Ref<const VectorX<T>>& gamma,
       EigenPtr<VectorX<T>> tau) const final;

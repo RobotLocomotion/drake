@@ -786,6 +786,9 @@ class LimitConstraint final : public SapConstraint<T> {
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
+  }
 
   VectorX<T> R_;     // Regularization.
   VectorX<T> vhat_;  // Bias.
@@ -1106,6 +1109,9 @@ class ConstantForceConstraint final : public SapConstraint<double> {
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<ConstantForceConstraint>(
         new ConstantForceConstraint(*this));
+  }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
 
   const VectorXd g_;  // Constant impulse.
