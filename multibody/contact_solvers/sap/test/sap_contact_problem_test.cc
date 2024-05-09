@@ -37,37 +37,38 @@ const Eigen::Matrix4d S44 =
 
 // Test constraint for which constraint and Jacobian values are not important.
 // Only indices and constraint sizes matter for the unit tests in this file.
-class TestConstraint final : public SapConstraint<double> {
+template <typename T = double>
+class TestConstraint final : public SapConstraint<T> {
  public:
   // Constructor for a constraint on a single clique.
   // No objects are registered.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
-      : SapConstraint<double>(
-            {clique, MatrixXd::Ones(num_constraint_equations, clique_nv)}, {}) {
-  }
+      : SapConstraint<T>(
+            {clique, MatrixX<T>::Ones(num_constraint_equations, clique_nv)},
+            {}) {}
 
   // Constructor for a constraint between two cliques.
   // Registers objects with index first_clique and second_clique, for testing.
   TestConstraint(int num_constraint_equations, int first_clique,
                  int first_clique_nv, int second_clique, int second_clique_nv)
-      : SapConstraint<double>(
+      : SapConstraint<T>(
             {first_clique,
-             MatrixXd::Ones(num_constraint_equations, first_clique_nv),
+             MatrixX<T>::Ones(num_constraint_equations, first_clique_nv),
              second_clique,
-             MatrixXd::Ones(num_constraint_equations, second_clique_nv)},
+             MatrixX<T>::Ones(num_constraint_equations, second_clique_nv)},
             {}) {}
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
   std::unique_ptr<AbstractValue> DoMakeData(
-      const double&, const Eigen::Ref<const VectorXd>&) const final {
+      const T&, const Eigen::Ref<const VectorX<T>>&) const final {
     return nullptr;
   }
-  void DoCalcData(const Eigen::Ref<const VectorXd>&,
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>&,
                   AbstractValue*) const final {}
-  double DoCalcCost(const AbstractValue&) const final { return 0.0; }
-  void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorXd>) const final {}
-  void DoCalcCostHessian(const AbstractValue&, MatrixX<double>*) const final {}
+  T DoCalcCost(const AbstractValue&) const final { return 0.0; }
+  void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorX<T>>) const final {}
+  void DoCalcCostHessian(const AbstractValue&, MatrixX<T>*) const final {}
 
  private:
   TestConstraint(const TestConstraint&) = default;
@@ -76,21 +77,33 @@ class TestConstraint final : public SapConstraint<double> {
   // SapContactProblem::CalcConstraintMultibodyForces() correctly accumulates
   // constraint contributions. Therefore their functional form must stay in sync
   // with testing code in ContactProblem__CalcConstraintMultibodyForces.
-  void DoAccumulateGeneralizedImpulses(int c,
-                                       const Eigen::Ref<const VectorXd>& gamma,
-                                       EigenPtr<VectorXd> tau) const final {
+  void DoAccumulateGeneralizedImpulses(
+      int c, const Eigen::Ref<const VectorX<T>>& gamma,
+      EigenPtr<VectorX<T>> tau) const final {
     *tau += VectorXd::Ones(this->num_velocities(c)) * gamma.sum();
   }
 
   void DoAccumulateSpatialImpulses(int o,
-                                   const Eigen::Ref<const VectorXd>& gamma,
-                                   SpatialForce<double>* F) const final {
-    Vector6d v6 = o * Vector6d::Ones() * gamma.sum();
-    *F += SpatialForce<double>(v6);
+                                   const Eigen::Ref<const VectorX<T>>& gamma,
+                                   SpatialForce<T>* F) const final {
+    Vector6<T> v6 = o * Vector6<T>::Ones() * gamma.sum();
+    *F += SpatialForce<T>(v6);
   }
 
-  std::unique_ptr<SapConstraint<double>> DoClone() const final {
-    return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<TestConstraint<T>>(new TestConstraint<T>(*this));
+  }
+
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    if (this->num_cliques() == 1) {
+      return std::make_unique<TestConstraint<double>>(
+          this->num_constraint_equations(), this->first_clique(),
+          this->num_velocities(0));
+    }
+    return std::make_unique<TestConstraint<double>>(
+        this->num_constraint_equations(), this->first_clique(),
+        this->num_velocities(0), this->second_clique(),
+        this->num_velocities(1));
   }
 };
 
@@ -136,31 +149,31 @@ GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
   SapContactProblem<double> problem(time_step, A, v_star);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      problem.AddConstraint(std::make_unique<TestConstraint>(
+      problem.AddConstraint(std::make_unique<TestConstraint<double>>(
           3 /* num_equations */, 5 /* (wrong) first_clique */,
           2 /* first_clique_nv */, 1 /* second_clique */,
           3 /* second_clique_nv */)),
       "First clique index must be strictly lower than num_cliques\\(\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      problem.AddConstraint(std::make_unique<TestConstraint>(
+      problem.AddConstraint(std::make_unique<TestConstraint<double>>(
           3 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
           5 /* (wrong) second_clique */, 3 /* second_clique_nv */)),
       "Second clique index must be strictly lower than num_cliques\\(\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      problem.AddConstraint(std::make_unique<TestConstraint>(
+      problem.AddConstraint(std::make_unique<TestConstraint<double>>(
           3 /* num_equations */, 0 /* first_clique */,
           3 /* (wrong) first_clique_nv */, 1 /* second_clique */,
           3 /* second_clique_nv */)),
       ".* does not match the number of velocities in this problem for "
       "the first clique.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      problem.AddConstraint(std::make_unique<TestConstraint>(
+      problem.AddConstraint(std::make_unique<TestConstraint<double>>(
           3 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
           1 /* second_clique */, 6 /* (wrong) second_clique_nv */)),
       ".* does not match the number of velocities in this problem for "
       "the second clique.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      problem.AddConstraint(std::make_unique<TestConstraint>(
+      problem.AddConstraint(std::make_unique<TestConstraint<double>>(
           3 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
           4 /* (empty) second_clique */, 0 /* second_clique_nv */)),
       ".*Adding constraint.*zero.*velocities.*");
@@ -195,11 +208,12 @@ GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
  In this test setup, we consider there is a physical object per clique, and
  therefore we have four objects.
 */
-void AddConstraints(SapContactProblem<double>* problem) {
+template <typename T = double>
+void AddConstraints(SapContactProblem<T>* problem) {
   auto add_and_verify_access =
-      [problem](std::unique_ptr<TestConstraint> owned_constraint) {
+      [problem](std::unique_ptr<TestConstraint<T>> owned_constraint) {
         const int expected_index = problem->num_constraints();
-        const TestConstraint& constraint = *owned_constraint;
+        const TestConstraint<T>& constraint = *owned_constraint;
         EXPECT_EQ(problem->AddConstraint(std::move(owned_constraint)),
                   expected_index);
         EXPECT_EQ(&problem->get_constraint(expected_index), &constraint);
@@ -209,18 +223,18 @@ void AddConstraints(SapContactProblem<double>* problem) {
   // Therefore we know we have four objects.
   problem->set_num_objects(4);
 
-  add_and_verify_access(std::make_unique<TestConstraint>(
+  add_and_verify_access(std::make_unique<TestConstraint<T>>(
       1 /* num_equations */, 3 /* clique */, 2 /* clique_nv */));
-  add_and_verify_access(std::make_unique<TestConstraint>(
+  add_and_verify_access(std::make_unique<TestConstraint<T>>(
       3 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
       1 /* second_clique */, 3 /* second_clique_nv */));
-  add_and_verify_access(std::make_unique<TestConstraint>(
+  add_and_verify_access(std::make_unique<TestConstraint<T>>(
       6 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
       3 /* second_clique */, 2 /* second_clique_nv */));
-  add_and_verify_access(std::make_unique<TestConstraint>(
+  add_and_verify_access(std::make_unique<TestConstraint<T>>(
       2 /* num_equations */, 1 /* first_clique */, 3 /* first_clique_nv */,
       3 /* second_clique */, 2 /* second_clique_nv */));
-  add_and_verify_access(std::make_unique<TestConstraint>(
+  add_and_verify_access(std::make_unique<TestConstraint<T>>(
       5 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
       3 /* second_clique */, 2 /* second_clique_nv */));
 }
@@ -253,23 +267,39 @@ GTEST_TEST(ContactProblem, AddConstraints) {
 
 GTEST_TEST(ContactProblem, Clone) {
   const double time_step = 0.01;
-  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  std::vector<MatrixXd> A{S22, S33, S44, S22};
   const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  SapContactProblem<double> problem(time_step, std::move(A), v_star);
   AddConstraints(&problem);
 
-  std::unique_ptr<SapContactProblem<double>> clone = problem.Clone();
-  EXPECT_EQ(clone->num_cliques(), problem.num_cliques());
-  EXPECT_EQ(clone->num_constraints(), problem.num_constraints());
-  EXPECT_EQ(clone->num_constraint_equations(),
-            problem.num_constraint_equations());
+  auto verify_clone = [&problem](const auto& clone) {
+    EXPECT_EQ(clone.num_cliques(), problem.num_cliques());
+    EXPECT_EQ(clone.num_constraints(), problem.num_constraints());
+    EXPECT_EQ(clone.num_constraint_equations(),
+              problem.num_constraint_equations());
 
-  // Verify graph for this problem.
-  const ContactProblemGraph& graph = clone->graph();
-  EXPECT_EQ(graph.num_cliques(), 4);
-  EXPECT_EQ(graph.num_constraints(), 5);
-  EXPECT_EQ(graph.num_clusters(), 4);
-  EXPECT_EQ(graph.num_constraint_equations(), 17);
+    // Verify graph for this problem.
+    const ContactProblemGraph& graph = clone.graph();
+    EXPECT_EQ(graph.num_cliques(), 4);
+    EXPECT_EQ(graph.num_constraints(), 5);
+    EXPECT_EQ(graph.num_clusters(), 4);
+    EXPECT_EQ(graph.num_constraint_equations(), 17);
+  };
+
+  std::unique_ptr<SapContactProblem<double>> clone = problem.Clone();
+  verify_clone(*clone);
+
+  // Make the same problem but with T = AutoDiffXd.
+  std::vector<MatrixX<AutoDiffXd>> A_ad{S22, S33, S44, S22};
+  VectorX<AutoDiffXd> v_star_ad = v_star;
+  SapContactProblem<AutoDiffXd> problem_ad(time_step, std::move(A_ad),
+                                           std::move(v_star_ad));
+  AddConstraints(&problem_ad);
+
+  // Unit test ToDouble().
+  std::unique_ptr<SapContactProblem<double>> clone_from_ad =
+      problem_ad.ToDouble();
+  verify_clone(*clone_from_ad);
 }
 
 /* We test reducing the SapContactProblem. The graph setup sketched below

@@ -5,6 +5,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
@@ -143,6 +144,10 @@ GTEST_TEST(SapFixedConstraint, SingleCliqueConstraintClone) {
   EXPECT_THROW(clone->second_clique(), std::exception);
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J66);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      c.ToDouble(),
+      "SapFixedConstraint: Scalar conversion to double not supported.");
 }
 
 GTEST_TEST(SapFixedConstraint, TwoCliquesConstraintClone) {
@@ -161,6 +166,10 @@ GTEST_TEST(SapFixedConstraint, TwoCliquesConstraintClone) {
   EXPECT_EQ(clone->second_clique(), kinematics.J.clique(1));
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J66);
   EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J62);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      c.ToDouble(),
+      "SapFixedConstraint: Scalar conversion to double not supported.");
 }
 
 GTEST_TEST(SapFixedConstraint, AccumulateGeneralizedImpulses) {

@@ -12,6 +12,9 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+template <typename T>
+class SapDistanceConstraint;
+
 /* Implements a SAP (compliant) distance constraint between two points. With
  finite compliance, this constraint can be used to model a linear spring between
  two points.
@@ -46,6 +49,8 @@ class SapDistanceConstraint final : public SapHolonomicConstraint<T> {
 
     /* Stiffness k and damping c. */
     ComplianceParameters(T stiffness, T damping);
+
+    bool operator==(const ComplianceParameters&) const = default;
 
     const T& stiffness() const { return stiffness_; }
 
@@ -113,6 +118,8 @@ class SapDistanceConstraint final : public SapHolonomicConstraint<T> {
     const SapConstraintJacobian<T>& jacobian() const { return J_; }
     const Vector3<T>& p_hat_W() const { return p_hat_W_; }
 
+    bool operator==(const Kinematics&) const = default;
+
    private:
     /* Index to a physical object A. */
     int objectA_;
@@ -158,6 +165,8 @@ class SapDistanceConstraint final : public SapHolonomicConstraint<T> {
     return parameters_;
   }
 
+  const Kinematics& kinematics() const { return kinematics_; }
+
  private:
   /* Private copy construction is enabled to use in the implementation of
      DoClone(). */
@@ -198,6 +207,8 @@ class SapDistanceConstraint final : public SapHolonomicConstraint<T> {
     return std::unique_ptr<SapDistanceConstraint<T>>(
         new SapDistanceConstraint<T>(*this));
   }
+
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   Kinematics kinematics_;
   ComplianceParameters parameters_;
