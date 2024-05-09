@@ -48,6 +48,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "expect_equal",
+    testonly = 1,
+    srcs = ["expect_equal.cc"],
+    hdrs = ["expect_equal.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":sap_constraint",
+        "//common:essential",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "partial_permutation",
     srcs = ["partial_permutation.cc"],
     hdrs = ["partial_permutation.h"],
@@ -93,6 +106,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//math:autodiff",
         "//multibody/contact_solvers:matrix_block",
     ],
 )
@@ -173,6 +187,7 @@ drake_cc_library(
         ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
+        "//math:autodiff",
     ],
 )
 
@@ -308,6 +323,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_constraint",
     ],
 )
@@ -337,6 +353,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_ball_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_ball_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -347,6 +364,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_coupler_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_coupler_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -357,6 +375,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_distance_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_distance_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -367,16 +386,19 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_fixed_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_fixed_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
     name = "sap_holonomic_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_holonomic_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -387,6 +409,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_hunt_crossley_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_hunt_crossley_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -399,6 +422,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_limit_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_limit_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -409,6 +433,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_pd_controller_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_pd_controller_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -419,6 +444,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_friction_cone_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_friction_cone_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -434,6 +460,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_weld_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_weld_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
