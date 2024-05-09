@@ -51,10 +51,14 @@ struct FastIrisOptions {
   /** Number of particles used to estimate the closest collision*/
   int num_particles = 1e3;
 
+  /** Descision threshold for unadaptive test.*/
   double tau = 0.5;
 
+  /** Upper bound on the error probability that the admissible_proportion in
+   * collision is not met.*/
   double delta = 5e-2;
 
+  /** Admissible fraction of the region volume allowed to be in collision.*/
   double admissible_proportion_in_collision = 1e-2;
 
   /** Points that are guaranteed to be contained in the final region

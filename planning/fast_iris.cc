@@ -203,11 +203,12 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
     double max_relaxation = 0;
     double outer_delta =
         options.delta * 6 / (M_PI * M_PI * (iteration + 1) * (iteration + 1));
-    
-    //No need for decaying outer delta if we are guaranteed to terminate after one step.
-    //In this case we can be less conservative and set it to our total accepted error probability.
-    if(options.max_iterations == 1){
-        outer_delta = options.delta;
+
+    // No need for decaying outer delta if we are guaranteed to terminate after
+    // one step. In this case we can be less conservative and set it to our
+    // total accepted error probability.
+    if (options.max_iterations == 1) {
+      outer_delta = options.delta;
     }
 
     while (num_iterations_separating_planes <
@@ -260,6 +261,7 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
               N_k) {
         break;
       }
+
       // warn user if test fails on last iteration
       if (num_iterations_separating_planes ==
           options.max_iterations_separating_planes - 1) {
@@ -269,32 +271,12 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
             "guarantees!");
       }
 
-      // debugging visualization
-      // if (options.meshcat && dim <= 3) {
-      //   for (int pt_to_draw = 0; pt_to_draw <
-      //   number_particles_in_collision;
-      //        ++pt_to_draw) {
-      //     std::string path =
-      //     fmt::format("iteration{:02}/sepit{:02}/{:03}/initial_guess",
-      //                                    iteration,
-      //                                    num_iterations_separating_planes,
-      //                                    pt_to_draw);
-      //     options.meshcat->SetObject(path, Sphere(0.01),
-      //                                geometry::Rgba(1, 0.1, 0.1, 1.0));
-      //     point_to_draw.head(dim) = particles_in_collision[pt_to_draw];
-      //     options.meshcat->SetTransform(
-      //         path, RigidTransform<double>(point_to_draw));
-      //   }
-      // }
-
       // Update particle positions
       std::vector<Eigen::VectorXd> particles_in_collision_updated;
       particles_in_collision_updated.reserve(particles_in_collision.size());
       for (auto p : particles_in_collision) {
         particles_in_collision_updated.emplace_back(p);
       }
-      // std::vector<Eigen::VectorXd> particles_update_distance;
-      // particles_update_distance.reserve(number_particles_in_collision);
 
       const auto particle_update_work =
           [&checker, &particles_in_collision_updated, &particles_in_collision,
@@ -339,43 +321,9 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
                                   number_particles_in_collision,
                                   particle_update_work,
                                   ParallelForBackend::BEST_AVAILABLE);
-      // debugging visualization
-      // if (options.meshcat && dim <= 3) {
 
-      //   for (int pt_to_draw = 0; pt_to_draw <
-      //   number_particles_in_collision;
-      //        ++pt_to_draw) {
-      //     std::string path =
-      //     fmt::format("iteration{:02}/sepit{:02}/{:03}/updated",
-      //                                    iteration,
-      //                                    num_iterations_separating_planes,
-      //                                    pt_to_draw);
-      //     options.meshcat->SetObject(path, Sphere(0.005),
-      //                                geometry::Rgba(0.5, 0.1, 0.5, 1.0));
-      //     point_to_draw.head(dim) =
-      //     particles_in_collision_updated[pt_to_draw];
-      //     options.meshcat->SetTransform(
-      //         path, RigidTransform<double>(
-      //                   point_to_draw));
-
-      //   //   Eigen::Matrix3Xd linepoints = Eigen::Matrix3Xd::Zero(3, 2);
-      //   //   point_to_draw<<0,0,0;
-      //   //   point_to_draw.head(dim) = particles_in_collision[pt_to_draw];
-      //   //   linepoints.col(0) =  point_to_draw;
-      //   //   point_to_draw.head(dim) =
-      //   particles_in_collision_updated[pt_to_draw];
-      //   //   linepoints.col(1) = point_to_draw;
-
-      //   //   std::string path_line =
-      //   fmt::format("iteration{:02}/{:03}/line",
-      //   // num_iterations_separating_planes, pt_to_draw);
-      //   //   options.meshcat->SetLine(path_line, linepoints, 2.0, Rgba(0,
-      //   0, 0));
-
-      //   }
-      // }
-      // Rresampling particles
-      // TODO(wernerpe): implement resampling step
+      // Resampling particles around found collisions
+      // TODO(wernerpe): implement optional resampling step
 
       // Place Hyperplanes
       std::vector<double> particle_distances;
@@ -390,8 +338,8 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
       // returned in ascending order
       auto indices_sorted = argsort(particle_distances);
 
-      // bools are not threadsafe - using uint8_t instead
-      // to accomondate for parallel checking
+      // bools are not threadsafe - using uint8_t instead to accomondate for
+      // parallel checking
       std::vector<uint8_t> particle_is_redundant;
 
       for (int i = 0; i < number_particles_in_collision; ++i) {
