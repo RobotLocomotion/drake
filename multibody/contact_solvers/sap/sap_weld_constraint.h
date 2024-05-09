@@ -68,6 +68,8 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Kinematics);
 
+    bool operator==(const Kinematics& other) const;
+
     /* @param[in] objectA
          Index of the physical object A on which frame P attaches.
        @param[in] X_WP Pose of frame P in the world frame.
@@ -172,6 +174,7 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
     return std::unique_ptr<SapWeldConstraint<T>>(
         new SapWeldConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   Kinematics kinematics_;
 };

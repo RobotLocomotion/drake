@@ -15,6 +15,9 @@ namespace internal {
 template <typename T>
 struct CliqueJacobian {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CliqueJacobian);
+
+  bool operator==(const CliqueJacobian<T>&) const = default;
+
   CliqueJacobian(int c, MatrixBlock<T>&& b) : clique(c), block(std::move(b)) {}
   int clique;
   MatrixBlock<T> block;
@@ -51,6 +54,8 @@ template <typename T>
 class SapConstraintJacobian {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraintJacobian);
+
+  bool operator==(const SapConstraintJacobian<T>&) const = default;
 
   /* Constraint Jacobian involving a single clique.
    @throws if `clique` is negative. */
@@ -108,6 +113,14 @@ class SapConstraintJacobian {
    @pre blocks_are_dense() is true. */
   SapConstraintJacobian<T> LeftMultiplyByTranspose(
       const Eigen::Ref<const MatrixX<T>>& A) const;
+
+  // TODO(amcastro-tri): implement support for non-dense blocks.
+  /* When T = double, this method returns a copy of `this` jacobian.
+   When T = AutoDiffXd this method returns a copy where gradients were
+   discarded.
+   @warning Only dense clique jacobians are supported.
+   @throws std::exception if any of the Jacobian blocks is not dense. */
+  SapConstraintJacobian<double> ToDouble() const;
 
  private:
   // Blocks for each block. Up to two entries only.
