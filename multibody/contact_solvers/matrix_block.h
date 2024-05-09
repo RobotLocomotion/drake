@@ -48,6 +48,8 @@ class MatrixBlock {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MatrixBlock);
 
+  bool operator==(const MatrixBlock<T>&) const = default;
+
   /* Constructs an empty MatrixBlock of size 0-by-0. */
   MatrixBlock() : MatrixBlock(MatrixX<T>::Zero(0, 0)) {}
 

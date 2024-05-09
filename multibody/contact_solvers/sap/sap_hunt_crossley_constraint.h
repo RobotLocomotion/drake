@@ -192,6 +192,7 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapHuntCrossleyConstraint<T>>(
         new SapHuntCrossleyConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   // no-op for this constraint.
   void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,

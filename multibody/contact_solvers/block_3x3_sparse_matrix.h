@@ -21,6 +21,8 @@ class Block3x3SparseMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Block3x3SparseMatrix);
 
+  bool operator==(const Block3x3SparseMatrix<T>&) const = default;
+
   /* A triplet is a tuple (i, j, value) defining a non-zero submatrix where i is
    the block row index, j is the block column index, and value is a 3x3 dense
    matrix. */
@@ -116,6 +118,7 @@ class Block3x3SparseMatrix {
   struct Index {
     int row;
     int flat;
+    bool operator==(const Index&) const = default;
   };
   /* For each block column j, col_to_indices_[j] contains all the indices
    corresponding to non-zero entries in block column j in increasing row index.

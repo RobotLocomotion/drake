@@ -102,6 +102,8 @@ class SapPdControllerConstraint final : public SapConstraint<T> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parameters);
 
+    bool operator==(const Parameters&) const = default;
+
     // TODO(amcastro-tri): Consider extending support for both gains being zero.
     /* Constructs a valid set of parameters.
      @param Kp Proportional gain. It must be strictly positive.
@@ -125,6 +127,8 @@ class SapPdControllerConstraint final : public SapConstraint<T> {
   /* Struct to store the current configuration of the the constraint, when it
   gets constructed. */
   struct Configuration {
+    bool operator==(const Configuration&) const = default;
+
     /* Clique index. */
     int clique;
     /* PD controlled dof within the given clique, and value in [0, clique_nv).*/
@@ -168,6 +172,7 @@ class SapPdControllerConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapPdControllerConstraint<T>>(
         new SapPdControllerConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
   void DoAccumulateGeneralizedImpulses(
       int c, const Eigen::Ref<const VectorX<T>>& gamma,
       EigenPtr<VectorX<T>> tau) const final;
