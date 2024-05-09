@@ -922,6 +922,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_geometry_poses_output_port",
             &Class::get_geometry_poses_output_port, py_rvp::reference_internal,
             cls_doc.get_geometry_poses_output_port.doc)
+        .def("get_deformable_body_configuration_output_port",
+            &Class::get_deformable_body_configuration_output_port,
+            py_rvp::reference_internal,
+            cls_doc.get_deformable_body_configuration_output_port.doc)
         .def("geometry_source_is_registered",
             &Class::geometry_source_is_registered,
             cls_doc.geometry_source_is_registered.doc)
@@ -1595,9 +1599,7 @@ PYBIND11_MODULE(plant, m) {
             [](const Class* self, geometry::GeometryId geometry_id) {
               return self->GetBodyId(geometry_id);
             },
-            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
-        .def("vertex_positions_port", &Class::vertex_positions_port,
-            py_rvp::reference_internal, cls_doc.vertex_positions_port.doc);
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
   }
   // Deformable identifier.
   {

@@ -50,7 +50,7 @@ class DeformableDriverTest : public ::testing::Test {
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
     diagram_ = builder.Build();
