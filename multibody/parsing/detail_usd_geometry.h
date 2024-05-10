@@ -1,13 +1,11 @@
 #include "drake/multibody/parsing/detail_common.h"
-
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 
 #include "pxr/usd/usd/prim.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
-
-struct ParsingWorkspace;
 
 Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
