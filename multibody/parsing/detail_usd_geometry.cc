@@ -13,8 +13,6 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/massAPI.h"
 
-#include "drake/multibody/parsing/detail_parsing_workspace.h"
-
 namespace drake {
 namespace multibody {
 namespace internal {
