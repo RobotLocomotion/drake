@@ -334,10 +334,7 @@ class SpanningForest {
 
   // The caller (only LinkJointGraph) must provide a new back pointer after copy
   // or move so these can't be default.
-  SpanningForest(const SpanningForest& source);
-  SpanningForest(SpanningForest&& source);
-  SpanningForest& operator=(const SpanningForest& source);
-  SpanningForest& operator=(SpanningForest&& source);
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SpanningForest)
 
   // LinkJointGraph uses this to fix the graph back pointer after copy or move.
   void SetNewOwner(LinkJointGraph* graph) {
