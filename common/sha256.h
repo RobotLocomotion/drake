@@ -39,10 +39,8 @@ class Sha256 final {
   /** Returns the 64-character ASCII hex representation of this checksum. */
   std::string to_string() const;
 
-  // Offer typical comparison operations.
-  bool operator==(const Sha256& other) const { return bytes_ == other.bytes_; }
-  bool operator!=(const Sha256& other) const { return bytes_ != other.bytes_; }
-  bool operator<(const Sha256& other) const { return bytes_ < other.bytes_; }
+  /** Standard comparison operator. */
+  auto operator<=>(const Sha256&) const = default;
 
  private:
   friend class std::hash<Sha256>;

@@ -44,7 +44,9 @@ enum class FormulaKind {
 };
 
 // Total ordering between FormulaKinds
-bool operator<(FormulaKind k1, FormulaKind k2);
+inline auto operator<=>(FormulaKind k1, FormulaKind k2) {
+  return static_cast<int>(k1) <=> static_cast<int>(k2);
+}
 
 class FormulaCell;                  // In drake/common/formula_cell.h
 class FormulaFalse;                 // In drake/common/formula_cell.h

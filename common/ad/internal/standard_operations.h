@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <compare>
 #include <iosfwd>
 
 /* This file contains free function operators for Drake's AutoDiff type.
@@ -242,93 +243,23 @@ inline AutoDiff operator/(double a, const AutoDiff& b) {
 //@{
 
 /** Standard comparison operator. Discards the derivatives. */
-inline bool operator<(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() < b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator<=(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() <= b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() > b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>=(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() >= b.value();
+inline std::partial_ordering operator<=>(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() <=> b.value();
 }
 
 /** Standard comparison operator. Discards the derivatives. */
 inline bool operator==(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() == b.value();
+  return (a <=> b) == 0;
 }
 
 /** Standard comparison operator. Discards the derivatives. */
-inline bool operator!=(const AutoDiff& a, const AutoDiff& b) {
-  return a.value() != b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator<(const AutoDiff& a, double b) {
-  return a.value() < b;
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator<=(const AutoDiff& a, double b) {
-  return a.value() <= b;
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>(const AutoDiff& a, double b) {
-  return a.value() > b;
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>=(const AutoDiff& a, double b) {
-  return a.value() >= b;
+inline std::partial_ordering operator<=>(const AutoDiff& a, double b) {
+  return a.value() <=> b;
 }
 
 /** Standard comparison operator. Discards the derivatives. */
 inline bool operator==(const AutoDiff& a, double b) {
-  return a.value() == b;
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator!=(const AutoDiff& a, double b) {
-  return a.value() != b;
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator<(double a, const AutoDiff& b) {
-  return a < b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator<=(double a, const AutoDiff& b) {
-  return a <= b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>(double a, const AutoDiff& b) {
-  return a > b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator>=(double a, const AutoDiff& b) {
-  return a >= b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator==(double a, const AutoDiff& b) {
-  return a == b.value();
-}
-
-/** Standard comparison operator. Discards the derivatives. */
-inline bool operator!=(double a, const AutoDiff& b) {
-  return a != b.value();
+  return (a <=> b) == 0;
 }
 
 //@}
