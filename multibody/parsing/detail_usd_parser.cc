@@ -254,9 +254,8 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     ProcessPrim(prim);
   }
 
-  // Returning an empty vector, since right now we only support static
-  // colliders attached to the world body (i.e., no actual models are
-  // involved).
+  // Returning an empty vector, since only rigidbody colliders are supported
+  // at the moment (i.e., no actual models are involved).
   return std::vector<ModelInstanceIndex>();
 }
 
