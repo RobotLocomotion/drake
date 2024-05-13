@@ -37,8 +37,8 @@ class RpyFloatingMobilizerTest : public MobilizerTester {
   // Helper to set the this fixture's context to an arbitrary non-zero state
   // comprised of arbitrary_rpy() and arbitrary_translation().
   void SetArbitraryNonZeroState() {
-    mobilizer_->set_angles(context_.get(), arbitrary_rpy().vector());
-    mobilizer_->set_translation(context_.get(), arbitrary_translation());
+    mobilizer_->SetAngles(context_.get(), arbitrary_rpy().vector());
+    mobilizer_->SetTranslation(context_.get(), arbitrary_translation());
   }
 
   RollPitchYawd arbitrary_rpy() const {
@@ -230,7 +230,7 @@ TEST_F(RpyFloatingMobilizerTest, MapVelocityToQdotAndBack) {
 // inverse of N(q).
 TEST_F(RpyFloatingMobilizerTest, KinematicMapping) {
   RollPitchYawd rpy(M_PI / 3, -M_PI / 3, M_PI / 5);
-  mobilizer_->set_angles(context_.get(), rpy.vector());
+  mobilizer_->SetAngles(context_.get(), rpy.vector());
 
   ASSERT_EQ(mobilizer_->num_positions(), 6);
   ASSERT_EQ(mobilizer_->num_velocities(), 6);
@@ -287,7 +287,7 @@ TEST_F(RpyFloatingMobilizerTest, MapUsesNplus) {
 TEST_F(RpyFloatingMobilizerTest, SingularityError) {
   // Set state in singularity
   const Vector3d rpy_value(M_PI / 3, M_PI / 2, M_PI / 5);
-  mobilizer_->set_angles(context_.get(), rpy_value);
+  mobilizer_->SetAngles(context_.get(), rpy_value);
 
   // Set arbitrary qdot and MapVelocityToQDot.
   const Vector6<double> v = (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();

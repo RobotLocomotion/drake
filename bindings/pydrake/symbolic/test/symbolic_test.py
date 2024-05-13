@@ -793,7 +793,7 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(sym.pow(v_x, v_y), v_x ** v_y)
         numpy_compare.assert_equal(sym.sin(v_x), np.sin(v_x))
         numpy_compare.assert_equal(sym.cos(v_x), np.cos(v_x))
-        numpy_compare.assert_equal(sym.tan(v_x), np.tan(v_x))
+        numpy_compare.assert_float_allclose(sym.tan(v_x), np.tan(v_x))
         numpy_compare.assert_equal(sym.asin(v_x), np.arcsin(v_x))
         numpy_compare.assert_equal(sym.acos(v_x), np.arccos(v_x))
         numpy_compare.assert_equal(sym.atan(v_x), np.arctan(v_x))

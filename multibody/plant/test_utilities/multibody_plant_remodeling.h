@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,10 +25,17 @@ namespace multibody {
 class MultibodyPlantRemodeling : public ::testing::Test {
  public:
   // This fixture sets up a plant with a serial chain of 3 bodies connected by
-  // revolute joints. An actuator is added to each joint. Then the actuator
-  // controlling `joint1` is removed.
-  void SetUp() override;
+  // joints of the type specified by the type parameter `JointType`. An actuator
+  // is added to each joint.
+  template <template <typename> class JointType = RevoluteJoint>
+  void BuildModel();
 
+  // Must be called afer BuildModel. Removes elements from the plant.
+  // If `remove_actuator` is true, actuator1 will be removed.
+  // If `remove_joint` is true, joint1 will be removed.
+  void DoRemoval(bool remove_actuator, bool remove_joint);
+
+  // Must be called after BuildModel.
   // Finalize the plant, build the diagram and initialize `simulator_`
   void FinalizeAndBuild();
 

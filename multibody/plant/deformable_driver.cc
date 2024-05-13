@@ -549,7 +549,8 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
   const MultibodyTreeTopology& tree_topology =
       manager_->internal_tree().get_topology();
   const auto& configurations =
-      deformable_model_->vertex_positions_port()
+      manager_->plant()
+          .get_deformable_body_configuration_output_port()
           .template Eval<geometry::GeometryConfigurationVector<T>>(context);
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {

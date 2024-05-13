@@ -24,10 +24,12 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
+#include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-
+#include "drake/multibody/tree/revolute_spring.h"
 namespace drake {
 namespace multibody {
 
@@ -403,7 +405,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
     for (auto& model : other.physical_models_) {
-      auto cloned_model = model->template CloneToScalar<T>();
+      auto cloned_model = model->template CloneToScalar<T>(this);
       // TODO(xuchenhan-tri): Rework physical model and discrete update manager
       //  to eliminate the requirement on the order that they are called with
       //  respect to Finalize().
@@ -680,7 +682,7 @@ std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
     graphviz += "}\n";
   }
   // Add the graph edges (via the joints).
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+  for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
     graphviz += fmt::format(
         "body{} -> body{} [label=\"{} [{}]\"];\n", joint.child_body().index(),
@@ -775,6 +777,51 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
   RandomGenerator generator;
   auto q_FM = math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
   SetFreeBodyRandomRotationDistribution(body, q_FM);
+}
+
+template <typename T>
+void MultibodyPlant<T>::RemoveJoint(const Joint<T>& joint) {
+  // Check for non-zero number of user-added force elements. (There is always 1
+  // force element, the gravity field added when the tree is constructed.)
+  if (num_force_elements() > 1) {
+    throw std::logic_error(fmt::format(
+        "{}: This plant has {} user-added force elements. This plant must have "
+        "0 user-added force elements in order to remove joint with index {}.",
+        __func__, num_force_elements() - 1, joint.index()));
+  }
+
+  // Check for non-zero number of user-added constraints.
+  if (num_constraints() > 0) {
+    throw std::logic_error(fmt::format(
+        "{}: This plant has {} user-added constraints. This plant must have "
+        "0 user-added constraints in order to remove joint with index {}.",
+        __func__, num_constraints(), joint.index()));
+  }
+
+  // Check for dependent JointActuators in the plant. Throw if any actuator
+  // depends on the joint to be removed.
+  // TODO(#21415): Find a way to make checking an element for dependency on a
+  // Joint more robust and uniform across all MultibodyElements and constraints.
+  std::vector<std::string> dependent_elements;
+
+  // Check JointActuators.
+  for (JointActuatorIndex index : GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = get_joint_actuator(index);
+    if (actuator.joint().index() == joint.index()) {
+      dependent_elements.push_back(
+          fmt::format("JointActuator(name: {}, index: {})", actuator.name(),
+                      actuator.index()));
+    }
+  }
+
+  if (dependent_elements.size() > 0) {
+    throw std::logic_error(fmt::format(
+        "{}: joint with index {} has the following dependent model elements "
+        "which must be removed prior to joint removal: [{}].",
+        __func__, joint.index(), fmt::join(dependent_elements, ", ")));
+  }
+
+  this->mutable_tree().RemoveJoint(joint);
 }
 
 template <typename T>
@@ -971,9 +1018,11 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
     const std::vector<JointIndex>& joint_indexes) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   for (const JointIndex& joint : joint_indexes) {
-    if (!joint.is_valid() || joint >= num_joints()) {
-      throw std::logic_error(fmt::format(
-          "{}: No joint with index {} has been registered.", __func__, joint));
+    if (!has_joint(joint)) {
+      throw std::logic_error(
+          fmt::format("{}: No joint with index {} has been registered or it "
+                      "has been removed.",
+                      __func__, joint));
     }
     if (get_joint(joint).num_velocities() == 0) {
       throw std::logic_error(
@@ -1184,7 +1233,7 @@ void MultibodyPlant<T>::Finalize() {
 
 template <typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+  for (JointIndex joint_index : GetJointIndices()) {
     // Currently MultibodyPlant applies these "compliant" joint limit forces
     // using an explicit Euler strategy. Stability analysis of the explicit
     // Euler applied to the harmonic oscillator (the model used for these
@@ -1401,7 +1450,7 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     // Disallow collisions between adjacent bodies. Adjacency is implied by the
     // existence of a joint between bodies, except in the case of 6-dof joints
     // or joints in which the parent body is `world`.
-    for (JointIndex j{0}; j < num_joints(); ++j) {
+    for (JointIndex j : GetJointIndices()) {
       const Joint<T>& joint = get_joint(j);
       const RigidBody<T>& child = joint.child_body();
       const RigidBody<T>& parent = joint.parent_body();
@@ -1533,7 +1582,7 @@ VectorX<T> MultibodyPlant<T>::GetDefaultPositions() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   VectorX<T> q;
   q.setConstant(num_positions(), std::numeric_limits<double>::quiet_NaN());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const Joint<T>& joint = get_joint(i);
     q.segment(joint.position_start(), joint.num_positions()) =
         joint.default_positions();
@@ -1556,7 +1605,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
@@ -1586,8 +1635,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   std::vector<std::string> names(num_positions());
 
-  for (int joint_index = 0; joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = get_joint(JointIndex(joint_index));
+  for (JointIndex joint_index : GetJointIndices()) {
+    const Joint<T>& joint = get_joint(joint_index);
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -1649,8 +1698,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   std::vector<std::string> names(num_velocities());
 
-  for (int joint_index = 0; joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = get_joint(JointIndex(joint_index));
+  for (JointIndex joint_index : GetJointIndices()) {
+    const Joint<T>& joint = get_joint(joint_index);
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -2593,7 +2642,7 @@ void MultibodyPlant<T>::CalcJointLockingCache(
 
   int unlocked_cursor = 0;
   int locked_cursor = 0;
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+  for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
     if (joint.is_locked(context)) {
       for (int k = 0; k < joint.num_velocities(); ++k) {
@@ -3101,7 +3150,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
   for (auto& physical_model : physical_models_) {
-    physical_model->DeclareSystemResources(this);
+    physical_model->DeclareSystemResources();
   }
 }
 
@@ -3528,7 +3577,7 @@ void MultibodyPlant<T>::CalcReactionForces(
 
   // Map mobilizer reaction forces to joint reaction forces and perform the
   // necessary frame conversions.
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+  for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
     const internal::MobilizerIndex mobilizer_index =
         internal_tree().get_joint_mobilizer(joint_index);
@@ -3584,7 +3633,7 @@ void MultibodyPlant<T>::CalcReactionForces(
     // Re-express in the joint's child frame Jc.
     const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
     const RotationMatrix<T> R_JcW = R_WJc.inverse();
-    F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
+    F_CJc_Jc_array->at(joint.ordinal()) = R_JcW * F_CJc_W;
   }
 }
 
@@ -3617,6 +3666,26 @@ template <typename T>
 const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
     const {
   return systems::System<T>::get_input_port(geometry_query_port_);
+}
+
+template <typename T>
+const OutputPort<T>&
+MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
+  // TODO(xuchenhan-tri): enforce that there's only ever going to be one
+  // DeformableModel as part of #21355.
+  for (const std::unique_ptr<PhysicalModel<T>>& physical_model :
+       physical_models_) {
+    if (std::holds_alternative<const DeformableModel<T>*>(
+            physical_model->ToPhysicalModelPointerVariant())) {
+      const DeformableModel<T>* deformable_model =
+          std::get<const DeformableModel<T>*>(
+              physical_model->ToPhysicalModelPointerVariant());
+      DRAKE_DEMAND(deformable_model != nullptr);
+      return systems::System<T>::get_output_port(
+          deformable_model->configuration_output_port_index());
+    }
+  }
+  throw std::runtime_error("No deformable body in the plant.");
 }
 
 template <typename T>

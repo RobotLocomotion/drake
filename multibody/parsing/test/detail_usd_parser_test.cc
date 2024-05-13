@@ -1,9 +1,10 @@
 #include "drake/multibody/parsing/detail_usd_parser.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace multibody {
@@ -20,7 +21,11 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   UsdParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
   std::vector<ModelInstanceIndex> ParseFile(const fs::path& filename) {
-    const std::string source_filename = filename.string();
+    const std::string source_filename =
+        filename.is_relative()
+            ? FindResourceOrThrow("drake/multibody/parsing/test/" +
+                                  filename.string())
+            : filename.string();
     const DataSource source{DataSource::kFilename, &source_filename};
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
@@ -46,13 +51,14 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   CollisionFilterGroups group_output_;
 };
 
-// TODO(jwnimmer-tri) This is a very basic sanity test, just to get the ball
-// rolling. It spews lots of error messages that probably indicate deeper
-// problems. But for now, it passes!
-TEST_F(UsdParserTest, Stub) {
-  const fs::path filename{"no_such_file.usda"};
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseFile(filename),
-                              ".*UsdParser.*AddAllModels.*not implemented.*");
+TEST_F(UsdParserTest, NoSuchFile) {
+  ParseFile("/no/such/file");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*Failed to open.*"));
+}
+
+TEST_F(UsdParserTest, BoxPlane) {
+  EXPECT_NO_THROW(ParseFile("usd_parser_test/box_plane.usda"));
+  // TODO(rpoyner-tri) Add real test logic.
 }
 
 }  // namespace

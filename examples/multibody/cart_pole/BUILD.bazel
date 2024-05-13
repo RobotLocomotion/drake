@@ -12,15 +12,17 @@ load(
     "drake_cc_vector_gen_library",
 )
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 models_filegroup(
     name = "models",
+    visibility = ["//visibility:public"],
 )
 
 install_data(
     name = "install_data",
     data = [":models"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(

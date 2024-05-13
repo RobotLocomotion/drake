@@ -238,7 +238,7 @@ int do_main() {
    the source configuration port in SceneGraph when deformable bodies are
    present in the plant. */
   builder.Connect(
-      deformable_model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Set the width between the fingers for open and closed states as well as the

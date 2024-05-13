@@ -101,7 +101,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
 
@@ -224,7 +224,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   F_Ac_W_expected.SetZero();
   GeometryId deformable_geometry_id = model_->GetGeometryId(body_id_);
   const VectorXd& vertex_positions =
-      model_->vertex_positions_port()
+      plant_->get_deformable_body_configuration_output_port()
           .template Eval<geometry::GeometryConfigurationVector<double>>(
               plant_context)
           .value(deformable_geometry_id);

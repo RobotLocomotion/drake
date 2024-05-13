@@ -2151,6 +2151,12 @@ int MathematicalProgram::RemoveConstraint(
   DRAKE_UNREACHABLE();
 }
 
+int MathematicalProgram::RemoveVisualizationCallback(
+    const Binding<VisualizationCallback>& callback) {
+  return RemoveCostOrConstraintImpl(callback, ProgramAttribute::kCallback,
+                                    &visualization_callbacks_);
+}
+
 void MathematicalProgram::CheckVariableType(VarType var_type) {
   switch (var_type) {
     case VarType::CONTINUOUS:

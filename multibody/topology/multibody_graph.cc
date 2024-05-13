@@ -129,7 +129,7 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
   }
 
   // next available index.
-  const JointIndex joint_index(num_joints());
+  const JointIndex joint_index(ssize(joints_));
   auto [map_iter, inserted] = bodies_to_joint_.insert(
       {{parent_body_index, child_body_index}, joint_index});
   if (!inserted) {
@@ -158,7 +158,23 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
   get_mutable_body(parent_body_index).add_joint(joint_index);
   get_mutable_body(child_body_index).add_joint(joint_index);
 
+  ++num_joints_;
+
   return joint_index;
+}
+
+void MultibodyGraph::RemoveJoint(JointIndex joint_index) {
+  DRAKE_THROW_UNLESS(has_joint(joint_index));
+  const Joint& joint = get_joint(joint_index);
+  bodies_to_joint_.erase({joint.parent_body(), joint.child_body()});
+  std::erase_if(joint_name_to_index_, [&](const auto& item) {
+    const auto& [name, index] = item;
+    return index == joint_index && name == joint.name();
+  });
+  get_mutable_body(joint.parent_body()).RemoveJoint(joint_index);
+  get_mutable_body(joint.child_body()).RemoveJoint(joint_index);
+  joints_[joint_index] = std::nullopt;
+  --num_joints_;
 }
 
 int MultibodyGraph::num_joint_types() const {
@@ -170,7 +186,7 @@ int MultibodyGraph::num_bodies() const {
 }
 
 int MultibodyGraph::num_joints() const {
-  return static_cast<int>(joints_.size());
+  return num_joints_;
 }
 
 const MultibodyGraph::RigidBody& MultibodyGraph::get_body(
@@ -184,9 +200,13 @@ MultibodyGraph::RigidBody& MultibodyGraph::get_mutable_body(
   return bodies_[body_index];
 }
 
+bool MultibodyGraph::has_joint(JointIndex joint_index) const {
+  return joint_index < ssize(joints_) && joints_[joint_index] != std::nullopt;
+}
+
 const MultibodyGraph::Joint& MultibodyGraph::get_joint(JointIndex index) const {
-  DRAKE_THROW_UNLESS(index < num_joints());
-  return joints_[index];
+  DRAKE_THROW_UNLESS(has_joint(index));
+  return *joints_[index];
 }
 
 JointTypeIndex MultibodyGraph::RegisterJointType(

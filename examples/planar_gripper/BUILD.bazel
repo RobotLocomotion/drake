@@ -13,6 +13,8 @@ load(
     "drake_cc_vector_gen_library",
 )
 
+package(default_visibility = ["//visibility:private"])
+
 models_filegroup(
     name = "models",
     visibility = ["//visibility:public"],
@@ -78,7 +80,6 @@ drake_cc_library(
     data = [
         ":models",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//examples/planar_gripper:planar_gripper_common",
         "//geometry:drake_visualizer",

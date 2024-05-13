@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -118,6 +119,24 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
   }
 
   return AddRigidBody(name, default_model_instance(), M_BBo_B);
+}
+
+template <typename T>
+void MultibodyTree<T>::RemoveJoint(const Joint<T>& joint) {
+  DRAKE_MBT_THROW_IF_FINALIZED();
+  joint.HasThisParentTreeOrThrow(this);
+  JointIndex joint_index = joint.index();
+  joints_.Remove(joint_index);
+  multibody_graph_.RemoveJoint(joint_index);
+
+  // Update the ordinals for all joints with higher indices than the
+  // one being removed.
+  for (JointIndex index : joints_.indices()) {
+    if (index > joint_index) {
+      Joint<T>& mutable_joint = joints_.get_mutable_element(index);
+      mutable_joint.set_ordinal(mutable_joint.ordinal() - 1);
+    }
+  }
 }
 
 template <typename T>
@@ -690,9 +709,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
   // implementation will therefore change the tree topology. Since topology
   // changes are NOT allowed after Finalize(), joint implementations MUST be
   // assembled BEFORE the tree's topology is finalized.
-  const int num_joints_pre_floating_joints = num_joints();
-  joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
-  for (JointIndex i{0}; i < num_joints_pre_floating_joints; ++i) {
+  for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     Mobilizer<T>* mobilizer =
         internal::JointImplementationBuilder<T>::Build(&joint, this);
@@ -722,17 +739,12 @@ void MultibodyTree<T>::CreateJointImplementations() {
     // Loop must terminate since there are only a finite number of joints.
     while (HasJointNamed(floating_joint_name, body.model_instance()))
       floating_joint_name = "_" + floating_joint_name;
-
     // The joint's model instance will be the same as body's.
-    this->AddJoint<QuaternionFloatingJoint>(floating_joint_name, world_body(),
-                                            {}, body, {});
-  }
-
-  joint_to_mobilizer_.resize(num_joints());
-  for (JointIndex i{num_joints_pre_floating_joints}; i < num_joints(); ++i) {
-    auto& joint = joints_.get_mutable_element(i);
+    const Joint<T>& joint = this->AddJoint<QuaternionFloatingJoint>(
+        floating_joint_name, world_body(), {}, body, {});
+    Joint<T>& mutable_joint = joints_.get_mutable_element(joint.index());
     Mobilizer<T>* mobilizer =
-        internal::JointImplementationBuilder<T>::Build(&joint, this);
+        internal::JointImplementationBuilder<T>::Build(&mutable_joint, this);
     mobilizer->set_model_instance(joint.model_instance());
     // Record the joint to mobilizer map.
     joint_to_mobilizer_[joint.index()] = mobilizer->index();
@@ -837,7 +849,7 @@ void MultibodyTree<T>::FinalizeInternals() {
 
   // For all floating bodies, route their future default poses queries through
   // its joint representation.
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
     if (body.is_floating()) {
@@ -861,9 +873,21 @@ void MultibodyTree<T>::Finalize() {
   // MultibodyPlant APIs and therefore registered in the graph. This accounts
   // for the QuaternionFloatingJoint added for each free body that was not
   // explicitly given a parent joint. It is important that this loop happens
-  // AFTER finalizing the tree.
-  for (JointIndex i{multibody_graph_.num_joints()}; i < num_joints(); ++i) {
-    RegisterJointInGraph(get_joint(i));
+  // AFTER finalizing the tree. Because addition and removal of joints is
+  // mirrored in the graph, the indices assigned by the graph should match 1:1
+  // with the indices of the joints in this tree.
+  for (JointIndex i : GetJointIndices()) {
+    if (!multibody_graph_.has_joint(i)) {
+      RegisterJointInGraph(get_joint(i));
+      // sanity check.
+      DRAKE_DEMAND(multibody_graph_.has_joint(i));
+      DRAKE_DEMAND(get_joint(i).parent_body().index().is_valid() &&
+                   multibody_graph_.get_joint(i).parent_body() ==
+                       get_joint(i).parent_body().index());
+      DRAKE_DEMAND(get_joint(i).child_body().index().is_valid() &&
+                   multibody_graph_.get_joint(i).child_body() ==
+                       get_joint(i).child_body().index());
+    }
   }
 }
 
@@ -1031,7 +1055,7 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
   DRAKE_DEMAND(quaternion_floating_joint != nullptr);
   quaternion_floating_joint->set_default_quaternion(
       X_WB.rotation().ToQuaternion());
-  quaternion_floating_joint->set_default_position(X_WB.translation());
+  quaternion_floating_joint->set_default_translation(X_WB.translation());
 }
 
 template <typename T>
@@ -1085,8 +1109,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
   const RotationMatrix<T>& R_WB = X_WB.rotation();
-  mobilizer.set_quaternion(context, R_WB.ToQuaternion(), state);
-  mobilizer.set_translation(context, X_WB.translation(), state);
+  mobilizer.SetQuaternion(context, R_WB.ToQuaternion(), state);
+  mobilizer.SetTranslation(context, X_WB.translation(), state);
 }
 
 template <typename T>
@@ -3623,10 +3647,12 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
     const std::vector<JointIndex>& user_to_joint_index_map) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
 
-  std::vector<JointActuatorIndex> joint_to_actuator_index(num_joints());
+  // Map of joint ordinal to actuator index for all actuators.
+  std::vector<std::optional<JointActuatorIndex>> joint_to_actuator_index(
+      num_joints());
   for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
     const auto& actuator = get_joint_actuator(actuator_index);
-    joint_to_actuator_index[actuator.joint().index()] = actuator_index;
+    joint_to_actuator_index[actuator.joint().ordinal()] = actuator_index;
   }
 
   // Build a list of actuators in the order given by user_to_joint_index_map,
@@ -3635,14 +3661,14 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
   for (JointIndex joint_index : user_to_joint_index_map) {
     const auto& joint = get_joint(joint_index);
 
-    // If the map has an invalid index then this joint does not have an
-    // actuator.
-    if (!joint_to_actuator_index[joint_index].is_valid()) {
-      throw std::logic_error(
-          "Joint '" + joint.name() + "' does not have an actuator.");
+    // If the joint does not have an actuator.
+    if (!joint_to_actuator_index.at(joint.ordinal()).has_value()) {
+      throw std::logic_error("Joint '" + joint.name() +
+                             "' does not have an actuator.");
     }
 
-    user_to_actuator_index_map.push_back(joint_to_actuator_index[joint_index]);
+    user_to_actuator_index_map.push_back(
+        joint_to_actuator_index.at(joint.ordinal()).value());
   }
 
   return MakeActuatorSelectorMatrix(user_to_actuator_index_map);
@@ -3653,7 +3679,7 @@ VectorX<double> MultibodyTree<T>::GetPositionLowerLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
       num_positions(), -std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     q_lower.segment(joint.position_start(), joint.num_positions()) =
         joint.position_lower_limits();
@@ -3666,7 +3692,7 @@ VectorX<double> MultibodyTree<T>::GetPositionUpperLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
       num_positions(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     q_upper.segment(joint.position_start(), joint.num_positions()) =
         joint.position_upper_limits();
@@ -3679,7 +3705,7 @@ VectorX<double> MultibodyTree<T>::GetVelocityLowerLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd v_lower = Eigen::VectorXd::Constant(
       num_velocities(), -std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     v_lower.segment(joint.velocity_start(), joint.num_velocities()) =
         joint.velocity_lower_limits();
@@ -3692,7 +3718,7 @@ VectorX<double> MultibodyTree<T>::GetVelocityUpperLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd v_upper = Eigen::VectorXd::Constant(
       num_velocities(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     v_upper.segment(joint.velocity_start(), joint.num_velocities()) =
         joint.velocity_upper_limits();
@@ -3705,7 +3731,7 @@ VectorX<double> MultibodyTree<T>::GetAccelerationLowerLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd vd_lower = Eigen::VectorXd::Constant(
       num_velocities(), -std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     vd_lower.segment(joint.velocity_start(), joint.num_velocities()) =
         joint.acceleration_lower_limits();
@@ -3718,7 +3744,7 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   Eigen::VectorXd vd_upper = Eigen::VectorXd::Constant(
       num_velocities(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < num_joints(); ++i) {
+  for (JointIndex i : GetJointIndices()) {
     const auto& joint = get_joint(i);
     vd_upper.segment(joint.velocity_start(), joint.num_velocities()) =
         joint.acceleration_upper_limits();

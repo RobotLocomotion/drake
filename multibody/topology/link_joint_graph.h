@@ -84,32 +84,13 @@ In general during SpanningForest building:
 separate LinkIndex type since these are necessarily the same. */
 class LinkJointGraph {
  public:
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(LinkJointGraph)
+
   class Link;  // Defined in separate headers.
   class Joint;
   class LoopConstraint;
 
   struct JointType;  // Defined below.
-
-  // This Doxygen text is intended to mimic the text generated for
-  // DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN. There is some extra information
-  // but the formatting is consistent.
-
-  // clang-format off
-  // NOLINTNEXTLINE(whitespace/line_length)
-  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */
-  // clang-format on
-  /**@{*/
-  /** Copies both the graph and the forest if there is one. */
-  LinkJointGraph(const LinkJointGraph&);
-  /** Assigns both the graph and the forest if there is one. */
-  LinkJointGraph& operator=(const LinkJointGraph&);
-  /** Move construction leaves the source as though it had just been
-  default constructed. */
-  LinkJointGraph(LinkJointGraph&&);
-  /** Move assignment leaves the source as though it had just been
-  default constructed. */
-  LinkJointGraph& operator=(LinkJointGraph&&);
-  /**@}*/
 
   /** Default construction defines well-known joint types and World. */
   LinkJointGraph();

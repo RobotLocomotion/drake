@@ -407,7 +407,6 @@ FILES = {
         "PUBLIC_CLASSES": [
             "array",
             "dictionary",
-            "functions",
             "hash",
             "streamOut",
             "types",

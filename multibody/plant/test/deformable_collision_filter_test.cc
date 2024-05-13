@@ -95,7 +95,7 @@ class DeformableCollisionFilterTest : public ::testing::Test {
 
     plant_->Finalize();
 
-    builder.Connect(model_->vertex_positions_port(),
+    builder.Connect(plant_->get_deformable_body_configuration_output_port(),
                     scene_graph_->get_source_configuration_port(
                         plant_->get_source_id().value()));
 

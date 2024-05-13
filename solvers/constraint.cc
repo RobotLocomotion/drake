@@ -10,6 +10,7 @@
 
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
 
@@ -98,11 +99,11 @@ std::string ToLatexConstraint(const Constraint& constraint,
                               int precision) {
   VectorX<symbolic::Expression> y(constraint.num_constraints());
   constraint.Eval(vars, &y);
-  return fmt::format(
-      "{}{}{}", ToLatexLowerBound(constraint, precision),
-      constraint.num_constraints() == 1 ? symbolic::ToLatex(y[0], precision)
-                                        : symbolic::ToLatex(y, precision),
-      ToLatexUpperBound(constraint, precision));
+  return fmt::format("{}{}{}", ToLatexLowerBound(constraint, precision),
+                     constraint.num_constraints() == 1
+                         ? symbolic::ToLatex(y[0], precision)
+                         : symbolic::ToLatex(y, precision),
+                     ToLatexUpperBound(constraint, precision));
 }
 
 }  // namespace
@@ -161,12 +162,22 @@ void QuadraticConstraint::UpdateHessianType(
   }
   Eigen::LDLT<Eigen::MatrixXd> ldlt_solver;
   ldlt_solver.compute(Q_);
-  if (ldlt_solver.isPositive()) {
-    hessian_type_ = HessianType::kPositiveSemidefinite;
-  } else if (ldlt_solver.isNegative()) {
-    hessian_type_ = HessianType::kNegativeSemidefinite;
-  } else {
+  if (ldlt_solver.info() != Eigen::Success) {
+    // Fall back to an indefinite Hessian type if we cannot determine the
+    // Hessian type.
+    drake::log()->warn(
+        "UpdateHessianType(): Unable to determine Hessian type of the "
+        "Quadratic Constraint. Falling "
+        "back to indefinite Hessian type.");
     hessian_type_ = HessianType::kIndefinite;
+  } else {
+    if (ldlt_solver.isPositive()) {
+      hessian_type_ = HessianType::kPositiveSemidefinite;
+    } else if (ldlt_solver.isNegative()) {
+      hessian_type_ = HessianType::kNegativeSemidefinite;
+    } else {
+      hessian_type_ = HessianType::kIndefinite;
+    }
   }
 }
 
@@ -500,18 +511,18 @@ std::ostream& LinearConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
 }
 
-std::string LinearConstraint::DoToLatex(
-    const VectorX<symbolic::Variable>& vars, int precision) const {
+std::string LinearConstraint::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                        int precision) const {
   if (num_constraints() == 1) {
     return fmt::format(
         "{}{}{}", ToLatexLowerBound(*this, precision),
         symbolic::ToLatex((A_.get_as_sparse() * vars)[0], precision),
         ToLatexUpperBound(*this, precision));
   }
-  return fmt::format(
-      "{}{} {}{}", ToLatexLowerBound(*this, precision),
-      symbolic::ToLatex(GetDenseA(), precision), symbolic::ToLatex(vars),
-      ToLatexUpperBound(*this, precision));
+  return fmt::format("{}{} {}{}", ToLatexLowerBound(*this, precision),
+                     symbolic::ToLatex(GetDenseA(), precision),
+                     symbolic::ToLatex(vars),
+                     ToLatexUpperBound(*this, precision));
 }
 
 std::ostream& LinearEqualityConstraint::DoDisplay(
@@ -666,8 +677,8 @@ void PositiveSemidefiniteConstraint::DoEval(
 
 std::string PositiveSemidefiniteConstraint::DoToLatex(
     const VectorX<symbolic::Variable>& vars, int precision) const {
-  Eigen::Map<const MatrixX<symbolic::Variable>> S(
-      vars.data(), matrix_rows(), matrix_rows());
+  Eigen::Map<const MatrixX<symbolic::Variable>> S(vars.data(), matrix_rows(),
+                                                  matrix_rows());
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
 

@@ -220,6 +220,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("joint"), py_rvp::reference_internal,
             cls_doc.AddJoint.doc_1args)
+        .def("RemoveJoint", &Class::RemoveJoint, py::arg("joint"),
+            cls_doc.RemoveJoint.doc)
         .def("AddJointActuator", &Class::AddJointActuator,
             py_rvp::reference_internal, py::arg("name"), py::arg("joint"),
             py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
@@ -726,6 +728,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
             py_rvp::reference_internal, cls_doc.get_body.doc)
+        .def("has_joint", &Class::has_joint, py::arg("joint_index"),
+            cls_doc.has_joint.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
             py_rvp::reference_internal, cls_doc.get_joint.doc)
         .def("get_mutable_joint", &Class::get_mutable_joint,
@@ -750,8 +754,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_gravity_enabled.doc)
         .def("is_gravity_enabled", &Class::is_gravity_enabled,
             py::arg("model_instance"), cls_doc.is_gravity_enabled.doc)
-        .def("GetJointIndices", &Class::GetJointIndices,
-            py::arg("model_instance"), cls_doc.GetJointIndices.doc)
+        .def("GetJointIndices",
+            overload_cast_explicit<const std::vector<JointIndex>&>(
+                &Class::GetJointIndices),
+            cls_doc.GetJointIndices.doc_0args)
+        .def("GetJointIndices",
+            overload_cast_explicit<std::vector<JointIndex>, ModelInstanceIndex>(
+                &Class::GetJointIndices),
+            py::arg("model_instance"), cls_doc.GetJointIndices.doc_1args)
         .def("GetJointActuatorIndices",
             overload_cast_explicit<const std::vector<JointActuatorIndex>&>(
                 &Class::GetJointActuatorIndices),
@@ -922,6 +932,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_geometry_poses_output_port",
             &Class::get_geometry_poses_output_port, py_rvp::reference_internal,
             cls_doc.get_geometry_poses_output_port.doc)
+        .def("get_deformable_body_configuration_output_port",
+            &Class::get_deformable_body_configuration_output_port,
+            py_rvp::reference_internal,
+            cls_doc.get_deformable_body_configuration_output_port.doc)
         .def("geometry_source_is_registered",
             &Class::geometry_source_is_registered,
             cls_doc.geometry_source_is_registered.doc)
@@ -1595,9 +1609,7 @@ PYBIND11_MODULE(plant, m) {
             [](const Class* self, geometry::GeometryId geometry_id) {
               return self->GetBodyId(geometry_id);
             },
-            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
-        .def("vertex_positions_port", &Class::vertex_positions_port,
-            py_rvp::reference_internal, cls_doc.vertex_positions_port.doc);
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
   }
   // Deformable identifier.
   {

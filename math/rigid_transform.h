@@ -173,7 +173,7 @@ class RigidTransform {
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-  explicit RigidTransform(const Eigen::Matrix<T, 3, 4> pose) {
+  explicit RigidTransform(const Eigen::Matrix<T, 3, 4>& pose) {
     set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
     set_translation(pose.template block<3, 1>(0, 3));
   }
@@ -251,6 +251,24 @@ class RigidTransform {
           "expression that can resolve to a Vector3 or 3x4 matrix or 4x4 "
           "matrix.");
     }
+  }
+
+  /// (Advanced) Constructs a %RigidTransform from a 3x4 matrix, without any
+  /// validity checks nor orthogonalization.
+  /// @param[in] pose 3x4 matrix that contains a 3x3 rotation matrix `R_AB` and
+  /// also a 3x1 position vector `p_AoBo_A` (the position vector from frame A's
+  /// origin to frame B's origin, expressed in frame A).
+  /// <pre>
+  ///  ┌                ┐
+  ///  │ R_AB  p_AoBo_A │
+  ///  └                ┘
+  /// </pre>
+  static RigidTransform<T> MakeUnchecked(const Eigen::Matrix<T, 3, 4>& pose) {
+    RigidTransform<T> result(internal::DoNotInitializeMemberFields{});
+    result.R_AB_ =
+        RotationMatrix<T>::MakeUnchecked(pose.template block<3, 3>(0, 0));
+    result.p_AoBo_A_ = pose.template block<3, 1>(0, 3);
+    return result;
   }
 
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.

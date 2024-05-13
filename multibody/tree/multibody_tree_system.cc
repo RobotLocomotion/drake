@@ -88,11 +88,8 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
         .SetDefaultParameters(parameters);
   }
   // Joints.
-  for (JointIndex joint_index(0); joint_index < tree_->num_joints();
-       ++joint_index) {
-    internal_tree()
-        .get_joint(joint_index)
-        .SetDefaultParameters(parameters);
+  for (JointIndex joint_index : tree_->GetJointIndices()) {
+    internal_tree().get_joint(joint_index).SetDefaultParameters(parameters);
   }
   // JointActuators.
   for (JointActuatorIndex joint_actuator_index :
@@ -151,8 +148,7 @@ void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
         .DeclareParameters(this);
   }
   // Joints.
-  for (JointIndex joint_index(0); joint_index < tree_->num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : tree_->GetJointIndices()) {
     mutable_tree().get_mutable_joint(joint_index).DeclareParameters(this);
   }
   // JointActuators.

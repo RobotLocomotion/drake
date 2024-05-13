@@ -4,9 +4,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
@@ -106,13 +106,13 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
   }
 
   /* Extracts information about the additional discrete state that
-   DummyModel declares if one exists in the owning MultibodyPlant. */
+   DummyPhysicalModel declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
     /* For unit testing we verify there is a single physical model of type
-     DummyModel. */
+     DummyPhysicalModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
-    const auto* dummy_model =
-        dynamic_cast<const DummyModel<T>*>(this->plant().physical_models()[0]);
+    const auto* dummy_model = dynamic_cast<const DummyPhysicalModel<T>*>(
+        this->plant().physical_models()[0]);
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
   }
@@ -195,7 +195,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   void SetUp() override {
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
-    auto dummy_model = std::make_unique<DummyModel<double>>();
+    auto dummy_model = std::make_unique<DummyPhysicalModel<double>>(&plant_);
     dummy_model_ = dummy_model.get();
     plant_.AddPhysicalModel(std::move(dummy_model));
     dummy_model_->AppendDiscreteState(dummy_discrete_state());
@@ -216,7 +216,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   MultibodyPlant<double> plant_{kDt};
   // A PhysicalModel to illustrate how physical models and discrete update
   // managers interact.
-  DummyModel<double>* dummy_model_{nullptr};
+  DummyPhysicalModel<double>* dummy_model_{nullptr};
   // The discrete update manager under test.
   DummyDiscreteUpdateManager<double>* dummy_manager_{nullptr};
 };
@@ -274,8 +274,8 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   auto simulator =
       systems::Simulator<AutoDiffXd>(*autodiff_plant, std::move(context));
   ASSERT_EQ(autodiff_plant->physical_models().size(), 1);
-  const DummyModel<AutoDiffXd>* model =
-      dynamic_cast<const DummyModel<AutoDiffXd>*>(
+  const DummyPhysicalModel<AutoDiffXd>* model =
+      dynamic_cast<const DummyPhysicalModel<AutoDiffXd>*>(
           autodiff_plant->physical_models()[0]);
   ASSERT_NE(model, nullptr);
 
@@ -496,6 +496,8 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
 /* Tests that actuation forces are accumulated using the correct indexing from
  JointActuaton::input_start() */
 TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   // Set gravity vector to zero so there is no force element contribution.
   plant_->mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
 

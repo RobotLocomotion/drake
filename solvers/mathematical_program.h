@@ -3631,16 +3631,17 @@ class MathematicalProgram {
 
   /**
    * @anchor remove_cost_constraint
-   * @name    Remove costs or constraints
-   * Removes costs or constraints from this program. If this program contains
-   * multiple costs/constraints objects matching the given argument, then all of
-   * these costs/constraints are removed. If this program doesn't contain the
-   * specified cost/constraint, then the code does nothing. We regard two
-   * costs/constraints being equal, if their evaluators point to the same
-   * object, and the associated variables are also the same.
-   * @note If two costs/constraints represent the same expression, but their
-   * evaluators point to different objects, then they are NOT regarded the same.
-   * For example, if we have
+   * @name    Remove costs, constraints or callbacks.
+   * Removes costs, constraints or visualization callbacks from this program. If
+   * this program contains multiple costs/constraints/callbacks objects matching
+   * the given argument, then all of these costs/constraints/callbacks are
+   * removed. If this program doesn't contain the specified
+   * cost/constraint/callback, then the code does nothing. We regard two
+   * costs/constraints/callbacks being equal, if their evaluators point to the
+   * same object, and the associated variables are also the same.
+   * @note If two costs/constraints/callbacks represent the same expression, but
+   * their evaluators point to different objects, then they are NOT regarded the
+   * same. For example, if we have
    * @code{.cc}
    * auto cost1 = prog.AddLinearCost(x[0] + x[1]);
    * auto cost2 = prog.AddLinearCost(x[0] + x[1]);
@@ -3655,8 +3656,8 @@ class MathematicalProgram {
 
   // @{
   /** Removes @p cost from this mathematical program.
-   * See @ref remove_cost_constraint "Remove costs or constraints" for more
-   * details.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
    * @return number of cost objects removed from this program. If this program
    * doesn't contain @p cost, then returns 0. If this program contains multiple
    * @p cost objects, then returns the repetition of @p cost in this program.
@@ -3664,8 +3665,8 @@ class MathematicalProgram {
   int RemoveCost(const Binding<Cost>& cost);
 
   /** Removes @p constraint from this mathematical program.
-   * See @ref remove_cost_constraint "Remove costs or constraints" for more
-   * details.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
    * @return number of constraint objects removed from this program. If this
    * program doesn't contain @p constraint, then returns 0. If this program
    * contains multiple
@@ -3673,6 +3674,18 @@ class MathematicalProgram {
    * program.
    */
   int RemoveConstraint(const Binding<Constraint>& constraint);
+
+  /** Removes @p callback from this mathematical program.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
+   * @return number of callback objects removed from this program. If this
+   * program doesn't contain @p callback, then returns 0. If this program
+   * contains multiple
+   * @p callback objects, then returns the repetition of @p callback in this
+   * program.
+   */
+  int RemoveVisualizationCallback(
+      const Binding<VisualizationCallback>& callback);
   //@}
 
  private:
