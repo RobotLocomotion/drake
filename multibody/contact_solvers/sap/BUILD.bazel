@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":contact_problem_graph",
+        ":dense_supernodal_solver",
         ":partial_permutation",
         ":sap_ball_constraint",
         ":sap_constraint",
@@ -44,6 +45,16 @@ drake_cc_library(
         ":partial_permutation",
         "//common:essential",
         "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_supernodal_solver",
+    srcs = ["dense_supernodal_solver.cc"],
+    hdrs = ["dense_supernodal_solver.h"],
+    deps = [
+        "//common:essential",
+        "//multibody/contact_solvers:supernodal_solver",
     ],
 )
 
@@ -245,6 +256,7 @@ drake_cc_library(
     hdrs = ["sap_model.h"],
     deps = [
         ":contact_problem_graph",
+        ":dense_supernodal_solver",
         ":partial_permutation",
         ":sap_constraint_bundle",
         ":sap_contact_problem",
@@ -252,6 +264,8 @@ drake_cc_library(
         "//common:essential",
         "//math:linear_solve",
         "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:block_sparse_supernodal_solver",
+        "//multibody/contact_solvers:conex_supernodal_solver",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
     ],
@@ -282,6 +296,15 @@ drake_cc_library(
     srcs = ["sap_solver_results.cc"],
     hdrs = ["sap_solver_results.h"],
     deps = ["//common:default_scalars"],
+)
+
+drake_cc_googletest(
+    name = "dense_supernodal_solver_test",
+    deps = [
+        ":dense_supernodal_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
 )
 
 drake_cc_library(

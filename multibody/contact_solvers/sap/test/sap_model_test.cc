@@ -842,6 +842,29 @@ TEST_F(DummyModelTest, CostGradients) {
                               MatrixCompareType::relative));
 }
 
+// Unit test the computation of the Hessian factorization.
+TEST_F(DummyModelTest, EvalHessianFactorization) {
+  const VectorXd v = arbitrary_v();
+  sap_model_->SetVelocities(v, context_.get());
+
+  // Two arbitrary rhs.
+  MatrixXd b(v.size(), 2);
+  b << 2.5 * v, -1.2 * v;
+
+  // Copute x = H⁻¹⋅b using the factorization.
+  const HessianFactorizationCache& H =
+      sap_model_->EvalHessianFactorizationCache(*context_);
+  MatrixXd x = b;
+  H.SolveInPlace(&x);
+
+  // Compute expected solution.
+  const MatrixXd H_expected = CalcDenseHessian();
+  MatrixXd x_expected = H_expected.ldlt().solve(b);
+
+  EXPECT_TRUE(CompareMatrices(x, x_expected, 8 * kEpsilon,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers
