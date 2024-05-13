@@ -288,7 +288,36 @@ class TestPlant(unittest.TestCase):
             plant.has_joint_actuator(actuator_index=actuator_index))
         plant.Finalize()
         self.assertEqual(
-            plant.GetJointActuatorIndices(model_instance=instance), [])
+            plant.GetJointActuatorIndices(), [])
+
+    @numpy_compare.check_all_types
+    def test_joint_remodeling(self, T):
+        """
+        Tests joint  APIs related to remodeling: `RemoveJoint`,
+        `has_joint` and the 0 argument `GetJointIndices()`.
+        """
+        plant = MultibodyPlant_[T](0)
+        instance = plant.AddModelInstance("instance")
+        body = plant.AddRigidBody(
+            name="body", model_instance=instance)
+        joint = plant.AddJoint(
+            PrismaticJoint_[T](
+                "joint",
+                plant.world_frame(),
+                body.body_frame(),
+                [0, 0, 1]))
+        joint_index = joint.index()
+        self.assertEqual(
+            plant.GetJointIndices(), [joint_index])
+        self.assertTrue(
+            plant.has_joint(joint_index=joint_index))
+        plant.RemoveJoint(joint=joint)
+        self.assertFalse(
+            plant.has_joint(joint_index=joint_index))
+        plant.Finalize()
+        # 6 dof joint will be added for the now free body.
+        self.assertEqual(
+            plant.GetJointIndices(), [JointIndex(1)])
 
     def test_multibody_plant_config(self):
         MultibodyPlantConfig()

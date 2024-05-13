@@ -157,8 +157,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
 
   void SetArbitraryState(const MultibodyPlant<double>& plant,
                          Context<double>* context) {
-    for (JointIndex joint_index(0); joint_index < plant.num_joints();
-         ++joint_index) {
+    for (JointIndex joint_index : plant.GetJointIndices()) {
       const Joint<double>& joint = plant.get_joint(joint_index);
       // This model only has weld, prismatic, and revolute joints.
       if (joint.type_name() == "revolute") {
@@ -323,14 +322,14 @@ TEST_F(MultibodyPlantReflectedInertiaTests, CalcKineticEnergyAndMomentum) {
   // Have the plant compute its kinetic energy.
   double energy_plant = plant_ri_.CalcKineticEnergy(*context_ri_);
 
-  const double kTolerance = 16.0 * std::numeric_limits<double>::epsilon();
-
-  EXPECT_NEAR(energy_mass_matrix, energy_plant, kTolerance);
+  EXPECT_DOUBLE_EQ(energy_mass_matrix, energy_plant);
 
   // Verify that the spatial momentum for plant_ and plant_ri are equal.
   // Reminder: Although kinetic energy and mass matrix account for reflected
   // inertia, angular momentum does not account for reflected inertia as it
   // depends on internal mechanics of the gear (e.g., number of gear stages).
+
+  const double kTolerance = 16.0 * std::numeric_limits<double>::epsilon();
 
   // Form the systems' spatial momentum in world W about Wo, expressed in W.
   const Vector3<double> p_WoWo_W = Vector3<double>::Zero();

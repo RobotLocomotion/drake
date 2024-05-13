@@ -78,20 +78,22 @@ class KukaIiwaModelTests : public ::testing::Test {
     }
   }
 
-  // Sets the state of the joints according to x_joints. The pose and spatial
-  // velocity of the base is set arbitrarily to a non-identity pose and non-zero
-  // spatial velocity.
+  // Sets the state of the revolute joints according to x_joints. The pose and
+  // spatial velocity of the base is set arbitrarily to a non-identity pose and
+  // non-zero spatial velocity.
   void SetState(const VectorX<double>& x_joints) {
-    EXPECT_EQ(plant_->num_joints(), kNumJoints);
-    // The last joint is the free body's joint so we skip it.
-    for (JointIndex joint_index(0); joint_index < kNumJoints - 1;
-         ++joint_index) {
+    EXPECT_EQ(plant_->num_joints(), kNumRevoluteJoints + kNumFloatingJoints);
+    for (JointIndex joint_index : plant_->GetJointIndices()) {
+      // Skip the floating joint.
+      if (plant_->get_joint(joint_index).num_velocities() != 1) {
+        continue;
+      }
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
-      joint.set_angle(context_.get(), x_joints[joint_index]);
+      joint.set_angle(context_.get(), x_joints[joint.ordinal()]);
       joint.set_angular_rate(context_.get(),
-                             x_joints[kNumJoints + joint_index - 1]);
+                             x_joints[kNumRevoluteJoints + joint.ordinal()]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.
@@ -110,7 +112,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Get an arm state associated with an arbitrary configuration that avoids
   // in-plane motion and in which joint angles and rates are non-zero.
   VectorX<double> GetArbitraryJointAnglesAndRates() {
-    VectorX<double> x(2 * (kNumJoints - 1));
+    VectorX<double> x(2 * kNumRevoluteJoints);
 
     // These joint angles avoid in-plane motion, but are otherwise arbitrary.
     const double q30 = M_PI / 6, q60 = M_PI / 3;
@@ -136,7 +138,8 @@ class KukaIiwaModelTests : public ::testing::Test {
 
  protected:
   // Problem sizes.
-  const int kNumJoints = 8;
+  const int kNumRevoluteJoints = 7;
+  const int kNumFloatingJoints = 1;
   const int kNumPositions = 14;
   const int kNumVelocities = 13;
 

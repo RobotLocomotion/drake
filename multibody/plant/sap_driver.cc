@@ -317,8 +317,7 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
   const double stiffness = 1.0e12;
   const double dissipation_time_scale = dt;
 
-  for (JointIndex joint_index(0); joint_index < plant().num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {

@@ -162,7 +162,7 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
   // don't kinematically affect our robot. Then at the end, we'll return the
   // complement of this set.
   std::vector<const Joint<double>*> controlled_or_unaffecting;
-  for (JointIndex joint_i{0}; joint_i < plant.num_joints(); ++joint_i) {
+  for (JointIndex joint_i : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(joint_i);
     // Skip these (or else GetBodiesKinematicallyAffectedBy will throw).
     if (joint.num_positions() == 0) {
