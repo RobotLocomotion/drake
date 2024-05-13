@@ -932,6 +932,27 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
       Vector3d{-0.1, 0.2, 0.3}, "xyz = -10 20 30");
 }
 
+GTEST_TEST(RigidTransform, DiscardGradient) {
+  // Test the double case:
+  const RigidTransform<double> test = RigidTransform<double>::Identity();
+  EXPECT_TRUE(test.IsExactlyEqualTo(DiscardGradient(test)));
+  EXPECT_EQ(&DiscardGradient(test), &test);  // reference to original object.
+
+  const RigidTransform<double> test2(RollPitchYaw<double>(1., 2., 3.),
+                                     Vector3<double>(4., 5., 6.));
+  EXPECT_TRUE(test2.IsExactlyEqualTo(DiscardGradient(test2)));
+  EXPECT_EQ(&DiscardGradient(test2), &test2);  // reference to original object.
+
+  // Test the AutoDiff case
+  const RigidTransform<AutoDiffXd> test3 = test2.cast<AutoDiffXd>();
+  // Note:  Neither of these would compile:
+  //   RotationMatrix<double> test3out = test3;
+  //   RotationMatrix<double> test3out = test3.cast<double>();
+  // (so even compiling is a success).
+  RigidTransform<double> test3out = DiscardGradient(test3);
+  EXPECT_TRUE(test3out.IsExactlyEqualTo(DiscardGradient(test3)));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

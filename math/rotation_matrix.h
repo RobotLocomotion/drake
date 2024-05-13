@@ -16,6 +16,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/unit_vector.h"
@@ -344,6 +345,9 @@ class RotationMatrix {
   /// This cast method works in accordance with Eigen's cast method for Eigen's
   /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
+  ///
+  /// @see DiscardGradient() overloaded for %RotationMatrix if your intention
+  /// is to discard gradients.
   template <typename U>
   RotationMatrix<U> cast() const {
     // TODO(Mitiguy) Make the RotationMatrix::cast() method more robust.  It is
@@ -1021,6 +1025,27 @@ using RotationMatrixd = RotationMatrix<double>;
 double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
                                   const Eigen::Vector3d& axis, double angle_lb,
                                   double angle_ub);
+
+/// `B = DiscardGradient(A)` enables casting from a rotation matrix of
+/// AutoDiffScalars to AutoDiffScalar::Scalar type, explicitly throwing away any
+/// gradient information. For a rotation matrix of type, e.g.
+/// `RotationMatrix<AutoDiffXd> A`, the comparable operation `B =
+/// A.cast<double>()` should (and does) fail to compile.  Use
+/// `DiscardGradient(A)` if you want to force the cast (and explicitly declare
+/// that information is lost).
+///
+/// When called with a rotation matrix that is already of type `double`, this
+/// function returns a _reference_ to the argument without any copying. This
+/// efficiently avoids extra copying, but be careful about reference lifetimes!
+template <typename T>
+decltype(auto) DiscardGradient(const RotationMatrix<T>& X) {
+  if constexpr (std::is_same_v<T, double>) {
+    return X;
+  } else {
+    using S = typename T::Scalar;
+    return RotationMatrix<S>(DiscardGradient(X.matrix()));
+  }
+}
 
 }  // namespace math
 }  // namespace drake

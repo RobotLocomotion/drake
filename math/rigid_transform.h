@@ -12,6 +12,7 @@
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -305,6 +306,9 @@ class RigidTransform {
   /// with Eigen's cast method for Eigen's objects that underlie this
   /// %RigidTransform.  For example, Eigen currently allows cast from type
   /// double to AutoDiffXd, but not vice-versa.
+  ///
+  /// @see DiscardGradient() overloaded for %RigidTransform if your intention
+  /// is to discard gradients.
   template <typename U>
   RigidTransform<U> cast() const {
     const RotationMatrix<U> R = R_AB_.template cast<U>();
@@ -712,6 +716,28 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 /// @relates RigidTransform.
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X);
+
+/// `B = DiscardGradient(A)` enables casting from a rigid transform of
+/// AutoDiffScalars to AutoDiffScalar::Scalar type, explicitly throwing away any
+/// gradient information. For a rigid transform of type, e.g.
+/// `RigidTransform<AutoDiffXd> A`, the comparable operation `B =
+/// A.cast<double>()` should (and does) fail to compile.  Use
+/// `DiscardGradient(A)` if you want to force the cast (and explicitly declare
+/// that information is lost).
+///
+/// When called with a rigid transform that is already of type `double`, this
+/// function returns a _reference_ to the argument without any copying. This
+/// efficiently avoids extra copying, but be careful about reference lifetimes!
+template <typename T>
+decltype(auto) DiscardGradient(const RigidTransform<T>& X) {
+  if constexpr (std::is_same_v<T, double>) {
+    return X;
+  } else {
+    using S = typename T::Scalar;
+    return RigidTransform<S>(DiscardGradient(X.rotation()),
+                             DiscardGradient(X.translation()));
+  }
+}
 
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform

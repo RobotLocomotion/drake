@@ -1451,6 +1451,26 @@ GTEST_TEST(MakeClosestRotationToIdentityFromUnitZTest, ThrowCondition) {
       "is not a unit vector.[^]*");
 }
 
+GTEST_TEST(RotationMatrix, DiscardGradient) {
+  // Test the double case:
+  const RotationMatrix<double> test = RotationMatrix<double>::Identity();
+  EXPECT_TRUE(test.IsExactlyEqualTo(DiscardGradient(test)));
+  EXPECT_EQ(&DiscardGradient(test), &test);  // reference to original object.
+
+  const RotationMatrix<double> test2(RollPitchYaw<double>(1., 2., 3.));
+  EXPECT_TRUE(test2.IsExactlyEqualTo(DiscardGradient(test2)));
+  EXPECT_EQ(&DiscardGradient(test2), &test2);  // reference to original object.
+
+  // Test the AutoDiff case
+  const RotationMatrix<AutoDiffXd> test3 = test2.cast<AutoDiffXd>();
+  // Note:  Neither of these would compile:
+  //   RotationMatrix<double> test3out = test3;
+  //   RotationMatrix<double> test3out = test3.cast<double>();
+  // (so even compiling is a success).
+  RotationMatrix<double> test3out = DiscardGradient(test3);
+  EXPECT_TRUE(test3out.IsExactlyEqualTo(DiscardGradient(test3)));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
