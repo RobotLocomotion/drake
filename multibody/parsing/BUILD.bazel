@@ -276,6 +276,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_make_model_name",
         "//common:find_runfiles",
         "//common:unused",
     ] + select({

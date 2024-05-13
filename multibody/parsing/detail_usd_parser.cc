@@ -19,6 +19,7 @@
 #include "drake/common/find_runfiles.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_usd_geometry.h"
 
 namespace drake {
@@ -53,6 +54,7 @@ class UsdParser {
   inline static std::vector<std::string> mesh_filenames_;
   const ParsingWorkspace& w_;
   UsdStageMetadata metadata_;
+  ModelInstanceIndex model_instance_;
 };
 
 namespace {
@@ -159,7 +161,8 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
     w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
   }
   return w_.plant->AddRigidBody(
-    fmt::format("{}-RigidBody", prim.GetPath().GetString()), si);
+    fmt::format("{}-RigidBody", prim.GetPath().GetString()),
+    model_instance_, si);
 }
 
 void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
@@ -234,8 +237,6 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
 std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   const DataSource& data_source,
   const std::optional<std::string>& parent_model_name) {
-  unused(parent_model_name);
-
   if (data_source.IsContents()) {
     throw std::runtime_error(
       "Ingesting raw USD content from DataSource is not implemented");
@@ -250,13 +251,15 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
 
   metadata_ = GetStageMetadata(stage);
 
+  std::string model_name = MakeModelName(
+    data_source.GetStem(), parent_model_name, w_);
+  model_instance_ = w_.plant->AddModelInstance(model_name);
+
   for (pxr::UsdPrim prim : stage->Traverse()) {
     ProcessPrim(prim);
   }
 
-  // Returning an empty vector, since only rigidbody colliders are supported
-  // at the moment (i.e., no actual models are involved).
-  return std::vector<ModelInstanceIndex>();
+  return std::vector<ModelInstanceIndex>{ model_instance_ };
 }
 
 }  // namespace internal
