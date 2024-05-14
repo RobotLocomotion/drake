@@ -191,6 +191,13 @@ class SapFixedConstraint final : public SapHolonomicConstraint<T> {
         new SapFixedConstraint<T>(*this));
   }
 
+  // We do not yet support scalar conversion for constraints used for
+  // deformables.
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error(
+        "SapFixedConstraint: Scalar conversion to double not supported.");
+  }
+
   int num_constrained_point_pairs_{};
   VectorX<T> p_APs_W_;
   std::optional<VectorX<T>> p_BQs_W_;

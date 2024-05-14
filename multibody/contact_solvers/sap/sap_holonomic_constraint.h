@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
 namespace drake {
@@ -174,6 +175,8 @@ class SapHolonomicConstraint : public SapConstraint<T> {
       return impulse_lower_limits_.size();
     }
 
+    bool operator==(const Parameters&) const = default;
+
    private:
     VectorX<T> impulse_lower_limits_;
     VectorX<T> impulse_upper_limits_;
@@ -258,6 +261,7 @@ class SapHolonomicConstraint : public SapConstraint<T> {
     return std::unique_ptr<SapHolonomicConstraint<T>>(
         new SapHolonomicConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const override;
 
   VectorX<T> g_;
   VectorX<T> bias_;

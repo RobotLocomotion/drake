@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 
@@ -16,6 +17,34 @@ namespace internal {
 // also denoted with C, defined by its orientation in the world frame W.
 template <typename T>
 struct ContactConfiguration {
+  /* When T = double, this method returns a copy of `this` object.
+     When T = AutoDiffXd this method returns a copy where gradients were
+     discarded. */
+  ContactConfiguration<double> ToDouble() const {
+    return ContactConfiguration<double>{
+        .objectA = objectA,
+        .p_ApC_W = math::DiscardGradient(p_ApC_W),
+        .objectB = objectB,
+        .p_BqC_W = math::DiscardGradient(p_BqC_W),
+        .phi = ExtractDoubleOrThrow(phi),
+        .vn = ExtractDoubleOrThrow(vn),
+        .fe = ExtractDoubleOrThrow(fe),
+        .R_WC =
+            math::RotationMatrix<double>(math::DiscardGradient(R_WC.matrix()))};
+  }
+
+  bool operator==(const ContactConfiguration& other) const {
+    if (objectA != other.objectA) return false;
+    if (p_ApC_W != other.p_ApC_W) return false;
+    if (objectB != other.objectB) return false;
+    if (p_BqC_W != other.p_BqC_W) return false;
+    if (phi != other.phi) return false;
+    if (vn != other.vn) return false;
+    if (fe != other.fe) return false;
+    if (!R_WC.IsExactlyEqualTo(other.R_WC)) return false;
+    return true;
+  }
+
   // Index to a physical object A.
   int objectA;
 

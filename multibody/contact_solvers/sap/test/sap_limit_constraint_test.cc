@@ -6,6 +6,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::Matrix2d;
@@ -22,6 +23,14 @@ namespace internal {
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
+
+void ExpectEqual(const SapLimitConstraint<double>& c1,
+                 const SapLimitConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.clique_dof(), c2.clique_dof());
+  EXPECT_EQ(c1.position(), c2.position());
+  EXPECT_EQ(c1.constraint_function(), c2.constraint_function());
+}
 
 struct TestConfig {
   // This is a gtest test suffix; no underscores or spaces.
@@ -286,20 +295,13 @@ TEST_P(SapLimitConstraintTest, Clone) {
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapLimitConstraint<double>>(dut_->Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_constraint_equations(), expected_num_equations());
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), clique_);
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
-            dut_->first_clique_jacobian().MakeDenseMatrix());
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  const SapLimitConstraint<double>::Parameters p = GetParam().p;
-  EXPECT_EQ(clone->parameters().lower_limit(), p.lower_limit());
-  EXPECT_EQ(clone->parameters().upper_limit(), p.upper_limit());
-  EXPECT_EQ(clone->parameters().stiffness(), p.stiffness());
-  EXPECT_EQ(clone->parameters().dissipation_time_scale(),
-            p.dissipation_time_scale());
-  EXPECT_EQ(clone->parameters().beta(), p.beta());
+  ExpectEqual(*dut_, *clone);
+
+  // Test ToDouble.
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapLimitConstraint<double>>(dut_ad_->ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(*dut_, *clone_from_ad);
 }
 
 TEST_P(SapLimitConstraintTest, AccumulateGeneralizedImpulses) {
