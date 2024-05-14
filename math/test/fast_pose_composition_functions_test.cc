@@ -21,14 +21,15 @@ constexpr bool kApple = true;
 constexpr bool kApple = false;
 #endif
 
+#if defined(__aarch64__)
+constexpr bool kARM64 = true;
+#else
+constexpr bool kARM64 = false;
+#endif
+
 // Checks that our logic for detecting AVX at runtime works as expected.
 GTEST_TEST(TestFastPoseCompositionFunctions, AvxDetection) {
-  if (!kApple) {
-    // On Drake's Ubuntu CI we should always have AVX available (Drake CI only
-    // covers x64_64 builds, no arm64 yet). If we ever do add arm64 in CI, then
-    // we'll need to amend this condition.
-    EXPECT_EQ(internal::AvxSupported(), true);
-  }
+  EXPECT_EQ(internal::AvxSupported(), (!kApple && !kARM64));
 }
 
 // The "using portable" and "has avx" should be opposites so long as AVX is the
