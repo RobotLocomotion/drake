@@ -153,12 +153,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] w_FM
   //   The desired angular velocity of frame M in F, expressed in F.
   // @returns a constant reference to `this` mobilizer.
-  const QuaternionFloatingMobilizer<T>& set_angular_velocity(
+  const QuaternionFloatingMobilizer<T>& SetAngularVelocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
-  // Alternative signature to set_angular_velocity(context, w_FM) to set
+  // Alternative signature to SetAngularVelocity(context, w_FM) to set
   // `state` to store the angular velocity `w_FM` of M in F.
-  const QuaternionFloatingMobilizer<T>& set_angular_velocity(
+  const QuaternionFloatingMobilizer<T>& SetAngularVelocity(
       const systems::Context<T>&, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
@@ -179,12 +179,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] v_FM
   //   The desired translational velocity of frame M in F, expressed in F.
   // @returns a constant reference to `this` mobilizer.
-  const QuaternionFloatingMobilizer<T>& set_translational_velocity(
+  const QuaternionFloatingMobilizer<T>& SetTranslationalVelocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const;
 
-  // Alternative signature to set_translational_velocity(context, v_FM) to set
+  // Alternative signature to SetTranslationalVelocity(context, v_FM) to set
   // `state` to store the translational velocity `v_FM` of M in F.
-  const QuaternionFloatingMobilizer<T>& set_translational_velocity(
+  const QuaternionFloatingMobilizer<T>& SetTranslationalVelocity(
       const systems::Context<T>&, const Vector3<T>& v_FM,
       systems::State<T>* state) const;
 

@@ -71,7 +71,7 @@ TEST_F(RpyBallMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // an identity rigid transform.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   const RigidTransformd X_WB(
       mobilizer_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());

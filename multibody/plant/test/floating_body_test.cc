@@ -85,11 +85,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
           internal::GetInternalTree(free_body_plant), free_body_plant.body());
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
-  mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
+  mobilizer.SetAngularVelocity(&context, 2.0 * w0_WB_expected);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_angular_velocity(context),
                               2.0 * w0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));
-  mobilizer.set_translational_velocity(&context, -3.5 * v0_WB_expected);
+  mobilizer.SetTranslationalVelocity(&context, -3.5 * v0_WB_expected);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_translational_velocity(context),
                               -3.5 * v0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));

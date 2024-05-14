@@ -49,7 +49,7 @@ Vector2<T> UniversalMobilizer<T>::get_angles(
 }
 
 template <typename T>
-const UniversalMobilizer<T>& UniversalMobilizer<T>::set_angles(
+const UniversalMobilizer<T>& UniversalMobilizer<T>::SetAngles(
     systems::Context<T>* context, const Vector2<T>& angles) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -66,7 +66,7 @@ Vector2<T> UniversalMobilizer<T>::get_angular_rates(
 }
 
 template <typename T>
-const UniversalMobilizer<T>& UniversalMobilizer<T>::set_angular_rates(
+const UniversalMobilizer<T>& UniversalMobilizer<T>::SetAngularRates(
     systems::Context<T>* context, const Vector2<T>& angles_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
