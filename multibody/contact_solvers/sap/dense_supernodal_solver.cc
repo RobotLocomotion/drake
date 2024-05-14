@@ -7,13 +7,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-int SafeGetCols(const BlockSparseMatrix<double>* J) {
-  DRAKE_THROW_UNLESS(J != nullptr);
-  return J->cols();
-}
-
 template <typename T>
-const T& SafeGetReference(std::string_view variable_name, const T* ptr) {
+const T& SafeDeference(std::string_view variable_name, const T* ptr) {
   if (ptr == nullptr) {
     throw std::runtime_error(
         fmt::format("Condition '{} != nullptr' failed.", variable_name));
@@ -23,9 +18,9 @@ const T& SafeGetReference(std::string_view variable_name, const T* ptr) {
 
 DenseSuperNodalSolver::DenseSuperNodalSolver(
     const std::vector<MatrixX<double>>* A, const BlockSparseMatrix<double>* J)
-    : A_(SafeGetReference("A", A)),
-      J_(SafeGetReference("J", J)),
-      H_(SafeGetCols(J), SafeGetCols(J)),
+    : A_(SafeDeference("A", A)),
+      J_(SafeDeference("J", J)),
+      H_(Eigen::MatrixXd::Zero(J->cols(), J->cols())),
       Hldlt_(H_) {
   const int nv = [this]() {
     int size = 0;
