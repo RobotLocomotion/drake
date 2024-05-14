@@ -38,7 +38,7 @@ namespace internal {
 // orientation of M in I as an elemental rotation of amount θ₂ about the y-axis
 // of frame I (also the y-axis of frame M).
 // Zero θ₁, θ₂ angles define the "zero configuration" which corresponds to
-// frames F, I, and M being coincident, see set_zero_state(). Angles (θ₁, θ₂)
+// frames F, I, and M being coincident, see SetZeroState(). Angles (θ₁, θ₂)
 // are defined to be positive according to the right-hand-rule with the thumb
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
@@ -82,8 +82,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   //                   described in this class's documentation, at entries
   //                   `angles(0)` and `angles(1)`, respectively.
   // @returns a constant reference to `this` mobilizer.
-  const UniversalMobilizer<T>& set_angles(systems::Context<T>* context,
-                                          const Vector2<T>& angles) const;
+  const UniversalMobilizer<T>& SetAngles(systems::Context<T>* context,
+                                         const Vector2<T>& angles) const;
 
   // Retrieves from `context` the rate of change, in radians per second, of
   // `this` mobilizer's angles (see get_angles()).
@@ -98,7 +98,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // @param[in] angles_dot The desired rate of change, ω₁, ω₂, packed as the
   //                       vector [ω₁, ω₂].
   // @returns a constant reference to `this` mobilizer.
-  const UniversalMobilizer<T>& set_angular_rates(
+  const UniversalMobilizer<T>& SetAngularRates(
       systems::Context<T>* context, const Vector2<T>& angles_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard

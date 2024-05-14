@@ -38,7 +38,7 @@ T ScrewMobilizer<T>::get_translation(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslation(
     systems::Context<T>* context,
     const T& translation) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -77,7 +77,7 @@ T ScrewMobilizer<T>::get_translation_rate(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslationRate(
     systems::Context<T>* context,
     const T& vz) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -99,7 +99,7 @@ const T& ScrewMobilizer<T>::get_angular_rate(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angular_rate(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetAngularRate(
     systems::Context<T>* context, const T& theta_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);

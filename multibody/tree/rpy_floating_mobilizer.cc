@@ -111,7 +111,7 @@ RpyFloatingMobilizer<T>::SetTranslation(systems::Context<T>* context,
 
 template <typename T>
 const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::set_angular_velocity(
+RpyFloatingMobilizer<T>::SetAngularVelocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
   auto v = this->GetMutableVelocities(context).template head<3>();
   v = w_FM;
@@ -120,7 +120,7 @@ RpyFloatingMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::set_translational_velocity(
+RpyFloatingMobilizer<T>::SetTranslationalVelocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
   auto v = this->GetMutableVelocities(context).template tail<3>();
   v = v_FM;

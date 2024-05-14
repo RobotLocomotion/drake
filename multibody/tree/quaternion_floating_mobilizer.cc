@@ -164,14 +164,14 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_angular_velocity(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_angular_velocity(
+QuaternionFloatingMobilizer<T>::SetAngularVelocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
+  return SetAngularVelocity(*context, w_FM, &context->get_mutable_state());
 }
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_angular_velocity(
+QuaternionFloatingMobilizer<T>::SetAngularVelocity(
     const systems::Context<T>&, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
   // Note: See storage order notes in get_angular_velocity().
@@ -191,15 +191,15 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_translational_velocity(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_translational_velocity(
+QuaternionFloatingMobilizer<T>::SetTranslationalVelocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
-  return set_translational_velocity(*context, v_FM,
-                                    &context->get_mutable_state());
+  return SetTranslationalVelocity(*context, v_FM,
+                                  &context->get_mutable_state());
 }
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_translational_velocity(
+QuaternionFloatingMobilizer<T>::SetTranslationalVelocity(
     const systems::Context<T>&, const Vector3<T>& v_FM,
     systems::State<T>* state) const {
   auto v = this->get_mutable_velocities(state);
