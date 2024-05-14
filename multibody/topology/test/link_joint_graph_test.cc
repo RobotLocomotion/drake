@@ -36,12 +36,12 @@ class LinkJointGraphTester {
 
   static LinkJointGraph::Joint MakeJoint(JointIndex index, std::string name,
                                          ModelInstanceIndex model_instance,
-                                         JointTypeIndex joint_type_index,
+                                         JointTraitsIndex joint_traits_index,
                                          BodyIndex parent_link_index,
                                          BodyIndex child_link_index,
                                          JointFlags flags) {
     return LinkJointGraph::Joint(index, std::move(name), model_instance,
-                                 joint_type_index, parent_link_index,
+                                 joint_traits_index, parent_link_index,
                                  child_link_index, flags);
   }
 
@@ -165,11 +165,11 @@ GTEST_TEST(LinkJointGraph, CopyMoveAssignTest) {
   // These first checks don't use copy/move/assign but are here to make it
   // clear what we have before we start with those.
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();
+  EXPECT_TRUE(graph.BuildForest());
   EXPECT_TRUE(graph.forest_is_valid());
   graph.AddLink("link1", ModelInstanceIndex(19));  // Should invalidate forest.
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();  // Update the forest.
+  EXPECT_TRUE(graph.BuildForest());  // Update the forest.
 
   // Remember the memory address of link1 so we can see if we're re-using
   // the same memory when we expect to be.
@@ -245,21 +245,22 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(world_link_index, BodyIndex(0));
 
   // Topologically important joint types are predefined.
-  EXPECT_EQ(ssize(graph.joint_types()), 3);
-  const LinkJointGraph::JointType& weld_type =
-      graph.joint_types(LinkJointGraph::weld_joint_type_index());
+  EXPECT_EQ(ssize(graph.joint_traits()), 3);
+  const LinkJointGraph::JointTraits& weld_type =
+      graph.joint_traits(LinkJointGraph::weld_joint_traits_index());
   EXPECT_EQ(weld_type.name, "weld");
   EXPECT_EQ(weld_type.nq, 0);
   EXPECT_EQ(weld_type.nv, 0);
   EXPECT_EQ(weld_type.has_quaternion, false);
-  const LinkJointGraph::JointType& quaternion_floating_type =
-      graph.joint_types(LinkJointGraph::quaternion_floating_joint_type_index());
+  const LinkJointGraph::JointTraits& quaternion_floating_type =
+      graph.joint_traits(
+          LinkJointGraph::quaternion_floating_joint_traits_index());
   EXPECT_EQ(quaternion_floating_type.name, "quaternion_floating");
   EXPECT_EQ(quaternion_floating_type.nq, 7);
   EXPECT_EQ(quaternion_floating_type.nv, 6);
   EXPECT_EQ(quaternion_floating_type.has_quaternion, true);
-  const LinkJointGraph::JointType& rpy_floating_type =
-      graph.joint_types(LinkJointGraph::rpy_floating_joint_type_index());
+  const LinkJointGraph::JointTraits& rpy_floating_type =
+      graph.joint_traits(LinkJointGraph::rpy_floating_joint_traits_index());
   EXPECT_EQ(rpy_floating_type.name, "rpy_floating");
   EXPECT_EQ(rpy_floating_type.nq, 6);
   EXPECT_EQ(rpy_floating_type.nv, 6);
@@ -270,7 +271,7 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   // With no forest built, there are no composites.
   EXPECT_TRUE(graph.link_composites().empty());
 
-  graph.BuildForest();
+  EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_TRUE(graph.forest_is_valid());
 
@@ -293,19 +294,19 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(dummy_index, BodyIndex(1));
   EXPECT_EQ(ssize(graph.links()), 2);
   EXPECT_EQ(ssize(graph.joints()), 1);
-  EXPECT_EQ(ssize(graph.joint_types()), 4);
+  EXPECT_EQ(ssize(graph.joint_traits()), 4);
   // Now get rid of that junk.
   graph.Clear();
   EXPECT_EQ(ssize(graph.links()), 1);  // World
   EXPECT_TRUE(graph.joints().empty());
-  EXPECT_EQ(ssize(graph.joint_types()), 3);  // Predefineds
+  EXPECT_EQ(ssize(graph.joint_traits()), 3);  // Predefineds
   EXPECT_FALSE(graph.forest_is_valid());
 
   // Make sure Clear() saved the existing forest.
   const SpanningForest& same_forest = graph.forest();
   EXPECT_EQ(&same_forest, &forest);
   EXPECT_FALSE(graph.forest_is_valid());
-  graph.BuildForest();  // OK to build even with just World in graph.
+  EXPECT_TRUE(graph.BuildForest());  // OK to build even if just World in graph.
   EXPECT_TRUE(graph.forest_is_valid());
 }
 
@@ -384,10 +385,10 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   EXPECT_TRUE(link5.joints_as_parent().empty());
   EXPECT_TRUE(link5.joints_as_child().empty());
   EXPECT_EQ(link5.num_shadows(), 0);
-  EXPECT_FALSE(link5.primary_link().is_valid());
+  EXPECT_EQ(link5.primary_link(), link5.index());
   EXPECT_FALSE(link5.mobod_index().is_valid());
   EXPECT_FALSE(link5.inboard_joint_index().is_valid());
-  EXPECT_FALSE(link5.composite().is_valid());
+  EXPECT_FALSE(link5.composite().has_value());
 }
 
 // Check operation of the public members of the Joint subclass.
@@ -397,7 +398,7 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
   const BodyIndex other_body_index(3);  // Not connected by joint3.
   LinkJointGraph::Joint joint3 = LinkJointGraphTester::MakeJoint(
       JointIndex(3), "joint3", ModelInstanceIndex(9),
-      LinkJointGraph::rpy_floating_joint_type_index(), parent_index,
+      LinkJointGraph::rpy_floating_joint_traits_index(), parent_index,
       child_index, JointFlags::kMustBeModeled);
   EXPECT_EQ(joint3.index(), JointIndex(3));
   EXPECT_EQ(joint3.model_instance(), ModelInstanceIndex(9));
@@ -405,8 +406,8 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
   EXPECT_EQ(joint3.parent_link(), parent_index);
   EXPECT_EQ(joint3.child_link(), child_index);
   EXPECT_FALSE(joint3.is_weld());
-  EXPECT_EQ(joint3.type_index(),
-            LinkJointGraph::rpy_floating_joint_type_index());
+  EXPECT_EQ(joint3.traits_index(),
+            LinkJointGraph::rpy_floating_joint_traits_index());
   EXPECT_TRUE(joint3.connects(parent_index));
   EXPECT_TRUE(joint3.connects(child_index));
   EXPECT_FALSE(joint3.connects(other_body_index));
@@ -429,21 +430,21 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
 GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   LinkJointGraph graph;
 
-  const JointTypeIndex revolute_index =
+  const JointTraitsIndex revolute_index =
       graph.RegisterJointType("revolute", 1, 1);
-  EXPECT_EQ(ssize(graph.joint_types()), 4);  // built-in types plus "revolute"
+  EXPECT_EQ(ssize(graph.joint_traits()), 4);  // built-in types plus "revolute"
 
   EXPECT_FALSE(graph.IsJointTypeRegistered("prismatic"));
-  EXPECT_THROW(graph.joint_types(JointTypeIndex(99)), std::exception);
+  EXPECT_THROW(graph.joint_traits(JointTraitsIndex(99)), std::exception);
 
   // Verify that the revolute joint was correctly registered.
   EXPECT_TRUE(graph.IsJointTypeRegistered("revolute"));
-  const LinkJointGraph::JointType& revolute_joint_type =
-      graph.joint_types(revolute_index);
-  EXPECT_EQ(revolute_joint_type.name, "revolute");
-  EXPECT_EQ(revolute_joint_type.nq, 1);
-  EXPECT_EQ(revolute_joint_type.nv, 1);
-  EXPECT_FALSE(revolute_joint_type.has_quaternion);
+  const LinkJointGraph::JointTraits& revolute_joint_traits =
+      graph.joint_traits(revolute_index);
+  EXPECT_EQ(revolute_joint_traits.name, "revolute");
+  EXPECT_EQ(revolute_joint_traits.nq, 1);
+  EXPECT_EQ(revolute_joint_traits.nv, 1);
+  EXPECT_FALSE(revolute_joint_traits.has_quaternion);
 
   // We'll add the chain to this model instance.
   const ModelInstanceIndex model_instance(5);
@@ -599,7 +600,7 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(graph.MaybeGetJointBetween(base11_index, link10_index),
             joint_10_11_index);
   EXPECT_FALSE(
-      graph.MaybeGetJointBetween(world_index(), link10_index).is_valid());
+      graph.MaybeGetJointBetween(world_index(), link10_index).has_value());
 }
 
 }  // namespace

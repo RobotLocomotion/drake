@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/forest.h".
 #endif
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -40,8 +41,7 @@ class SpanningForest::Mobod {
   directly or indirectly connected to the World %Mobod by Weld mobilizers.
   All such %Mobods are part of the 0th WeldedMobods group. */
   bool is_anchored() const {
-    return welded_mobods_index_.is_valid() &&
-           welded_mobods_index_ == WeldedMobodsIndex(0);
+    return welded_mobods_index_ == WeldedMobodsIndex(0);
   }
 
   /** Returns true if there is no %Mobod that claims this one as its
@@ -103,9 +103,11 @@ class SpanningForest::Mobod {
 
   /** Returns the index of the WeldedMobods group of which this %Mobod is a
   part, if any. If this is the World %Mobod, we always return
-  WeldedMobodIndex(0). Otherwise, the returned index is invalid if there are no
-  %Mobods welded to this one. */
-  WeldedMobodsIndex welded_mobods_group() const { return welded_mobods_index_; }
+  WeldedMobodIndex(0). Otherwise, an index is returned only if there is
+  another %Mobod connected by a weld mobilizer to this %Mobod. */
+  std::optional<WeldedMobodsIndex> welded_mobods_group() const {
+    return welded_mobods_index_;
+  }
 
   /** Returns the level of this %Mobod within the SpanningForest. World is
   level 0, the root (base body) of each Tree is level 1, %Mobods connected to
@@ -206,8 +208,12 @@ class SpanningForest::Mobod {
   MobodIndex inboard_mobod_;  // Tree parent at level-1 (invalid for World)
   std::vector<MobodIndex> outboard_mobods_;  // Tree children at level+1
 
-  TreeIndex tree_index_;                   // Which Tree is this Mobod part of?
-  WeldedMobodsIndex welded_mobods_index_;  // Part of a WeldedMobods group?
+  TreeIndex tree_index_;  // Which Tree is this Mobod part of?
+
+  // The World Mobod is always in WeldedMobods group 0. Any other Mobod is
+  // in a WeldedMobods group only if it is actually connected by a Weld
+  // mobilizer to another Mobod.
+  std::optional<WeldedMobodsIndex> welded_mobods_index_;
 
   // Coordinate assignments (done last). For welds (and for World), q/v_start
   // is still set to where coordinates would have started if there were any,
