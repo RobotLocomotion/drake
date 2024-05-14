@@ -715,7 +715,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("qdot"), cls_doc.MapQDotToVelocity.doc)
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
-            cls_doc.CalcRelativeTransform.doc);
+            cls_doc.CalcRelativeTransform.doc)
+        .def("CalcRelativeRotationMatrix", &Class::CalcRelativeRotationMatrix,
+            py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
+            cls_doc.CalcRelativeRotationMatrix.doc);
     if constexpr (std::is_same_v<T, double>) {
       cls  // BR
           .def("MakeVelocityToQDotMap", &Class::MakeVelocityToQDotMap,

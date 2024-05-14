@@ -99,6 +99,8 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
     const Vector3<T>& p_PoQo_W() const { return p_PoQo_W_; }
     const Vector3<T>& a_PQ_W() const { return a_PQ_W_; }
 
+    bool operator==(const Kinematics& other) const;
+
    private:
     /* Index to a physical object A. */
     int objectA_;
@@ -172,6 +174,7 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
     return std::unique_ptr<SapWeldConstraint<T>>(
         new SapWeldConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   Kinematics kinematics_;
 };

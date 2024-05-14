@@ -1142,8 +1142,11 @@ class TestPlant(unittest.TestCase):
         base = plant.GetBodyByName("base")
         base_frame = plant.GetFrameByName("base")
         X_WL = plant.CalcRelativeTransform(
-            context, frame_A=world_frame, frame_B=base_frame)
+            context=context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, RigidTransform)
+        R_WL = plant.CalcRelativeRotationMatrix(
+            context=context, frame_A=world_frame, frame_B=base_frame)
+        self.assertIsInstance(R_WL, RotationMatrix_[T])
         free_bodies = plant.GetFloatingBaseBodies()
         self.assertEqual(len(free_bodies), 1)
         self.assertTrue(base.index() in free_bodies)

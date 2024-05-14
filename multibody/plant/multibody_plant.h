@@ -3374,39 +3374,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     }
   }
 
-  /// Calculates the rigid transform (pose) `X_FG` relating frame F and frame G.
+  /// Calculates the rigid transform (pose) `X_AB` relating frame A and frame B.
   /// @param[in] context
   ///    The state of the multibody system, which includes the system's
-  ///    generalized positions q.  Note: `X_FG` is a function of q.
-  /// @param[in] frame_F
-  ///    The frame F designated in the rigid transform `X_FG`.
-  /// @param[in] frame_G
-  ///    The frame G designated in the rigid transform `X_FG`.
-  /// @retval X_FG
-  ///    The RigidTransform relating frame F and frame G.
+  ///    generalized positions q.  Note: `X_AB` is a function of q.
+  /// @param[in] frame_A
+  ///    The frame A designated in the rigid transform `X_AB`.
+  /// @param[in] frame_B
+  ///    The frame G designated in the rigid transform `X_AB`.
+  /// @retval X_AB
+  ///    The RigidTransform relating frame A and frame B.
   math::RigidTransform<T> CalcRelativeTransform(
-      const systems::Context<T>& context, const Frame<T>& frame_F,
-      const Frame<T>& frame_G) const {
+      const systems::Context<T>& context, const Frame<T>& frame_A,
+      const Frame<T>& frame_B) const {
     this->ValidateContext(context);
-    return internal_tree().CalcRelativeTransform(context, frame_F, frame_G);
+    return internal_tree().CalcRelativeTransform(context, frame_A, frame_B);
   }
 
-  /// Calculates the rotation matrix `R_FG` relating frame F and frame G.
+  /// Calculates the rotation matrix `R_AB` relating frame A and frame B.
   /// @param[in] context
   ///    The state of the multibody system, which includes the system's
-  ///    generalized positions q.  Note: `R_FG` is a function of q.
-  /// @param[in] frame_F
-  ///    The frame F designated in the rigid transform `R_FG`.
-  /// @param[in] frame_G
-  ///    The frame G designated in the rigid transform `R_FG`.
-  /// @retval R_FG
-  ///    The RigidTransform relating frame F and frame G.
+  ///    generalized positions q.  Note: `R_AB` is a function of q.
+  /// @param[in] frame_A
+  ///    The frame A designated in the rigid transform `R_AB`.
+  /// @param[in] frame_B
+  ///    The frame G designated in the rigid transform `R_AB`.
+  /// @retval R_AB
+  ///    The RigidTransform relating frame A and frame B.
   math::RotationMatrix<T> CalcRelativeRotationMatrix(
-      const systems::Context<T>& context, const Frame<T>& frame_F,
-      const Frame<T>& frame_G) const {
+      const systems::Context<T>& context, const Frame<T>& frame_A,
+      const Frame<T>& frame_B) const {
     this->ValidateContext(context);
-    return internal_tree().CalcRelativeRotationMatrix(context, frame_F,
-                                                      frame_G);
+    return internal_tree().CalcRelativeRotationMatrix(context, frame_A,
+                                                      frame_B);
   }
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
