@@ -34,10 +34,10 @@ class LinkJointGraph::Joint {
   BodyIndex child_link() const { return child_link_index_; }
 
   /** Returns `true` if this is a Weld %Joint. */
-  bool is_weld() const { return type_index() == weld_joint_type_index(); }
+  bool is_weld() const { return traits_index() == weld_joint_traits_index(); }
 
-  /** Returns the index of this %Joint's joint type. */
-  JointTypeIndex type_index() const { return type_index_; }
+  /** Returns the index of this %Joint's traits. */
+  JointTraitsIndex traits_index() const { return traits_index_; }
 
   /** Returns `true` if either the parent or child Link of this %Joint is
   the specified `link`. */
@@ -89,10 +89,10 @@ class LinkJointGraph::Joint {
   friend class LinkJointGraphTester;
 
   Joint(JointIndex index, std::string name, ModelInstanceIndex model_instance,
-        JointTypeIndex joint_type_index, BodyIndex parent_link_index,
+        JointTraitsIndex joint_traits_index, BodyIndex parent_link_index,
         BodyIndex child_link_index, JointFlags flags);
 
-  void clear_model() { how_modeled_ = std::monostate{}; }
+  void ClearModel() { how_modeled_ = std::monostate{}; }
 
   // (For testing) If `to_set` is JointFlags::kDefault sets the flags to
   // kDefault. Otherwise or's in the given flags to the current set. Returns
@@ -115,7 +115,7 @@ class LinkJointGraph::Joint {
   ModelInstanceIndex model_instance_;
   JointFlags flags_{JointFlags::kDefault};
 
-  JointTypeIndex type_index_;
+  JointTraitsIndex traits_index_;
   BodyIndex parent_link_index_;
   BodyIndex child_link_index_;
 
