@@ -229,6 +229,9 @@ class SapModel {
     return *problem_;
   }
 
+  /* Returns the type of factorization used for the Hessian. */
+  SapHessianFactorizationType hessian_type() const { return hessian_type_; }
+
   /* Returns the number of (participating) cliques. */
   int num_cliques() const;
 
@@ -277,10 +280,10 @@ class SapModel {
   /* Returns free-motion generalized momenta. Participating momenta only. */
   const VectorX<T>& p_star() const;
 
-  // Inverse of the diagonal matrix formed with the square root of the diagonal
-  // entries of the momentum matrix, i.e. diag(A)^{-1/2}, of size
-  // num_velocities(). This matrix is used to compute a scaled momentum
-  // residual, see [Castro et al. 2022].
+  /* Inverse of the diagonal matrix formed with the square root of the diagonal
+   entries of the momentum matrix, i.e. diag(A)^{-1/2}, of size
+   num_velocities(). This matrix is used to compute a scaled momentum
+   residual, see [Castro et al. 2022]. */
   const VectorX<T>& inv_sqrt_dynamics_matrix() const;
 
   /* Const access to the bundle for this model. */
@@ -404,17 +407,17 @@ class SapModel {
         .G;
   }
 
-  // This method evaluates the Hessian H of the primal cost ℓₚ(v).
-  //
-  // @note This is an expensive computation and therefore only T = double is
-  // supported. When working with T = AutoDiffXd there are much more efficient
-  // and accurate ways to propagate gradients (namely implicit function theorem)
-  // than by a simple brute force propagation of gradients through the
-  // factorization itself. Therefore we discourage this practice by only
-  // providing Hessian support for T = double.
-  //
-  // @throws std::runtime_error when attempting to perform the computation on T
-  // != double.
+  /* This method evaluates the Hessian H of the primal cost ℓₚ(v).
+
+   @note This is an expensive computation and therefore only T = double is
+   supported. When working with T = AutoDiffXd there are much more efficient
+   and accurate ways to propagate gradients (namely implicit function theorem)
+   than by a simple brute force propagation of gradients through the
+   factorization itself. Therefore we discourage this practice by only
+   providing Hessian support for T = double.
+
+   @throws std::runtime_error when attempting to perform the computation on T
+   != double. */
   const HessianFactorizationCache& EvalHessianFactorizationCache(
       const systems::Context<T>& context) const {
     return system_
@@ -423,7 +426,7 @@ class SapModel {
   }
 
  private:
-  // Facilitate testing.
+  /* Facilitate testing. */
   friend class SapModelTester;
 
   /* System used to manage context resources. */
@@ -466,9 +469,9 @@ class SapModel {
     CacheIndexes cache_indexes_;
   };
 
-  // SapModel builds a model at construction that is meant to remain const for
-  // its lifetime. We place all this model data into this structure as a way to
-  // properly document its intent to future developers.
+  /* SapModel builds a model at construction that is meant to remain const for
+   its lifetime. We place all this model data into this structure as a way to
+   properly document its intent to future developers. */
   struct ConstModelData {
     /* Permutation to map back and forth between DOFs in problem_ and DOFs in
      this model. */
@@ -516,23 +519,23 @@ class SapModel {
   PartialPermutation MakeImpulsesPermutation(
       const ContactProblemGraph& graph) const;
 
-  // Computes a diagonal approximation of the Delassus operator used to compute
-  // a per constraint diagonal scaling into delassus_diagonal. Given an
-  // approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
-  // constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
-  // ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
-  // the size of Wᵢᵢ). See [Castro et al. 2022] for details.
-  //
-  // @param[in]  A linear dynamics matrix for each participating clique in the
-  // model.
-  // @param[out] delassus_diagonal On output an array of size nc (number of
-  // constraints) where each entry stores the Delassus operator constraint
-  // scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
-  // the i-th constraint.
-  //
-  // @pre delassus_diagonal is not nullptr.
-  // @pre A.size() equals num_cliques().
-  // @pre Matrix entries stored in `A` are SPD.
+  /* Computes a diagonal approximation of the Delassus operator used to compute
+   a per constraint diagonal scaling into delassus_diagonal. Given an
+   approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
+   constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
+   ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
+   the size of Wᵢᵢ). See [Castro et al. 2022] for details.
+
+   @param[in]  A linear dynamics matrix for each participating clique in the
+   model.
+   @param[out] delassus_diagonal On output an array of size nc (number of
+   constraints) where each entry stores the Delassus operator constraint
+   scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
+   the i-th constraint.
+
+   @pre delassus_diagonal is not nullptr.
+   @pre A.size() equals num_cliques().
+   @pre Matrix entries stored in `A` are SPD. */
   void CalcDelassusDiagonalApproximation(const std::vector<MatrixX<T>>& A,
                                          VectorX<T>* delassus_diagonal) const;
 
@@ -579,14 +582,14 @@ class SapModel {
   SapHessianFactorizationType hessian_type_{
       SapHessianFactorizationType::kBlockSparseCholesky};
 
-  // TODO(amcastro-tri): Data below is heap allocated once per time step.
-  // Consider how to pre-allocate once to minimize heap allocation.
-  // N.B. For developers, this model data is set once at construction and is
-  // meant to remain const for the lifetime of the SapModel object. The name of
-  // the struct and the name of the data variable should be enough for
-  // developers to think twice before mutating any of this.
-  // Future efforts to mutate this data (for instance to reuse the model) must
-  // move data out of this struct and document properly its mutability.
+  /* TODO(amcastro-tri): Data below is heap allocated once per time step.
+   Consider how to pre-allocate once to minimize heap allocation.
+   N.B. For developers, this model data is set once at construction and is
+   meant to remain const for the lifetime of the SapModel object. The name of
+   the struct and the name of the data variable should be enough for
+   developers to think twice before mutating any of this.
+   Future efforts to mutate this data (for instance to reuse the model) must
+   move data out of this struct and document properly its mutability. */
   ConstModelData const_model_data_;
 
   // System used to manage context resources.
