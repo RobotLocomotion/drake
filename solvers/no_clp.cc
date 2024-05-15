@@ -10,9 +10,9 @@ bool ClpSolver::is_available() {
   return false;
 }
 
-void ClpSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-                        const SolverOptions&,
-                        MathematicalProgramResult*) const {
+void ClpSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                         internal::SpecificOptions*,
+                         MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The CLP bindings were not compiled.  You'll need to use a different "
       "solver.");

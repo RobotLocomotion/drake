@@ -11,9 +11,9 @@ bool CsdpSolver::is_available() {
   return false;
 }
 
-void CsdpSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-                         const SolverOptions&,
-                         MathematicalProgramResult*) const {
+void CsdpSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                          internal::SpecificOptions*,
+                          MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The CSDP bindings were not compiled.  You'll need to use a different "
       "solver.");

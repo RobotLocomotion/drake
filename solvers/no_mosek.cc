@@ -18,9 +18,9 @@ bool MosekSolver::is_available() {
   return false;
 }
 
-void MosekSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-                          const SolverOptions&,
-                          MathematicalProgramResult*) const {
+void MosekSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                           internal::SpecificOptions*,
+                           MathematicalProgramResult*) const {
   throw runtime_error(
       "Mosek is not installed in your build. You'll need to use a different "
       "solver.");
