@@ -229,6 +229,9 @@ class SapModel {
     return *problem_;
   }
 
+  // Returns the type of factorization used for the Hessian.
+  SapHessianFactorizationType hessian_type() const { return hessian_type_; }
+
   /* Returns the number of (participating) cliques. */
   int num_cliques() const;
 
