@@ -511,11 +511,20 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sap_solver_autodiff_test",
+    data = [
+        "@drake_models//:dishes",
+        "@drake_models//:iiwa_description",
+    ],
     deps = [
-        ":sap_friction_cone_constraint",
         ":sap_solver",
         ":sap_solver_results",
-        "//common/test_utilities:expect_throws_message",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//visualization:visualization_config_functions",
     ],
 )
 

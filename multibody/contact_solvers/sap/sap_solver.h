@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -60,21 +61,6 @@ struct SapSolverParameters {
     int max_iterations{100};
     // Maximum line search step size allowed.
     double alpha_max{1.5};
-  };
-
-  // The type of linear solver used for solving linear systems from the Newton
-  // iterations.
-  enum class LinearSolverType {
-    // Supernodal KKT solver as implemented in conex [Permenter, 2020].
-    //
-    // [Permenter, 2020] Permenter, Frank. "A geodesic interior-point method for
-    // linear optimization over symmetric cones." SIAM Journal on
-    // Optimization 33.2 (2023): 1006-1034.
-    kConex,
-    // Block sparse supernodal solver implemented by BlockSparseCholeskySolver.
-    kBlockSparseCholesky,
-    // Dense algebra. Typically used for testing.
-    kDense,
   };
 
   // Stopping Criteria:
@@ -178,7 +164,8 @@ struct SapSolverParameters {
   // documentation on `relative_slop`.
   bool nonmonotonic_convergence_is_error{false};
 
-  LinearSolverType linear_solver_type{LinearSolverType::kBlockSparseCholesky};
+  SapHessianFactorizationType linear_solver_type{
+      SapHessianFactorizationType::kBlockSparseCholesky};
 };
 
 // Struct used to store SAP solver statistics.
@@ -299,14 +286,27 @@ class SapSolver {
     T d2ellA_dalpha2{NAN};  // d²ellA/dα² = Δvᵀ⋅A⋅Δv.
   };
 
+  // This method takes a full vector of SapContactProblem velocities (including
+  // both participating and non-participating DOFs) and stores the participating
+  // velocities into the `context` for a `model`.
+  void SetProblemVelocitiesIntoModelContext(
+      const SapModel<T>& model, const VectorX<T>& v_problem,
+      systems::Context<T>* context) const {
+    Eigen::VectorBlock<VectorX<T>> v_model =
+        model.GetMutableVelocities(context);
+    model.velocities_permutation().Apply(v_problem, &v_model);
+  }
+
   // Helper method to implement the SolveWithGuess() public API. This helper
-  // takes a `model`, a guess to the solution in v_guess and a model `context`
-  // used by the solver to work with.
-  // On exit, `context` stores the solution to the problem.
+  // takes a `model` and a model `context` used by the solver to work with. On
+  // input, `context` stores a guess to the solution. On exit, `context` stores
+  // the solution to the problem.
   // @pre context is not nullptr.
   // @pre context was created via a call to model.MakeContext().
+  // @note We use SFINAE to only define this method for T = double.
+  template <typename T1 = T,
+            typename = typename std::enable_if_t<std::is_same_v<T1, double>>>
   SapSolverStatus SolveWithGuess(const SapModel<T>& model,
-                                 const VectorX<T>& v_guess,
                                  systems::Context<T>* context);
 
   // Pack solution into SapSolverResults. Where v is the vector of
@@ -443,8 +443,7 @@ class SapSolver {
   // parameters_.linear_solver_type != LinearSolverType::kDense.
   void CalcSearchDirectionData(const SapModel<T>& model,
                                const systems::Context<T>& context,
-                               SuperNodalSolver* supernodal_solver,
-                               SearchDirectionData* data) const;
+                               SearchDirectionData* data);
 
   SapSolverParameters parameters_;
   // Stats are mutable so we can update them from within const methods (e.g.
@@ -458,9 +457,13 @@ class SapSolver {
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // We use these to specialize functions that do not support AutoDiffXd.
 template <>
-SapSolverStatus SapSolver<double>::SolveWithGuess(const SapModel<double>&,
-                                                  const VectorX<double>&,
-                                                  systems::Context<double>*);
+SapSolverStatus SapSolver<double>::SolveWithGuess(
+    const SapContactProblem<double>&, const VectorX<double>&,
+    SapSolverResults<double>*);
+template <>
+SapSolverStatus SapSolver<AutoDiffXd>::SolveWithGuess(
+    const SapContactProblem<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
+    SapSolverResults<AutoDiffXd>*);
 template <>
 std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
     const SapModel<double>&, const systems::Context<double>&,
@@ -468,8 +471,7 @@ std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
 template <>
 void SapSolver<double>::CalcSearchDirectionData(
     const SapModel<double>&, const systems::Context<double>&,
-    SuperNodalSolver* supernodal_solver,
-    SapSolver<double>::SearchDirectionData*) const;
+    SapSolver<double>::SearchDirectionData*);
 
 }  // namespace internal
 }  // namespace contact_solvers
