@@ -9,6 +9,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.solvers import SolverId
 
 
 class TestPlanner(unittest.TestCase):
@@ -60,6 +61,8 @@ class TestPlanner(unittest.TestCase):
         np.testing.assert_equal(
             params.get_end_effector_translational_velocity_limits()[1],
             [1, 2, 3])
+        params.get_mutable_solver_options().SetOption(
+            SolverId("dummy"), "dummy", 0.0)
 
         # Test a basic call for the API. These values intentionally have no
         # physical meaning.
