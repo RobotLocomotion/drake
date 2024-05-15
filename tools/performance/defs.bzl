@@ -67,7 +67,7 @@ def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
     dut = "drake/{}/{}".format(native.package_name(), googlebench_binary[1:])
     template = """
     import os, sys
-    from bazel_tools.tools.python.runfiles.runfiles import Create
+    from python.runfiles import Create
     runfiles = Create()
     tool = runfiles.Rlocation("drake/tools/performance/benchmark_tool")
     dut = runfiles.Rlocation({dut})
