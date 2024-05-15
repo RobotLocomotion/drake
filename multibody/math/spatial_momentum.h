@@ -134,7 +134,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how L_MSQ_E is calculated.
   SpatialMomentum<T> Shift(const Vector3<T>& offset) const {
-    return SpatialMomentum<T>(*this).ShiftInPlace(offset);
+    SpatialMomentum<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Calculates twice (2x) a body B's kinetic energy measured in a frame M.

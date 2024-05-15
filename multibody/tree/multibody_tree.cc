@@ -2180,7 +2180,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
 
   // Re-express spatial inertia from frame W to frame F.
   const RotationMatrix<T> R_FW = (X_WF.rotation()).inverse();
-  return M_SFo_W.ReExpressInPlace(R_FW);  // Returns M_SFo_F.
+  return M_SFo_W.ReExpress(R_FW);  // Returns M_SFo_F.
 }
 
 template <typename T>
@@ -2321,7 +2321,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
       CalcBodiesSpatialMomentumInWorldAboutWo(context, body_indexes);
 
   // Shift the spatial momentum from Wo to point P.
-  return L_WS_W.ShiftInPlace(p_WoP_W);
+  return L_WS_W.Shift(p_WoP_W);
 }
 
 template <typename T>

@@ -634,7 +634,9 @@ class RotationalInertia {
   /// @see ReExpressInPlace()
   [[nodiscard]] RotationalInertia<T> ReExpress(
       const math::RotationMatrix<T>& R_AE) const {
-    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+    RotationalInertia result(*this);
+    result.ReExpressInPlace(R_AE);
+    return result;
   }
 
   /// @name Shift methods
@@ -716,7 +718,9 @@ class RotationalInertia {
   /// result.
   [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
       const T& mass, const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    return result;
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
@@ -760,8 +764,9 @@ class RotationalInertia {
   [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
       const T& mass, const Vector3<T>& p_PBcm_E,
       const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-        mass, p_PBcm_E, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToThenAwayFromCenterOfMassInPlace(mass, p_PBcm_E, p_QBcm_E);
+    return result;
   }
   ///@}
 
