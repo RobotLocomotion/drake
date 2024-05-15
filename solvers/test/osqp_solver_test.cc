@@ -112,6 +112,10 @@ GTEST_TEST(QPtest, TestInfeasible) {
     EXPECT_EQ(result.get_optimal_cost(),
               MathematicalProgram::kGlobalInfeasibleCost);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 0);
+    // If the timer-based adaptive rho is enabled by default (i.e., interval=0),
+    // we would see a rho update in this test case. This check proves that we've
+    // set a non-zero default values for adaptive_rho_interval.
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().rho_updates, 0);
   }
 }
 
