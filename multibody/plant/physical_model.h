@@ -138,10 +138,13 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     return DoToPhysicalModelPointerVariant();
   }
 
- protected:
   /* Returns the back pointer to the MultibodyPlant owning `this`
    PhysicalModel pre-finalize and nullptr post-finalize. */
   const MultibodyPlant<T>* plant() const { return owning_plant_; }
+
+ protected:
+  /* Returns the mutable back pointer to the MultibodyPlant owning `this`
+   PhysicalModel pre-finalize and nullptr post-finalize. */
   MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
 
   /* Derived classes must override this function to return their specific model

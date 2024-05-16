@@ -88,26 +88,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "dummy_physical_model",
-    testonly = 1,
-    srcs = ["dummy_physical_model.cc"],
-    hdrs = ["dummy_physical_model.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":multibody_plant_core",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
         "discrete_update_manager.cc",
+        "dummy_physical_model.cc",
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
+        "physical_model_collection.cc",
         "sap_driver.cc",
         "tamsi_driver.cc",
     ],
@@ -117,11 +108,13 @@ drake_cc_library(
         "deformable_ids.h",
         "deformable_model.h",
         "discrete_update_manager.h",
+        "dummy_physical_model.h",
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "physical_model_collection.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
         "tamsi_driver.h",
@@ -1174,7 +1167,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
-        ":dummy_physical_model",
+        ":multibody_plant_core",
         ":plant",
     ],
 )
@@ -1199,6 +1192,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "physical_model_collection_test",
+    deps = [
+        ":multibody_plant_config_functions",
+        ":multibody_plant_core",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "wing_test",
     data = ["//multibody:models"],
     deps = [
@@ -1213,7 +1215,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
-        ":dummy_physical_model",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1230,7 +1231,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "physical_model_test",
     deps = [
-        ":dummy_physical_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
