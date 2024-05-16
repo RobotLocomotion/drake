@@ -2616,8 +2616,8 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
   // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
   //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
   throw std::domain_error(
-      fmt::format("This method doesn't support T = {}.",
-                  NiceTypeName::Get<symbolic::Expression>()));
+      "MultibodyPlant<T>::CalcHydroelasticWithFallback(): This method doesn't "
+      "support T = symbolic::Expression.");
 }
 
 template <typename T>

@@ -88,6 +88,39 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dummy_physical_model",
+    testonly = 1,
+    srcs = ["dummy_physical_model.cc"],
+    hdrs = ["dummy_physical_model.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa7_model",
+    testonly = 1,
+    srcs = ["test/iiwa7_model.cc"],
+    hdrs = ["test/iiwa7_model.h"],
+    data = [
+        "@drake_models//:dishes",
+        "@drake_models//:iiwa_description",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//visualization:visualization_config_functions",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
@@ -1167,8 +1200,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
+        ":dummy_physical_model",
+        ":iiwa7_model",
         ":multibody_plant_core",
         ":plant",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

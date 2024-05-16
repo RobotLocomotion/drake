@@ -3,10 +3,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/test/iiwa7_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -16,6 +19,7 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
+using multibody::test::RobotModel;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -275,6 +279,154 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
       System<AutoDiffXd>::ToScalarType<double>(*plant_double_to_autodiff);
   EXPECT_EQ(plant_autodiff_to_double->num_constraints(),
             plant_double.num_constraints());
+}
+
+struct IiwaRobotTestConfig {
+  // This is a gtest test suffix; no underscores or spaces at the start.
+  std::string description;
+
+  DiscreteContactApproximation contact_approximation{
+      DiscreteContactApproximation::kSimilar};
+
+  bool with_contact{true};
+
+  ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
+};
+
+// This provides the suffix for each test parameter: the test config
+// description.
+std::ostream& operator<<(std::ostream& out, const IiwaRobotTestConfig& c) {
+  out << c.description;
+  return out;
+}
+
+template <typename T>
+class IiwaRobotTest : public ::testing::TestWithParam<IiwaRobotTestConfig> {
+ public:
+  void SetUp() override {
+    const IiwaRobotTestConfig& config = GetParam();
+    auto model_double = std::make_unique<RobotModel<double>>(
+        config.contact_approximation, config.contact_model);
+    if (config.with_contact) {
+      model_double->SetRobotState(
+          RobotModel<double>::RobotStateWithOneContactStiction());
+    } else {
+      model_double->SetRobotState(VectorX<double>::Zero(14));
+    }
+    if constexpr (std::is_same_v<T, double>) {
+      model_ = std::move(model_double);
+    } else {
+      model_ = model_double->ToScalarType<T>();
+    }
+  }
+
+ protected:
+  std::unique_ptr<RobotModel<T>> model_;
+};
+
+using IiwaRobotTestDouble = IiwaRobotTest<double>;
+using IiwaRobotTestAutoDiff = IiwaRobotTest<AutoDiffXd>;
+using IiwaRobotTestExpression = IiwaRobotTest<symbolic::Expression>;
+
+std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
+  return std::vector<IiwaRobotTestConfig>{
+      // SAP
+      {
+          .description = "Sap_HydroWithFallback_NoContact",
+          .contact_approximation = DiscreteContactApproximation::kSimilar,
+          .with_contact = false,
+          .contact_model = ContactModel::kHydroelasticWithFallback,
+      },
+      {
+          .description = "Sap_HydroWithFallback_WithContact",
+          .contact_approximation = DiscreteContactApproximation::kSimilar,
+          .with_contact = true,
+          .contact_model = ContactModel::kHydroelasticWithFallback,
+      },
+      {
+          .description = "Sap_Point_WithContact",
+          .contact_approximation = DiscreteContactApproximation::kSimilar,
+          .with_contact = true,
+          .contact_model = ContactModel::kPoint,
+      },
+      // TAMSI
+      {
+          .description = "Tamsi_HydroWithFallback_NoContact",
+          .contact_approximation = DiscreteContactApproximation::kTamsi,
+          .with_contact = false,
+          .contact_model = ContactModel::kHydroelasticWithFallback,
+      },
+      {
+          .description = "Tamsi_HydroWithFallback_WithContact",
+          .contact_approximation = DiscreteContactApproximation::kTamsi,
+          .with_contact = true,
+          .contact_model = ContactModel::kHydroelasticWithFallback,
+      },
+      {
+          .description = "Tamsi_Point_WithContact",
+          .contact_approximation = DiscreteContactApproximation::kTamsi,
+          .with_contact = true,
+          .contact_model = ContactModel::kPoint,
+      },
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestDouble,
+                         testing::ValuesIn(MakeSupportMatrixTestCases()),
+                         testing::PrintToStringParamName());
+
+TEST_P(IiwaRobotTestDouble, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestAutoDiff,
+                         testing::ValuesIn(MakeSupportMatrixTestCases()),
+                         testing::PrintToStringParamName());
+
+TEST_P(IiwaRobotTestAutoDiff, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestExpression,
+                         testing::ValuesIn(MakeSupportMatrixTestCases()),
+                         testing::PrintToStringParamName());
+
+TEST_P(IiwaRobotTestExpression, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+
+  // In summary, even though the exceptions below are caused at different
+  // levels, we do not support discrete updates when T = symbolic::Expression.
+  std::string failure_cause_message;
+  if (model_->plant().get_discrete_contact_solver() ==
+      DiscreteContactSolver::kSap) {
+    failure_cause_message =
+        "Discrete updates with the SAP solver are not supported for T = "
+        "symbolic::Expression";
+  } else {
+    if (model_->plant().get_contact_model() ==
+        ContactModel::kHydroelasticWithFallback) {
+      failure_cause_message =
+          "MultibodyPlant<T>::CalcHydroelasticWithFallback\\(\\): This method "
+          "doesn't support T = symbolic::Expression.";
+    } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
+      failure_cause_message =
+          "Penetration queries between shapes .* are not supported for scalar "
+          "type drake::symbolic::Expression. .*";
+    } else {
+      throw std::runtime_error("Update unit test to verify this case.");
+    }
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(diagram.CalcForcedDiscreteVariableUpdate(
+                                  model_->context(), updates.get()),
+                              failure_cause_message);
 }
 
 }  // namespace
