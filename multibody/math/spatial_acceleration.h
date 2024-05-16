@@ -159,8 +159,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   SpatialAcceleration<T> Shift(
       const Vector3<T>& offset,
       const Vector3<T>& angular_velocity_of_this_frame) const {
-    return SpatialAcceleration<T>(*this).ShiftInPlace(
-        offset, angular_velocity_of_this_frame);
+    SpatialAcceleration<T> result(*this);
+    result.ShiftInPlace(offset, angular_velocity_of_this_frame);
+    return result;
   }
 
   /// (Advanced) Given `this` spatial acceleration A_MB of a frame B measured

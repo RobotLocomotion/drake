@@ -152,7 +152,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// spatial forces (with or without modifying the input parameter
   /// spatial_forces).
   SpatialForce<T> Shift(const Vector3<T>& offset) const {
-    return SpatialForce<T>(*this).ShiftInPlace(offset);  // offset = p_BpBq_E
+    SpatialForce<T> result(*this);
+    result.ShiftInPlace(offset);  // offset = p_BpBq_E
+    return result;
   }
 
   /// Shifts a matrix of spatial forces from one point fixed on frame B to

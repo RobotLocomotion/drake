@@ -390,7 +390,9 @@ SpatialInertia<T>& SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
     const Vector3<T>& p_ScmP_E) const {
-  return SpatialInertia(*this).ShiftFromCenterOfMassInPlace(p_ScmP_E);
+  SpatialInertia result(*this);
+  result.ShiftFromCenterOfMassInPlace(p_ScmP_E);
+  return result;
 }
 
 template <typename T>

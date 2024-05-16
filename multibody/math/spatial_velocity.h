@@ -109,7 +109,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how V_MC_E is calculated.
   SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(offset);
+    SpatialVelocity<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Compose `this` spatial velocity (measured in some frame M) with the

@@ -287,7 +287,9 @@ class ArticulatedBodyInertia {
   /// @retval P_AR_E This same articulated body inertia for articulated body
   ///         A but now computed about a new point R.
   ArticulatedBodyInertia<T> Shift(const Vector3<T>& p_QR_E) const {
-    return ArticulatedBodyInertia<T>(*this).ShiftInPlace(p_QR_E);
+    ArticulatedBodyInertia<T> result(*this);
+    result.ShiftInPlace(p_QR_E);
+    return result;
   }
 
   /// Adds in to this articulated body inertia `P_AQ_E` for an articulated body

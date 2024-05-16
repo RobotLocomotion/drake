@@ -768,7 +768,9 @@ class SpatialInertia {
   ///                re-expressed in frame A.
   /// @see ReExpressInPlace() for details.
   SpatialInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const {
-    return SpatialInertia(*this).ReExpressInPlace(R_AE);
+    SpatialInertia result(*this);
+    result.ReExpressInPlace(R_AE);
+    return result;
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
@@ -801,7 +803,9 @@ class SpatialInertia {
   /// @retval M_SQ_E    This same spatial inertia for body or composite body S
   ///                   but computed about a new point Q.
   SpatialInertia<T> Shift(const Vector3<T>& p_PQ_E) const {
-    return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
+    SpatialInertia result(*this);
+    result.ShiftInPlace(p_PQ_E);
+    return result;
   }
 
   /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
@@ -971,7 +975,9 @@ class SpatialInertia {
   // on return the position vector p_PScm underlying `this` is the zero vector.
   // @see SpatialInertia::ShiftToCenterOfMassInPlace(), ShiftFromCenterOfMass().
   [[nodiscard]] SpatialInertia<T> ShiftToCenterOfMass() const {
-    return SpatialInertia<T>(*this).ShiftToCenterOfMassInPlace();
+    SpatialInertia<T> result(*this);
+    result.ShiftToCenterOfMassInPlace();
+    return result;
   }
 
   // Returns principal semi-diameters (half-lengths), associated principal axes
