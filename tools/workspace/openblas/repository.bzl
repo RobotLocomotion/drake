@@ -1,5 +1,8 @@
 load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
+# TODO(jwnimmer-tri) On or after 2024-05-01, deprecate this (unused)
+# repository rule.
+
 def openblas_repository(name):
     # Note that @openblas is typically only available on macOS.
     # See drake/tools/workspace/blas for the OS-specific selection policy.
