@@ -10,4 +10,5 @@ def drake_models_repository(
         sha256 = "128bd6287ad66ce7e7a1d4606c1e8ef7fb79c828d5093f98d735d5ca3ba66890",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
+	    local_repository_override = <path>,
     )
