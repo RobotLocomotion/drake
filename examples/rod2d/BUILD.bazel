@@ -5,16 +5,20 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "rod2d_state_vector",
-    srcs = ["rod2d_state_vector_named_vector.yaml"],
+    srcs = ["gen/rod2d_state_vector.cc"],
+    hdrs = ["gen/rod2d_state_vector.h"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_binary(

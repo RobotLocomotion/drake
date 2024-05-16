@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/examples/acrobot/gen/acrobot_params.h"
+#include "drake/examples/acrobot/acrobot_params.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
