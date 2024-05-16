@@ -7,10 +7,6 @@ load(
     "drake_cc_library",
 )
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 
 package(default_visibility = ["//visibility:private"])
 
@@ -25,9 +21,17 @@ install_data(
     visibility = ["//visibility:public"],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "cart_pole_params",
-    srcs = ["cart_pole_params_named_vector.yaml"],
+    srcs = ["cart_pole_params.cc"],
+    hdrs = ["cart_pole_params.h"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_binary(

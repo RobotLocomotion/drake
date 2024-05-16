@@ -1,11 +1,11 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/examples/pendulum/gen/pendulum_input.h"
-#include "drake/examples/pendulum/gen/pendulum_params.h"
-#include "drake/examples/pendulum/gen/pendulum_state.h"
 #include "drake/examples/pendulum/pendulum_geometry.h"
+#include "drake/examples/pendulum/pendulum_input.h"
+#include "drake/examples/pendulum/pendulum_params.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_state.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -50,7 +50,6 @@ void DefineExamplesPendulum(py::module m) {
           py_rvp::reference_internal, py::arg("context"),
           doc.PendulumPlant.get_mutable_parameters.doc);
 
-  // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<PendulumInput<T>, BasicVector<T>>(
       m, "PendulumInput", doc.PendulumInput.doc)
       .def(py::init<>(), doc.PendulumInput.ctor.doc)

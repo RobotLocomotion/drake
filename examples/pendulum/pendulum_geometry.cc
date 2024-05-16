@@ -3,8 +3,8 @@
 #include <memory>
 #include <utility>
 
-#include "drake/examples/pendulum/gen/pendulum_params.h"
-#include "drake/examples/pendulum/gen/pendulum_state.h"
+#include "drake/examples/pendulum/pendulum_params.h"
+#include "drake/examples/pendulum/pendulum_state.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"

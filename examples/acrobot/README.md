@@ -19,7 +19,7 @@ The basic acrobot and its simple controllers are implemented in the files:
 
 * `acrobot_geometry.{cc,h}`
 * `acrobot_plant.{cc,h}`
-* `acrobot_*_named_vector.yaml`
+* `acrobot_{params,input,state}.{cc,h}`
 * `spong_controller.{cc,h}`
 
 The acrobot plant is implemented analytically rather than from a URDF or

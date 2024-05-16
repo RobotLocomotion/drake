@@ -4,7 +4,7 @@
 
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_state.h"
+#include "drake/examples/acrobot/acrobot_state.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/examples/pendulum/gen/pendulum_input.h"
-#include "drake/examples/pendulum/gen/pendulum_params.h"
-#include "drake/examples/pendulum/gen/pendulum_state.h"
+#include "drake/examples/pendulum/pendulum_input.h"
+#include "drake/examples/pendulum/pendulum_params.h"
+#include "drake/examples/pendulum/pendulum_state.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

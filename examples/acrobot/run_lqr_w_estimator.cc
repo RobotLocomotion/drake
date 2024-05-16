@@ -8,7 +8,7 @@
 #include "drake/common/proto/call_python.h"
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_state.h"
+#include "drake/examples/acrobot/acrobot_state.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/estimators/kalman_filter.h"

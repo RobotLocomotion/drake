@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/examples/multibody/cart_pole/gen/cart_pole_params.h"
+#include "drake/examples/multibody/cart_pole/cart_pole_params.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/joint_actuator.h"
@@ -106,7 +106,6 @@ class CartPoleTest : public ::testing::Test {
   const PrismaticJoint<double>* cart_slider_{nullptr};
   const RevoluteJoint<double>* pole_pin_{nullptr};
   std::unique_ptr<Context<double>> context_;
-  // Default parameters generated from cart_pole_params_named_vector.yaml.
   const CartPoleParams<double> default_parameters_;
 };
 
