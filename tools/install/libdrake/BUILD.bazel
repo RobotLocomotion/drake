@@ -24,18 +24,43 @@ load(
 )
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(":header_lint.bzl", "cc_check_allowed_headers")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
 
 package(default_visibility = ["//visibility:private"])
 
-genrule(
+drake_py_binary(
+    name = "parse_version",
+    srcs = ["parse_version.py"],
+)
+
+run_binary(
+    srcs = select({
+        "MAGIC": ["VERSION.TXT"],
+        "//conditions:default": [],
+    }),
+    outs = ["drake-version.cmake"],
+    tool = "parse_version",
+    args = [
+        "$(location drake-version.cmake)",
+    ] + select({
+        "MAGIC": ["VERSION.TXT"],
+        "//conditions:default": [],
+    }),
+)
+
+cmake_configure_file(
     name = "drake_config_cmake_expand",
-    srcs = ["drake-config.cmake.in"],
-    outs = ["drake-config.cmake"],
-    cmd = "sed '" +
-          "s!@PYTHON_SITE_PACKAGES_RELPATH@!" +
-          PYTHON_SITE_PACKAGES_RELPATH + "!g;" +
-          "s!@PYTHON_VERSION@!" + PYTHON_VERSION + "!g;" +
-          "' $< > $@",
+    src = "drake-config.cmake.in",
+    out = "drake-config.cmake",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+        "PYTHON_VERSION=" + PYTHON_VERSION,
+    ],
+    cmakelists = ["drake-version.cmake"],
+    atonly = True,
 )
 
 install_cmake_config(
