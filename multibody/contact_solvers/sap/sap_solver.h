@@ -303,11 +303,9 @@ class SapSolver {
   // the solution to the problem.
   // @pre context is not nullptr.
   // @pre context was created via a call to model.MakeContext().
-  // @note We use SFINAE to only define this method for T = double.
-  template <typename T1 = T,
-            typename = typename std::enable_if_t<std::is_same_v<T1, double>>>
-  SapSolverStatus SolveWithGuess(const SapModel<T>& model,
-                                 systems::Context<T>* context);
+  SapSolverStatus SolveWithGuessImpl(const SapModel<T>& model,
+                                     systems::Context<T>* context)
+    requires std::is_same_v<T, double>;
 
   // Pack solution into SapSolverResults. Where v is the vector of
   // generalized velocities, vc is the vector of contact velocities and gamma is
@@ -396,7 +394,8 @@ class SapSolver {
   std::pair<T, int> PerformExactLineSearch(
       const SapModel<T>& model, const systems::Context<T>& context,
       const SearchDirectionData& search_direction_data,
-      systems::Context<T>* scratch_workspace) const;
+      systems::Context<T>* scratch_workspace) const
+    requires std::is_same_v<T, double>;
 
   // Computes a dense Hessian H(v) = A + Jᵀ⋅G(v)⋅J for the generalized
   // velocities state stored in `context`.
@@ -443,7 +442,8 @@ class SapSolver {
   // parameters_.linear_solver_type != LinearSolverType::kDense.
   void CalcSearchDirectionData(const SapModel<T>& model,
                                const systems::Context<T>& context,
-                               SearchDirectionData* data);
+                               SearchDirectionData* data)
+    requires std::is_same_v<T, double>;
 
   SapSolverParameters parameters_;
   // Stats are mutable so we can update them from within const methods (e.g.
@@ -464,14 +464,6 @@ template <>
 SapSolverStatus SapSolver<AutoDiffXd>::SolveWithGuess(
     const SapContactProblem<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
     SapSolverResults<AutoDiffXd>*);
-template <>
-std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
-    const SapModel<double>&, const systems::Context<double>&,
-    const SearchDirectionData&, systems::Context<double>*) const;
-template <>
-void SapSolver<double>::CalcSearchDirectionData(
-    const SapModel<double>&, const systems::Context<double>&,
-    SapSolver<double>::SearchDirectionData*);
 
 }  // namespace internal
 }  // namespace contact_solvers
