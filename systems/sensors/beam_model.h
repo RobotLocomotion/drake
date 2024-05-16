@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/sensors/gen/beam_model_params.h"
+#include "drake/systems/sensors/beam_model_params.h"
 
 namespace drake {
 namespace systems {

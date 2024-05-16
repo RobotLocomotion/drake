@@ -1,7 +1,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h"
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h"
 
 namespace drake {
 namespace manipulation {

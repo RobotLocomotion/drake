@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system_output.h"

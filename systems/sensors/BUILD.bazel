@@ -11,10 +11,6 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -56,9 +52,22 @@ drake_cc_library(
     ],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "beam_model_params",
-    srcs = ["beam_model_params_named_vector.yaml"],
+    srcs = [
+        "beam_model_params.cc",
+    ],
+    hdrs = [
+        "beam_model_params.h",
+        "gen/beam_model_params.h",
+    ],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(

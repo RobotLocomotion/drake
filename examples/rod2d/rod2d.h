@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
+#include "drake/examples/rod2d/rod2d_state_vector.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"

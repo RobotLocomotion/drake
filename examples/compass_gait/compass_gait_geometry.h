@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/examples/compass_gait/gen/compass_gait_params.h"
+#include "drake/examples/compass_gait/compass_gait_params.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
