@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -20,6 +21,12 @@ using symbolic::Expression;
 using symbolic::Polynomial;
 using symbolic::Variable;
 using symbolic::Variables;
+
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
 
 // Verifies the region of attraction of the origin, x ∈ [-1, 1].  This is
 // taken from the example in http://underactuated.mit.edu/lyapunov.html .
@@ -139,8 +146,13 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   RegionOfAttractionOptions options;
   options.lyapunov_candidate = (x.transpose() * x)(0);
   options.state_variables = x;
-  // Mosek and Clarabel are known to fail for this test, see #12876.
+  // See #12876. Mosek and Clarabel are known to fail for this test, and on
+  // macOS also CSDP is known to fail.
   options.solver_id = solvers::CsdpSolver::id();
+  if (kApple) {
+    log()->info("Skipping NonConvexROA on macOS (#12876)");
+    return;
+  }
 
   const Expression V = RegionOfAttraction(*system, *context, options);
 
