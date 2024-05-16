@@ -104,9 +104,8 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
-  UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     RotationalInertia<T>::ReExpressInPlace(R_AE);
-    return *this;
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
@@ -129,9 +128,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     inertia is expressed.
   /// @returns A reference to `this` unit inertia, which has now been taken
   ///          about point Q so can be written as `G_BQ_E`.
-  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
+  void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));
-    return *this;
   }
 
   /// Shifts this central unit inertia to a different point, and returns the
@@ -143,7 +141,9 @@ class UnitInertia : public RotationalInertia<T> {
   ///                the centroid `Bcm`.
   [[nodiscard]] UnitInertia<T> ShiftFromCenterOfMass(
       const Vector3<T>& p_BcmQ_E) const {
-    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQ_E);
+    UnitInertia<T> result(*this);
+    result.ShiftFromCenterOfMassInPlace(p_BcmQ_E);
+    return result;
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
@@ -166,9 +166,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
   /// Use with care.
   // TODO(mitiguy) Issue #6147.  If invalid inertia, should throw exception.
-  UnitInertia<T>& ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
+  void ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
     RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
-    return *this;
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
@@ -185,7 +184,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// Use with care. See ShiftToCenterOfMassInPlace() for details.
   [[nodiscard]] UnitInertia<T> ShiftToCenterOfMass(
       const Vector3<T>& p_QBcm_E) const {
-    return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
+    UnitInertia<T> result(*this);
+    result.ShiftToCenterOfMassInPlace(p_QBcm_E);
+    return result;
   }
 
   /// @name            Unit inertia for common 3D objects

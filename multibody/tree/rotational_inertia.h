@@ -623,7 +623,7 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -634,7 +634,9 @@ class RotationalInertia {
   /// @see ReExpressInPlace()
   [[nodiscard]] RotationalInertia<T> ReExpress(
       const math::RotationMatrix<T>& R_AE) const {
-    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+    RotationalInertia result(*this);
+    result.ReExpressInPlace(R_AE);
+    return result;
   }
 
   /// @name Shift methods
@@ -660,11 +662,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
-  RotationalInertia<T>& ShiftFromCenterOfMassInPlace(
-      const T& mass,
-      const Vector3<T>& p_BcmQ_E) {
+  void ShiftFromCenterOfMassInPlace(const T& mass, const Vector3<T>& p_BcmQ_E) {
     *this += RotationalInertia(mass, p_BcmQ_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -679,8 +678,9 @@ class RotationalInertia {
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   [[nodiscard]] RotationalInertia<T> ShiftFromCenterOfMass(
       const T& mass, const Vector3<T>& p_BcmQ_E) const {
-    return RotationalInertia(*this).
-           ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
+    RotationalInertia result(*this);
+    result.ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
+    return result;
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
@@ -696,10 +696,8 @@ class RotationalInertia {
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
-  RotationalInertia<T>& ShiftToCenterOfMassInPlace(const T& mass,
-                                                   const Vector3<T>& p_QBcm_E) {
+  void ShiftToCenterOfMassInPlace(const T& mass, const Vector3<T>& p_QBcm_E) {
     *this -= RotationalInertia(mass, p_QBcm_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -716,7 +714,9 @@ class RotationalInertia {
   /// result.
   [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
       const T& mass, const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    return result;
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
@@ -736,13 +736,11 @@ class RotationalInertia {
   /// @remark This method is more efficient (by 6 multiplications) than first
   ///         shifting to the center of mass, then shifting away, e.g., as
   ///         (ShiftToCenterOfMassInPlace()).ShiftFromCenterOfMassInPlace();
-  RotationalInertia<T>& ShiftToThenAwayFromCenterOfMassInPlace(
-      const T& mass,
-      const Vector3<T>& p_PBcm_E,
-      const Vector3<T>& p_QBcm_E) {
+  void ShiftToThenAwayFromCenterOfMassInPlace(const T& mass,
+                                              const Vector3<T>& p_PBcm_E,
+                                              const Vector3<T>& p_QBcm_E) {
     *this += mass * ShiftUnitMassBodyToThenAwayFromCenterOfMass(p_PBcm_E,
                                                                 p_QBcm_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -760,8 +758,9 @@ class RotationalInertia {
   [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
       const T& mass, const Vector3<T>& p_PBcm_E,
       const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-        mass, p_PBcm_E, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToThenAwayFromCenterOfMassInPlace(mass, p_PBcm_E, p_QBcm_E);
+    return result;
   }
   ///@}
 
@@ -1147,7 +1146,7 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
 // instructions. Both compilers were fully able to inline the Eigen methods here
 // so there are no loops or function calls.)
 template <typename T>
-RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
+void RotationalInertia<T>::ReExpressInPlace(
     const math::RotationMatrix<T>& R_AE) {
   const Matrix3<T>& R = R_AE.matrix();
 
@@ -1191,7 +1190,6 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
   // If both `this` and `R_AE` were valid upon entry to this method, the
   // returned rotational inertia should be valid.  Otherwise, it may not be.
   DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
-  return *this;
 }
 
 }  // namespace multibody

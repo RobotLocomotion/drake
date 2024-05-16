@@ -128,9 +128,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   DtM(p_BoCo) = DtB(p_BoCo) + ω_MB x p_BoCo
   ///               =          0  + ω_MB x p_BoCo
   /// </pre>
-  SpatialAcceleration<T>& ShiftInPlace(
-      const Vector3<T>& offset,
-      const Vector3<T>& angular_velocity_of_this_frame) {
+  void ShiftInPlace(const Vector3<T>& offset,
+                    const Vector3<T>& angular_velocity_of_this_frame) {
     const Vector3<T>& p_BoCo_E = offset;
     const Vector3<T>& w_MB_E = angular_velocity_of_this_frame;
     // Frame B's angular acceleration measured in frame M, expressed in frame M.
@@ -139,7 +138,6 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     Vector3<T>& a_MCo_E = this->translational();
     a_MCo_E += (alpha_MB_E.cross(p_BoCo_E)
             +   w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));
-    return *this;
   }
 
   /// Shifts a %SpatialAcceleration from a frame B to a frame C, where both
@@ -159,8 +157,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   SpatialAcceleration<T> Shift(
       const Vector3<T>& offset,
       const Vector3<T>& angular_velocity_of_this_frame) const {
-    return SpatialAcceleration<T>(*this).ShiftInPlace(
-        offset, angular_velocity_of_this_frame);
+    SpatialAcceleration<T> result(*this);
+    result.ShiftInPlace(offset, angular_velocity_of_this_frame);
+    return result;
   }
 
   /// (Advanced) Given `this` spatial acceleration A_MB of a frame B measured
