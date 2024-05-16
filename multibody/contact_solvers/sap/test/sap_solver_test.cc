@@ -27,28 +27,6 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// Friend struct to grant access to SapSolver's private functions for testing.
-class SapSolverTester {
- public:
-  static std::unique_ptr<SuperNodalSolver> MakeSuperNodalSolver(
-      const SapSolver<double>& sap, const SapModel<double>& model) {
-    return sap.MakeSuperNodalSolver(model);
-  }
-
-  static void UpdateSuperNodalSolver(const SapSolver<double>& sap,
-                                     const SapModel<double>& model,
-                                     const Context<double>& context,
-                                     SuperNodalSolver* supernodal_solver) {
-    sap.UpdateSuperNodalSolver(model, context, supernodal_solver);
-  }
-
-  static MatrixX<double> CalcDenseHessian(
-      const SapSolver<double>& sap, const SapModel<double>& model,
-      const systems::Context<double>& context) {
-    return sap.CalcDenseHessian(model, context);
-  }
-};
-
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 // Suggested value for the dimensionless parameter used in the regularization of
 // friction, see [Castro et al. 2022].
@@ -848,6 +826,10 @@ class SapNewtonIterationTest
     VectorXd R = VectorXd::Constant(num_limit_constraint_equations, 1.0e-3);
     sap_problem_->AddConstraint(
         std::make_unique<LimitConstraint<double>>(1, vl_, vu_, std::move(R)));
+    // Model and context to test solver internals.
+    model_ = std::make_unique<SapModel<double>>(
+        sap_problem_.get(), SapHessianFactorizationType::kBlockSparseCholesky);
+    context_ = model_->MakeContext();
   }
 
   // We verify our supernodal algebra by comparing the Hessian reconstructed
@@ -855,17 +837,33 @@ class SapNewtonIterationTest
   void VerifySupernodalHessian(const SapSolver<double>& sap,
                                const VectorXd& v_guess) const {
     // Verify Hessian obtained with sparse supernodal algebra.
-    SapModel<double> model(sap_problem_.get());
-    std::unique_ptr<SuperNodalSolver> supernodal_solver =
-        SapSolverTester::MakeSuperNodalSolver(sap, model);
-    const auto context = model.MakeContext();
-    auto v = model.GetMutableVelocities(context.get());
-    model.velocities_permutation().Apply(v_guess, &v);
-    SapSolverTester::UpdateSuperNodalSolver(sap, model, *context,
-                                            supernodal_solver.get());
-    const MatrixXd H = supernodal_solver->MakeFullMatrix();
-    const MatrixXd H_expected =
-        SapSolverTester::CalcDenseHessian(sap, model, *context);
+    auto v = model_->GetMutableVelocities(context_.get());
+    model_->velocities_permutation().Apply(v_guess, &v);
+
+    // Sanity check the default is not dense, since we'll use a dense
+    // factorization to construct an expected value.
+    ASSERT_NE(model_->hessian_type(), SapHessianFactorizationType::kDense);
+
+    // To reconstruct a dense Hessian from its factorization we do:
+    //  1. Apply factorization to the identity matrix to get its inverse, Hinv.
+    //  2. Explicitly compute the inverse of Hinv to get H.
+    const HessianFactorizationCache& factorization =
+        model_->EvalHessianFactorizationCache(*context_);
+    MatrixXd Hinv = MatrixXd::Identity(v.size(), v.size());
+    factorization.SolveInPlace(&Hinv);
+    const MatrixXd H = Hinv.inverse();
+
+    // Compute Hessian using dense algebra.
+    HessianFactorizationCache dense_factorization(
+        SapHessianFactorizationType::kDense, &model_->dynamics_matrix(),
+        &model_->constraints_bundle().J());
+    dense_factorization.UpdateWeightMatrixAndFactor(
+        model_->EvalConstraintsHessian(*context_));
+    MatrixXd Hinv_expected = MatrixXd::Identity(v.size(), v.size());
+    dense_factorization.SolveInPlace(&Hinv_expected);
+    const MatrixXd H_expected = Hinv.inverse();
+
+    // Verify dense and sparse hessians match.
     EXPECT_TRUE(CompareMatrices(H, H_expected, 3.0 * kEps,
                                 MatrixCompareType::relative));
   }
@@ -896,8 +894,7 @@ class SapNewtonIterationTest
 
     // Perform computation with dense algebra.
     SapSolverParameters params_dense;  // Default set of parameters.
-    params_dense.linear_solver_type =
-        SapSolverParameters::LinearSolverType::kDense;
+    params_dense.linear_solver_type = SapHessianFactorizationType::kDense;
     params_dense.abs_tolerance = 0;
     params_dense.rel_tolerance = relative_tolerance;
     params_dense.line_search_type = GetParam();
@@ -914,6 +911,8 @@ class SapNewtonIterationTest
   VectorXd vu_;
   VectorXd v_star_;
   std::unique_ptr<SapContactProblem<double>> sap_problem_;
+  std::unique_ptr<SapModel<double>> model_;
+  std::unique_ptr<Context<double>> context_;
 };
 
 // Unit test that SAP performs no computation when provided with an initial
