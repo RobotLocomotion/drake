@@ -56,6 +56,25 @@ class SapDriverTest {
 
 namespace test {
 
+// Options for RobotModel.
+struct RobotModelConfig {
+  // If true, loads a model with collision geometry. Otherwise all proximity
+  // gometry is removed.
+  bool with_contact_geometry{true};
+
+  // Specifies the discrete approximation of contact.
+  DiscreteContactApproximation contact_approximation{
+      DiscreteContactApproximation::kSimilar};
+
+  // If true, the state is initialized to
+  // RobotModel::RobotStateWithOneContactStiction().
+  // If false, the state is initialized to RobotModel::RobotStateIsZero().
+  bool state_in_contact{true};
+
+  // Specifies the geomteric modeling of contact.
+  ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
+};
+
 // Helper class to create an interesting SapContactProblem with problem data
 // a function of the parameters of differentiation, in this case the initial
 // state. This allows to exercise the entire numeric pipeline with gradients
@@ -76,10 +95,8 @@ class RobotModel {
   // This constructor is provided to make a RoboModel<double>. Use the scalar
   // conversion methods provided by this class to obtain models on other scalar
   // types.
-  RobotModel(
-      DiscreteContactApproximation contact_approximation,
-      ContactModel contact_model = ContactModel::kHydroelasticWithFallback,
-      bool add_visualization = false)
+  explicit RobotModel(const RobotModelConfig& config,
+                      bool add_visualization = false)
     requires std::is_same_v<T, double>
   {  // NOLINT(whitespace/braces)
     DiagramBuilder<double> builder;
@@ -115,9 +132,19 @@ class RobotModel {
         RigidTransformd(Vector3d(0.0, 0.0, 0.07)), geometry::Sphere(0.05),
         "iiwa_link_7_collision", proximity_properties);
 
-    plant_->set_contact_model(contact_model);
-    plant_->set_discrete_contact_approximation(contact_approximation);
+    plant_->set_contact_model(config.contact_model);
+    plant_->set_discrete_contact_approximation(config.contact_approximation);
     plant_->Finalize();
+
+    // Remove proximity roles if geometry is not requested.
+    if (!config.with_contact_geometry) {
+      const auto& inspector = items.scene_graph.model_inspector();
+      for (const auto id :
+           inspector.GetAllGeometryIds(geometry::Role::kProximity)) {
+        items.scene_graph.RemoveRole(*plant_->get_source_id(), id,
+                                     geometry::Role::kProximity);
+      }
+    }
 
     // Make and add a manager so that we have access to it and its driver.
     if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
@@ -140,6 +167,11 @@ class RobotModel {
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(*plant_, context_.get());
     SetPlateInitialState();
+    if (config.state_in_contact) {
+      SetRobotState(RobotStateWithOneContactStiction());
+    } else {
+      SetRobotState(RobotStateIsZero());
+    }
 
     // Fix input ports.
     const VectorX<double> tau =
@@ -247,6 +279,9 @@ class RobotModel {
             )
         .finished();
   }
+
+  // Returns the robot's "zero state".
+  static VectorXd RobotStateIsZero() { return VectorX<double>::Zero(14); }
 
  private:
   // Friendship to give ToAutoDiffXd() access to private members.

@@ -5,16 +5,12 @@ namespace multibody {
 namespace test {
 
 void VisualizeRobotModel() {
-  RobotModel<double> model(DiscreteContactApproximation::kSimilar,
-                           ContactModel::kHydroelasticWithFallback,
-                           true /* add viz */);
   // Visualize the contact configuration.
-  const VectorX<double> x0 =
-      (VectorX<double>(14) << 0, 1.17, 0, -1.33, 0, 0.58, 0,  // q
-       0, 0, 0, 0, 0, 0, 0                                    // v
-       )
-          .finished();
-  model.SetRobotState(RobotModel<double>::RobotStateWithOneContactStiction());
+  RobotModelConfig config{
+      .with_contact_geometry = true,
+      .state_in_contact = true,
+  };
+  RobotModel<double> model(config, true /* add viz */);
 
   model.ForcedPublish();
   common::MaybePauseForUser();

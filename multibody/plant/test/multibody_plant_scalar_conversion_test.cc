@@ -20,6 +20,7 @@ namespace drake {
 
 using multibody::RevoluteSpring;
 using multibody::test::RobotModel;
+using multibody::test::RobotModelConfig;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -285,12 +286,7 @@ struct IiwaRobotTestConfig {
   // This is a gtest test suffix; no underscores or spaces at the start.
   std::string description;
 
-  DiscreteContactApproximation contact_approximation{
-      DiscreteContactApproximation::kSimilar};
-
-  bool with_contact{true};
-
-  ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
+  RobotModelConfig robot_config{};
 };
 
 // This provides the suffix for each test parameter: the test config
@@ -305,14 +301,8 @@ class IiwaRobotTest : public ::testing::TestWithParam<IiwaRobotTestConfig> {
  public:
   void SetUp() override {
     const IiwaRobotTestConfig& config = GetParam();
-    auto model_double = std::make_unique<RobotModel<double>>(
-        config.contact_approximation, config.contact_model);
-    if (config.with_contact) {
-      model_double->SetRobotState(
-          RobotModel<double>::RobotStateWithOneContactStiction());
-    } else {
-      model_double->SetRobotState(VectorX<double>::Zero(14));
-    }
+    auto model_double =
+        std::make_unique<RobotModel<double>>(config.robot_config);
     if constexpr (std::is_same_v<T, double>) {
       model_ = std::move(model_double);
     } else {
@@ -330,43 +320,118 @@ using IiwaRobotTestExpression = IiwaRobotTest<symbolic::Expression>;
 
 std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
   return std::vector<IiwaRobotTestConfig>{
-      // SAP
+      // DiscreteContactApproximation::kSap
+      //   ContactModel::kPoint
       {
-          .description = "Sap_HydroWithFallback_NoContact",
-          .contact_approximation = DiscreteContactApproximation::kSimilar,
-          .with_contact = false,
-          .contact_model = ContactModel::kHydroelasticWithFallback,
+          .description = "Sap_Point_NoGeometry",
+          .robot_config{
+              .with_contact_geometry = false,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kPoint,
+          },
       },
       {
-          .description = "Sap_HydroWithFallback_WithContact",
-          .contact_approximation = DiscreteContactApproximation::kSimilar,
-          .with_contact = true,
-          .contact_model = ContactModel::kHydroelasticWithFallback,
+          .description = "Sap_Point_NoContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kPoint,
+          },
       },
       {
-          .description = "Sap_Point_WithContact",
-          .contact_approximation = DiscreteContactApproximation::kSimilar,
-          .with_contact = true,
-          .contact_model = ContactModel::kPoint,
+          .description = "Sap_Point_InContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = true,
+              .contact_model = ContactModel::kPoint,
+          },
       },
-      // TAMSI
+      //   ContactModel::kHydroelasticWithFallback
       {
-          .description = "Tamsi_HydroWithFallback_NoContact",
-          .contact_approximation = DiscreteContactApproximation::kTamsi,
-          .with_contact = false,
-          .contact_model = ContactModel::kHydroelasticWithFallback,
+          .description = "Sap_HydroWithFallback_NoGeometry",
+          .robot_config{
+              .with_contact_geometry = false,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kHydroelasticWithFallback},
       },
       {
-          .description = "Tamsi_HydroWithFallback_WithContact",
-          .contact_approximation = DiscreteContactApproximation::kTamsi,
-          .with_contact = true,
-          .contact_model = ContactModel::kHydroelasticWithFallback,
+          .description = "Sap_HydroWithFallback_NoContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kHydroelasticWithFallback,
+          },
       },
       {
-          .description = "Tamsi_Point_WithContact",
-          .contact_approximation = DiscreteContactApproximation::kTamsi,
-          .with_contact = true,
-          .contact_model = ContactModel::kPoint,
+          .description = "Sap_HydroWithFallback_InContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kSimilar,
+              .state_in_contact = true,
+              .contact_model = ContactModel::kHydroelasticWithFallback,
+          },
+      },
+      // DiscreteContactApproximation::kTamsi
+      //   ContactModel::kPoint
+      {
+          .description = "Tamsi_Point_NoGeometry",
+          .robot_config{
+              .with_contact_geometry = false,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kPoint,
+          },
+      },
+      {
+          .description = "Tamsi_Point_NoContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kPoint,
+          },
+      },
+      {
+          .description = "Tamsi_Point_InContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = true,
+              .contact_model = ContactModel::kPoint,
+          },
+      },
+      //   ContactModel::kHydroelasticWithFallback
+      {
+          .description = "Tamsi_HydroWithFallback_NoGeometry",
+          .robot_config{
+              .with_contact_geometry = false,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kHydroelasticWithFallback,
+          },
+      },
+      {
+          .description = "Tamsi_HydroWithFallback_NoContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = false,
+              .contact_model = ContactModel::kHydroelasticWithFallback,
+          },
+      },
+      {
+          .description = "Tamsi_HydroWithFallback_InContactState",
+          .robot_config{
+              .with_contact_geometry = true,
+              .contact_approximation = DiscreteContactApproximation::kTamsi,
+              .state_in_contact = true,
+              .contact_model = ContactModel::kHydroelasticWithFallback,
+          },
       },
   };
 }
@@ -400,6 +465,8 @@ INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestExpression,
 TEST_P(IiwaRobotTestExpression, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
+  const IiwaRobotTestConfig& config = GetParam();
+  const RobotModelConfig robot_config = config.robot_config;
 
   // In summary, even though the exceptions below are caused at different
   // levels, we do not support discrete updates when T = symbolic::Expression.
@@ -416,9 +483,16 @@ TEST_P(IiwaRobotTestExpression, ForcedUpdate) {
           "MultibodyPlant<T>::CalcHydroelasticWithFallback\\(\\): This method "
           "doesn't support T = drake::symbolic::Expression.";
     } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
-      failure_cause_message =
-          "Penetration queries between shapes .* are not supported for scalar "
-          "type drake::symbolic::Expression. .*";
+      if (!robot_config.with_contact_geometry ||
+          !robot_config.state_in_contact) {
+        failure_cause_message =
+            "This method doesn't support T = drake::symbolic::Expression.";
+
+      } else {
+        failure_cause_message =
+            "Penetration queries between shapes .* are not supported for "
+            "scalar type drake::symbolic::Expression. .*";
+      }
     } else {
       throw std::runtime_error("Update unit test to verify this case.");
     }

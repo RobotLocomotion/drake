@@ -31,6 +31,7 @@ using drake::multibody::internal::CompliantContactManager;
 using drake::multibody::internal::CompliantContactManagerTester;
 using drake::multibody::internal::SapDriver;
 using drake::multibody::test::RobotModel;
+using drake::multibody::test::RobotModelConfig;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::DiagramBuilder;
@@ -131,7 +132,9 @@ class SapSolverIiwaRobotTest
  public:
   void SetUp() override {
     const SapSolverIiwaRobotTestConfig& config = GetParam();
-    model_ = std::make_unique<RobotModel<double>>(config.contact_approximation);
+    RobotModelConfig robot_config{.contact_approximation =
+                                      config.contact_approximation};
+    model_ = std::make_unique<RobotModel<double>>(robot_config);
     model_ad_ = model_->ToAutoDiffXd();
   }
 
