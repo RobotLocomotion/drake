@@ -3,6 +3,9 @@
 
 # This demo simulation shows an IIWA arm with an attached WSG gripper.
 Demo:
+  scene_graph_config:
+    default_proximity_properties:
+      compliance_type: "undefined"
   directives:
   - add_model:
       name: amazon_table
