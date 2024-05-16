@@ -81,9 +81,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///  v_MC_E = v_MB_E + ω_MB_E x p_BoCo_E     (translational velocity changes).
   /// </pre>
   /// @see Shift() to shift spatial velocity without modifying `this`.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->translational() += this->rotational().cross(offset);
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
     //    V_MC = Φᵀ(p_BoCo) V_MB    where Φᵀ(p) is the linear operator:
@@ -109,7 +108,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how V_MC_E is calculated.
   SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(offset);
+    SpatialVelocity<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Compose `this` spatial velocity (measured in some frame M) with the

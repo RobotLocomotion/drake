@@ -104,9 +104,8 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// Note: Spatial momenta shift similar to spatial force (see SpatialForce)
   /// and in a related/different way for spatial velocity (see SpatialVelocity).
   /// @see Shift() to shift spatial momentum without modifying `this`.
-  SpatialMomentum<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§2.1, page 22) uses the
     // "rigid body transformation operator" to write this as:
     //  L_MSQ = Φ(-p_PQ) L_MSP
@@ -134,7 +133,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how L_MSQ_E is calculated.
   SpatialMomentum<T> Shift(const Vector3<T>& offset) const {
-    return SpatialMomentum<T>(*this).ShiftInPlace(offset);
+    SpatialMomentum<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Calculates twice (2x) a body B's kinetic energy measured in a frame M.

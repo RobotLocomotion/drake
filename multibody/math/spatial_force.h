@@ -90,9 +90,8 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// `this` and static functions ShiftInPlace() and Shift() to shift multiple
   /// spatial forces (with or without modifying the input parameter
   /// spatial_forces).
-  SpatialForce<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§1.5, page 15) uses the
     // "rigid body transformation operator" to write this as:
     //   F_Bq = Φ(-p_BpBq) F_Bp
@@ -152,7 +151,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// spatial forces (with or without modifying the input parameter
   /// spatial_forces).
   SpatialForce<T> Shift(const Vector3<T>& offset) const {
-    return SpatialForce<T>(*this).ShiftInPlace(offset);  // offset = p_BpBq_E
+    SpatialForce<T> result(*this);
+    result.ShiftInPlace(offset);  // offset = p_BpBq_E
+    return result;
   }
 
   /// Shifts a matrix of spatial forces from one point fixed on frame B to

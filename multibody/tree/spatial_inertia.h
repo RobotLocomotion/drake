@@ -754,10 +754,10 @@ class SpatialInertia {
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @returns A reference to `this` rotational inertia about the same point P
   ///          but now re-expressed in frame A, that is, `M_SP_A`.
-  SpatialInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
     G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
-    return *this;                    // Now M_SP_A
+    // Now M_SP_A
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
@@ -768,7 +768,9 @@ class SpatialInertia {
   ///                re-expressed in frame A.
   /// @see ReExpressInPlace() for details.
   SpatialInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const {
-    return SpatialInertia(*this).ReExpressInPlace(R_AE);
+    SpatialInertia result(*this);
+    result.ReExpressInPlace(R_AE);
+    return result;
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
@@ -786,7 +788,7 @@ class SpatialInertia {
   ///                   `this` spatial inertia is expressed in.
   /// @returns A reference to `this` spatial inertia for body or composite body
   ///          S but now computed about a new point Q.
-  SpatialInertia<T>& ShiftInPlace(const Vector3<T>& p_PQ_E);
+  void ShiftInPlace(const Vector3<T>& p_PQ_E);
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
@@ -801,7 +803,9 @@ class SpatialInertia {
   /// @retval M_SQ_E    This same spatial inertia for body or composite body S
   ///                   but computed about a new point Q.
   SpatialInertia<T> Shift(const Vector3<T>& p_PQ_E) const {
-    return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
+    SpatialInertia result(*this);
+    result.ShiftInPlace(p_PQ_E);
+    return result;
   }
 
   /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
@@ -939,7 +943,7 @@ class SpatialInertia {
   // from about-point Scm to about-point P, expressed in frame E.
   // @pre On entry, the about-point for `this` SpatialInertia is Scm. Hence, on
   // entry the position vector p_PScm underlying `this` is the zero vector.
-  SpatialInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_ScmP_E);
+  void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_ScmP_E);
 
   // Calculates the spatial inertia that results from shifting `this` spatial
   // inertia for a body (or composite body) S from about-point Scm (S's center
@@ -960,7 +964,7 @@ class SpatialInertia {
   // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
   // on return the position vector p_PScm underlying `this` is the zero vector.
   // @see SpatialInertia::ShiftToCenterOfMass(), ShiftFromCenterOfMassInPlace().
-  SpatialInertia<T>& ShiftToCenterOfMassInPlace();
+  void ShiftToCenterOfMassInPlace();
 
   // Calculates the spatial inertia that results from shifting `this` spatial
   // inertia for a body (or composite body) S from about-point P to
@@ -971,7 +975,9 @@ class SpatialInertia {
   // on return the position vector p_PScm underlying `this` is the zero vector.
   // @see SpatialInertia::ShiftToCenterOfMassInPlace(), ShiftFromCenterOfMass().
   [[nodiscard]] SpatialInertia<T> ShiftToCenterOfMass() const {
-    return SpatialInertia<T>(*this).ShiftToCenterOfMassInPlace();
+    SpatialInertia<T> result(*this);
+    result.ShiftToCenterOfMassInPlace();
+    return result;
   }
 
   // Returns principal semi-diameters (half-lengths), associated principal axes
