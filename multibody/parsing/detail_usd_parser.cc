@@ -242,11 +242,18 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
       "Ingesting raw USD content from DataSource is not implemented");
   }
 
-  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(
-    data_source.GetAbsolutePath());
+  std::string file_absolute_path = data_source.GetAbsolutePath();
+  if (!std::filesystem::exists(file_absolute_path)) {
+    w_.diagnostic.Error(
+      fmt::format("File does not exist: {}", file_absolute_path));
+    return std::vector<ModelInstanceIndex>();
+  }
+
+  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(file_absolute_path);
   if (!stage) {
-    w_.diagnostic.Error(fmt::format("Failed to open USD stage",
+    w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}",
       data_source.filename()));
+    return std::vector<ModelInstanceIndex>();
   }
 
   metadata_ = GetStageMetadata(stage);
