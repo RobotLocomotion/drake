@@ -55,7 +55,7 @@ std::string FindUsdTestResourceOrThrow(const std::string& filename) {
 
 TEST_F(UsdParserTest, NoSuchFile) {
   ParseFile("/no/such/file");
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*File does not exist:.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*File does not exist.*"));
 }
 
 TEST_F(UsdParserTest, BasicImportTest) {
@@ -64,6 +64,16 @@ TEST_F(UsdParserTest, BasicImportTest) {
   EXPECT_EQ(plant_.num_bodies(), 5);
   EXPECT_EQ(plant_.num_collision_geometries(), 11);
   EXPECT_EQ(plant_.num_visual_geometries(), 11);
+}
+
+TEST_F(UsdParserTest, InvalidMassTest) {
+  std::string filename =
+    FindUsdTestResourceOrThrow("invalid/invalid_mass.usda");
+  ParseFile(filename);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Double precision float is not supported by UsdPhysicsMassAPI.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read the mass of the prim at.*"));
 }
 
 }  // namespace

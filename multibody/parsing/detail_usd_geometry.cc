@@ -57,13 +57,18 @@ CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
 double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
   if (prim.HasAPI(pxr::TfToken("PhysicsMassAPI"))) {
     auto mass_attribute = pxr::UsdPhysicsMassAPI(prim).GetMassAttr();
-    // Only single precision float is supported by UsdPhysicsMassAPI
-    // at the moment. Making the attribute a double type would result in
-    // failure when trying to read its value.
-    DRAKE_ASSERT("float" == mass_attribute.GetTypeName());
     float mass = 0.f;
     if (mass_attribute.Get(&mass)) {
       return static_cast<double>(mass);
+    } else {
+      // Failed to read the value of the mass attribute.
+      // One potential cause is that the author specified its type as double
+      // rather than float.
+      if ("double" == mass_attribute.GetTypeName()) {
+        w.diagnostic.Error("Double precision float is not supported by "
+          "UsdPhysicsMassAPI at the moment. Please use single precision float "
+          "instead.");
+      }
     }
   }
   const double default_mass = 1.0;
