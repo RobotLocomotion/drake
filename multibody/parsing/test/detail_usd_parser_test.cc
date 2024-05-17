@@ -94,6 +94,46 @@ TEST_F(UsdParserTest, InvalidMassTest) {
     ".*Failed to read the mass of the prim at.*"));
 }
 
+TEST_F(UsdParserTest, UnsupportedGeometryTest) {
+  std::string filename =
+    FindUsdTestResourceOrThrow("invalid/unsupported_geometry.usda");
+  ParseFile(filename);
+  // Errors from the `/World/Box` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Unsupported Prim type.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Unsupported Prim type.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to create collision or visual geometry.*"));
+  // Errors from the `/World/Cone` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Unsupported Prim type: Cone.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Unsupported Prim type: Cone.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to create collision or visual geometry.*"));
+  // Errors from the `/World/Cube` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The extent of the prim at .* is not symmetric"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The extent of the prim at .* is not symmetric"));
+  // Errors from the `/World/Capsule` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only upright capsules are supported at the moment.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only upright capsules are supported at the moment.*"));
+  // Errors from the `/World/Cylinder` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only upright cylinders are supported at the moment.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only upright cylinders are supported at the moment.*"));
+  // Errors from the `/World/Octahedron` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Non-isotropic scaling of a mesh is not supported*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Non-isotropic scaling of a mesh is not supported*"));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
