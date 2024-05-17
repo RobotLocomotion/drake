@@ -12,7 +12,7 @@ import sys
 
 from python import runfiles
 
-from drake.doc.defs import (
+from doc.defs import (
     check_call,
     main,
     perl_cleanup_html_output,

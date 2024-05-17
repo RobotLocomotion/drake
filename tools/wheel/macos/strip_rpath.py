@@ -7,7 +7,7 @@ import re
 import subprocess
 import sys
 
-from drake.tools.install import otool
+from tools.install import otool
 
 
 def _filter_rpaths(paths, exclusions):
