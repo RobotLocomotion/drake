@@ -242,16 +242,16 @@ GTEST_TEST(SapFixedConstraint, AccumulateSpatialImpulses) {
   // Expected spatial impulse on B.
   const SpatialForce<double> F_Bo_W =
       SpatialForce<double>(Vector3d::Zero(), gamma0)
-          .ShiftInPlace(Vector3d(0.25, 0, 0)) +
+          .Shift(Vector3d(0.25, 0, 0)) +
       SpatialForce<double>(Vector3d::Zero(), gamma1)
-          .ShiftInPlace(Vector3d(0.5, 0, 0.5));
+          .Shift(Vector3d(0.5, 0, 0.5));
 
   // Expected spatial impulse on A.
   const SpatialForce<double> F_Ao_W =
       SpatialForce<double>(Vector3d::Zero(), -gamma0)
-          .ShiftInPlace(Vector3d(-0.25, 0, 0)) +
+          .Shift(Vector3d(-0.25, 0, 0)) +
       SpatialForce<double>(Vector3d::Zero(), -gamma1)
-          .ShiftInPlace(Vector3d(-0.5, 0, -0.5));
+          .Shift(Vector3d(-0.5, 0, -0.5));
 
   const SpatialForce<double> F0(Vector3d(1, 2, 3), Vector3d(4, 5, 6));
   SpatialForce<double> Faccumulated = F0;  // Initialize to non-zero value.
