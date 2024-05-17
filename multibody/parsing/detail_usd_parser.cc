@@ -123,7 +123,8 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // Create an obj file for each mesh and pass the filename into
     // the constructor of geometry::Mesh. This is a temporary solution while
-    // https://github.com/RobotLocomotion/drake/issues/15263 is being worked on
+    // https://github.com/RobotLocomotion/drake/issues/15263 is being worked
+    // on.
     std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
     mesh_filenames_.push_back(obj_filename);
     return CreateGeometryMesh(obj_filename, prim, mpu, w_);
@@ -137,7 +138,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
 std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
   const pxr::UsdPrim& prim) {
   // For now, we use the raw visual geometry for collision detection
-  // for all geometry types
+  // for all geometry types.
   return CreateVisualGeometry(prim);
 }
 
@@ -153,7 +154,7 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     si = CreateSpatialInertiaForCylinder(prim, mpu, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
-    // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh
+    // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh.
     si = SpatialInertia<double>::MakeUnitary();
   } else {
     si.SetNaN();
