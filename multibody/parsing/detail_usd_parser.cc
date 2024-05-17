@@ -218,19 +218,30 @@ void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
 
 UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
   UsdStageMetadata metadata;
-  if (!stage->GetMetadata(pxr::TfToken("metersPerUnit"),
-    &metadata.meters_per_unit)) {
+
+  bool success = false;
+  if (stage->HasAuthoredMetadata(pxr::TfToken("metersPerUnit"))) {
+    success = stage->GetMetadata(pxr::TfToken("metersPerUnit"),
+      &metadata.meters_per_unit);
+  }
+  if (!success) {
     w_.diagnostic.Warning(fmt::format(
       "Failed to read metersPerUnit in stage metadata. "
       "Using the default value ({}) instead.", metadata.meters_per_unit));
   }
-  if (!stage->GetMetadata(pxr::TfToken("upAxis"), &metadata.up_axis)) {
+
+  success = false;
+  if (stage->HasAuthoredMetadata(pxr::TfToken("upAxis"))) {
+    success = stage->GetMetadata(pxr::TfToken("upAxis"), &metadata.up_axis);
+  }
+  if (!success) {
     w_.diagnostic.Warning(fmt::format(
       "Failed to read upAxis in stage metadata. "
       "Using the default value ({}) instead.", metadata.up_axis));
   }
   if (metadata.up_axis != "Z") {
-    throw std::runtime_error("Only Z-up stages are supported at the moment");
+    throw std::runtime_error("Parsing for Y-up or X-up stage is not yet "
+      "implemented.");
   }
   return metadata;
 }

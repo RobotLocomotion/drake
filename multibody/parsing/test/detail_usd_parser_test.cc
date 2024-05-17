@@ -66,6 +66,16 @@ TEST_F(UsdParserTest, BasicImportTest) {
   EXPECT_EQ(plant_.num_visual_geometries(), 11);
 }
 
+TEST_F(UsdParserTest, MissingMetadataTest) {
+  std::string filename =
+    FindUsdTestResourceOrThrow("invalid/missing_metadata.usda");
+  ParseFile(filename);
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read metersPerUnit in stage metadata.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read upAxis in stage metadata.*"));
+}
+
 TEST_F(UsdParserTest, InvalidMassTest) {
   std::string filename =
     FindUsdTestResourceOrThrow("invalid/invalid_mass.usda");
