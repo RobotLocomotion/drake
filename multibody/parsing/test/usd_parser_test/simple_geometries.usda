@@ -123,8 +123,8 @@ def Xform "World"
         )
         {
             uniform token axis = "Z"
-            float3[] extent = [(-25, -25, -50), (25, 25, 50)]
-            double height = 50
+            float3[] extent = [(-25, -25, -30), (25, 25, 30)]
+            double height = 60
             double radius = 25
             color3f[] primvars:displayColor = [(0.5, 0.8, 0.5)]
             custom bool refinementEnableOverride = 1
