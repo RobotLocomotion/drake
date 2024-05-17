@@ -9,6 +9,8 @@ import sys
 import time
 import unittest
 
+from python.runfiles import Create as CreateRunfiles
+
 
 def _unique_lcm_url(path):
     """Returns a unique LCM url given a path."""
@@ -19,20 +21,20 @@ def _unique_lcm_url(path):
 
 class TestRunTwistingMug(unittest.TestCase):
 
+    def _find_resource(self, basename):
+        respath = f"drake/examples/allegro_hand/joint_control/{basename}"
+        runfiles = CreateRunfiles()
+        result = runfiles.Rlocation(respath)
+        self.assertTrue(result, respath)
+        self.assertTrue(os.path.exists(result), respath)
+        return result
+
     def setUp(self):
-        # Fail-fast if these are not set.
-        self._test_srcdir = os.environ["TEST_SRCDIR"]
         self._test_tmpdir = os.environ["TEST_TMPDIR"]
 
         # Find the two binaries under test.
-        self._sim = os.path.join(
-            self._test_srcdir, "drake/examples/allegro_hand/joint_control",
-            "allegro_single_object_simulation")
-        self._control = os.path.join(
-            self._test_srcdir, "drake/examples/allegro_hand/joint_control",
-            "run_twisting_mug")
-        assert os.path.exists(self._sim)
-        assert os.path.exists(self._control)
+        self._sim = self._find_resource("allegro_single_object_simulation")
+        self._control = self._find_resource("run_twisting_mug")
 
         # Let the sim and controller talk to (only) each other.
         self._env = dict(**os.environ)

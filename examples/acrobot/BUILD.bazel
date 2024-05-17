@@ -224,9 +224,14 @@ drake_cc_binary(
 drake_py_binary(
     name = "optimizer_demo",
     srcs = ["optimizer_demo.py"],
+    add_test_rule = True,
     data = [
         ":spong_sim_main_cc",
         ":test/example_stochastic_scenario.yaml",
+    ],
+    test_rule_args = [
+        "--ensemble_size=3",
+        "--num_evaluations=3",
     ],
     deps = [
         ":acrobot_io",
@@ -421,17 +426,6 @@ drake_cc_googletest(
         ":acrobot_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
-    ],
-)
-
-sh_test(
-    name = "optimizer_demo_smoke_test",
-    srcs = ["test/optimizer_demo_smoke_test.sh"],
-    data = [
-        ":optimizer_demo",
-    ],
-    tags = [
-        "no_memcheck",  # This wraps python; python is memcheck-exempt.
     ],
 )
 
