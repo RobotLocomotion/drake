@@ -20,6 +20,11 @@ struct CsdpSolverDetails {
    *     2 Problem is dual infeasible.
    *     3 Problem solved to near optimality.
    *     4 Maximum iterations reached.
+   *     5 Stuck at edge of primal feasibility.
+   *     6 Stuck at edge of dual feasibility.
+   *     7 Lack of progress.
+   *     8 X, Z, or O is singular.
+   *     9 NaN or Inf values encountered.
    */
   int return_code{};
   /** The primal objective value. */
