@@ -1,6 +1,12 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
+
+# This is what gets used for @blas and @lapack when on macOS.
+cc_library(
+    name = "accelerate",
+    linkopts = ["-framework Accelerate"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
 
 add_lint_tests()
