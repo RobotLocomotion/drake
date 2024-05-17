@@ -49,8 +49,8 @@ Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim) {
 }
 
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
-  // TODO(hong-nvidia): Use the prim's friction attributes if has those
-  // For now, we just use default friction
+  // TODO(hong-nvidia): Use the prim's friction attributes if has those.
+  // For now, we just use default friction.
   return default_friction();
 }
 
@@ -85,7 +85,7 @@ Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
     pxr::GfVec3f color = colors[0];
     return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
-    // Prim does not contain color attribute, use default color instead
+    // Prim does not contain color attribute, use default color instead.
     auto default_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
     return default_color;
   }
@@ -157,7 +157,7 @@ void WriteMeshToObjFile(
       fmt::format("v {} {} {}\n", vertex[0], vertex[1], vertex[2]));
   }
   for (int i = 0; i < num_triangles; ++i) {
-    // Adding one to all three indices because obj index starts at one
+    // Adding one to all three indices because obj index starts at one.
     int index0 = indices[i * 3] + 1;
     int index1 = indices[i * 3 + 1] + 1;
     int index2 = indices[i * 3 + 2] + 1;
@@ -222,7 +222,7 @@ Eigen::Vector2d GetCylinderDimension(
 
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
   // Makes the assumption that axis X/Y scales the radius of the cylinder
-  // and axis Z scales the height of the cylinder
+  // and axis Z scales the height of the cylinder.
   if (prim_scale[0] != prim_scale[1]) {
     w.diagnostic.Error(fmt::format(
       "The cylinder at {} has different scaling in X and Y axis, and that is "
@@ -258,7 +258,7 @@ Eigen::Vector2d GetCapsuleDimension(
 
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
   // Makes the assumption that axis X/Y scales the radius of the capsule
-  // and axis Z scales the height of the capsule
+  // and axis Z scales the height of the capsule.
   if (prim_scale[0] != prim_scale[1]) {
     w.diagnostic.Error(fmt::format(
       "The capsule at {} has different scaling in X and Y axis, and that is "
