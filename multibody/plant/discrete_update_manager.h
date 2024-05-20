@@ -217,8 +217,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
 
-  double default_contact_stiffness() const;
-  double default_contact_dissipation() const;
+  double default_point_contact_stiffness() const;
+  double default_hydroelasic_modulus() const;
+  double default_hunt_crossley_dissipation() const;
+  double default_relaxation_time() const;
 
   const std::unordered_map<geometry::GeometryId, BodyIndex>&
   geometry_id_to_body_index() const;

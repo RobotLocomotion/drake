@@ -479,8 +479,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        contact approximation. See multibody::DiscreteContactApproximation for
        details about these contact models. */
       const T d = GetCombinedHuntCrossleyDissipation(
-          surface.id_A(), surface.id_B(), kA, kB, 0.0 /* Default value */,
-          inspector);
+          surface.id_A(), surface.id_B(), kA, kB,
+          manager_->default_hunt_crossley_dissipation(), inspector);
 
       /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
        contact approximation. See multibody::DiscreteContactApproximation for

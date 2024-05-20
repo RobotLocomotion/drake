@@ -119,6 +119,46 @@ struct ContactByPenaltyMethodParameters {
   std::optional<double> gravity;
 };
 
+// Default proximity parameters when none are provided. We estimate the order of
+// mangnitude for stiffness parameters based on analytic formulae for a
+// compliant box and for a sphere with density of water in contact with a rigid
+// plane.
+// When using the hydroelastic model, the amount of penetration x is:
+//   x = ρ⋅g/(2⋅E)L²       for the box and,
+//   x = (ρ⋅g/(2⋅E))½⋅L³⁄₂  for the sphere.
+// where g is the acceleration of gravity, ρ the density of water and L the size
+// (width of the box or diameter of the sphere).
+// When using point contact the amount of penetration is:
+//   x = ρ⋅g/k⋅L³          for the box and,
+//   x = π/6⋅ρ⋅g/k⋅L³      for the sphere.
+//
+// For the default value of k = 10⁶ N/m the amount of penetration (in meters)
+// would be:
+//          |   L = 0.1 m   |   L = 1 m
+//   Box    |      10⁻⁵     |      10⁻²
+//   Sphere |  0.5⋅10⁻⁵     |  0.5⋅10⁻²
+//
+// and for the default value of E = 10⁷ the amount of penetration (in meters)
+// would be:
+//          |   L = 0.1 m   |   L = 1 m
+//   Box    |     5⋅10⁻⁶    |     5⋅10⁻⁴
+//   Sphere |   7.1⋅10⁻⁴    |   2.2⋅10⁻²
+//
+// relaxation_time for the kSap approximation is chosen as a compromise between
+// having enough dissipation to model elastic collissions and the error
+// introduced by the convex approximation in SAP.
+//
+// hunt_crossley_dissipation is chosen based on the fact that the bouce speed in
+// a contact collisions is bounded to 1/hunt_crossley_dissipation. Moreover,
+// hunt_crossley_dissipation has no effect on the gliding artifact of convex
+// approximations, and no trade off to model elastic collisions is required.
+struct ProximityPropertiesDefaults {
+  double point_contact_stiffness = 1.0e6;
+  double hydroelasic_modulus = 1.0e7;
+  double hunt_crossley_dissipation = 20.0;
+  double relaxation_time = 0.1;
+};
+
 // Forward declaration.
 template <typename>
 class MultibodyPlantModelAttorney;
@@ -2462,6 +2502,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// to decrease by the penetration_allowance δ. In this case a user should
   /// choose a time step for simulation that can resolve the smallest of the two
   /// time scales `tc` and `tn`.
+  DRAKE_DEPRECATED("2024-09-01", "This function will no longer be supported.")
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return penalty_method_contact_parameters_.time_scale;
@@ -5712,6 +5753,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::optional<geometry::SourceId> source_id_{std::nullopt};
 
   internal::ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+
+  internal::ProximityPropertiesDefaults proximity_defaults_{};
 
   // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
   // See set_penetration_allowance() for details.

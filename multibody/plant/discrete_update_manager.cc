@@ -167,15 +167,27 @@ systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
 }
 
 template <typename T>
-double DiscreteUpdateManager<T>::default_contact_stiffness() const {
+double DiscreteUpdateManager<T>::default_point_contact_stiffness() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::default_contact_stiffness(plant());
+      T>::default_point_contact_stiffness(plant());
 }
 
 template <typename T>
-double DiscreteUpdateManager<T>::default_contact_dissipation() const {
+double DiscreteUpdateManager<T>::default_hydroelasic_modulus() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::default_contact_dissipation(plant());
+      T>::default_hydroelasic_modulus(plant());
+}
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_hunt_crossley_dissipation() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_hunt_crossley_dissipation(plant());
+}
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_relaxation_time() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_relaxation_time(plant());
 }
 
 template <typename T>
@@ -844,9 +856,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
         (treeB_has_dofs &&
          per_tree_unlocked_indices[treeB_index].size() != 0)) {
       const T kA = GetPointContactStiffness(
-          pair.id_A, default_contact_stiffness(), inspector);
+          pair.id_A, default_point_contact_stiffness(), inspector);
       const T kB = GetPointContactStiffness(
-          pair.id_B, default_contact_stiffness(), inspector);
+          pair.id_B, default_point_contact_stiffness(), inspector);
 
       // We compute the position of the point contact based on Hertz's theory
       // for contact between two elastic bodies.
@@ -909,20 +921,19 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
 
       // Contact stiffness and damping
       const T k = GetCombinedPointContactStiffness(
-          pair.id_A, pair.id_B, default_contact_stiffness(), inspector);
+          pair.id_A, pair.id_B, default_point_contact_stiffness(), inspector);
       // Hunt & Crossley dissipation. Ignored, for instance, by Sap. See
       // multibody::DiscreteContactApproximation for details about these contact
       // models.
       const T d = GetCombinedHuntCrossleyDissipation(
-          pair.id_A, pair.id_B, kA, kB, default_contact_dissipation(),
+          pair.id_A, pair.id_B, kA, kB, default_hunt_crossley_dissipation(),
           inspector);
       // Dissipation time scale. Ignored, for instance, by Similar and Lagged
       // models. See multibody::DiscreteContactApproximation for details about
       // these contact models.
-      const double default_dissipation_time_constant = 0.1;
       const T tau = GetCombinedDissipationTimeConstant(
-          pair.id_A, pair.id_B, default_dissipation_time_constant,
-          body_A.name(), body_B.name(), inspector);
+          pair.id_A, pair.id_B, default_relaxation_time(), body_A.name(),
+          body_B.name(), inspector);
       const T mu =
           GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
 
@@ -1024,23 +1035,22 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
       // TODO(amcastro-tri): Consider making the modulus required, instead of
       // a default infinite value.
       const T hydro_modulus_M = GetHydroelasticModulus(
-          s.id_M(), std::numeric_limits<double>::infinity(), inspector);
+          s.id_M(), default_hydroelasic_modulus(), inspector);
       const T hydro_modulus_N = GetHydroelasticModulus(
-          s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+          s.id_N(), default_hydroelasic_modulus(), inspector);
       // Hunt & Crossley dissipation. Used by the Tamsi, Lagged, and Similar
       // contact models. Ignored by Sap. See
       // multibody::DiscreteContactApproximation for details about these contact
       // models.
       const T d = GetCombinedHuntCrossleyDissipation(
           s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
-          0.0 /* Default value */, inspector);
+          default_hunt_crossley_dissipation(), inspector);
       // Dissipation time scale. Used by Sap contact model. Ignored by Tamsi,
       // Lagged, and Similar contact model. See
       // multibody::DiscreteContactApproximation for details about these contact
       // models.
-      const double default_dissipation_time_constant = 0.1;
       const T tau = GetCombinedDissipationTimeConstant(
-          s.id_M(), s.id_N(), default_dissipation_time_constant, body_A.name(),
+          s.id_M(), s.id_N(), default_relaxation_time(), body_A.name(),
           body_B.name(), inspector);
       // Combine friction coefficients.
       const T mu =
