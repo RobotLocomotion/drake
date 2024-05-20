@@ -114,7 +114,7 @@ the main body of the document:
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-cmake-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
-      ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
+      ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
       with today's date (they kick off after midnight).  All of the builds
       should have the same date. If not, wait until the following night.
    5. Use the
@@ -140,7 +140,7 @@ the main body of the document:
    5. Click "Build"; each build will take around an hour, give or take.
    6. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
-      tag the release until all five builds have succeeded.
+      tag the release until all four builds have succeeded.
 3. Update the release notes to have the ``YYYY-MM-DD`` we choose.
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
@@ -228,7 +228,8 @@ the email address associated with your github account.
    tutorials deployment now (so that others are aware of the potentially-
    disruptive changes).
 2. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/Dockerfile):
-   1. Edit the first line to refer to the YYYYMMDD for this release.
+   1. Edit the first line to refer to the YYYYMMDD for this release (login 
+      with your github account; otherwise, the file is read-only).
       1. For reference, the typical content is thus:
          ```
          FROM robotlocomotion/drake:jammy-20230518
