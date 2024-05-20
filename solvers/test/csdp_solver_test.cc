@@ -498,6 +498,38 @@ TEST_F(TrivialSDP1, SolveVerbose) {
     solver.Solve(*prog_, {}, options);
   }
 }
+
+// Confirm that setting solver options has an effect on the solve.
+TEST_F(TrivialSDP1, SolverOptionsPropagation) {
+  CsdpSolver solver;
+  if (!solver.available()) {
+    return;
+  }
+
+  // Solving with default options works fine.
+  {
+    SolverOptions options;
+    auto result = solver.Solve(*prog_, {}, options);
+    EXPECT_TRUE(result.is_success());
+  }
+
+  // Setting an absurd `int` option causes a failure.
+  {
+    SolverOptions options;
+    options.SetOption(CsdpSolver::id(), "maxiter", 0);
+    auto result = solver.Solve(*prog_, {}, options);
+    EXPECT_EQ(result.get_solution_result(), kIterationLimit);
+  }
+
+  // Setting an absurd `double` option causes a failure.
+  {
+    SolverOptions options;
+    options.SetOption(CsdpSolver::id(), "axtol", 1e-100);
+    auto result = solver.Solve(*prog_, {}, options);
+    EXPECT_EQ(result.get_solution_result(), kSolverSpecificError);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
