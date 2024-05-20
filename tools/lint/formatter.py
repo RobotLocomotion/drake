@@ -5,7 +5,7 @@ import io
 import os
 from subprocess import Popen, PIPE, CalledProcessError
 
-import drake.tools.lint.clang_format as clang_format_lib
+import tools.lint.clang_format as clang_format_lib
 
 
 class FormatterBase:

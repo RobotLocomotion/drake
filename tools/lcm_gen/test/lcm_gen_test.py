@@ -4,7 +4,7 @@ import unittest
 
 from python import runfiles
 
-from drake.tools.lcm_gen import (
+from tools.lcm_gen import (
     CppGen,
     Parser,
     PrimitiveType,

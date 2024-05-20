@@ -11,7 +11,7 @@ import urllib.parse
 from python import runfiles
 import xml.etree.ElementTree as ET
 
-from drake.doc.defs import check_call, main
+from doc.defs import check_call, main
 
 
 def _build(*, out_dir, temp_dir, quick, modules):
