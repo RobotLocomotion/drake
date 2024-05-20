@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -171,6 +172,26 @@ class GcsTrajectoryOptimization final {
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+    /** Adds a nonlinear derivative constraints to the subgraph `lb` ≤
+    d^Nq(t)/dt^N ≤ `ub`.
+
+    This adds a nonlinear constraint to the restriction and MIP, while adding a
+    convex surrogate to the relaxation.
+
+    @param lb is the lower bound of the derivative.
+    @param ub is the upper bound of the derivative.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if the derivative order < 1.
+    @throws std::exception if subgraph order is less than the derivative order.
+    @throws std::exception if the derivative order is one, since the linear
+    velocity bounds are preferred.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddNonlinearDerivativeBounds(
+        const Eigen::Ref<const Eigen::VectorXd>& lb,
+        const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
+
     /** Enforces derivative continuity constraints on the subgraph.
      @param continuity_order is the order of the continuity constraint.
 
@@ -258,6 +279,27 @@ class GcsTrajectoryOptimization final {
     */
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+    /** Adds a nonlinear derivative constraints to the control point connecting
+    the subgraphs `lb` ≤ d^Nq(t)/dt^N ≤ `ub`.
+
+    This adds a nonlinear constraint to the restriction and MIP, while adding a
+    convex surrogate to the relaxation.
+
+    @param lb is the lower bound of the derivative.
+    @param ub is the upper bound of the derivative.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if the derivative order < 1.
+    @throws std::exception if both subgraphs order is less than the desired
+    derivative order.
+    @throws std::exception if the derivative order is one, since the linear
+    velocity bounds are preferred.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddNonlinearDerivativeBounds(
+        const Eigen::Ref<const Eigen::VectorXd>& lb,
+        const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
 
     /** Enforces zero derivatives on the control point connecting the subgraphs.
 
@@ -513,6 +555,22 @@ class GcsTrajectoryOptimization final {
   void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                          const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Adds a nonlinear derivative constraints to the entire graph `lb` ≤
+  d^Nq(t)/dt^N ≤ `ub`.
+
+  This adds a nonlinear constraint to the restriction and MIP, while adding a
+  convex surrogate to the relaxation.
+
+  @param lb is the lower bound of the derivative.
+  @param ub is the upper bound of the derivative.
+  @param derivative_order is the order of the derivative to be constrained.
+
+  @throws std::exception if lb or ub are not of size num_positions().
+  */
+  void AddNonlinearDerivativeBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                                    const Eigen::Ref<const Eigen::VectorXd>& ub,
+                                    int derivative_order);
+
   /** Enforces derivative continuity constraints on the entire graph.
   @param continuity_order is the order of the continuity constraint.
 
@@ -683,6 +741,8 @@ class GcsTrajectoryOptimization final {
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
+  std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>
+      global_nonlinear_derivative_bounds_{};
   std::vector<int> global_continuity_constraints_{};
 };
 

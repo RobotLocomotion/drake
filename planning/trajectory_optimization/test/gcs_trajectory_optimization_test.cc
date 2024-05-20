@@ -19,6 +19,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace planning {
@@ -54,6 +55,12 @@ bool GurobiOrMosekSolverUnavailableDuringMemoryCheck() {
            solvers::MosekSolver::is_enabled() &&
            solvers::GurobiSolver::is_available() &&
            solvers::GurobiSolver::is_enabled());
+}
+
+bool SnoptSolverUnavailableDuringMemoryCheck() {
+  return (std::getenv("VALGRIND_OPTS") != nullptr) &&
+         !(solvers::SnoptSolver::is_available() &&
+           solvers::SnoptSolver::is_enabled());
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
@@ -431,10 +438,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
   // We need to duplicate the race track regions to sandwich the duck regions.
   auto& race_track_1 = gcs.AddRegions(
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(0, -5), Vector2d(305, 5))),
-      5);
+      6, 0.0, 200.0);
   auto& race_track_2 = gcs.AddRegions(
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(0, -5), Vector2d(305, 5))),
-      5);
+      6, 0.0, 200.0);
   // Bob's car can only drive straight. So he can drive at 50 m/s forward in x,
   // but not in y.
   race_track_1.AddVelocityBounds(Vector2d(0, 0), Vector2d(kMaxSpeed, 0));
@@ -472,7 +479,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
   gcs.AddTimeCost();
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
-  EXPECT_LT(gcs.EstimateComplexity(), 185);
+  EXPECT_LT(gcs.EstimateComplexity(), 210);
 
   auto [traj, result] = gcs.SolvePath(source, target);
 
@@ -524,6 +531,39 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
   EXPECT_TRUE(CompareMatrices(
       traj.EvalDerivative(stopped_at_ducks_time + kDuckDelay, 2),
       Vector2d(0, 0), 1e-6));
+
+  // Bob has been racing all day long, and his car ran out of battery. He still
+  // wants to race, but the only availbe car is a tow truck 🛻!
+  const double kMaxAcceleration = 3.0;  // m/s^2
+
+  // Bob's truck can only drive straight.
+  race_track_1.AddNonlinearDerivativeBounds(Vector2d(-kMaxAcceleration, 0),
+                                            Vector2d(kMaxAcceleration, 0), 2);
+  race_track_2.AddNonlinearDerivativeBounds(Vector2d(-kMaxAcceleration, 0),
+                                            Vector2d(kMaxAcceleration, 0), 2);
+
+  GraphOfConvexSetsOptions options;
+  solvers::SnoptSolver snopt;
+  options.solver = &snopt;
+  options.max_rounded_paths = 3;
+
+  if (SnoptSolverUnavailableDuringMemoryCheck()) return;
+  auto [traj_truck, result_truck] = gcs.SolvePath(source, target, options);
+
+  EXPECT_TRUE(result_truck.is_success());
+  EXPECT_EQ(traj_truck.rows(), 2);
+  EXPECT_EQ(traj_truck.cols(), 1);
+  EXPECT_TRUE(
+      CompareMatrices(traj_truck.value(traj_truck.start_time()), start, 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(traj_truck.value(traj_truck.end_time()), goal, 1e-6));
+
+  // Let's make sure the truck remained within the acceleration bounds.
+  for (double t = traj_truck.start_time(); t < traj_truck.end_time();
+       t += kTimeStep) {
+    EXPECT_TRUE(traj_truck.EvalDerivative(t, 2).cwiseAbs()(0) <=
+                kMaxAcceleration + 1e-6);
+  }
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, RemoveSubgraph) {
@@ -622,6 +662,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidDerivativeBounds) {
   auto& regions2 =
       gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 0);
 
+  auto& regions3 =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 3);
+
   auto& regions1_to_regions2 = gcs.AddEdges(regions1, regions2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -662,6 +705,51 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidDerivativeBounds) {
       "order: 0\n Derivative order: 1");
   DRAKE_EXPECT_THROWS_MESSAGE(
       regions1_to_regions2.AddZeroDerivativeConstraints(2),
+      "Cannot add derivative bounds to subgraph edges where both subgraphs "
+      "have less than derivative order.\n From subgraph order: 0\n To subgraph "
+      "order: 0\n Derivative order: 2");
+
+  // Test the nonlinear derivative bounds.
+  // Prefer velocity bounds since they are linear.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions3.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(),
+                                            1),
+      "Use Velocity Bounds instead since they are linear.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddNonlinearDerivativeBounds(Vector2d::Zero(),
+                                                        Vector2d::Zero(), 1),
+      "Use Velocity Bounds instead since they are linear.");
+
+  // The zeroth order derivative is not a proper derivative.
+  DRAKE_EXPECT_THROWS_MESSAGE(regions3.AddNonlinearDerivativeBounds(
+                                  Vector2d::Zero(), Vector2d::Zero(), 0),
+                              "Derivative order must be greater than 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1_to_regions2.AddNonlinearDerivativeBounds(
+                                  Vector2d::Zero(), Vector2d::Zero(), 0),
+                              "Derivative order must be greater than 1.");
+
+  // lower and upper bound must have the same dimension as the graph.
+  DRAKE_EXPECT_THROWS_MESSAGE(regions3.AddNonlinearDerivativeBounds(
+                                  Vector3d::Zero(), Vector2d::Zero(), 2),
+                              ".*size.*.num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1_to_regions2.AddNonlinearDerivativeBounds(
+                                  Vector3d::Zero(), Vector2d::Zero(), 2),
+                              ".*size.*.num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector3d::Zero(), 2),
+      ".*size.*.num_positions.*");
+
+  // Can't add derivative bounds to a subgraph with an order lower than the
+  // derivative order.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions3.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(),
+                                            4),
+      "Derivative order must be less than or equal to the set order.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddNonlinearDerivativeBounds(Vector2d::Zero(),
+                                                        Vector2d::Zero(), 2),
       "Cannot add derivative bounds to subgraph edges where both subgraphs "
       "have less than derivative order.\n From subgraph order: 0\n To subgraph "
       "order: 0\n Derivative order: 2");
@@ -1208,6 +1296,64 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
   }
 }
 
+TEST_F(SimpleEnv2D, DerivativeConstraints) {
+  const int kDimension = 2;
+  const double kMaxSpeed = 2.0;
+  const double kMaxAcceleration = 1.0;
+  const double kMaxJerk = 7.5;
+
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start(0.2, 0.2), goal(4.8, 4.8);
+  auto& regions = gcs.AddRegions(regions_, 6);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0.0, 0.0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0.0, 0.0);
+
+  gcs.AddEdges(source, regions);
+  gcs.AddEdges(regions, target);
+
+  gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
+
+  // Add velocity bounds.
+  gcs.AddVelocityBounds(Vector2d(-kMaxSpeed, -kMaxSpeed),
+                        Vector2d(kMaxSpeed, kMaxSpeed));
+  // Add acceleration bounds.
+  gcs.AddNonlinearDerivativeBounds(
+      Vector2d(-kMaxAcceleration, -kMaxAcceleration),
+      Vector2d(kMaxAcceleration, kMaxAcceleration), 2);
+  // Add jerk bounds.
+  gcs.AddNonlinearDerivativeBounds(Vector2d(-kMaxJerk, -kMaxJerk),
+                                   Vector2d(kMaxJerk, kMaxJerk), 3);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 2.5e3);
+
+  // Define solver options.
+  GraphOfConvexSetsOptions options;
+  solvers::SnoptSolver snopt;
+  options.restriction_solver = &snopt;
+  options.max_rounded_paths = 5;
+
+  if (SnoptSolverUnavailableDuringMemoryCheck()) return;
+  auto [traj, result] = gcs.SolvePath(source, target, options);
+
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  // Check that the velocity, acceleration, and jerk are bounded.
+  const double dt = 0.01;
+  for (double t = traj.start_time(); t < traj.end_time(); t += dt) {
+    EXPECT_LT(traj.EvalDerivative(t, 1).cwiseAbs().maxCoeff(),
+              kMaxSpeed + 1e-6);
+    EXPECT_LT(traj.EvalDerivative(t, 2).cwiseAbs().maxCoeff(),
+              kMaxAcceleration + 1e-6);
+    EXPECT_LT(traj.EvalDerivative(t, 3).cwiseAbs().maxCoeff(), kMaxJerk + 1e-6);
+  }
+}
+
 TEST_F(SimpleEnv2D, DurationDelay) {
   /* The durations bounds in a subgraph can be used to enforce delays.*/
   const int kDimension = 2;
@@ -1375,7 +1521,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_EQ(gcs.num_positions(), kDimension);
 
   Vector2d start(0.2, 0.2), goal(4.8, 4.8), intermediate(2.3, 3.5);
-  const double kSpeed = 1.0;
+  const double kSpeed = 2.0;
 
   // Both a Point and an HPolytope are valid subspaces.
   Point subspace_point(intermediate);
@@ -1405,12 +1551,15 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   auto& main1_to_main2_region = gcs.AddEdges(main1, main2, &subspace_region);
   auto& main2_to_target = gcs.AddEdges(main2, target);
 
-  // Add zero velocity constraints to the source, target and the intermediate
-  // point and region.
+  // Add zero velocity constraints to the source, and target.
   source_to_main.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero());
-  main1_to_main2_pt.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero());
-  main1_to_main2_region.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero());
   main2_to_target.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero());
+
+  // Add half of the velocity limit to the intermediate point and region.
+  main1_to_main2_pt.AddVelocityBounds(Vector2d(-kSpeed / 2, -kSpeed / 2),
+                                      Vector2d(kSpeed / 2, kSpeed / 2));
+  main1_to_main2_region.AddVelocityBounds(Vector2d(-kSpeed / 2, -kSpeed / 2),
+                                          Vector2d(kSpeed / 2, kSpeed / 2));
 
   // We can add different costs and constraints to the individual subgraphs.
   main1.AddPathLengthCost(5);
@@ -1440,6 +1589,37 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  const double kMaxAcceleration = 1.0;
+  const double kMaxJerk = 7.5;
+
+  // Add accelertation and jerk bounds to the whole graph.
+  gcs.AddNonlinearDerivativeBounds(
+      Vector2d(-kMaxAcceleration, -kMaxAcceleration),
+      Vector2d(kMaxAcceleration, kMaxAcceleration), 2);
+  gcs.AddNonlinearDerivativeBounds(Vector2d(-kMaxJerk, -kMaxJerk),
+                                   Vector2d(kMaxJerk, kMaxJerk), 3);
+
+  // Add half of the acceleration and jerk bounds to the intermediate point and
+  // region.
+  main1_to_main2_pt.AddNonlinearDerivativeBounds(
+      Vector2d(-kMaxAcceleration / 2, -kMaxAcceleration / 2),
+      Vector2d(kMaxAcceleration / 2, kMaxAcceleration / 2), 2);
+  main1_to_main2_region.AddNonlinearDerivativeBounds(
+      Vector2d(-kMaxAcceleration / 2, -kMaxAcceleration / 2),
+      Vector2d(kMaxAcceleration / 2, kMaxAcceleration / 2), 2);
+
+  if (SnoptSolverUnavailableDuringMemoryCheck()) return;
+  solvers::SnoptSolver snopt;
+  options.restriction_solver = &snopt;
+
+  auto [traj_nonlinear, result_nonlinear] =
+      gcs.SolvePath(source, target, options);
+  EXPECT_TRUE(result_nonlinear.is_success());
+  EXPECT_TRUE(CompareMatrices(traj_nonlinear.value(traj_nonlinear.start_time()),
+                              start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj_nonlinear.value(traj_nonlinear.end_time()),
+                              goal, 1e-6));
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, EdgesFromWrappedJoints) {
