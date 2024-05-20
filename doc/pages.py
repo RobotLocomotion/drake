@@ -7,7 +7,7 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 import os
 import tempfile
 
-from drake.doc.defs import (
+from doc.defs import (
     check_call,
     main,
     perl_cleanup_html_output,

@@ -2,7 +2,7 @@ import re
 from textwrap import dedent, indent
 import unittest
 
-import drake.doc.doxygen_cxx.system_doxygen as mut
+import doc.doxygen_cxx.system_doxygen as mut
 
 
 class TestSystemDoxygen(unittest.TestCase):

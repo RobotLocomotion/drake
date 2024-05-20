@@ -48,7 +48,7 @@ from typing import Optional, Set
 import git
 import github3
 
-from drake.tools.workspace.metadata import read_repository_metadata
+from tools.workspace.metadata import read_repository_metadata
 
 logger = logging.getLogger('new_release')
 logger.setLevel(logging.INFO)

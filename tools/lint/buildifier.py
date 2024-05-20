@@ -12,8 +12,8 @@ import subprocess
 import sys
 from subprocess import Popen, PIPE, STDOUT
 
-from drake.tools.lint.find_data import find_data
-from drake.tools.lint.util import find_all_sources
+from tools.lint.find_data import find_data
+from tools.lint.util import find_all_sources
 
 # These match data=[] in our BUILD.bazel file.
 _BUILDIFIER = "external/buildifier/buildifier"

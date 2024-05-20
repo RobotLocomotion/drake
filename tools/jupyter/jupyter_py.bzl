@@ -9,7 +9,7 @@ load("//tools/workspace:generate_file.bzl", "generate_file")
 _JUPYTER_PY_TEMPLATE = """
 import sys
 
-from drake.tools.jupyter.jupyter_bazel import _jupyter_bazel_notebook_main
+from jupyter_bazel import _jupyter_bazel_notebook_main
 
 
 def main():

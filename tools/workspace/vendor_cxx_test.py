@@ -1,6 +1,6 @@
 import unittest
 
-from drake.tools.workspace.vendor_cxx import _rewrite_one_text
+from tools.workspace.vendor_cxx import _rewrite_one_text
 
 
 class TestVendorCxx(unittest.TestCase):
