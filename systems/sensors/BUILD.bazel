@@ -7,6 +7,7 @@ load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
+    "drake_cc_googletest_linux_only",
     "drake_cc_library",
     "drake_cc_package_library",
 )
@@ -575,20 +576,15 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_googletest_linux_only(
     name = "rgbd_sensor_async_gl_test",
     timeout = "moderate",
-    args = select({
-        "//tools/cc_toolchain:apple": [
-            # The GL render engine is not available on macOS.
-            "--gtest_filter=-*",
-        ],
-        "//conditions:default": [],
-    }),
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [
         # Similar to #7520, the GL vendor's libraries are not sufficiently
         # instrumented for compatibility with TSan.

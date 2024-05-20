@@ -157,4 +157,14 @@ config_setting(
     values = {"define": "WITH_USD=ON"},
 )
 
+config_setting(
+    name = "ubuntu_jammy",
+    values = {"define": "UBUNTU_VERSION=22.04"},
+)
+
+config_setting(
+    name = "ubuntu_noble",
+    values = {"define": "UBUNTU_VERSION=24.04"},
+)
+
 add_lint_tests()
