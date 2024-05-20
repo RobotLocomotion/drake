@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -171,6 +172,32 @@ class GcsTrajectoryOptimization final {
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+    /** Adds a nonlinear derivative constraints to the subgraph `lb` ≤
+    dᴺq(t) / dtᴺ ≤ `ub`.
+
+    This adds a nonlinear constraint to the restriction and MIP
+    GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+    relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+    "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+    The nonlinear constraint involves the derivative dᴺq(t) / dtᴺ
+    which is decomposed as dᴺr(s) / dsᴺ / hᴺ. The convex surrogate replaces the
+    nonlinear component hᴺ with h₀ᴺ⁻¹h, where h₀ is the characteristic time of
+    the set. For now, h₀ is set to 1.0 for all sets.
+
+    @param lb is the lower bound of the derivative.
+    @param ub is the upper bound of the derivative.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if subgraph order is less than the derivative order.
+    @throws std::exception if the derivative order <= 1, since the linear
+      velocity bounds are preferred.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddNonlinearDerivativeBounds(
+        const Eigen::Ref<const Eigen::VectorXd>& lb,
+        const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
+
     /** Enforces derivative continuity constraints on the subgraph.
      @param continuity_order is the order of the continuity constraint.
 
@@ -258,6 +285,33 @@ class GcsTrajectoryOptimization final {
     */
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+    /** Adds a nonlinear derivative constraints to the control point connecting
+    the subgraphs `lb` ≤ dᴺq(t) / dtᴺ ≤ `ub`.
+
+    This adds a nonlinear constraint to the restriction and MIP
+    GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+    relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+    "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+    The nonlinear constraint involves the derivative dᴺq(t) / dtᴺ
+    which is decomposed as dᴺr(s) / dsᴺ / hᴺ. The convex surrogate replaces the
+    nonlinear component hᴺ with h₀ᴺ⁻¹h, where h₀ is the characteristic time of
+    the set. For now, h₀ is set to 1.0 for all sets.
+
+    @param lb is the lower bound of the derivative.
+    @param ub is the upper bound of the derivative.
+    @param derivative_order is the order of the derivative to be constrained.
+
+    @throws std::exception if both subgraphs order is less than the desired
+    derivative order.
+    @throws std::exception if the derivative order <= 1, since the linear
+      velocity bounds are preferred.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddNonlinearDerivativeBounds(
+        const Eigen::Ref<const Eigen::VectorXd>& lb,
+        const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
 
     /** Enforces zero derivatives on the control point connecting the subgraphs.
 
@@ -513,6 +567,30 @@ class GcsTrajectoryOptimization final {
   void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                          const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Adds a nonlinear derivative constraints to the entire graph `lb` ≤
+  dᴺq(t) / dtᴺ ≤ `ub`.
+
+  This adds a nonlinear constraint to the restriction and MIP
+  GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+  relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+  "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+  The nonlinear constraint involves the derivative dᴺq(t) / dtᴺ
+  which is decomposed as dᴺr(s) / dsᴺ / hᴺ. The convex surrogate replaces the
+  nonlinear component hᴺ with h₀ᴺ⁻¹h, where h₀ is the characteristic time of
+  the set. For now, h₀ is set to 1.0 for all sets.
+
+
+  @param lb is the lower bound of the derivative.
+  @param ub is the upper bound of the derivative.
+  @param derivative_order is the order of the derivative to be constrained.
+
+  @throws std::exception if lb or ub are not of size num_positions().
+  */
+  void AddNonlinearDerivativeBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                                    const Eigen::Ref<const Eigen::VectorXd>& ub,
+                                    int derivative_order);
+
   /** Enforces derivative continuity constraints on the entire graph.
   @param continuity_order is the order of the continuity constraint.
 
@@ -683,6 +761,8 @@ class GcsTrajectoryOptimization final {
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
+  std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>
+      global_nonlinear_derivative_bounds_{};
   std::vector<int> global_continuity_constraints_{};
 };
 
