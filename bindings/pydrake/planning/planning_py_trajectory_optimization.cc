@@ -380,6 +380,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             subgraph_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
             py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::Subgraph::AddNonlinearDerivativeBounds, py::arg("lb"),
+            py::arg("ub"), py::arg("derivative_order"),
+            subgraph_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddPathContinuityConstraints",
             &Class::Subgraph::AddPathContinuityConstraints,
             py::arg("continuity_order"),
@@ -393,6 +397,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::EdgesBetweenSubgraphs::AddNonlinearDerivativeBounds,
+            py::arg("lb"), py::arg("ub"), py::arg("derivative_order"),
+            subgraph_edges_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddZeroDerivativeConstraints",
             &Class::EdgesBetweenSubgraphs::AddZeroDerivativeConstraints,
             py::arg("derivative_order"),
@@ -459,6 +467,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::AddNonlinearDerivativeBounds, py::arg("lb"), py::arg("ub"),
+            py::arg("derivative_order"),
+            cls_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddPathContinuityConstraints",
             &Class::AddPathContinuityConstraints, py::arg("continuity_order"),
             cls_doc.AddPathContinuityConstraints.doc)
