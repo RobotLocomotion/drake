@@ -102,7 +102,7 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
   auto context = model->MakeContext();
   // Initialize context with v_guess.
   SetProblemVelocitiesIntoModelContext(*model, v_guess, context.get());
-  const SapSolverStatus status = SolveWithGuess(*model, context.get());
+  const SapSolverStatus status = SolveWithGuessImpl(*model, context.get());
   if (status != SapSolverStatus::kSuccess) return status;
   PackSapSolverResults(*model, *context, results);
   return status;
@@ -151,7 +151,7 @@ SapSolverStatus SapSolver<AutoDiffXd>::SolveWithGuess(
   SapSolver<double> sap;
   sap.set_parameters(parameters_);
   sap.SetProblemVelocitiesIntoModelContext(*model, v_guess, context.get());
-  const SapSolverStatus status = sap.SolveWithGuess(*model, context.get());
+  const SapSolverStatus status = sap.SolveWithGuessImpl(*model, context.get());
   stats_ = sap.get_statistics();  // Report the <double> solver stats.
   if (status == SapSolverStatus::kFailure) return status;
 
@@ -212,9 +212,10 @@ SapSolverStatus SapSolver<AutoDiffXd>::SolveWithGuess(
 }
 
 template <typename T>
-template <typename T1, typename>
-SapSolverStatus SapSolver<T>::SolveWithGuess(const SapModel<T>& model,
-                                             systems::Context<T>* context) {
+SapSolverStatus SapSolver<T>::SolveWithGuessImpl(const SapModel<T>& model,
+                                                 systems::Context<T>* context)
+  requires std::is_same_v<T, double>
+{  // NOLINT(whitespace/braces)
   using std::abs;
   using std::max;
 
@@ -541,17 +542,11 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
-    const SapModel<T>&, const systems::Context<T>&, const SearchDirectionData&,
-    systems::Context<T>*) const {
-  throw std::logic_error(
-      "SapSolver::PerformExactLineSearch(): Only T = double is supported.");
-}
-
-template <>
-std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
-    const SapModel<double>& model, const systems::Context<double>& context,
+    const SapModel<T>& model, const systems::Context<T>& context,
     const SearchDirectionData& search_direction_data,
-    systems::Context<double>* scratch) const {
+    systems::Context<T>* scratch) const
+  requires std::is_same_v<T, double>
+{  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(parameters_.line_search_type ==
                SapSolverParameters::LineSearchType::kExact);
   DRAKE_DEMAND(scratch != nullptr);
@@ -655,17 +650,11 @@ std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
 }
 
 template <typename T>
-void SapSolver<T>::CalcSearchDirectionData(const SapModel<T>&,
-                                           const systems::Context<T>&,
-                                           SapSolver<T>::SearchDirectionData*) {
-  throw std::runtime_error(
-      "Hessian factorization can only be computed for T = double.");
-}
-
-template <>
-void SapSolver<double>::CalcSearchDirectionData(
-    const SapModel<double>& model, const systems::Context<double>& context,
-    SapSolver<double>::SearchDirectionData* data) {
+void SapSolver<T>::CalcSearchDirectionData(
+    const SapModel<T>& model, const systems::Context<T>& context,
+    SapSolver<T>::SearchDirectionData* data)
+  requires std::is_same_v<T, double>
+{  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
   data->dv = -model.EvalCostGradient(context);
   const HessianFactorizationCache& hessian_factorization =
