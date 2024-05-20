@@ -9,7 +9,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/test/iiwa7_model.h"
+#include "drake/multibody/plant/test/robot_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -282,7 +282,7 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
             plant_double.num_constraints());
 }
 
-struct IiwaRobotTestConfig {
+struct DiscretePlantTestConfig {
   // This is a gtest test suffix; no underscores or spaces at the start.
   std::string description;
 
@@ -291,16 +291,17 @@ struct IiwaRobotTestConfig {
 
 // This provides the suffix for each test parameter: the test config
 // description.
-std::ostream& operator<<(std::ostream& out, const IiwaRobotTestConfig& c) {
+std::ostream& operator<<(std::ostream& out, const DiscretePlantTestConfig& c) {
   out << c.description;
   return out;
 }
 
 template <typename T>
-class IiwaRobotTest : public ::testing::TestWithParam<IiwaRobotTestConfig> {
+class DiscretePlantTest
+    : public ::testing::TestWithParam<DiscretePlantTestConfig> {
  public:
   void SetUp() override {
-    const IiwaRobotTestConfig& config = GetParam();
+    const DiscretePlantTestConfig& config = GetParam();
     auto model_double =
         std::make_unique<RobotModel<double>>(config.robot_config);
     if constexpr (std::is_same_v<T, double>) {
@@ -314,16 +315,16 @@ class IiwaRobotTest : public ::testing::TestWithParam<IiwaRobotTestConfig> {
   std::unique_ptr<RobotModel<T>> model_;
 };
 
-using IiwaRobotTestDouble = IiwaRobotTest<double>;
-using IiwaRobotTestAutoDiff = IiwaRobotTest<AutoDiffXd>;
-using IiwaRobotTestExpression = IiwaRobotTest<symbolic::Expression>;
+using DiscretePlantTestDouble = DiscretePlantTest<double>;
+using DiscretePlantTestAutoDiff = DiscretePlantTest<AutoDiffXd>;
+using DiscretePlantTestExpression = DiscretePlantTest<symbolic::Expression>;
 
-std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
-  return std::vector<IiwaRobotTestConfig>{
+std::vector<DiscretePlantTestConfig> MakeSupportMatrixTestCases() {
+  return std::vector<DiscretePlantTestConfig>{
       // DiscreteContactApproximation::kSap
       //   ContactModel::kPoint
       {
-          .description = "Sap_Point_NoGeometry",
+          .description = "SapPointNoGeometry",
           .robot_config{
               .with_contact_geometry = false,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -332,7 +333,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Sap_Point_NoContactState",
+          .description = "SapPointNoContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -341,7 +342,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Sap_Point_InContactState",
+          .description = "SapPointInContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -351,7 +352,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
       },
       //   ContactModel::kHydroelasticWithFallback
       {
-          .description = "Sap_HydroWithFallback_NoGeometry",
+          .description = "SapHydroWithFallbackNoGeometry",
           .robot_config{
               .with_contact_geometry = false,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -359,7 +360,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
               .contact_model = ContactModel::kHydroelasticWithFallback},
       },
       {
-          .description = "Sap_HydroWithFallback_NoContactState",
+          .description = "SapHydroWithFallbackNoContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -368,7 +369,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Sap_HydroWithFallback_InContactState",
+          .description = "SapHydroWithFallbackInContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kSimilar,
@@ -379,7 +380,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
       // DiscreteContactApproximation::kTamsi
       //   ContactModel::kPoint
       {
-          .description = "Tamsi_Point_NoGeometry",
+          .description = "TamsiPointNoGeometry",
           .robot_config{
               .with_contact_geometry = false,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -388,7 +389,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Tamsi_Point_NoContactState",
+          .description = "TamsiPointNoContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -397,7 +398,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Tamsi_Point_InContactState",
+          .description = "TamsiPointInContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -407,7 +408,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
       },
       //   ContactModel::kHydroelasticWithFallback
       {
-          .description = "Tamsi_HydroWithFallback_NoGeometry",
+          .description = "TamsiHydroWithFallbackNoGeometry",
           .robot_config{
               .with_contact_geometry = false,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -416,7 +417,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Tamsi_HydroWithFallback_NoContactState",
+          .description = "TamsiHydroWithFallbackNoContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -425,7 +426,7 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
           },
       },
       {
-          .description = "Tamsi_HydroWithFallback_InContactState",
+          .description = "TamsiHydroWithFallbackInContactState",
           .robot_config{
               .with_contact_geometry = true,
               .contact_approximation = DiscreteContactApproximation::kTamsi,
@@ -436,36 +437,36 @@ std::vector<IiwaRobotTestConfig> MakeSupportMatrixTestCases() {
   };
 }
 
-INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestDouble,
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestDouble,
                          testing::ValuesIn(MakeSupportMatrixTestCases()),
                          testing::PrintToStringParamName());
 
-TEST_P(IiwaRobotTestDouble, ForcedUpdate) {
+TEST_P(DiscretePlantTestDouble, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
   EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
                                                            updates.get()));
 }
 
-INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestAutoDiff,
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestAutoDiff,
                          testing::ValuesIn(MakeSupportMatrixTestCases()),
                          testing::PrintToStringParamName());
 
-TEST_P(IiwaRobotTestAutoDiff, ForcedUpdate) {
+TEST_P(DiscretePlantTestAutoDiff, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
   EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
                                                            updates.get()));
 }
 
-INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, IiwaRobotTestExpression,
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
                          testing::ValuesIn(MakeSupportMatrixTestCases()),
                          testing::PrintToStringParamName());
 
-TEST_P(IiwaRobotTestExpression, ForcedUpdate) {
+TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
-  const IiwaRobotTestConfig& config = GetParam();
+  const DiscretePlantTestConfig& config = GetParam();
   const RobotModelConfig robot_config = config.robot_config;
 
   // In summary, even though the exceptions below are caused at different

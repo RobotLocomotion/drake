@@ -1,43 +1,18 @@
 #pragma once
 
-#include <chrono>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
-#include <gtest/gtest.h>
-
-#include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/proximity_properties.h"
-#include "drake/math/compute_numerical_gradient.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
-#include "drake/multibody/contact_solvers/sap/sap_solver.h"
-#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/visualization/visualization_config_functions.h"
-
-using drake::geometry::ProximityProperties;
-using drake::math::RigidTransformd;
-using drake::math::RotationMatrixd;
-using drake::multibody::contact_solvers::internal::SapContactProblem;
-using drake::multibody::contact_solvers::internal::SapSolver;
-using drake::multibody::contact_solvers::internal::SapSolverParameters;
-using drake::multibody::contact_solvers::internal::SapSolverResults;
-using drake::multibody::contact_solvers::internal::SapSolverStatus;
-using drake::multibody::internal::CompliantContactManager;
-using drake::multibody::internal::CompliantContactManagerTester;
-using drake::multibody::internal::SapDriver;
-using drake::systems::Context;
-using drake::systems::Diagram;
-using drake::systems::DiagramBuilder;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
@@ -48,7 +23,7 @@ class SapDriverTest {
  public:
   template <typename T>
   static const ContactProblemCache<T>& EvalContactProblemCache(
-      const SapDriver<T>& driver, const Context<T>& context) {
+      const SapDriver<T>& driver, const systems::Context<T>& context) {
     return driver.EvalContactProblemCache(context);
   }
 };
@@ -59,7 +34,7 @@ namespace test {
 // Options for RobotModel.
 struct RobotModelConfig {
   // If true, loads a model with collision geometry. Otherwise all proximity
-  // gometry is removed.
+  // geometry is removed.
   bool with_contact_geometry{true};
 
   // Specifies the discrete approximation of contact.
@@ -68,10 +43,13 @@ struct RobotModelConfig {
 
   // If true, the state is initialized to
   // RobotModel::RobotStateWithOneContactStiction().
-  // If false, the state is initialized to RobotModel::RobotStateIsZero().
+  // If false, the state is initialized to RobotModel::RobotZeroState().
   bool state_in_contact{true};
 
-  // Specifies the geomteric modeling of contact.
+  // Specifies the geometric modeling of contact. Even if `with_contact_geometry
+  // = false`, MultibodyPlant calls specific proximity queries depending on the
+  // contact model. To unit test these different code paths, this config
+  // provides both `contact_model` and `with_contact_geometry` separately.
   ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
 };
 
@@ -92,14 +70,14 @@ class RobotModel {
   // Creates an empty model.
   RobotModel() = default;
 
-  // This constructor is provided to make a RoboModel<double>. Use the scalar
+  // This constructor is provided to make a RobotModel<double>. Use the scalar
   // conversion methods provided by this class to obtain models on other scalar
   // types.
   explicit RobotModel(const RobotModelConfig& config,
                       bool add_visualization = false)
     requires std::is_same_v<T, double>
   {  // NOLINT(whitespace/braces)
-    DiagramBuilder<double> builder;
+    systems::DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
     plant_ = &items.plant;
 
@@ -123,14 +101,15 @@ class RobotModel {
                                      geometry::internal::kRelaxationTime,
                                      kRelaxationTime_ / 2);
     plant_->RegisterCollisionGeometry(
-        plant_->world_body(), RigidTransformd(Vector3d(0.0, 0.0, -0.05)),
+        plant_->world_body(),
+        math::RigidTransformd(Eigen::Vector3d(0.0, 0.0, -0.05)),
         geometry::Box(2.0, 2.0, 0.1), "ground_collision", proximity_properties);
 
     // Add simple contact geometry at the end effector.
     plant_->RegisterCollisionGeometry(
         plant_->GetBodyByName("iiwa_link_7"),
-        RigidTransformd(Vector3d(0.0, 0.0, 0.07)), geometry::Sphere(0.05),
-        "iiwa_link_7_collision", proximity_properties);
+        math::RigidTransformd(Eigen::Vector3d(0.0, 0.0, 0.07)),
+        geometry::Sphere(0.05), "iiwa_link_7_collision", proximity_properties);
 
     plant_->set_contact_model(config.contact_model);
     plant_->set_discrete_contact_approximation(config.contact_approximation);
@@ -148,11 +127,12 @@ class RobotModel {
 
     // Make and add a manager so that we have access to it and its driver.
     if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-      auto owned_contact_manager =
-          std::make_unique<CompliantContactManager<double>>();
+      auto owned_contact_manager = std::make_unique<
+          multibody::internal::CompliantContactManager<double>>();
       manager_ = owned_contact_manager.get();
       plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
-      driver_ = &CompliantContactManagerTester::sap_driver(*manager_);
+      driver_ = &multibody::internal::CompliantContactManagerTester::sap_driver(
+          *manager_);
     }
 
     // We add a visualizer for visual inspection of the model in this test.
@@ -170,7 +150,7 @@ class RobotModel {
     if (config.state_in_contact) {
       SetRobotState(RobotStateWithOneContactStiction());
     } else {
-      SetRobotState(RobotStateIsZero());
+      SetRobotState(RobotZeroState());
     }
 
     // Fix input ports.
@@ -180,8 +160,8 @@ class RobotModel {
   }
 
   const MultibodyPlant<T>& plant() const { return *plant_; }
-  const Diagram<T>& diagram() const { return *diagram_; }
-  const Context<T>& context() const { return *context_; }
+  const systems::Diagram<T>& diagram() const { return *diagram_; }
+  const systems::Context<T>& context() const { return *context_; }
 
   int num_velocities() const { return plant_->num_velocities(); }
 
@@ -190,8 +170,8 @@ class RobotModel {
     auto converted_model = std::make_unique<RobotModel<U>>();
 
     // Scalar-convert the model.
-    converted_model->diagram_ =
-        dynamic_pointer_cast<Diagram<U>>(diagram_->template ToScalarType<U>());
+    converted_model->diagram_ = dynamic_pointer_cast<systems::Diagram<U>>(
+        diagram_->template ToScalarType<U>());
     converted_model->plant_ = const_cast<MultibodyPlant<U>*>(
         &converted_model->diagram_
              ->template GetDowncastSubsystemByName<MultibodyPlant<U>>(
@@ -201,12 +181,13 @@ class RobotModel {
     if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap &&
         !std::is_same_v<U, symbolic::Expression>) {
       auto owned_contact_manager_ad =
-          std::make_unique<CompliantContactManager<U>>();
+          std::make_unique<multibody::internal::CompliantContactManager<U>>();
       converted_model->manager_ = owned_contact_manager_ad.get();
       converted_model->plant_->SetDiscreteUpdateManager(
           std::move(owned_contact_manager_ad));
-      converted_model->driver_ = &CompliantContactManagerTester::sap_driver(
-          *converted_model->manager_);
+      converted_model->driver_ =
+          &multibody::internal::CompliantContactManagerTester::sap_driver(
+              *converted_model->manager_);
     }
 
     // Create context.
@@ -248,7 +229,8 @@ class RobotModel {
 
   // Helper that uses the underlying SapDriver to evaluate the SapContactProblem
   // at x0. Not available when T = symbolic::Expression.
-  const SapContactProblem<T>& EvalContactProblem(const VectorX<T>& x0)
+  const multibody::contact_solvers::internal::SapContactProblem<T>&
+  EvalContactProblem(const VectorX<T>& x0)
     requires(!std::is_same_v<T, symbolic::Expression>)
   {  // NOLINT(whitespace/braces)
     DRAKE_DEMAND(plant_->get_discrete_contact_solver() ==
@@ -264,7 +246,7 @@ class RobotModel {
 
   // Makes a state in which the robot's end effector touches the ground.
   // Velocities are zero.
-  static VectorXd RobotStateWithOneContactStiction() {
+  static Eigen::VectorXd RobotStateWithOneContactStiction() {
     return (VectorX<double>(14) << 0, 1.17, 0, -1.33, 0, 0.58, 0,  // q
             0, 0, 0, 0, 0, 0, 0                                    // v
             )
@@ -273,7 +255,7 @@ class RobotModel {
 
   // Makes a state in which the robot's end effector touches the ground.
   // Velocities are non-zero.
-  static VectorXd RobotStateWithOneOneContactSliding() {
+  static Eigen::VectorXd RobotStateWithOneOneContactSliding() {
     return (VectorX<double>(14) << 0, 1.17, 0, -1.33, 0, 0.58, 0,  // q
             0, -0.1, 0, -0.2, 0, 0, 0                              // v
             )
@@ -281,10 +263,10 @@ class RobotModel {
   }
 
   // Returns the robot's "zero state".
-  static VectorXd RobotStateIsZero() { return VectorX<double>::Zero(14); }
+  static Eigen::VectorXd RobotZeroState() { return VectorX<double>::Zero(14); }
 
  private:
-  // Friendship to give ToAutoDiffXd() access to private members.
+  // Friendship to give ToScalarType() access to private members.
   template <typename U>
   friend class RobotModel;
 
@@ -297,14 +279,14 @@ class RobotModel {
                             math::RigidTransform<T>{Vector3<T>(0.5, 0.5, 0.5)});
   }
 
-  std::unique_ptr<Diagram<T>> diagram_;
+  std::unique_ptr<systems::Diagram<T>> diagram_;
   MultibodyPlant<T>* plant_{nullptr};
-  std::unique_ptr<Context<T>> context_;
-  Context<T>* plant_context_{nullptr};
+  std::unique_ptr<systems::Context<T>> context_;
+  systems::Context<T>* plant_context_{nullptr};
   // N.B. manager_ and driver_ will be available for testing only when using the
-  // SAP solver for T != symblic::Expression.
-  CompliantContactManager<T>* manager_{nullptr};
-  const SapDriver<T>* driver_{nullptr};
+  // SAP solver for T != symbolic::Expression.
+  multibody::internal::CompliantContactManager<T>* manager_{nullptr};
+  const multibody::internal::SapDriver<T>* driver_{nullptr};
   ModelInstanceIndex robot_model_instance_;
 
   // Parameters of the problem.

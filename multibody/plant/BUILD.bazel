@@ -88,10 +88,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "iiwa7_model",
+    name = "robot_model",
     testonly = 1,
-    srcs = ["test/iiwa7_model.cc"],
-    hdrs = ["test/iiwa7_model.h"],
+    srcs = ["test/robot_model.cc"],
+    hdrs = ["test/robot_model.h"],
     data = [
         "@drake_models//:dishes",
         "@drake_models//:iiwa_description",
@@ -99,13 +99,10 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":multibody_plant_core",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:maybe_pause_for_user",
         "//multibody/parsing",
         "//multibody/plant:compliant_contact_manager_tester",
         "//visualization:visualization_config_functions",
-        "@gtest//:without_main",
     ],
 )
 
@@ -1189,9 +1186,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
-        ":iiwa7_model",
         ":multibody_plant_core",
         ":plant",
+        ":robot_model",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],

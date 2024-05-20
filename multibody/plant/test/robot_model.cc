@@ -1,4 +1,6 @@
-#include "drake/multibody/plant/test/iiwa7_model.h"
+#include "drake/multibody/plant/test/robot_model.h"
+
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 
 namespace drake {
 namespace multibody {
