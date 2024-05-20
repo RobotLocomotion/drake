@@ -180,6 +180,7 @@ drake_cc_googletest(
         "//common/trajectories:piecewise_polynomial",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+        "//solvers:snopt_solver",
     ],
 )
 
