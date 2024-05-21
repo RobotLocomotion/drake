@@ -524,6 +524,7 @@ drake_cc_googletest(
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/plant:compliant_contact_manager_tester",
+        "//multibody/test_utilities:robot_model",
         "//visualization:visualization_config_functions",
     ],
 )

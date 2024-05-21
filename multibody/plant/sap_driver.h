@@ -113,6 +113,11 @@ class SapDriver {
   void CalcActuation(const systems::Context<T>& context,
                      VectorX<T>* actuation) const;
 
+  // Evaluates a cache entry storing the SapContactProblem to be solved at the
+  // state stored in `context`.
+  const ContactProblemCache<T>& EvalContactProblemCache(
+      const systems::Context<T>& context) const;
+
  private:
   // Provide private access for unit testing only.
   friend class SapDriverTest;
@@ -262,10 +267,6 @@ class SapDriver {
   // contact impulses for reporting contact results.
   void CalcContactProblemCache(const systems::Context<T>& context,
                                ContactProblemCache<T>* cache) const;
-
-  // Eval version of CalcContactProblemCache()
-  const ContactProblemCache<T>& EvalContactProblemCache(
-      const systems::Context<T>& context) const;
 
   // Computes the discrete update from the state stored in the context. The
   // resulting next time step velocities and constraint impulses are stored in
