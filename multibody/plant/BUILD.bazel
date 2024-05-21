@@ -1169,6 +1169,9 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant_core",
         ":plant",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/test_utilities:robot_model",
     ],
 )
 
