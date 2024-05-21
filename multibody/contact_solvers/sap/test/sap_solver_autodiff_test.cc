@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
+#include "drake/multibody/test_utilities/robot_model.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 using drake::geometry::ProximityProperties;
@@ -29,6 +30,8 @@ using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using drake::multibody::internal::CompliantContactManager;
 using drake::multibody::internal::CompliantContactManagerTester;
 using drake::multibody::internal::SapDriver;
+using drake::multibody::test::RobotModel;
+using drake::multibody::test::RobotModelConfig;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::DiagramBuilder;
@@ -38,19 +41,6 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
-
-namespace internal {
-// Friend helper class to access SapDriver private internals for testing.
-class SapDriverTest {
- public:
-  template <typename T>
-  static const ContactProblemCache<T>& EvalContactProblemCache(
-      const SapDriver<T>& driver, const Context<T>& context) {
-    return driver.EvalContactProblemCache(context);
-  }
-};
-}  // namespace internal
-
 namespace contact_solvers {
 namespace internal {
 
@@ -81,205 +71,6 @@ GTEST_TEST(SapAutoDiffTest, ProblemWithNoConstraints) {
   EXPECT_EQ(result.j, VectorX<AutoDiffXd>::Zero(kNumDofs));
 }
 
-// Helper class to create an interesting SapContactProblem with problem data
-// a function of the parameters of differentiation, in this case the initial
-// state. This allows to exercise the entire numeric pipeline with gradients
-// propagating through complex terms such as the mass matrix, contact Jacobians
-// and even contact data.
-//
-// In particular, we load the model of an IIWA7 arm and a free floating plate.
-// Having a robot and a free floating body helps to stress test the sparsity
-// treatment within the solver.
-template <typename T>
-class RobotModel {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotModel);
-
-  // Creates an empty model.
-  RobotModel() = default;
-
-  RobotModel(DiscreteContactApproximation contact_approximation,
-             bool add_visualization = false) {
-    DiagramBuilder<double> builder;
-    auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
-    plant_ = &items.plant;
-
-    Parser parser(plant_);
-    robot_model_instance_ = parser.AddModelsFromUrl(
-        "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf")
-                                [0];
-    parser.AddModelsFromUrl("package://drake_models/dishes/plate_8in.sdf");
-
-    // Weld the robot's base to the world.
-    plant_->WeldFrames(plant_->world_frame(),
-                       plant_->GetBodyByName("iiwa_link_0").body_frame(),
-                       math::RigidTransformd::Identity());
-
-    // Ground geometry.
-    geometry::ProximityProperties proximity_properties;
-    geometry::AddContactMaterial(kHcDissipation_, kStiffness_,
-                                 CoulombFriction<double>(kMu_, kMu_),
-                                 &proximity_properties);
-    proximity_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                     geometry::internal::kRelaxationTime,
-                                     kRelaxationTime_ / 2);
-    plant_->RegisterCollisionGeometry(
-        plant_->world_body(), RigidTransformd(Vector3d(0.0, 0.0, -0.05)),
-        geometry::Box(2.0, 2.0, 0.1), "ground_collision", proximity_properties);
-
-    // Add simple contact geometry at the end effector.
-    plant_->RegisterCollisionGeometry(
-        plant_->GetBodyByName("iiwa_link_7"),
-        RigidTransformd(Vector3d(0.0, 0.0, 0.07)), geometry::Sphere(0.05),
-        "iiwa_link_7_collision", proximity_properties);
-
-    plant_->set_discrete_contact_approximation(contact_approximation);
-    plant_->Finalize();
-
-    // Make and add a manager so that we have access to it and its driver.
-    auto owned_contact_manager =
-        std::make_unique<CompliantContactManager<double>>();
-    manager_ = owned_contact_manager.get();
-    plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
-    driver_ = &CompliantContactManagerTester::sap_driver(*manager_);
-
-    // We add a visualizer for visual inspection of the model in this test.
-    if (add_visualization) {
-      visualization::AddDefaultVisualization(&builder);
-    }
-
-    diagram_ = builder.Build();
-
-    // Create context.
-    context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &diagram_->GetMutableSubsystemContext(*plant_, context_.get());
-    SetPlateInitialState();
-
-    // Fix input ports.
-    const VectorX<double> tau =
-        VectorX<double>::Zero(plant_->num_actuated_dofs());
-    plant_->get_actuation_input_port().FixValue(plant_context_, tau);
-  }
-
-  const MultibodyPlant<T>& plant() const { return *plant_; }
-  const Diagram<T>& diagram() const { return *diagram_; }
-
-  int num_velocities() const { return plant_->num_velocities(); }
-
-  std::unique_ptr<RobotModel<AutoDiffXd>> ToAutoDiffXd() const {
-    auto model_ad = std::make_unique<RobotModel<AutoDiffXd>>();
-
-    // Scalar-convert the model.
-    model_ad->diagram_ =
-        dynamic_pointer_cast<Diagram<AutoDiffXd>>(diagram_->ToAutoDiffXd());
-    model_ad->plant_ = const_cast<MultibodyPlant<AutoDiffXd>*>(
-        &model_ad->diagram_
-             ->GetDowncastSubsystemByName<MultibodyPlant<AutoDiffXd>>(
-                 plant_->get_name()));
-
-    // Make and add a manager so that we have access to it and its driver.
-    auto owned_contact_manager_ad =
-        std::make_unique<CompliantContactManager<AutoDiffXd>>();
-    model_ad->manager_ = owned_contact_manager_ad.get();
-    model_ad->plant_->SetDiscreteUpdateManager(
-        std::move(owned_contact_manager_ad));
-    model_ad->driver_ =
-        &CompliantContactManagerTester::sap_driver(*model_ad->manager_);
-
-    // Create context.
-    model_ad->context_ = model_ad->diagram_->CreateDefaultContext();
-    model_ad->context_->SetTimeStateAndParametersFrom(*context_);
-    model_ad->plant_context_ = &model_ad->diagram_->GetMutableSubsystemContext(
-        *model_ad->plant_, model_ad->context_.get());
-    model_ad->SetPlateInitialState();
-
-    // Fix input ports.
-    const VectorX<AutoDiffXd> tau_ad =
-        VectorX<AutoDiffXd>::Zero(plant_->num_actuated_dofs());
-    model_ad->plant_->get_actuation_input_port().FixValue(
-        model_ad->plant_context_, tau_ad);
-
-    return model_ad;
-  }
-
-  void ForcedPublish() { diagram_->ForcedPublish(*context_); }
-
-  // Helper to set the full state of the model, including robot and plate.
-  void SetState(const VectorX<T>& x) {
-    plant_->SetPositionsAndVelocities(plant_context_, x);
-  }
-
-  // Helper to set the state of the robot only.
-  void SetRobotState(const VectorX<T>& x) {
-    plant_->SetPositionsAndVelocities(plant_context_, robot_model_instance_, x);
-  }
-
-  // Returns a vector with the full state of the model.
-  VectorX<T> GetState() const {
-    return plant_->GetPositionsAndVelocities(*plant_context_);
-  }
-
-  // Helper that uses the underlying SapDriver to evaluate the SapContactProblem
-  // at x0.
-  const SapContactProblem<T>& EvalContactProblem(const VectorX<T>& x0) {
-    SetState(x0);
-    const auto& problem_cache =
-        drake::multibody::internal::SapDriverTest::EvalContactProblemCache(
-            *driver_, *plant_context_);
-    // There are no locked dofs. Sanity check.
-    DRAKE_DEMAND(problem_cache.sap_problem_locked == nullptr);
-    return *problem_cache.sap_problem;
-  }
-
-  // Makes a state in which the robot's end effector touches the ground.
-  // Velocities are zero.
-  static VectorXd RobotStateWithOneContactStiction() {
-    return (VectorX<double>(14) << 0, 1.17, 0, -1.33, 0, 0.58, 0,  // q
-            0, 0, 0, 0, 0, 0, 0                                    // v
-            )
-        .finished();
-  }
-
-  // Makes a state in which the robot's end effector touches the ground.
-  // Velocities are non-zero.
-  static VectorXd RobotStateWithOneOneContactSliding() {
-    return (VectorX<double>(14) << 0, 1.17, 0, -1.33, 0, 0.58, 0,  // q
-            0, -0.1, 0, -0.2, 0, 0, 0                              // v
-            )
-        .finished();
-  }
-
- private:
-  // Friendship to give ToAutoDiffXd() access to private members.
-  template <typename U>
-  friend class RobotModel;
-
-  // We set the initial state of the plate to be away from the robot and away
-  // from the ground so that there  is no contact. This is to stress test the
-  // sparsity treatment withing the SAP solver, which removes non-participating
-  // DOFs from the problem, and solves a reduced problem instead.
-  void SetPlateInitialState() {
-    plant_->SetFreeBodyPose(plant_context_, plant_->GetBodyByName("plate_8in"),
-                            math::RigidTransform<T>{Vector3<T>(0.5, 0.5, 0.5)});
-  }
-
-  std::unique_ptr<Diagram<T>> diagram_;
-  MultibodyPlant<T>* plant_{nullptr};
-  std::unique_ptr<Context<T>> context_;
-  Context<T>* plant_context_{nullptr};
-  CompliantContactManager<T>* manager_{nullptr};
-  const SapDriver<T>* driver_{nullptr};
-  ModelInstanceIndex robot_model_instance_;
-
-  // Parameters of the problem.
-  const double kTimeStep_{0.001};      // Discrete time step of the plant.
-  const double kStiffness_{1.0e4};     // In N/m.
-  const double kHcDissipation_{0.2};   // In s/m.
-  const double kMu_{0.5};              // Coefficient of friction.
-  const double kRelaxationTime_{0.1};  // In s.
-};
-
 // Test that can be used to manually inspect the model used for testing. To see
 // the model, run the test as a command-line executable, instead of as a bazel
 // test.
@@ -287,13 +78,7 @@ class RobotModel {
 // illustration), check the box "proximity" under "drake" in Meshcat's controls
 // panel.
 GTEST_TEST(RobotModel, Visualize) {
-  RobotModel<double> model(DiscreteContactApproximation::kSimilar,
-                           true /* add viz */);
-  // Visualize the contact configuration.
-  model.SetRobotState(RobotModel<double>::RobotStateWithOneContactStiction());
-
-  model.ForcedPublish();
-  common::MaybePauseForUser();
+  test::VisualizeRobotModel();
 }
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
@@ -347,7 +132,9 @@ class SapSolverIiwaRobotTest
  public:
   void SetUp() override {
     const SapSolverIiwaRobotTestConfig& config = GetParam();
-    model_ = std::make_unique<RobotModel<double>>(config.contact_approximation);
+    RobotModelConfig robot_config{.contact_approximation =
+                                      config.contact_approximation};
+    model_ = std::make_unique<RobotModel<double>>(robot_config);
     model_ad_ = model_->ToAutoDiffXd();
   }
 

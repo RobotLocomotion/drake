@@ -37,6 +37,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "robot_model",
+    testonly = 1,
+    srcs = ["robot_model.cc"],
+    hdrs = ["robot_model.h"],
+    data = [
+        "@drake_models//:dishes",
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//visualization:visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
     name = "spatial_kinematics",
     testonly = 1,
     srcs = [],
