@@ -164,7 +164,7 @@ void WriteMeshToObjFile(
     obj_file_contents.append(
       fmt::format("f {} {} {}\n", index0, index1, index2));
   }
-  
+
   std::ofstream out_file(filename);
   if (!out_file.is_open()) {
     w.diagnostic.Error(
@@ -178,7 +178,7 @@ Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   ValidatePrimExtent(prim, w, true);
-  
+
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
@@ -201,7 +201,7 @@ Eigen::Vector3d GetEllipsoidDimension(
     RaiseFailedToReadAttributeError("radius", prim, w);
   }
   sphere_radius *= meters_per_unit;
-  
+
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
   return prim_scale * sphere_radius;
 }
@@ -273,7 +273,7 @@ Eigen::Vector2d GetCapsuleDimension(
   if (!capsule.GetHeightAttr().Get(&capsule_raw_height)) {
     RaiseFailedToReadAttributeError("height", prim, w);
   }
-  
+
   double capsule_radius = capsule_raw_radius * prim_scale[0] * meters_per_unit;
   double capsule_height = capsule_raw_height * prim_scale[2] * meters_per_unit;
   return Eigen::Vector2d(capsule_radius, capsule_height);
@@ -354,7 +354,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   if (!mesh.GetFaceVertexIndicesAttr().Get(&indices)) {
     RaiseFailedToReadAttributeError("faceVertexIndices", prim, w);
   }
-  
+
   WriteMeshToObjFile(obj_filename, vertices, indices, w);
 
   return std::make_unique<geometry::Mesh>(obj_filename, prim_scale);
