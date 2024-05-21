@@ -71,7 +71,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                            entries `translations(0)` and `translations(1)`,
                            respectively.
    @returns A constant reference to `this` mobilizer. */
-  const PlanarMobilizer<T>& SetTranslations(
+  const PlanarMobilizer<T>& set_translations(
       systems::Context<T>* context,
       const Eigen::Ref<const Vector2<T>>& translations) const;
 

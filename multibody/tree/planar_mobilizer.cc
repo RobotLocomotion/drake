@@ -48,7 +48,7 @@ Vector2<T> PlanarMobilizer<T>::get_translations(
 }
 
 template <typename T>
-const PlanarMobilizer<T>& PlanarMobilizer<T>::SetTranslations(
+const PlanarMobilizer<T>& PlanarMobilizer<T>::set_translations(
     systems::Context<T>* context,
     const Eigen::Ref<const Vector2<T>>& translations) const {
   auto q = this->GetMutablePositions(context);
