@@ -3295,8 +3295,18 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   auto obj2 = prog.AddL2NormCost(A, b, x);
   EXPECT_EQ(prog.l2norm_costs().size(), 2u);
 
+  symbolic::Expression e = (A * x + b).norm();
+  auto obj3 = prog.AddL2NormCost(e, 1e-8, 1e-8);
+  EXPECT_EQ(prog.l2norm_costs().size(), 3u);
+
+  // Test that the AddCost method correctly recognizes the L2norm.
+  auto obj4 = prog.AddCost(e);
+  EXPECT_EQ(prog.l2norm_costs().size(), 4u);
+
   prog.RemoveCost(obj1);
   prog.RemoveCost(obj2);
+  prog.RemoveCost(obj3);
+  prog.RemoveCost(obj4);
   EXPECT_EQ(prog.l2norm_costs().size(), 0u);
   EXPECT_FALSE(prog.required_capabilities().contains(
       ProgramAttribute::kL2NormCost));
@@ -3308,6 +3318,10 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
 
   auto new_prog = prog.Clone();
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
+
+  // AddL2NormCost(Expression) can throw.
+  e = (A*x + b).squaredNorm();
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddL2NormCost(e), ".*is not an L2 norm.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, AddQuadraticConstraint) {

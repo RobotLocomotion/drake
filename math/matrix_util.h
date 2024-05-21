@@ -144,7 +144,7 @@ drake::VectorX<typename Derived::Scalar> ToLowerTriangularColumnsFromMatrix(
 }
 
 /// Checks if a matrix is symmetric (with tolerance @p symmetry_tolerance --
-/// @see IsSymmetric) and has all eigenvalues greater than @p
+/// see IsSymmetric) and has all eigenvalues greater than @p
 /// eigenvalue_tolerance.  @p eigenvalue_tolerance must be >= 0 -- where 0
 /// implies positive semi-definite (but is of course subject to all of the
 /// pitfalls of floating point).
