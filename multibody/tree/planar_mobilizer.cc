@@ -66,7 +66,7 @@ const T& PlanarMobilizer<T>::get_angle(
 }
 
 template <typename T>
-const PlanarMobilizer<T>& PlanarMobilizer<T>::set_angle(
+const PlanarMobilizer<T>& PlanarMobilizer<T>::SetAngle(
     systems::Context<T>* context, const T& angle) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);

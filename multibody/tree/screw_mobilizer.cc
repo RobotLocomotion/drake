@@ -60,7 +60,7 @@ const T& ScrewMobilizer<T>::get_angle(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angle(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetAngle(
     systems::Context<T>* context, const T& angle) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);

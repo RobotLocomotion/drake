@@ -180,7 +180,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angle(context, angle);
+    get_mobilizer()->SetAngle(context, angle);
     return *this;
   }
 
