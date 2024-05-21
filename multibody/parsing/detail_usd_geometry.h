@@ -138,8 +138,6 @@ Eigen::Vector3d UsdVec3dToEigen(pxr::GfVec3d v);
 
 Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q);
 
-
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
