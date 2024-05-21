@@ -45,11 +45,11 @@ drake_cc_library(
     hdrs = [
         "rod2d.h",
     ],
-    visibility = ["//multibody/constraint:__pkg__"],
+    visibility = ["//examples/rod2d/constraint:__pkg__"],
     deps = [
         ":rod2d_state_vector",
         "//common:essential",
-        "//multibody/constraint",
+        "//examples/rod2d/constraint",
         "//solvers:mathematical_program",
         "//systems/framework:leaf_system",
     ],
@@ -84,7 +84,7 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
-        "//multibody/constraint",
+        "//examples/rod2d/constraint",
         "//systems/analysis:simulator",
     ],
 )

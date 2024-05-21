@@ -9,7 +9,7 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
-#include "drake/multibody/constraint/constraint_problem_data.h"
+#include "drake/examples/rod2d/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 
 namespace drake {
