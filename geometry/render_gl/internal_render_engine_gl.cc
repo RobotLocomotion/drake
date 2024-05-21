@@ -985,6 +985,15 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   });
   clone->opengl_context_->MakeCurrent();
 
+  // Note: changes in graphics drivers have led to artifacts where frame buffers
+  // are not necessarily shared across contexts. So, to be safe, we'll clear
+  // the clone's frame buffers (it will recreate them as needed). This should
+  // also benefit parallel rendering as two clones will no longer attempt to
+  // render to the same render targets.
+  for (int i = 0; i < RenderType::kTypeCount; ++i) {
+    clone->frame_buffers_[i].clear();
+  }
+
   clone->InitGlState();
 
   // Update the vertex array objects on the shared vertex buffers.
