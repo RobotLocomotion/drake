@@ -3,10 +3,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/test_utilities/robot_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -16,6 +19,8 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
+using multibody::test::RobotModel;
+using multibody::test::RobotModelConfig;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -275,6 +280,165 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
       System<AutoDiffXd>::ToScalarType<double>(*plant_double_to_autodiff);
   EXPECT_EQ(plant_autodiff_to_double->num_constraints(),
             plant_double.num_constraints());
+}
+
+struct DiscretePlantTestConfig {
+  // This is a gtest test suffix; no underscores or spaces at the start.
+  std::string description;
+
+  RobotModelConfig robot_config{};
+};
+
+// This provides the suffix for each test parameter: the test config
+// description.
+std::ostream& operator<<(std::ostream& out, const DiscretePlantTestConfig& c) {
+  out << c.description;
+  return out;
+}
+
+template <typename T>
+class DiscretePlantTest
+    : public ::testing::TestWithParam<DiscretePlantTestConfig> {
+ public:
+  void SetUp() override {
+    const DiscretePlantTestConfig& config = GetParam();
+    auto model_double =
+        std::make_unique<RobotModel<double>>(config.robot_config);
+    if constexpr (std::is_same_v<T, double>) {
+      model_ = std::move(model_double);
+    } else {
+      model_ = model_double->ToScalarType<T>();
+    }
+  }
+
+ protected:
+  std::unique_ptr<RobotModel<T>> model_;
+};
+
+using DiscretePlantTestDouble = DiscretePlantTest<double>;
+using DiscretePlantTestAutoDiff = DiscretePlantTest<AutoDiffXd>;
+using DiscretePlantTestExpression = DiscretePlantTest<symbolic::Expression>;
+
+// Make a vector of test configurations from the Cartesian product of three
+// sets:
+//
+//  permutations = {kSimilar, kTamsi} x {kPoint, kHyroWithFallback} x
+//                 {NoGeom, NoContactState, InContactState}
+//
+// where the first two correspond to contact_approximation and contact_model,
+// respectively. In the last set:
+//   1. NoGeom corresponds to a model with no geometry, and a state
+//      arbitrarily chosen (i.e. with_contact_geometry=false and
+//      state_in_contact=false).
+//   2. NoContactState corresponds to a model (with geometry) in a no contact
+//      state (i.e. with_contact_geometry=true and state_in_contact=false).
+//   3. InContactState corresponds to a model (with geometry) in a state with
+//      contact (i.e. with_contact_geometry=true and state_in_contact=true).
+std::vector<DiscretePlantTestConfig> MakeSupportMatrixTestPermutations() {
+  const std::vector<
+      std::pair<std::string /* description */,
+                DiscreteContactApproximation /* contact_approximation */>>
+      approximations = {{"Sap", DiscreteContactApproximation::kSimilar},
+                        {"Tamsi", DiscreteContactApproximation::kTamsi}};
+
+  const std::vector<std::pair<std::string /* description */,
+                              ContactModel /* contact_model */>>
+      contact_models = {
+          {"Point", ContactModel::kPoint},
+          {"HydroWithFallback", ContactModel::kHydroelasticWithFallback}};
+
+  const std::vector<std::pair<
+      std::string /* description */,
+      std::pair<bool /* with_contact_geometry */, bool /* state_in_contact */>>>
+      contact_states = {{"NoGeometry", {false, false}},
+                        {"NoContactState", {true, false}},
+                        {"InContactState", {true, true}}};
+
+  std::vector<DiscretePlantTestConfig> permutations;
+  for (auto& an_approximation : approximations) {
+    for (auto& a_contact_model : contact_models) {
+      for (auto& a_contact_state : contact_states) {
+        // Form a description from the description of each individual item.
+        const std::string description = an_approximation.first +
+                                        a_contact_model.first +
+                                        a_contact_state.first;
+        permutations.push_back(DiscretePlantTestConfig{
+            .description = description,
+            .robot_config{.with_contact_geometry = a_contact_state.second.first,
+                          .contact_approximation = an_approximation.second,
+                          .state_in_contact = a_contact_state.second.second,
+                          .contact_model = a_contact_model.second}});
+      }
+    }
+  }
+
+  return permutations;
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestDouble,
+                         testing::ValuesIn(MakeSupportMatrixTestPermutations()),
+                         testing::PrintToStringParamName());
+
+TEST_P(DiscretePlantTestDouble, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestAutoDiff,
+                         testing::ValuesIn(MakeSupportMatrixTestPermutations()),
+                         testing::PrintToStringParamName());
+
+TEST_P(DiscretePlantTestAutoDiff, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
+                         testing::ValuesIn(MakeSupportMatrixTestPermutations()),
+                         testing::PrintToStringParamName());
+
+TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  const DiscretePlantTestConfig& config = GetParam();
+  const RobotModelConfig robot_config = config.robot_config;
+
+  // In summary, even though the exceptions below are caused at different
+  // levels, we do not support discrete updates when T = symbolic::Expression.
+  std::string failure_cause_message;
+  if (model_->plant().get_discrete_contact_solver() ==
+      DiscreteContactSolver::kSap) {
+    failure_cause_message =
+        "Discrete updates with the SAP solver are not supported for T = "
+        ".*Expression";
+  } else {
+    if (model_->plant().get_contact_model() ==
+        ContactModel::kHydroelasticWithFallback) {
+      failure_cause_message =
+          ".*CalcHydroelasticWithFallback.*: This method doesn't support T = "
+          ".*Expression.";
+    } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
+      if (!robot_config.with_contact_geometry ||
+          !robot_config.state_in_contact) {
+        failure_cause_message = "This method doesn't support T = .*Expression.";
+
+      } else {
+        failure_cause_message =
+            "Penetration queries between shapes .* are not supported for "
+            "scalar type .*Expression. .*";
+      }
+    } else {
+      throw std::runtime_error("Update unit test to verify this case.");
+    }
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(diagram.CalcForcedDiscreteVariableUpdate(
+                                  model_->context(), updates.get()),
+                              failure_cause_message);
 }
 
 }  // namespace
