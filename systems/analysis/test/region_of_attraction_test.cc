@@ -139,9 +139,11 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   RegionOfAttractionOptions options;
   options.lyapunov_candidate = (x.transpose() * x)(0);
   options.state_variables = x;
-  // Mosek and Clarabel are known to fail for this test, see #12876.
+  // Force the use of CSDP for solving; Mosek and Clarabel are known to fail for
+  // this test, see #12876. We also need a tighter tolerance to pass on macOS.
   options.solver_id = solvers::CsdpSolver::id();
-
+  options.solver_options.emplace().SetOption(solvers::CsdpSolver::id(),
+                                             "objtol", 1e-9);
   const Expression V = RegionOfAttraction(*system, *context, options);
 
   // Leverage the quadratic form of V to find the boundary point on the

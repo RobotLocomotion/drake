@@ -233,6 +233,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "onetbb_internal" not in excludes:
         onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     if "openblas" not in excludes:
+        # The @openblas external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-09-01.
         openblas_repository(name = "openblas")
     if "opencl" not in excludes:
         opencl_repository(name = "opencl")
