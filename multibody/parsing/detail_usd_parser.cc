@@ -143,27 +143,29 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
 }
 
 const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
-  double mpu = metadata_.meters_per_unit;
-  SpatialInertia<double> si;
+  SpatialInertia<double> inertia;
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    si = CreateSpatialInertiaForBox(prim, mpu, w_);
+    inertia = CreateSpatialInertiaForBox(
+      prim, metadata_.meters_per_unit, w_);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    si = CreateSpatialInertiaForEllipsoid(prim, mpu, w_);
+    inertia = CreateSpatialInertiaForEllipsoid(
+      prim, metadata_.meters_per_unit, w_);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
-    si = CreateSpatialInertiaForCapsule(prim, mpu, metadata_.up_axis, w_);
+    inertia = CreateSpatialInertiaForCapsule(
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
-    si = CreateSpatialInertiaForCylinder(prim, mpu, metadata_.up_axis, w_);
+    inertia = CreateSpatialInertiaForCylinder(
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh.
-    si = SpatialInertia<double>::MakeUnitary();
+    inertia = SpatialInertia<double>::MakeUnitary();
   } else {
-    si.SetNaN();
     pxr::TfToken prim_type = prim.GetTypeName();
     w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
   }
   return w_.plant->AddRigidBody(
     fmt::format("{}-RigidBody", prim.GetPath().GetString()),
-    model_instance_, si);
+    model_instance_, inertia);
 }
 
 void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
