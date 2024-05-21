@@ -170,7 +170,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                               const Vector3<T>& w_FM) const {
-    get_mobilizer()->set_angular_velocity(context, w_FM);
+    get_mobilizer()->SetAngularVelocity(context, w_FM);
     return *this;
   }
 

@@ -78,7 +78,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   //                    belongs to.
   // @param[in] translation The desired translation in meters.
   // @returns a constant reference to `this` mobilizer.
-  const PrismaticMobilizer<T>& set_translation(
+  const PrismaticMobilizer<T>& SetTranslation(
       systems::Context<T>* context, const T& translation) const;
 
   // Gets the rate of change, in meters per second, of `this` mobilizer's
@@ -99,7 +99,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // @param[in] translation_dot The desired rate of change of `this`
   // mobilizer's translation in meters per second.
   // @returns a constant reference to `this` mobilizer.
-  const PrismaticMobilizer<T>& set_translation_rate(
+  const PrismaticMobilizer<T>& SetTranslationRate(
       systems::Context<T> *context, const T& translation_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard

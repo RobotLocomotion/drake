@@ -53,7 +53,7 @@ const T& RevoluteMobilizer<T>::get_angular_rate(
 }
 
 template <typename T>
-const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
+const RevoluteMobilizer<T>& RevoluteMobilizer<T>::SetAngularRate(
     systems::Context<T>* context, const T& theta_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);

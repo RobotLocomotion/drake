@@ -56,9 +56,9 @@ class MobilizerImpl : public Mobilizer<T> {
   int num_velocities() const final { return kNv;}
 
   // Sets the elements of the `state` associated with this Mobilizer to the
-  // _zero_ state.  See Mobilizer::set_zero_state().
-  void set_zero_state(const systems::Context<T>&,
-                      systems::State<T>* state) const final {
+  // _zero_ state.  See Mobilizer::SetZeroState().
+  void SetZeroState(const systems::Context<T>&,
+                    systems::State<T>* state) const final {
     get_mutable_positions(state) = get_zero_position();
     get_mutable_velocities(state).setZero();
   };

@@ -149,7 +149,7 @@ class PrismaticJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation(
       Context<T>* context, const T& translation) const {
-    get_mobilizer()->set_translation(context, translation);
+    get_mobilizer()->SetTranslation(context, translation);
     return *this;
   }
 
@@ -174,7 +174,7 @@ class PrismaticJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation_rate(
       Context<T>* context, const T& translation_dot) const {
-    get_mobilizer()->set_translation_rate(context, translation_dot);
+    get_mobilizer()->SetTranslationRate(context, translation_dot);
     return *this;
   }
 

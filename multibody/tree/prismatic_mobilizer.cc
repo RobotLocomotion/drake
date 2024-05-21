@@ -37,7 +37,7 @@ const T& PrismaticMobilizer<T>::get_translation(
 }
 
 template <typename T>
-const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation(
+const PrismaticMobilizer<T>& PrismaticMobilizer<T>::SetTranslation(
     systems::Context<T>* context, const T& translation) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -54,7 +54,7 @@ const T& PrismaticMobilizer<T>::get_translation_rate(
 }
 
 template <typename T>
-const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
+const PrismaticMobilizer<T>& PrismaticMobilizer<T>::SetTranslationRate(
     systems::Context<T>* context, const T& translation_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);

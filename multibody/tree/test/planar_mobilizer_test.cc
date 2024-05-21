@@ -64,13 +64,13 @@ TEST_F(PlanarMobilizerTest, StateAccess) {
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_values4);
 
   // Verify we can set a planar mobilizer velocities given the model's context.
-  mobilizer_->set_translation_rates(context_.get(), some_values1);
+  mobilizer_->SetTranslationRates(context_.get(), some_values1);
   EXPECT_EQ(mobilizer_->get_translation_rates(*context_), some_values1);
-  mobilizer_->set_translation_rates(context_.get(), some_values2);
+  mobilizer_->SetTranslationRates(context_.get(), some_values2);
   EXPECT_EQ(mobilizer_->get_translation_rates(*context_), some_values2);
-  mobilizer_->set_angular_rate(context_.get(), some_values3);
+  mobilizer_->SetAngularRate(context_.get(), some_values3);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_values3);
-  mobilizer_->set_angular_rate(context_.get(), some_values4);
+  mobilizer_->SetAngularRate(context_.get(), some_values4);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_values4);
 }
 
@@ -81,9 +81,9 @@ TEST_F(PlanarMobilizerTest, ZeroState) {
   const double some_values4 = std::sqrt(5);
   // Set the state to some arbitrary non-zero value.
   mobilizer_->set_translations(context_.get(), some_values1);
-  mobilizer_->set_translation_rates(context_.get(), some_values2);
+  mobilizer_->SetTranslationRates(context_.get(), some_values2);
   mobilizer_->set_angle(context_.get(), some_values3);
-  mobilizer_->set_angular_rate(context_.get(), some_values4);
+  mobilizer_->SetAngularRate(context_.get(), some_values4);
   EXPECT_EQ(mobilizer_->get_translations(*context_), some_values1);
   EXPECT_EQ(mobilizer_->get_translation_rates(*context_), some_values2);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_values3);
@@ -91,7 +91,7 @@ TEST_F(PlanarMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // zero position and velocity.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   EXPECT_EQ(mobilizer_->get_translations(*context_), Vector2d::Zero());
   EXPECT_EQ(mobilizer_->get_translation_rates(*context_), Vector2d::Zero());
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
@@ -221,8 +221,8 @@ TEST_F(PlanarMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const Vector3d acceleration(3.5, 4, 4.5);
   mobilizer_->set_translations(context_.get(), translations);
   mobilizer_->set_angle(context_.get(), angle);
-  mobilizer_->set_translation_rates(context_.get(), translation_rates);
-  mobilizer_->set_angular_rate(context_.get(), angle_rate);
+  mobilizer_->SetTranslationRates(context_.get(), translation_rates);
+  mobilizer_->SetAngularRate(context_.get(), angle_rate);
 
   const SpatialAcceleration<double> A_FM =
       mobilizer_->CalcAcrossMobilizerSpatialAcceleration(*context_,

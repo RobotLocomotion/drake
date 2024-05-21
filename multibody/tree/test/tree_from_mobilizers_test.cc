@@ -571,8 +571,8 @@ class PendulumKinematicTests : public PendulumTests {
     // C(q, v) = 0 for v = 0.
     shoulder_rate = 0.0;
     elbow_rate = 0.0;
-    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    shoulder_mobilizer_->SetAngularRate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->SetAngularRate(context_.get(), elbow_rate);
     tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
             shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
@@ -582,8 +582,8 @@ class PendulumKinematicTests : public PendulumTests {
     // First column of C(q, e_1) times e_1.
     shoulder_rate = 1.0;
     elbow_rate = 0.0;
-    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    shoulder_mobilizer_->SetAngularRate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->SetAngularRate(context_.get(), elbow_rate);
     tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
@@ -593,8 +593,8 @@ class PendulumKinematicTests : public PendulumTests {
     // Second column of C(q, e_2) times e_2.
     shoulder_rate = 0.0;
     elbow_rate = 1.0;
-    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    shoulder_mobilizer_->SetAngularRate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->SetAngularRate(context_.get(), elbow_rate);
     tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
@@ -604,8 +604,8 @@ class PendulumKinematicTests : public PendulumTests {
     // Both velocities are non-zero.
     shoulder_rate = 1.0;
     elbow_rate = 1.0;
-    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    shoulder_mobilizer_->SetAngularRate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->SetAngularRate(context_.get(), elbow_rate);
     tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
@@ -788,7 +788,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute velocity kinematics.
-    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
+    shoulder_mobilizer_->SetAngularRate(context_.get(), shoulder_angle_rate);
     elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
@@ -848,8 +848,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // Test mobilizer's setter/getters.
   shoulder_mobilizer_->set_angle(context_.get(), M_PI);
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), M_PI);
-  shoulder_mobilizer_->set_zero_state(*context_,
-                                      &context_->get_mutable_state());
+  shoulder_mobilizer_->SetZeroState(*context_,
+                                    &context_->get_mutable_state());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
   PositionKinematicsCache<double> pc(tree().get_topology());
@@ -961,8 +961,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 
       // Set the shoulder's angular velocity.
       const double shoulder_angle_rate = 1.0;
-      shoulder_mobilizer_->set_angular_rate(context_.get(),
-                                            shoulder_angle_rate);
+      shoulder_mobilizer_->SetAngularRate(context_.get(),
+                                          shoulder_angle_rate);
       EXPECT_EQ(shoulder_mobilizer_->get_angular_rate(*context_),
                 shoulder_angle_rate);
 
@@ -1263,11 +1263,11 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // conservative power.
           shoulder_mobilizer_->set_angle(
               context_.get(), shoulder_angle.value());
-          shoulder_mobilizer_->set_angular_rate(
+          shoulder_mobilizer_->SetAngularRate(
               context_.get(), shoulder_angle.derivatives()[0]);
           elbow_mobilizer_->set_angle(
               context_.get(), elbow_angle.value());
-          elbow_mobilizer_->set_angular_rate(
+          elbow_mobilizer_->SetAngularRate(
               context_.get(), elbow_angle.derivatives()[0]);
           const double Pc = tree().CalcConservativePower(*context_);
 

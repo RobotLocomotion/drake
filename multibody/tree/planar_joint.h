@@ -176,7 +176,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector2<T>& v_FoMo_F) const {
-    get_mobilizer()->set_translation_rates(context, v_FoMo_F);
+    get_mobilizer()->SetTranslationRates(context, v_FoMo_F);
     return *this;
   }
 
@@ -201,7 +201,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                              const T& theta_dot) const {
-    get_mobilizer()->set_angular_rate(context, theta_dot);
+    get_mobilizer()->SetAngularRate(context, theta_dot);
     return *this;
   }
 

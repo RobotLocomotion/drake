@@ -151,7 +151,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translation(Context<T>* context,
                                        const T& z) const {
-    get_mobilizer()->set_translation(context, z);
+    get_mobilizer()->SetTranslation(context, z);
     return *this;
   }
 
@@ -194,7 +194,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const T& vz) const {
-    get_mobilizer()->set_translation_rate(context, vz);
+    get_mobilizer()->SetTranslationRate(context, vz);
     return *this;
   }
 
@@ -219,7 +219,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                              const T& theta_dot) const {
-    get_mobilizer()->set_angular_rate(context, theta_dot);
+    get_mobilizer()->SetAngularRate(context, theta_dot);
     return *this;
   }
 
