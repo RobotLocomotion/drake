@@ -2,8 +2,7 @@
  Doxygen-only documentation for @ref multibody_parsing. */
 
 /**
-@defgroup multibody_parsing Parsing Models for Multibody Dynamics
-@ingroup multibody
+@addtogroup multibody_parsing
 
 Drake's drake::multibody::Parser accepts model files written in a variety of
 input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
