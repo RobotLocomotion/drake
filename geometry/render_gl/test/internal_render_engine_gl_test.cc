@@ -1141,6 +1141,11 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 //
 // If all of that is processed correctly, we should get a cube with a different
 // color on each face. We'll test for those colors.
+//
+// This test renders against an original engine and its clone (to confirm that
+// the render artifacts survive cloning). This has a secondary benefit of
+// detecting if anything happens to corrupt the relationship between original
+// and cloned context (see, e.g., #21326).
 TEST_F(RenderEngineGlTest, MultiMaterialObj) {
   struct Face {
     // The expected *illuminated* material color. The simple illumination model
