@@ -1,4 +1,4 @@
 # Options for macOS when running on arm64 as reported by `arch`.
 
 # N.B. Ensure this is consistent with `execute.bzl`.
-build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin
+build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin

@@ -19,6 +19,8 @@ def path(repo_ctx, additional_search_paths = []):
     if repo_ctx.os.name == "mac os x":
         search_paths = search_paths + [homebrew_prefix(repo_ctx) + "/bin"]
     search_paths = search_paths + ["/usr/bin", "/bin"]
+    if repo_ctx.os.name == "mac os x":
+        search_paths = search_paths + ["/usr/sbin", "/sbin"]
     return ":".join(search_paths)
 
 def which(repo_ctx, program, additional_search_paths = []):

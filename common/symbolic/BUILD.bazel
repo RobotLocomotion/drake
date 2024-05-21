@@ -181,8 +181,11 @@ drake_cc_library(
         "monomial.h",
         "polynomial.h",
     ],
-    deps = [
+    interface_deps = [
         ":expression",
+    ],
+    deps = [
+        "//math:quadratic_form",
     ],
 )
 

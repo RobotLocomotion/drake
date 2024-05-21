@@ -31,6 +31,9 @@ from pydrake.manipulation import (
     SchunkWsgDriver,
     ZeroForceDriver,
 )
+from pydrake.geometry import (
+    SceneGraphConfig
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlant,
     MultibodyPlantConfig,
@@ -81,6 +84,9 @@ class Scenario:
     # Plant configuration (time step and contact parameters).
     plant_config: MultibodyPlantConfig = MultibodyPlantConfig()
 
+    # SceneGraph configuration.
+    scene_graph_config: SceneGraphConfig = SceneGraphConfig()
+
     # All of the fully deterministic elements of the simulation.
     directives: typing.List[ModelDirective] = dc.field(default_factory=list)
 
@@ -129,7 +135,8 @@ def run(*, scenario, graphviz=None):
 
     # Create the multibody plant and scene graph.
     sim_plant, scene_graph = AddMultibodyPlant(
-        config=scenario.plant_config,
+        plant_config=scenario.plant_config,
+        scene_graph_config=scenario.scene_graph_config,
         builder=builder)
 
     # Add model directives.

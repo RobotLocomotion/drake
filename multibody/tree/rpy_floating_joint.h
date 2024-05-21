@@ -273,7 +273,7 @@ class RpyFloatingJoint final : public Joint<T> {
   @returns a constant reference to this joint. */
   const RpyFloatingJoint<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const {
-    get_mobilizer().set_angular_velocity(context, w_FM);
+    get_mobilizer().SetAngularVelocity(context, w_FM);
     return *this;
   }
 
@@ -301,7 +301,7 @@ class RpyFloatingJoint final : public Joint<T> {
   @returns a constant reference to this joint. */
   const RpyFloatingJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const {
-    get_mobilizer().set_translational_velocity(context, v_FM);
+    get_mobilizer().SetTranslationalVelocity(context, v_FM);
     return *this;
   }
   /**@}*/

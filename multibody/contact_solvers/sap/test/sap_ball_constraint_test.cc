@@ -179,12 +179,12 @@ GTEST_TEST(SapBallConstraint, AccumulateSpatialImpulses) {
   // Expected spatial impulse on B.
   const SpatialForce<double> F_Bo_W =
       (SpatialForce<double>(Vector3d::Zero(), gamma))
-          .ShiftInPlace(-kinematics.p_BQ_W());
+          .Shift(-kinematics.p_BQ_W());
 
   // Expected spatial impulse on A.
   const SpatialForce<double> F_Ao_W =
       (SpatialForce<double>(Vector3d::Zero(), -gamma))
-          .ShiftInPlace(-kinematics.p_AP_W());
+          .Shift(-kinematics.p_AP_W());
 
   const SpatialForce<double> F0(Vector3d(1., 2., 3), Vector3d(4., 5., 6));
   SpatialForce<double> Faccumulated = F0;  // Initialize to non-zero value.

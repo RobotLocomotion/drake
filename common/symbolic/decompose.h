@@ -155,5 +155,30 @@ std::tuple<MatrixX<Expression>, VectorX<Expression>, VectorX<Expression>>
 DecomposeLumpedParameters(
     const Eigen::Ref<const VectorX<Expression>>& f,
     const Eigen::Ref<const VectorX<Variable>>& parameters);
+
+/** Decomposes an L2 norm @p e = |Ax+b|₂ into A, b, and the variable vector x
+(or returns false if the decomposition is not possible).
+
+In order for the decomposition to succeed, the following conditions must be met:
+1. e is a sqrt expression.
+2. e.get_argument() is a polynomial of degree 2, which can be expressed as a
+   quadratic form (Ax+b)ᵀ(Ax+b).
+
+@param e The symbolic affine expression
+@param psd_tol The tolerance for checking positive semidefiniteness.
+Eigenvalues less that this threshold are considered to be zero. Matrices with
+negative eigenvalues less than this threshold are considered to be not positive
+semidefinite, and will cause the decomposition to fail.
+@param coefficient_tol The absolute tolerance for checking that the
+coefficients of the expression inside the sqrt match the coefficients of
+|Ax+b|₂².
+
+@return [is_l2norm, A, b, vars] where is_l2norm is true iff the decomposition
+was successful, and if is_l2norm is true then |A*vars + b|₂ = e.
+*/
+std::tuple<bool, Eigen::MatrixXd, Eigen::VectorXd, VectorX<Variable>>
+DecomposeL2NormExpression(const symbolic::Expression& e, double psd_tol = 1e-8,
+                          double coefficient_tol = 1e-8);
+
 }  // namespace symbolic
 }  // namespace drake

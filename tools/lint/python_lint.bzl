@@ -52,18 +52,6 @@ def python_lint(
             PYTHON_LINT_IGNORE_DEFAULT (as strings, with the 'E' or 'W').
         exclude: List of labels to exclude from linting, e.g., [:foo.py].
         extra_srcs: Source files that are not discoverable via rules.
-
-    Example:
-        BUILD:
-            load("//tools/lint:python_lint.bzl", "python_lint")
-            load("//tools/skylark:py.bzl", "py_library")
-
-            py_library(
-                name = "foo",
-                srcs = ["foo.py"],
-            )
-
-            python_lint()
     """
     if existing_rules == None:
         existing_rules = native.existing_rules().values()

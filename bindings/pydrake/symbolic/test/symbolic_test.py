@@ -2077,6 +2077,17 @@ class TestDecomposeLumpedParameters(unittest.TestCase):
         numpy_compare.assert_equal(w0, [sym.Expression(x), sym.Expression(0)])
 
 
+class TestDecomposeL2NormExpression(unittest.TestCase):
+    def test(self):
+        x = sym.MakeVectorVariable(2, "x")
+        [is_l2norm, A, b, vars] = sym.DecomposeL2NormExpression(
+            e=np.linalg.norm(x), psd_tol=1e-8, coefficient_tol=1e-8)
+        self.assertTrue(is_l2norm)
+        numpy_compare.assert_equal(A, np.eye(2))
+        numpy_compare.assert_equal(b, [0, 0])
+        numpy_compare.assert_equal(vars, x)
+
+
 class TestUnapplyExpression(unittest.TestCase):
     def setUp(self):
         # For these kinds of expressions, the unapplied args should only ever

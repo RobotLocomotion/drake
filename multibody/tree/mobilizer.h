@@ -348,7 +348,7 @@ class Mobilizer : public MultibodyElement<T> {
   // generally be different from the identity transformation.
   // In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
   // where `ref_context` is a Context storing a State set to the zero
-  // configuration with set_zero_state().
+  // configuration with SetZeroState().
   // In addition, all generalized velocities are set to zero in the _zero_
   // state.
   //
@@ -363,8 +363,8 @@ class Mobilizer : public MultibodyElement<T> {
   // Note that the zero state may fall outside of the limits for any joints
   // associated with this mobilizer.
   // @see set_default_state().
-  virtual void set_zero_state(const systems::Context<T>& context,
-                              systems::State<T>* state) const = 0;
+  virtual void SetZeroState(const systems::Context<T>& context,
+                            systems::State<T>* state) const = 0;
 
   // Sets the `state` to the _default_ state (position and velocity) for
   // `this` mobilizer.  For example, the zero state for our standard IIWA

@@ -551,7 +551,8 @@ class TestMath(unittest.TestCase):
 
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])
-        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)
+        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(
+            Y=Q, zero_tol=1e-8, return_empty_if_not_psd=False)
         np.testing.assert_array_almost_equal(X, np.sqrt(Q))
         b = np.zeros(3)
         c = 4.
