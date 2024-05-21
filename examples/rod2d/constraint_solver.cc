@@ -1,4 +1,4 @@
-#include "drake/multibody/constraint/constraint_solver.h"
+#include "drake/examples/rod2d/constraint_solver.h"
 
 namespace drake {
 namespace multibody {

@@ -6,8 +6,8 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/multibody/constraint/constraint_problem_data.h"
-#include "drake/multibody/constraint/constraint_solver.h"
+#include "drake/examples/rod2d/constraint_problem_data.h"
+#include "drake/examples/rod2d/constraint_solver.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::multibody::constraint::ConstraintAccelProblemData;
