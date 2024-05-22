@@ -62,8 +62,9 @@ the action of its own weight, infinite solutions to the static problem exist.
 Rigid contact with Coulomb friction is a common approximation used in
 simulation as well. It has its own limitations, most notable the possible
 non-existence of a solution. An example of this is the well known Painlevé
-paradox, a one degree of freedom system with contact that, depending on the
-state, has an infinite number of solutions or even no solution.
+rod @ref PfeifferGlocker1996 "[Pfeiffer & Glocker, 1996]", a one degree of
+freedom system with only one contact that, depending on the state, has an
+infinite number of solutions or even no solution.
 
 It should be noted that these artifacts are a consequence of the mathematical
 approximations adopted and not a flaw of the original continuum mechanics theory
@@ -74,33 +75,31 @@ and even much less, a flaw in the physics itself.
 The rigid modeling of contact coupled with Coulomb friction is plagued with a
 wide variety of technical issues:
  - Even without friction, the system can be overconstrained and the contact
-   forces are indeterminated.
- - Coupled with Coulomb friction Painlevé paradoxes might arise, where the
-   system has no solutions or infinite solutions. A well known example of this
-   is the Painlevé rod, a single degree of freedom system with only once
-   contact.
- - Simulating these systems requires the formulation of Non Linear
+   forces are indeterminate.
+ - As described above, rigid contact coupled with Coulomb friction might lead to
+   Painlevé, where the system has no solutions or infinite solutions.
+ - Simulating these systems requires the formulation of Non-Linear
    Complementarity problems (NCPs).  NCPs are believed to be NP-hard
    @ref Kaufman2008 "[Kaufman et al., 2008]" (i.e. very difficult to deal with
    in practice) and are often very ill conditioned numerically, leading to
    brittle solutions in practical software.
 
-The literature on this topic is very rich, and there has been great deal of
-effort to solve many of these problems. Unfortunatelly, most solutions involve
-the introduction of heuristics or tunning parameters hidden within the solvers
-that introduce yet new artifacts or trade off robustness/speed for physical
+The literature on this topic is very rich, and there has been a great deal of
+effort to solve many of these problems. Unfortunately, most solutions involve
+the introduction of heuristics or tuning parameters hidden within the solvers
+that introduce yet new artifacts or trading off robustness/speed for physical
 accuracy.
 
 As an example, *constraint softening* is introduced "...to control the
-spongyness and springyness..." (quoting from the @ref ODEUserGuide
-"[ODE User Guide]"). This strategy is used improve the numerics of the solver,
-which no longer approximates a true rigid system, but a compliant one.
+sponginess and springiness..." (quoting from the @ref ODEUserGuide
+"[ODE User Guide]"). This strategy is used to improve the numerics of the
+solver, which no longer approximates a true rigid system, but a compliant one.
 Similarly, Interior Point (IP) methods for general NCPs or more recently
 Incremental Potential Contact (IPC) in @ref Li2020 "[Li et al., 2020]",
 introduce barrier functions to handle constraints. These barriers can only be
 solved to a finite accuracy, at which the solution is essentially compliant
-(even if stiff). This is discussed in more detail in @ref Castro2023
-"[Castro et al., 2023]".
+(even if stiff). This is discussed in more detail in
+@ref Castro2023 "[Castro et al., 2023]".
 
 @subsection compliance_in_robotics Compliance in Robotics
 
@@ -113,10 +112,10 @@ close the sim2real gap.
 @subsection embracing_compliance Embracing Compliance
 
 The discussion above can be probably summarized as follows:
- 1. The rigid approximation of contact leads to difficult to solve fundamental
-    mathematical problems and numerical ill-conditioning in software.
+ 1. The rigid approximation of contact leads to fundamental problems in the
+    mathematics and ill-conditioned numerics in software.
  2. Real physical systems are compliant, even if stiff.
- 3. Numerical techiniques to deal with ill-conditioning essentially boil down to
+ 3. Numerical techniques to deal with ill conditioning essentially boil down to
     introducing compliance at some level deep within the solver.
 
 It is for these reasons that in Drake we embrace compliance, to provide accurate
@@ -125,7 +124,7 @@ problems associated with rigid approximations of contact. Within this framework,
 <em>rigid contact</em> can be approximated with very stiff compliance. As shown
 in @ref Castro2023 "[Castro et al., 2023]" this technique is very effective even
 at very high stiffness values, beyond what it is really needed to model hard
-materials such as stell. In this way the modeling of contact is transparent to
+materials such as steel. In this way the modeling of contact is transparent to
 users, with physical parameters to control compliance and no need for hidden
 parameters in our solvers.
 
@@ -149,6 +148,9 @@ compliant_contact.
 - @anchor Castro2023 [Castro et al., 2023] Castro, A., Han, X. and Masterjohn,
   J., 2023. A Theory of Irrotational Contact Fields. arXiv preprint
   https://arxiv.org/abs/2312.03908
+- @anchor PfeifferGlocker1996 [Pfeiffer & Glocker, 1996]
+  Pfeiffer, F., Glocker, C. (1996). Multibody Dynamics with Unilateral
+  Contacts. Germany: Wiley.  
 - @anchor HuntCrossley1975 [Hunt and Crossley 1975] Hunt, K.H. and Crossley,
   F.R.E., 1975. Coefficient of restitution interpreted as damping in
   vibroimpact. Journal of Applied Mechanics, vol. 42, pp. 440–445.
@@ -160,7 +162,7 @@ compliant_contact.
   Incremental potential contact: intersection-and inversion-free,
   large-deformation dynamics. ACM Trans. Graph., 39(4), p.49.
 - @anchor ODEUserGuide [ODE User Guide] Smith, R., 2005. Open dynamics engine.
-  https://ode.org
+  https://ode.org/ode-latest-userguide.pdf
 - @anchor Todorov2014 [Todorov, 2014] Todorov, E., 2014, May. Convex and
   analytically-invertible dynamics with contacts and constraints: Theory and
   implementation in mujoco. In 2014 IEEE International Conference on Robotics
@@ -226,14 +228,13 @@ function of the penetration distance x between the bodies (defined to be
 positive when the bodies are in contact) and the penetration distance rate ẋ
 (with ẋ > 0 meaning the penetration distance is increasing and therefore the
 interpenetration between the bodies is also increasing). Stiffness `k` and
-dissipation `d` are the combined of stiffness and dissipation, given a pair of
-contacting geometries. Dissipation is modeled using a Hunt & Crossley model of
-dissipation, see
-@ref mbp_dissipation_model "Modeling Dissipation" for details.  For flexibility
-of parameterization, stiffness and dissipation are set on a per-geometry basis
-(@ref accessing_contact_properties). Given two geometries with individual
-stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we define the rule
-for combined stiffness (k) and dissipation (d) as: <pre>
+dissipation `d` are the combined "effective" stiffness and dissipation for the
+pair of contacting geometries. Dissipation is modeled using a Hunt & Crossley
+model of dissipation, see @ref mbp_dissipation_model for details.  For
+flexibility of parameterization, stiffness and dissipation are set on a
+per-geometry basis (@ref accessing_contact_properties). Given two geometries
+with individual stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we
+define the rule for combined stiffness (k) and dissipation (d) as: <pre>
   k = (k₁⋅k₂)/(k₁+k₂)
   d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
 </pre>
@@ -241,35 +242,40 @@ These parameters are optional for each geometry. For any geometry not assigned
 these parameters by a user Pre-Finalize, %MultibodyPlant will assign default
 values such that the combined parameters of two geometries with default values
 match those estimated using the user-supplied "penetration allowance", see
- @note When modeling stiff materials such as steel or ceramics, these model
+@ref point_contact_defaults "Default Parameters".
+
+@note When modeling stiff materials such as steel or ceramics, these model
 parameters often need to be tuned as a trade-off between numerical stiffness and
 physical accuracy. Stiffer materials lead to a harder to solve system of
 equations, affecting the overall performance of the simulation. The convex
-approximation provided in Drake are very robust even at high stiffness values,
+approximations provided in Drake are very robust even at high stiffness values,
 please refer to @ref Castro2023 "[Castro et al., 2023]" for a study on the
 effect of stiffness on solver performance.
 
 @subsubsection point_contact_defaults Default Parameters
 
 @note The treatment of default parameters is undergoing a major revision. Please
-refer to the documentation for DefaultProximityProperties and for
-AddMultibodyPlant(). For now, we still support he the "penetration allowance"
-workflow outlined below, but that might change.
+refer to the documentation for
+@ref drake::geometry::DefaultProximityProperties "DefaultProximityProperties"
+and for AddMultibodyPlant(). For now, we still support the "penetration
+allowance" workflow outlined below, but that might change.
 
-While we strongly recommend setting these parameters accordingly for your model,
+While we strongly recommend setting these parameters appropriately for your
+model,
 @ref drake::multibody::MultibodyPlant "MultibodyPlant" aids the estimation of
 these coefficients using a heuristic function based on a user-supplied
-"penetration allowance", see set_penetration_allowance(). This heuristics offers
-a good starting point when setting a simulation for the first time. Users can
-then set material properties for specific geometries once they observe the
-results of a first simulation with these defaults. The penetration allowance is
-a number in meters that specifies the order of magnitude of the average
-penetration between bodies in the system that the user is willing to accept as
-reasonable for the problem being solved. For instance, in the robotics
-manipulation of ordinary daily objects the user might set this number to 1
-millimeter. However, the user might want to increase it for the simulation of
-heavy walking robots for which an allowance of 1 millimeter would result in a
-very stiff system.
+"penetration allowance", see
+@ref drake::multibody::MultibodyPlant::set_penetration_allowance() "set_penetration_allowance()".
+ This heuristics offers a good starting point when creating a simulation for the
+first time. Users can then set material properties for specific geometries once
+they observe the results of a first simulation with these defaults. The
+penetration allowance is a number in meters that specifies the order of
+magnitude of the average penetration between bodies in the system that the user
+is willing to accept as reasonable for the problem being solved. For instance,
+in the robotic manipulation of ordinary daily objects the user might set this
+number to 1 millimeter. However, the user might want to increase it for the
+simulation of heavy walking robots for which an allowance of 1 millimeter would
+result in a very stiff system.
 
 As for the dissipation coefficient in the simple law above,
 @ref drake::multibody::MultibodyPlant "MultibodyPlant" chooses the dissipation
@@ -281,28 +287,31 @@ constraint on the penetration distance, which models a perfect inelastic
 collision. For most applications, such as manipulation and walking, this is the
 desired behavior.
 
-When set_penetration_allowance() is called,
+When
+@ref drake::multibody::MultibodyPlant::set_penetration_allowance() "set_penetration_allowance()"
+ is called,
 @ref drake::multibody::MultibodyPlant "MultibodyPlant" will estimate reasonable
 stiffness and dissipation coefficients as a function of the input penetration
-allowance. Users will want to run their simulation a number of times and assess
-they are satisfied with the level of inter-penetration actually observed in the
-simulation; if the observed penetration is too large, the user will want to set
-a smaller penetration allowance. If the system is too stiff and the time
-integration requires very small time steps while at the same time the user can
-afford larger inter-penetrations, the user will want to increase the penetration
-allowance. Typically, the observed penetration will be proportional to the
-penetration allowance. Thus scaling the penetration allowance by say a factor of
-0.5, would typically results in inter-penetrations being reduced by the same
-factor of 0.5. In summary, users should choose the largest penetration allowance
-that results in inter-penetration levels that are acceptable for the particular
-application (even when in theory this penetration should be zero for perfectly
-rigid bodies.)
+allowance. Users will want to run their simulation a number of times to
+determine if they are satisfied with the level of inter-penetration actually
+observed in the simulation; if the observed penetration is too large, the user
+will want to set a smaller penetration allowance. If the system is too stiff and
+the time integration requires very small time steps while at the same time the
+user can afford larger inter-penetrations, the user will want to increase the
+penetration allowance. Typically, the observed penetration will be proportional
+to the penetration allowance. Thus scaling the penetration allowance by say a
+factor of 0.5, would typically results in inter-penetrations being reduced by
+the same factor of 0.5. In summary, users should choose the largest penetration
+allowance that results in inter-penetration levels that are acceptable for the
+particular application (even when in theory this penetration should be zero for
+perfectly rigid bodies.)
 
 For a given penetration allowance, the contact interaction that takes two bodies
 with a non-zero approaching velocity to zero approaching velocity, takes place
 in a finite amount of time (for ideal rigid contact this time is zero.) A good
 estimate of this time period is given by a call to
-get_contact_penalty_method_time_scale(). Users might want to query this value to
+@ref drake::multibody::MultibodyPlant::get_contact_penalty_method_time_scale() "get_contact_penalty_method_time_scale()".
+ Users might want to query this value to
 either set the maximum time step in error-controlled time integration or to set
 the time step for fixed time step integration. As a guidance, typical fixed time
 step integrators will become unstable for time steps larger than about a tenth
@@ -311,10 +320,10 @@ of this time scale.
 @subsection crafting_collision_geometry Choosing the Right Collision Geometry
 
 The compliant point contact model only reports a single contact between bodies.
-More particularly, the contact is characterized by a single point. For
-<b>Surface-on-surface contacts</b>, when the contact between bodies is better
-characterized as a surface instead of a point (such as one box lying on
-another), this has two implications:
+More particularly, the contact is characterized by a single point. In some cases
+(e.g., a steel ball on a table surface), that is perfectly fine. For objects
+that contact across a large surface area (such as a box on the table), this
+characterization has two negative implications:
  - the contact point will not be guaranteed to be at the center of pressure,
    possibly inducing unrealistic torque, and
  - not be temporally coherent. This will lead to instability artifacts which
@@ -323,14 +332,15 @@ another), this has two implications:
 Both of these issues can be addressed by changing the geometry that
 represent the body's contact surface. For some shapes (e.g., boxes), we can
 introduce two sets of collision elements: discrete "points" at the corners,
-and a box capturing the volume (see `block_for_pick_and_place.urdf` and
-`drake/examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc`
-examples). With this strategy, the contact "points" are actually small-radius
-spheres. The volume-capturing box should actually be inset from those spheres
-such that when the box is lying on a plane (such that the logical contact
-manifold would be a face), only the contact points make contact, providing
-reliable points of contact. However, for arbitrary configurations contact with
-the box will provide more general contact.
+and a box capturing the volume (see examples in
+`examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf` and and
+`examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc`).
+With this strategy, the contact "points" are actually small-radius spheres. The
+volume-capturing box should actually be inset from those spheres such that when
+the box is lying on a plane (such that the logical contact manifold would be a
+face), only the contact points make contact, providing reliable points of
+contact. However, for arbitrary configurations contact with the box will provide
+more general contact.
 
 The Hydroelastic contact model described below in @ref hydro_contact
 "Hydroelastic Contact", was designed to resolve these issues in a principled
@@ -340,7 +350,7 @@ simulation speed are a constraint.
 @section hydro_contact Hydroelastic Contact
 
 The purpose of this documentation is to provide a quick overview of the
-Hydroelatic contact model and its modeling parameters. More details are provided
+Hydroelastic contact model and its modeling parameters. More details are provided
 in Drake's
 @ref hydroelastic_user_guide "Hydroelastic Contact User Guide" and references
 therein.
@@ -406,7 +416,7 @@ This equilibrium surface has important properties:
 
 @subsection hydro_model_parameters Model Parameters
 
-The Hydroelastic modulus has units of pressure, i.e. `Pa (N/m²)`. The
+The hydroelastic modulus has units of pressure, i.e. `Pa (N/m²)`. The
 hydroelastic modulus is often estimated based on the Young's modulus of the
 material though in the hydroelastic model it represents an effective elastic
 property. For instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the
@@ -421,17 +431,18 @@ as steel. While Young's modulus of steel is about 200 GPa (2×10¹¹ Pa),
 hydroelastic modulus values of about 10⁵−10⁷ Pa lead to good approximations of
 rigid contact, with no practical reason to use higher values.
 
-@note `hydroelastic_modulus` has units of stress/strain, measured in Pascal or
-N/m² like the more-familiar elastic moduli discussed above. However, it is
-quantitatively different and may require experimentation to match empirical
-behavior.
+@note Although the hydroelastic modulus carries the same units as the more
+familiar elastic moduli mentioned above, it is qualitatively different. Do not
+expect to use values for those moduli for the hydroelastic modulus to good
+effect.
 
-We use a Hunt & Crossley dissipation model parameterized by a dissipation
-constant with units of inverse of velocity, i.e. `s/m`. See
-@ref mbp_dissipation_model "Modeling Dissipation" for more detail. For two
-hydroelastic bodies A and B, with hydroelastic moduli `Eᵃ` and `Eᵇ` respectively
-and dissipation `dᵃ` and `dᵇ` respectively, an effective dissipation is defined
-according to the combination law: <pre>
+As with point contact, the hydroelastic contact model uses a Hunt & Crossley
+dissipation model (see @ref mbp_dissipation_model). It differs in defining the
+combined effective dissipation parameter; for hydroelastic contact, the
+combined dissipation depends on the hydroelastic moduli of the contacting
+geometries. For two hydroelastic bodies A and B, with hydroelastic moduli `Eᵃ`
+and `Eᵇ`, respectively, and dissipation `dᵃ` and `dᵇ`, respectively, the
+effective dissipation is defined according to the combination law: <pre>
   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
 </pre>
@@ -439,18 +450,8 @@ thus dissipation is weighted in accordance with the fact that the softer
 material will deform more and faster and thus the softer material dissipation is
 given more importance.
 
-The dissipation can be specified in one of two ways:
-- define it in an instance of drake::geometry::ProximityProperties using the
-  function drake::geometry::AddContactMaterial(), or
-- define it in an input URDF/SDFormat file as detailed here:
-  @ref tag_drake_hunt_crossley_dissipation.
-
-The hydroelastic modulus can be specified in one of two ways:
-- define it in an instance of drake::geometry::ProximityProperties using the
-  function drake::geometry::AddCompliantHydroelasticProperties() and
-  drake::geometry::AddCompliantHydroelasticPropertiesForHalfSpace(), or
-- define it in an input URDF/SDFormat file as detailed here:
-  @ref tag_drake_hydroelastic_modulus.
+The @ref hug_geometry_properties "hydroelastic user guide" shows how values for
+these properties can be assigned to geometries.
 
 @subsection hydro_practice Hydroelastic Contact in practice
 
@@ -510,17 +511,17 @@ dissipation due to deformation.
 
 Similarly, Drake's hydroelastic contact model incorporates dissipation at the
 stress level, rather than forces. That is, pressure `p(x)` at a specific point
-on the contact surface is replaces the force `f(x)` in the point contact model:
+on the contact surface replaces the force `f(x)` in the point contact model:
 <pre>
   p(x) = pₑ(x)⋅(1 - d⋅vₙ(x))₊
 </pre>
 where `pₑ(x)` is the (elastic) hydroelastic pressure and once more the term `(1
 - d⋅vₙ(x))₊` models Hunt & Crossley dissipation.
 
-This is our prefered model of dissipation for several reasons:
+This is our preferred model of dissipation for several reasons:
 1. It is based on physics and has been developed based on experimental
    observations.
-2. It is a continous function of state, as in the real phyisical world.
+2. It is a continuous function of state, as in the real physical world.
    Moreover, this continuity leads to better conditioned systems of
    equations.
 3. The bounce velocity after an impact is bounded by 1/d, giving a quick
