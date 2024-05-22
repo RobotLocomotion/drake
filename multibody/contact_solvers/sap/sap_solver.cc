@@ -25,14 +25,13 @@ using drake::systems::Context;
 namespace {
 
 constexpr char kNanValuesMessage[] =
-    "The typical root cause for this failure is usually outside the "
-    "solver, when there are no enough checks to catch it ealier. In this "
-    "case, a previous (valid) simulation result led to the generation of "
-    "NaN values in a controller, that are then fed as actuation through "
-    "MultibodyPlant's ports. If you don't believe this is the root cause "
-    "of your problem, please contact the Drake developers and/or open a "
-    "Drake issue with a minimal reproduciton example to help debug your "
-    "problem.";
+    "The typical root cause for this failure is usually outside the solver, "
+    "when there are not enough checks to catch it ealier. In this case, a "
+    "previous (valid) simulation result led to the generation of NaN values in "
+    "a controller, that are then fed as actuation through MultibodyPlant's "
+    "ports. If you don't believe this is the root cause of your problem, "
+    "please contact the Drake developers and/or open a Drake issue with a "
+    "minimal reproduciton example to help debug your problem.";
 
 }  // namespace
 
