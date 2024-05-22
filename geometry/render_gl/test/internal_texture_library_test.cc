@@ -21,8 +21,8 @@ namespace fs = std::filesystem;
  - Thread safety of calling GetTextureId() - see multithread_safety_test.cc
    for that test.
  - Doesn't test the image parsing and OpenGl texture loading logic of
-   GetTextureId(). If that failed, it would be apparent in the RenderEngineGl
-   tests -- texture would not get loaded properly. */
+   GetTextureId() or AddInMemoryImages(). If those failed, it would be apparent
+   in the RenderEngineGl tests -- textures would not get loaded properly. */
 
 /* Confirms that the texture key is generated as expected, handling symlinks
  and actual paths. */

@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <tiny_gltf.h>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/pointer_cast.h"
@@ -21,9 +22,12 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
+using Eigen::Matrix3f;
+using Eigen::Matrix4d;
 using Eigen::Matrix4f;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Vector3f;
 using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeDiffuseMaterial;
 using geometry::internal::MaybeMakeMeshFallbackMaterial;
@@ -31,6 +35,7 @@ using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using geometry::internal::UvState;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using render::LightParameter;
@@ -39,6 +44,7 @@ using render::RenderEngine;
 using render::RenderLabel;
 using std::make_shared;
 using std::make_unique;
+using std::map;
 using std::set;
 using std::shared_ptr;
 using std::string;
@@ -262,13 +268,12 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     DoConfigureMoreUniforms();
   }
 
-  void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                            const Eigen::Matrix4f& T_WM,
-                            const Eigen::Matrix3f& N_WM) const override {
+  void DoSetModelViewMatrix(const Matrix4f& X_CW, const Matrix4f& T_WM,
+                            const Matrix3f& N_WM) const override {
     glUniformMatrix3fv(T_WM_normals_loc_, 1, GL_FALSE, N_WM.data());
     glUniformMatrix4fv(T_WM_loc_, 1, GL_FALSE, T_WM.data());
 
-    Eigen::Matrix4f X_WC = Eigen::Matrix4f::Identity();
+    Matrix4f X_WC = Eigen::Matrix4f::Identity();
     X_WC.block<3, 3>(0, 0) = X_CW.block<3, 3>(0, 0).transpose();
     X_WC.block<3, 1>(0, 3) = X_WC.block<3, 3>(0, 0) * (-X_CW.block<3, 1>(0, 3));
     glUniformMatrix4fv(X_WC_loc_, 1, GL_FALSE, X_WC.data());
@@ -277,7 +282,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   void SetLightParameters(int index, const LightParameter& light) const {
     glUniform1i(GetLightFieldLocation(index, "type"),
                 static_cast<int>(render::light_type_from_string(light.type)));
-    Eigen::Vector3f color = light.color.rgba().head<3>().cast<float>();
+    Vector3f color = light.color.rgba().head<3>().cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "color"), 1, color.data());
     Eigen::Vector4f position;
     position.head<3>() = light.position.cast<float>();
@@ -285,7 +290,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
         render::light_frame_from_string(light.frame);
     position(3) = frame == render::LightFrame::kWorld ? 0.0f : 1.0f;
     glUniform4fv(GetLightFieldLocation(index, "position"), 1, position.data());
-    Eigen::Vector3f atten_coeff = light.attenuation_values.cast<float>();
+    Vector3f atten_coeff = light.attenuation_values.cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "atten_coeff"), 1,
                  atten_coeff.data());
     glUniform1f(GetLightFieldLocation(index, "intensity"),
@@ -299,7 +304,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     }
 
     if (light.type != "point") {
-      Eigen::Vector3f direction = light.direction.cast<float>();
+      Vector3f direction = light.direction.cast<float>();
       glUniform3fv(GetLightFieldLocation(index, "dir"), 1, direction.data());
     }
   }
@@ -406,12 +411,14 @@ class DefaultTextureColorShader final : public LightingShader {
     const auto& my_data = data.value().get_value<InstanceData>();
     glBindTexture(GL_TEXTURE_2D, my_data.texture_id);
     glUniform2fv(diffuse_scale_loc_, 1, my_data.texture_scale.data());
+    glUniform1i(texture_flip_loc_, my_data.flip_y);
   }
 
  private:
   void DoConfigureMoreUniforms() final {
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
+    texture_flip_loc_ = GetUniformLocation("texture_flip_y");
   }
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
@@ -419,8 +426,9 @@ class DefaultTextureColorShader final : public LightingShader {
   }
 
   struct InstanceData {
-    GLuint texture_id;
+    GLuint texture_id{};
     Vector2<float> texture_scale;
+    bool flip_y{};
   };
 
   std::optional<ShaderProgramData> DoCreateProgramData(
@@ -438,9 +446,11 @@ class DefaultTextureColorShader final : public LightingShader {
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
-    return ShaderProgramData{
-        shader_id(),
-        AbstractValue::Make(InstanceData{*texture_id, scale.cast<float>()})};
+    const bool flip_y =
+        properties.GetPropertyOrDefault("texture", "flip", false);
+    return ShaderProgramData{shader_id(),
+                             AbstractValue::Make(InstanceData{
+                                 *texture_id, scale.cast<float>(), flip_y})};
   }
 
   std::shared_ptr<TextureLibrary> library_{};
@@ -450,6 +460,9 @@ class DefaultTextureColorShader final : public LightingShader {
 
   // The location of the "diffuse_scale" uniform in the shader.
   GLint diffuse_scale_loc_{};
+
+  // The location of the "texture_flip_y" uniform in the shader.
+  GLint texture_flip_loc_{};
 
   // For diffuse *map*, we need to propagate texture coordinates along with
   // transforming the vertex data. So, invoke the lighting function and output
@@ -468,6 +481,7 @@ void main() {
   static constexpr char kFragmentShader[] = R"""(
 uniform sampler2D diffuse_map;
 uniform vec2 diffuse_map_scale;
+uniform bool texture_flip_y;
 in vec2 tex_coord;
 out vec4 color;
 
@@ -479,7 +493,11 @@ void main() {
   //  which cause the texture to be sampled on the other side.
   // TODO(20234): To get parity with our other renderings, the diffuse *color*
   // should modulate the texture for the final diffuse color.
-  vec4 map_rgba = texture(diffuse_map, fract(tex_coord * diffuse_map_scale));
+  vec2 uv = fract(tex_coord * diffuse_map_scale);
+  if (texture_flip_y) {
+    uv.y = 1.0 - uv.y;
+  }
+  vec4 map_rgba = texture(diffuse_map, uv);
   color = GetIlluminatedColor(map_rgba);
 })""";
 };
@@ -842,10 +860,12 @@ void RenderEngineGl::ImplementMeshesForFile(void* user_data,
           data.properties, filename, parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
     }
-    temp_props.UpdateProperty("phong", "diffuse_map",
-                              material.diffuse_map.string());
+    temp_props.UpdateProperty("phong", "diffuse_map", material.diffuse_map);
     temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
-    RegistrationData temp_data{data.id, data.X_WG, temp_props};
+    // Non-public property to communicate to the shaders.
+    temp_props.UpdateProperty("texture", "flip", material.flip_y);
+    RegistrationData temp_data{data.id, data.X_WG, temp_props,
+                               data.default_diffuse};
     AddGeometryInstance(gl_mesh.mesh_index, &temp_data, scale);
   }
 }
@@ -854,7 +874,10 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
                                       const PerceptionProperties& properties,
                                       const RigidTransformd& X_WG) {
   opengl_context_->MakeCurrent();
-  RegistrationData data{id, RigidTransformd{X_WG}, properties};
+  RegistrationData data{.id = id,
+                        .X_WG = RigidTransformd{X_WG},
+                        .properties = properties,
+                        .default_diffuse = parameters_.default_diffuse};
   shape.Reify(this, &data);
   return data.accepted;
 }
@@ -875,9 +898,10 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
             : MakeDiffuseMaterial(parameters_.default_diffuse);
     PerceptionProperties mesh_properties(properties);
     mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   material.diffuse_map.string());
+                                   material.diffuse_map);
     mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
-    RegistrationData data{id, RigidTransformd::Identity(), mesh_properties};
+    RegistrationData data{id, RigidTransformd::Identity(), mesh_properties,
+                          parameters_.default_diffuse};
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
   deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
@@ -1000,7 +1024,7 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
 
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
                               RenderType render_type) const {
-  const Eigen::Matrix4f& X_CW = X_CW_.GetAsMatrix4().matrix().cast<float>();
+  const Matrix4f& X_CW = X_CW_.GetAsMatrix4().matrix().cast<float>();
   // We rely on the calling method to clear all appropriate buffers; this method
   // may be called multiple times per image (based on the number of shaders
   // being used) and, therefore, can't do the clearing itself.
@@ -1047,8 +1071,7 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
 
   // Matrix mapping a geometry vertex from the camera frame C to the device
   // frame D.
-  const Eigen::Matrix4f T_DC =
-      camera.core().CalcProjectionMatrix().cast<float>();
+  const Matrix4f T_DC = camera.core().CalcProjectionMatrix().cast<float>();
 
   for (const auto& [_, shader_program] : shader_programs_[RenderType::kColor]) {
     shader_program->Use();
@@ -1083,8 +1106,7 @@ void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
 
   // Matrix mapping a geometry vertex from the camera frame C to the device
   // frame D.
-  const Eigen::Matrix4f T_DC =
-      camera.core().CalcProjectionMatrix().cast<float>();
+  const Matrix4f T_DC = camera.core().CalcProjectionMatrix().cast<float>();
 
   for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kDepth]) {
     const ShaderProgram& shader_program = *shader_ptr;
@@ -1119,8 +1141,7 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
 
   // Matrix mapping a geometry vertex from the camera frame C to the device
   // frame D.
-  const Eigen::Matrix4f T_DC =
-      camera.core().CalcProjectionMatrix().cast<float>();
+  const Matrix4f T_DC = camera.core().CalcProjectionMatrix().cast<float>();
 
   for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kLabel]) {
     const ShaderProgram& shader_program = *shader_ptr;
@@ -1294,13 +1315,601 @@ void CreateVertexArray(OpenGlGeometry* geometry) {
 }
 
 }  // namespace
+
+/* Extracts mesh primitives from a glTF file. It places OpenGlGeometries in the
+ provided mesh cache, registers any embedded textures into the given texture
+ library, and, ultimately, produces RenderGlMeshes from the glTF contents.
+
+ It is designed to be instantiated for each glTF file and all of the extracted
+ contents should be associated with a single GeometryId. */
+class RenderEngineGl::GltfMeshExtractor {
+ public:
+  /* Constructs the mesh extractor. During the extraction process, glTF
+  primitives are turned into OpenGlGeometry instances, placed into the given
+  `geometries`. Any embedded textures will be registered with the given
+  `texture_library`. As such, both must remain alive and valid for the lifespan
+  of the mesh extractor.
+
+  The extractor does *not* automatically register the final RenderGlMesh
+  instances. Those are created by calling ExtractMeshes() and the caller is
+  responsible for taking ownership. */
+  GltfMeshExtractor(std::vector<OpenGlGeometry>* geometries,
+                    TextureLibrary* texture_library)
+      : geometries_(*geometries), texture_library_(*texture_library) {
+    DRAKE_DEMAND(geometries != nullptr);
+    DRAKE_DEMAND(texture_library != nullptr);
+  }
+
+  /* Extracts the geometry data (meshes and accompanying data) from the named
+   glTF file. While OpenGlGeometries and texture images will be automatically
+   registered with the containers passed into the constructor, the caller is
+   responsible for taking ownership of the collection of RenderGlMesh
+   instances returned. */
+  vector<RenderGlMesh> ExtractMeshes(std::string_view file_name,
+                                     const RegistrationData& data) {
+    file_name_ = file_name;
+    tinygltf::TinyGLTF loader;
+
+    /* Capture embedded images for later registration. These include all images
+     defined in the file; not all of these will be used by RenderEngineGl. */
+    map<string, std::vector<unsigned char>> all_embedded_images;
+    auto load_image_cb =
+        [&all_embedded_images, this](
+            tinygltf::Image* image, const int image_index, std::string* /*err*/,
+            std::string* /*warn*/, int /*req_width*/, int /*req_height*/,
+            const unsigned char* bytes, int size, void* /*user_data*/) -> bool {
+      /* Update the image->uri to use the name we're using in the texture
+       library so that when we extract the material, the uri matches. */
+      image->uri = GetEmbeddedImageName(image_index);
+      all_embedded_images.insert(
+          {image->uri, vector<unsigned char>(bytes, bytes + size)});
+      return true;
+    };
+    loader.SetImageLoader(load_image_cb, nullptr);
+
+    string error;
+    string warn;
+
+    tinygltf::Model model;
+    const bool valid_parse =
+        loader.LoadASCIIFromFile(&model, &error, &warn, file_name_);
+
+    if (!valid_parse) {
+      policy_.Error(fmt::format("Failed parsing the glTF file: {}: {}",
+                                file_name_, error));
+    }
+
+    /* We better not get any errors if we have a valid parse. */
+    DRAKE_DEMAND(error.empty());
+    if (!warn.empty()) {
+      policy_.Warning(warn);
+    }
+
+    /* The root nodes of all the hierarchies that will be instantiated (by
+     index). */
+    vector<int> root_indices = FindTargetRootNodes(model);
+
+    vector<RenderGlMesh> meshes =
+        BuildGeometriesFromRootNodes(root_indices, model, data);
+
+    /* Identify which embedded textures are actually referenced by materials
+     and load them into the texture library. */
+    map<string, std::vector<unsigned char>> used_embedded_images;
+    for (const auto& mesh : meshes) {
+      if (!mesh.mesh_material.has_value()) continue;
+      /* Currently, we only support diffuse maps. */
+      const std::string& diffuse_map = mesh.mesh_material->diffuse_map;
+      if (used_embedded_images.contains(diffuse_map)) continue;
+      if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
+        used_embedded_images[diffuse_map] =
+            std::move(all_embedded_images[diffuse_map]);
+        all_embedded_images.erase(diffuse_map);
+      }
+    }
+    texture_library_.AddInMemoryImages(used_embedded_images);
+    return meshes;
+  }
+
+ private:
+  /* Creates a unique image URI for an indexed image in a glTF file. The URI
+   will be compatible with TextureLibrary's documented needs for adding
+   in-memory images. */
+  string GetEmbeddedImageName(int image_index) const {
+    /* Make sure we use TextureLibrary's required prefix. We also append a
+     suffix that further reduces accidentally interpreting the string as a valid
+     file path. */
+    return fmt::format("{}{}?image={}", TextureLibrary::InMemoryPrefix(),
+                       file_name_, image_index);
+  }
+
+  /* Returns the indices of all glTF nodes that have no parents (i.e., are root
+   nodes). It searches *all* the nodes, unconstrained by what may or may not be
+   indicated by the model's scenes. */
+  static vector<int> FindAllRootNodes(const tinygltf::Model& model) {
+    vector<bool> has_parent(model.nodes.size(), false);
+    for (const tinygltf::Node& node : model.nodes) {
+      for (int child_index : node.children) {
+        has_parent[child_index] = true;
+      }
+    }
+    vector<int> roots;
+    for (int n = 0; n < ssize(has_parent); ++n) {
+      if (!has_parent[n]) {
+        roots.push_back(n);
+      }
+    }
+    return roots;
+  }
+
+  /* Identifies a source scene from the glTF file and returns the indices of
+   that scene's root nodes. If no default scene can be identified, then
+   all root nodes in the file are returned. As documented in
+   geometry_file_formats_doxygen.h, the only promise we make is that if the
+   default scene is specified, we'll respect it. Otherwise, we get to use voodoo
+   in picking the nodes from the glTF file. */
+  vector<int> FindTargetRootNodes(const tinygltf::Model& model) const {
+    /* The root nodes of all the hierarchies that will be instantiated (by
+     index). */
+    vector<int> root_indices;
+    if (model.scenes.size() > 0) {
+      if (model.defaultScene >= ssize(model.scenes)) {
+        policy_.Error(fmt::format(
+            "Error parsing a glTF file; it defines {} scenes but has an "
+            "invalid value for the \"glTF.scene\" property: {}. '{}'. No "
+            "geometry will be added.",
+            model.scenes.size(), model.defaultScene, file_name_));
+        return root_indices;
+      }
+
+      /* Arbitrarily picking the zeroth scene *seems* consistent with glTF's
+       spec: See:
+       https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#scenes */
+
+      // TODO(SeanCurtis-TRI): Does this deserve a warning?
+      if (model.defaultScene < 0 && ssize(model.scenes) > 1) {
+        policy_.Warning(fmt::format(
+            "Parsing a glTF file with multiple scene and no explicit "
+            "default scene; using the zeroth scene: '{}'.",
+            file_name_));
+      }
+      /* tinygltf initializes defaultScene to -1 to indicate "undefined". */
+      const int scene_index = std::max(model.defaultScene, 0);
+      root_indices = model.scenes[scene_index].nodes;
+      /* Note: glTF doesn't require that a scene actually contain any nodes:
+       https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-scene.
+       */
+      if (root_indices.empty()) {
+        policy_.Error(fmt::format(
+            "Error parsing a glTF file; the 0th scene has no root nodes. '{}'.",
+            file_name_));
+      }
+    } else {
+      if (model.nodes.size() == 0) {
+        policy_.Error(fmt::format(
+            "Error parsing a glTF file; it has no scenes and no nodes. '{}'.",
+            file_name_));
+      }
+      root_indices = FindAllRootNodes(model);
+      if (root_indices.empty() && model.nodes.size() > 0) {
+        policy_.Error(
+            fmt::format("Error parsing a glTF file; none of its {} nodes are "
+                        "root nodes. '{}'.",
+                        model.nodes.size(), file_name_));
+      }
+    }
+    return root_indices;
+  }
+
+  /* Given a set of glTF root nodes (indicated by index), returns a collection
+   of RenderGlMesh instances that represent the collection of objects.
+
+   @pre There is an active OpenGl context. */
+  vector<RenderGlMesh> BuildGeometriesFromRootNodes(
+      const vector<int>& root_indices, const tinygltf::Model& model,
+      const RegistrationData& data) {
+    vector<RenderGlMesh> result;
+    /* glTF is y-up, Drake's models are z-up. So, we'll start with a rotation
+     around the x-axis. */
+    const Matrix4d X_MGltf =
+        RigidTransformd(
+            RotationMatrixd::MakeFromOrthonormalColumns(
+                Vector3d{1, 0, 0}, Vector3d{0, 0, 1}, Vector3d{0, -1, 0}))
+            .GetAsMatrix4();
+    for (int root_index : root_indices) {
+      WalkNodeTree(root_index, model, X_MGltf, data, &result);
+    }
+    return result;
+  }
+
+  /* Given the name of the glTF mesh.primitive attribute, reports the attribute
+   index that needs to be used to match the data to the shader definitions. */
+  static int GetAttributeIndex(std::string_view attr_name) {
+    if (attr_name == "POSITION") {
+      return 0;
+    } else if (attr_name == "NORMAL") {
+      return 1;
+    } else if (attr_name == "TEXCOORD_0") {
+      return 2;
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  /* Creates the description of the named attribute (and the glTF buffer in
+   which the attribute data lives).
+
+   @returns  A pair consisting of the attribute specification and the index of
+             the glTF buffer in which the data is stored. If undefined, the
+             buffer will be -1.
+   @throws std::exception if the requested attribute is missing (unless it is
+                          "TEXCOORD_0"). */
+  std::pair<VertexAttrib, int> GetAttribute(
+      const std::string& attr_name, const tinygltf::Primitive& prim,
+      const tinygltf::Model& model) const {
+    const auto iter = prim.attributes.find(attr_name);
+    VertexAttrib attribute;
+    int buffer_index{-1};
+    if (iter != prim.attributes.end()) {
+      const int accessor_index = iter->second;
+      const tinygltf::Accessor& accessor = model.accessors.at(accessor_index);
+      const tinygltf::BufferView& buffer_view =
+          model.bufferViews.at(accessor.bufferView);
+
+      attribute.attribute_index = GetAttributeIndex(attr_name);
+      attribute.components_per_element =
+          tinygltf::GetNumComponentsInType(accessor.type);
+      attribute.byte_offset = accessor.byteOffset + buffer_view.byteOffset;
+      attribute.stride = accessor.ByteStride(buffer_view);
+      attribute.numeric_type = accessor.componentType;
+
+      buffer_index = buffer_view.buffer;
+    } else if (attr_name != "TEXCOORD_0") {
+      policy_.Error(fmt::format(
+          "RenderEngineGl has limited support for glTF files. Primitives must "
+          "define both 'POSITION' and 'NORMAL' attributes. A primitive is "
+          "missing the attribute '{}' in '{}'.",
+          attr_name, file_name_));
+    }
+    return {attribute, buffer_index};
+  }
+
+  /* Walks the node tree rooted at the node indicated by `node_index`. The mesh
+   nodes are processed and added to `result` (with additional changes made to
+   this instance's geometries_ as needed).
+
+   @param node_index       The index of the node to process.
+   @param model            The full model (used to resolve the quantities
+                           referenced by the node and its child structures)
+   @param T_FP             The pose of the node's parent frame in the file's
+                           frame. In the parlance of OpenGlGeometry's frame
+                           taxonomy, the file frame F is the model frame M
+                           (i.e., we may still need to apply Drake-specified
+                           scaling to put it in the geometry frame G).
+   @param data             Drake's registration data associated with the file.
+   @param[out] result      Newly instantiated RenderGlMesh instances will be
+                           appended. For a single node, zero or more
+                           RenderGlMesh instances will be added. */
+  void WalkNodeTree(int node_index, const tinygltf::Model& model,
+                    const Matrix4d& T_FP, const RegistrationData& data,
+                    vector<RenderGlMesh>* result) {
+    DRAKE_DEMAND(result != nullptr);
+    const tinygltf::Node& node = model.nodes.at(node_index);
+
+    const Matrix4d T_PN = EigenMatrixFromNode(node);
+    const Matrix4d T_FN = T_FP * T_PN;
+    if (node.mesh >= 0) {
+      const Matrix4f T_FN_float = T_FN.cast<float>();
+      InstantiateMesh(node.mesh, model, T_FN_float, data, result);
+    }
+    for (int child_index : node.children) {
+      WalkNodeTree(child_index, model, T_FN, data, result);
+    }
+  }
+
+  /* Instantiates zero or more OpenGlInstances from the glTF mesh indicated by
+   `mesh_index`. Each of the primitives shares a common in-file transform
+   T_MN (where the file frame is also the "model" frame M -- as documented for
+   OpenGlGeometry). New RenderGlMesh instances (one per OpenGlGeometry) are
+   appended to the provided `result` container.*/
+  void InstantiateMesh(int mesh_index, const tinygltf::Model& model,
+                       const Matrix4f& T_MN, const RegistrationData& data,
+                       vector<RenderGlMesh>* result) {
+    DRAKE_DEMAND(result != nullptr);
+    const tinygltf::Mesh& mesh = model.meshes.at(mesh_index);
+    for (int prim_i = 0; prim_i < ssize(mesh.primitives); ++prim_i) {
+      const tinygltf::Primitive& prim = mesh.primitives[prim_i];
+      /* Note *_buffer are indices into glTF buffers and *not* OpenGl ids. */
+      const auto [p_attr, p_buffer] = GetAttribute("POSITION", prim, model);
+      const auto [n_attr, n_buffer] = GetAttribute("NORMAL", prim, model);
+      const auto [uv_attr, uv_buffer] = GetAttribute("TEXCOORD_0", prim, model);
+
+      if (p_buffer != n_buffer || (uv_buffer != -1 && uv_buffer != p_buffer)) {
+        policy_.Error(fmt::format(
+            "RenderEngineGl has limited support for glTF files. All attributes "
+            "of a primitive must ultimately reference the same buffer. A "
+            "primitive {} in mesh {} has attributes referencing multiple "
+            "buffers. '{}'.",
+            prim_i, mesh_index, file_name_));
+      }
+
+      OpenGlGeometry geometry;
+
+      /* Set the transforms relating node (N) to model (M) frames. */
+      geometry.T_MN = T_MN;
+      /* Just extracting the upper 3x3 block does not give us N_MN. As
+       documented in internal_opengl_geometry.h, N_MN = R_MN * S⁻¹_MN. The
+       upper block is R_MN * S_MN. The scale factors are simply the magnitudes
+       of the block's columns and we can find N_MN as follows:
+
+           N_MN = R_MN * S⁻¹_MN
+           N_MN = R_MN * S_MN * S⁻¹_MN * S⁻¹_MN
+           N_MN = block * S⁻¹_MN * S⁻¹_MN          */
+      geometry.N_MN = T_MN.block<3, 3>(0, 0);
+      const Vector3f inv_scale_squared(
+          1.0 / geometry.N_MN.col(0).squaredNorm(),
+          1.0 / geometry.N_MN.col(1).squaredNorm(),
+          1.0 / geometry.N_MN.col(2).squaredNorm());
+      geometry.N_MN.col(0) *= inv_scale_squared.x();
+      geometry.N_MN.col(1) *= inv_scale_squared.y();
+      geometry.N_MN.col(2) *= inv_scale_squared.z();
+
+      /* Set the geometry's vertex and index buffers. */
+      geometry.vertex_buffer = GetOpenGlBuffer(p_buffer, model);
+      ConfigureIndexBuffer(prim, model, mesh_index, &geometry);
+
+      /* Now initialize the vertex arrays for the geometry. */
+      geometry.spec =
+          VertexSpec{.positions = p_attr, .normals = n_attr, .uvs = uv_attr};
+      CreateVertexArray(&geometry);
+
+      const int g_index = ssize(geometries_);
+      geometries_.push_back(geometry);
+
+      result->push_back(
+          MakeRenderGlMesh(g_index, mesh_index, prim, model, data));
+    }
+  }
+
+  /* Creates the RenderGlMesh associated with the OpenGlGeometry. */
+  RenderGlMesh MakeRenderGlMesh(int geometry_index, int mesh_index,
+                                const tinygltf::Primitive& prim,
+                                const tinygltf::Model& model,
+                                const RegistrationData& data) {
+    RenderGlMesh gl_mesh{.mesh_index = geometry_index};
+
+    const OpenGlGeometry& geometry = geometries_.at(geometry_index);
+    gl_mesh.uv_state = geometry.spec.uvs.components_per_element == 0
+                           ? UvState::kNone
+                           : UvState::kFull;
+
+    gl_mesh.mesh_material =
+        MakePrimitiveMaterial(prim, model, gl_mesh, mesh_index, data);
+    return gl_mesh;
+  }
+
+  /* Makes the RenderMaterial for the material associated with the primitive,
+   if it exists. Otherwise, returns a fallback material. */
+  RenderMaterial MakePrimitiveMaterial(const tinygltf::Primitive& prim,
+                                       const tinygltf::Model& model,
+                                       const RenderGlMesh& render_mesh,
+                                       int gltf_mesh_index,
+                                       const RegistrationData& data) {
+    if (prim.material < 0 || prim.material >= ssize(model.materials)) {
+      if (prim.material >= ssize(model.materials)) {
+        policy_.Warning(fmt::format(
+            "A primitive from mesh {} has invalid material index {}; there are "
+            "only {} materials in the glTF file '{}'.",
+            gltf_mesh_index, prim.material, ssize(model.materials),
+            file_name_));
+      }
+      return *MaybeMakeMeshFallbackMaterial(data.properties, file_name_,
+                                            data.default_diffuse, policy_,
+                                            render_mesh.uv_state);
+    }
+
+    RenderMaterial material;
+
+    const tinygltf::Material gltf_mat = model.materials.at(prim.material);
+    const tinygltf::PbrMetallicRoughness& gltf_pbr =
+        gltf_mat.pbrMetallicRoughness;
+
+    /* Not required in the glTF, but defaults to [1, 1, 1, 1], as per spec. */
+    const vector<double>& gltf_rgba = gltf_pbr.baseColorFactor;
+    material.diffuse =
+        Rgba(gltf_rgba[0], gltf_rgba[1], gltf_rgba[2], gltf_rgba[3]);
+
+    if (gltf_pbr.baseColorTexture.index < 0 ||
+        render_mesh.uv_state == UvState::kNone) {
+      /* There is no diffuse texture or no UVs for it. */
+      return material;
+    }
+
+    if (gltf_pbr.baseColorTexture.texCoord > 0) {
+      // TODO(SeanCurtis-TRI) Would this be better as a one-time warning?
+      policy_.Warning(fmt::format(
+          "Drake's support for glTF files only includes the \"TEXCOORD_0\" set "
+          "of texture coordinates. Material {} specifies a baseColorTexture "
+          "that references texture coordinate set {}. That texture will be "
+          "ignored. {}.",
+          prim.material, gltf_pbr.baseColorTexture.texCoord, file_name_));
+      return material;
+    }
+    const tinygltf::Texture& texture =
+        model.textures.at(gltf_pbr.baseColorTexture.index);
+    const tinygltf::Image& image = model.images.at(texture.source);
+    /* We don't worry about whether the image format is supported here. It'll
+     be reported downstream in the TextureLibrary. */
+    /* When glTF references external images, they need to be flipped vertically
+     (to accommodate the discrepancy between glTF and OpenGL image conventions).
+     When *properly* embedded, they should be pre-flipped.
+      - glTF image origin: top left corner.
+        https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#images
+      - OpenGL image origin: bottom left corner.
+        https://community.khronos.org/t/origin-of-texture-image-data/38792/2 */
+    if (image.uri.starts_with(TextureLibrary::InMemoryPrefix())) {
+      material.diffuse_map = image.uri;
+      material.flip_y = false;
+    } else {
+      const std::filesystem::path path(file_name_);
+      material.diffuse_map =
+          (path.parent_path() / image.uri).lexically_normal();
+      material.flip_y = true;
+    }
+
+    return material;
+  }
+
+  /* Returns the name of the OpenGL buffer that contains the data in the glTF
+   buffer indicated by `buffer_index` (creating the OpenGL object as needed).
+
+   Note: the buffer is created in the current active context and only deleted
+   *with the context*. */
+  GLuint GetOpenGlBuffer(int buffer_index, const tinygltf::Model& model) {
+    if (buffers_.contains(buffer_index)) {
+      return buffers_.at(buffer_index);
+    }
+    const tinygltf::Buffer& buffer = model.buffers.at(buffer_index);
+    GLuint buffer_id;
+    glCreateBuffers(1, &buffer_id);
+    glNamedBufferStorage(buffer_id, ssize(buffer.data), buffer.data.data(), 0);
+    buffers_[buffer_index] = buffer_id;
+    return buffer_id;
+  }
+
+  /* Configures the given `geometry` with the appropriate index data as
+   extracted from the given primitive (`prim`). This may include creating a new
+   buffer object for the primitive *indices*. Upon successful completion, the
+   `geometry` will have its index_buffer, index_count, type, and mode
+   configured.
+
+   @pre `prim.indices` names an accessor that can be interpreted as element
+        indices.
+
+   Note: the buffer is created in the current active context and only deleted
+   *with the context*. */
+  void ConfigureIndexBuffer(const tinygltf::Primitive& prim,
+                            const tinygltf::Model& model, int mesh_index,
+                            OpenGlGeometry* geometry) {
+    DRAKE_DEMAND(geometry != nullptr);
+    if (prim.indices == -1) {
+      policy_.Error(fmt::format(
+          "RenderEngineGl has limited support for glTF files. All meshes "
+          "must be indexed. A primitive in mesh {} has no 'indices'.",
+          mesh_index));
+    }
+    if (!index_buffers_.contains(prim.indices)) {
+      const tinygltf::Accessor& accessor = model.accessors.at(prim.indices);
+      DRAKE_DEMAND(accessor.type == TINYGLTF_TYPE_SCALAR);
+      const tinygltf::BufferView& buffer_view =
+          model.bufferViews.at(accessor.bufferView);
+      if (buffer_view.byteStride != 0) {
+        policy_.Error(fmt::format(
+            "RenderEngineGl has limited support for glTF files. Primitive "
+            "indices must be compactly stored in a buffer. The buffer view {} "
+            "(referenced by mesh {}) has non-zero stride length: {}.",
+            accessor.bufferView, mesh_index, buffer_view.byteStride));
+      }
+      const int offset = accessor.byteOffset + buffer_view.byteOffset;
+      const tinygltf::Buffer& buffer = model.buffers.at(buffer_view.buffer);
+
+      /* We have probably already loaded the whole glTF buffer into buffers_.
+       The glTF buffer typically includes vertex attribute *and* primitive index
+       data. However, the indices should be contained in their *own* buffer.
+       (See
+       https://registry.khronos.org/OpenGL/extensions/ARB/ARB_vertex_buffer_object.txt).
+       This creates that separate (but redundant) buffer. In the future, we
+       may choose to eliminate the redundancy by eliminating the index data from
+       the vertex data buffer. */
+      GLuint buffer_id;
+      glCreateBuffers(1, &buffer_id);
+      glNamedBufferStorage(buffer_id, ssize(buffer.data),
+                           buffer.data.data() + offset, 0);
+      index_buffers_[prim.indices] = {
+          .buffer = buffer_id,
+          .count = static_cast<int>(accessor.count),
+          .type = static_cast<GLenum>(accessor.componentType)};
+    }
+    const IndexBuffer& indices = index_buffers_.at(prim.indices);
+    geometry->index_buffer = indices.buffer;
+    geometry->index_count = indices.count;
+    geometry->type = indices.type;
+    /* Values of gltf.mesh.primitive.mode map to the corresponding gl values. */
+    geometry->mode = static_cast<GLenum>(prim.mode);
+  }
+
+  /* Creates a transform from the given `node` data. */
+  static Matrix4d EigenMatrixFromNode(const tinygltf::Node& node) {
+    Matrix4d T;
+    if (node.matrix.size() == 16) {
+      // For glTF, transform matrix is a *column-major* matrix.
+      int i = -1;
+      for (int c = 0; c < 4; ++c) {
+        for (int r = 0; r < 4; ++r) {
+          T(r, c) = node.matrix.at(++i);
+        }
+      }
+    } else {
+      T = Matrix4d::Identity();
+      if (node.translation.size() > 0) {
+        DRAKE_DEMAND(node.translation.size() == 3);
+        const Vector3d p(node.translation.at(0), node.translation.at(1),
+                         node.translation.at(2));
+        T.block<3, 1>(0, 3) = p.transpose();
+      }
+      if (node.rotation.size() > 0) {
+        DRAKE_DEMAND(node.rotation.size() == 4);
+        const Quaternion<double> quat(node.rotation[3], node.rotation[0],
+                                      node.rotation[1], node.rotation[2]);
+        T.block<3, 3>(0, 0) = math::RotationMatrixd(quat).matrix();
+      }
+      if (node.scale.size() > 0) {
+        DRAKE_DEMAND(node.scale.size() == 3);
+        for (int i = 0; i < 3; ++i) {
+          T.block<3, 1>(0, i) *= node.scale.at(i);
+        }
+      }
+    }
+    return T;
+  }
+
+  /* We load an entire glTF buffer into an OpenGl buffer object. This maps the
+   glTF buffer (named by its index) to its OpenGl object. */
+  map<int, GLuint> buffers_;
+
+  /* Describes the data associated with a primitive's indices: the OpenGl
+   index buffer object in which it is stored (with a zero offset), the number
+   of indices, and the numerical type that represents the indices. */
+  struct IndexBuffer {
+    GLuint buffer;
+    int count;
+    GLenum type;
+  };
+
+  drake::internal::DiagnosticPolicy policy_;
+
+  /* The name of the glTF file being processed. */
+  std::string file_name_;
+
+  /* A map from a glTF accessor (named by its index) used as a primitive indices
+   to the corresponding OpenGL index buffer. */
+  map<int, IndexBuffer> index_buffers_;
+
+  /* The repository for newly created OpenGlGeometry instances. Extracted meshes
+   will strictly be appended. */
+  std::vector<OpenGlGeometry>& geometries_;
+
+  /* The texture library for registering embedded textures in the glTF file. */
+  TextureLibrary& texture_library_;
+};
+
 void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
                                           RegistrationData* data) {
-  if (Mesh(filename).extension() != ".obj") {
+  DRAKE_DEMAND(opengl_context_->IsCurrent());
+  const std::string extension = Mesh(filename).extension();
+  if (!(extension == ".obj" || extension == ".gltf")) {
     static const logging::Warn one_time(
-        "RenderEngineGl only supports Mesh/Convex specifications which use "
-        ".obj files. Mesh specifications using other mesh types (e.g., "
-        ".gltf, .stl, .dae, etc.) will be ignored.");
+        "RenderEngineGl only supports Mesh specifications which use "
+        ".obj or .gltf files. Mesh specifications using other mesh types "
+        "(e.g., .stl, .dae, etc.) will be ignored.");
     data->accepted = false;
     return;
   }
@@ -1308,34 +1917,41 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
   const std::string file_key = GetPathKey(filename, /*is_convex=*/false);
 
   if (!meshes_.contains(file_key)) {
-    // Note: either the obj has defined its own material or it hasn't. If it
-    // has, that material will be defined in the RenderMesh and that material
-    // will be saved in the cache, forcing every instance to use that material.
-    // If it hasn't defined its own material, then every instance must define
-    // its own material. Either way, we don't require whatever properties were
-    // available when we triggered this cache update. That's why we simply pass
-    // a set of empty properties -- to emphasize its independence.
-    const vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-        filename, PerceptionProperties(), parameters_.default_diffuse,
-        drake::internal::DiagnosticPolicy());
     vector<RenderGlMesh> file_meshes;
-    for (const auto& render_mesh : meshes) {
-      int mesh_index = CreateGlGeometry(render_mesh);
-      DRAKE_DEMAND(mesh_index >= 0);
+    if (extension == ".obj") {
+      // Note: either the mesh has defined its own material or it hasn't. If it
+      // has, that material will be defined in the RenderMesh and that material
+      // will be saved in the cache, forcing every instance to use that
+      // material. If it hasn't defined its own material, then every instance
+      // must define its own material. Either way, we don't require whatever
+      // properties were available when we triggered this cache update. That's
+      // why we simply pass a set of empty properties -- to emphasize its
+      // independence.
+      vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
+          filename, PerceptionProperties(), parameters_.default_diffuse,
+          drake::internal::DiagnosticPolicy());
 
-      geometries_[mesh_index].throw_if_undefined(
-          fmt::format("Error creating object for mesh {}", filename).c_str());
+      for (const auto& render_mesh : meshes) {
+        int mesh_index = CreateGlGeometry(render_mesh);
+        DRAKE_DEMAND(mesh_index >= 0);
 
-      file_meshes.push_back(
-          {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
+        geometries_[mesh_index].throw_if_undefined(
+            fmt::format("Error creating object for mesh {}", filename).c_str());
 
-      // Only store materials defined by the obj file; otherwise let instances
-      // define their own (see ImplementMeshesForFile()).
-      DRAKE_DEMAND(render_mesh.material.has_value());
-      const RenderMaterial& material = *render_mesh.material;
-      if (material.from_mesh_file) {
-        file_meshes.back().mesh_material = material;
+        file_meshes.push_back(
+            {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
+
+        DRAKE_DEMAND(render_mesh.material.has_value());
+        const RenderMaterial& material = *render_mesh.material;
+        // Only store materials defined by the mesh file; otherwise let
+        // instances define their own (see ImplementMeshesForFile()).
+        if (material.from_mesh_file) {
+          file_meshes.back().mesh_material = material;
+        }
       }
+    } else {
+      file_meshes = GltfMeshExtractor(&geometries_, texture_library_.get())
+                        .ExtractMeshes(filename, *data);
     }
     meshes_[file_key] = std::move(file_meshes);
   }
