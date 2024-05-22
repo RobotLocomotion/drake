@@ -138,6 +138,7 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
     const GeometryId id;
     const math::RigidTransformd& X_WG;
     const PerceptionProperties& properties;
+    const Rgba& default_diffuse;
     bool accepted{true};
   };
 
@@ -246,7 +247,8 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   void CacheConvexHullMesh(const Convex& convex, const RegistrationData& data);
 
   // For the given mesh filename, parses the file and attempts to place the
-  // resulting render meshes in the geometry cache.
+  // resulting render meshes in the geometry cache (i.e., a set of RenderMesh
+  // instances are associated with the filename-derived key in `meshes_`).
   //
   // If the file is an unsupported file type, no geometry is cached, and
   // data->accepted is set to false.
@@ -413,6 +415,10 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
     std::optional<geometry::internal::RenderMaterial> mesh_material{
         std::nullopt};
   };
+
+  // Forward declaration of the class that processes glTF files. We declare it
+  // here so that it has access to private types (e.g., RenderGlMesh).
+  class GltfMeshExtractor;
 
   // Mapping from the obj's canonical filename to RenderGlMeshes.
   std::unordered_map<std::string, std::vector<RenderGlMesh>> meshes_;
