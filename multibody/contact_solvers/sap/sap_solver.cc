@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -439,15 +438,14 @@ T SapSolver<T>::CalcCostAlongLine(
           kNanValuesMessage));
     }
     if (d2ellR_dalpha2 < 0) {
-      const std::string msg = fmt::format(
+      throw std::logic_error(fmt::format(
           "The Hessian of the constraints cost along the search direction is "
           "negative, d²ℓ/dα² = {}. This can only be caused by a degenerate "
           "constraint Hessian (a bug). This would be indicated by a value that "
           "might be negative but close to machine epsilon. Please contact the "
           "Drake developers and/or open a Drake issue with a minimal "
           "reproduciton example to help debug your problem.",
-          d2ellR_dalpha2);
-      throw std::logic_error(msg);
+          d2ellR_dalpha2));
     }
 
     DRAKE_DEMAND(d2ellA_dalpha2 > 0.0);
@@ -704,13 +702,13 @@ void SapSolver<T>::CalcSearchDirectionData(
 
   using std::isnan;
   if (isnan(data->d2ellA_dalpha2)) {
-    throw std::logic_error(
-        fmt::format("The Hessian of the momentum cost along the search "
-                    "direction is NaN. {}",
-                    kNanValuesMessage));
+    throw std::logic_error(fmt::format(
+        "The Hessian of the momentum cost along the search direction is NaN. "
+        "{}",
+        kNanValuesMessage));
   }
   if (data->d2ellA_dalpha2 <= 0) {
-    const std::string msg = fmt::format(
+    throw std::logic_error(fmt::format(
         "The Hessian of the momentum cost along the search direction is not "
         "positive, d²ℓ/dα² = {}. This can only be caused by a mass matrix that "
         "is not SPD. This would indicate bad problem data (e.g. a zero mass "
@@ -718,8 +716,7 @@ void SapSolver<T>::CalcSearchDirectionData(
         "believe this is the root cause of your problem, please contact the "
         "Drake developers and/or open a Drake issue with a minimal "
         "reproduciton example to help debug your problem.",
-        data->d2ellA_dalpha2);
-    throw std::logic_error(msg);
+        data->d2ellA_dalpha2));
   }
 }
 
