@@ -281,7 +281,7 @@ SapSolverStatus SapSolver<T>::SolveWithGuessImpl(const SapModel<T>& model,
             k, std::abs(ell - ell_previous), alpha,
             momentum_residual / momentum_scale);
         if (parameters_.nonmonotonic_convergence_is_error) {
-          throw std::runtime_error(
+          throw std::logic_error(
               "SapSolver: Non-monotonic convergence detected.");
         }
       }
@@ -433,7 +433,7 @@ T SapSolver<T>::CalcCostAlongLine(
     // Sanity check these terms are all positive.
     using std::isnan;
     if (isnan(d2ellR_dalpha2)) {
-      throw std::runtime_error(fmt::format(
+      throw std::logic_error(fmt::format(
           "The Hessian of the constraints cost along the search direction is "
           "NaN. {}",
           kNanValuesMessage));
@@ -447,7 +447,7 @@ T SapSolver<T>::CalcCostAlongLine(
           "Drake developers and/or open a Drake issue with a minimal "
           "reproduciton example to help debug your problem.",
           d2ellR_dalpha2);
-      throw std::runtime_error(msg);
+      throw std::logic_error(msg);
     }
 
     DRAKE_DEMAND(d2ellA_dalpha2 > 0.0);
@@ -487,7 +487,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // destroy this property. If so, we abort given that'd mean the model must be
   // revisited.
   if (dell_dalpha0 >= 0) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "The cost does not decrease along the search direction. This is "
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
@@ -563,7 +563,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 
   // If we are here, the line-search could not find a valid parameter that
   // satisfies Armijo's criterion.
-  throw std::runtime_error(
+  throw std::logic_error(
       "Line search reached the maximum number of iterations. Either we need to "
       "increase the maximum number of iterations parameter or to condition the "
       "problem better.");
@@ -594,7 +594,7 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // destroy this property. If so, we abort given that'd mean the model must be
   // revisited.
   if (dell_dalpha0 >= 0) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "The cost does not decrease along the search direction. This is "
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
@@ -662,7 +662,7 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // alpha = 0.
   const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
   if (std::isnan(alpha_guess)) {
-    throw std::runtime_error(fmt::format(
+    throw std::logic_error(fmt::format(
         "The initial guess for line search is NaN. {}", kNanValuesMessage));
   }
 
@@ -704,7 +704,7 @@ void SapSolver<T>::CalcSearchDirectionData(
 
   using std::isnan;
   if (isnan(data->d2ellA_dalpha2)) {
-    throw std::runtime_error(
+    throw std::logic_error(
         fmt::format("The Hessian of the momentum cost along the search "
                     "direction is NaN. {}",
                     kNanValuesMessage));
@@ -719,7 +719,7 @@ void SapSolver<T>::CalcSearchDirectionData(
         "Drake developers and/or open a Drake issue with a minimal "
         "reproduciton example to help debug your problem.",
         data->d2ellA_dalpha2);
-    throw std::runtime_error(msg);
+    throw std::logic_error(msg);
   }
 }
 
