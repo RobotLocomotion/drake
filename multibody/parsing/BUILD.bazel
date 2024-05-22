@@ -360,6 +360,7 @@ drake_cc_library(
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        ":detail_usd_parser",
     ],
 )
 
