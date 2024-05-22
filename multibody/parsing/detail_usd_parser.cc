@@ -130,7 +130,11 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     return CreateGeometryMesh(obj_filename, prim, mpu, w_);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
+    if (prim_type == "") {
+      prim_type = pxr::TfToken("EmptyType");
+    }
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}",
+      prim_type, prim.GetPath().GetString()));
     return nullptr;
   }
 }
