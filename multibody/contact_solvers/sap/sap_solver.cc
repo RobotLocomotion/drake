@@ -20,7 +20,11 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-const char nan_values_message[] =
+using drake::systems::Context;
+
+namespace {
+
+constexpr char kNanValuesMessage[] =
     "The typical root cause for this failure is usually outside the "
     "solver, when there are no enough checks to catch it ealier. In this "
     "case, a previous (valid) simulation result led to the generation of "
@@ -30,7 +34,7 @@ const char nan_values_message[] =
     "Drake issue with a minimal reproduciton example to help debug your "
     "problem.";
 
-using drake::systems::Context;
+}  // namespace
 
 template <typename T>
 void SapSolver<T>::set_parameters(const SapSolverParameters& parameters) {
@@ -433,7 +437,7 @@ T SapSolver<T>::CalcCostAlongLine(
       throw std::runtime_error(fmt::format(
           "The Hessian of the constraints cost along the search direction is "
           "NaN. {}",
-          nan_values_message));
+          kNanValuesMessage));
     }
     if (d2ellR_dalpha2 < 0) {
       const std::string msg = fmt::format(
@@ -660,7 +664,7 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
   if (std::isnan(alpha_guess)) {
     throw std::runtime_error(fmt::format(
-        "The initial guess for line search is NaN. {}", nan_values_message));
+        "The initial guess for line search is NaN. {}", kNanValuesMessage));
   }
 
   // N.B. If we are here, then we already know that dell_dalpha0 < 0 and dell >
@@ -704,7 +708,7 @@ void SapSolver<T>::CalcSearchDirectionData(
     throw std::runtime_error(
         fmt::format("The Hessian of the momentum cost along the search "
                     "direction is NaN. {}",
-                    nan_values_message));
+                    kNanValuesMessage));
   }
   if (data->d2ellA_dalpha2 <= 0) {
     const std::string msg = fmt::format(
