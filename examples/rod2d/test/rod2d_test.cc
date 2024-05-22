@@ -10,8 +10,6 @@
 #include "drake/examples/rod2d/constraint_solver.h"
 #include "drake/systems/analysis/simulator.h"
 
-using drake::multibody::constraint::ConstraintAccelProblemData;
-using drake::multibody::constraint::ConstraintVelProblemData;
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
@@ -254,8 +252,7 @@ class Rod2DDAETest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
-  drake::multibody::constraint::ConstraintSolver<double>
-      contact_solver_;
+  ConstraintSolver<double> contact_solver_;
 };
 
 // Verifies that the state vector functions throw no exceptions.

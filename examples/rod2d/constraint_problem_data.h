@@ -7,8 +7,8 @@
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace multibody {
-namespace constraint {
+namespace examples {
+namespace rod2d {
 
 /// Structure for holding constraint data for computing forces due to
 /// constraints and the resulting multibody accelerations.
@@ -289,9 +289,7 @@ template <class T>
 struct ConstraintVelProblemData {
   /// Constructs velocity problem data for a system with a @p gv_dim dimensional
   /// generalized velocity.
-  explicit ConstraintVelProblemData(int gv_dim) {
-    Reinitialize(gv_dim);
-  }
+  explicit ConstraintVelProblemData(int gv_dim) { Reinitialize(gv_dim); }
 
   /// Reinitializes the constraint problem data using the specified dimension
   /// of the generalized velocities.
@@ -308,7 +306,8 @@ struct ConstraintVelProblemData {
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
     auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(gv_dim); };
+      return VectorX<T>::Zero(gv_dim);
+    };
     N_transpose_mult = zero_gv_dim_fn;
     F_transpose_mult = zero_gv_dim_fn;
     L_transpose_mult = zero_gv_dim_fn;
@@ -510,6 +509,6 @@ struct ConstraintVelProblemData {
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
-}  // namespace constraint
-}  // namespace multibody
+}  // namespace rod2d
+}  // namespace examples
 }  // namespace drake
