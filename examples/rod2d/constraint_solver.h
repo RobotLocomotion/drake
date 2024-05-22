@@ -162,8 +162,8 @@ class ConstraintSolver {
   /// `x₆`, `x₇`, and `x₈` can be viewed as mathematical programming "slack"
   /// variables; and `kᴳ ∈ ℝⁿᵇ`, `kᴺ ∈ ℝⁿᶜ`, `kᴰ ∈ ℝⁿᶜᵏ`, `kᴸ ∈ ℝⁿᵘ`
   /// allow customizing the problem to, e.g., correct constraint violations and
-  /// simulate restitution. See @ref constraint_variable_defs for complete
-  /// definitions of `nv`, `nc`, `nb`, etc.
+  /// simulate restitution. See "Variable definitions" in the local README for
+  /// complete definitions of `nv`, `nc`, `nb`, etc.
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to

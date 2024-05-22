@@ -44,7 +44,7 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
     // Both piecewise DAE and compliant approach require six continuous
     // variables.
     auto state_index = this->DeclareContinuousState(Rod2dStateVector<T>(), 3, 3,
-                                                    0);  // q, v, z
+                                                    0 /* q, v, z */);
     state_output_port_ =
         &this->DeclareStateOutputPort("state_output", state_index);
   }
@@ -127,7 +127,11 @@ MatrixX<T> Rod2D<T>::solve_inertia(const MatrixX<T>& B) const {
   const T inv_mass = 1.0 / get_rod_mass();
   const T inv_J = 1.0 / get_rod_moment_of_inertia();
   Matrix3<T> iM;
-  iM << inv_mass, 0, 0, 0, inv_mass, 0, 0, 0, inv_J;
+  // clang-format off
+  iM << inv_mass,        0,     0,
+               0, inv_mass,     0,
+               0,        0, inv_J;
+  // clang-format on
   return iM * B;
 }
 
@@ -269,7 +273,10 @@ Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
   DRAKE_DEMAND(xaxis_velocity != 0);
   Matrix2<T> R_WC;
   // R_WC's elements match how they appear lexically: one row per line.
-  R_WC << 0, ((xaxis_velocity > 0) ? 1 : -1), 1, 0;
+  // clang-format off
+  R_WC << 0, ((xaxis_velocity > 0) ? 1 : -1),
+          1, 0;
+  // clang-format on
   return R_WC;
 }
 
@@ -286,7 +293,10 @@ Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
   // axis in the contact frame) is +x in the world frame.
   Matrix2<T> R_WC;
   // R_WC's elements match how they appear lexically: one row per line.
-  R_WC << 0, 1, 1, 0;
+  // clang-format off
+  R_WC << 0, 1,
+          1, 0;
+  // clang-format on
   return R_WC;
 }
 
@@ -412,7 +422,11 @@ void Rod2D<T>::CalcImpactProblemData(const systems::Context<T>& context,
 
   // Setup the generalized inertia matrix.
   Matrix3<T> M;
-  M << mass_, 0, 0, 0, mass_, 0, 0, 0, J_;
+  // clang-format off
+  M << mass_,     0,  0,
+           0, mass_,  0,
+           0,     0, J_;
+  // clang-format on
 
   // Get the generalized velocity.
   data->Mv =
@@ -768,7 +782,11 @@ Vector2<T> Rod2D<T>::CalcStickingImpactImpulse(
 template <class T>
 Matrix3<T> Rod2D<T>::GetInertiaMatrix() const {
   Matrix3<T> M;
-  M << mass_, 0, 0, 0, mass_, 0, 0, 0, J_;
+  // clang-format off
+  M << mass_,     0,  0,
+           0, mass_,  0,
+           0,     0, J_;
+  // clang-format on
   return M;
 }
 
@@ -777,7 +795,11 @@ Matrix3<T> Rod2D<T>::GetInertiaMatrix() const {
 template <class T>
 Matrix3<T> Rod2D<T>::GetInverseInertiaMatrix() const {
   Matrix3<T> M_inv;
-  M_inv << 1.0 / mass_, 0, 0, 0, 1.0 / mass_, 0, 0, 0, 1.0 / J_;
+  // clang-format off
+  M_inv << 1.0 / mass_,           0,        0,
+                     0, 1.0 / mass_,        0,
+                     0,           0, 1.0 / J_;
+  // clang-format on
   return M_inv;
 }
 

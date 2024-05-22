@@ -24,7 +24,7 @@ namespace rod2d {
 /// constraints, etc.)
 ///
 /// <h3>Definition of variables specific to this class</h3>
-/// (See @ref constraint_variable_defs) for the more general set of
+/// (See "Variable definitions" in the local README) for the more general set of
 /// definitions).
 ///
 /// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
