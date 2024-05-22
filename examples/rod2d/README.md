@@ -9,7 +9,7 @@ applications. The reason being that even though there is good theory on the
 existence and uniqueness of MLCP solutions, these problems are often badly
 ill-conditioned numerically, leading to catastrophic failures in practice.
 Moreover, we found out that performance does not scale well with the number of
-constraints. This lack of rubustness and performance is the reason why you find
+constraints. This lack of robustness and performance is the reason why you find
 this implementation within an example and not as part of a supported main Drake
 feature.
 
@@ -321,12 +321,6 @@ constraint problem data</h4>
         errors via the same error feedback process (Baumgarte
         Stabilization) that uses α.
 - `γ`   Non-negative, real valued scalar used to regularize constraints.
-
-## <a id="discretization"></a>A stable discretization strategy
-
-To be written. Refer to
-https://github.com/RobotLocomotion/drake/pull/7055
-for a preview.
 
 ## <a id="constraint_references"></a>References
 
