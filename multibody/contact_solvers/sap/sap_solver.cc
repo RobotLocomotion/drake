@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -18,6 +19,16 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+const char nan_values_message[] =
+    "The typical root cause for this failure is usually outside the "
+    "solver, when there are no enough checks to catch it ealier. In this "
+    "case, a previous (valid) simulation result led to the generation of "
+    "NaN values in a controller, that are then fed as actuation through "
+    "MultibodyPlant's ports. If you don't believe this is the root cause "
+    "of your problem, please contact the Drake developers and/or open a "
+    "Drake issue with a minimal reproduciton example to help debug your "
+    "problem.";
 
 using drake::systems::Context;
 
@@ -417,7 +428,25 @@ T SapSolver<T>::CalcCostAlongLine(
     *d2ell_dalpha2 = d2ellA_dalpha2 + d2ellR_dalpha2;
 
     // Sanity check these terms are all positive.
-    DRAKE_DEMAND(d2ellR_dalpha2 >= 0.0);
+    using std::isnan;
+    if (isnan(d2ellR_dalpha2)) {
+      throw std::runtime_error(fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "NaN. {}",
+          nan_values_message));
+    }
+    if (d2ellR_dalpha2 < 0) {
+      const std::string msg = fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "negative, d²ℓ/dα² = {}. This can only be caused by a degenerate "
+          "constraint Hessian (a bug). This would be indicated by a value that "
+          "might be negative but close to machine epsilon. Please contact the "
+          "Drake developers and/or open a Drake issue with a minimal "
+          "reproduciton example to help debug your problem.",
+          d2ellR_dalpha2);
+      throw std::runtime_error(msg);
+    }
+
     DRAKE_DEMAND(d2ellA_dalpha2 > 0.0);
     DRAKE_DEMAND(*d2ell_dalpha2 > 0);
   }
@@ -629,6 +658,10 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // To estimate a guess, we approximate the cost as being quadratic around
   // alpha = 0.
   const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
+  if (std::isnan(alpha_guess)) {
+    throw std::runtime_error(fmt::format(
+        "The initial guess for line search is NaN. {}", nan_values_message));
+  }
 
   // N.B. If we are here, then we already know that dell_dalpha0 < 0 and dell >
   // 0, and therefore [0, alpha_max] is a valid bracket.
@@ -665,6 +698,26 @@ void SapSolver<T>::CalcSearchDirectionData(
   model.constraints_bundle().J().Multiply(data->dv, &data->dvc);
   model.MultiplyByDynamicsMatrix(data->dv, &data->dp);
   data->d2ellA_dalpha2 = data->dv.dot(data->dp);
+
+  using std::isnan;
+  if (isnan(data->d2ellA_dalpha2)) {
+    throw std::runtime_error(
+        fmt::format("The Hessian of the momentum cost along the search "
+                    "direction is NaN. {}",
+                    nan_values_message));
+  }
+  if (data->d2ellA_dalpha2 <= 0) {
+    const std::string msg = fmt::format(
+        "The Hessian of the momentum cost along the search direction is not "
+        "positive, d²ℓ/dα² = {}. This can only be caused by a mass matrix that "
+        "is not SPD. This would indicate bad problem data (e.g. a zero mass "
+        "floating body, though this would be caught earlier). If you don't "
+        "believe this is the root cause of your problem, please contact the "
+        "Drake developers and/or open a Drake issue with a minimal "
+        "reproduciton example to help debug your problem.",
+        data->d2ellA_dalpha2);
+    throw std::runtime_error(msg);
+  }
 }
 
 }  // namespace internal
