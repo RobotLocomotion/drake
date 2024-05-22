@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <string>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_properties.h"
@@ -23,7 +24,17 @@ struct RenderMaterial {
    applied as a texture according to the geometry's texture coordinates. If
    `diffuse_map` is empty, it acts as the multiplicative identity. */
   Rgba diffuse;
-  std::filesystem::path diffuse_map;
+
+  /* The optional texture to use as diffuse map. It can be a file path or
+   in-memory texture data. If the latter, it should be formatted as indicated
+   by TextureLibrary (e.g., prefixed with "data://"). */
+  std::string diffuse_map;
+
+  /* OpenGL defines image origin at the bottom-left corner of the texture. Some
+   geometry formats (e.g., glTF), define the origin at the top-left corner.
+   When set to true, the texture coordinates need to be flipped in the y
+   direction to render correctly. */
+  bool flip_y{false};
 
   /* Whether the material definition comes from the mesh itself, e.g., an .mtl
    file, as opposed to the user specification or an implied texture. */
