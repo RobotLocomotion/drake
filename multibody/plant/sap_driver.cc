@@ -251,16 +251,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
             MakeContactConfiguration(pair), std::move(J),
             make_sap_parameters()));
       } else {
-        ContactConfiguration<T> contact_configuration =
-            MakeContactConfiguration(pair);
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.vn)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.fe)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.phi)));
         problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
-            std::move(contact_configuration), std::move(J),
+            MakeContactConfiguration(pair), std::move(J),
             make_hunt_crossley_parameters()));
       }
     } else {
