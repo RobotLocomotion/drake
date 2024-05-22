@@ -70,14 +70,14 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
       policy.Warning(fmt::format(
           "The OBJ file's material requested an unavailable diffuse texture "
           "image: {}. The image will be omitted.",
-          result.diffuse_map.string()));
+          result.diffuse_map));
       result.diffuse_map.clear();
     } else if (uv_state != UvState::kFull) {
       policy.Warning(fmt::format(
           "The OBJ file's material requested a diffuse texture image: {}. "
           "However the mesh doesn't define {} texture coordinates. The image "
           "will be omitted.",
-          result.diffuse_map.string(),
+          result.diffuse_map,
           uv_state == UvState::kNone ? "any" : "a complete set of"));
       result.diffuse_map.clear();
     }

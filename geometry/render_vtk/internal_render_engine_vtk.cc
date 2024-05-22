@@ -993,7 +993,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map.string());
+          material.diffuse_map);
     }
 
     vtkNew<vtkImageCast> caster;
