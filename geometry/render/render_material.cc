@@ -108,12 +108,13 @@ RenderMaterial DefineMaterial(const GeometryProperties& props,
 
   material.diffuse_map =
       props.GetPropertyOrDefault<std::string>("phong", "diffuse_map", "");
-  const bool has_texture = !material.diffuse_map.empty();
+  const bool has_diffuse_map = !material.diffuse_map.empty();
+
   // Default of white with a declared texture, otherwise the given default.
   material.diffuse = props.GetPropertyOrDefault<Rgba>(
-      "phong", "diffuse", has_texture ? Rgba(1, 1, 1) : default_diffuse);
+      "phong", "diffuse", has_diffuse_map ? Rgba(1, 1, 1) : default_diffuse);
 
-  if (has_texture) {
+  if (has_diffuse_map) {
     // Confirm it is available.
     if (!std::ifstream(material.diffuse_map).is_open()) {
       // TODO(SeanCurtis-TRI): It would be good to be able to tie this into
@@ -123,16 +124,16 @@ RenderMaterial DefineMaterial(const GeometryProperties& props,
       policy.Warning(fmt::format(
           "The ('phong', 'diffuse_map') property referenced a map that "
           "could not be found: '{}'",
-          material.diffuse_map.string()));
-      material.diffuse_map.clear();
+          material.diffuse_map));
+      material.diffuse_map = "";
     } else if (uv_state != UvState::kFull) {
       policy.Warning(fmt::format(
           "The ('phong', 'diffuse_map') property referenced a map, but the "
           "geometry doesn't define {} texture coordinates. The map will be "
           "omitted: '{}'.",
           uv_state == UvState::kNone ? "any" : "a complete set of",
-          material.diffuse_map.string()));
-      material.diffuse_map.clear();
+          material.diffuse_map));
+      material.diffuse_map = "";
     }
   }
   return material;
