@@ -167,11 +167,6 @@ namespace solvers {
 */
 } // namespace solvers
 
-/**
-  @defgroup constraint_overview Multibody Dynamics Constraints
-  @ingroup multibody
-*/
-
 // TODO(russt): Take a thorough pass through the algorithms group
 // documentation, adding brief descriptions of each and tagging the relevant
 // algorithms throughout the code.

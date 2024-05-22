@@ -4,13 +4,11 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace multibody {
-namespace constraint {
-namespace internal {
+namespace examples {
+namespace rod2d {
 
 /// Structure for holding constraint data for computing forces due to
 /// constraints and the resulting multibody accelerations.
@@ -26,7 +24,7 @@ namespace internal {
 /// constraints, etc.)
 ///
 /// <h3>Definition of variables specific to this class</h3>
-/// (See @ref constraint_variable_defs) for the more general set of
+/// (See "Variable definitions" in the local README) for the more general set of
 /// definitions).
 ///
 /// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
@@ -291,9 +289,7 @@ template <class T>
 struct ConstraintVelProblemData {
   /// Constructs velocity problem data for a system with a @p gv_dim dimensional
   /// generalized velocity.
-  explicit ConstraintVelProblemData(int gv_dim) {
-    Reinitialize(gv_dim);
-  }
+  explicit ConstraintVelProblemData(int gv_dim) { Reinitialize(gv_dim); }
 
   /// Reinitializes the constraint problem data using the specified dimension
   /// of the generalized velocities.
@@ -310,7 +306,8 @@ struct ConstraintVelProblemData {
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
     auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(gv_dim); };
+      return VectorX<T>::Zero(gv_dim);
+    };
     N_transpose_mult = zero_gv_dim_fn;
     F_transpose_mult = zero_gv_dim_fn;
     L_transpose_mult = zero_gv_dim_fn;
@@ -512,18 +509,6 @@ struct ConstraintVelProblemData {
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
-}  // namespace internal
-
-template <class T>
-using ConstraintAccelProblemData
-    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
-    = internal::ConstraintAccelProblemData<T>;
-
-template <class T>
-using ConstraintVelProblemData
-    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
-    = internal::ConstraintVelProblemData<T>;
-
-}  // namespace constraint
-}  // namespace multibody
+}  // namespace rod2d
+}  // namespace examples
 }  // namespace drake

@@ -7,16 +7,14 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
-#include "drake/multibody/constraint/constraint_problem_data.h"
+#include "drake/examples/rod2d/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 
 namespace drake {
-namespace multibody {
-namespace constraint {
-namespace internal {
+namespace examples {
+namespace rod2d {
 
 /// Solves constraint problems for constraint forces. Specifically, given
 /// problem data corresponding to a rigid or multi-body system constrained
@@ -164,8 +162,8 @@ class ConstraintSolver {
   /// `x₆`, `x₇`, and `x₈` can be viewed as mathematical programming "slack"
   /// variables; and `kᴳ ∈ ℝⁿᵇ`, `kᴺ ∈ ℝⁿᶜ`, `kᴰ ∈ ℝⁿᶜᵏ`, `kᴸ ∈ ℝⁿᵘ`
   /// allow customizing the problem to, e.g., correct constraint violations and
-  /// simulate restitution. See @ref constraint_variable_defs for complete
-  /// definitions of `nv`, `nc`, `nb`, etc.
+  /// simulate restitution. See "Variable definitions" in the local README for
+  /// complete definitions of `nv`, `nc`, `nb`, etc.
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
@@ -299,9 +297,7 @@ class ConstraintSolver {
   /// @see UpdateDiscretizedTimeLcp()
   static void ConstructBaseDiscretizedTimeLcp(
       const ConstraintVelProblemData<T>& problem_data,
-      MlcpToLcpData* mlcp_to_lcp_data,
-      MatrixX<T>* MM,
-      VectorX<T>* qq);
+      MlcpToLcpData* mlcp_to_lcp_data, MatrixX<T>* MM, VectorX<T>* qq);
 
   /// Updates the time-discretization of the LCP initially computed in
   /// ConstructBaseDiscretizedTimeLcp() using the problem data and time step
@@ -317,11 +313,8 @@ class ConstraintSolver {
   /// @pre `mlcp_to_lcp_data`, `a`, `MM`, and `qq` are non-null on entry.
   /// @see ConstructBaseDiscretizedTimeLcp()
   static void UpdateDiscretizedTimeLcp(
-      const ConstraintVelProblemData<T>& problem_data,
-      double h,
-      MlcpToLcpData* mlcp_to_lcp_data,
-      VectorX<T>* a,
-      MatrixX<T>* MM,
+      const ConstraintVelProblemData<T>& problem_data, double h,
+      MlcpToLcpData* mlcp_to_lcp_data, VectorX<T>* a, MatrixX<T>* MM,
       VectorX<T>* qq);
 
   /// Solves the impact problem described above.
@@ -378,11 +371,8 @@ class ConstraintSolver {
   /// @pre cf is non-null.
   static void PopulatePackedConstraintForcesFromLcpSolution(
       const ConstraintVelProblemData<T>& problem_data,
-      const MlcpToLcpData& mlcp_to_lcp_data,
-      const VectorX<T>& zz,
-      const VectorX<T>& a,
-      double dt,
-      VectorX<T>* cf);
+      const MlcpToLcpData& mlcp_to_lcp_data, const VectorX<T>& zz,
+      const VectorX<T>& a, double dt, VectorX<T>* cf);
   //@}
 
   /// Solves the appropriate constraint problem at the acceleration level.
@@ -424,8 +414,7 @@ class ConstraintSolver {
   /// @throws std::exception if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
-      const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& cf,
+      const ConstraintAccelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
   /// Computes the generalized force on the system from the constraint forces
@@ -442,8 +431,7 @@ class ConstraintSolver {
   /// @throws std::exception if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
-      const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& cf,
+      const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
   /// Computes the system generalized acceleration due to both external forces
@@ -456,13 +444,11 @@ class ConstraintSolver {
   /// @throws std::exception if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
-      const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& cf,
+      const ConstraintAccelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration) {
     ComputeGeneralizedAccelerationFromConstraintForces(
         problem_data, cf, generalized_acceleration);
-    (*generalized_acceleration) += problem_data.solve_inertia(
-        problem_data.tau);
+    (*generalized_acceleration) += problem_data.solve_inertia(problem_data.tau);
   }
 
   /// Computes a first-order approximation of generalized acceleration due
@@ -484,10 +470,17 @@ class ConstraintSolver {
   ///         `cf` vector is incorrectly sized.
   /// @pre `dt` is positive.
   static void ComputeGeneralizedAcceleration(
-      const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& v,
-      const VectorX<T>& cf,
-      double dt,
+      const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& v,
+      const VectorX<T>& cf, double dt, VectorX<T>* generalized_acceleration);
+
+  /// Computes the system generalized acceleration due *only* to constraint
+  /// forces.
+  /// @param cf The computed constraint forces, in the packed storage
+  ///           format described in documentation for SolveConstraintProblem.
+  /// @throws std::exception if @p generalized_acceleration is null or
+  ///         @p cf vector is incorrectly sized.
+  static void ComputeGeneralizedAccelerationFromConstraintForces(
+      const ConstraintAccelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
 
   /// Computes the system generalized acceleration due *only* to constraint
@@ -497,20 +490,8 @@ class ConstraintSolver {
   /// @throws std::exception if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAccelerationFromConstraintForces(
-      const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& cf,
+      const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
-
-  /// Computes the system generalized acceleration due *only* to constraint
-  /// forces.
-  /// @param cf The computed constraint forces, in the packed storage
-  ///           format described in documentation for SolveConstraintProblem.
-  /// @throws std::exception if @p generalized_acceleration is null or
-  ///         @p cf vector is incorrectly sized.
-  static void ComputeGeneralizedAccelerationFromConstraintForces(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
-    VectorX<T>* generalized_acceleration);
 
   /// Computes the change to the system generalized velocity from constraint
   /// impulses.
@@ -519,8 +500,7 @@ class ConstraintSolver {
   /// @throws std::exception if `generalized_delta_v` is null or
   ///         `cf` vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
-      const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& cf,
+      const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
       VectorX<T>* generalized_delta_v);
 
   /// Gets the contact forces expressed in each contact frame *for 2D contact
@@ -547,8 +527,7 @@ class ConstraintSolver {
   /// @note On return, the contact force at the iᵗʰ contact point expressed
   ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
-      const VectorX<T>& cf,
-      const ConstraintAccelProblemData<T>& problem_data,
+      const VectorX<T>& cf, const ConstraintAccelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
@@ -578,35 +557,28 @@ class ConstraintSolver {
   /// @note On return, the contact force at the iᵗʰ contact point expressed
   ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
-      const VectorX<T>& cf,
-      const ConstraintVelProblemData<T>& problem_data,
+      const VectorX<T>& cf, const ConstraintVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
  private:
   static void PopulatePackedConstraintForcesFromLcpSolution(
       const ConstraintVelProblemData<T>& problem_data,
-      const MlcpToLcpData& mlcp_to_lcp_data,
-      const VectorX<T>& zz,
-      const VectorX<T>& a,
-      VectorX<T>* cf);
+      const MlcpToLcpData& mlcp_to_lcp_data, const VectorX<T>& zz,
+      const VectorX<T>& a, VectorX<T>* cf);
   static void ConstructLinearEquationSolversForMlcp(
       const ConstraintVelProblemData<T>& problem_data,
       MlcpToLcpData* mlcp_to_lcp_data);
   void FormAndSolveConstraintLcp(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& trunc_neg_invA_a,
-      VectorX<T>* cf) const;
+      const VectorX<T>& trunc_neg_invA_a, VectorX<T>* cf) const;
   void FormAndSolveConstraintLinearSystem(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& trunc_neg_invA_a,
-      VectorX<T>* cf) const;
+      const VectorX<T>& trunc_neg_invA_a, VectorX<T>* cf) const;
   static void CheckAccelConstraintMatrix(
-    const ConstraintAccelProblemData<T>& problem_data,
-    const MatrixX<T>& MM);
+      const ConstraintAccelProblemData<T>& problem_data, const MatrixX<T>& MM);
   static void CheckVelConstraintMatrix(
-    const ConstraintVelProblemData<T>& problem_data,
-    const MatrixX<T>& MM);
+      const ConstraintVelProblemData<T>& problem_data, const MatrixX<T>& MM);
 
   // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ
   // (realized here using an operator) and B ∈ ℝᵇˣᵐ are both Jacobian matrices
@@ -614,53 +586,44 @@ class ConstraintSolver {
   // mixing types of constraints is explicitly allowed. Aborts if A_iM_BT is
   // not of size a × b.
   static void ComputeConstraintSpaceComplianceMatrix(
-      std::function<VectorX<T>(const VectorX<T>&)> A_mult,
-      int a,
-      const MatrixX<T>& M_inv_BT,
-      Eigen::Ref<MatrixX<T>>);
+      std::function<VectorX<T>(const VectorX<T>&)> A_mult, int a,
+      const MatrixX<T>& M_inv_BT, Eigen::Ref<MatrixX<T>>);
 
   // Computes the matrix M⁻¹⋅Gᵀ, G ∈ ℝᵐˣⁿ is a constraint Jacobian matrix
   // (realized here using an operator) and M⁻¹ ∈ ℝⁿˣⁿ is the inverse of the
   // generalized inertia matrix. Resizes iM_GT as necessary.
   static void ComputeInverseInertiaTimesGT(
       std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
-      std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
-      int m,
+      std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult, int m,
       MatrixX<T>* iM_GT);
 
   static void FormImpactingConstraintLcp(
-      const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
+      const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& invA_a,
       MatrixX<T>* MM, VectorX<T>* qq);
   static void FormSustainedConstraintLcp(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
-      MatrixX<T>* MM, VectorX<T>* qq);
+      const VectorX<T>& invA_a, MatrixX<T>* MM, VectorX<T>* qq);
   static void FormSustainedConstraintLinearSystem(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
-      MatrixX<T>* MM, VectorX<T>* qq);
+      const VectorX<T>& invA_a, MatrixX<T>* MM, VectorX<T>* qq);
 
   template <typename ProblemData>
   static void DetermineNewPartialInertiaSolveOperator(
-    const ProblemData* problem_data,
-    int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
-    std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve);
+      const ProblemData* problem_data, int num_generalized_velocities,
+      const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
+      std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve);
 
   template <typename ProblemData>
   static void DetermineNewFullInertiaSolveOperator(
-    const ProblemData* problem_data,
-    int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
-    std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve);
+      const ProblemData* problem_data, int num_generalized_velocities,
+      const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
+      std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve);
 
   template <typename ProblemData>
   static ProblemData* UpdateProblemDataForUnilateralConstraints(
       const ProblemData& problem_data,
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-      int gv_dim,
-      ProblemData* modified_problem_data);
+      int gv_dim, ProblemData* modified_problem_data);
 
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
@@ -684,8 +647,7 @@ class ConstraintSolver {
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
-    const ProblemData* problem_data,
-    int num_generalized_velocities,
+    const ProblemData* problem_data, int num_generalized_velocities,
     const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) {
   const int num_eq_constraints = problem_data->kG.size();
@@ -717,8 +679,8 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
     const MatrixX<T> GT_Del_G_iM_X = problem_data->G_transpose_mult(Del_G_iM_X);
 
     // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹X
-    const MatrixX<T> iM_GT_Del_G_iM_X = problem_data->solve_inertia(
-        GT_Del_G_iM_X);
+    const MatrixX<T> iM_GT_Del_G_iM_X =
+        problem_data->solve_inertia(GT_Del_G_iM_X);
 
     // Compute the result
     result = iM_X - iM_GT_Del_G_iM_X;
@@ -742,8 +704,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
-    const ProblemData* problem_data,
-    int num_generalized_velocities,
+    const ProblemData* problem_data, int num_generalized_velocities,
     const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) {
   // Get the number of equality constraints.
@@ -788,8 +749,8 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     const MatrixX<T> GT_Del_G_iM_Y = problem_data->G_transpose_mult(Del_G_iM_Y);
 
     // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
-    const MatrixX<T> iM_GT_Del_G_iM_Y = problem_data->solve_inertia(
-        GT_Del_G_iM_Y);
+    const MatrixX<T> iM_GT_Del_G_iM_Y =
+        problem_data->solve_inertia(GT_Del_G_iM_Y);
 
     // 2. Begin computation of components of E
     // Compute (GM⁻¹Gᵀ)⁻¹Z
@@ -816,8 +777,7 @@ template <typename ProblemData>
 ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     const ProblemData& problem_data,
     std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-    int gv_dim,
-    ProblemData* modified_problem_data) {
+    int gv_dim, ProblemData* modified_problem_data) {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data != nullptr);
 
@@ -880,10 +840,9 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 template <class T>
 void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& trunc_neg_invA_a,
-    VectorX<T>* cf) const {
-  using std::max;
+    const VectorX<T>& trunc_neg_invA_a, VectorX<T>* cf) const {
   using std::abs;
+  using std::max;
 
   DRAKE_DEMAND(cf != nullptr);
 
@@ -896,14 +855,14 @@ void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
   const int num_sliding = sliding_contacts.size();
   const int num_non_sliding = non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
 
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
-      num_eq_constraints);
+             num_eq_constraints);
 
   // Using Equations (f) and (g) from the comments in
   // FormAndSolveConstraintLcp() and defining C as the upper left block of A⁻¹,
@@ -942,10 +901,9 @@ void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
 template <typename T>
 void ConstraintSolver<T>::FormAndSolveConstraintLcp(
     const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& trunc_neg_invA_a,
-    VectorX<T>* cf) const {
-  using std::max;
+    const VectorX<T>& trunc_neg_invA_a, VectorX<T>* cf) const {
   using std::abs;
+  using std::max;
 
   DRAKE_DEMAND(cf != nullptr);
 
@@ -958,15 +916,15 @@ void ConstraintSolver<T>::FormAndSolveConstraintLcp(
   const int num_sliding = sliding_contacts.size();
   const int num_non_sliding = non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int nk = num_spanning_vectors * 2;
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
 
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
-      num_eq_constraints);
+             num_eq_constraints);
 
   // The constraint problem is a mixed linear complementarity problem of the
   // form:
@@ -1053,8 +1011,8 @@ void ConstraintSolver<T>::FormAndSolveConstraintLcp(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
-  const double max_dot = (zz.size() > 0) ?
-                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
+  const double max_dot =
+      (zz.size() > 0) ? (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
@@ -1065,19 +1023,20 @@ void ConstraintSolver<T>::FormAndSolveConstraintLcp(
   // num_vars multiplies.
   const int num_vars = qq.size();
   const int npivots = std::max(1, lcp_.get_num_pivots());
-  if (!success || (zz.size() > 0 &&
-      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
-      ww.minCoeff() < -num_vars * npivots * zero_tol ||
-      max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
-          npivots * zero_tol))) {
+  if (!success ||
+      (zz.size() > 0 &&
+       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
+        ww.minCoeff() < -num_vars * npivots * zero_tol ||
+        max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
+                      num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
   // Alias constraint force segments.
   const auto fN = zz.segment(0, num_contacts);
   const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
-  const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
-                                   num_spanning_vectors);
+  const auto fD_minus =
+      zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
   const auto fL = zz.segment(num_contacts + num_non_sliding + nk, num_limits);
 
   // Get the constraint forces in the specified packed storage format.
@@ -1088,13 +1047,11 @@ void ConstraintSolver<T>::FormAndSolveConstraintLcp(
 
 template <typename T>
 void ConstraintSolver<T>::SolveConstraintProblem(
-    const ConstraintAccelProblemData<T>& problem_data,
-    VectorX<T>* cf) const {
-  using std::max;
+    const ConstraintAccelProblemData<T>& problem_data, VectorX<T>* cf) const {
   using std::abs;
+  using std::max;
 
-  if (!cf)
-    throw std::logic_error("cf (output parameter) is null.");
+  if (!cf) throw std::logic_error("cf (output parameter) is null.");
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -1108,8 +1065,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
   const int num_generalized_velocities = problem_data.tau.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
 
   // Look for fast exit.
   if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
@@ -1120,12 +1077,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   // Look for a second fast exit. (We avoid this calculation if there are
   // bilateral constraints because it's too hard to determine a workable
   // tolerance at this point).
-  const VectorX<T> candidate_accel = problem_data.solve_inertia(
-      problem_data.tau);
-  const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
-      problem_data.kN;
-  const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
-      problem_data.kL;
+  const VectorX<T> candidate_accel =
+      problem_data.solve_inertia(problem_data.tau);
+  const VectorX<T> N_eval =
+      problem_data.N_mult(candidate_accel) + problem_data.kN;
+  const VectorX<T> L_eval =
+      problem_data.L_mult(candidate_accel) + problem_data.kL;
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
       (num_eq_constraints == 0)) {
@@ -1148,8 +1105,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
                                  problem_data.G_transpose_mult,
                                  num_eq_constraints, &iM_GT);
     ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
-                                           num_eq_constraints,
-                                           iM_GT, Del);
+                                           num_eq_constraints, iM_GT, Del);
 
     // Compute the complete orthogonal factorization.
     mlcp_to_lcp_data.delassus_QTZ.compute(Del);
@@ -1159,15 +1115,15 @@ void ConstraintSolver<T>::SolveConstraintProblem(
     //     | G   0  |
     // using a least-squares solution to accommodate rank-deficiency in G. This
     // will allow transforming the mixed LCP into a pure LCP.
-    DetermineNewFullInertiaSolveOperator(&problem_data,
-        num_generalized_velocities, &mlcp_to_lcp_data.delassus_QTZ,
-        &mlcp_to_lcp_data.A_solve);
+    DetermineNewFullInertiaSolveOperator(
+        &problem_data, num_generalized_velocities,
+        &mlcp_to_lcp_data.delassus_QTZ, &mlcp_to_lcp_data.A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
     // of A⁻¹ (denoted C) to exploit zero blocks in common operations.
-    DetermineNewPartialInertiaSolveOperator(&problem_data,
-        num_generalized_velocities, &mlcp_to_lcp_data.delassus_QTZ,
-        &mlcp_to_lcp_data.fast_A_solve);
+    DetermineNewPartialInertiaSolveOperator(
+        &problem_data, num_generalized_velocities,
+        &mlcp_to_lcp_data.delassus_QTZ, &mlcp_to_lcp_data.fast_A_solve);
   } else {
     mlcp_to_lcp_data.A_solve = problem_data.solve_inertia;
     mlcp_to_lcp_data.fast_A_solve = problem_data.solve_inertia;
@@ -1176,8 +1132,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   // Copy the problem data and then update it to account for bilateral
   // constraints.
   const int gv_dim = problem_data.tau.size();
-  ConstraintAccelProblemData<T> modified_problem_data(
-       gv_dim + num_eq_constraints);
+  ConstraintAccelProblemData<T> modified_problem_data(gv_dim +
+                                                      num_eq_constraints);
   ConstraintAccelProblemData<T>* data_ptr = &modified_problem_data;
   data_ptr = UpdateProblemDataForUnilateralConstraints(
       problem_data, mlcp_to_lcp_data.fast_A_solve, gv_dim, data_ptr);
@@ -1216,33 +1172,32 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   if (num_eq_constraints > 0) {
     // In this case, Xv = -(Nᵀ + μQᵀ)fN - DᵀfD - LᵀfL and a = | -f |.
     //                                                        | kG |
-    const VectorX<T> Xv = -data_ptr->N_minus_muQ_transpose_mult(fN)
-        -data_ptr->F_transpose_mult(fF)
-        -data_ptr->L_transpose_mult(fL);
+    const VectorX<T> Xv = -data_ptr->N_minus_muQ_transpose_mult(fN) -
+                          data_ptr->F_transpose_mult(fF) -
+                          data_ptr->L_transpose_mult(fL);
     VectorX<T> aug = a;
     aug.head(Xv.size()) += Xv;
     const VectorX<T> u = -mlcp_to_lcp_data.A_solve(aug);
-    auto lambda = cf->segment(
-        num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
+    auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,
+                              num_eq_constraints);
     lambda = u.tail(num_eq_constraints);
   }
 }
 
 template <typename T>
 void ConstraintSolver<T>::SolveImpactProblem(
-    const ConstraintVelProblemData<T>& problem_data,
-    VectorX<T>* cf) const {
-  using std::max;
+    const ConstraintVelProblemData<T>& problem_data, VectorX<T>* cf) const {
   using std::abs;
+  using std::max;
 
-  if (!cf)
-    throw std::logic_error("cf (output parameter) is null.");
+  if (!cf) throw std::logic_error("cf (output parameter) is null.");
 
   // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
   if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
-    throw std::logic_error("Number of elements in 'r' does not match number"
-                               "of elements in 'mu'");
+    throw std::logic_error(
+        "Number of elements in 'r' does not match number"
+        "of elements in 'mu'");
   }
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
@@ -1254,8 +1209,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   }
 
   // Get number of tangent spanning vectors.
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
 
   // Determine the pre-impact velocity.
   const VectorX<T> v = problem_data.solve_inertia(problem_data.Mv);
@@ -1263,10 +1218,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // If no impact and no bilateral constraints, do not apply the impact model.
   // (We avoid this calculation if there are bilateral constraints because it's
   // too hard to determine a workable tolerance at this point).
-  const VectorX<T> N_eval = problem_data.N_mult(v) +
-      problem_data.kN;
-  const VectorX<T> L_eval = problem_data.L_mult(v) +
-      problem_data.kL;
+  const VectorX<T> N_eval = problem_data.N_mult(v) + problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(v) + problem_data.kL;
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
       (num_eq_constraints == 0)) {
@@ -1276,7 +1229,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
-      num_eq_constraints);
+             num_eq_constraints);
 
   // Construct the operators required to "factor out" the bilateral constraints
   // through conversion of a mixed linear complementarity problem into a "pure"
@@ -1288,8 +1241,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // Copy the problem data and then update it to account for bilateral
   // constraints.
   const int gv_dim = problem_data.Mv.size();
-  ConstraintVelProblemData<T> modified_problem_data(
-      gv_dim + num_eq_constraints);
+  ConstraintVelProblemData<T> modified_problem_data(gv_dim +
+                                                    num_eq_constraints);
   ConstraintVelProblemData<T>* data_ptr = &modified_problem_data;
   data_ptr = UpdateProblemDataForUnilateralConstraints(
       problem_data, mlcp_to_lcp_data.fast_A_solve, gv_dim, data_ptr);
@@ -1314,8 +1267,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
-  const T max_dot = (zz.size() > 0) ?
-                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
+  const T max_dot =
+      (zz.size() > 0) ? (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
   // Check the answer and solve using progressive regularization if necessary.
   const int num_vars = qq.size();
@@ -1325,18 +1278,19 @@ void ConstraintSolver<T>::SolveImpactProblem(
        (zz.minCoeff() < -num_vars * npivots * zero_tol ||
         ww.minCoeff() < -num_vars * npivots * zero_tol ||
         max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
-            num_vars * npivots * zero_tol))) {
+                      num_vars * npivots * zero_tol))) {
     // Report difficulty
-    DRAKE_LOGGER_DEBUG("Unable to solve impacting problem LCP without "
+    DRAKE_LOGGER_DEBUG(
+        "Unable to solve impacting problem LCP without "
         "progressive regularization");
     DRAKE_LOGGER_DEBUG("zero tolerance for z/w: {}",
-        num_vars * npivots * zero_tol);
+                       num_vars * npivots * zero_tol);
     DRAKE_LOGGER_DEBUG("Solver reports success? {}", success);
     DRAKE_LOGGER_DEBUG("minimum z: {}", zz.minCoeff());
     DRAKE_LOGGER_DEBUG("minimum w: {}", ww.minCoeff());
     DRAKE_LOGGER_DEBUG("zero tolerance for <z,w>: {}",
-      max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
-      npivots * zero_tol);
+                       max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
+                           num_vars * npivots * zero_tol);
     DRAKE_LOGGER_DEBUG("z'w: {}", max_dot);
 
     // Use progressive regularization to solve.
@@ -1345,21 +1299,20 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                   // factor of ten.
     const int max_exp = 1;        // Maximum regularization: 1e1.
     const double piv_tol = -1;    // Make solver compute the pivot tolerance.
-    if (!lcp_.SolveLcpLemkeRegularized(
-        MM, qq, &zz, min_exp, step_exp, max_exp, piv_tol, zero_tol)) {
+    if (!lcp_.SolveLcpLemkeRegularized(MM, qq, &zz, min_exp, step_exp, max_exp,
+                                       piv_tol, zero_tol)) {
       throw std::runtime_error("Progressively regularized LCP solve failed.");
     } else {
       ww = MM * zz + qq;
       DRAKE_LOGGER_DEBUG("minimum z: {}", zz.minCoeff());
       DRAKE_LOGGER_DEBUG("minimum w: {}", ww.minCoeff());
-      DRAKE_LOGGER_DEBUG("z'w: ",
-          (zz.array() * ww.array()).abs().maxCoeff());
+      DRAKE_LOGGER_DEBUG("z'w: ", (zz.array() * ww.array()).abs().maxCoeff());
     }
   }
 
   // Construct the packed force vector.
-  PopulatePackedConstraintForcesFromLcpSolution(
-      problem_data, mlcp_to_lcp_data, zz, a, cf);
+  PopulatePackedConstraintForcesFromLcpSolution(problem_data, mlcp_to_lcp_data,
+                                                zz, a, cf);
 }
 
 template <typename T>
@@ -1392,8 +1345,7 @@ void ConstraintSolver<T>::ConstructLinearEquationSolversForMlcp(
                                  problem_data.G_transpose_mult,
                                  num_eq_constraints, &iM_GT);
     ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
-                                           num_eq_constraints,
-                                           iM_GT, Del);
+                                           num_eq_constraints, iM_GT, Del);
 
     // Compute the complete orthogonal factorization.
     mlcp_to_lcp_data->delassus_QTZ.compute(Del);
@@ -1403,15 +1355,15 @@ void ConstraintSolver<T>::ConstructLinearEquationSolversForMlcp(
     //     | G   0  |
     // using the newly reduced set of constraints. This will allow transforming
     // the mixed LCP into a pure LCP.
-    DetermineNewFullInertiaSolveOperator(&problem_data,
-        num_generalized_velocities, &mlcp_to_lcp_data->delassus_QTZ,
-        &mlcp_to_lcp_data->A_solve);
+    DetermineNewFullInertiaSolveOperator(
+        &problem_data, num_generalized_velocities,
+        &mlcp_to_lcp_data->delassus_QTZ, &mlcp_to_lcp_data->A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
     // of A⁻¹ to exploit zeros in common operations.
-    DetermineNewPartialInertiaSolveOperator(&problem_data,
-        num_generalized_velocities, &mlcp_to_lcp_data->delassus_QTZ,
-        &mlcp_to_lcp_data->fast_A_solve);
+    DetermineNewPartialInertiaSolveOperator(
+        &problem_data, num_generalized_velocities,
+        &mlcp_to_lcp_data->delassus_QTZ, &mlcp_to_lcp_data->fast_A_solve);
   } else {
     mlcp_to_lcp_data->A_solve = problem_data.solve_inertia;
     mlcp_to_lcp_data->fast_A_solve = problem_data.solve_inertia;
@@ -1428,43 +1380,38 @@ void ConstraintSolver<T>::ConstructLinearEquationSolversForMlcp(
 template <typename T>
 void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     const ConstraintVelProblemData<T>& problem_data,
-    const MlcpToLcpData& mlcp_to_lcp_data,
-    const VectorX<T>& zz,
-    const VectorX<T>& a,
-    VectorX<T>* cf) {
-  PopulatePackedConstraintForcesFromLcpSolution(
-      problem_data, mlcp_to_lcp_data, zz, a, 1.0, cf);
+    const MlcpToLcpData& mlcp_to_lcp_data, const VectorX<T>& zz,
+    const VectorX<T>& a, VectorX<T>* cf) {
+  PopulatePackedConstraintForcesFromLcpSolution(problem_data, mlcp_to_lcp_data,
+                                                zz, a, 1.0, cf);
 }
 
 template <typename T>
 void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     const ConstraintVelProblemData<T>& problem_data,
-    const MlcpToLcpData& mlcp_to_lcp_data,
-    const VectorX<T>& zz,
-    const VectorX<T>& a,
-    double dt,
-    VectorX<T>* cf) {
+    const MlcpToLcpData& mlcp_to_lcp_data, const VectorX<T>& zz,
+    const VectorX<T>& a, double dt, VectorX<T>* cf) {
   // Resize the force vector.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
-      num_eq_constraints);
+             num_eq_constraints);
 
   // Quit early if zz is empty.
   if (zz.size() == 0) {
     cf->setZero();
     if (num_eq_constraints > 0) {
       const VectorX<T> u = -mlcp_to_lcp_data.A_solve(a);
-      auto lambda = cf->segment(num_contacts +
-          num_spanning_vectors + num_limits, num_eq_constraints);
+      auto lambda = cf->segment(
+          num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
 
       // Transform the impulsive forces to non-impulsive forces.
       lambda = u.tail(num_eq_constraints) / dt;
       DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-          fmt_eigen(lambda.transpose()));
+                         fmt_eigen(lambda.transpose()));
     }
 
     return;
@@ -1473,10 +1420,10 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
   // Alias constraint force segments.
   const auto fN = zz.segment(0, num_contacts);
   const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
-  const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
-                                   num_spanning_vectors);
-  const auto fL = zz.segment(num_contacts * 2 + num_spanning_vectors * 2,
-                             num_limits);
+  const auto fD_minus =
+      zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
+  const auto fL =
+      zz.segment(num_contacts * 2 + num_spanning_vectors * 2, num_limits);
   const auto fF = cf->segment(num_contacts, num_spanning_vectors);
 
   // Get the constraint forces in the specified packed storage format.
@@ -1484,11 +1431,13 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
   cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
   cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
   DRAKE_LOGGER_DEBUG("Normal contact forces/impulses: {}",
-      fmt_eigen(fN.transpose()));
+                     fmt_eigen(fN.transpose()));
   DRAKE_LOGGER_DEBUG("Frictional contact forces/impulses: {}",
-      fmt_eigen((fD_plus - fD_minus).transpose()));
-  DRAKE_LOGGER_DEBUG("Generic unilateral constraint "
-      "forces/impulses: {}", fmt_eigen(fL.transpose()));
+                     fmt_eigen((fD_plus - fD_minus).transpose()));
+  DRAKE_LOGGER_DEBUG(
+      "Generic unilateral constraint "
+      "forces/impulses: {}",
+      fmt_eigen(fL.transpose()));
 
   // Determine the new velocity and the bilateral constraint forces/
   // impulses.
@@ -1507,42 +1456,38 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     // In this case, Xv = -NᵀfN - DᵀfD -LᵀfL and a = | -Mv(t) |.
     //                                               |   kG   |
     // First, make the forces impulsive.
-    const VectorX<T> Xv = (-problem_data.N_transpose_mult(fN)
-        -problem_data.F_transpose_mult(fF)
-        -problem_data.L_transpose_mult(fL)) * dt;
+    const VectorX<T> Xv = (-problem_data.N_transpose_mult(fN) -
+                           problem_data.F_transpose_mult(fF) -
+                           problem_data.L_transpose_mult(fL)) *
+                          dt;
     VectorX<T> aug = a;
     aug.head(Xv.size()) += Xv;
     const VectorX<T> u = -mlcp_to_lcp_data.A_solve(aug);
-    auto lambda = cf->segment(num_contacts +
-        num_spanning_vectors + num_limits, num_eq_constraints);
+    auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,
+                              num_eq_constraints);
 
     // Transform the impulsive forces back to non-impulsive forces.
     lambda = u.tail(num_eq_constraints) / dt;
     DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-        fmt_eigen(lambda.transpose()));
+                       fmt_eigen(lambda.transpose()));
   }
 }
 
 template <typename T>
 void ConstraintSolver<T>::UpdateDiscretizedTimeLcp(
-    const ConstraintVelProblemData<T>& problem_data,
-    double dt,
-    MlcpToLcpData* mlcp_to_lcp_data,
-    VectorX<T>* a,
-    MatrixX<T>* MM,
+    const ConstraintVelProblemData<T>& problem_data, double dt,
+    MlcpToLcpData* mlcp_to_lcp_data, VectorX<T>* a, MatrixX<T>* MM,
     VectorX<T>* qq) {
   DRAKE_DEMAND(MM != nullptr);
   DRAKE_DEMAND(qq != nullptr);
   DRAKE_DEMAND(a != nullptr);
 
   // Look for early exit.
-  if (qq->rows() == 0)
-    return;
+  if (qq->rows() == 0) return;
 
   // Recompute the linear equation solvers, if necessary.
   if (problem_data.kG.size() > 0) {
-    ConstructLinearEquationSolversForMlcp(
-        problem_data, mlcp_to_lcp_data);
+    ConstructLinearEquationSolversForMlcp(problem_data, mlcp_to_lcp_data);
   }
 
   // Compute a and A⁻¹a.
@@ -1555,13 +1500,12 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLcp(
   const VectorX<T> trunc_neg_invA_a = -invA_a.head(Mv.size());
 
   // Look for quick exit.
-  if (qq->rows() == 0)
-    return;
+  if (qq->rows() == 0) return;
 
   // Get numbers of contacts.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Alias these variables for more readable construction of MM and qq.
@@ -1614,15 +1558,13 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLcp(
   qq->segment(nc, nr) = F(trunc_neg_invA_a) + problem_data.kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
+  qq->segment(nc * 2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
 }
 
 template <typename T>
 void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLcp(
     const ConstraintVelProblemData<T>& problem_data,
-    MlcpToLcpData* mlcp_to_lcp_data,
-    MatrixX<T>* MM,
-    VectorX<T>* qq) {
+    MlcpToLcpData* mlcp_to_lcp_data, MatrixX<T>* MM, VectorX<T>* qq) {
   DRAKE_DEMAND(MM != nullptr);
   DRAKE_DEMAND(qq != nullptr);
   DRAKE_DEMAND(mlcp_to_lcp_data != nullptr);
@@ -1630,8 +1572,9 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLcp(
   // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
   if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
-    throw std::logic_error("Number of elements in 'r' does not match number"
-                               "of elements in 'mu'");
+    throw std::logic_error(
+        "Number of elements in 'r' does not match number"
+        "of elements in 'mu'");
   }
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
@@ -1648,10 +1591,8 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLcp(
   // constraints because it's too hard to determine a workable tolerance at
   // this point).
   const VectorX<T> v = problem_data.solve_inertia(problem_data.Mv);
-  const VectorX<T> N_eval = problem_data.N_mult(v) +
-      problem_data.kN;
-  const VectorX<T> L_eval = problem_data.L_mult(v) +
-      problem_data.kL;
+  const VectorX<T> N_eval = problem_data.N_mult(v) + problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(v) + problem_data.kL;
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
       (num_eq_constraints == 0)) {
@@ -1682,18 +1623,15 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLcp(
 
 template <class T>
 void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
-    std::function<VectorX<T>(const VectorX<T>&)> A_mult,
-    int a,
-    const MatrixX<T>& iM_BT,
-    Eigen::Ref<MatrixX<T>> A_iM_BT) {
+    std::function<VectorX<T>(const VectorX<T>&)> A_mult, int a,
+    const MatrixX<T>& iM_BT, Eigen::Ref<MatrixX<T>> A_iM_BT) {
   const int b = iM_BT.cols();
   DRAKE_DEMAND(A_iM_BT.rows() == a && A_iM_BT.cols() == b);
 
   // Look for fast exit.
-  if (a == 0 || b == 0)
-    return;
+  if (a == 0 || b == 0) return;
 
-  VectorX<T> iM_bT;     // Intermediate result vector.
+  VectorX<T> iM_bT;  // Intermediate result vector.
 
   for (int i = 0; i < b; ++i) {
     iM_bT = iM_BT.col(i);
@@ -1704,8 +1642,7 @@ void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
 template <class T>
 void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
     std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
-    std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
-    int m,
+    std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult, int m,
     MatrixX<T>* iM_GT) {
   DRAKE_DEMAND(iM_GT != nullptr);
   DRAKE_DEMAND(iM_GT->cols() == m);
@@ -1714,8 +1651,7 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
   VectorX<T> gT;        // Intermediate result vector.
 
   // Look for fast exit.
-  if (m == 0)
-    return;
+  if (m == 0) return;
 
   for (int i = 0; i < m; ++i) {
     // Get the i'th column of G.
@@ -1731,11 +1667,10 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
 // useful to debug untested constraint Jacobian operators.
 template <class T>
 void ConstraintSolver<T>::CheckAccelConstraintMatrix(
-    const ConstraintAccelProblemData<T>& problem_data,
-    const MatrixX<T>& MM) {
+    const ConstraintAccelProblemData<T>& problem_data, const MatrixX<T>& MM) {
   // Get numbers of types of contacts.
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Alias operators and vectors to make accessing them less clunky.
@@ -1763,8 +1698,8 @@ void ConstraintSolver<T>::CheckAccelConstraintMatrix(
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
 
   // Determine the zero tolerance.
-  const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
-      MM.rows();
+  const double zero_tol =
+      std::numeric_limits<double>::epsilon() * MM.norm() * MM.rows();
 
   // Check that the blocks are nearly equal.
   DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
@@ -1775,8 +1710,7 @@ void ConstraintSolver<T>::CheckAccelConstraintMatrix(
 template <class T>
 void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& trunc_neg_invA_a,
-    MatrixX<T>* MM, VectorX<T>* qq) {
+    const VectorX<T>& trunc_neg_invA_a, MatrixX<T>* MM, VectorX<T>* qq) {
   DRAKE_DEMAND(MM != nullptr);
   DRAKE_DEMAND(qq != nullptr);
 
@@ -1784,8 +1718,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
   const int num_sliding = problem_data.sliding_contacts.size();
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are mildly adapted from:
@@ -1813,8 +1747,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
 
   // Precompute some matrices that will be reused repeatedly.
   MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
-  ComputeInverseInertiaTimesGT(
-      iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
+  ComputeInverseInertiaTimesGT(iM, problem_data.N_minus_muQ_transpose_mult, nc,
+                               &iM_NT_minus_muQT);
   ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
   ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
@@ -1834,16 +1768,16 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc + nr, nc + nr, nl, nl);
 
   // Compute the blocks.
-  ComputeConstraintSpaceComplianceMatrix(
-      N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT_minus_muQT,
+                                         N_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
-      F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_NT_minus_muQT,
+                                         F_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
   ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
-      L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_NT_minus_muQT,
+                                         L_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
   L_iM_FT = F_iM_LT.transpose().eval();
 
@@ -1863,8 +1797,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
 template <class T>
 void ConstraintSolver<T>::FormSustainedConstraintLcp(
     const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& trunc_neg_invA_a,
-    MatrixX<T>* MM, VectorX<T>* qq) {
+    const VectorX<T>& trunc_neg_invA_a, MatrixX<T>* MM, VectorX<T>* qq) {
   DRAKE_DEMAND(MM != nullptr);
   DRAKE_DEMAND(qq != nullptr);
 
@@ -1872,8 +1805,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
   const int num_sliding = problem_data.sliding_contacts.size();
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are mildly adapted from:
@@ -1922,8 +1855,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
 
   // Precompute some matrices that will be reused repeatedly.
   MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
-  ComputeInverseInertiaTimesGT(
-      iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
+  ComputeInverseInertiaTimesGT(iM, problem_data.N_minus_muQ_transpose_mult, nc,
+                               &iM_NT_minus_muQT);
   ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
   ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
@@ -1937,26 +1870,26 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
   MM->resize(num_vars, num_vars);
   Eigen::Ref<MatrixX<T>> N_iM_NT_minus_muQT = MM->block(0, 0, nc, nc);
   Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
-  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(
-      0, nc + nk + num_non_sliding, nc, nl);
+  Eigen::Ref<MatrixX<T>> N_iM_LT =
+      MM->block(0, nc + nk + num_non_sliding, nc, nl);
   Eigen::Ref<MatrixX<T>> F_iM_NT_minus_muQT = MM->block(nc, 0, nr, nc);
   Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
   Eigen::Ref<MatrixX<T>> F_iM_LT =
       MM->block(nc, nc + nk + num_non_sliding, nr, nl);
-  Eigen::Ref<MatrixX<T>> L_iM_NT_minus_muQT = MM->block(
-      nc + nk + num_non_sliding, 0, nl, nc);
-  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
-      nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
-  ComputeConstraintSpaceComplianceMatrix(
-      N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
+  Eigen::Ref<MatrixX<T>> L_iM_NT_minus_muQT =
+      MM->block(nc + nk + num_non_sliding, 0, nl, nc);
+  Eigen::Ref<MatrixX<T>> L_iM_LT =
+      MM->block(nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT_minus_muQT,
+                                         N_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
-      F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_NT_minus_muQT,
+                                         F_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
   ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
-      L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_NT_minus_muQT,
+                                         L_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
@@ -1988,8 +1921,9 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
   // Construct the last row block, which provides the generic unilateral
   // constraints.
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk + num_non_sliding) =
-      MM->block(0, nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl).
-      transpose().eval();
+      MM->block(0, nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl)
+          .transpose()
+          .eval();
 
   // Check the transposed blocks of the LCP matrix.
   DRAKE_ASSERT_VOID(CheckAccelConstraintMatrix(problem_data, *MM));
@@ -2010,12 +1944,11 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
 
 template <class T>
 void ConstraintSolver<T>::CheckVelConstraintMatrix(
-    const ConstraintVelProblemData<T>& problem_data,
-    const MatrixX<T>& MM) {
+    const ConstraintVelProblemData<T>& problem_data, const MatrixX<T>& MM) {
   // Get numbers of contacts.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Alias operators and vectors to make accessing them less clunky.
@@ -2052,17 +1985,17 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
 
   // Determine the zero tolerance.
-  const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
-      MM.rows();
+  const double zero_tol =
+      std::numeric_limits<double>::epsilon() * MM.norm() * MM.rows();
 
   // Check that the blocks are nearly equal. Note: these tests are necessary
   // because Eigen does not correctly compute the norm of an empty matrix.
   DRAKE_ASSERT(F_iM_NT.rows() == 0 || F_iM_NT.cols() == 0 ||
-      (F_iM_NT - F_iM_NT_true).norm() < zero_tol);
+               (F_iM_NT - F_iM_NT_true).norm() < zero_tol);
   DRAKE_ASSERT(L_iM_NT.rows() == 0 || L_iM_NT.cols() == 0 ||
-      (L_iM_NT - L_iM_NT_true).norm() < zero_tol);
+               (L_iM_NT - L_iM_NT_true).norm() < zero_tol);
   DRAKE_ASSERT(L_iM_FT.rows() == 0 || L_iM_FT.cols() == 0 ||
-      (L_iM_FT - L_iM_FT_true).norm() < zero_tol);
+               (L_iM_FT - L_iM_FT_true).norm() < zero_tol);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -2070,15 +2003,14 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
 template <class T>
 void ConstraintSolver<T>::FormImpactingConstraintLcp(
     const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& trunc_neg_invA_a,
-    MatrixX<T>* MM, VectorX<T>* qq) {
+    const VectorX<T>& trunc_neg_invA_a, MatrixX<T>* MM, VectorX<T>* qq) {
   DRAKE_DEMAND(MM != nullptr);
   DRAKE_DEMAND(qq != nullptr);
 
   // Get numbers of contacts.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are nearly identical to:
@@ -2212,13 +2144,12 @@ void ConstraintSolver<T>::FormImpactingConstraintLcp(
   qq->segment(nc, nr) = F(trunc_neg_invA_a) + problem_data.kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
+  qq->segment(nc * 2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
 }
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
-    const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
+    const ConstraintAccelProblemData<T>& problem_data, const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
   if (!generalized_force)
     throw std::logic_error("generalized_force vector is null.");
@@ -2227,27 +2158,28 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const int num_sliding = problem_data.sliding_contacts.size();
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_bilat_constraints = problem_data.kG.size();
 
   // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
-      num_bilat_constraints;
+  const int num_vars =
+      num_contacts + num_spanning_vectors + num_limits + num_bilat_constraints;
   if (cf.size() != num_vars) {
-    throw std::logic_error("cf (constraint force) parameter incorrectly"
-                               "sized.");
+    throw std::logic_error(
+        "cf (constraint force) parameter incorrectly"
+        "sized.");
   }
 
   /// Get the normal and non-sliding contact forces.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
-  const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional = cf.segment(
-      num_contacts, num_spanning_vectors);
+  const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional =
+      cf.segment(num_contacts, num_spanning_vectors);
 
   /// Get the limit forces.
-  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
-      num_contacts + num_spanning_vectors, num_limits);
+  const Eigen::Ref<const VectorX<T>> f_limit =
+      cf.segment(num_contacts + num_spanning_vectors, num_limits);
 
   // Get the bilateral constraint forces.
   const Eigen::Ref<const VectorX<T>> f_bilat = cf.segment(
@@ -2262,8 +2194,7 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
+    const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
   if (!generalized_force)
     throw std::logic_error("generalized_force vector is null.");
@@ -2276,27 +2207,28 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
 
   // Get number of contacts.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_bilat_constraints = problem_data.kG.size();
 
   // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
-      num_bilat_constraints;
+  const int num_vars =
+      num_contacts + num_spanning_vectors + num_limits + num_bilat_constraints;
   if (num_vars != cf.size()) {
-    throw std::logic_error("Unexpected packed constraint force vector"
-                               " dimension.");
+    throw std::logic_error(
+        "Unexpected packed constraint force vector"
+        " dimension.");
   }
 
   /// Get the normal and tangential contact forces.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
-  const Eigen::Ref<const VectorX<T>> f_frictional = cf.segment(
-      num_contacts, num_spanning_vectors);
+  const Eigen::Ref<const VectorX<T>> f_frictional =
+      cf.segment(num_contacts, num_spanning_vectors);
 
   /// Get the limit forces.
-  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
-      num_contacts + num_spanning_vectors, num_limits);
+  const Eigen::Ref<const VectorX<T>> f_limit =
+      cf.segment(num_contacts + num_spanning_vectors, num_limits);
 
   // Get the bilateral constraint forces.
   const Eigen::Ref<const VectorX<T>> f_bilat = cf.segment(
@@ -2304,18 +2236,15 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
 
   /// Compute the generalized forces.
   *generalized_force = problem_data.N_transpose_mult(f_normal) +
-      problem_data.F_transpose_mult(f_frictional) +
-      problem_data.L_transpose_mult(f_limit) +
-      problem_data.G_transpose_mult(f_bilat);
+                       problem_data.F_transpose_mult(f_frictional) +
+                       problem_data.L_transpose_mult(f_limit) +
+                       problem_data.G_transpose_mult(f_bilat);
 }
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& v,
-    const VectorX<T>& cf,
-    double dt,
-    VectorX<T>* generalized_acceleration) {
+    const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& v,
+    const VectorX<T>& cf, double dt, VectorX<T>* generalized_acceleration) {
   DRAKE_DEMAND(dt > 0);
 
   // Keep from allocating storage by reusing `generalized_acceleration`; at
@@ -2329,15 +2258,14 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
   // where ga is the generalized acceleration and gf is the generalized force.
   // Note: we have no way to break apart the Mv term. But, we can instead
   // compute v(t+dt) and then solve for the acceleration.
-  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv +
-      dt * (*generalized_acceleration));
-  *generalized_acceleration = (vplus - v)/dt;
+  const VectorX<T> vplus = problem_data.solve_inertia(
+      problem_data.Mv + dt * (*generalized_acceleration));
+  *generalized_acceleration = (vplus - v) / dt;
 }
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedAccelerationFromConstraintForces(
-    const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
+    const ConstraintAccelProblemData<T>& problem_data, const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
   if (!generalized_acceleration)
     throw std::logic_error("generalized_acceleration vector is null.");
@@ -2350,8 +2278,7 @@ void ConstraintSolver<T>::ComputeGeneralizedAccelerationFromConstraintForces(
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedAccelerationFromConstraintForces(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
+    const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
   if (!generalized_acceleration)
     throw std::logic_error("generalized_acceleration vector is null.");
@@ -2364,10 +2291,8 @@ void ConstraintSolver<T>::ComputeGeneralizedAccelerationFromConstraintForces(
 
 template <class T>
 void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& cf,
+    const ConstraintVelProblemData<T>& problem_data, const VectorX<T>& cf,
     VectorX<T>* generalized_delta_v) {
-
   if (!generalized_delta_v)
     throw std::logic_error("generalized_delta_v vector is null.");
 
@@ -2379,8 +2304,7 @@ void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
 
 template <class T>
 void ConstraintSolver<T>::CalcContactForcesInContactFrames(
-    const VectorX<T>& cf,
-    const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T>& cf, const ConstraintAccelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_forces) {
   using std::abs;
@@ -2396,29 +2320,32 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 
   // Verify that cf is the correct size.
   const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
-  const int num_contacts = problem_data.sliding_contacts.size() +
-      num_non_sliding_contacts;
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_contacts =
+      problem_data.sliding_contacts.size() + num_non_sliding_contacts;
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_bilat_constraints = problem_data.kG.size();
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
-      num_bilat_constraints;
+  const int num_vars =
+      num_contacts + num_spanning_vectors + num_limits + num_bilat_constraints;
   if (num_vars != cf.size()) {
-    throw std::logic_error("Unexpected packed constraint force vector "
-                               "dimension.");
+    throw std::logic_error(
+        "Unexpected packed constraint force vector "
+        "dimension.");
   }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_non_sliding_contacts) {
-    throw std::logic_error("Problem data 'r' indicates contact problem is not "
-                               "two-dimensional");
+    throw std::logic_error(
+        "Problem data 'r' indicates contact problem is not "
+        "two-dimensional");
   }
 
   // Verify that the correct number of contact frames has been specified.
   if (contact_frames.size() != static_cast<size_t>(num_contacts)) {
-    throw std::logic_error("Number of contact frames does not match number of "
-                               "contacts.");
+    throw std::logic_error(
+        "Number of contact frames does not match number of "
+        "contacts.");
   }
 
   // Verify that sliding contact indices are sorted.
@@ -2460,9 +2387,9 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     f0 += contact_normal * cf[i];
 
     // Determine whether the contact is sliding.
-    const bool is_sliding = std::binary_search(
-        problem_data.sliding_contacts.begin(),
-        problem_data.sliding_contacts.end(), i);
+    const bool is_sliding =
+        std::binary_search(problem_data.sliding_contacts.begin(),
+                           problem_data.sliding_contacts.end(), i);
 
     // Subtract/add the tangential force in the world frame.
     if (is_sliding) {
@@ -2478,8 +2405,7 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 
 template <class T>
 void ConstraintSolver<T>::CalcContactForcesInContactFrames(
-    const VectorX<T>& cf,
-    const ConstraintVelProblemData<T>& problem_data,
+    const VectorX<T>& cf, const ConstraintVelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_forces) {
   using std::abs;
@@ -2495,27 +2421,30 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 
   // Verify that cf is the correct size.
   const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
+  const int num_spanning_vectors =
+      std::accumulate(problem_data.r.begin(), problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
   const int num_bilat_constraints = problem_data.kG.size();
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
-      num_bilat_constraints;
+  const int num_vars =
+      num_contacts + num_spanning_vectors + num_limits + num_bilat_constraints;
   if (num_vars != cf.size()) {
-    throw std::logic_error("Unexpected packed constraint force vector "
-                               "dimension.");
+    throw std::logic_error(
+        "Unexpected packed constraint force vector "
+        "dimension.");
   }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_contacts) {
-    throw std::logic_error("Problem data 'r' indicates contact problem is not "
-                               "two-dimensional");
+    throw std::logic_error(
+        "Problem data 'r' indicates contact problem is not "
+        "two-dimensional");
   }
 
   // Verify that the correct number of contact frames has been specified.
   if (contact_frames.size() != static_cast<size_t>(num_contacts)) {
-    throw std::logic_error("Number of contact frames does not match number of "
-                               "contacts.");
+    throw std::logic_error(
+        "Number of contact frames does not match number of "
+        "contacts.");
   }
 
   // Resize the force vector.
@@ -2546,21 +2475,14 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     }
 
     // Compute the contact force expressed in the global frame.
-    Vector2<T> j0 = contact_normal * cf[i] + contact_tangent *
-        cf[num_contacts + tangent_index++];
+    Vector2<T> j0 = contact_normal * cf[i] +
+                    contact_tangent * cf[num_contacts + tangent_index++];
 
     // Compute the contact force in the contact frame.
     contact_force_i = contact_frames[i].transpose() * j0;
   }
 }
 
-}  // namespace internal
-
-template <typename T>
-using ConstraintSolver
-    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
-    = internal::ConstraintSolver<T>;
-
-}  // namespace constraint
-}  // namespace multibody
+}  // namespace rod2d
+}  // namespace examples
 }  // namespace drake
