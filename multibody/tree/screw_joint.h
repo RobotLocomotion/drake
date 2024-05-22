@@ -172,7 +172,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_rotation(systems::Context<T>* context,
                                      const T& theta) const {
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 

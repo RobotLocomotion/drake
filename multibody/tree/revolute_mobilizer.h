@@ -79,7 +79,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   //                    belongs to.
   // @param[in] angle The desired angle in radians.
   // @returns a constant reference to `this` mobilizer.
-  const RevoluteMobilizer<T>& set_angle(
+  const RevoluteMobilizer<T>& SetAngle(
       systems::Context<T>* context, const T& angle) const;
 
   // Gets the rate of change, in radians per second, of `this` mobilizer's

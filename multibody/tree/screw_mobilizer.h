@@ -119,8 +119,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param[in] context The context of the model this mobilizer belongs to.
    @param[in] angle The desired angle in radians.
    @returns a constant reference to `this` mobilizer. */
-  const ScrewMobilizer<T>& set_angle(systems::Context<T>* context,
-                                     const T& angle) const;
+  const ScrewMobilizer<T>& SetAngle(systems::Context<T>* context,
+                                    const T& angle) const;
 
   /* Retrieves from `context` the rate of change, in meters per second, of
    `this` mobilizer's translation (see get_translation()).

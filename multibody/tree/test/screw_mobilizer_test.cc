@@ -84,10 +84,10 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
 
   const double angle_z_first{1.0 * 180.0 / M_PI};
 
-  mobilizer_->set_angle(context_.get(), angle_z_first);
+  mobilizer_->SetAngle(context_.get(), angle_z_first);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_first);
 
-  mobilizer_->set_angle(context_.get(), angle_z_second);
+  mobilizer_->SetAngle(context_.get(), angle_z_second);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_second);
 
   const double velocity_z_first{1.0};
@@ -120,7 +120,7 @@ TEST_F(ScrewMobilizerTest, ZeroState) {
   const double velocity_z{angular_velocity_z * kScrewPitch / (2.0 * M_PI)};
 
   // Set the state to some arbitrary non-zero value.
-  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->SetAngle(context_.get(), angle_z);
   mobilizer_->SetAngularRate(context_.get(), angular_velocity_z);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z);
@@ -199,7 +199,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
 
 TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
   const double angle = 1.5;
-  mobilizer_->set_angle(context_.get(), angle);
+  mobilizer_->SetAngle(context_.get(), angle);
   const RigidTransformd X_FM(
       mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
@@ -217,7 +217,7 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
 TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double angle = 1.5;
   const Vector1d angular_velocity(0.1);
-  mobilizer_->set_angle(context_.get(), angle);
+  mobilizer_->SetAngle(context_.get(), angle);
   const SpatialVelocity<double> V_FM =
       mobilizer_->CalcAcrossMobilizerSpatialVelocity(*context_,
                                                      angular_velocity);
@@ -234,7 +234,7 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double angle = 1.5;
   const double angle_rate = 3;
   const Vector1d angle_acceleration(4.5);
-  mobilizer_->set_angle(context_.get(), angle);
+  mobilizer_->SetAngle(context_.get(), angle);
   mobilizer_->SetAngularRate(context_.get(), angle_rate);
 
   const SpatialAcceleration<double> A_FM =
@@ -253,7 +253,7 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
   const double translation(0.5);
   const double angle = 1.5;
   mobilizer_->SetTranslation(context_.get(), translation);
-  mobilizer_->set_angle(context_.get(), angle);
+  mobilizer_->SetAngle(context_.get(), angle);
 
   const Vector3d torque_Mo_F(1.0, 2.0, 3.0);
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
@@ -313,7 +313,7 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
 TEST_F(ScrewMobilizerTest, MapUsesN) {
   // Set an arbitrary "non-zero" state.
   const double angle_z{1.0 * 180.0 / M_PI};
-  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->SetAngle(context_.get(), angle_z);
 
   // Set arbitrary v and MapVelocityToQDot.
   Vector1d v(1.5);
@@ -331,7 +331,7 @@ TEST_F(ScrewMobilizerTest, MapUsesN) {
 TEST_F(ScrewMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
   const double angle_z{1.0 * 180.0 / M_PI};
-  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->SetAngle(context_.get(), angle_z);
 
   // Set arbitrary qdot and MapQDotToVelocity.
   Vector1d qdot(1.5);

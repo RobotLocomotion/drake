@@ -135,7 +135,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_rotation(systems::Context<T>* context,
                                      const T& theta) const {
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 
@@ -153,7 +153,7 @@ class PlanarJoint final : public Joint<T> {
                                  const Vector2<T>& p_FoMo_F,
                                  const T& theta) const {
     get_mobilizer()->set_translations(context, p_FoMo_F);
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 
