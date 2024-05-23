@@ -132,8 +132,10 @@ bool WriteMeshToObjFile(const std::string filename,
   const pxr::VtArray<int>& indices,
   const ParsingWorkspace& w);
 
-// Returns the scale of a prim as `Vector3d(scale_x, scale_y, scale_z)`.
-Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim);
+// Returns the scale of a prim as `Vector3d(scale_x, scale_y, scale_z)`,
+// or nullopt if an error occurs.
+std::optional<Eigen::Vector3d> GetPrimScale(const pxr::UsdPrim& prim,
+  const ParsingWorkspace& w);
 
 void RaiseFailedToReadAttributeError(const std::string& attr_name,
   const pxr::UsdPrim& prim, const ParsingWorkspace& w);
