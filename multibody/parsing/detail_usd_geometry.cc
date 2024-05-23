@@ -177,9 +177,15 @@ void WriteMeshToObjFile(
 Eigen::Vector3d GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
+  pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
+  if (!cube) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the prim at {} into an UsdGeomCube.",
+      prim.GetPath().GetString()));
+  }
+
   ValidatePrimExtent(prim, w, true);
 
-  pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
     RaiseFailedToReadAttributeError("size", prim, w);
@@ -193,9 +199,15 @@ Eigen::Vector3d GetBoxDimension(
 Eigen::Vector3d GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
+  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
+  if (!sphere) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the prim at {} into an UsdGeomSphere.",
+      prim.GetPath().GetString()));
+  }
+
   ValidatePrimExtent(prim, w, true);
 
-  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
@@ -209,6 +221,13 @@ Eigen::Vector3d GetEllipsoidDimension(
 Eigen::Vector2d GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
+  if (!cylinder) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the prim at {} into an UsdGeomCylinder.",
+      prim.GetPath().GetString()));
+  }
+
   ValidatePrimExtent(prim, w);
 
   pxr::TfToken cylinder_axis = GetUsdGeomAxis(prim, w);
@@ -229,7 +248,6 @@ Eigen::Vector2d GetCylinderDimension(
       "not supported", prim.GetPath().GetString()));
   }
 
-  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
   double cylinder_raw_height, cylinder_raw_radius;
   if (!cylinder.GetRadiusAttr().Get(&cylinder_raw_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
@@ -245,6 +263,13 @@ Eigen::Vector2d GetCylinderDimension(
 Eigen::Vector2d GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
+  if (!capsule) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the prim at {} into an UsdGeomCapsule.",
+      prim.GetPath().GetString()));
+  }
+
   ValidatePrimExtent(prim, w);
 
   pxr::TfToken capsule_axis = GetUsdGeomAxis(prim, w);
@@ -265,7 +290,6 @@ Eigen::Vector2d GetCapsuleDimension(
       "not supported", prim.GetPath().GetString()));
   }
 
-  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
   double capsule_raw_radius, capsule_raw_height;
   if (!capsule.GetRadiusAttr().Get(&capsule_raw_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, w);
