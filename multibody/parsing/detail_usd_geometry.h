@@ -115,9 +115,10 @@ double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w);
 // its `primvars:displayColor` attribute. If not, it returns the default color.
 Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim);
 
-// Returns the RigidTransform of a prim relative to the world frame.
-math::RigidTransform<double> GetPrimRigidTransform(const pxr::UsdPrim& prim,
-  double meters_per_unit);
+// Returns the RigidTransform of a prim relative to the world frame, or nullopt
+// if an error occurs.
+std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
+  const pxr::UsdPrim& prim, double meters_per_unit, const ParsingWorkspace& w);
 
 // Throws an error and returns false if the extent of a UsdGeom is invalid
 // (e.g., the upper bound and lower bound have different magnitudes).

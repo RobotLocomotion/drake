@@ -105,17 +105,23 @@ void RaiseFailedToReadAttributeError(const std::string& attr_name,
       prim.GetPath().GetString()));
 }
 
-math::RigidTransform<double> GetPrimRigidTransform(
-  const pxr::UsdPrim& prim, double meters_per_unit) {
+std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
+  const pxr::UsdPrim& prim, double meters_per_unit,
+  const ParsingWorkspace& w) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+  if (!xformable) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the Prim at {} into an UsdGeomXformable.",
+      prim.GetPath().GetString()));
+    return std::nullopt;
+  }
 
   pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
 
   pxr::GfTransform transform(transform_matrix);
-  pxr::GfVec3d translation = transform.GetTranslation();
+  pxr::GfVec3d translation = transform.GetTranslation() * meters_per_unit;
   pxr::GfRotation rotation = transform.GetRotation();
-  translation *= meters_per_unit;
 
   math::RotationMatrix<double> rotation_matrix(
     UsdQuatdToEigen(rotation.GetQuat()));
