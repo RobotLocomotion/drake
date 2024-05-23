@@ -96,7 +96,7 @@ std::optional<ModelInstanceIndex> UsdParserWrapper::AddModel(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   unused(data_source, model_name, parent_model_name, workspace);
-  throw std::runtime_error("UsdParser::AddModel is not implemented");
+  throw std::runtime_error("UsdParser::AddModel is not implemented.");
 }
 
 std::vector<ModelInstanceIndex> UsdParserWrapper::AddAllModels(
@@ -133,7 +133,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     if (prim_type == "") {
       prim_type = pxr::TfToken("EmptyType");
     }
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}",
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
       prim_type, prim.GetPath().GetString()));
     return nullptr;
   }
@@ -168,7 +168,7 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
     if (prim_type == "") {
       prim_type = pxr::TfToken("EmptyType");
     }
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}",
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
       prim_type, prim.GetPath().GetString()));
   }
   return w_.plant->AddRigidBody(
@@ -182,7 +182,7 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   auto visual_geometry = CreateVisualGeometry(prim);
   if (!collision_geometry || !visual_geometry) {
     w_.diagnostic.Error(fmt::format("Failed to create collision or visual "
-      "geometry for prim at {}", prim.GetPath().GetString()));
+      "geometry for prim at {}.", prim.GetPath().GetString()));
     return;
   }
 
@@ -237,7 +237,7 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
   if (!success) {
     w_.diagnostic.Warning(fmt::format(
       "Failed to read metersPerUnit in stage metadata. "
-      "Using the default value ({}) instead.", metadata.meters_per_unit));
+      "Using the default value '{}' instead.", metadata.meters_per_unit));
   }
 
   success = false;
@@ -247,7 +247,7 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
   if (!success) {
     w_.diagnostic.Warning(fmt::format(
       "Failed to read upAxis in stage metadata. "
-      "Using the default value ({}) instead.", metadata.up_axis));
+      "Using the default value '{}' instead.", metadata.up_axis));
   }
   if (metadata.up_axis != "Z") {
     throw std::runtime_error("Parsing for Y-up or X-up stage is not yet "
@@ -261,19 +261,19 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   const std::optional<std::string>& parent_model_name) {
   if (data_source.IsContents()) {
     throw std::runtime_error(
-      "Ingesting raw USD content from DataSource is not implemented");
+      "Ingesting raw USD content from DataSource is not implemented.");
   }
 
   std::string file_absolute_path = data_source.GetAbsolutePath();
   if (!std::filesystem::exists(file_absolute_path)) {
     w_.diagnostic.Error(
-      fmt::format("File does not exist: {}", file_absolute_path));
+      fmt::format("File does not exist: {}.", file_absolute_path));
     return std::vector<ModelInstanceIndex>();
   }
 
   pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(file_absolute_path);
   if (!stage) {
-    w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}",
+    w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}.",
       data_source.filename()));
     return std::vector<ModelInstanceIndex>();
   }
