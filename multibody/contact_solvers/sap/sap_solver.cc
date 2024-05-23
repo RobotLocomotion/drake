@@ -21,6 +21,19 @@ namespace internal {
 
 using drake::systems::Context;
 
+namespace {
+
+constexpr char kNanValuesMessage[] =
+    "The typical root cause for this failure is usually outside the solver, "
+    "when there are not enough checks to catch it earlier. In this case, a "
+    "previous (valid) simulation result led to the generation of NaN values in "
+    "a controller, that are then fed as actuation through MultibodyPlant's "
+    "ports. If you don't believe this is the root cause of your problem, "
+    "please contact the Drake developers and/or open a Drake issue with a "
+    "minimal reproduction example to help debug your problem.";
+
+}  // namespace
+
 template <typename T>
 void SapSolver<T>::set_parameters(const SapSolverParameters& parameters) {
   parameters_ = parameters;
@@ -33,7 +46,7 @@ const SapStatistics& SapSolver<T>::get_statistics() const {
 
 template <typename T>
 void SapSolver<T>::PackSapSolverResults(const SapModel<T>& model,
-                                        const systems::Context<T>& context,
+                                        const Context<T>& context,
                                         SapSolverResults<T>* results) const {
   DRAKE_DEMAND(results != nullptr);
   results->Resize(model.problem().num_velocities(),
@@ -213,7 +226,7 @@ SapSolverStatus SapSolver<AutoDiffXd>::SolveWithGuess(
 
 template <typename T>
 SapSolverStatus SapSolver<T>::SolveWithGuessImpl(const SapModel<T>& model,
-                                                 systems::Context<T>* context)
+                                                 Context<T>* context)
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
   using std::abs;
@@ -267,7 +280,7 @@ SapSolverStatus SapSolver<T>::SolveWithGuessImpl(const SapModel<T>& model,
             k, std::abs(ell - ell_previous), alpha,
             momentum_residual / momentum_scale);
         if (parameters_.nonmonotonic_convergence_is_error) {
-          throw std::runtime_error(
+          throw std::logic_error(
               "SapSolver: Non-monotonic convergence detected.");
         }
       }
@@ -330,9 +343,9 @@ SapSolverStatus SapSolver<T>::SolveWithGuessImpl(const SapModel<T>& model,
 
 template <typename T>
 T SapSolver<T>::CalcCostAlongLine(
-    const SapModel<T>& model, const systems::Context<T>& context,
+    const SapModel<T>& model, const Context<T>& context,
     const SearchDirectionData& search_direction_data, const T& alpha,
-    systems::Context<T>* scratch, T* dell_dalpha, T* d2ell_dalpha2,
+    Context<T>* scratch, T* dell_dalpha, T* d2ell_dalpha2,
     VectorX<T>* d2ell_dalpha2_scratch) const {
   DRAKE_DEMAND(scratch != nullptr);
   DRAKE_DEMAND(scratch != &context);
@@ -417,8 +430,30 @@ T SapSolver<T>::CalcCostAlongLine(
     *d2ell_dalpha2 = d2ellA_dalpha2 + d2ellR_dalpha2;
 
     // Sanity check these terms are all positive.
-    DRAKE_DEMAND(d2ellR_dalpha2 >= 0.0);
+    using std::isnan;
+    if (isnan(d2ellR_dalpha2)) {
+      throw std::logic_error(fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "NaN. {}",
+          kNanValuesMessage));
+    }
+    if (d2ellR_dalpha2 < 0) {
+      throw std::logic_error(fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "negative, d²ℓ/dα² = {}. This can only be caused by a degenerate "
+          "constraint Hessian (a bug). This would be indicated by a value that "
+          "might be negative but close to machine epsilon. Please contact the "
+          "Drake developers and/or open a Drake issue with a minimal "
+          "reproduction example to help debug your problem.",
+          d2ellR_dalpha2));
+    }
+
+    // N.B. d2ellA_dalpha2 coming as input in SearchDirectionData was already
+    // validated to be strictly positive by CalcSearchDirectionData().
     DRAKE_DEMAND(d2ellA_dalpha2 > 0.0);
+
+    // N.B. With d2ellA_dalpha2 > 0 and d2ellR_dalpha2 validated to be positive
+    // just a few lines above, then d2ell_dalpha2 must be strictly positive.
     DRAKE_DEMAND(*d2ell_dalpha2 > 0);
   }
 
@@ -427,9 +462,9 @@ T SapSolver<T>::CalcCostAlongLine(
 
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
-    const SapModel<T>& model, const systems::Context<T>& context,
+    const SapModel<T>& model, const Context<T>& context,
     const SearchDirectionData& search_direction_data,
-    systems::Context<T>* scratch) const {
+    Context<T>* scratch) const {
   DRAKE_DEMAND(parameters_.line_search_type ==
                SapSolverParameters::LineSearchType::kBackTracking);
   DRAKE_DEMAND(scratch != nullptr);
@@ -455,7 +490,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // destroy this property. If so, we abort given that'd mean the model must be
   // revisited.
   if (dell_dalpha0 >= 0) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "The cost does not decrease along the search direction. This is "
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
@@ -531,7 +566,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 
   // If we are here, the line-search could not find a valid parameter that
   // satisfies Armijo's criterion.
-  throw std::runtime_error(
+  throw std::logic_error(
       "Line search reached the maximum number of iterations. Either we need to "
       "increase the maximum number of iterations parameter or to condition the "
       "problem better.");
@@ -542,9 +577,8 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
-    const SapModel<T>& model, const systems::Context<T>& context,
-    const SearchDirectionData& search_direction_data,
-    systems::Context<T>* scratch) const
+    const SapModel<T>& model, const Context<T>& context,
+    const SearchDirectionData& search_direction_data, Context<T>* scratch) const
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(parameters_.line_search_type ==
@@ -562,7 +596,7 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // destroy this property. If so, we abort given that'd mean the model must be
   // revisited.
   if (dell_dalpha0 >= 0) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "The cost does not decrease along the search direction. This is "
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
@@ -629,6 +663,10 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // To estimate a guess, we approximate the cost as being quadratic around
   // alpha = 0.
   const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
+  if (std::isnan(alpha_guess)) {
+    throw std::logic_error(fmt::format(
+        "The initial guess for line search is NaN. {}", kNanValuesMessage));
+  }
 
   // N.B. If we are here, then we already know that dell_dalpha0 < 0 and dell >
   // 0, and therefore [0, alpha_max] is a valid bracket.
@@ -651,7 +689,7 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
 
 template <typename T>
 void SapSolver<T>::CalcSearchDirectionData(
-    const SapModel<T>& model, const systems::Context<T>& context,
+    const SapModel<T>& model, const Context<T>& context,
     SapSolver<T>::SearchDirectionData* data)
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
@@ -665,6 +703,25 @@ void SapSolver<T>::CalcSearchDirectionData(
   model.constraints_bundle().J().Multiply(data->dv, &data->dvc);
   model.MultiplyByDynamicsMatrix(data->dv, &data->dp);
   data->d2ellA_dalpha2 = data->dv.dot(data->dp);
+
+  using std::isnan;
+  if (isnan(data->d2ellA_dalpha2)) {
+    throw std::logic_error(fmt::format(
+        "The Hessian of the momentum cost along the search direction is NaN. "
+        "{}",
+        kNanValuesMessage));
+  }
+  if (data->d2ellA_dalpha2 <= 0) {
+    throw std::logic_error(fmt::format(
+        "The Hessian of the momentum cost along the search direction is not "
+        "positive, d²ℓ/dα² = {}. This can only be caused by a mass matrix that "
+        "is not SPD. This would indicate bad problem data (e.g. a zero mass "
+        "floating body, though this would be caught earlier). If you don't "
+        "believe this is the root cause of your problem, please contact the "
+        "Drake developers and/or open a Drake issue with a minimal "
+        "reproduction example to help debug your problem.",
+        data->d2ellA_dalpha2));
+  }
 }
 
 }  // namespace internal
