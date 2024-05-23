@@ -133,7 +133,7 @@ TEST_F(UsdParserTest, InvalidGeometryAttributesTest) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Non-isotropic scaling of a mesh is not supported.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Non-isotropic scaling of a mesh is not supported.*"));
+    ".*Failed to create collision geometry.*"));
 }
 
 }  // namespace

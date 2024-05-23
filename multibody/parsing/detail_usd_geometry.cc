@@ -329,7 +329,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
   return Eigen::Vector2d(capsule_radius, capsule_height);
 }
 
-double GetMeshScale(
+std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
   Eigen::Vector3d prim_scale = GetPrimScale(prim);
@@ -337,8 +337,9 @@ double GetMeshScale(
     w.diagnostic.Error(fmt::format(
       "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
       "of a mesh is not supported.", prim.GetPath().GetString()));
+    return std::nullopt;
   }
-  return prim_scale[0] * meters_per_unit;
+  return std::optional<double>{prim_scale[0] * meters_per_unit};
 }
 
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
@@ -405,7 +406,10 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     return nullptr;
   }
 
-  double prim_scale = GetMeshScale(prim, meters_per_unit, w);
+  std::optional<double> prim_scale = GetMeshScale(prim, meters_per_unit, w);
+  if (!prim_scale.has_value()) {
+    return nullptr;
+  }
 
   pxr::VtArray<int> face_vertex_counts;
   if (!mesh.GetFaceVertexCountsAttr().Get(&face_vertex_counts)) {
@@ -435,7 +439,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 
   WriteMeshToObjFile(obj_filename, vertices, indices, w);
 
-  return std::make_unique<geometry::Mesh>(obj_filename, prim_scale);
+  return std::make_unique<geometry::Mesh>(obj_filename, prim_scale.value());
 }
 
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
