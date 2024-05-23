@@ -37,8 +37,15 @@ Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q) {
     q.GetImaginary()[2]);
 }
 
-Eigen::Vector3d GetPrimScale(const pxr::UsdPrim& prim) {
+std::optional<Eigen::Vector3d> GetPrimScale(const pxr::UsdPrim& prim,
+  const ParsingWorkspace& w) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
+  if (!xformable) {
+    w.diagnostic.Error(fmt::format(
+      "Failed to cast the Prim at {} into an UsdGeomXformable.",
+      prim.GetPath().GetString()));
+    return std::nullopt;
+  }
 
   pxr::GfMatrix4d transform_matrix = xformable.ComputeLocalToWorldTransform(
     pxr::UsdTimeCode::Default());
@@ -201,9 +208,12 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
     return std::nullopt;
   }
 
-  Eigen::Vector3d cube_dimension = GetPrimScale(prim) * cube_size;
-  cube_dimension *= meters_per_unit;
-  return cube_dimension;
+  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, w);
+  if (!prim_scale.has_value()) {
+    return std::nullopt;
+  }
+
+  return prim_scale.value() * cube_size * meters_per_unit;
 }
 
 std::optional<Eigen::Vector3d> GetEllipsoidDimension(
@@ -226,10 +236,12 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
     RaiseFailedToReadAttributeError("radius", prim, w);
     return std::nullopt;
   }
-  sphere_radius *= meters_per_unit;
 
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
-  return prim_scale * sphere_radius;
+  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, w);
+  if (!prim_scale.has_value()) {
+    return std::nullopt;
+  }
+  return prim_scale.value() * sphere_radius * meters_per_unit;
 }
 
 std::optional<Eigen::Vector2d> GetCylinderDimension(
@@ -260,7 +272,12 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
     return std::nullopt;
   }
 
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  if (!prim_scale_opt.has_value()) {
+    return std::nullopt;
+  }
+  Eigen::Vector3d prim_scale = prim_scale_opt.value();
+
   // Makes the assumption that axis X/Y scales the radius of the cylinder
   // and axis Z scales the height of the cylinder.
   if (prim_scale[0] != prim_scale[1]) {
@@ -312,7 +329,12 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
     return std::nullopt;
   }
 
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  if (!prim_scale_opt.has_value()) {
+    return std::nullopt;
+  }
+  Eigen::Vector3d prim_scale = prim_scale_opt.value();
+
   // Makes the assumption that axis X/Y scales the radius of the capsule
   // and axis Z scales the height of the capsule.
   if (prim_scale[0] != prim_scale[1]) {
@@ -340,7 +362,12 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w) {
-  Eigen::Vector3d prim_scale = GetPrimScale(prim);
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  if (!prim_scale_opt.has_value()) {
+    return std::nullopt;
+  }
+  Eigen::Vector3d prim_scale = prim_scale_opt.value();
+
   if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
     w.diagnostic.Error(fmt::format(
       "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
