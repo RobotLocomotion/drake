@@ -38,10 +38,10 @@ Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q) {
 }
 
 std::optional<Eigen::Vector3d> GetPrimScale(const pxr::UsdPrim& prim,
-  const ParsingWorkspace& w) {
+  const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
   if (!xformable) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomXformable.",
       prim.GetPath().GetString()));
     return std::nullopt;
@@ -61,7 +61,8 @@ CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
   return default_friction();
 }
 
-double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
+double GetPrimMass(const pxr::UsdPrim& prim,
+  const DiagnosticPolicy& diagnostic) {
   if (prim.HasAPI(pxr::TfToken("PhysicsMassAPI"))) {
     auto mass_attribute = pxr::UsdPhysicsMassAPI(prim).GetMassAttr();
     float mass = 0.f;
@@ -72,14 +73,14 @@ double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
       // One potential cause is that the author specified its type as double
       // rather than float.
       if ("double" == mass_attribute.GetTypeName()) {
-        w.diagnostic.Error("Double precision float is not supported by "
+        diagnostic.Error("Double precision float is not supported by "
           "UsdPhysicsMassAPI at the moment. Please use single precision float "
           "instead.");
       }
     }
   }
   const double default_mass = 1.0;
-  w.diagnostic.Warning(fmt::format(
+  diagnostic.Warning(fmt::format(
     "Failed to read the mass of the Prim at {}. Using the "
     "default value '{}' instead.", prim.GetPath().GetString(), default_mass));
   return default_mass;
@@ -99,18 +100,18 @@ Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
 }
 
 void RaiseFailedToReadAttributeError(const std::string& attr_name,
-  const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
-    w.diagnostic.Error(fmt::format(
+  const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
+    diagnostic.Error(fmt::format(
       "Failed to read the '{}' attribute of the Prim at {}.", attr_name,
       prim.GetPath().GetString()));
 }
 
 std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
+  const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
   if (!xformable) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomXformable.",
       prim.GetPath().GetString()));
     return std::nullopt;
@@ -132,10 +133,10 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
 }
 
 bool ValidatePrimExtent(const pxr::UsdPrim& prim,
-  const ParsingWorkspace& w, bool check_if_isotropic) {
+  const DiagnosticPolicy& diagnostic, bool check_if_isotropic) {
   pxr::VtVec3fArray extent;
   if (!prim.GetAttribute(pxr::TfToken("extent")).Get(&extent)) {
-    RaiseFailedToReadAttributeError("extent", prim, w);
+    RaiseFailedToReadAttributeError("extent", prim, diagnostic);
     return false;
   }
   const pxr::GfVec3f& lower_bound = extent[0];
@@ -143,7 +144,7 @@ bool ValidatePrimExtent(const pxr::UsdPrim& prim,
   if (-lower_bound[0] != upper_bound[0] ||
       -lower_bound[1] != upper_bound[1] ||
       -lower_bound[2] != upper_bound[2]) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "The extent of the Prim at {} is not symmetric.",
       prim.GetPath().GetString()));
     return false;
@@ -153,7 +154,7 @@ bool ValidatePrimExtent(const pxr::UsdPrim& prim,
         lower_bound[1] != lower_bound[2] ||
         upper_bound[0] != upper_bound[1] ||
         upper_bound[1] != upper_bound[2]) {
-      w.diagnostic.Error(fmt::format(
+      diagnostic.Error(fmt::format(
         "The extent of the Prim at {} should be of the same magnitude across"
         "all three dimensions.", prim.GetPath().GetString()));
       return false;
@@ -166,7 +167,7 @@ bool WriteMeshToObjFile(
   const std::string filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
-  const ParsingWorkspace& w) {
+  const DiagnosticPolicy& diagnostic) {
   std::string obj_file_contents;
   int num_triangles = indices.size() / 3;
   for (auto& vertex : vertices) {
@@ -184,7 +185,7 @@ bool WriteMeshToObjFile(
 
   std::ofstream out_file(filename);
   if (!out_file.is_open()) {
-    w.diagnostic.Error(
+    diagnostic.Error(
       fmt::format("Failed to create file {} for obj mesh.", filename));
     return false;
   }
@@ -195,26 +196,26 @@ bool WriteMeshToObjFile(
 
 std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
+  const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
   if (!cube) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCube.",
       prim.GetPath().GetString()));
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, w, true)) {
+  if (!ValidatePrimExtent(prim, diagnostic, true)) {
     return std::nullopt;
   }
 
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
-    RaiseFailedToReadAttributeError("size", prim, w);
+    RaiseFailedToReadAttributeError("size", prim, diagnostic);
     return std::nullopt;
   }
 
-  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, w);
+  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, diagnostic);
   if (!prim_scale.has_value()) {
     return std::nullopt;
   }
@@ -224,26 +225,26 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
 
 std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
+  const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
   if (!sphere) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomSphere.",
       prim.GetPath().GetString()));
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, w, true)) {
+  if (!ValidatePrimExtent(prim, diagnostic, true)) {
     return std::nullopt;
   }
 
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
-    RaiseFailedToReadAttributeError("radius", prim, w);
+    RaiseFailedToReadAttributeError("radius", prim, diagnostic);
     return std::nullopt;
   }
 
-  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, w);
+  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, diagnostic);
   if (!prim_scale.has_value()) {
     return std::nullopt;
   }
@@ -252,25 +253,26 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
 
 std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
   if (!cylinder) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCylinder.",
       prim.GetPath().GetString()));
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, w)) {
+  if (!ValidatePrimExtent(prim, diagnostic)) {
     return std::nullopt;
   }
 
-  std::optional<pxr::TfToken> cylinder_axis = GetUsdGeomAxis(prim, w);
+  std::optional<pxr::TfToken> cylinder_axis = GetUsdGeomAxis(
+    prim, diagnostic);
   if (!cylinder_axis.has_value()) {
     return std::nullopt;
   }
   if (cylinder_axis.value() != stage_up_axis) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Only upright cylinders are supported at the moment. The cylinder at {} "
       "is not upright because its axis '{}' differs from the axis of the "
       "stage '{}'.", prim.GetPath().GetString(),
@@ -278,7 +280,8 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
     return std::nullopt;
   }
 
-  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(
+    prim, diagnostic);
   if (!prim_scale_opt.has_value()) {
     return std::nullopt;
   }
@@ -287,7 +290,7 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
   // Makes the assumption that axis X/Y scales the radius of the cylinder
   // and axis Z scales the height of the cylinder.
   if (prim_scale[0] != prim_scale[1]) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "The cylinder at {} has different scaling in X and Y axis, and that is "
       "not supported.", prim.GetPath().GetString()));
     return std::nullopt;
@@ -295,39 +298,41 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
 
   double cylinder_raw_height, cylinder_raw_radius;
   if (!cylinder.GetRadiusAttr().Get(&cylinder_raw_radius)) {
-    RaiseFailedToReadAttributeError("radius", prim, w);
+    RaiseFailedToReadAttributeError("radius", prim, diagnostic);
     return std::nullopt;
   }
   if (!cylinder.GetHeightAttr().Get(&cylinder_raw_height)) {
-    RaiseFailedToReadAttributeError("height", prim, w);
+    RaiseFailedToReadAttributeError("height", prim, diagnostic);
     return std::nullopt;
   }
-  double cylinder_radius = cylinder_raw_radius * prim_scale[0] * meters_per_unit;
-  double cylinder_height = cylinder_raw_height * prim_scale[2] * meters_per_unit;
+  double cylinder_radius =
+    cylinder_raw_radius * prim_scale[0] * meters_per_unit;
+  double cylinder_height =
+    cylinder_raw_height * prim_scale[2] * meters_per_unit;
   return Eigen::Vector2d(cylinder_radius, cylinder_height);
 }
 
 std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
   if (!capsule) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCapsule.",
       prim.GetPath().GetString()));
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, w)) {
+  if (!ValidatePrimExtent(prim, diagnostic)) {
     return std::nullopt;
   }
 
-  std::optional<pxr::TfToken> capsule_axis = GetUsdGeomAxis(prim, w);
+  std::optional<pxr::TfToken> capsule_axis = GetUsdGeomAxis(prim, diagnostic);
   if (!capsule_axis.has_value()) {
     return std::nullopt;
   }
   if (capsule_axis.value() != stage_up_axis) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Only upright capsules are supported at the moment. The capsule at {} "
       "is not upright because its axis '{}' differs from the axis of the "
       "stage '{}'.", prim.GetPath().GetString(),
@@ -335,7 +340,8 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
     return std::nullopt;
   }
 
-  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(
+    prim, diagnostic);
   if (!prim_scale_opt.has_value()) {
     return std::nullopt;
   }
@@ -344,7 +350,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
   // Makes the assumption that axis X/Y scales the radius of the capsule
   // and axis Z scales the height of the capsule.
   if (prim_scale[0] != prim_scale[1]) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "The capsule at {} has different scaling in X and Y axis, and that is "
       "not supported.", prim.GetPath().GetString()));
     return std::nullopt;
@@ -352,11 +358,11 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 
   double capsule_raw_radius, capsule_raw_height;
   if (!capsule.GetRadiusAttr().Get(&capsule_raw_radius)) {
-    RaiseFailedToReadAttributeError("radius", prim, w);
+    RaiseFailedToReadAttributeError("radius", prim, diagnostic);
     return std::nullopt;
   }
   if (!capsule.GetHeightAttr().Get(&capsule_raw_height)) {
-    RaiseFailedToReadAttributeError("height", prim, w);
+    RaiseFailedToReadAttributeError("height", prim, diagnostic);
     return std::nullopt;
   }
 
@@ -367,15 +373,16 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 
 std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(prim, w);
+  const DiagnosticPolicy& diagnostic) {
+  std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(
+    prim, diagnostic);
   if (!prim_scale_opt.has_value()) {
     return std::nullopt;
   }
   Eigen::Vector3d prim_scale = prim_scale_opt.value();
 
   if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
       "of a mesh is not supported.", prim.GetPath().GetString()));
     return std::nullopt;
@@ -385,8 +392,8 @@ std::optional<double> GetMeshScale(
 
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  auto dimension = GetBoxDimension(prim, meters_per_unit, w);
+  const DiagnosticPolicy& diagnostic) {
+  auto dimension = GetBoxDimension(prim, meters_per_unit, diagnostic);
   if (dimension.has_value()) {
     return std::make_unique<geometry::Box>(dimension.value());
   } else {
@@ -396,8 +403,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
 
 std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  auto dimension_opt = GetEllipsoidDimension(prim, meters_per_unit, w);
+  const DiagnosticPolicy& diagnostic) {
+  auto dimension_opt = GetEllipsoidDimension(
+    prim, meters_per_unit, diagnostic);
   if (dimension_opt.has_value()) {
     auto dimension = dimension_opt.value();
     if (dimension[0] == dimension[1] &&
@@ -414,9 +422,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
 
 std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   auto dimension_opt = GetCapsuleDimension(
-    prim, meters_per_unit, stage_up_axis, w);
+    prim, meters_per_unit, stage_up_axis, diagnostic);
   if (dimension_opt.has_value()) {
     return std::make_unique<geometry::Capsule>(dimension_opt.value());
   } else {
@@ -426,9 +434,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
 
 std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   auto dimension_opt = GetCylinderDimension(
-    prim, meters_per_unit, stage_up_axis, w);
+    prim, meters_per_unit, stage_up_axis, diagnostic);
   if (dimension_opt.has_value()) {
     return std::make_unique<geometry::Cylinder>(dimension_opt.value());
   } else {
@@ -438,28 +446,29 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
 
 std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   const std::string obj_filename, const pxr::UsdPrim& prim,
-  double meters_per_unit, const ParsingWorkspace& w) {
+  double meters_per_unit, const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(prim);
   if (!mesh) {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomMesh.",
       prim.GetPath().GetString()));
     return nullptr;
   }
 
-  std::optional<double> prim_scale = GetMeshScale(prim, meters_per_unit, w);
+  std::optional<double> prim_scale = GetMeshScale(
+    prim, meters_per_unit, diagnostic);
   if (!prim_scale.has_value()) {
     return nullptr;
   }
 
   pxr::VtArray<int> face_vertex_counts;
   if (!mesh.GetFaceVertexCountsAttr().Get(&face_vertex_counts)) {
-    RaiseFailedToReadAttributeError("faceVertexCounts", prim, w);
+    RaiseFailedToReadAttributeError("faceVertexCounts", prim, diagnostic);
     return nullptr;
   }
   for (int count : face_vertex_counts) {
     if (count != 3) {
-      w.diagnostic.Error(fmt::format(
+      diagnostic.Error(fmt::format(
         "The mesh at {} is not a triangle mesh. Only triangle mesh are "
         "supported at the moment.", prim.GetPath().GetString()));
       return nullptr;
@@ -468,17 +477,17 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 
   pxr::VtArray<pxr::GfVec3f> vertices;
   if (!mesh.GetPointsAttr().Get(&vertices)) {
-    RaiseFailedToReadAttributeError("points", prim, w);
+    RaiseFailedToReadAttributeError("points", prim, diagnostic);
     return nullptr;
   }
 
   pxr::VtArray<int> indices;
   if (!mesh.GetFaceVertexIndicesAttr().Get(&indices)) {
-    RaiseFailedToReadAttributeError("faceVertexIndices", prim, w);
+    RaiseFailedToReadAttributeError("faceVertexIndices", prim, diagnostic);
     return nullptr;
   }
 
-  if (!WriteMeshToObjFile(obj_filename, vertices, indices, w)) {
+  if (!WriteMeshToObjFile(obj_filename, vertices, indices, diagnostic)) {
     return nullptr;
   }
 
@@ -487,12 +496,12 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  auto dimension_opt = GetBoxDimension(prim, meters_per_unit, w);
+  const DiagnosticPolicy& diagnostic) {
+  auto dimension_opt = GetBoxDimension(prim, meters_per_unit, diagnostic);
   if (dimension_opt.has_value()) {
     auto dimension = dimension_opt.value();
     return SpatialInertia<double>::SolidBoxWithMass(
-      GetPrimMass(prim, w), dimension[0], dimension[1], dimension[2]);
+      GetPrimMass(prim, diagnostic), dimension[0], dimension[1], dimension[2]);
   } else {
     return std::nullopt;
   }
@@ -500,17 +509,19 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
 
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const ParsingWorkspace& w) {
-  auto dimension_opt = GetEllipsoidDimension(prim, meters_per_unit, w);
+  const DiagnosticPolicy& diagnostic) {
+  auto dimension_opt = GetEllipsoidDimension(
+    prim, meters_per_unit, diagnostic);
   if (dimension_opt.has_value()) {
     auto dimension = dimension_opt.value();
     if (dimension[0] == dimension[1] &&
         dimension[1] == dimension[2]) {
       return SpatialInertia<double>::SolidSphereWithMass(
-        GetPrimMass(prim, w), dimension[0]);
+        GetPrimMass(prim, diagnostic), dimension[0]);
     } else {
       return SpatialInertia<double>::SolidEllipsoidWithMass(
-        GetPrimMass(prim, w), dimension[0], dimension[1], dimension[2]);
+        GetPrimMass(prim, diagnostic),
+        dimension[0], dimension[1], dimension[2]);
     }
   } else {
     return std::nullopt;
@@ -519,14 +530,14 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
 
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   auto dimension = GetCylinderDimension(
-    prim, meters_per_unit, stage_up_axis, w);
-  auto cylinder_axis = GetUsdGeomAxisUnitVector(prim, w);
+    prim, meters_per_unit, stage_up_axis, diagnostic);
+  auto cylinder_axis = GetUsdGeomAxisUnitVector(prim, diagnostic);
   if (dimension.has_value() && cylinder_axis.has_value()) {
     return SpatialInertia<double>::SolidCylinderWithMass(
-      GetPrimMass(prim, w), dimension.value()[0], dimension.value()[1],
-      cylinder_axis.value());
+      GetPrimMass(prim, diagnostic),
+      dimension.value()[0], dimension.value()[1], cylinder_axis.value());
   } else {
     return std::nullopt;
   }
@@ -534,21 +545,21 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
 
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
-  const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w) {
+  const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
   auto dimension = GetCapsuleDimension(
-    prim, meters_per_unit, stage_up_axis, w);
-  auto capsule_axis = GetUsdGeomAxisUnitVector(prim, w);
+    prim, meters_per_unit, stage_up_axis, diagnostic);
+  auto capsule_axis = GetUsdGeomAxisUnitVector(prim, diagnostic);
   if (dimension.has_value() && capsule_axis.has_value()) {
     return SpatialInertia<double>::SolidCapsuleWithMass(
-      GetPrimMass(prim, w), dimension.value()[0], dimension.value()[1],
-      capsule_axis.value());
+      GetPrimMass(prim, diagnostic),
+      dimension.value()[0], dimension.value()[1], capsule_axis.value());
   } else {
     return std::nullopt;
   }
 }
 
 std::optional<pxr::TfToken> GetUsdGeomAxis(
-  const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
+  const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
   pxr::TfToken axis;
   bool success = false;
   if (prim.IsA<pxr::UsdGeomCylinder>()) {
@@ -560,15 +571,15 @@ std::optional<pxr::TfToken> GetUsdGeomAxis(
   }
 
   if (!success) {
-    RaiseFailedToReadAttributeError("axis", prim, w);
+    RaiseFailedToReadAttributeError("axis", prim, diagnostic);
     return std::nullopt;
   }
   return axis;
 }
 
 std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
-  const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
-  std::optional<pxr::TfToken> axis = GetUsdGeomAxis(prim, w);
+  const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
+  std::optional<pxr::TfToken> axis = GetUsdGeomAxis(prim, diagnostic);
   if (!axis.has_value()) {
     return std::nullopt;
   }
@@ -579,7 +590,7 @@ std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
   } else if (axis.value() == "Z") {
     return Eigen::Vector3d(0.0, 0.0, 1.0);
   } else {
-    w.diagnostic.Error(fmt::format(
+    diagnostic.Error(fmt::format(
       "The axis of cylinder at {} is invalid.", prim.GetPath().GetString()));
     return std::nullopt;
   }
