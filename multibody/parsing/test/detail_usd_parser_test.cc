@@ -94,24 +94,26 @@ TEST_F(UsdParserTest, InvalidMassTest) {
     ".*Failed to read the mass of the Prim at.*"));
 }
 
-TEST_F(UsdParserTest, UnsupportedGeometryTest) {
+TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
   std::string filename =
-    FindUsdTestResourceOrThrow("invalid/unsupported_geometry.usda");
+    FindUsdTestResourceOrThrow("invalid/unsupported_prim_types.usda");
   ParseFile(filename);
   // Errors from the `/World/Box` prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Unsupported Prim type 'EmptyType'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Unsupported Prim type 'EmptyType'.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision or visual geometry.*"));
+    ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Cone` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Unsupported Prim type 'Cone'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Unsupported Prim type 'Cone'.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision or visual geometry.*"));
+    ".*Failed to create collision geometry.*"));
+}
+
+TEST_F(UsdParserTest, InvalidGeometryAttributesTest) {
+  std::string filename =
+    FindUsdTestResourceOrThrow("invalid/invalid_geometry_attributes.usda");
+  ParseFile(filename);
   // Errors from the `/World/Cube` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The extent of the Prim at .* is not symmetric."));
@@ -121,12 +123,12 @@ TEST_F(UsdParserTest, UnsupportedGeometryTest) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright capsules are supported at the moment.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Only upright capsules are supported at the moment.*"));
+    ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Cylinder` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright cylinders are supported at the moment.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Only upright cylinders are supported at the moment.*"));
+    ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Octahedron` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Non-isotropic scaling of a mesh is not supported.*"));

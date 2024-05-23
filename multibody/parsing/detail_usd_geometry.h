@@ -9,23 +9,23 @@ namespace internal {
 
 // Returns the dimension of an UsdGeomCube as `Vector3d(length_x, length_y,
 // length_z)`.
-Eigen::Vector3d GetBoxDimension(
+std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
 // Returns the dimension of an UsdGeomSphere as `Vector3d(length_x, length_y,
 // length_z)`.
-Eigen::Vector3d GetEllipsoidDimension(
+std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
 // Returns the dimension of an UsdGeomCylinder as `Vector2d(radius, length)`.
-Eigen::Vector2d GetCylinderDimension(
+std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
 
 // Returns the dimension of an UsdGeomCapsule as `Vector2d(radius, length)`.
-Eigen::Vector2d GetCapsuleDimension(
+std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
 
@@ -64,25 +64,25 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 
 // Returns the SpatialInertia corresponding to the geometry represented
 // by the UsdGeomCube prim.
-SpatialInertia<double> CreateSpatialInertiaForBox(
+std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
 // Returns the SpatialInertia corresponding to the geometry represented
 // by the UsdGeomSphere prim.
-SpatialInertia<double> CreateSpatialInertiaForEllipsoid(
+std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
 // Returns the SpatialInertia corresponding to the geometry represented
 // by the UsdGeomCylinder prim.
-SpatialInertia<double> CreateSpatialInertiaForCylinder(
+std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
 
 // Returns the SpatialInertia corresponding to the geometry represented
 // by the UsdGeomCapsule prim.
-SpatialInertia<double> CreateSpatialInertiaForCapsule(
+std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
 
