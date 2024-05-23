@@ -135,10 +135,13 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     if (prim_type == "") {
-      prim_type = pxr::TfToken("EmptyType");
+      w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
+        "not specified. Please assign a type to it.",
+        prim.GetPath().GetString()));
+    } else {
+      w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
+        prim_type, prim.GetPath().GetString()));
     }
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
-      prim_type, prim.GetPath().GetString()));
     return nullptr;
   }
 }
@@ -171,10 +174,13 @@ const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     if (prim_type == "") {
-      prim_type = pxr::TfToken("EmptyType");
+      w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
+        "not specified. Please assign a type to it.",
+        prim.GetPath().GetString()));
+    } else {
+      w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
+        prim_type, prim.GetPath().GetString()));
     }
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
-      prim_type, prim.GetPath().GetString()));
   }
   if (inertia.has_value()) {
     return &w_.plant->AddRigidBody(

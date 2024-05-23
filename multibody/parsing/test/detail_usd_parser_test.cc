@@ -100,7 +100,7 @@ TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
   ParseFile(filename);
   // Errors from the `/World/Box` prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Unsupported Prim type 'EmptyType'.*"));
+    ".*The type of the Prim at .* is not specified.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Cone` Prim.
