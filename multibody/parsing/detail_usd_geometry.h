@@ -30,7 +30,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::TfToken& stage_up_axis, const ParsingWorkspace& w);
 
 // Returns the scale factor of an UsdGeomMesh.
-double GetMeshScale(
+std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const ParsingWorkspace& w);
 
