@@ -113,16 +113,16 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   const pxr::UsdPrim& prim) {
   if (prim.IsA<pxr::UsdGeomCube>()) {
     return CreateGeometryBox(
-      prim, metadata_.meters_per_unit, w_);
+      prim, metadata_.meters_per_unit, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     return CreateGeometryEllipsoid(
-      prim, metadata_.meters_per_unit, w_);
+      prim, metadata_.meters_per_unit, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
     return CreateGeometryCapsule(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     return CreateGeometryCylinder(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // Create an obj file for each mesh and pass the filename into
     // the constructor of geometry::Mesh. This is a temporary solution while
@@ -131,7 +131,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
     mesh_filenames_.push_back(obj_filename);
     return CreateGeometryMesh(
-      obj_filename, prim, metadata_.meters_per_unit, w_);
+      obj_filename, prim, metadata_.meters_per_unit, w_.diagnostic);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     if (prim_type == "") {
@@ -157,16 +157,16 @@ const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
   std::optional<SpatialInertia<double>> inertia;
   if (prim.IsA<pxr::UsdGeomCube>()) {
     inertia = CreateSpatialInertiaForBox(
-      prim, metadata_.meters_per_unit, w_);
+      prim, metadata_.meters_per_unit, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
     inertia = CreateSpatialInertiaForEllipsoid(
-      prim, metadata_.meters_per_unit, w_);
+      prim, metadata_.meters_per_unit, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
     inertia = CreateSpatialInertiaForCapsule(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     inertia = CreateSpatialInertiaForCylinder(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh.
     inertia = std::optional<SpatialInertia<double>>{
@@ -208,7 +208,7 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   }
 
   std::optional<math::RigidTransform<double>> prim_transform =
-    GetPrimRigidTransform(prim, metadata_.meters_per_unit, w_);
+    GetPrimRigidTransform(prim, metadata_.meters_per_unit, w_.diagnostic);
   if (!prim_transform.has_value()) {
     return;
   }
