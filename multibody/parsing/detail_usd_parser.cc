@@ -187,26 +187,6 @@ const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
 
 void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   bool is_static) {
-  const RigidBody<double>* rigid_body;
-  math::RigidTransform<double> transform_relative_to_rigid_body;
-  math::RigidTransform<double> prim_transform =
-    GetPrimRigidTransform(prim, metadata_.meters_per_unit);
-  if (is_static) {
-    rigid_body = &w_.plant->world_body();
-    transform_relative_to_rigid_body = prim_transform;
-  } else {
-    rigid_body = CreateRigidBody(prim);
-    transform_relative_to_rigid_body =
-      math::RigidTransform<double>::Identity();
-    w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform);
-  }
-
-  if (!rigid_body) {
-    w_.diagnostic.Error(fmt::format("Failed to create RigidBody "
-      "for prim at {}.", prim.GetPath().GetString()));
-    return;
-  }
-
   auto collision_geometry = CreateCollisionGeometry(prim);
   if (!collision_geometry) {
     w_.diagnostic.Error(fmt::format("Failed to create collision "
@@ -221,6 +201,29 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
     return;
   }
 
+  std::optional<math::RigidTransform<double>> prim_transform =
+    GetPrimRigidTransform(prim, metadata_.meters_per_unit, w_);
+  if (!prim_transform.has_value()) {
+    return;
+  }
+
+  const RigidBody<double>* rigid_body;
+  math::RigidTransform<double> transform_relative_to_rigid_body;
+  if (is_static) {
+    rigid_body = &w_.plant->world_body();
+    transform_relative_to_rigid_body = prim_transform.value();
+  } else {
+    rigid_body = CreateRigidBody(prim);
+    transform_relative_to_rigid_body =
+      math::RigidTransform<double>::Identity();
+    w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform.value());
+  }
+
+  if (!rigid_body) {
+    w_.diagnostic.Error(fmt::format("Failed to create RigidBody "
+      "for prim at {}.", prim.GetPath().GetString()));
+    return;
+  }
   w_.plant->RegisterCollisionGeometry(
     *rigid_body,
     transform_relative_to_rigid_body,
