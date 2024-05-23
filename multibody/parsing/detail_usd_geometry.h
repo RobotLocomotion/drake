@@ -89,13 +89,13 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
 // Returns the axis (the orientation of the geometry) of a UsdGeomCylinder or
 // a UsdGeomCapsule as a pxr::TfToken, which could be one of `"X"`, `"Y"`, or
 // `"Z"`.
-pxr::TfToken GetUsdGeomAxis(
+std::optional<pxr::TfToken> GetUsdGeomAxis(
   const pxr::UsdPrim& prim, const ParsingWorkspace& w);
 
 // Returns the axis (the orientation of the geometry) of a UsdGeomCylinder or
 // a UsdGeomCapsule as a Vector3d, which could be one of `Vector3d(1,0,0)`,
 // `Vector3d(0,1,0)`, or `Vector3d(0,0,1)`.
-Eigen::Vector3d GetUsdGeomAxisUnitVector(
+std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
   const pxr::UsdPrim& prim, const ParsingWorkspace& w);
 
 // Returns the CoulombFriction of a prim if the prim specifies its
