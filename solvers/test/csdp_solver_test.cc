@@ -258,6 +258,9 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
       SolverOptions solver_options;
       solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
                                static_cast<int>(method));
+      // Loosen the tolerances a bit (otherwise macOS is sad).
+      solver_options.SetOption(solver.id(), "axtol", 1e-6);
+      solver_options.SetOption(solver.id(), "objtol", 1e-6);
       TestSocpDuplicatedVariable2(solver, solver_options, 1E-5);
     }
   }
