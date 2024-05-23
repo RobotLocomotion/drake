@@ -49,7 +49,7 @@ class UsdParser {
     const pxr::UsdPrim& prim);
   std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     const pxr::UsdPrim& prim);
-  const RigidBody<double>& CreateRigidBody(const pxr::UsdPrim& prim);
+  const RigidBody<double>* CreateRigidBody(const pxr::UsdPrim& prim);
 
   inline static std::vector<std::string> mesh_filenames_;
   const ParsingWorkspace& w_;
@@ -111,15 +111,18 @@ UsdParser::UsdParser(const ParsingWorkspace& ws) : w_{ws} { }
 
 std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   const pxr::UsdPrim& prim) {
-  double mpu = metadata_.meters_per_unit;
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    return CreateGeometryBox(prim, mpu, w_);
+    return CreateGeometryBox(
+      prim, metadata_.meters_per_unit, w_);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    return CreateGeometryEllipsoid(prim, mpu, w_);
+    return CreateGeometryEllipsoid(
+      prim, metadata_.meters_per_unit, w_);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
-    return CreateGeometryCapsule(prim, mpu, metadata_.up_axis, w_);
+    return CreateGeometryCapsule(
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
-    return CreateGeometryCylinder(prim, mpu, metadata_.up_axis, w_);
+    return CreateGeometryCylinder(
+      prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // Create an obj file for each mesh and pass the filename into
     // the constructor of geometry::Mesh. This is a temporary solution while
@@ -127,7 +130,8 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     // on.
     std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
     mesh_filenames_.push_back(obj_filename);
-    return CreateGeometryMesh(obj_filename, prim, mpu, w_);
+    return CreateGeometryMesh(
+      obj_filename, prim, metadata_.meters_per_unit, w_);
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     if (prim_type == "") {
@@ -146,8 +150,8 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
   return CreateVisualGeometry(prim);
 }
 
-const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
-  SpatialInertia<double> inertia;
+const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
+  std::optional<SpatialInertia<double>> inertia;
   if (prim.IsA<pxr::UsdGeomCube>()) {
     inertia = CreateSpatialInertiaForBox(
       prim, metadata_.meters_per_unit, w_);
@@ -162,7 +166,8 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
       prim, metadata_.meters_per_unit, metadata_.up_axis, w_);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh.
-    inertia = SpatialInertia<double>::MakeUnitary();
+    inertia = std::optional<SpatialInertia<double>>{
+      SpatialInertia<double>::MakeUnitary()};
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
     if (prim_type == "") {
@@ -171,21 +176,17 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
     w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
       prim_type, prim.GetPath().GetString()));
   }
-  return w_.plant->AddRigidBody(
-    fmt::format("{}-RigidBody", prim.GetPath().GetString()),
-    model_instance_, inertia);
+  if (inertia.has_value()) {
+    return &w_.plant->AddRigidBody(
+      fmt::format("{}-RigidBody", prim.GetPath().GetString()),
+      model_instance_, inertia.value());
+  } else {
+    return nullptr;
+  }
 }
 
 void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   bool is_static) {
-  auto collision_geometry = CreateCollisionGeometry(prim);
-  auto visual_geometry = CreateVisualGeometry(prim);
-  if (!collision_geometry || !visual_geometry) {
-    w_.diagnostic.Error(fmt::format("Failed to create collision or visual "
-      "geometry for prim at {}.", prim.GetPath().GetString()));
-    return;
-  }
-
   const RigidBody<double>* rigid_body;
   math::RigidTransform<double> transform_relative_to_rigid_body;
   math::RigidTransform<double> prim_transform =
@@ -194,10 +195,30 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
     rigid_body = &w_.plant->world_body();
     transform_relative_to_rigid_body = prim_transform;
   } else {
-    rigid_body = &CreateRigidBody(prim);
+    rigid_body = CreateRigidBody(prim);
     transform_relative_to_rigid_body =
       math::RigidTransform<double>::Identity();
     w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform);
+  }
+
+  if (!rigid_body) {
+    w_.diagnostic.Error(fmt::format("Failed to create RigidBody "
+      "for prim at {}.", prim.GetPath().GetString()));
+    return;
+  }
+
+  auto collision_geometry = CreateCollisionGeometry(prim);
+  if (!collision_geometry) {
+    w_.diagnostic.Error(fmt::format("Failed to create collision "
+      "geometry for prim at {}.", prim.GetPath().GetString()));
+    return;
+  }
+
+  auto visual_geometry = CreateVisualGeometry(prim);
+  if (!visual_geometry) {
+    w_.diagnostic.Error(fmt::format("Failed to create visual "
+      "geometry for prim at {}.", prim.GetPath().GetString()));
+    return;
   }
 
   w_.plant->RegisterCollisionGeometry(
