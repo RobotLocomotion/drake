@@ -165,7 +165,11 @@ const RigidBody<double>& UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
     inertia = SpatialInertia<double>::MakeUnitary();
   } else {
     pxr::TfToken prim_type = prim.GetTypeName();
-    w_.diagnostic.Error(fmt::format("Unsupported Prim type: {}", prim_type));
+    if (prim_type == "") {
+      prim_type = pxr::TfToken("EmptyType");
+    }
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}",
+      prim_type, prim.GetPath().GetString()));
   }
   return w_.plant->AddRigidBody(
     fmt::format("{}-RigidBody", prim.GetPath().GetString()),
