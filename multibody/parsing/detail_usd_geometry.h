@@ -110,7 +110,7 @@ std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
 
 // Returns the mass of a prim if the prim specifies its `physics:mass`
-// attribute. If not, it returns the default mass and throws a warning.
+// attribute. If not, it returns the default mass (1.0 kg) and emits a warning.
 double GetPrimMass(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic);
 
