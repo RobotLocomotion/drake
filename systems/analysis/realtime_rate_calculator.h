@@ -9,10 +9,10 @@ namespace drake {
 namespace systems {
 namespace internal {
 /* Utility class that computes the realtime rate achieved between time steps. */
-class InstantaneousRealtimeRateCalculator {
+class RealtimeRateCalculator {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InstantaneousRealtimeRateCalculator);
-  InstantaneousRealtimeRateCalculator() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RealtimeRateCalculator);
+  RealtimeRateCalculator() = default;
 
   /* Computes the realtime rate which is the ratio of the amount of simulator
    time to real world time that has passed between invocations.
