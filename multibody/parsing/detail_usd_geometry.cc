@@ -118,11 +118,12 @@ math::RigidTransform<double> GetPrimRigidTransform(
     UsdVec3dToEigen(translation));
 }
 
-void ValidatePrimExtent(const pxr::UsdPrim& prim,
+bool ValidatePrimExtent(const pxr::UsdPrim& prim,
   const ParsingWorkspace& w, bool check_if_isotropic) {
   pxr::VtVec3fArray extent;
   if (!prim.GetAttribute(pxr::TfToken("extent")).Get(&extent)) {
     RaiseFailedToReadAttributeError("extent", prim, w);
+    return false;
   }
   const pxr::GfVec3f& lower_bound = extent[0];
   const pxr::GfVec3f& upper_bound = extent[1];
@@ -132,6 +133,7 @@ void ValidatePrimExtent(const pxr::UsdPrim& prim,
     w.diagnostic.Error(fmt::format(
       "The extent of the Prim at {} is not symmetric.",
       prim.GetPath().GetString()));
+    return false;
   }
   if (check_if_isotropic) {
     if (lower_bound[0] != lower_bound[1] ||
@@ -141,8 +143,10 @@ void ValidatePrimExtent(const pxr::UsdPrim& prim,
       w.diagnostic.Error(fmt::format(
         "The extent of the Prim at {} should be of the same magnitude across"
         "all three dimensions.", prim.GetPath().GetString()));
+      return false;
     }
   }
+  return true;
 }
 
 void WriteMeshToObjFile(
@@ -185,7 +189,9 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
     return std::nullopt;
   }
 
-  ValidatePrimExtent(prim, w, true);
+  if (!ValidatePrimExtent(prim, w, true)) {
+    return std::nullopt;
+  }
 
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
@@ -209,7 +215,9 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
     return std::nullopt;
   }
 
-  ValidatePrimExtent(prim, w, true);
+  if (!ValidatePrimExtent(prim, w, true)) {
+    return std::nullopt;
+  }
 
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
@@ -233,7 +241,9 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
     return std::nullopt;
   }
 
-  ValidatePrimExtent(prim, w);
+  if (!ValidatePrimExtent(prim, w)) {
+    return std::nullopt;
+  }
 
   pxr::TfToken cylinder_axis = GetUsdGeomAxis(prim, w);
   if (cylinder_axis != stage_up_axis) {
@@ -280,7 +290,9 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
     return std::nullopt;
   }
 
-  ValidatePrimExtent(prim, w);
+  if (!ValidatePrimExtent(prim, w)) {
+    return std::nullopt;
+  }
 
   pxr::TfToken capsule_axis = GetUsdGeomAxis(prim, w);
   if (capsule_axis != stage_up_axis) {

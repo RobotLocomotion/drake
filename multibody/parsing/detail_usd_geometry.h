@@ -117,7 +117,7 @@ math::RigidTransform<double> GetPrimRigidTransform(const pxr::UsdPrim& prim,
 
 // Throws an error if the extent of a UsdGeom is invalid (e.g., the upper bound
 // and lower bound have different magnitudes).
-void ValidatePrimExtent(const pxr::UsdPrim& prim,
+bool ValidatePrimExtent(const pxr::UsdPrim& prim,
   const ParsingWorkspace& w, bool check_if_isotropic = false);
 
 // Formats the vertices and indices of a mesh and write to a new obj file.

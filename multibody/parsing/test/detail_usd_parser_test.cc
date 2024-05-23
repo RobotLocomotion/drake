@@ -118,7 +118,7 @@ TEST_F(UsdParserTest, InvalidGeometryAttributesTest) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The extent of the Prim at .* is not symmetric."));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The extent of the Prim at .* is not symmetric."));
+    ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Capsule` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright capsules are supported at the moment.*"));
