@@ -62,7 +62,7 @@ the action of its own weight, infinite solutions to the static problem exist.
 Rigid contact with Coulomb friction is a common approximation used in
 simulation as well. It has its own limitations, most notable the possible
 non-existence of a solution. An example of this is the well known Painlevé
-rod @ref PfeifferGlocker1996 "[Pfeiffer & Glocker, 1996]", a one degree of
+paradox @ref PfeifferGlocker1996 "[Pfeiffer & Glocker, 1996]", a one degree of
 freedom system with only one contact that, depending on the state, has an
 infinite number of solutions or even no solution.
 
@@ -77,7 +77,7 @@ wide variety of technical issues:
  - Even without friction, the system can be overconstrained and the contact
    forces are indeterminate.
  - As described above, rigid contact coupled with Coulomb friction might lead to
-   Painlevé, where the system has no solutions or infinite solutions.
+   the Painlevé paradox, where the system has no solution or infinite solutions.
  - Simulating these systems requires the formulation of Non-Linear
    Complementarity problems (NCPs).  NCPs are believed to be NP-hard
    @ref Kaufman2008 "[Kaufman et al., 2008]" (i.e. very difficult to deal with
@@ -232,9 +232,11 @@ dissipation `d` are the combined "effective" stiffness and dissipation for the
 pair of contacting geometries. Dissipation is modeled using a Hunt & Crossley
 model of dissipation, see @ref mbp_dissipation_model for details.  For
 flexibility of parameterization, stiffness and dissipation are set on a
-per-geometry basis (@ref accessing_contact_properties). Given two geometries
-with individual stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we
-define the rule for combined stiffness (k) and dissipation (d) as: <pre>
+per-geometry basis
+(@ref accessing_contact_properties "Accessing point contact parameters"). Given
+two geometries with individual stiffness and dissipation parameters (k₁, d₁) and
+(k₂, d₂), we define the rule for combined stiffness (k) and dissipation (d) as:
+<pre>
   k = (k₁⋅k₂)/(k₁+k₂)
   d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
 </pre>
@@ -242,7 +244,7 @@ These parameters are optional for each geometry. For any geometry not assigned
 these parameters by a user Pre-Finalize, %MultibodyPlant will assign default
 values such that the combined parameters of two geometries with default values
 match those estimated using the user-supplied "penetration allowance", see
-@ref point_contact_defaults "Default Parameters".
+@ref point_contact_defaults.
 
 @note When modeling stiff materials such as steel or ceramics, these model
 parameters often need to be tuned as a trade-off between numerical stiffness and
@@ -333,8 +335,10 @@ Both of these issues can be addressed by changing the geometry that
 represent the body's contact surface. For some shapes (e.g., boxes), we can
 introduce two sets of collision elements: discrete "points" at the corners,
 and a box capturing the volume (see examples in
-`examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf` and and
-`examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc`).
+<a href="https://github.com/RobotLocomotion/drake/blob/master/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf">
+block_for_pick_and_place.urdf</a> and
+<a href="https://github.com/RobotLocomotion/drake/blob/master/examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc">
+inclined_plane_with_body.cc</a> in Drake's examples).
 With this strategy, the contact "points" are actually small-radius spheres. The
 volume-capturing box should actually be inset from those spheres such that when
 the box is lying on a plane (such that the logical contact manifold would be a
@@ -469,16 +473,20 @@ pressure on the contact surface is likewise a piecewise linear function.
 
 Objects with very large hydroelastic modulus can introduce stiffness into the
 numerics of the contact resolution computation and lead to ill conditioning,
-affecting simulation performance and robustness. For these cases, our
-implementation in Drake allows to declare an object as "rigid hydroelastic" (see
-@ref creating_hydro_reps.) When a "rigid hydroelastic" object interacts with
-other ("compliant") hydroelastic object, the contact surface always follows the
+affecting simulation performance and robustness. For these cases, Drake permits
+declaring an object as "rigid hydroelastic" (see @ref creating_hydro_reps.) When
+a *rigid* hydroelastic object interacts with
+other *compliant* hydroelastic objects, the contact surface always follows the
 surface of the rigid object. Think of it as the compliant object doing 100% of
-the deformation, so it conforms to the shape of the rigid object. When declaring
-an object as rigid hydroelastic please keep in mind that contact among two rigid
-hydroelastic objects is not supported (since in Drake all contacts must have
-some level compliance, even if made of very stiff materials),
-see @ref hug_not_yet_implemented.
+the deformation, so it conforms to the shape of the rigid object. However,
+rigid hydroelastic objects have limitations. There is no hydroelastic contact
+surface between two rigid hydroelastic representations -- when contact is
+observed between two such objects, the contact will be characterized with
+point contact (or maybe even throw), depending on how the
+@ref hug_enabling "contact model" has been configured. For
+this reason, the use of the rigid hydroelastic declaration should be used
+judiciously -- making everything compliant can be simpler in reasoning about the
+scene.
 
 Important points to note:
 - The time cost of resolving contact scales with the complexity of the contact
@@ -493,10 +501,6 @@ Important points to note:
   geometry. As a shape with infinite volume, it would be infeasible to create a
   finite, discrete representation. It is also unnecessary. Intersecting meshes
   directly with a half space is far more efficient.
-- As discussed above, when an object is very near rigid it is more efficient to
-  model it as rigid than as a very stiff compliant object. Modeling as rigid
-  allows us to take advantage of the fact that the contact surface will lie on
-  the surface of the rigid object.
 
 @section mbp_dissipation_model Modeling Dissipation
 

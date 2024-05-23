@@ -11,7 +11,7 @@ namespace geometry {
 
 /** These properties will be used as defaults when the geometry as
 added via API calls or parsed from model files doesn't say anything more
-specific.  @see @ref hug_title, @ref hug_quick_hydro, @ref hug_properties,
+specific.  @see @ref hug_introduction, @ref hug_properties,
 @ref stribeck_approximation. */
 struct DefaultProximityProperties {
   /** Passes this object to an Archive.

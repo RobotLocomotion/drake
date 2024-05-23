@@ -5,9 +5,9 @@
 /**
 @addtogroup hydroelastic_user_guide
 
-@section hug_title Hydroelastic Contact User Guide
+A guide to using hydroelastic contact in practice.
 
-@subsection hug_introduction Introduction
+@section hug_introduction Introduction
 
 There are many ways to model contact between rigid bodies. Drake uses an
 approach we call “compliant” contact. In compliant contact, nominally rigid
@@ -26,7 +26,7 @@ hydroelastic contact. See @ref compliant_contact for a fuller discussion of the
 theory and practice of contact models. For notes on implementation status, see
 @ref hydro_appendix_a. Also see @ref hydro_appendix_examples_and_tutorials.
 
-@subsubsection hug_quick_hydro Hydroelastic Quick-start
+@subsection hug_quick_hydro Hydroelastic Quick-start
 
 The @ref drake::geometry::DefaultProximityProperties
 "proximity default configuration settings" of SceneGraph offer a quick-start
@@ -68,7 +68,7 @@ files. Any explicit properties in model files (or applied by calling Drake
 APIs) will take precedence over the default proximity properties for the
 annotated geometries.
 
-@subsection hug_working_with_hydro Working with Hydroelastic Contact
+@section hug_working_with_hydro Working with Hydroelastic Contact
 
 It is relatively simple to enable a simulation to use hydroelastic
 contact. However, using it effectively requires some experience and
@@ -106,7 +106,7 @@ rigid-hydroelastic geometry.
 <!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
 @image html "multibody/hydroelastics/images/HydroelasticTutorialContactSurfaceRigidCompliantBubble.png"
 
-@subsubsection hug_enabling Enabling Hydroelastic contact in your simulation
+@subsection hug_enabling Enabling Hydroelastic contact in your simulation
 
 Because @ref drake::multibody::MultibodyPlant "MultibodyPlant"
 is responsible for computing the dynamics of the
@@ -156,7 +156,7 @@ contact forces. As the implementation evolves, more and more contact will be
 captured with hydroelastic contact and the circumstances in which the
 point-contact fallback is applied will decrease.
 
-@subsubsection creating_hydro_reps Creating hydroelastic representations of collision geometries
+@subsection creating_hydro_reps Creating hydroelastic representations of collision geometries
 
 There are three ways to configure hydroelastic representations for collision
 geometries:
@@ -175,9 +175,9 @@ type and whether it is rigid or compliant. Some properties can be defined, but
 if they are absent they’ll be provided by `MultibodyPlant`. First we’ll discuss
 each of the properties and then discuss how they can be specified.
 
-@paragraph hug_properties Properties for hydroelastic contact
 <!-- TODO(rpoyner-tri): consider restructuring this section to paragraphs,
      rather than a nested list -->
+@subsubsection hug_properties Properties for hydroelastic contact
 - Hydroelastic classification
    - To have a hydroelastic representation, a shape needs to be classified as
      either “compliant” or “rigid”. This must be explicit -- there are no
@@ -287,13 +287,13 @@ each of the properties and then discuss how they can be specified.
       - Fixing the hydroelastic modulus and decreasing the slab thickness.
       - Increasing the hydroelastic modulus and decreasing the slab thickness.
 
-@subsubsection hug_geometry_properties Assigning hydroelastic properties to geometries
+@subsection hug_geometry_properties Assigning hydroelastic properties to geometries
 
 Properties can be assigned to geometries inside a URDF or SDFormat file using
 some custom Drake XML tags. Alternatively, the properties can be assigned
 programmatically.
 
-@paragraph hug_file_specs Assigning hydroelastic properties in file specifications
+@subsubsection hug_file_specs Assigning hydroelastic properties in file specifications
 
 Drake has introduced a number of custom tags to provide a uniform language to
 specify hydroelastic properties in both URDF and SDFormat. The tag names are
@@ -370,7 +370,7 @@ Let’s look at the specific tags:
   - <@ref tag_drake_mu_dynamic> The coefficient for dynamic friction; this
     applies to both point contact and hydroelastic contact.
 
-@paragraph hug_code_properties Assigning hydroelastic properties in code
+@subsubsection hug_code_properties Assigning hydroelastic properties in code
 
 Hydroelastic properties can be set to objects programmatically via the following
 APIs (see their documentation for further details):
@@ -394,7 +394,7 @@ exception.  Note the special case for declaring a compliant half space -- it
 takes the required slab thickness parameter in addition to the hydroelastic
 modulus value.
 
-@subsection hug_visualizing Visualizing hydroelastic contact
+@section hug_visualizing Visualizing hydroelastic contact
 
 Start Meldis by:
 
@@ -428,7 +428,7 @@ When viewing collisions, note that red arrows indicate a hydroelastic contact,
 with an associated contact patch. Green arrows indicate point contact, which
 does not have any contact patch.
 
-@subsection hug_pitfalls Pitfalls/Troubleshooting
+@section hug_pitfalls Pitfalls/Troubleshooting
 
 Here are various ways that hydroelastic contact may surprise you.
 - A rigid body is not a rigid hydroelastic body until users say so (see
@@ -462,14 +462,14 @@ Here are various ways that hydroelastic contact may surprise you.
   geometry to the resultant contact surface. The contact surface’s refinement
   will depend on the other geometry’s level of refinement.
 
-@subsubsection hug_tips Tips and Tricks
+@subsection hug_tips Tips and Tricks
 
 This is a random collection of things we can do to maximize the benefits of the
 hydroelastic contact model. Some of these tricks accommodate current
 implementation limitations, and some are to work within the theoretical
 framework.
 
-@paragraph hug_gaming Gaming the model
+@subsubsection hug_gaming Gaming the model
 
 - Rigid meshes need not be closed. You can use this to provide fine grained
   control over where a contact surface can actually exist. Be careful to have a

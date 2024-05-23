@@ -769,8 +769,9 @@ If present, this element provides a stiffness value (units of N/m) for point
 contact calculations for this specific geometry. It is stored in a
 ProximityProperties object under `(material, point_contact_stiffness)`.
 
-@see @ref accessing_contact_properties, @ref point_forces_modeling "Point
-Contact Forces", drake::geometry::ProximityProperties
+@see @ref accessing_contact_properties "Accessing point contact parameters",
+@ref point_forces_modeling "Point Contact Forces", and
+drake::geometry::ProximityProperties
 
 @subsection tag_drake_proximity_properties drake:proximity_properties
 

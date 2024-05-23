@@ -253,7 +253,7 @@ namespace geometry {
  @subsection vtk_support VTK file (.vtk)
 
  Drake uses tetrahedral meshes a couple of different ways: as compliant
- hydroelastic geometries (see @ref hug_title "here" for more details) and
+ hydroelastic geometries (see @ref hug_introduction "here" for more details) and
  deformable bodies (see, e.g., multibody::DeformableModel). For some of the
  Shape types (the mathematical primitives), Drake will provide a
  tetrahedralization of the shape at run time. However, Drake cannot yet do so
