@@ -334,7 +334,7 @@ characterization has two negative implications:
 Both of these issues can be addressed by changing the geometry that
 represent the body's contact surface. For some shapes (e.g., boxes), we can
 introduce two sets of collision elements: discrete "points" at the corners,
-and a box capturing the volume (see examples in
+and a box capturing the volume (see
 <a href="https://github.com/RobotLocomotion/drake/blob/master/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf">
 block_for_pick_and_place.urdf</a> and
 <a href="https://github.com/RobotLocomotion/drake/blob/master/examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc">
