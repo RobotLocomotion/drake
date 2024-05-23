@@ -65,6 +65,7 @@ only updated nightly.</p>
  @addtogroup drake_contacts
  @{
    @defgroup compliant_contact Modeling Compliant Contact
+   @defgroup friction_model Modeling of Dry Friction
  @}
 
  @addtogroup multibody_solvers

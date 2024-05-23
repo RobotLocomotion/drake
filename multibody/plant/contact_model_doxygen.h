@@ -550,3 +550,64 @@ drake::multibody::DiscreteContactApproximation::kLagged are convex
 approximations of contact, using a solver with theoretical and practical
 convergence guarantees.
 */
+
+/** @addtogroup  friction_model Modeling of Dry Friction
+ @section friction_physical_model Physical Model
+
+ Despite several @ref friction_numerical_approximations
+ "numerical approximations" that Drake provides, the underlying physical "model"
+ is the same; Coulomb's law of friction coupled with the maximum dissipation
+ principle (MDP).
+
+ Coulomb's law of friction can be stated in terms of forces for
+ @ref compliant_point_contact "point contact" as:<pre>
+  ‖fₜ‖ ≤ μₛfₙ,
+ </pre>
+ where μₛ is the "static" coefficient of friction and fₜ and fₙ are the
+ tangential (friction) and normal components of the contact force, respectively.
+
+ For @ref hydro_contact "hydroelastic contact" the same law can be stated in
+ terms of stresses as:<pre>
+  ‖Tₜ‖ ≤ μₛpₙ,
+ </pre>
+ where Tₜ and pₙ are the tangential (friction) and normal stresses,
+ respectively.
+
+ The friction force fₜ (or stress Tₜ) is perpendicular to the contact normal.
+ It's direction within a plane perpendicular to the contact normal, is
+ determined by MDP. The MDP states that the direction of the friction force is
+ such that it maximizes the amount of dissipation due to friction. Therefore,
+ for a sliding contact with a non-zero slip velocity vector vₜ, the friction
+ force directly opposes vₜ and its magnitude is μₖfₙ (or μₖpₙ), where μₖ is the
+ "dynamic" (or kinetic) coefficient of friction, with μₖ ≤ μₛ. This can be
+ written as:
+ <pre> 
+  fₜ = -μₖ vₜ/‖vₜ‖ fₙ.
+ </pre> 
+
+ @section friction_numerical_approximations Numerical Approximations
+
+ Drake can model multibody systems as being @ref mbp_continuous "continuous" or
+ @ref mbp_discrete "discrete". Each of these represent different numerical
+ approximations of the same underlying physics.
+
+ In a nutshell, @ref mbp_continuous "continuous" models formulate the multibody
+ physics at the acceleration level and use a @ref stribeck_approximation
+ "regularized model of Coulomb friction". This model is a continuous function of
+ state that can be integrated in time using standard error-controlled numerical
+ methods.
+
+ @ref mbp_discrete "Discrete" models on the other hand, formulate the multibody
+ physics at the velocity level, and incorporate friction as constraints. Now,
+ these constraints can be regularized similarly to continuous models, to improve
+ numerics and robustness. Drake's discrete non-convex model with regularized
+ friction is presented in @ref Castro2019 "[Castro et al., 2019]", and novel
+ convex approximations are presented @ref Castro2022 "[Castro et al., 2022]" and
+ @ref Castro2023 "[Castro et al., 2023]".
+
+ Please refer to @ref multibody_solvers for further details.
+
+ @note Discrete models, formulated at the velocity level, cannot differentiate
+ between static (μₛ) and dynamic (μₖ) friction; only dynamic friction can be
+ resolved. Therefore the static coefficient of friction is ignored.
+*/

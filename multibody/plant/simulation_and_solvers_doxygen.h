@@ -54,9 +54,9 @@ complex models of compliant contact, such as
 based on physics, it is continuous and has been experimentally validated.
 Therefore it is the preferred model to capture the physics of contact.
 
-@note Discrete models cannot differentiate between kinematic and dynamic
-friction; only dynamic friction can be resolved. Therefore the static
-coefficient of friction is ignored.
+@note Discrete models, formulated at the velocity level, cannot differentiate
+ between static (μₛ) and dynamic (μₖ) friction; only dynamic friction can be
+ resolved. Therefore the static coefficient of friction is ignored.
 */
 
 /** @addtogroup mbp_continuous Continuous Models for Simulation
