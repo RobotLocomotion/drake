@@ -91,7 +91,7 @@ TEST_F(UsdParserTest, InvalidMassTest) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Double precision float is not supported by UsdPhysicsMassAPI.*"));
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-    ".*Failed to read the mass of the prim at.*"));
+    ".*Failed to read the mass of the Prim at.*"));
 }
 
 TEST_F(UsdParserTest, UnsupportedGeometryTest) {
@@ -105,33 +105,33 @@ TEST_F(UsdParserTest, UnsupportedGeometryTest) {
     ".*Unsupported Prim type 'EmptyType'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to create collision or visual geometry.*"));
-  // Errors from the `/World/Cone` prim.
+  // Errors from the `/World/Cone` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Unsupported Prim type 'Cone'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Unsupported Prim type 'Cone'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to create collision or visual geometry.*"));
-  // Errors from the `/World/Cube` prim.
+  // Errors from the `/World/Cube` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The extent of the prim at .* is not symmetric"));
+    ".*The extent of the Prim at .* is not symmetric."));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The extent of the prim at .* is not symmetric"));
-  // Errors from the `/World/Capsule` prim.
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Only upright capsules are supported at the moment.*"));
+    ".*The extent of the Prim at .* is not symmetric."));
+  // Errors from the `/World/Capsule` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright capsules are supported at the moment.*"));
-  // Errors from the `/World/Cylinder` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only upright capsules are supported at the moment.*"));
+  // Errors from the `/World/Cylinder` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright cylinders are supported at the moment.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright cylinders are supported at the moment.*"));
-  // Errors from the `/World/Octahedron` prim.
+  // Errors from the `/World/Octahedron` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Non-isotropic scaling of a mesh is not supported*"));
+    ".*Non-isotropic scaling of a mesh is not supported.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Non-isotropic scaling of a mesh is not supported*"));
+    ".*Non-isotropic scaling of a mesh is not supported.*"));
 }
 
 }  // namespace

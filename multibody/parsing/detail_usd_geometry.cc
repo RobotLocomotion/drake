@@ -73,8 +73,8 @@ double GetPrimMass(const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
   }
   const double default_mass = 1.0;
   w.diagnostic.Warning(fmt::format(
-    "Failed to read the mass of the prim at {}. Using the "
-    "default value ({}) instead", prim.GetPath().GetString(), default_mass));
+    "Failed to read the mass of the Prim at {}. Using the "
+    "default value '{}' instead.", prim.GetPath().GetString(), default_mass));
   return default_mass;
 }
 
@@ -94,7 +94,7 @@ Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
 void RaiseFailedToReadAttributeError(const std::string& attr_name,
   const pxr::UsdPrim& prim, const ParsingWorkspace& w) {
     w.diagnostic.Error(fmt::format(
-      "Failed to read the \"{}\" attribute of the prim at {}", attr_name,
+      "Failed to read the '{}' attribute of the Prim at {}.", attr_name,
       prim.GetPath().GetString()));
 }
 
@@ -130,7 +130,7 @@ void ValidatePrimExtent(const pxr::UsdPrim& prim,
       -lower_bound[1] != upper_bound[1] ||
       -lower_bound[2] != upper_bound[2]) {
     w.diagnostic.Error(fmt::format(
-      "The extent of the prim at {} is not symmetric",
+      "The extent of the Prim at {} is not symmetric.",
       prim.GetPath().GetString()));
   }
   if (check_if_isotropic) {
@@ -139,8 +139,8 @@ void ValidatePrimExtent(const pxr::UsdPrim& prim,
         upper_bound[0] != upper_bound[1] ||
         upper_bound[1] != upper_bound[2]) {
       w.diagnostic.Error(fmt::format(
-        "The extent of the prim at {} should be of the same magnitude across"
-        "all three dimensions", prim.GetPath().GetString()));
+        "The extent of the Prim at {} should be of the same magnitude across"
+        "all three dimensions.", prim.GetPath().GetString()));
     }
   }
 }
@@ -168,7 +168,7 @@ void WriteMeshToObjFile(
   std::ofstream out_file(filename);
   if (!out_file.is_open()) {
     w.diagnostic.Error(
-      fmt::format("Failed to create file {} for obj mesh", filename));
+      fmt::format("Failed to create file {} for obj mesh.", filename));
   }
   out_file << obj_file_contents;
   out_file.close();
@@ -180,7 +180,7 @@ Eigen::Vector3d GetBoxDimension(
   pxr::UsdGeomCube cube = pxr::UsdGeomCube(prim);
   if (!cube) {
     w.diagnostic.Error(fmt::format(
-      "Failed to cast the prim at {} into an UsdGeomCube.",
+      "Failed to cast the Prim at {} into an UsdGeomCube.",
       prim.GetPath().GetString()));
   }
 
@@ -202,7 +202,7 @@ Eigen::Vector3d GetEllipsoidDimension(
   pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere(prim);
   if (!sphere) {
     w.diagnostic.Error(fmt::format(
-      "Failed to cast the prim at {} into an UsdGeomSphere.",
+      "Failed to cast the Prim at {} into an UsdGeomSphere.",
       prim.GetPath().GetString()));
   }
 
@@ -224,7 +224,7 @@ Eigen::Vector2d GetCylinderDimension(
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
   if (!cylinder) {
     w.diagnostic.Error(fmt::format(
-      "Failed to cast the prim at {} into an UsdGeomCylinder.",
+      "Failed to cast the Prim at {} into an UsdGeomCylinder.",
       prim.GetPath().GetString()));
   }
 
@@ -234,8 +234,8 @@ Eigen::Vector2d GetCylinderDimension(
   if (cylinder_axis != stage_up_axis) {
     w.diagnostic.Error(fmt::format(
       "Only upright cylinders are supported at the moment. The cylinder at {} "
-      "is not upright because its axis ({}) differs from the axis of the "
-      "stage ({})", prim.GetPath().GetString(), cylinder_axis.GetString(),
+      "is not upright because its axis '{}' differs from the axis of the "
+      "stage '{}'.", prim.GetPath().GetString(), cylinder_axis.GetString(),
       stage_up_axis.GetString()));
   }
 
@@ -245,7 +245,7 @@ Eigen::Vector2d GetCylinderDimension(
   if (prim_scale[0] != prim_scale[1]) {
     w.diagnostic.Error(fmt::format(
       "The cylinder at {} has different scaling in X and Y axis, and that is "
-      "not supported", prim.GetPath().GetString()));
+      "not supported.", prim.GetPath().GetString()));
   }
 
   double cylinder_raw_height, cylinder_raw_radius;
@@ -266,7 +266,7 @@ Eigen::Vector2d GetCapsuleDimension(
   pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule(prim);
   if (!capsule) {
     w.diagnostic.Error(fmt::format(
-      "Failed to cast the prim at {} into an UsdGeomCapsule.",
+      "Failed to cast the Prim at {} into an UsdGeomCapsule.",
       prim.GetPath().GetString()));
   }
 
@@ -276,8 +276,8 @@ Eigen::Vector2d GetCapsuleDimension(
   if (capsule_axis != stage_up_axis) {
     w.diagnostic.Error(fmt::format(
       "Only upright capsules are supported at the moment. The capsule at {} "
-      "is not upright because its axis ({}) differs from the axis of the "
-      "stage ({})", prim.GetPath().GetString(), capsule_axis.GetString(),
+      "is not upright because its axis '{}' differs from the axis of the "
+      "stage '{}'.", prim.GetPath().GetString(), capsule_axis.GetString(),
       stage_up_axis.GetString()));
   }
 
@@ -287,7 +287,7 @@ Eigen::Vector2d GetCapsuleDimension(
   if (prim_scale[0] != prim_scale[1]) {
     w.diagnostic.Error(fmt::format(
       "The capsule at {} has different scaling in X and Y axis, and that is "
-      "not supported", prim.GetPath().GetString()));
+      "not supported.", prim.GetPath().GetString()));
   }
 
   double capsule_raw_radius, capsule_raw_height;
@@ -310,7 +310,7 @@ double GetMeshScale(
   if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
     w.diagnostic.Error(fmt::format(
       "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
-      "of a mesh is not supported", prim.GetPath().GetString()));
+      "of a mesh is not supported.", prim.GetPath().GetString()));
   }
   return prim_scale[0] * meters_per_unit;
 }
@@ -365,7 +365,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     if (count != 3) {
       w.diagnostic.Error(fmt::format(
         "The mesh at {} is not a triangle mesh. Only triangle mesh are "
-        "supported at the moment", prim.GetPath().GetString()));
+        "supported at the moment.", prim.GetPath().GetString()));
     }
   }
 
@@ -455,7 +455,7 @@ Eigen::Vector3d GetUsdGeomAxisUnitVector(
     return Eigen::Vector3d(0.0, 0.0, 1.0);
   } else {
     w.diagnostic.Error(fmt::format(
-      "The axis of cylinder at {} is invalid", prim.GetPath().GetString()));
+      "The axis of cylinder at {} is invalid.", prim.GetPath().GetString()));
     return Eigen::Vector3d(0.0, 0.0, 0.0);
   }
 }
