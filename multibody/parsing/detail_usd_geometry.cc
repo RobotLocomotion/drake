@@ -149,7 +149,7 @@ bool ValidatePrimExtent(const pxr::UsdPrim& prim,
   return true;
 }
 
-void WriteMeshToObjFile(
+bool WriteMeshToObjFile(
   const std::string filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
@@ -173,9 +173,11 @@ void WriteMeshToObjFile(
   if (!out_file.is_open()) {
     w.diagnostic.Error(
       fmt::format("Failed to create file {} for obj mesh.", filename));
+    return false;
   }
   out_file << obj_file_contents;
   out_file.close();
+  return true;
 }
 
 std::optional<Eigen::Vector3d> GetBoxDimension(
@@ -443,7 +445,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     return nullptr;
   }
 
-  WriteMeshToObjFile(obj_filename, vertices, indices, w);
+  if (!WriteMeshToObjFile(obj_filename, vertices, indices, w)) {
+    return nullptr;
+  }
 
   return std::make_unique<geometry::Mesh>(obj_filename, prim_scale.value());
 }
