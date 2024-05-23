@@ -79,6 +79,8 @@ double GetPrimMass(const pxr::UsdPrim& prim,
       }
     }
   }
+  // When mass is not provided explicitly, we assume the value to be 1.0, per
+  // https://openusd.org/release/wp_rigid_body_physics.html#body-mass-properties
   const double default_mass = 1.0;
   diagnostic.Warning(fmt::format(
     "Failed to read the mass of the Prim at {}. Using the "
