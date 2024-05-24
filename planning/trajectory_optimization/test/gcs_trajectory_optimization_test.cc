@@ -791,6 +791,18 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
       gcs.AddPathContinuityConstraints(0),
       "Path continuity is enforced by default. Choose a higher order.");
 
+  // Zero order path continuity should throw an error, since it's enforced by
+  // default.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddContinuityConstraints(0),
+      "Path continuity is enforced by default. Choose a higher order.");
+
   // Negative continuity should be rejected as well.
   DRAKE_EXPECT_THROWS_MESSAGE(regions1.AddPathContinuityConstraints(-1),
                               "Order must be greater than or equal to 1.");
@@ -800,16 +812,30 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddPathContinuityConstraints(-1),
                               "Order must be greater than or equal to 1.");
 
+  // Negative continuity should be rejected as well.
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1.AddContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(regions1_to_regions2.AddContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.AddContinuityConstraints(-1),
+                              "Order must be greater than or equal to 1.");
+
   // Adding global continuity constraints should consider the order of the
   // subgraphs and edges between subgraphs. Thus very large continuity orders
   // shouldn't be rejected.
   DRAKE_EXPECT_NO_THROW(gcs.AddPathContinuityConstraints(100));
+  DRAKE_EXPECT_NO_THROW(gcs.AddContinuityConstraints(100));
 
   // Since the order of region1 is 1, velocity continuity should be support.
   DRAKE_EXPECT_NO_THROW(regions1.AddPathContinuityConstraints(1));
+  DRAKE_EXPECT_NO_THROW(regions1.AddContinuityConstraints(1));
   // But acceleration continuity would require the region to be of order 2.
   DRAKE_EXPECT_THROWS_MESSAGE(
       regions1.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint of order greater than the set "
+      "order.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1.AddContinuityConstraints(2),
       "Cannot add continuity constraint of order greater than the set "
       "order.");
 
@@ -818,6 +844,12 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidContinuityConstraints) {
   DRAKE_EXPECT_NO_THROW(regions1_to_regions2.AddPathContinuityConstraints(1));
   DRAKE_EXPECT_THROWS_MESSAGE(
       regions1_to_regions2.AddPathContinuityConstraints(2),
+      "Cannot add continuity constraint to a subgraph edge where both "
+      "subgraphs order are not greater than or equal to the requested "
+      "continuity order.");
+  DRAKE_EXPECT_NO_THROW(regions1_to_regions2.AddContinuityConstraints(1));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions1_to_regions2.AddContinuityConstraints(2),
       "Cannot add continuity constraint to a subgraph edge where both "
       "subgraphs order are not greater than or equal to the requested "
       "continuity order.");
@@ -1236,7 +1268,7 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
-TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
+TEST_F(SimpleEnv2D, GlobalPathContinuityConstraints) {
   const int kDimension = 2;
   const double kSpeed = 1.0;
   GcsTrajectoryOptimization gcs(kDimension);
@@ -1303,6 +1335,60 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
         normalized_next_segment_acc->value(
             normalized_next_segment_acc->start_time()),
         1e-6));
+  }
+}
+
+TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
+  const int kDimension = 2;
+  const double kSpeed = 1.0;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start(0.2, 0.2), goal(4.8, 4.8);
+  auto& regions = gcs.AddRegions(regions_, 6);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0.0, 0.0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0.0, 0.0);
+
+  gcs.AddEdges(source, regions);
+  gcs.AddEdges(regions, target);
+
+  gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
+  gcs.AddVelocityBounds(Vector2d(-kSpeed, -kSpeed), Vector2d(kSpeed, kSpeed));
+
+  // Add velocity and acceleration continuity on q(t).
+  gcs.AddContinuityConstraints(1);
+  gcs.AddContinuityConstraints(2);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 4.5e3);
+
+  if (SnoptSolverUnavailable()) return;
+  // Define solver options.
+  GraphOfConvexSetsOptions options;
+  solvers::SnoptSolver snopt;
+  options.restriction_solver = &snopt;
+  options.max_rounded_paths = 5;
+
+  auto [traj, result] = gcs.SolvePath(source, target, options);
+
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
+
+  // Check for velocity and acceleration continuity on q(t).
+  for (int i = 0; i < traj.get_number_of_segments() - 1; ++i) {
+    auto segment_vel = traj.segment(i).MakeDerivative();
+    auto next_segment_vel = traj.segment(i + 1).MakeDerivative();
+    EXPECT_TRUE(CompareMatrices(
+        segment_vel->value(segment_vel->end_time()),
+        next_segment_vel->value(next_segment_vel->start_time()), 1e-6));
+
+    auto segment_acc = traj.segment(i).MakeDerivative(2);
+    auto next_segment_acc = traj.segment(i + 1).MakeDerivative(2);
+    EXPECT_TRUE(CompareMatrices(
+        segment_acc->value(segment_acc->end_time()),
+        next_segment_acc->value(next_segment_acc->start_time()), 1e-6));
   }
 }
 
