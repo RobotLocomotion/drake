@@ -611,6 +611,17 @@ class TestTrajectoryOptimization(unittest.TestCase):
         main1_to_main2_region.AddVelocityBounds(
             lb=-max_jerk / 2, ub=max_jerk / 2)
 
+        # Add global velocity continuity.
+        gcs.AddContinuityConstraints(continuity_order=1)
+
+        # Add acceleration continuity to each subgraph.
+        main1.AddContinuityConstraints(continuity_order=2)
+        main2.AddContinuityConstraints(continuity_order=2)
+
+        # Add acceleration continuity at the subspace point and region.
+        main1_to_main2_pt.AddContinuityConstraints(continuity_order=2)
+        main1_to_main2_region.AddContinuityConstraints(continuity_order=2)
+
     def test_gcs_trajectory_optimization_wraparound(self):
         gcs_wraparound = GcsTrajectoryOptimization(
             num_positions=1, continuous_revolute_joints=[0])
