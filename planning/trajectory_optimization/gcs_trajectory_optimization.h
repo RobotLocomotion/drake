@@ -199,7 +199,6 @@ class GcsTrajectoryOptimization final {
         const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
 
     /** Enforces derivative continuity constraints on the subgraph.
-     @param continuity_order is the order of the continuity constraint.
 
     Note that the constraints are on the control points of the
     derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -207,12 +206,39 @@ class GcsTrajectoryOptimization final {
     duration h to yield q(t). `NormalizeSegmentTimes()` will return r(s) with
     valid continuity.
 
+    @param continuity_order is the order of the continuity constraint.
+
     @throws std::exception if the continuity order is not equal or less than
         the order the subgraphs.
     @throws std::exception if the continuity order is less than one since path
     continuity is enforced by default.
     */
     void AddPathContinuityConstraints(int continuity_order);
+
+    /** Enforces derivative continuity constraints on the subgraph.
+
+    This adds a nonlinear constraint to the restriction and MIP
+    GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+    relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+    "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+    The continuity is enforced on the control points of q(t), which appear as
+    nonlinear constraints.
+    <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥᴺ </pre>
+    The convex surrogate is simply the path continuity, where hᵤᴺ and hᵥᴺ are
+    replaced by the characteristic times of the respective sets:
+    <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤ₀ᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥ₀ᴺ </pre>.
+    For now, these are set to one, but future work may involve scaling them by
+    the size of the sets.
+
+    @param continuity_order is the order of the continuity constraint.
+
+    @throws std::exception if the continuity order is not equal or less than
+      the order the subgraphs.
+    @throws std::exception if the continuity order is less than one since path
+      continuity is enforced by default.
+    */
+    void AddContinuityConstraints(int continuity_order);
 
    private:
     /* Constructs a new subgraph and copies the regions. */
@@ -328,7 +354,6 @@ class GcsTrajectoryOptimization final {
 
     /** Enforces derivative continuity constraints on the edges between the
     subgraphs.
-     @param continuity_order is the order of the continuity constraint.
 
     Note that the constraints are on the control points of the
     derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -336,12 +361,40 @@ class GcsTrajectoryOptimization final {
     duration h to yield q(t). `NormalizeSegmentTimes()` will return r(s) with
     valid continuity.
 
+    @param continuity_order is the order of the continuity constraint.
+
     @throws std::exception if the continuity order is not equal or less than
         the order of both subgraphs.
     @throws std::exception if the continuity order is less than one since path
     continuity is enforced by default.
     */
     void AddPathContinuityConstraints(int continuity_order);
+
+    /** Enforces derivative continuity constraints on the edges between the
+    subgraphs.
+
+    This adds a nonlinear constraint to the restriction and MIP
+    GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+    relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+    "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+    The continuity is enforced on the control points of q(t), which appear as
+    nonlinear constraints.
+    <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥᴺ </pre>
+    The convex surrogate is simply the path continuity, where hᵤᴺ and hᵥᴺ are
+    replaced by the characteristic times of the respective sets:
+    <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤ₀ᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥ₀ᴺ </pre>.
+    For now, these are set to one, but future work may involve scaling them by
+    the size of the sets.
+
+    @param continuity_order is the order of the continuity constraint.
+
+    @throws std::exception if the continuity order is not equal or less than
+      the order of both subgraphs.
+    @throws std::exception if the continuity order is less than one since path
+      continuity is enforced by default.
+    */
+    void AddContinuityConstraints(int continuity_order);
 
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
@@ -592,7 +645,6 @@ class GcsTrajectoryOptimization final {
                                     int derivative_order);
 
   /** Enforces derivative continuity constraints on the entire graph.
-  @param continuity_order is the order of the continuity constraint.
 
   Note that the constraints are on the control points of the
   derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -600,10 +652,35 @@ class GcsTrajectoryOptimization final {
   duration h to yield q(t). `NormalizeSegmentTimes()` will return r(s) with
   valid continuity.
 
+  @param continuity_order is the order of the continuity constraint.
+
   @throws std::exception if the continuity order is less than one since path
   continuity is enforced by default.
   */
   void AddPathContinuityConstraints(int continuity_order);
+
+  /** Enforces derivative continuity constraints on the entire graph.
+
+  This adds a nonlinear constraint to the restriction and MIP
+  GraphOfConvexSets::Transcription, while adding a convex surrogate to the
+  relaxation. For more details, see @ref nonconvex_graph_of_convex_sets
+  "Guiding Non-convex Optimization with the GraphOfConvexSets".
+
+  The continuity is enforced on the control points of q(t), which appear as
+  nonlinear constraints.
+  <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥᴺ </pre>
+  The convex surrogate is simply the path continuity, where hᵤᴺ and hᵥᴺ are
+  replaced by the characteristic times of the respective sets:
+  <pre> (dᴺrᵤ(s=1) / dsᴺ) / hᵤ₀ᴺ == (dᴺrᵥ(s=0) / dsᴺ) / hᵥ₀ᴺ </pre>.
+  For now, these are set to one, but future work may involve scaling them by
+  the size of the sets.
+
+  @param continuity_order is the order of the continuity constraint.
+
+  @throws std::exception if the continuity order is less than one since path
+    continuity is enforced by default.
+  */
+  void AddContinuityConstraints(int continuity_order);
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the whole graph. @see
@@ -763,6 +840,7 @@ class GcsTrajectoryOptimization final {
       global_velocity_bounds_{};
   std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>
       global_nonlinear_derivative_bounds_{};
+  std::vector<int> global_path_continuity_constraints_{};
   std::vector<int> global_continuity_constraints_{};
 };
 

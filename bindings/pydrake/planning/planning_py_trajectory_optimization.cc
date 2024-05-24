@@ -387,7 +387,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathContinuityConstraints",
             &Class::Subgraph::AddPathContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_doc.AddPathContinuityConstraints.doc);
+            subgraph_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints",
+            &Class::Subgraph::AddContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_doc.AddContinuityConstraints.doc);
 
     // EdgesBetweenSubgraphs
     const auto& subgraph_edges_doc =
@@ -408,7 +412,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathContinuityConstraints",
             &Class::EdgesBetweenSubgraphs::AddPathContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_edges_doc.AddPathContinuityConstraints.doc);
+            subgraph_edges_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints",
+            &Class::EdgesBetweenSubgraphs::AddContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_edges_doc.AddContinuityConstraints.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),
@@ -474,6 +482,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathContinuityConstraints",
             &Class::AddPathContinuityConstraints, py::arg("continuity_order"),
             cls_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints", &Class::AddContinuityConstraints,
+            py::arg("continuity_order"), cls_doc.AddContinuityConstraints.doc)
         .def("SolvePath", &Class::SolvePath, py::arg("source"),
             py::arg("target"),
             py::arg("options") =
