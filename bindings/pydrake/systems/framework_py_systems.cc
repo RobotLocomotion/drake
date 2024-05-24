@@ -598,12 +598,30 @@ Note: The above is for the C++ documentation. For Python, use
                               -> const OutputPort<T>& {
               return self->DeclareAbstractOutputPort(name, arg1, arg2, arg3);
             }),
+            py_rvp::reference_internal, py::arg("name"),
+            py::arg("alloc_function"), py::arg("calc_function"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.LeafSystem.DeclareAbstractOutputPort
+                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    leaf_system_cls  // BR
+        .def("DeclareAbstractOutputPort",
+            WrapCallbacks([](PyLeafSystem* self, const std::string& name,
+                              AllocCallback arg1, CalcCallback arg2,
+                              const std::set<DependencyTicket>& arg3)
+                              -> const OutputPort<T>& {
+              return self->DeclareAbstractOutputPort(name, arg1, arg2, arg3);
+            }),
             py_rvp::reference_internal, py::arg("name"), py::arg("alloc"),
             py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
-                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
+                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    leaf_system_cls         // BR
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
