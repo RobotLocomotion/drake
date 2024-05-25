@@ -445,6 +445,24 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
+  std::vector<MultibodyConstraintId> ids;
+  for (const auto& entry : coupler_constraints_specs_) {
+    ids.push_back(entry.first);
+  }
+  for (const auto& entry : distance_constraints_specs_) {
+    ids.push_back(entry.first);
+  }
+  for (const auto& entry : ball_constraints_specs_) {
+    ids.push_back(entry.first);
+  }
+  for (const auto& entry : weld_constraints_specs_) {
+    ids.push_back(entry.first);
+  }
+  return ids;
+}
+
+template <typename T>
 bool MultibodyPlant<T>::GetConstraintActiveStatus(
     const systems::Context<T>& context, MultibodyConstraintId id) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();

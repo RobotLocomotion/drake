@@ -2644,6 +2644,44 @@ class TestPlant(unittest.TestCase):
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
 
+    def test_get_constraint_ids(self):
+        plant = MultibodyPlant_[float](0.01)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
+
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
+
+        # Add ball and distance constraints.
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        X_AP = RigidTransform_[float](p_AP)
+        X_BQ = RigidTransform_[float](p_BQ)
+        distance_id = plant.AddDistanceConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
+        ball_id = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+        weld_id = plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
+
+        Parser(plant).AddModelsFromUrl(
+            "package://drake_models/"
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+
+        # Add coupler constraint.
+        left_slider = plant.GetJointByName("left_finger_sliding_joint")
+        right_slider = plant.GetJointByName("right_finger_sliding_joint")
+        coupler_id = plant.AddCouplerConstraint(
+            joint0=left_slider, joint1=right_slider,
+            gear_ratio=1.2, offset=3.4)
+
+        ids = plant.GetConstraintIds()
+        # Confirm that indices and [distance_id, ball_id, weld_id, coupler_id]
+        # are the same up to a permutation.
+        self.assertTrue(
+            collections.Counter(ids) == collections.Counter(
+                [distance_id, ball_id, weld_id, coupler_id]))
+
     def test_constraint_active_status_api(self):
         plant = MultibodyPlant_[float](0.01)
         plant.set_discrete_contact_approximation(
