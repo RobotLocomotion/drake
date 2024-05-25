@@ -2678,6 +2678,14 @@ class TestPlant(unittest.TestCase):
         # We are done creating the model.
         plant.Finalize()
 
+        # Test GetConstraintIds()
+        ids = plant.GetConstraintIds()
+        # Confirm that indices and [distance_id, ball_id, weld_id, coupler_id]
+        # are the same up to a permutation.
+        self.assertTrue(
+            collections.Counter(ids) == collections.Counter(
+                [distance_id, ball_id, weld_id, coupler_id]))
+
         # Default context.
         context = plant.CreateDefaultContext()
 
