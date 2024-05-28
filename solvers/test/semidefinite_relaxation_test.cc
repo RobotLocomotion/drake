@@ -83,6 +83,9 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, UnsupportedCost) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeSemidefiniteRelaxation(prog),
       ".*GenericCost was declared but is not supported.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeSemidefiniteRelaxation(prog),
+      ".*GenericCost was declared but is not supported.");
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationTest, UnsupportedConstraint) {

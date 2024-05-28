@@ -19,6 +19,199 @@ using symbolic::Expression;
 using symbolic::Variable;
 using symbolic::Variables;
 
+using Eigen::Matrix2d;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+
+namespace {
+void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
+                               MathematicalProgram* relaxation) {
+  const int N = y_expected.size() + 1;
+  MatrixX<Variable> X = Eigen::Map<const MatrixX<Variable>>(
+      relaxation->positive_semidefinite_constraints()[0].variables().data(), N,
+      N);
+  VectorXd x_expected(N);
+  x_expected << y_expected, 1;
+  const MatrixXd X_expected = x_expected * x_expected.transpose();
+  relaxation->SetInitialGuess(X, X_expected);
+}
+
+void SetRelaxationInitialGuess(
+    const std::map<Variable, double>& expected_values,
+    MathematicalProgram* relaxation) {
+  for (const auto& [var, val] : expected_values) {
+    relaxation->SetInitialGuess(var, val);
+  }
+  for (const auto& constraint :
+       relaxation->positive_semidefinite_constraints()) {
+    const int n = constraint.evaluator()->matrix_rows();
+    VectorXd x_expected(n);
+    const MatrixX<Variable> X_var = Eigen::Map<const MatrixX<Variable>>(
+        constraint.variables().data(), n, n);
+    for (int i = 0; i < n - 1; ++i) {
+      x_expected(i) = expected_values.at(X_var(i, n - 1));
+    }
+    x_expected(n - 1) = 1;
+    const MatrixXd X_expected = x_expected * x_expected.transpose();
+    relaxation->SetInitialGuess(X_var, X_expected);
+  }
+}
+
+int NChoose2(int n) {
+  return (n * (n - 1)) / 2;
+}
+
+const double kInf = std::numeric_limits<double>::infinity();
+
+}  // namespace
+
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           ValidateProgramIsSupportedTest) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables(3, "x");
+  // Supported Costs.
+  prog.AddLinearCost(x(1));
+  prog.AddQuadraticCost(x(0) * x(0));
+
+  // Supported Constraints.
+  prog.AddLinearConstraint(x(2) >= 0);
+  prog.AddLinearEqualityConstraint(x(0) == 0);
+  // A convex, negative definite quadratic constraint.
+  prog.AddQuadraticConstraint(-x[0] * x[0], 1, kInf);
+  // A convex, positive definite quadratic constraint.
+  prog.AddQuadraticConstraint(x(1) * x(1), -kInf, 2);
+  // A non-convex, quadratic constraint.
+  prog.AddQuadraticConstraint(x(0) * x(1), 0, 1);
+  EXPECT_NO_THROW(ValidateProgramIsSupported(prog));
+
+  // An unsupported cost.
+  const auto bad_cost = prog.AddCost(sin(x[0]));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ValidateProgramIsSupported(prog),
+      ".*MakeSemidefiniteRelaxation.* does not .* support this program.*");
+  prog.RemoveCost(bad_cost);
+
+  // An unsupported constraint.
+  const auto bad_constraint = prog.AddCost(cos(x[1]));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ValidateProgramIsSupported(prog),
+      ".*MakeSemidefiniteRelaxation.* does not.* support this program.*");
+}
+
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           CheckProgramHasNonConvexQuadratics) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables(3, "x");
+  EXPECT_FALSE(CheckProgramHasNonConvexQuadratics(prog));
+  // A convex, quadratic constraint.
+  prog.AddQuadraticConstraint(x(0) * x(0), -kInf, 1);
+  EXPECT_FALSE(CheckProgramHasNonConvexQuadratics(prog));
+  // A non-convex, quadratic constraint.
+  prog.AddQuadraticConstraint(x(0) * x(1), 0, 1);
+  EXPECT_TRUE(CheckProgramHasNonConvexQuadratics(prog));
+}
+
+GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
+           InitializeSemidefiniteRelaxationForProg) {
+  MathematicalProgram prog;
+  Variable one("1");
+
+  VectorX<Variable> x(3);
+  x << Variable("x1"), Variable("x2"), Variable("x3");
+  VectorX<Variable> y(2);
+  y << Variable("y1"), Variable("y2");
+
+  VectorX<Variable> xy(x.size() + y.size());
+  xy << x, y;
+
+  // Add the decision variables to prog in a way that x and y are not sorted by
+  // variable id index. This allows us to check that
+  // InitializeSemidefiniteRelaxationForProg actually sorts the variables.
+  prog.AddDecisionVariables(y);
+  prog.AddDecisionVariables(x);
+
+  MathematicalProgram relaxation;
+  relaxation.AddDecisionVariables(Vector<Variable, 1>{one});
+  MatrixX<Variable> X;
+  std::map<Variable, int> variables_to_sorted_indices;
+  InitializeSemidefiniteRelaxationForProg(prog, one, &relaxation, &X,
+                                          &variables_to_sorted_indices, 1);
+  MatrixX<Variable> Y(prog.num_vars(), prog.num_vars());
+  Y = X.topLeftCorner(prog.num_vars(), prog.num_vars());
+  // Y should be named Y1 since we passed a group number.
+  EXPECT_TRUE(Y(0, 0).get_name().find("Y1") != std::string::npos);
+
+  MatrixX<Variable> X_expected(prog.num_vars() + 1, prog.num_vars() + 1);
+  X_expected.topLeftCorner(prog.num_vars(), prog.num_vars()) = Y;
+  X_expected.topRightCorner(prog.num_vars(), 1) = xy;
+  X_expected.bottomLeftCorner(1, prog.num_vars()) = xy.transpose();
+  X_expected(prog.num_vars(), prog.num_vars()) = one;
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    for (int j = 0; j < prog.num_vars(); ++j) {
+      EXPECT_TRUE(X(i, j).equal_to(X_expected(i, j)));
+    }
+  }
+
+  EXPECT_EQ(variables_to_sorted_indices.at(x(0)), 0);
+  EXPECT_EQ(variables_to_sorted_indices.at(x(1)), 1);
+  EXPECT_EQ(variables_to_sorted_indices.at(x(2)), 2);
+  EXPECT_EQ(variables_to_sorted_indices.at(y(0)), 3);
+  EXPECT_EQ(variables_to_sorted_indices.at(y(1)), 4);
+
+  EXPECT_EQ(relaxation.num_vars(), NChoose2(prog.num_vars() + 1));
+
+  EXPECT_EQ(ssize(relaxation.GetAllConstraints()), 1);
+  EXPECT_EQ(ssize(relaxation.positive_semidefinite_constraints()), 1);
+  EXPECT_EQ(ssize(relaxation.GetAllCosts()), 0);
+}
+
+class MakeSemidefiniteRelaxationTestFixture : public ::testing::Test {
+ public:
+  MakeSemidefiniteRelaxationTestFixture() : prog_(), relaxation_(), one_("1") {
+    InitializeSemidefiniteRelaxationForProg(prog_, one_, relaxation_.get(), &X_,
+                                            &variables_to_sorted_indices_);
+  }
+
+  void ReinitializeRelaxation() {
+    relaxation_ = prog_.Clone();
+    const Variable one("one");
+    relaxation_->AddDecisionVariables(Vector1<Variable>(one));
+    relaxation_->AddLinearEqualityConstraint(one, 1);
+    InitializeSemidefiniteRelaxationForProg(prog_, one_, relaxation_.get(), &X_,
+                                            &variables_to_sorted_indices_);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  std::unique_ptr<MathematicalProgram> relaxation_;
+  Variable one_;
+
+  MatrixX<Variable> X_;
+  std::map<Variable, int> variables_to_sorted_indices_;
+};
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoLinearizeQuadraticCostsAndConstraintsCaseQuadraticCost) {
+  const auto y = prog_.NewContinuousVariables<2>("y");
+  const Vector2d yd(0.5, 0.7);
+  // A convex quadratic cost
+  prog_.AddQuadraticErrorCost(Matrix2d::Identity(), yd, y);
+  // A non-convex quadratic cost
+  prog_.AddQuadraticCost(y(0)*y(1), false);
+  ReinitializeRelaxation();
+
+  DoLinearizeQuadraticCostsAndConstraints(
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get(), false);
+  EXPECT_EQ(relaxation_->linear_costs().size(), 1);
+  SetRelaxationInitialGuess(yd, relaxation_.get());
+  EXPECT_NEAR(
+      relaxation_->EvalBindingAtInitialGuess(relaxation_->linear_costs()[0])[0],
+      0, 1e-12);
+}
+
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSparseKron) {
   Eigen::MatrixXd A(3, 3);
   // clang-format off

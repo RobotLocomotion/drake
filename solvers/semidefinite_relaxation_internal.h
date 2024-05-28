@@ -1,11 +1,78 @@
 #pragma once
 
+#include <map>
+#include <memory>
+#include <optional>
+
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 namespace internal {
+
+// Validate that we can compute the semidefinite relaxation of prog.
+void ValidateProgramIsSupported(const MathematicalProgram& prog);
+
+// Check whether the program prog has any non-convex quadratic costs or
+// constraints.
+bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
+
+// Add the initialization of the semidefinite relaxation of prog to relaxation.
+// Let z represent the variables of prog. First we sort z into a vector y and
+// the resorted indices are stored in variables_to_sorted_indices. The matrix X
+// is set to be equal to X = [[Y, y], [y, one]]. The variable Y is a symmetric
+// matrix variable and both y and Y are added as decision variables to the
+// relaxation. The matrix X is constrained to be PSD. The optional group_number
+// is used to name the variables in the matrix Y. We assume that the variable
+// ones is already a decision variable of relaxation.
+void InitializeSemidefiniteRelaxationForProg(
+    const MathematicalProgram& prog, const symbolic::Variable& one,
+    MathematicalProgram* relaxation, MatrixX<symbolic::Variable>* X,
+    std::map<symbolic::Variable, int>* variables_to_sorted_indices,
+    const std::optional<int>& group_number = std::nullopt);
+
+// Iterate over the quadratic costs and constraints in prog, remove them if
+// present in the relaxation, and add an equivalent linear cost or constraint on
+// the semidefinite variable X. If the cost or constraint is convex, and
+// preserve_convex is true, then the cost/constraint is not removed. The map
+// variables_to_sorted_indices maps the decision variables in prog to their
+// index in the last column of X.
+void DoLinearizeQuadraticCostsAndConstraints(
+    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
+    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    MathematicalProgram* relaxation, bool preserve_convex = false);
+
+// For every equality constraint Ay = b in prog, add the implied linear equality
+// constraint [A, -b]X = 0 on the semidefinite relaxation variable X to the
+// relaxation. The map variables_to_sorted_indices maps the decision variables
+// in prog to their index in the last column of X.
+void DoAddImpliedLinearEqualityConstraints(
+    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
+    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    MathematicalProgram* relaxation);
+
+// Constructs the semidefinite relaxation of the program prog and adds it to
+// relaxation. We assume that the program attributes of prog are already
+// validated and that relaxation already contains all the variables and
+// constraints of prog. The variable one is already constrained to be equal to
+// one. This is passed so it can be re-used across semidefinite variables in the
+// sparse version of MakeSemidefiniteRelaxation. Returns the X matrix of the
+// semidefinite relaxation.
+MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
+    const MathematicalProgram& prog, const symbolic::Variable& one,
+    MathematicalProgram* relaxation,
+    const std::optional<int>& group_number = std::nullopt);
+
+// Aggregate all the finite linear constraints in the program into a single
+// expression Ay ≤ b, which can be expressed as [A, -b][y; 1] ≤ 0.
+// We add the implied linear constraint [A,-b]X[A,-b]ᵀ ≤ 0 on the variable X to
+// the relaxation. The map variables_to_sorted_indices maps the
+// decision variables in prog to their index in the last column of X.
+void DoAddImpliedLinearConstraints(
+    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
+    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    MathematicalProgram* relaxation);
 
 // Take the sparse Kronecker product of A and B.
 Eigen::SparseMatrix<double> SparseKroneckerProduct(
@@ -19,8 +86,8 @@ Eigen::SparseMatrix<double> GetWAdjForTril(const int r);
 // Given a vector expressing an element of Sⁿ ⊗ Sᵐ, return the corresponding
 // symmetric matrix of size Sⁿᵐ. Note that Sⁿ ⊗ Sᵐ is a
 // subspace of Sⁿᵐ of dimension (n+1) choose 2 * (m+1) choose 2. Therefore, this
-// method requires that tensor_vector.rows() be of size (n+1) choose 2 * (m+1)
-// choose 2.
+// method requires that tensor_vector.rows() be of size
+// ((n+1) choose 2) * ((m+1) choose 2).
 template <typename Derived>
 drake::MatrixX<typename Derived::Scalar> ToSymmetricMatrixFromTensorVector(
     const Eigen::MatrixBase<Derived>& tensor_vector, int n, int m) {
