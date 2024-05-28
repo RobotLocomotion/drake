@@ -979,12 +979,12 @@ void SapDriver<T>::CalcSapSolverResults(
         "  3. Numerical ill conditioning of the model caused by, for instance, "
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
-        "     objects in the model."
+        "     objects in the model.\n"
         "  4. Ill-conditioning could be alleviated via SAP's near rigid "
         "     parameter. Refer to "
-        "     MultibodyPlant::set_sap_near_rigid_threshold() for details."
+        "     MultibodyPlant::set_sap_near_rigid_threshold() for details.\n"
         "  5. Some other cause. You may want to use Stack Overflow (#drake "
-        "     tag) to request some assistance.",
+        "     tag) to request some assistance.\n",
         context.get_time());
     throw std::runtime_error(msg);
   }
