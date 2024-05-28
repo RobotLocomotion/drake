@@ -37,6 +37,14 @@ int GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
   return num_constraints;
 }
 
+/// @param[out] num_grad number of gradients
+/// @return number of constraints
+int GetNumGradients(const LinearConstraint& c, Index* num_grad) {
+  const int num_constraints = c.num_constraints();
+  *num_grad = c.get_sparse_A().nonZeros();
+  return num_constraints;
+}
+
 template <typename C>
 void SetConstraintDualVariableIndex(
     const Binding<C>& binding, int constraint_index,
@@ -162,6 +170,24 @@ size_t GetGradientMatrix(
   return grad_index;
 }
 
+size_t GetGradientMatrix(
+    const MathematicalProgram& prog, const LinearConstraint& c,
+    const Eigen::Ref<const VectorXDecisionVariable>& variables,
+    Index constraint_idx, Index* iRow, Index* jCol) {
+  size_t grad_index = 0;
+  const Eigen::SparseMatrix<double>& A = c.get_sparse_A();
+  for (int i = 0; i < A.outerSize(); ++i) {
+    const int var_index = prog.FindDecisionVariableIndex(variables(i));
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      iRow[grad_index] = constraint_idx + it.row();
+      jCol[grad_index] = var_index;
+      grad_index++;
+    }
+  }
+
+  return grad_index;
+}
+
 Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
   Eigen::VectorXd xvec(n);
   for (Index i = 0; i < n; i++) {
@@ -227,8 +253,10 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     size_t grad_idx = 0;
     for (int i = 0; i < ty.rows(); i++) {
       result[i] = ty(i);
-      for (int j = 0; j < binding.variables().rows(); j++) {
-        grad[grad_idx++] = A.coeff(i, j);
+    }
+    for (int i = 0; i < A.outerSize(); ++i) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+        grad[grad_idx++] = it.value();
       }
     }
     return grad_idx;
@@ -339,11 +367,11 @@ bool IpoptSolver_NLP::get_nlp_info(
     nnz_jac_g += num_grad;
   }
   for (const auto& c : problem_->linear_constraints()) {
-    m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+    m += GetNumGradients(*(c.evaluator()), &num_grad);
     nnz_jac_g += num_grad;
   }
   for (const auto& c : problem_->linear_equality_constraints()) {
-    m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+    m += GetNumGradients(*(c.evaluator()), &num_grad);
     nnz_jac_g += num_grad;
   }
 
