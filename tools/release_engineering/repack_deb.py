@@ -15,6 +15,7 @@ and copy the final re-packaged debian archive to the directory $PWD/drake_deb.
 """
 
 import argparse
+import csv
 import email.utils
 import os
 from pathlib import Path
@@ -23,9 +24,13 @@ import subprocess
 import tarfile
 import tempfile
 
-import lsb_release
-
 from python import runfiles
+
+
+def _get_os_release():
+    with open('/etc/os-release') as f:
+        reader = csv.reader(f, delimiter="=")
+        return dict(reader)
 
 
 def _rlocation(relative_path):
@@ -46,7 +51,7 @@ def _run(args):
     deb_changelog_in = _rlocation('debian/changelog.in')
 
     # Discern the version badging to use, get the dependencies for drake.
-    codename = lsb_release.get_os_release()['CODENAME']
+    codename = _get_os_release()['VERSION_CODENAME']
     assert codename in args.tgz, \
         ("Debian re-packaging must be performed on the same distribution, but "
          f"'{codename}' was not found in '{args.tgz}'.")
