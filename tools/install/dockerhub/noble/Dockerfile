@@ -12,7 +12,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3-pip python-is-python3 \
   && rm -rf /var/lib/apt/lists/* \
 # Bake model data into the image up-front, instead of fetching on demand.
-  && PYTHONPATH=/opt/drake/lib/python3.11/site-packages python3 -c \
+  && PYTHONPATH=/opt/drake/lib/python3.12/site-packages python3 -c \
     'from pydrake.all import PackageMap; PackageMap().GetPath("drake_models")' \
 ENV PATH="/opt/drake/bin:${PATH}" \
-  PYTHONPATH="/opt/drake/lib/python3.11/site-packages:${PYTHONPATH}"
+  PYTHONPATH="/opt/drake/lib/python3.12/site-packages:${PYTHONPATH}"
