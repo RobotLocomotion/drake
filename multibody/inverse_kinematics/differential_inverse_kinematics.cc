@@ -6,6 +6,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/osqp_solver.h"
 
@@ -35,20 +36,29 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   J_WE_E.topRows<3>() = R_EW * J_WE_W.topRows<3>();
   J_WE_E.bottomRows<3>() = R_EW * J_WE_W.bottomRows<3>();
 
-  Vector6<double> V_WE_E_with_flags;
-  MatrixX<double> J_WE_E_with_flags{6, num_columns};
-  int num_cart_constraints = 0;
-  for (int i = 0; i < 6; i++) {
-    if (parameters.get_end_effector_velocity_flag()(i)) {
-      J_WE_E_with_flags.row(num_cart_constraints) = J_WE_E.row(i);
-      V_WE_E_with_flags(num_cart_constraints) = V_WE_E[i];
-      num_cart_constraints++;
+  // kSameDirection has an additional "flag" that can disable some of the
+  // indices of V.
+  if (parameters.get_formulation() ==
+      DifferentialInverseKinematicsFormulation::kSameDirection) {
+    Vector6<double> V_WE_E_with_flags;
+    MatrixX<double> J_WE_E_with_flags{6, num_columns};
+    int num_cart_constraints = 0;
+    for (int i = 0; i < 6; i++) {
+      if (parameters.get_end_effector_velocity_flag()(i)) {
+        J_WE_E_with_flags.row(num_cart_constraints) = J_WE_E.row(i);
+        V_WE_E_with_flags(num_cart_constraints) = V_WE_E[i];
+        num_cart_constraints++;
+      }
     }
+
+    return DoDifferentialInverseKinematics(
+        q_current, v_current, V_WE_E_with_flags.head(num_cart_constraints),
+        J_WE_E_with_flags.topRows(num_cart_constraints), parameters, N, Nplus);
   }
 
+  // All other formulations just use the full 6 x n Jacobian.
   return DoDifferentialInverseKinematics(
-      q_current, v_current, V_WE_E_with_flags.head(num_cart_constraints),
-      J_WE_E_with_flags.topRows(num_cart_constraints), parameters, N, Nplus);
+      q_current, v_current, V_WE_E.get_coeffs(), J_WE_E, parameters, N, Nplus);
 }
 
 }  // namespace internal
@@ -64,6 +74,12 @@ std::ostream& operator<<(std::ostream& os,
       return os << "Stuck!";
   }
   DRAKE_UNREACHABLE();
+}
+
+void DifferentialInverseKinematicsParameters::
+    set_end_effector_velocity_objective(const Matrix6<double>& Q) {
+  DRAKE_THROW_UNLESS(math::IsPositiveDefinite(Q));
+  Q_ = Q;
 }
 
 const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
@@ -138,12 +154,38 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   bool quadratic_cost = false;
   solvers::VectorXDecisionVariable v_next =
       prog.NewContinuousVariables(num_velocities, "v_next");
-  solvers::VectorDecisionVariable<1> alpha =
-      prog.NewContinuousVariables<1>("alpha");
 
-  // 100*alpha
-  const double kPrimaryObjectiveGain = 100;
-  prog.AddLinearCost(-Vector1d{kPrimaryObjectiveGain}, 0.0, alpha);
+  switch (parameters.get_formulation()) {
+    case DifferentialInverseKinematicsFormulation::kSameDirection: {
+      solvers::VectorDecisionVariable<1> alpha =
+          prog.NewContinuousVariables<1>("alpha");
+
+      // 100*alpha
+      const double kPrimaryObjectiveGain = 100;
+      prog.AddLinearCost(-Vector1d{kPrimaryObjectiveGain}, 0.0, alpha);
+
+      // J * v_next = alpha * V
+      if (V.size() > 0) {
+        MatrixX<double> A(num_cart_constraints, num_velocities + 1);
+        A.leftCols(num_velocities) = J;
+        A.rightCols(1) = -V;
+        prog.AddLinearEqualityConstraint(
+            A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
+      }
+
+      // 0 <= alpha <= 1
+      prog.AddBoundingBoxConstraint(0, 1, alpha);
+    } break;
+    case DifferentialInverseKinematicsFormulation::kVelocityError: {
+      // min ||V - Jvₙ|²_Q
+      // written as 0.5*vₙᵀ(2*JᵀQJ)vₙ + (-2*JᵀQ*V)'vₙ + (VᵀQV).
+      const Matrix6<double>& Q =
+          parameters.get_end_effector_velocity_objective();
+      prog.AddQuadraticCost(2 * J.transpose() * Q * J,
+                            -2 * J.transpose() * Q * V, V.dot(Q * V), v_next);
+      quadratic_cost = true;
+    } break;
+  }
 
   // |P⋅(v_next - N⁺(q)⋅K⋅(q_nominal - q_current))|²
   const Eigen::FullPivLU<MatrixX<double>> lu(J);
@@ -171,18 +213,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     }
     quadratic_cost = true;
   }
-
-  // J * v_next = alpha * V
-  if (V.size() > 0) {
-    MatrixX<double> A(num_cart_constraints, num_velocities + 1);
-    A.leftCols(num_velocities) = J;
-    A.rightCols(1) = -V;
-    prog.AddLinearEqualityConstraint(
-        A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
-  }
-
-  // 0 <= alpha <= 1
-  prog.AddBoundingBoxConstraint(0, 1, alpha);
 
   // joint_lim_min <= q_current + N⋅v_next⋅dt <= joint_lim_max
   if (parameters.get_joint_position_limits()) {
@@ -244,8 +274,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
             DifferentialInverseKinematicsStatus::kNoSolutionFound};
   }
 
-  const double alpha_sol = result.GetSolution(alpha[0]);
-  if (alpha_sol < parameters.get_maximum_scaling_to_report_stuck()) {
+  Eigen::VectorXd v_sol = result.GetSolution(v_next);
+  if ((J * v_sol).norm() <
+      parameters.get_maximum_scaling_to_report_stuck() * V.norm()) {
     // The computed velocity is small compared to the desired.
     return {result.GetSolution(v_next),
             DifferentialInverseKinematicsStatus::kStuck};

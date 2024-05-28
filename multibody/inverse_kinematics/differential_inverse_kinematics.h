@@ -28,6 +28,11 @@ enum class DifferentialInverseKinematicsStatus {
                      /// likely due to constraints.
 };
 
+enum class DifferentialInverseKinematicsFormulation {
+  kSameDirection,    ///< min α, s.t. Jvₙ = αV, α ∈ [0, 1].
+  kVelocityError     ///< min |V - Jvₙ|²
+};
+
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value);
 
@@ -75,6 +80,10 @@ class DifferentialInverseKinematicsParameters {
 
   int get_num_velocities() const { return num_velocities_; }
 
+  DifferentialInverseKinematicsFormulation get_formulation() const {
+    return formulation_;
+  }
+
   const VectorX<double>& get_nominal_joint_position() const {
     return nominal_joint_position_;
   }
@@ -85,6 +94,10 @@ class DifferentialInverseKinematicsParameters {
 
   const Vector6<bool>& get_end_effector_velocity_flag() const {
     return flag_E_;
+  }
+
+  const Matrix6<double>& get_end_effector_velocity_objective() const {
+    return Q_;
   }
 
   const std::optional<std::pair<VectorX<double>, VectorX<double>>>&
@@ -130,6 +143,12 @@ class DifferentialInverseKinematicsParameters {
     dt_ = dt;
   }
 
+  /** Sets which formulation to use for the objective. */
+  void set_formulation(
+      const DifferentialInverseKinematicsFormulation& formulation) {
+    formulation_ = formulation;
+  }
+
   /**
    * Sets the nominal joint position.
    * @throws std::exception if @p nominal_joint_position's dimension differs.
@@ -143,13 +162,20 @@ class DifferentialInverseKinematicsParameters {
   // TODO(russt): It's not clear that it is reasonable to enable/disable
   // independent components of the angular velocity vector.
   /**
-   * Sets the end effector flags in the body frame. If a spatial velocity flag
-   * is set to false, it will not be included in the differential IK
-   * formulation.
+   * Sets the end effector flags in the body frame. This is only used in
+   * DifferentialInverseKinematicsFormulation::kSameDirection. If a spatial
+   * velocity flag is set to false, it will not be included in the differential
+   * IK formulation.
    */
   void set_end_effector_velocity_flag(const Vector6<bool>& flag_E) {
     flag_E_ = flag_E;
   }
+
+  /** When using DifferentialInverseKinematicsFormulation::kVelocityError, this
+  sets the metric for the error: (V - Jvₙ)ᵀ Q (V - Jvₙ).
+  @pre Q must be P.S.D.
+  */
+  void set_end_effector_velocity_objective(const Matrix6<double>& Q);
 
   /**
    * Sets the joint centering gain, K, so that the joint centering command is
@@ -218,11 +244,11 @@ class DifferentialInverseKinematicsParameters {
     vd_bounds_ = vd_bounds;
   }
 
-  /** Sets the threshold for α below which the status returned is
-  DifferentialInverseKinematicsStatus::kStuck. α is the scaling of the
-  commanded spatial velocity, so when α is small, it means that the actual
-  spatial velocity magnitude will be small proportional to the commanded.
-  @default 0.01. */
+  /** Sets the threshold, β, such that if |Jvₙ|₂ < β |V|₂ then the status
+   * returned is DifferentialInverseKinematicsStatus::kStuck. When this number
+   * is small, it means that the actual spatial velocity magnitude will be small
+   * proportional to the commanded. @default 0.01.
+   */
   void set_maximum_scaling_to_report_stuck(double scaling) {
     max_scaling_to_report_stuck_ = scaling;
   }
@@ -277,6 +303,8 @@ class DifferentialInverseKinematicsParameters {
  private:
   int num_positions_{0};
   int num_velocities_{0};
+  DifferentialInverseKinematicsFormulation formulation_{
+      DifferentialInverseKinematicsFormulation::kSameDirection};
   VectorX<double> nominal_joint_position_;
   std::optional<std::pair<VectorX<double>, VectorX<double>>> q_bounds_{};
   std::optional<std::pair<VectorX<double>, VectorX<double>>> v_bounds_{};
@@ -284,6 +312,7 @@ class DifferentialInverseKinematicsParameters {
   std::optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
   MatrixX<double> joint_centering_gain_;
   Vector6<bool> flag_E_{Vector6<bool>::Ones()};
+  Matrix6<double> Q_{Matrix6<double>::Identity()};
   double dt_{1};
   double max_scaling_to_report_stuck_{1e-2};
   double angular_speed_limit_{std::numeric_limits<double>::infinity()};
@@ -298,6 +327,8 @@ class DifferentialInverseKinematicsParameters {
  * Computes a generalized velocity v_next, via the following
  * MathematicalProgram:
  *
+ * If parameters.get_formulation() is
+ * DifferentialInverseKinematicsFormulation::kSameDirection, then
  * ```
  *   min_{v_next,alpha}
  *     -100 * alpha + |P⋅(v_next - N⁺(q)⋅K⋅(q_nominal - q_current))|²
@@ -305,6 +336,16 @@ class DifferentialInverseKinematicsParameters {
  *   s.t.
  *     J⋅v_next = alpha⋅V, // J⋅v_next has the same direction as V
  *     0 <= alpha <= 1,        // Never go faster than V
+ * ```
+ * If parameters.get_formulation() is
+ * DifferentialInverseKinematicsFormulation::kVelocityError, then
+ * ```
+ *  min_{v_next}
+ *   |V - J⋅v_next|²_Q + |P⋅(v_next - N⁺(q)⋅K⋅(q_nominal - q_current))|²
+ * ```
+ *
+ * In all formulations, the optimization is also subject to the constraints:
+ * ```
  *     joint_lim_min <= q_current + N⋅v_next⋅dt <= joint_lim_max,
  *     joint_vel_lim_min <= v_next <= joint_vel_lim_max,
  *     joint_accel_lim_min <= (v_next - v_current)/dt <= joint_accel_lim_max,
@@ -317,6 +358,7 @@ class DifferentialInverseKinematicsParameters {
  *   - V can have any size, with each element representing a constraint on the
  *     solution (6 constraints specifying an end-effector spatial velocity is
  *     typical, but not required),
+ *   - Q is the end_effector_velocity_objective,
  *   - K is the joint_centering_gain,
  *   - the "additional linear velocity constraints" are added via
  *     DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint().
