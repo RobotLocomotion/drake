@@ -37,6 +37,14 @@ int GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
   return num_constraints;
 }
 
+/// @param[out] num_grad number of gradients
+/// @return number of constraints
+int GetNumGradients(const LinearConstraint& c, Index* num_grad) {
+  const int num_constraints = c.num_constraints();
+  *num_grad = c.get_sparse_A().nonZeros();
+  return num_constraints;
+}
+
 template <typename C>
 void SetConstraintDualVariableIndex(
     const Binding<C>& binding, int constraint_index,
@@ -137,12 +145,11 @@ void SetAllConstraintDualSolution(
 ///
 /// Parameters @p iRow and @p jCol are used in the same manner as
 /// described in
-/// http://www.coin-or.org/Ipopt/documentation/node23.html for the
-/// eval_jac_g() function (in the mode where it's requesting the
+/// https://coin-or.github.io/Ipopt/classIpopt_1_1TNLP.html#aa4162d052f69d4f9946a42feec012853
+/// for the eval_jac_g() function (in the mode where it's requesting the
 /// sparsity structure of the Jacobian).  The triplet format is also
 /// described in
-/// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
-///
+/// https://coin-or.github.io/Ipopt/IMPL.html#TRIPLET
 /// @return the number of row/column pairs filled in.
 size_t GetGradientMatrix(
     const MathematicalProgram& prog, const Constraint& c,
@@ -155,6 +162,27 @@ size_t GetGradientMatrix(
     for (int j = 0; j < variables.rows(); ++j) {
       iRow[grad_index] = constraint_idx + i;
       jCol[grad_index] = prog.FindDecisionVariableIndex(variables(j));
+      grad_index++;
+    }
+  }
+
+  return grad_index;
+}
+
+/// Overloads GetGradientMatrix for linear constraints.
+size_t GetGradientMatrix(
+    const MathematicalProgram& prog, const LinearConstraint& c,
+    const Eigen::Ref<const VectorXDecisionVariable>& variables,
+    Index constraint_idx, Index* iRow, Index* jCol) {
+  size_t grad_index = 0;
+  const Eigen::SparseMatrix<double>& A = c.get_sparse_A();
+  for (int i = 0; i < A.outerSize(); ++i) {
+    // A is in column major, so we iterate through each column by looping over
+    // i.
+    const int var_index = prog.FindDecisionVariableIndex(variables(i));
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      iRow[grad_index] = constraint_idx + it.row();
+      jCol[grad_index] = var_index;
       grad_index++;
     }
   }
@@ -227,8 +255,10 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     size_t grad_idx = 0;
     for (int i = 0; i < ty.rows(); i++) {
       result[i] = ty(i);
-      for (int j = 0; j < binding.variables().rows(); j++) {
-        grad[grad_idx++] = A.coeff(i, j);
+    }
+    for (int i = 0; i < A.outerSize(); ++i) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+        grad[grad_idx++] = it.value();
       }
     }
     return grad_idx;
@@ -339,11 +369,11 @@ bool IpoptSolver_NLP::get_nlp_info(
     nnz_jac_g += num_grad;
   }
   for (const auto& c : problem_->linear_constraints()) {
-    m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+    m += GetNumGradients(*(c.evaluator()), &num_grad);
     nnz_jac_g += num_grad;
   }
   for (const auto& c : problem_->linear_equality_constraints()) {
-    m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+    m += GetNumGradients(*(c.evaluator()), &num_grad);
     nnz_jac_g += num_grad;
   }
 
