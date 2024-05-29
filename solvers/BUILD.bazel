@@ -926,30 +926,13 @@ drake_cc_variant_library(
     ],
 )
 
-drake_cc_optional_library(
-    name = "ipopt_solver_internal",
-    opt_out_condition = "//tools:no_ipopt",
-    srcs = ["ipopt_solver_internal.cc"],
-    hdrs = ["ipopt_solver_internal.h"],
-    deps = [
-        ":mathematical_program",
-        ":mathematical_program_result",
-        "//common:drake_export",
-        "@ipopt",
-    ],
-)
-
 drake_cc_variant_library(
     name = "ipopt_solver",
     opt_out_condition = "//tools:no_ipopt",
     srcs_always = ["ipopt_solver_common.cc"],
-    srcs_enabled = [
-        "ipopt_solver.cc",
-    ],
+    srcs_enabled = ["ipopt_solver.cc"],
     srcs_disabled = ["no_ipopt.cc"],
-    hdrs = [
-        "ipopt_solver.h",
-    ],
+    hdrs = ["ipopt_solver.h"],
     interface_deps = [
         ":solver_base",
     ],
@@ -957,7 +940,6 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     deps_enabled = [
-        ":ipopt_solver_internal",
         "@ipopt",
         "//common:unused",
         "//math:autodiff",
