@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_usd_geometry.h"
 
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/capsule.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/sphere.h"
@@ -100,6 +101,36 @@ TEST_F(UsdGeometryTest, GetCylinderDimensionTest) {
 
   std::optional<Eigen::Vector2d> dimension = GetCylinderDimension(
     cylinder.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(dimension.has_value());
+
+  double correct_radius = scale_factor[0] * radius * meters_per_unit_;
+  double correct_height = scale_factor[2] * height * meters_per_unit_;
+  auto correct_dimension = Eigen::Vector2d(correct_radius, correct_height);
+  EXPECT_EQ(dimension.value(), correct_dimension);
+}
+
+TEST_F(UsdGeometryTest, GetCapsuleDimensionTest) {
+  pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule::Define(
+    stage_, pxr::SdfPath("/Capsule"));
+
+  double radius = 101;
+  double height = 45;
+  pxr::TfToken axis = pxr::TfToken("Z");
+  EXPECT_TRUE(capsule.CreateRadiusAttr().Set(radius));
+  EXPECT_TRUE(capsule.CreateHeightAttr().Set(height));
+  EXPECT_TRUE(capsule.CreateAxisAttr().Set(axis));
+
+  pxr::VtVec3fArray extent;
+  EXPECT_TRUE(pxr::UsdGeomCapsule::ComputeExtent(
+    height, radius, axis, &extent));
+  EXPECT_TRUE(capsule.CreateExtentAttr().Set(extent));
+
+  pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
+  auto scale_op = capsule.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(scale_op.Set(scale_factor));
+
+  std::optional<Eigen::Vector2d> dimension = GetCapsuleDimension(
+    capsule.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(dimension.has_value());
 
   double correct_radius = scale_factor[0] * radius * meters_per_unit_;
