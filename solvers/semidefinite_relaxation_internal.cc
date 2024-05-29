@@ -79,9 +79,9 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog) {
 }
 
 void InitializeSemidefiniteRelaxationForProg(
-    const MathematicalProgram& prog, const Variable &one,
-    MathematicalProgram* relaxation, MatrixX<Variable> *X,
-    std::map<Variable, int> *variables_to_sorted_indices,
+    const MathematicalProgram& prog, const Variable& one,
+    MathematicalProgram* relaxation, MatrixX<Variable>* X,
+    std::map<Variable, int>* variables_to_sorted_indices,
     const std::optional<int>& group_number) {
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
@@ -146,9 +146,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
   // on the semidefinite variables i.e.
   // 0.5 y'Qy + b'y + c => 0.5 tr(QY) + b'y + c
   for (const auto& binding : prog.quadratic_costs()) {
-    if(!preserve_convex || !binding.evaluator()->is_convex()) {
-            relaxation->RemoveCost(binding);
-    }
+    relaxation->RemoveCost(binding);
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
     std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
@@ -164,8 +162,33 @@ void DoLinearizeQuadraticCostsAndConstraints(
   // on the semidefinite varaibles i.e.
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
-    if(!preserve_convex || !binding.evaluator()->is_convex()) {
-            relaxation->RemoveConstraint(binding);
+    relaxation->RemoveConstraint(binding);
+    if (preserve_convex && binding.evaluator()->is_convex()) {
+      switch (binding.evaluator()->hessian_type()) {
+        case QuadraticConstraint::HessianType::kPositiveSemidefinite: {
+          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
+              binding.evaluator()->Q(), binding.evaluator()->b(),
+              -binding.evaluator()->upper_bound()[0], binding.variables(),
+              // set the PSD tolerance check to infinity since Q is already
+              // known to be PSD
+              kInf);
+          break;
+        }
+        case QuadraticConstraint::HessianType::kNegativeSemidefinite: {
+          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
+              -binding.evaluator()->Q(), -binding.evaluator()->b(),
+              binding.evaluator()->lower_bound()[0], binding.variables(),
+              // Set the PSD tolerance check to infinity since -Q is already
+              // known to be PSD
+              kInf);
+          break;
+        }
+        case QuadraticConstraint::HessianType::kIndefinite: {
+          // binding.evaluator()->is_convex() and therefore the hessian type
+          // cannot be indefinite.
+          DRAKE_UNREACHABLE();
+        }
+      }
     }
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
@@ -317,8 +340,8 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
     MathematicalProgram* relaxation, const std::optional<int>& group_number) {
   MatrixX<Variable> X;
   std::map<Variable, int> variables_to_sorted_indices;
-  InitializeSemidefiniteRelaxationForProg(prog, one, relaxation, &X,
-                                          &variables_to_sorted_indices, group_number);
+  InitializeSemidefiniteRelaxationForProg(
+      prog, one, relaxation, &X, &variables_to_sorted_indices, group_number);
 
   DoLinearizeQuadraticCostsAndConstraints(prog, X, variables_to_sorted_indices,
                                           relaxation, false);
