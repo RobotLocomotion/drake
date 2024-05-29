@@ -31,22 +31,22 @@ class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
 };
 
 TEST_F(UsdGeometryTest, GetBoxDimensionTest) {
-  pxr::UsdGeomCube cube = pxr::UsdGeomCube::Define(
-    stage_, pxr::SdfPath("/Cube"));
+  pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(
+    stage_, pxr::SdfPath("/Box"));
 
   double size = 49.0;
-  EXPECT_TRUE(cube.CreateSizeAttr().Set(size));
+  EXPECT_TRUE(box.CreateSizeAttr().Set(size));
 
   pxr::VtVec3fArray extent;
   EXPECT_TRUE(pxr::UsdGeomCube::ComputeExtent(size, &extent));
-  EXPECT_TRUE(cube.CreateExtentAttr().Set(extent));
+  EXPECT_TRUE(box.CreateExtentAttr().Set(extent));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.4, 0.5, 0.6);
-  auto scale_op = cube.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  auto scale_op = box.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
   std::optional<Eigen::Vector3d> dimension = GetBoxDimension(
-    cube.GetPrim(), meters_per_unit_, diagnostic_policy_);
+    box.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(dimension.has_value());
 
   Eigen::Vector3d correct_dimension =
@@ -55,22 +55,22 @@ TEST_F(UsdGeometryTest, GetBoxDimensionTest) {
 }
 
 TEST_F(UsdGeometryTest, GetEllipsoidDimensionTest) {
-  pxr::UsdGeomSphere sphere = pxr::UsdGeomSphere::Define(
-    stage_, pxr::SdfPath("/Sphere"));
+  pxr::UsdGeomSphere ellipsoid = pxr::UsdGeomSphere::Define(
+    stage_, pxr::SdfPath("/Ellipsoid"));
 
   double radius = 17.0;
-  EXPECT_TRUE(sphere.CreateRadiusAttr().Set(radius));
+  EXPECT_TRUE(ellipsoid.CreateRadiusAttr().Set(radius));
 
   pxr::VtVec3fArray extent;
   EXPECT_TRUE(pxr::UsdGeomSphere::ComputeExtent(radius, &extent));
-  EXPECT_TRUE(sphere.CreateExtentAttr().Set(extent));
+  EXPECT_TRUE(ellipsoid.CreateExtentAttr().Set(extent));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.6, 1.1, 2.9);
-  auto scale_op = sphere.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  auto scale_op = ellipsoid.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
   std::optional<Eigen::Vector3d> dimension = GetEllipsoidDimension(
-    sphere.GetPrim(), meters_per_unit_, diagnostic_policy_);
+    ellipsoid.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(dimension.has_value());
 
   Eigen::Vector3d correct_dimension =
