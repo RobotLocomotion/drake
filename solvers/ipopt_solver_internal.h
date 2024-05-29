@@ -125,7 +125,7 @@ class DRAKE_NO_EXPORT IpoptSolver_NLP : public Ipopt::TNLP {
   // ipopt_solver.h (in fact, ipopt_solver depends on ipopt_solver_internal). So
   // we store z_L, z_U, g, lambda here, and set IpoptSolverDetails in
   // ipopt_solver.cc
-  Ipopt::SolverReturn status_;
+  Ipopt::SolverReturn status_{Ipopt::SolverReturn::UNASSIGNED};
   Eigen::VectorXd z_L_;
   Eigen::VectorXd z_U_;
   Eigen::VectorXd g_;
