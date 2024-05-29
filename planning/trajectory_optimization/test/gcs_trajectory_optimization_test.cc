@@ -1380,7 +1380,7 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
   GraphOfConvexSetsOptions options;
   solvers::SnoptSolver snopt;
   options.restriction_solver = &snopt;
-  options.max_rounded_paths = 5;
+  options.max_rounded_paths = 2;
 
   auto [traj, result] = gcs.SolvePath(source, target, options);
 
