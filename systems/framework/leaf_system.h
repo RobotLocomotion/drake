@@ -1460,8 +1460,8 @@ class LeafSystem : public System<T> {
   @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback */
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
-      typename LeafOutputPort<T>::AllocCallback alloc_function,
-      typename LeafOutputPort<T>::CalcCallback calc_function,
+      typename LeafOutputPort<T>::AllocCallback alloc,
+      typename LeafOutputPort<T>::CalcCallback calc,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
