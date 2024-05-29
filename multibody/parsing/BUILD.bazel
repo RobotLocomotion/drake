@@ -817,6 +817,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_usd_parser",
+        "//common:is_approx_equal_abstol",
         "//common/test_utilities:diagnostic_policy_test_base",
     ] + select({
         "//tools:with_usd": [
