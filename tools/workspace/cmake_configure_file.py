@@ -17,8 +17,31 @@ from collections import OrderedDict
 # Looks like "#cmakedefine VAR ..." or "#cmakedefine01 VAR".
 _cmakedefine = re.compile(r'^(\s*)#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
 
-# Looks like "@VAR@" or "${VAR}".
-_varsubst = re.compile(r'^(.*?)(@[^ ]+?@|\$\{[^ ]+?\})(.*)([\r\n]*)')
+# Looks like "${VAR}".
+_varsubst = re.compile(r'^(.*)\$\{([^} ]+?)\}(.*)([\r\n]*)')
+
+# Looks like "@VAR@".
+_atvarsubst = re.compile(r'^(.*)@([^@ ]+?)@(.*)([\r\n]*)')
+
+
+# Transform substitutions in a source line according to a specified pattern.
+#
+# The 'definitions' provides values for CMake variables.  The dict's keys are
+# the variable names to substitute, and the dict's values are the values to
+# substitute.  (The values can be None, for known-but-undefined variable keys.)
+#
+# This is used to transform exactly ONE of '@VAR@' or '${VAR}', depending on
+# which pattern is specified.
+def _transform_substitions(*, line, definitions, used_vars, pattern):
+    while (match := pattern.match(line)) is not None:
+        before, var, after, newline = match.groups()
+        assert len(var) > 0
+
+        value = definitions[var] or ''
+        line = before + value + after + newline
+        used_vars.add(var)
+
+    return line, used_vars
 
 
 # Transform a source code line per CMake's configure_file semantics.
@@ -43,7 +66,7 @@ _varsubst = re.compile(r'^(.*?)(@[^ ]+?@|\$\{[^ ]+?\})(.*)([\r\n]*)')
 #   substitution token with the value in 'definitions' dict for that VAR, or
 #   else the empty string if the value is None.  It is an error if there is no
 #   such key in the dict.
-def _transform_cmake(*, line, definitions, strict):
+def _transform_cmake(*, line, definitions, strict, atonly):
     used_vars = set()
 
     # Replace define statements.
@@ -67,29 +90,18 @@ def _transform_cmake(*, line, definitions, strict):
             return line, used_vars
 
     # Replace variable substitutions.
-    while True:
-        match = _varsubst.match(line)
-        if not match:
-            break
-        before, xvarx, after, newline = match.groups()
-        if xvarx[0] == '$':
-            assert len(xvarx) >= 4
-            assert xvarx[1] == '{'
-            assert xvarx[-1] == '}'
-            var = xvarx[2:-1]
-        elif xvarx[0] == '@':
-            assert len(xvarx) >= 3
-            assert xvarx[-1] == '@'
-            var = xvarx[1:-1]
-        assert len(var) > 0
+    if not atonly:
+        line, used_vars = _transform_substitions(
+            line=line,
+            definitions=definitions,
+            used_vars=used_vars,
+            pattern=_varsubst)
 
-        if var not in definitions:
-            raise KeyError(var)
-        used_vars.add(var)
-        value = definitions.get(var)
-        if value is None:
-            value = ''
-        line = before + value + after + newline
+    line, used_vars = _transform_substitions(
+        line=line,
+        definitions=definitions,
+        used_vars=used_vars,
+        pattern=_atvarsubst)
 
     return line, used_vars
 
@@ -100,7 +112,11 @@ _autoconf_undef = re.compile(r'^(\s*)#undef +([^ \r\n]+)([\r\n]+)')
 
 # Transform a source code line using autoconf format.
 # The 'definitions' provides variable values, just like _transform_cmake above.
-def _transform_autoconf(*, line, definitions, strict):
+def _transform_autoconf(*, line, definitions, strict, atonly):
+    # 'atonly' isn't meaningful to _transform_autoconf, but the argument is
+    # needed in order to have the same signature as _transform_cmake.
+    assert not atonly
+
     used_vars = set()
     match = _autoconf_undef.match(line)
     if match:
@@ -134,7 +150,8 @@ def _extract_definition(line, prior_definitions):
         value, _ = _transform_cmake(
             line=value,
             definitions=prior_definitions,
-            strict=False)
+            strict=False,
+            atonly=False)
     except KeyError:
         return dict()
     if value.startswith('"'):
@@ -181,12 +198,15 @@ def main():
     parser.add_argument(
         '-U', metavar='NAME', dest='undefines', action='append', default=[])
     parser.add_argument(
-        '--autoconf', action='store_true',
-        help='The input file is in autoconf format, not cmake format.')
-    parser.add_argument(
         '--cmakelists', action='append', default=[])
     parser.add_argument(
         '--strict', action='store_true')
+    modifiers = parser.add_mutually_exclusive_group()
+    modifiers.add_argument(
+        '--autoconf', action='store_true',
+        help='The input file is in autoconf format, not cmake format.')
+    modifiers.add_argument(
+        '--atonly', action='store_true')
     args = parser.parse_args()
     if len(args.input) == 0:
         parser.error("There must be at least one --input")
@@ -205,7 +225,8 @@ def main():
                         output_line, used_vars = transformer(
                             line=input_line,
                             definitions=definitions,
-                            strict=args.strict)
+                            strict=args.strict,
+                            atonly=args.atonly)
                         output_file.write(output_line)
                         total_used_vars |= used_vars
                     except KeyError as e:
