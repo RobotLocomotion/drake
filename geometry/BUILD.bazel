@@ -711,7 +711,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
-        "//systems/analysis:instantaneous_realtime_rate_calculator",
+        "//systems/analysis:realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",

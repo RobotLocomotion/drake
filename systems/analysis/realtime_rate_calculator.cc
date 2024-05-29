@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #include <utility>
 
@@ -7,8 +7,7 @@ namespace systems {
 namespace internal {
 
 std::optional<double>
-InstantaneousRealtimeRateCalculator::UpdateAndRecalculate(
-    double current_sim_time) {
+RealtimeRateCalculator::UpdateAndRecalculate(double current_sim_time) {
   std::optional<double> realtime_rate;
   if (prev_sim_time_.has_value()) {
     const double wall_delta{timer_->Tick()};
@@ -23,7 +22,7 @@ InstantaneousRealtimeRateCalculator::UpdateAndRecalculate(
   return realtime_rate;
 }
 
-void InstantaneousRealtimeRateCalculator::InjectMockTimer(
+void RealtimeRateCalculator::InjectMockTimer(
     std::unique_ptr<Timer> mock_timer) {
   timer_ = std::move(mock_timer);
 }

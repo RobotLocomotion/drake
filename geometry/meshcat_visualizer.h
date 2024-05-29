@@ -11,7 +11,7 @@
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -204,8 +204,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* TODO(#16486): ideally this mutable state will go away once it is safe to
   run Meshcat multithreaded */
-  mutable systems::internal::InstantaneousRealtimeRateCalculator
-      realtime_rate_calculator_{};
+  mutable systems::internal::RealtimeRateCalculator realtime_rate_calculator_;
 
   /* The name of the alpha slider, if any. */
   std::string alpha_slider_name_;

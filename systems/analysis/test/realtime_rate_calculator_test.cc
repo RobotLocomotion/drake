@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #include <gtest/gtest.h>
 
@@ -6,8 +6,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-
-using internal::InstantaneousRealtimeRateCalculator;
+using internal::RealtimeRateCalculator;
 
 class MockTimer final : public Timer {
  public:
@@ -15,10 +14,10 @@ class MockTimer final : public Timer {
   double Tick() final { return 0.1; }
 };
 
-// Tests that the InstantaneousRealtimeRateCalculator calculates the correct
+// Tests that the RealtimeRateCalculator calculates the correct
 // results including startup and rewinding time.
-GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
-  InstantaneousRealtimeRateCalculator calculator{};
+GTEST_TEST(RealtimeRateCalculatorTest, BasicTest) {
+  RealtimeRateCalculator calculator{};
   calculator.InjectMockTimer(std::make_unique<MockTimer>());
   // First (seed) call returns nullopt.
   EXPECT_FALSE(calculator.UpdateAndRecalculate(0.0).has_value());
@@ -36,8 +35,7 @@ GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   // return 0.0 realtime rate.
   EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 0.0);
 
-  // InstantaneousRealtimeRateCalculator should reset properly on call
-  // to Reset().
+  // RealtimeRateCalculator should reset properly on call to Reset().
   calculator.Reset();
 
   // First call to UpdateAndRecalculate() after Reset() returns nullopt
