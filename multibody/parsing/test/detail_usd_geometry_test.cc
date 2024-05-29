@@ -31,7 +31,7 @@ class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
   double meters_per_unit_;
 };
 
-TEST_F(UsdGeometryTest, GetBoxDimensionTest) {
+TEST_F(UsdGeometryTest, BoxParsingTest) {
   pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(
     stage_, pxr::SdfPath("/Box"));
 
@@ -53,9 +53,15 @@ TEST_F(UsdGeometryTest, GetBoxDimensionTest) {
   Eigen::Vector3d correct_dimension =
     UsdVec3dToEigen(scale_factor) * size * meters_per_unit_;
   EXPECT_EQ(dimension.value(), correct_dimension);
+
+  auto shape = CreateGeometryBox(box.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_TRUE(shape != nullptr);
+  geometry::Box* drake_box = dynamic_cast<geometry::Box*>(shape.get());
+  EXPECT_EQ(drake_box->size(), correct_dimension);
 }
 
-TEST_F(UsdGeometryTest, GetEllipsoidDimensionTest) {
+TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
   pxr::UsdGeomSphere ellipsoid = pxr::UsdGeomSphere::Define(
     stage_, pxr::SdfPath("/Ellipsoid"));
 
@@ -77,9 +83,18 @@ TEST_F(UsdGeometryTest, GetEllipsoidDimensionTest) {
   Eigen::Vector3d correct_dimension =
     UsdVec3dToEigen(scale_factor) * radius * meters_per_unit_;
   EXPECT_EQ(dimension.value(), correct_dimension);
+
+  auto shape = CreateGeometryEllipsoid(ellipsoid.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_TRUE(shape != nullptr);
+  geometry::Ellipsoid* drake_ellipsoid =
+    dynamic_cast<geometry::Ellipsoid*>(shape.get());
+  auto actual_dimension = Eigen::Vector3d(
+    drake_ellipsoid->a(), drake_ellipsoid->b(), drake_ellipsoid->c());
+  EXPECT_EQ(actual_dimension, correct_dimension);
 }
 
-TEST_F(UsdGeometryTest, GetCylinderDimensionTest) {
+TEST_F(UsdGeometryTest, CylinderParsingTest) {
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder::Define(
     stage_, pxr::SdfPath("/Cylinder"));
 
@@ -107,9 +122,18 @@ TEST_F(UsdGeometryTest, GetCylinderDimensionTest) {
   double correct_height = scale_factor[2] * height * meters_per_unit_;
   auto correct_dimension = Eigen::Vector2d(correct_radius, correct_height);
   EXPECT_EQ(dimension.value(), correct_dimension);
+
+  auto shape = CreateGeometryCylinder(cylinder.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(shape != nullptr);
+  geometry::Cylinder* drake_cylinder =
+    dynamic_cast<geometry::Cylinder*>(shape.get());
+  auto actual_dimension = Eigen::Vector2d(
+    drake_cylinder->radius(), drake_cylinder->length());
+  EXPECT_EQ(actual_dimension, correct_dimension);
 }
 
-TEST_F(UsdGeometryTest, GetCapsuleDimensionTest) {
+TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule::Define(
     stage_, pxr::SdfPath("/Capsule"));
 
@@ -137,6 +161,15 @@ TEST_F(UsdGeometryTest, GetCapsuleDimensionTest) {
   double correct_height = scale_factor[2] * height * meters_per_unit_;
   auto correct_dimension = Eigen::Vector2d(correct_radius, correct_height);
   EXPECT_EQ(dimension.value(), correct_dimension);
+
+  auto shape = CreateGeometryCapsule(capsule.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(shape != nullptr);
+  geometry::Capsule* drake_capsule =
+    dynamic_cast<geometry::Capsule*>(shape.get());
+  auto actual_dimension = Eigen::Vector2d(
+    drake_capsule->radius(), drake_capsule->length());
+  EXPECT_EQ(actual_dimension, correct_dimension);
 }
 
 }  // namespace
