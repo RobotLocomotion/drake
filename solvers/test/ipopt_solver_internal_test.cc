@@ -157,6 +157,119 @@ GTEST_TEST(TestIpoptSolverNlp, LinearConstraintsDuplicatedVariable) {
   // clang-format on
   EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
 }
+
+class ToyConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ToyConstraint)
+
+  explicit ToyConstraint(bool set_sparsity_pattern)
+      : Constraint(2, 4, Eigen::Vector2d(1, 2), Eigen::Vector2d(3, 4)) {
+    if (set_sparsity_pattern) {
+      std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+      gradient_sparsity_pattern.emplace_back(0, 0);
+      gradient_sparsity_pattern.emplace_back(0, 1);
+      gradient_sparsity_pattern.emplace_back(0, 2);
+      gradient_sparsity_pattern.emplace_back(1, 1);
+      gradient_sparsity_pattern.emplace_back(1, 2);
+      gradient_sparsity_pattern.emplace_back(1, 3);
+      this->SetGradientSparsityPattern(gradient_sparsity_pattern);
+    }
+  }
+
+ private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<T>* y) const {
+    y->resize(2);
+    (*y)(0) = x(0) * x(1) + x(2) * x(2);
+    (*y)(1) = x(1) * x(2) * x(3);
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const {
+    DoEvalGeneric<double>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const {
+    DoEvalGeneric<AutoDiffXd>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const {
+    DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+  }
+};
+
+GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraint) {
+  for (bool set_sparsity_pattern : {true, false}) {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<4>();
+    prog.AddConstraint(std::make_shared<ToyConstraint>(set_sparsity_pattern),
+                       x);
+
+    Eigen::Vector4d x_init(0, 1, 2, 3);
+    MathematicalProgramResult result;
+    IpoptSolver_NLP dut(prog, x_init, &result);
+    Index n;
+    Index m;
+    Index nnz_jac_g;
+    Index nnz_h_lag;
+    Ipopt::TNLP::IndexStyleEnum index_style;
+    bool status = dut.get_nlp_info(n, m, nnz_jac_g, nnz_h_lag, index_style);
+    EXPECT_TRUE(status);
+    EXPECT_EQ(n, 4);
+    EXPECT_EQ(m, 2);
+    int nnz_jac_g_expected = set_sparsity_pattern ? 6 : 8;
+    EXPECT_EQ(nnz_jac_g, nnz_jac_g_expected);
+    EXPECT_EQ(nnz_h_lag, 0);
+    EXPECT_EQ(index_style, Ipopt::TNLP::IndexStyleEnum::C_STYLE);
+
+    Eigen::SparseMatrix<double> jac(m, n);
+    GetConstraintJacobian(&dut, n, m, nnz_jac_g, x_init.data(), &jac);
+    Eigen::Matrix<double, 2, 4> jac_expected;
+    // clang-format off
+    jac_expected << 1, 0, 4, 0,
+                    0, 6, 3, 2;
+    // clang-format on
+    EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+  }
+}
+
+GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraintDuplicatedVariables) {
+  // Test IpoptSolverNlp with nonlinear constraints, imposed on variables with
+  // duplication.
+  for (bool set_sparsity_pattern : {true, false}) {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<4>();
+    prog.AddConstraint(std::make_shared<ToyConstraint>(set_sparsity_pattern),
+                       Vector4<symbolic::Variable>(x(0), x(1), x(2), x(2)));
+
+    Eigen::Vector4d x_init(0, 1, 2, 3);
+    MathematicalProgramResult result;
+    IpoptSolver_NLP dut(prog, x_init, &result);
+    Index n;
+    Index m;
+    Index nnz_jac_g;
+    Index nnz_h_lag;
+    Ipopt::TNLP::IndexStyleEnum index_style;
+    bool status = dut.get_nlp_info(n, m, nnz_jac_g, nnz_h_lag, index_style);
+    EXPECT_TRUE(status);
+    EXPECT_EQ(n, 4);
+    EXPECT_EQ(m, 2);
+    EXPECT_EQ(nnz_h_lag, 0);
+    EXPECT_EQ(index_style, Ipopt::TNLP::IndexStyleEnum::C_STYLE);
+
+    Eigen::SparseMatrix<double> jac(m, n);
+    GetConstraintJacobian(&dut, n, m, nnz_jac_g, x_init.data(), &jac);
+    Eigen::Matrix<double, 2, 4> jac_expected;
+    // clang-format off
+    jac_expected << 1, 0, 4, 0,
+                    0, 4, 4, 0;
+    // clang-format on
+    EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+  }
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
