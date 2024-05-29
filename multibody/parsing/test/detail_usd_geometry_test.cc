@@ -5,8 +5,10 @@
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/sphere.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include <gtest/gtest.h>
 
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/multibody/parsing/detail_usd_parser.h"
 
@@ -170,6 +172,34 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   auto actual_dimension = Eigen::Vector2d(
     drake_capsule->radius(), drake_capsule->length());
   EXPECT_EQ(actual_dimension, correct_dimension);
+}
+
+TEST_F(UsdGeometryTest, GetRigidTransformTest) {
+  pxr::UsdGeomXform xform = pxr::UsdGeomXform::Define(
+    stage_, pxr::SdfPath("/Xform"));
+
+  pxr::GfVec3d translation = pxr::GfVec3d(196, 51, 133.1);
+  pxr::GfVec3d rotation_xyz = pxr::GfVec3d(21.59, -9.56, 155);
+  auto translate_op = xform.AddTranslateOp(
+    pxr::UsdGeomXformOp::PrecisionDouble);
+  auto rotate_op = xform.AddRotateXYZOp(
+    pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(translate_op.Set(translation));
+  EXPECT_TRUE(rotate_op.Set(rotation_xyz));
+
+  auto transform = GetPrimRigidTransform(
+    xform.GetPrim(), meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(transform.has_value());
+  auto actual_translation = transform.value().translation();
+  auto actual_rotation_xyz =
+    transform.value().rotation().ToRollPitchYaw().vector();
+
+  auto intended_translation = UsdVec3dToEigen(translation * meters_per_unit_);
+  auto intended_rotation_xyz = UsdVec3dToEigen(rotation_xyz * (M_PI / 180.0));
+  EXPECT_TRUE(is_approx_equal_abstol(
+    actual_translation, intended_translation, 1e-10));
+  EXPECT_TRUE(is_approx_equal_abstol(
+    actual_rotation_xyz, intended_rotation_xyz, 1e-10));
 }
 
 }  // namespace
