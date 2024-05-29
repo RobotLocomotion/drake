@@ -2,6 +2,7 @@
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include <gtest/gtest.h>
 
@@ -21,9 +22,11 @@ class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
 
     stage_ = pxr::UsdStage::CreateInMemory();
     meters_per_unit_ = 0.01;
+    stage_up_axis_ = pxr::TfToken("Z");
   }
  protected:
   pxr::UsdStageRefPtr stage_;
+  pxr::TfToken stage_up_axis_;
   double meters_per_unit_;
 };
 
@@ -38,18 +41,16 @@ TEST_F(UsdGeometryTest, GetBoxDimensionTest) {
   EXPECT_TRUE(pxr::UsdGeomCube::ComputeExtent(size, &extent));
   EXPECT_TRUE(cube.CreateExtentAttr().Set(extent));
 
-  double scale_factor = 0.5;
-  pxr::GfMatrix4d transform = pxr::GfMatrix4d();
-  transform.SetScale(scale_factor);
-  EXPECT_TRUE(cube.AddTransformOp().Set(transform));
+  pxr::GfVec3d scale_factor = pxr::GfVec3d(0.4, 0.5, 0.6);
+  auto scale_op = cube.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(scale_op.Set(scale_factor));
 
   std::optional<Eigen::Vector3d> dimension = GetBoxDimension(
     cube.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(dimension.has_value());
 
-  double correct_size = size * scale_factor * meters_per_unit_;
   Eigen::Vector3d correct_dimension =
-    Eigen::Vector3d(correct_size, correct_size, correct_size);
+    UsdVec3dToEigen(scale_factor) * size * meters_per_unit_;
   EXPECT_EQ(dimension.value(), correct_dimension);
 }
 
@@ -65,9 +66,8 @@ TEST_F(UsdGeometryTest, GetEllipsoidDimensionTest) {
   EXPECT_TRUE(sphere.CreateExtentAttr().Set(extent));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.6, 1.1, 2.9);
-  pxr::GfMatrix4d transform = pxr::GfMatrix4d();
-  transform.SetScale(scale_factor);
-  EXPECT_TRUE(sphere.AddTransformOp().Set(transform));
+  auto scale_op = sphere.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(scale_op.Set(scale_factor));
 
   std::optional<Eigen::Vector3d> dimension = GetEllipsoidDimension(
     sphere.GetPrim(), meters_per_unit_, diagnostic_policy_);
@@ -75,6 +75,36 @@ TEST_F(UsdGeometryTest, GetEllipsoidDimensionTest) {
 
   Eigen::Vector3d correct_dimension =
     UsdVec3dToEigen(scale_factor) * radius * meters_per_unit_;
+  EXPECT_EQ(dimension.value(), correct_dimension);
+}
+
+TEST_F(UsdGeometryTest, GetCylinderDimensionTest) {
+  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder::Define(
+    stage_, pxr::SdfPath("/Cylinder"));
+
+  double radius = 62.0;
+  double height = 199.0;
+  pxr::TfToken axis = pxr::TfToken("Z");
+  EXPECT_TRUE(cylinder.CreateRadiusAttr().Set(radius));
+  EXPECT_TRUE(cylinder.CreateHeightAttr().Set(height));
+  EXPECT_TRUE(cylinder.CreateAxisAttr().Set(axis));
+
+  pxr::VtVec3fArray extent;
+  EXPECT_TRUE(pxr::UsdGeomCylinder::ComputeExtent(
+    height, radius, axis, &extent));
+  EXPECT_TRUE(cylinder.CreateExtentAttr().Set(extent));
+
+  pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
+  auto scale_op = cylinder.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(scale_op.Set(scale_factor));
+
+  std::optional<Eigen::Vector2d> dimension = GetCylinderDimension(
+    cylinder.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(dimension.has_value());
+
+  double correct_radius = scale_factor[0] * radius * meters_per_unit_;
+  double correct_height = scale_factor[2] * height * meters_per_unit_;
+  auto correct_dimension = Eigen::Vector2d(correct_radius, correct_height);
   EXPECT_EQ(dimension.value(), correct_dimension);
 }
 
