@@ -1312,6 +1312,10 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
     const solvers::MathematicalProgramResult& result,
     const GraphOfConvexSetsOptions& options) const {
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "Cannot extract a solution path when result.is_success() is false.");
+  }
   std::map<EdgeId, double> flows;
   for (const auto& [edge_id, e] : edges_) {
     flows.emplace(edge_id, result.GetSolution(e->phi_));
