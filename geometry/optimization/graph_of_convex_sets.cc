@@ -1365,6 +1365,8 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
     const solvers::MathematicalProgramResult& result,
     const GraphOfConvexSetsOptions& options) const {
+  DRAKE_THROW_UNLESS(*options.max_rounded_paths > 0);
+
   if (!result.is_success()) {
     throw std::runtime_error(
         "Cannot sample paths when result.is_success() is false.");
@@ -1383,84 +1385,74 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   VertexId source_id = source.id();
   VertexId target_id = target.id();
 
-  std::set<EdgeId> unusable_edges;
-  if (*options.preprocessing) {
-    unusable_edges = PreprocessShortestPath(source_id, target_id, options);
+  RandomGenerator generator(options.rounding_seed);
+  std::uniform_real_distribution<double> uniform;
+  std::vector<std::vector<const Edge*>> paths;
+
+  std::map<EdgeId, double> flows;
+
+  for (const auto& [edge_id, e] : edges_) {
+    if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
+      flows.emplace(edge_id, 0);
+    } else {
+      flows.emplace(edge_id, result.GetSolution(e->phi()));
+    }
   }
 
-  if (*options.convex_relaxation && *options.max_rounded_paths > 0) {
-    DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
+  int num_trials = 0;
+  MathematicalProgramResult best_rounded_result;
+  while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
+         num_trials < options.max_rounding_trials) {
+    ++num_trials;
 
-    RandomGenerator generator(options.rounding_seed);
-    std::uniform_real_distribution<double> uniform;
-    std::vector<std::vector<const Edge*>> paths;
-    std::map<EdgeId, double> flows;
-    for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
-        flows.emplace(edge_id, 0);
-      } else {
-        flows.emplace(edge_id, result.GetSolution(e->phi()));
-      }
-    }
-    int num_trials = 0;
-    MathematicalProgramResult best_rounded_result;
-    while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
-           num_trials < options.max_rounding_trials) {
-      ++num_trials;
-
-      // Find candidate path by traversing the graph with a depth first search
-      // where edges are taken with probability proportional to their flow.
-      std::vector<VertexId> visited_vertex_ids{source.id()};
-      std::vector<const Vertex*> path_vertices{&source};
-      std::vector<const Edge*> new_path;
-      while (path_vertices.back()->id() != target_id) {
-        std::vector<const Edge*> candidate_edges;
-        for (const Edge* e : path_vertices.back()->outgoing_edges()) {
-          if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
-                        e->v().id()) == visited_vertex_ids.end() &&
-              flows[e->id()] > options.flow_tolerance) {
-            candidate_edges.emplace_back(e);
-          }
-        }
-        // If the depth first search finds itself at a node with no candidate
-        // outbound edges, backtrack to the previous node and continue the
-        // search.
-        if (candidate_edges.size() == 0) {
-          path_vertices.pop_back();
-          new_path.pop_back();
-          // Since this code requires result.is_success() to be true, we should
-          // always have a path. We assert that..
-          DRAKE_ASSERT(path_vertices.size() > 0);
-          continue;
-        }
-        Eigen::VectorXd candidate_flows(candidate_edges.size());
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          candidate_flows(ii) = flows[candidate_edges[ii]->id()];
-        }
-        double edge_sample = uniform(generator) * candidate_flows.sum();
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          if (edge_sample >= candidate_flows(ii)) {
-            edge_sample -= candidate_flows(ii);
-          } else {
-            visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            path_vertices.push_back(&candidate_edges[ii]->v());
-            new_path.emplace_back(candidate_edges[ii]);
-            break;
-          }
+    // Find candidate path by traversing the graph with a depth first search
+    // where edges are taken with probability proportional to their flow.
+    std::vector<VertexId> visited_vertex_ids{source.id()};
+    std::vector<const Vertex*> path_vertices{&source};
+    std::vector<const Edge*> new_path;
+    while (path_vertices.back()->id() != target_id) {
+      std::vector<const Edge*> candidate_edges;
+      for (const Edge* e : path_vertices.back()->outgoing_edges()) {
+        if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
+                      e->v().id()) == visited_vertex_ids.end() &&
+            flows[e->id()] > options.flow_tolerance) {
+          candidate_edges.emplace_back(e);
         }
       }
-
-      if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
+      // If the depth first search finds itself at a node with no candidate
+      // outbound edges, backtrack to the previous node and continue the
+      // search.
+      if (candidate_edges.size() == 0) {
+        path_vertices.pop_back();
+        new_path.pop_back();
+        // Since this code requires result.is_success() to be true, we should
+        // always have a path. We assert that..
+        DRAKE_ASSERT(path_vertices.size() > 0);
         continue;
       }
-      paths.push_back(new_path);
+      Eigen::VectorXd candidate_flows(candidate_edges.size());
+      for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+        candidate_flows(ii) = flows[candidate_edges[ii]->id()];
+      }
+      double edge_sample = uniform(generator) * candidate_flows.sum();
+      for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+        if (edge_sample >= candidate_flows(ii)) {
+          edge_sample -= candidate_flows(ii);
+        } else {
+          visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
+          path_vertices.push_back(&candidate_edges[ii]->v());
+          new_path.emplace_back(candidate_edges[ii]);
+          break;
+        }
+      }
     }
-    return paths;
+
+    if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
+      continue;
+    }
+    paths.push_back(new_path);
   }
-  throw std::runtime_error(
-      fmt::format("Can not sample paths when convex relaxation is false or "
-                  "max_rounded_paths is 0.",
-                  target.name()));
+  return paths;
 }
 
 std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
