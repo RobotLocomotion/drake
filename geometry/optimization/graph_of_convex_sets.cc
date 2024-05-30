@@ -1388,8 +1388,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     unusable_edges = PreprocessShortestPath(source_id, target_id, options);
   }
 
-  if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
-      result.is_success()) {
+  if (*options.convex_relaxation && *options.max_rounded_paths > 0) {
     DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
 
     RandomGenerator generator(options.rounding_seed);
