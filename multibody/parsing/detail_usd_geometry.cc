@@ -374,8 +374,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 }
 
 std::optional<double> GetMeshScale(
-  const pxr::UsdPrim& prim, double meters_per_unit,
-  const DiagnosticPolicy& diagnostic) {
+  const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
   std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(
     prim, diagnostic);
   if (!prim_scale_opt.has_value()) {
@@ -389,7 +388,7 @@ std::optional<double> GetMeshScale(
       "of a mesh is not supported.", prim.GetPath().GetString()));
     return std::nullopt;
   }
-  return prim_scale[0] * meters_per_unit;
+  return prim_scale[0];
 }
 
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
@@ -457,8 +456,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     return nullptr;
   }
 
-  std::optional<double> prim_scale = GetMeshScale(
-    prim, meters_per_unit, diagnostic);
+  std::optional<double> prim_scale = GetMeshScale(prim, diagnostic);
   if (!prim_scale.has_value()) {
     return nullptr;
   }
@@ -481,6 +479,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   if (!mesh.GetPointsAttr().Get(&vertices)) {
     RaiseFailedToReadAttributeError("points", prim, diagnostic);
     return nullptr;
+  }
+  for (auto& vertex : vertices) {
+    vertex *= meters_per_unit;
   }
 
   pxr::VtArray<int> indices;

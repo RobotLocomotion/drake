@@ -35,8 +35,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 
 // Returns the scale factor of an UsdGeomMesh, or nullopt if an error occurs.
 std::optional<double> GetMeshScale(
-  const pxr::UsdPrim& prim, double meters_per_unit,
-  const DiagnosticPolicy& diagnostic);
+  const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
 
 // Creates a geometry::Box with a dimension specified by the UsdGeomCube prim,
 // or nullptr if an error occurs.
