@@ -1382,21 +1382,16 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
         target.name()));
   }
 
-  VertexId source_id = source.id();
-  VertexId target_id = target.id();
-
   RandomGenerator generator(options.rounding_seed);
   std::uniform_real_distribution<double> uniform;
   std::vector<std::vector<const Edge*>> paths;
 
   std::map<EdgeId, double> flows;
-
   for (const auto& [edge_id, e] : edges_) {
     flows.emplace(edge_id, result.GetSolution(e->phi()));
   }
 
   int num_trials = 0;
-  MathematicalProgramResult best_rounded_result;
   while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
          num_trials < options.max_rounding_trials) {
     ++num_trials;
@@ -1406,7 +1401,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     std::vector<VertexId> visited_vertex_ids{source.id()};
     std::vector<const Vertex*> path_vertices{&source};
     std::vector<const Edge*> new_path;
-    while (path_vertices.back()->id() != target_id) {
+    while (path_vertices.back()->id() != target.id()) {
       std::vector<const Edge*> candidate_edges;
       for (const Edge* e : path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
