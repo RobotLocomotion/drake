@@ -179,11 +179,14 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh::Define(
     stage_, pxr::SdfPath("/Mesh"));
 
+  // The following specifies an octahedron mesh.
   auto vertices = pxr::VtArray<pxr::GfVec3f>{
-    pxr::GfVec3f(0.0, 0.0, 0.0), pxr::GfVec3f(0.0, 1.0, 0.0),
-    pxr::GfVec3f(1.0, 0.0, 0.0), pxr::GfVec3f(1.0, 1.0, 0.0)};
-  auto face_vertex_counts = pxr::VtArray<int>{3, 3};
-  auto face_vertex_indices = pxr::VtArray<int>{0, 1, 2, 1, 3, 2};
+    pxr::GfVec3f(1, 0, 0), pxr::GfVec3f(0, -1, 0),
+    pxr::GfVec3f(-1, 0, 0), pxr::GfVec3f(0, 1, 0),
+    pxr::GfVec3f(0, 0, 1), pxr::GfVec3f(0, 0, -1)};
+  auto face_vertex_counts = pxr::VtArray<int>{3, 3, 3, 3, 3, 3, 3, 3};
+  auto face_vertex_indices = pxr::VtArray<int>{
+    1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0, 1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5};
   double scale_factor = 129.2;
 
   EXPECT_TRUE(mesh.CreatePointsAttr().Set(vertices));
@@ -194,15 +197,16 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   EXPECT_TRUE(scale_op.Set(
     pxr::GfVec3d(scale_factor, scale_factor, scale_factor)));
 
-  std::string filename = "mesh.obj";
-  EXPECT_TRUE(WriteMeshToObjFile(filename, vertices, face_vertex_indices,
-    diagnostic_policy_));
-
-  auto shape = CreateGeometryMesh(filename, mesh.GetPrim(), meters_per_unit_,
-    diagnostic_policy_);
+  auto shape = CreateGeometryMesh("octahedron.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Mesh* drake_mesh = dynamic_cast<geometry::Mesh*>(shape.get());
   EXPECT_EQ(drake_mesh->scale(), scale_factor);
+
+  // Check whether Drake can sucessfully parse that file by computing the
+  // convex hull of the octahedron mesh.
+  auto convex_hull = drake_mesh->GetConvexHull();
+  EXPECT_EQ(convex_hull.num_faces(), 8);
 }
 
 TEST_F(UsdGeometryTest, GetRigidTransformTest) {
