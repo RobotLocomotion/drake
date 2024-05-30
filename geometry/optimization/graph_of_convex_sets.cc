@@ -1392,11 +1392,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   std::map<EdgeId, double> flows;
 
   for (const auto& [edge_id, e] : edges_) {
-    if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
-      flows.emplace(edge_id, 0);
-    } else {
-      flows.emplace(edge_id, result.GetSolution(e->phi()));
-    }
+    flows.emplace(edge_id, result.GetSolution(e->phi()));
   }
 
   int num_trials = 0;
