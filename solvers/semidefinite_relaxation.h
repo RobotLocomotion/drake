@@ -10,6 +10,10 @@ namespace solvers {
 
 // TODO(russt): Add an option for using diagonal dominance and/or
 // scaled-diagonal dominance instead of the PSD constraint.
+
+/** Configuration options for the MakeSemidefiniteRelaxation.
+ *  @ingroup semidefinite_relaxation
+ * */
 struct SemidefiniteRelaxationOptions {
   /** Given a program with the linear constraints Ay ≤ b, sets whether to add
    * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0  to the semidefinite
