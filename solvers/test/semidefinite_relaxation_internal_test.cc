@@ -38,27 +38,6 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
   const MatrixXd X_expected = x_expected * x_expected.transpose();
   relaxation->SetInitialGuess(X, X_expected);
 }
-//
-// void SetRelaxationInitialGuess(
-//    const std::map<Variable, double>& expected_values,
-//    MathematicalProgram* relaxation) {
-//  for (const auto& [var, val] : expected_values) {
-//    relaxation->SetInitialGuess(var, val);
-//  }
-//  for (const auto& constraint :
-//       relaxation->positive_semidefinite_constraints()) {
-//    const int n = constraint.evaluator()->matrix_rows();
-//    VectorXd x_expected(n);
-//    const MatrixX<Variable> X_var = Eigen::Map<const MatrixX<Variable>>(
-//        constraint.variables().data(), n, n);
-//    for (int i = 0; i < n - 1; ++i) {
-//      x_expected(i) = expected_values.at(X_var(i, n - 1));
-//    }
-//    x_expected(n - 1) = 1;
-//    const MatrixXd X_expected = x_expected * x_expected.transpose();
-//    relaxation->SetInitialGuess(X_var, X_expected);
-//  }
-//}
 
 int NChoose2(int n) {
   return (n * (n - 1)) / 2;
