@@ -72,6 +72,14 @@ GTEST_TEST(TestIpoptSolverNlp, LinearConstraints) {
                   0, 2, -4, 0;
   // clang-format on
   EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+
+  // Test constraint types.
+  std::vector<Ipopt::TNLP::LinearityType> constraint_types(m);
+  status = dut.get_constraints_linearity(m, constraint_types.data());
+  EXPECT_TRUE(status);
+  for (int i = 0; i < m; ++i) {
+    EXPECT_EQ(constraint_types[i], Ipopt::TNLP::LinearityType::LINEAR);
+  }
 }
 
 GTEST_TEST(TestIpoptSolverNlp, LinearEqualityConstraints) {
@@ -115,6 +123,14 @@ GTEST_TEST(TestIpoptSolverNlp, LinearEqualityConstraints) {
                   2, -4,  0, 0;
   // clang-format on
   EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+
+  // Test constraint types.
+  std::vector<Ipopt::TNLP::LinearityType> constraint_types(m);
+  status = dut.get_constraints_linearity(m, constraint_types.data());
+  EXPECT_TRUE(status);
+  for (int i = 0; i < m; ++i) {
+    EXPECT_EQ(constraint_types[i], Ipopt::TNLP::LinearityType::LINEAR);
+  }
 }
 
 GTEST_TEST(TestIpoptSolverNlp, LinearConstraintsDuplicatedVariable) {
@@ -156,6 +172,14 @@ GTEST_TEST(TestIpoptSolverNlp, LinearConstraintsDuplicatedVariable) {
                   5, 3, 0, 0;
   // clang-format on
   EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+
+  // Test constraint types.
+  std::vector<Ipopt::TNLP::LinearityType> constraint_types(m);
+  status = dut.get_constraints_linearity(m, constraint_types.data());
+  EXPECT_TRUE(status);
+  for (int i = 0; i < m; ++i) {
+    EXPECT_EQ(constraint_types[i], Ipopt::TNLP::LinearityType::LINEAR);
+  }
 }
 
 class ToyConstraint : public Constraint {
@@ -233,6 +257,14 @@ GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraint) {
                     0, 6, 3, 2;
     // clang-format on
     EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+
+    // Test constraint types.
+    std::vector<Ipopt::TNLP::LinearityType> constraint_types(m);
+    status = dut.get_constraints_linearity(m, constraint_types.data());
+    EXPECT_TRUE(status);
+    for (int i = 0; i < m; ++i) {
+      EXPECT_EQ(constraint_types[i], Ipopt::TNLP::LinearityType::NON_LINEAR);
+    }
   }
 }
 
@@ -268,6 +300,13 @@ GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraintDuplicatedVariables) {
                     0, 4, 4, 0;
     // clang-format on
     EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
+
+    std::vector<Ipopt::TNLP::LinearityType> constraint_types(m);
+    status = dut.get_constraints_linearity(m, constraint_types.data());
+    EXPECT_TRUE(status);
+    for (int i = 0; i < m; ++i) {
+      EXPECT_EQ(constraint_types[i], Ipopt::TNLP::LinearityType::NON_LINEAR);
+    }
   }
 }
 }  // namespace internal

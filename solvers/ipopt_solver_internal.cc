@@ -759,6 +759,42 @@ void IpoptSolver_NLP::EvaluateConstraints(Index n, const Number* x,
     constraint_cache_->grad_valid = true;
   }
 }
+
+bool IpoptSolver_NLP::get_constraints_linearity(
+    Index m, Ipopt::TNLP::LinearityType* const_types) {
+  unused(m);
+  int constraint_count = 0;
+
+  auto set_constraint_type = [const_types, &constraint_count](
+                                 const Constraint& constraint,
+                                 Ipopt::TNLP::LinearityType type) {
+    for (int i = 0; i < constraint.num_constraints(); ++i) {
+      *(const_types + constraint_count + i) = type;
+    }
+    constraint_count += constraint.num_constraints();
+  };
+
+  // The order in const_types should be same as in eval_g
+  for (const auto& c : problem_->generic_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::NON_LINEAR);
+  }
+  for (const auto& c : problem_->quadratic_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::NON_LINEAR);
+  }
+  for (const auto& c : problem_->lorentz_cone_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::NON_LINEAR);
+  }
+  for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::NON_LINEAR);
+  }
+  for (const auto& c : problem_->linear_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::LINEAR);
+  }
+  for (const auto& c : problem_->linear_equality_constraints()) {
+    set_constraint_type(*c.evaluator(), Ipopt::TNLP::LinearityType::LINEAR);
+  }
+  return true;
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

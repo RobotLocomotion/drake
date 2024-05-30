@@ -103,6 +103,9 @@ class DRAKE_NO_EXPORT IpoptSolver_NLP : public Ipopt::TNLP {
       Ipopt::Number obj_value, const Ipopt::IpoptData* ip_data,
       Ipopt::IpoptCalculatedQuantities* ip_cq);
 
+  virtual bool get_constraints_linearity(
+      Ipopt::Index m, Ipopt::TNLP::LinearityType* const_types);
+
   const Ipopt::SolverReturn& status() const { return status_; }
   const Eigen::VectorXd& z_L() const { return z_L_; }
   const Eigen::VectorXd& z_U() const { return z_U_; }
