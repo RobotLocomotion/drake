@@ -624,34 +624,38 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult& result,
       double tolerance = 1e-3) const;
 
-  /** Samples a collection of paths from `source` to `target`, where the
+  /** Samples a collection of unique paths from `source` to `target`, where the
    flow values (the relaxed binary variables associated with each `Edge`)
    `flows` are interpreted as the probabilities of transitioning an edge. This
    function implements the first part of the rounding scheme put forth in
    Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
    https://arxiv.org/abs/2205.04422
+
    @param options include all settings for sampling the paths. Specifically,
-   this functions behavior is determined through options.rounding_seed,
+   the behavior of this function is determined through options.rounding_seed,
    options.max_rounded_paths, options.max_rounding_trials, and
-   options.flow_tolerance. See `GraphOfConvexSetsOptions` for further details.
-   Note that this function will throw unless options.max_rounded_paths > 0.
+   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
+   Note that this function will throw unless options.max_rounded_paths > 0,
+   and that the number of returned paths can be 0 if no paths are found.
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
       std::map<EdgeId, double> flows,
       const GraphOfConvexSetsOptions& options) const;
 
-  /** Samples a collection of paths from `source` to `target`, where the
+  /** Samples a collection of unique paths from `source` to `target`, where the
    flow values (the relaxed binary variables associated with each `Edge`) in
    `result` are interpreted as the probabilities of transitioning an edge. This
    function implements the first part of the rounding scheme put forth in
    Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
    https://arxiv.org/abs/2205.04422
+
    @param options include all settings for sampling the paths. Specifically,
-   this functions behavior is determined through options.rounding_seed,
+   the behavior of this function is determined through options.rounding_seed,
    options.max_rounded_paths, options.max_rounding_trials, and
-   options.flow_tolerance. See `GraphOfConvexSetsOptions` for further details.
-   Note that this function will throw unless options.max_rounded_paths > 0.
+   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
+   Note that this function will throw unless options.max_rounded_paths > 0,
+   and that the number of returned paths can be 0 if no paths are found.
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
