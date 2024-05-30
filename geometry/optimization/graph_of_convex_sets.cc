@@ -1177,8 +1177,17 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   // https://arxiv.org/abs/2205.04422
   if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
       result.is_success()) {
+    std::map<EdgeId, double> flows;
+    for (const auto& [edge_id, e] : edges_) {
+      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
+        flows.emplace(edge_id, 0);
+      } else {
+        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
+      }
+    }
+
     std::vector<std::vector<const Edge*>> candidate_paths =
-        SamplePaths(source, target, result, options);
+        SamplePaths(source, target, flows, options);
 
     MathematicalProgramResult best_rounded_result;
 
@@ -1303,12 +1312,18 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
     const solvers::MathematicalProgramResult& result,
     const GraphOfConvexSetsOptions& options) const {
+  std::map<EdgeId, double> flows;
+  for (const auto& [edge_id, e] : edges_) {
+    flows.emplace(edge_id, result.GetSolution(e->phi_));
+  }
+  return SamplePaths(source, target, flows, options);
+}
+
+std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
+    const Vertex& source, const Vertex& target, std::map<EdgeId, double> flows,
+    const GraphOfConvexSetsOptions& options) const {
   DRAKE_THROW_UNLESS(*options.max_rounded_paths > 0);
 
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        "Cannot sample paths when result.is_success() is false.");
-  }
   if (vertices_.count(source.id()) == 0) {
     throw std::invalid_argument(fmt::format(
         "Source vertex {} is not a vertex in this GraphOfConvexSets.",
@@ -1323,11 +1338,6 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   RandomGenerator generator(options.rounding_seed);
   std::uniform_real_distribution<double> uniform;
   std::vector<std::vector<const Edge*>> paths;
-
-  std::map<EdgeId, double> flows;
-  for (const auto& [edge_id, e] : edges_) {
-    flows.emplace(edge_id, result.GetSolution(e->phi()));
-  }
 
   int num_trials = 0;
   while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
