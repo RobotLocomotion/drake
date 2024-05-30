@@ -1368,10 +1368,6 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       if (candidate_edges.size() == 0) {
         path_vertices.pop_back();
         new_path.pop_back();
-        // TODO(bernhardpg): Remove this?
-        // Since this code requires result.is_success() to be true, we should
-        // always have a path. We assert that..
-        DRAKE_ASSERT(path_vertices.size() > 0);
         continue;
       }
       Eigen::VectorXd candidate_flows(candidate_edges.size());
