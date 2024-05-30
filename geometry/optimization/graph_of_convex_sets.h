@@ -630,9 +630,11 @@ class GraphOfConvexSets {
    function implements the first part of the rounding scheme put forth in
    Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
    https://arxiv.org/abs/2205.04422
-   @param options include all settings for sampling the paths. See
-   `GraphOfConvexSetsOptions` for further details. Note that this function will
-   throw unless options.max_rounded_paths > 0.
+   @param options include all settings for sampling the paths. Specifically,
+   this functions behavior is determined through options.rounding_seed,
+   options.max_rounded_paths, options.max_rounding_trials, and
+   options.flow_tolerance. See `GraphOfConvexSetsOptions` for further details.
+   Note that this function will throw unless options.max_rounded_paths > 0.
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
