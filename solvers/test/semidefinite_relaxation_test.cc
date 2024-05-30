@@ -20,6 +20,18 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
+void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
+                               MathematicalProgram* relaxation) {
+  const int N = y_expected.size() + 1;
+  MatrixX<Variable> X = Eigen::Map<const MatrixX<Variable>>(
+      relaxation->positive_semidefinite_constraints()[0].variables().data(), N,
+      N);
+  VectorXd x_expected(N);
+  x_expected << y_expected, 1;
+  const MatrixXd X_expected = x_expected * x_expected.transpose();
+  relaxation->SetInitialGuess(X, X_expected);
+}
+
 void SetRelaxationInitialGuess(
     const std::map<Variable, double>& expected_values,
     MathematicalProgram* relaxation) {
@@ -113,7 +125,7 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
     // clang-format on
     const Vector3d lb0(1.3, -kInf, 0.25);
     const Vector3d ub0(5.6, 0.1, kInf);
-    prog_.AddLinearConstraint(A0, lb0, ub0, y_.tail<2>());
+    prog_.AddLinearConstraint(A0, lb0, ub0, y_.segment(2, 2));
 
     // Supported LinearEqualityConstraint.
     MatrixXd A_eq(2, 3);
@@ -122,7 +134,7 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
              0.4, -2.3, -4.5;
     // clang-format on
     const Vector2d b_eq(1.3, -0.24);
-    prog_.AddLinearEqualityConstraint(A_eq, b_eq, y_.head<3>());
+    prog_.AddLinearEqualityConstraint(A_eq, b_eq, y_.tail<3>());
 
     // Supported non-convex QuadraticConstraint.
     const double lb_non_convex = -0.4, ub_non_convex = 0.5;
@@ -157,6 +169,96 @@ TEST_F(MakeSemidefiniteRelaxationTest, EnsureProgramsAreValidated) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeSemidefiniteRelaxation(prog_, options_),
       ".*GenericCost was declared but is not supported.");
+}
+
+// This test is used to verify that the initial linear costs and constraints are
+// cloned into the relaxation.
+TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
+  // Remove all quadratic costs and constraints.
+  const std::vector<Binding<QuadraticCost>> quadratic_costs =
+      prog_.quadratic_costs();
+  for (const auto& cost : quadratic_costs) {
+    prog_.RemoveCost(cost);
+  }
+  const std::vector<Binding<QuadraticConstraint>> quadratic_constraints =
+      prog_.quadratic_constraints();
+  for (const auto& constraint : quadratic_constraints) {
+    prog_.RemoveConstraint(constraint);
+  }
+
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  // The semidefinite program is initialized.
+  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
+  // The linear costs and constraints are cloned.
+  EXPECT_EQ(relaxation->linear_equality_constraints().size(), 2);
+  EXPECT_EQ(relaxation->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation->GetAllConstraints().size(), 3 + 1 + 1);
+
+  EXPECT_EQ(relaxation->linear_costs().size(), 1);
+  EXPECT_EQ(relaxation->GetAllCosts().size(), 1);
+
+  VectorXd y_test(5);
+  y_test << 1.3, 0.24, 0.5, 0.2, -0.4;
+  SetRelaxationInitialGuess(y_test, relaxation.get());
+
+  // The linear cost is correct.
+  const VectorXd a_cost = prog_.linear_costs()[0].evaluator()->a();
+  const double b_cost = prog_.linear_costs()[0].evaluator()->b();
+  EXPECT_NEAR(
+      relaxation->EvalBindingAtInitialGuess(relaxation->linear_costs()[0])[0],
+      a_cost.transpose() * y_test.head<2>() + b_cost, 1e-12);
+
+  // The linear constraint is correct.
+  const MatrixXd A_constraint =
+      prog_.linear_constraints()[0].evaluator()->GetDenseA();
+  EXPECT_TRUE(CompareMatrices(relaxation->EvalBindingAtInitialGuess(
+                                  relaxation->linear_constraints()[0]),
+                              A_constraint * y_test.segment(2, 2), 1e-12));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->linear_constraints()[0].evaluator()->upper_bound(),
+      prog_.linear_constraints()[0].evaluator()->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->linear_constraints()[0].evaluator()->lower_bound(),
+      prog_.linear_constraints()[0].evaluator()->lower_bound()));
+
+  // The bounding box constraint is correct.
+  const MatrixXd A_bb =
+      prog_.bounding_box_constraints()[0].evaluator()->GetDenseA();
+  EXPECT_TRUE(CompareMatrices(relaxation->EvalBindingAtInitialGuess(
+                                  relaxation->bounding_box_constraints()[0]),
+                              A_bb.transpose() * y_test.head<3>(), 1e-12));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->bounding_box_constraints()[0].evaluator()->upper_bound(),
+      prog_.bounding_box_constraints()[0].evaluator()->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->bounding_box_constraints()[0].evaluator()->lower_bound(),
+      prog_.bounding_box_constraints()[0].evaluator()->lower_bound()));
+  // The linear equality constraint is correct.
+  const MatrixXd A_eq =
+      prog_.linear_equality_constraints()[0].evaluator()->GetDenseA();
+  EXPECT_TRUE(CompareMatrices(relaxation->EvalBindingAtInitialGuess(
+                                  relaxation->linear_equality_constraints()[0]),
+                              A_eq * y_test.tail<3>(), 1e-12));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->linear_equality_constraints()[0].evaluator()->upper_bound(),
+      prog_.linear_equality_constraints()[0].evaluator()->upper_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      relaxation->linear_equality_constraints()[0].evaluator()->lower_bound(),
+      prog_.linear_equality_constraints()[0].evaluator()->lower_bound()));
+
+  // The variable "one" is constrained to be equal to 1.
+  const auto one_binding = relaxation->linear_equality_constraints()[1];
+  EXPECT_EQ(one_binding.variables().size(), 1);
+  EXPECT_EQ(one_binding.variables()[0].get_name(), "one");
+  EXPECT_EQ(relaxation->EvalBindingAtInitialGuess(one_binding).size(), 1);
+  EXPECT_NEAR(one_binding.evaluator()->upper_bound()[0], 1.0, 1e-12);
+  EXPECT_NEAR(one_binding.evaluator()->lower_bound()[0], 1.0, 1e-12);
+
+  // Confirm that the decision variables of prog are also decision variables of
+  // the relaxation.
+  std::vector<int> indices = relaxation->FindDecisionVariableIndices(y_);
+  EXPECT_EQ(indices.size(), y_.size());
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest,

@@ -20,10 +20,10 @@ using symbolic::Variables;
 namespace {
 
 // Validate that we can construct the semidefinite relaxation of this program
-// and prepare a relaxation program. The relaxation program will be a clone of
-// the program prog, with the additional variable "one" constrained to be equal
-// to one. This relaxation is processed by DoMakeSemidefiniteRelaxation in
-// different ways.
+// and prepare a relaxation program. The relaxation program will be initialized
+// as a clone of the program prog, with the additional variable "one"
+// constrained to be equal to one. This relaxation is processed by
+// DoMakeSemidefiniteRelaxation in different ways.
 std::unique_ptr<MathematicalProgram> InitializeRelaxation(
     const MathematicalProgram& prog, const Variable& one) {
   internal::ValidateProgramIsSupported(prog);

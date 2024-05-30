@@ -18,7 +18,7 @@ void ValidateProgramIsSupported(const MathematicalProgram& prog);
 // constraints.
 bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
 
-// Add the initialization of the semidefinite relaxation of prog to relaxation.
+// Adds the initialization of the semidefinite relaxation of prog to relaxation.
 // Let z represent the variables of prog. First we sort z into a vector y and
 // the resorted indices are stored in variables_to_sorted_indices. The matrix X
 // is set to be equal to X = [[Y, y], [y, one]]. The variable Y is a symmetric
