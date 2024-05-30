@@ -20,18 +20,6 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-// void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
-//                               MathematicalProgram* relaxation) {
-//  const int N = y_expected.size() + 1;
-//  MatrixX<Variable> X = Eigen::Map<const MatrixX<Variable>>(
-//      relaxation->positive_semidefinite_constraints()[0].variables().data(),
-//      N, N);
-//  VectorXd x_expected(N);
-//  x_expected << y_expected, 1;
-//  const MatrixXd X_expected = x_expected * x_expected.transpose();
-//  relaxation->SetInitialGuess(X, X_expected);
-//}
-
 void SetRelaxationInitialGuess(
     const std::map<Variable, double>& expected_values,
     MathematicalProgram* relaxation) {
@@ -65,14 +53,7 @@ GTEST_TEST(SemidefiniteRelaxationOptions, DefaultOptionsTest) {
   SemidefiniteRelaxationOptions options;
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
-
   EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetWeakestTest) {
@@ -81,12 +62,6 @@ GTEST_TEST(SemidefiniteRelaxationOptions, SetWeakestTest) {
   EXPECT_FALSE(options.add_implied_linear_equality_constraints);
   EXPECT_FALSE(options.add_implied_linear_constraints);
   EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetStrongestTest) {
@@ -95,128 +70,6 @@ GTEST_TEST(SemidefiniteRelaxationOptions, SetStrongestTest) {
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
   EXPECT_TRUE(options.preserve_convex_quadratic_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_TRUE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_TRUE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-}
-
-GTEST_TEST(SemidefiniteRelaxationOptions, SetAllLorentzTimesLinearValue) {
-  SemidefiniteRelaxationOptions options;
-  options.set_to_weakest();
-
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  // Make sure that we do not change the value of the other options.
-  options.set_all_lorentz_times_linear_value(true);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  EXPECT_TRUE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_TRUE(options.add_implied_rotated_lorentz_times_linear_constraints);
-
-  options.set_all_lorentz_times_linear_value(false);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-}
-
-GTEST_TEST(SemidefiniteRelaxationOptions, SetAllLorentzTimesLorentzValue) {
-  SemidefiniteRelaxationOptions options;
-  options.set_to_weakest();
-
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  // Make sure that we do not change the value of the other options.
-  options.set_all_lorentz_times_lorentz_value(true);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-
-  EXPECT_TRUE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_TRUE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  options.set_all_lorentz_times_lorentz_value(false);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-}
-
-GTEST_TEST(SemidefiniteRelaxationOptions, SetAllLorentzOptionsValue) {
-  SemidefiniteRelaxationOptions options;
-  options.set_to_weakest();
-
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  // Make sure that we do not change the value of the other options.
-  options.set_all_lorentz_options_value(true);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_TRUE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_TRUE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_TRUE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
-
-  options.set_all_lorentz_options_value(false);
-  EXPECT_FALSE(options.add_implied_linear_equality_constraints);
-  EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_linear_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_lorentz_times_rotated_lorentz_constraints);
-  EXPECT_FALSE(options.add_implied_rotated_lorentz_times_linear_constraints);
-  EXPECT_FALSE(
-      options.add_implied_rotated_lorentz_times_rotated_lorentz_constraints);
 }
 
 class MakeSemidefiniteRelaxationTest : public ::testing::Test {

@@ -11,71 +11,42 @@ namespace solvers {
 // TODO(russt): Add an option for using diagonal dominance and/or
 // scaled-diagonal dominance instead of the PSD constraint.
 struct SemidefiniteRelaxationOptions {
+  /** Given a program with the linear constraints Ay ≤ b, sets whether to add
+   * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0  to the semidefinite
+   * relaxation.*/
   bool add_implied_linear_equality_constraints = true;
+
+  /** Given a program with the linear equality constraints Ay = b, sets whether
+   * to add the implied linear constraints [A, -b]X = 0  to the semidefinite
+   * relaxation.*/
   bool add_implied_linear_constraints = true;
+
   // TODO(Alexandre.Amice): change this to true by default.
+
+  /** Given a program with the convex quadratic constraints, sets whether
+   * equivalent rotated second order cone constraints are enforced on the last
+   * column of X in the semidefinite relaxation.*/
   bool preserve_convex_quadratic_constraints = false;
 
-  bool add_implied_lorentz_times_linear_constraints = false;
-  bool add_implied_lorentz_times_lorentz_constraints = false;
-  bool add_implied_lorentz_times_rotated_lorentz_constraints = false;
-  bool add_implied_rotated_lorentz_times_linear_constraints = false;
-  bool add_implied_rotated_lorentz_times_rotated_lorentz_constraints = false;
-
-  // Configure the semidefinite relaxation options to provide the strongest
-  // possible semidefinite relaxation that we currently support. This in general
-  // will create the most expensive relaxation to solve.
+  /** Configure the semidefinite relaxation options to provide the strongest
+   * possible semidefinite relaxation that we currently support. This in general
+   * will give the tightest convex relaxation we support, but the longest solve
+   * times.*/
   void set_to_strongest() {
     add_implied_linear_equality_constraints = true;
     add_implied_linear_constraints = true;
     preserve_convex_quadratic_constraints = true;
-
-    add_implied_lorentz_times_linear_constraints = true;
-    add_implied_lorentz_times_lorentz_constraints = true;
-    add_implied_lorentz_times_rotated_lorentz_constraints = true;
-    add_implied_rotated_lorentz_times_linear_constraints = true;
-    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = true;
   }
 
-  // Configure the semidefinite relaxation options to provide the weakest
-  // semidefinite relaxation that we currently support. This in general will
-  // create the cheapest relaxation. This is equivalent to the standard Shor
-  // relaxation.
+  /** Configure the semidefinite relaxation options to provide the weakest
+  semidefinite relaxation that we currently support. This in general will
+  create the loosest convex relaxation we support, but the shortest solve times.
+  This is equivalent to the standard Shor Relaxation (see Quadratic Optimization
+  Problems by NZ Shor or Semidefinite Programming by Vandenberghe and Boyd). */
   void set_to_weakest() {
     add_implied_linear_equality_constraints = false;
     add_implied_linear_constraints = false;
     preserve_convex_quadratic_constraints = false;
-
-    add_implied_lorentz_times_linear_constraints = false;
-    add_implied_lorentz_times_lorentz_constraints = false;
-    add_implied_lorentz_times_rotated_lorentz_constraints = false;
-    add_implied_rotated_lorentz_times_linear_constraints = false;
-    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = false;
-  }
-
-  // Convenience method for setting all the value of all the lorentz times
-  // linear constraint options.
-  void set_all_lorentz_times_linear_value(bool v) {
-    add_implied_lorentz_times_linear_constraints = v;
-    add_implied_rotated_lorentz_times_linear_constraints = v;
-  }
-
-  // Convenience method for setting all the value of all the lorentz times
-  // lorentz constraint options.
-  void set_all_lorentz_times_lorentz_value(bool v) {
-    add_implied_lorentz_times_lorentz_constraints = v;
-    add_implied_lorentz_times_rotated_lorentz_constraints = v;
-    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = v;
-  }
-
-  // Convenience method for setting all the value of all the lorentz times
-  // linear and lorentz times lorentz constraint options.
-  void set_all_lorentz_options_value(bool v) {
-    add_implied_lorentz_times_linear_constraints = v;
-    add_implied_rotated_lorentz_times_linear_constraints = v;
-    add_implied_lorentz_times_lorentz_constraints = v;
-    add_implied_lorentz_times_rotated_lorentz_constraints = v;
-    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = v;
   }
 };
 
