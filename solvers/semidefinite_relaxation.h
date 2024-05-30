@@ -10,6 +10,74 @@ namespace solvers {
 
 // TODO(russt): Add an option for using diagonal dominance and/or
 // scaled-diagonal dominance instead of the PSD constraint.
+struct SemidefiniteRelaxationOptions {
+  bool add_implied_linear_equality_constraints = true;
+  bool add_implied_linear_constraints = true;
+  // TODO(Alexandre.Amice): change this to true by default.
+  bool preserve_convex_quadratic_constraints = false;
+
+  bool add_implied_lorentz_times_linear_constraints = false;
+  bool add_implied_lorentz_times_lorentz_constraints = false;
+  bool add_implied_lorentz_times_rotated_lorentz_constraints = false;
+  bool add_implied_rotated_lorentz_times_linear_constraints = false;
+  bool add_implied_rotated_lorentz_times_rotated_lorentz_constraints = false;
+
+  // Configure the semidefinite relaxation options to provide the strongest
+  // possible semidefinite relaxation that we currently support. This in general
+  // will create the most expensive relaxation to solve.
+  void set_to_strongest() {
+    add_implied_linear_equality_constraints = true;
+    add_implied_linear_constraints = true;
+    preserve_convex_quadratic_constraints = true;
+
+    add_implied_lorentz_times_linear_constraints = true;
+    add_implied_lorentz_times_lorentz_constraints = true;
+    add_implied_lorentz_times_rotated_lorentz_constraints = true;
+    add_implied_rotated_lorentz_times_linear_constraints = true;
+    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = true;
+  }
+
+  // Configure the semidefinite relaxation options to provide the weakest
+  // semidefinite relaxation that we currently support. This in general will
+  // create the cheapest relaxation. This is equivalent to the standard Shor
+  // relaxation.
+  void set_to_weakest() {
+    add_implied_linear_equality_constraints = false;
+    add_implied_linear_constraints = false;
+    preserve_convex_quadratic_constraints = false;
+
+    add_implied_lorentz_times_linear_constraints = false;
+    add_implied_lorentz_times_lorentz_constraints = false;
+    add_implied_lorentz_times_rotated_lorentz_constraints = false;
+    add_implied_rotated_lorentz_times_linear_constraints = false;
+    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = false;
+  }
+
+  // Convenience method for setting all the value of all the lorentz times
+  // linear constraint options.
+  void set_all_lorentz_times_linear_value(bool v) {
+    add_implied_lorentz_times_linear_constraints = v;
+    add_implied_rotated_lorentz_times_linear_constraints = v;
+  }
+
+  // Convenience method for setting all the value of all the lorentz times
+  // lorentz constraint options.
+  void set_all_lorentz_times_lorentz_value(bool v) {
+    add_implied_lorentz_times_lorentz_constraints = v;
+    add_implied_lorentz_times_rotated_lorentz_constraints = v;
+    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = v;
+  }
+
+  // Convenience method for setting all the value of all the lorentz times
+  // linear and lorentz times lorentz constraint options.
+  void set_all_lorentz_options_value(bool v) {
+    add_implied_lorentz_times_linear_constraints = v;
+    add_implied_rotated_lorentz_times_linear_constraints = v;
+    add_implied_lorentz_times_lorentz_constraints = v;
+    add_implied_lorentz_times_rotated_lorentz_constraints = v;
+    add_implied_rotated_lorentz_times_rotated_lorentz_constraints = v;
+  }
+};
 
 // TODO(russt): Consider adding Y as an optional argument return value, to help
 // users know the decision variables associated with Y.
@@ -30,7 +98,8 @@ namespace solvers {
  linear nor quadratic.
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog);
+    const MathematicalProgram& prog,
+    const SemidefiniteRelaxationOptions& options = {});
 
 /** A version of MakeSemidefiniteRelaxation that allows for specifying the
  * sparsity of the relaxation.
@@ -105,7 +174,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
  */
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
-    const std::vector<symbolic::Variables>& variable_groups);
+    const std::vector<symbolic::Variables>& variable_groups,
+    const SemidefiniteRelaxationOptions& options = {});
 
 }  // namespace solvers
 }  // namespace drake

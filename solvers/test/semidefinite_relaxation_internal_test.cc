@@ -60,18 +60,6 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
 //  }
 //}
 
-// Given the evaluation of a rotated lorentz cone constraint which comes from
-// calling prog.AddQuadraticAsRotatedLorentzCone(), convert the evaluation to
-// the value that would be return by evaluating the same constraint added as
-// prog.AddQuadraticConstraint().
-double ConvertRotatedLorentzEvalToQuadraticEval(
-    const Eigen::Ref<const VectorXd>& rotated_lorentz_evaluation,
-    const double quadratic_constraint_upper_bound) {
-  return -rotated_lorentz_evaluation(0) - quadratic_constraint_upper_bound +
-         rotated_lorentz_evaluation.tail(rotated_lorentz_evaluation.size() - 2)
-             .squaredNorm();
-}
-
 int NChoose2(int n) {
   return (n * (n - 1)) / 2;
 }
@@ -147,6 +135,7 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
 
   MathematicalProgram relaxation;
   relaxation.AddDecisionVariables(Vector<Variable, 1>{one});
+  relaxation.AddDecisionVariables(prog.decision_variables());
   MatrixX<Variable> X;
   std::map<Variable, int> variables_to_sorted_indices;
   InitializeSemidefiniteRelaxationForProg(prog, one, &relaxation, &X,
@@ -306,9 +295,8 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
        DoLinearizeQuadraticCostsAndConstraintsCasePositiveDefinitePreserve) {
   const auto y = prog_.NewContinuousVariables<1>("y");
   // This is a convex quadratic.
-  // This is a convex quadratic.
-  Eigen::Matrix2d Q{{2, 1}, {1, 1}};
-  prog_.AddQuadraticConstraint(Q, Eigen::Vector2d::Zero(), -kInf, 1,
+  const Eigen::Matrix2d Q{{2, 1}, {1, 1}};
+  prog_.AddQuadraticConstraint(Q, Eigen::Vector2d::Ones(), -kInf, 1,
                                Vector2<Variable>(y(0), y(0)));
   EXPECT_TRUE(prog_.quadratic_constraints()[0].evaluator()->is_convex());
 
@@ -329,7 +317,7 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
   SetRelaxationInitialGuess(y_test, relaxation_.get());
   EXPECT_NEAR(relaxation_->EvalBindingAtInitialGuess(
                   relaxation_->linear_constraints()[0])[0],
-              5.0 / 2.0 * y_test(0) * y_test(0), 1e-12);
+              5.0 / 2.0 * y_test(0) * y_test(0) + 2 * y_test(0), 1e-12);
   EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0],
             -kInf);
   EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
@@ -339,14 +327,227 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
   // quadratic constraint.
   const VectorXd rotated_lorentz_eval = relaxation_->EvalBindingAtInitialGuess(
       relaxation_->rotated_lorentz_cone_constraints()[0]);
-  const double rotated_lorentz_eval_as_quadratic_eval =
-      ConvertRotatedLorentzEvalToQuadraticEval(
-          rotated_lorentz_eval,
-          prog_.quadratic_constraints()[0].evaluator()->upper_bound()[0]);
+  // The last entry of the rotate lorentz cone constraint evaluation is
+  // -0.5xᵀQx - bᵀx - ub, while the quadratic constraint evaluation is
+  // 0.5xᵀQx + bᵀx. So we expect the following two expressions to be the same.
   EXPECT_NEAR(
-      rotated_lorentz_eval_as_quadratic_eval,
+      -rotated_lorentz_eval(2) +
+          prog_.quadratic_constraints()[0].evaluator()->upper_bound()[0],
       prog_.EvalBindingAtInitialGuess(prog_.quadratic_constraints()[0])[0],
       1e-12);
+}
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoLinearizeQuadraticCostsAndConstraintsCaseNegativeDefinitePreserve) {
+  const auto y = prog_.NewContinuousVariables<2>("y");
+  // This is a convex negative-definite quadratic.
+  const Eigen::Matrix2d Q{{-2, -1}, {-1, -1}};
+  const Eigen::Vector2d b{1, 2};
+  prog_.AddQuadraticConstraint(Q, b, -1, kInf, Vector2<Variable>(y(0), y(1)));
+  EXPECT_TRUE(prog_.quadratic_constraints()[0].evaluator()->is_convex());
+
+  ReinitializeRelaxation();
+  DoLinearizeQuadraticCostsAndConstraints(
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get(), true);
+
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
+  // The rotated lorentz cone comes from preserving the convex quadratic
+  // constraint.
+  EXPECT_EQ(relaxation_->rotated_lorentz_cone_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 4);
+
+  const Vector2d y_test(1.3, -2.3);
+  prog_.SetInitialGuess(y, y_test);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+  EXPECT_NEAR(
+      relaxation_->EvalBindingAtInitialGuess(
+          relaxation_->linear_constraints()[0])[0],
+      (0.5 * y_test.transpose() * Q * y_test + b.transpose() * y_test)(0),
+      1e-12);
+  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0],
+            -1);
+  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
+            kInf);
+
+  // Expect the rotated lorentz cone to implement the same constraint as the
+  // quadratic constraint.
+  const VectorXd rotated_lorentz_eval = relaxation_->EvalBindingAtInitialGuess(
+      relaxation_->rotated_lorentz_cone_constraints()[0]);
+  // The last entry of the rotate lorentz cone constraint evaluation is
+  // 0.5xᵀQx + bᵀx - lb, while the quadratic constraint evaluation is
+  // 0.5xᵀQx + bᵀx. So we expect the following two expressions to be the same.
+  EXPECT_NEAR(
+      rotated_lorentz_eval(2) +
+          prog_.quadratic_constraints()[0].evaluator()->lower_bound()[0],
+      prog_.EvalBindingAtInitialGuess(prog_.quadratic_constraints()[0])[0],
+      1e-12);
+}
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoAddImpliedLinearConstraintsBoundingBoxConstraint) {
+  const int N_VARS = 2;
+  const auto y = prog_.NewContinuousVariables<2>("y");
+
+  VectorXd lb(N_VARS);
+  lb << -1.5, -2.0;
+  VectorXd ub(N_VARS);
+  ub << kInf, 2.3;
+  prog_.AddBoundingBoxConstraint(lb, ub, y);
+
+  ReinitializeRelaxation();
+  DoAddImpliedLinearConstraints(prog_, X_, variables_to_sorted_indices_,
+                                relaxation_.get());
+
+  // We have 1 bounding box constraint.
+  EXPECT_EQ(relaxation_->bounding_box_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  // We have 1 linear constraint due to the product of the bounding box
+  // constraints.
+  EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 4);
+
+  auto bbox_evaluator = relaxation_->bounding_box_constraints()[0].evaluator();
+
+  EXPECT_TRUE(CompareMatrices(lb, bbox_evaluator->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(ub, bbox_evaluator->upper_bound()));
+
+  const int N_CONSTRAINTS = 3;
+  VectorXd b(N_CONSTRAINTS);
+  b << -lb[0], -lb[1], ub[1];  // all the finite lower/upper bounds.
+
+  MatrixXd A(N_CONSTRAINTS, 2);
+  // Rows of A:
+  // 1. Lower bound y[0]
+  // 2. Lower bound y[1]
+  // 3. Upper bound y[1]
+  A << -1, 0, 0, -1, 0, 1;
+
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+
+  // First linear constraint (in the new decision variables) is 0 ≤
+  // (Ay-b)(Ay-b)ᵀ, where A and b represent all of the constraints stacked.
+  auto linear_constraint = relaxation_->linear_constraints()[0];
+  VectorXd value = relaxation_->EvalBindingAtInitialGuess(linear_constraint);
+  MatrixXd expected_mat =
+      (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
+  VectorXd expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value = linear_constraint.evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+}
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoAddImpliedLinearConstraintsLinearConstraint) {
+  const auto y = prog_.NewContinuousVariables<2>("y");
+  MatrixXd A0(3, 2);
+  A0 << 0.5, 0.7, -0.2, 0.4, -2.3, -4.5;
+  const Vector3d lb0(1.3, -kInf, 0.25);
+  const Vector3d ub0(5.6, 0.1, kInf);
+  prog_.AddLinearConstraint(A0, lb0, ub0, y);
+  Matrix2d A1;
+  A1 << 0.2, 1.2, 0.24, -0.1;
+  const Vector2d lb1(-0.74, -0.3);
+  const Vector2d ub1(-0.75, 0.9);
+  prog_.AddLinearConstraint(A1, lb1, ub1, Vector2<Variable>(y[1], y[0]));
+  Matrix2d A1_reordered;
+  A1_reordered.col(0) = A1.col(1);
+  A1_reordered.col(1) = A1.col(0);
+
+  ReinitializeRelaxation();
+  DoAddImpliedLinearConstraints(prog_, X_, variables_to_sorted_indices_,
+                                relaxation_.get());
+
+  EXPECT_EQ(relaxation_->num_vars(), 6);
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_constraints().size(), 3);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 5);
+
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+
+  // First linear constraint is lb0 ≤ A0y ≤ ub0.
+  EXPECT_TRUE(CompareMatrices(
+      A0, relaxation_->linear_constraints()[0].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(
+      lb0, relaxation_->linear_constraints()[0].evaluator()->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      ub0, relaxation_->linear_constraints()[0].evaluator()->upper_bound()));
+
+  // Second linear constraint is lb1 ≤ A1 y ≤ ub1.
+  EXPECT_TRUE(CompareMatrices(
+      A1, relaxation_->linear_constraints()[1].evaluator()->GetDenseA()));
+  EXPECT_TRUE(CompareMatrices(
+      lb1, relaxation_->linear_constraints()[1].evaluator()->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(
+      ub1, relaxation_->linear_constraints()[1].evaluator()->upper_bound()));
+
+  // Third linear (in the new decision variables) constraint is 0 ≤
+  // (Ay-b)(Ay-b)ᵀ, where A and b represent all of the constraints stacked.
+  VectorXd b(8);  // all of the finite lower/upper bounds.
+  b << -lb0[0], ub0[0], ub0[1], -lb0[2], -lb1[0], ub1[0], -lb1[1], ub1[1];
+  MatrixXd A(8, 2);
+  A << -A0.row(0), A0.row(0), A0.row(1), -A0.row(2), -A1_reordered.row(0),
+      A1_reordered.row(0), -A1_reordered.row(1), A1_reordered.row(1);
+  int expected_size = (b.size() * (b.size() + 1)) / 2;
+  EXPECT_EQ(relaxation_->linear_constraints()[2].evaluator()->num_constraints(),
+            expected_size);
+  VectorXd value = relaxation_->EvalBindingAtInitialGuess(
+      relaxation_->linear_constraints()[2]);
+  MatrixXd expected_mat =
+      (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
+  VectorXd expected = math::ToLowerTriangularColumnsFromMatrix(expected_mat);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  value = relaxation_->linear_constraints()[2].evaluator()->lower_bound();
+  expected = math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+}
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoAddImpliedLinearEqualityConstraints) {
+  const auto y = prog_.NewContinuousVariables<2>("y");
+  MatrixXd A(3, 2);
+  A << 0.5, 0.7, -0.2, 0.4, -2.3, -4.5;
+  const Vector3d b(1.3, -0.24, 0.25);
+  prog_.AddLinearEqualityConstraint(A, b, y);
+
+  ReinitializeRelaxation();
+  DoAddImpliedLinearEqualityConstraints(prog_, X_, variables_to_sorted_indices_,
+                                relaxation_.get());
+
+  EXPECT_EQ(relaxation_->num_vars(), 6);
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 4);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 5);
+
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+
+  // First constraint is (Ay-b)=0.
+  MatrixXd expected = A * y_test - b;
+  VectorXd value =
+      relaxation_->EvalBindingAtInitialGuess(
+          relaxation_->linear_equality_constraints()[0]) -
+      relaxation_->linear_equality_constraints()[0].evaluator()->lower_bound();
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  // The second constraint is X(-1,-1) = 1.
+  expected = Eigen::VectorXd::Ones(1);
+  value = relaxation_->EvalBindingAtInitialGuess(
+      relaxation_->linear_equality_constraints()[1]);
+  EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+
+  for (int i = 2; i < 4; ++i) {
+    // Linear constraints are (Ay - b)*y_i = 0.
+    expected = (A * y_test - b) * y_test[i - 2];
+    value = relaxation_->EvalBindingAtInitialGuess(
+        relaxation_->linear_equality_constraints()[i]);
+    EXPECT_TRUE(CompareMatrices(value, expected, 1e-12));
+  }
 }
 
 GTEST_TEST(MakeSemidefiniteRelaxationInternalTest, TestSparseKron) {

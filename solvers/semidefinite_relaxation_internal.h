@@ -52,18 +52,6 @@ void DoAddImpliedLinearEqualityConstraints(
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
-// Constructs the semidefinite relaxation of the program prog and adds it to
-// relaxation. We assume that the program attributes of prog are already
-// validated and that relaxation already contains all the variables and
-// constraints of prog. The variable one is already constrained to be equal to
-// one. This is passed so it can be re-used across semidefinite variables in the
-// sparse version of MakeSemidefiniteRelaxation. Returns the X matrix of the
-// semidefinite relaxation.
-MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog, const symbolic::Variable& one,
-    MathematicalProgram* relaxation,
-    const std::optional<int>& group_number = std::nullopt);
-
 // Aggregate all the finite linear constraints in the program into a single
 // expression Ay ≤ b, which can be expressed as [A, -b][y; 1] ≤ 0.
 // We add the implied linear constraint [A,-b]X[A,-b]ᵀ ≤ 0 on the variable X to

@@ -86,10 +86,9 @@ void InitializeSemidefiniteRelaxationForProg(
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
   // variables).
-  relaxation->AddDecisionVariables(prog.decision_variables());
-  // X = xxᵀ; x = [prog.decision_vars(); 1].
   std::string name =
       group_number.has_value() ? fmt::format("Y{}", group_number.value()) : "Y";
+  // X = xxᵀ; x = [prog.decision_vars(); 1].
   X->resize(prog.num_vars() + 1, prog.num_vars() + 1);
   X->topLeftCorner(prog.num_vars(), prog.num_vars()) =
       relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
@@ -163,6 +162,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
+    // If the preserve_convex flag is true, we replace convex quadratics with
+    // their conic form.
     if (preserve_convex && binding.evaluator()->is_convex()) {
       switch (binding.evaluator()->hessian_type()) {
         case QuadraticConstraint::HessianType::kPositiveSemidefinite: {
@@ -333,23 +334,6 @@ void DoAddImpliedLinearEqualityConstraints(
           Ab, VectorXd::Zero(binding.evaluator()->num_constraints()), vars);
     }
   }
-}
-
-MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog, const Variable& one,
-    MathematicalProgram* relaxation, const std::optional<int>& group_number) {
-  MatrixX<Variable> X;
-  std::map<Variable, int> variables_to_sorted_indices;
-  InitializeSemidefiniteRelaxationForProg(
-      prog, one, relaxation, &X, &variables_to_sorted_indices, group_number);
-
-  DoLinearizeQuadraticCostsAndConstraints(prog, X, variables_to_sorted_indices,
-                                          relaxation, false);
-  DoAddImpliedLinearConstraints(prog, X, variables_to_sorted_indices,
-                                relaxation);
-  DoAddImpliedLinearEqualityConstraints(prog, X, variables_to_sorted_indices,
-                                        relaxation);
-  return X;
 }
 
 Eigen::SparseMatrix<double> SparseKroneckerProduct(
