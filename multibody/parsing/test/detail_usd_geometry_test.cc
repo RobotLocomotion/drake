@@ -4,6 +4,7 @@
 #include "pxr/usd/usdGeom/capsule.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/cylinder.h"
+#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include <gtest/gtest.h>
@@ -172,6 +173,36 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   auto actual_dimension = Eigen::Vector2d(
     drake_capsule->radius(), drake_capsule->length());
   EXPECT_EQ(actual_dimension, correct_dimension);
+}
+
+TEST_F(UsdGeometryTest, MeshParsingTest) {
+  pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh::Define(
+    stage_, pxr::SdfPath("/Mesh"));
+
+  auto vertices = pxr::VtArray<pxr::GfVec3f>{
+    pxr::GfVec3f(0.0, 0.0, 0.0), pxr::GfVec3f(0.0, 1.0, 0.0),
+    pxr::GfVec3f(1.0, 0.0, 0.0), pxr::GfVec3f(1.0, 1.0, 0.0)};
+  auto face_vertex_counts = pxr::VtArray<int>{3, 3};
+  auto face_vertex_indices = pxr::VtArray<int>{0, 1, 2, 1, 3, 2};
+  double scale_factor = 129.2;
+
+  EXPECT_TRUE(mesh.CreatePointsAttr().Set(vertices));
+  EXPECT_TRUE(mesh.CreateFaceVertexCountsAttr().Set(face_vertex_counts));
+  EXPECT_TRUE(mesh.CreateFaceVertexIndicesAttr().Set(face_vertex_indices));
+
+  auto scale_op = mesh.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+  EXPECT_TRUE(scale_op.Set(
+    pxr::GfVec3d(scale_factor, scale_factor, scale_factor)));
+
+  std::string filename = "mesh.obj";
+  EXPECT_TRUE(WriteMeshToObjFile(filename, vertices, face_vertex_indices,
+    diagnostic_policy_));
+
+  auto shape = CreateGeometryMesh(filename, mesh.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_TRUE(shape != nullptr);
+  geometry::Mesh* drake_mesh = dynamic_cast<geometry::Mesh*>(shape.get());
+  EXPECT_EQ(drake_mesh->scale(), scale_factor);
 }
 
 TEST_F(UsdGeometryTest, GetRigidTransformTest) {
