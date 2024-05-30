@@ -897,7 +897,7 @@ void DefineGeometryOptimization(py::module m) {
                 std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
                 const GraphOfConvexSets::Vertex&,
                 const GraphOfConvexSets::Vertex&,
-                std::map<GraphOfConvexSets::EdgeId, double>,
+                const std::map<GraphOfConvexSets::EdgeId, double>&,
                 const GraphOfConvexSetsOptions&>(
                 &GraphOfConvexSets::SamplePaths),
             py::arg("source"), py::arg("target"), py::arg("flows"),

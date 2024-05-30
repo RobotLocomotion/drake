@@ -1324,7 +1324,8 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
 }
 
 std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
-    const Vertex& source, const Vertex& target, std::map<EdgeId, double> flows,
+    const Vertex& source, const Vertex& target,
+    const std::map<EdgeId, double>& flows,
     const GraphOfConvexSetsOptions& options) const {
   DRAKE_THROW_UNLESS(*options.max_rounded_paths > 0);
 
@@ -1358,7 +1359,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       for (const Edge* e : path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
                       e->v().id()) == visited_vertex_ids.end() &&
-            flows[e->id()] > options.flow_tolerance) {
+            flows.at(e->id()) > options.flow_tolerance) {
           candidate_edges.emplace_back(e);
         }
       }
@@ -1372,7 +1373,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       }
       Eigen::VectorXd candidate_flows(candidate_edges.size());
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-        candidate_flows(ii) = flows[candidate_edges[ii]->id()];
+        candidate_flows(ii) = flows.at(candidate_edges[ii]->id());
       }
       double edge_sample = uniform(generator) * candidate_flows.sum();
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
