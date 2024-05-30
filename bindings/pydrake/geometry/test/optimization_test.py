@@ -809,6 +809,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))
 
+        options.max_rounded_paths = 5
+        spp.SamplePaths(
+            source=source, target=target, result=result, options=options)
+        flows = {e.id(): result.GetSolution(e.phi()) for e in spp.Edges()}
+        spp.SamplePaths(
+            source=source, target=target, flows=flows, options=options)
+        options.max_rounded_paths = 5
+
         # Vertex
         self.assertAlmostEqual(
             source.GetSolutionCost(result=result), 0.0, 1e-6)
