@@ -637,6 +637,7 @@ class GraphOfConvexSets {
    options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
    Note that this function will throw unless options.max_rounded_paths > 0,
    and that the number of returned paths can be 0 if no paths are found.
+   @pydrake_mkdoc_identifier{flows}
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
@@ -656,6 +657,7 @@ class GraphOfConvexSets {
    options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
    Note that this function will throw unless options.max_rounded_paths > 0,
    and that the number of returned paths can be 0 if no paths are found.
+   @pydrake_mkdoc_identifier{result}
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
