@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 
 #include "drake/common/text_logging.h"
 
@@ -33,7 +34,11 @@ int GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 /// @return number of constraints
 int GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
   const int num_constraints = c.num_constraints();
-  *num_grad = num_constraints * var_count;
+  if (c.gradient_sparsity_pattern().has_value()) {
+    *num_grad = c.gradient_sparsity_pattern()->size();
+  } else {
+    *num_grad = num_constraints * var_count;
+  }
   return num_constraints;
 }
 
@@ -158,11 +163,21 @@ size_t GetGradientMatrix(
   const int m = c.num_constraints();
   size_t grad_index = 0;
 
-  for (int i = 0; i < static_cast<int>(m); ++i) {
-    for (int j = 0; j < variables.rows(); ++j) {
-      iRow[grad_index] = constraint_idx + i;
-      jCol[grad_index] = prog.FindDecisionVariableIndex(variables(j));
+  const std::optional<std::vector<std::pair<int, int>>>& sparsity_pattern =
+      c.gradient_sparsity_pattern();
+  if (sparsity_pattern.has_value()) {
+    for (const auto& [row, col] : sparsity_pattern.value()) {
+      iRow[grad_index] = constraint_idx + row;
+      jCol[grad_index] = prog.FindDecisionVariableIndex(variables(col));
       grad_index++;
+    }
+  } else {
+    for (int i = 0; i < static_cast<int>(m); ++i) {
+      for (int j = 0; j < variables.rows(); ++j) {
+        iRow[grad_index] = constraint_idx + i;
+        jCol[grad_index] = prog.FindDecisionVariableIndex(variables(j));
+        grad_index++;
+      }
     }
   }
 
@@ -278,14 +293,26 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     size_t grad_idx = 0;
 
     DRAKE_ASSERT(ty.rows() == c->num_constraints());
-    for (int i = 0; i < ty.rows(); i++) {
-      if (ty(i).derivatives().size() > 0) {
-        for (int j = 0; j < binding.variables().rows(); j++) {
-          grad[grad_idx++] = ty(i).derivatives()(j);
-        }
-      } else {
-        for (int j = 0; j < binding.variables().rows(); j++) {
+    const std::optional<std::vector<std::pair<int, int>>>& sparsity_pattern =
+        binding.evaluator()->gradient_sparsity_pattern();
+    if (sparsity_pattern.has_value()) {
+      for (const auto& [row, col] : sparsity_pattern.value()) {
+        if (ty(row).derivatives().size() > 0) {
+          grad[grad_idx++] = ty(row).derivatives()(col);
+        } else {
           grad[grad_idx++] = 0;
+        }
+      }
+    } else {
+      for (int i = 0; i < ty.rows(); i++) {
+        if (ty(i).derivatives().size() > 0) {
+          for (int j = 0; j < binding.variables().rows(); j++) {
+            grad[grad_idx++] = ty(i).derivatives()(j);
+          }
+        } else {
+          for (int j = 0; j < binding.variables().rows(); j++) {
+            grad[grad_idx++] = 0;
+          }
         }
       }
     }
@@ -609,8 +636,8 @@ void IpoptSolver_NLP::finalize_solution(SolverReturn status, Index n,
 
   SetBoundingBoxConstraintDualSolution(*problem_, z_L, z_U,
                                        bb_con_dual_variable_indices_, result_);
-  SetAllConstraintDualSolution(*problem_, lambda_,
-                               constraint_dual_start_index_, result_);
+  SetAllConstraintDualSolution(*problem_, lambda_, constraint_dual_start_index_,
+                               result_);
 
   result_->set_solution_result(SolutionResult::kSolverSpecificError);
   switch (status) {
