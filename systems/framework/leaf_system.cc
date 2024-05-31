@@ -613,17 +613,17 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     std::variant<std::string, UseDefaultName> name,
-    typename LeafOutputPort<T>::AllocCallback alloc_function,
-    typename LeafOutputPort<T>::CalcCallback calc_function,
+    typename LeafOutputPort<T>::AllocCallback alloc,
+    typename LeafOutputPort<T>::CalcCallback calc,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  auto calc = [captured_calc = std::move(calc_function)](
+  auto calc_function = [captured_calc = std::move(calc)](
       const ContextBase& context_base, AbstractValue* result) {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     return captured_calc(context, result);
   };
   auto& port = CreateAbstractLeafOutputPort(
       NextOutputPortName(std::move(name)),
-      ValueProducer(std::move(alloc_function), std::move(calc)),
+      ValueProducer(std::move(alloc), std::move(calc_function)),
       std::move(prerequisites_of_calc));
   return port;
 }
