@@ -115,25 +115,11 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return this->default_damping_vector()[0];
   }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_angular_damping() instead.")
-  double angular_damping() const {
-    // N.B. All 3 angular damping coefficients are set to the same value for
-    // this joint.
-    return this->default_damping_vector()[0];
-  }
-
   /// Returns `this` joint's default translational damping constant in N⋅s/m.
   /// The damping force (in N) is modeled as `f = -damping⋅v` i.e. opposing
   /// motion, with v the translational velocity of frame M in F (see
   /// get_translational_velocity()) and f the force on child body B at Mo.
   double default_translational_damping() const {
-    // N.B. All 3 translational damping coefficients are set to the same value
-    // for this joint.
-    return this->default_damping_vector()[3];
-  }
-
-  DRAKE_DEPRECATED("2024-06-01", "Use default_translational_damping() instead.")
-  double translational_damping() const {
     // N.B. All 3 translational damping coefficients are set to the same value
     // for this joint.
     return this->default_damping_vector()[3];

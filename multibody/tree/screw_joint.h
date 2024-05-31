@@ -128,9 +128,6 @@ class ScrewJoint final : public Joint<T> {
   /// child body B expressed in frame F as t_B_F = τ⋅Fâ_F.
   double default_damping() const { return this->default_damping_vector()[0]; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const { return this->default_damping_vector()[0]; }
-
   /// @name Context-dependent value access
   /// @{
 

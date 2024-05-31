@@ -90,9 +90,6 @@ class PlanarJoint final : public Joint<T> {
     return this->default_damping_vector();
   }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  Vector3<double> damping() const { return this->default_damping_vector(); }
-
   /// @name Context-dependent value access
   /// @{
 
