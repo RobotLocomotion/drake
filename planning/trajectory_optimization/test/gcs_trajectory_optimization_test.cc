@@ -93,6 +93,17 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   auto& source_to_regions = gcs.AddEdges(source, regions);
   auto& regions_to_target = gcs.AddEdges(regions, target);
 
+  // Verify that the individual Edges were added (and can be retreived).
+  EXPECT_EQ(source_to_regions.Edges().size(), 1);
+  {  // Confirm that the const accessor returns the same edges.
+    std::vector<const GraphOfConvexSets::Edge*> const_edges =
+        const_cast<const GcsTrajectoryOptimization::EdgesBetweenSubgraphs&>(
+            source_to_regions)
+            .Edges();
+    EXPECT_EQ(const_edges.size(), 1);
+    EXPECT_EQ(source_to_regions.Edges()[0], const_edges[0]);
+  }
+
   // Verify that the edges between subgraphs are present in gcs trajectory
   // optimization.
   auto all_subgraph_edges = gcs.GetEdgesBetweenSubgraphs();
@@ -243,6 +254,34 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
           HPolyhedron::MakeBox(Vector2d(-0.5, 1), Vector2d(0.5, 1.5)),
           HPolyhedron::MakeBox(Vector2d(0.2, -0.5), Vector2d(0.5, 1))),
       3, 0, 20, "scooter");
+
+  EXPECT_EQ(scooter_regions.Vertices().size(), 3);
+
+  {  // Confirm that the returned vertices are in the same order they were
+     // added.
+    Vector2d point(-0.4, 0.0);  // in the first region.
+    EXPECT_TRUE(scooter_regions.Vertices()[0]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+    point << -0.4, 1.2;  // in the second region.
+    EXPECT_TRUE(scooter_regions.Vertices()[1]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+    point << 0.4, 0.0;  // in the third region.
+    EXPECT_TRUE(scooter_regions.Vertices()[2]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+  }
+
+  {  // Confirm that the const accessor returns the same vertices.
+    std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
+        const_scooter_vertices =
+            const_cast<const GcsTrajectoryOptimization::Subgraph&>(
+                scooter_regions)
+                .Vertices();
+    EXPECT_EQ(const_scooter_vertices.size(), 3);
+    for (size_t i = 0; i < 3; i++) {
+      EXPECT_EQ(scooter_regions.Vertices()[i], const_scooter_vertices[i]);
+    }
+  }
+
   // Bob can ride an e-scooter at 10 m/s in x and y.
   scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
                                     Vector2d(kScooterSpeed, kScooterSpeed));
@@ -253,8 +292,18 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   gcs.AddEdges(source, walking_regions);
   gcs.AddEdges(walking_regions, target);
 
-  gcs.AddEdges(source, scooter_regions);
+  auto& source_scooter = gcs.AddEdges(source, scooter_regions);
   gcs.AddEdges(scooter_regions, target);
+
+  EXPECT_EQ(source_scooter.Edges().size(), 1);
+  {  // Confirm that the const accessor returns the same edges.
+    std::vector<const GraphOfConvexSets::Edge*> const_edges =
+        const_cast<const GcsTrajectoryOptimization::EdgesBetweenSubgraphs&>(
+            source_scooter)
+            .Edges();
+    EXPECT_EQ(const_edges.size(), 1);
+    EXPECT_EQ(source_scooter.Edges()[0], const_edges[0]);
+  }
 
   // Add shortest path objective to compare against the minimum time objective.
   gcs.AddPathLengthCost();
