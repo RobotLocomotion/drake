@@ -791,7 +791,8 @@ class TestGeometryOptimization(unittest.TestCase):
             MathematicalProgramResult)
         self.assertIsInstance(
             spp.SolveConvexRestriction(active_edges=[edge0, edge1],
-                                       options=options),
+                                       options=options,
+                                       initial_guess=result),
             MathematicalProgramResult)
         self.assertEqual(
             len(
