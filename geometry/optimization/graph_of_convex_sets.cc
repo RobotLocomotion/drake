@@ -1185,106 +1185,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           ? " and rounding"
           : " and no rounding");
 
-  bool found_rounded_result = false;
-  // Implements the rounding scheme put forth in Section 4.2 of
-  // "Motion Planning around Obstacles with Convex Optimization":
-  // https://arxiv.org/abs/2205.04422
-  if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
-      result.is_success()) {
-    DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
-
-    RandomGenerator generator(options.rounding_seed);
-    std::uniform_real_distribution<double> uniform;
-    std::vector<std::vector<const Edge*>> paths;
-    std::map<EdgeId, double> flows;
-    for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
-        flows.emplace(edge_id, 0);
-      } else {
-        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
-      }
-    }
-    int num_trials = 0;
-    MathematicalProgramResult best_rounded_result;
-    while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
-           num_trials < options.max_rounding_trials) {
-      ++num_trials;
-
-      // Find candidate path by traversing the graph with a depth first search
-      // where edges are taken with probability proportional to their flow.
-      std::vector<VertexId> visited_vertex_ids{source_id};
-      std::vector<VertexId> path_vertex_ids{source_id};
-      std::vector<const Edge*> new_path;
-      while (path_vertex_ids.back() != target_id) {
-        std::vector<const Edge*> candidate_edges;
-        for (const Edge* e : outgoing_edges[path_vertex_ids.back()]) {
-          if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
-                        e->v().id()) == visited_vertex_ids.end() &&
-              flows[e->id()] > options.flow_tolerance) {
-            candidate_edges.emplace_back(e);
-          }
-        }
-        // If the depth first search finds itself at a node with no candidate
-        // outbound edges, backtrack to the previous node and continue the
-        // search.
-        if (candidate_edges.size() == 0) {
-          path_vertex_ids.pop_back();
-          new_path.pop_back();
-          // Since this code requires result.is_success() to be true, we should
-          // always have a path. We assert that..
-          DRAKE_ASSERT(path_vertex_ids.size() > 0);
-          continue;
-        }
-        Eigen::VectorXd candidate_flows(candidate_edges.size());
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          candidate_flows(ii) = flows[candidate_edges[ii]->id()];
-        }
-        double edge_sample = uniform(generator) * candidate_flows.sum();
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          if (edge_sample >= candidate_flows(ii)) {
-            edge_sample -= candidate_flows(ii);
-          } else {
-            visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            path_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            new_path.emplace_back(candidate_edges[ii]);
-            break;
-          }
-        }
-      }
-
-      if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
-        continue;
-      }
-      paths.push_back(new_path);
-
-      // Optimize path
-      MathematicalProgramResult rounded_result =
-          SolveConvexRestriction(new_path, options);
-
-      // Check path quality.
-      if (rounded_result.is_success() &&
-          (!best_rounded_result.is_success() ||
-           rounded_result.get_optimal_cost() <
-               best_rounded_result.get_optimal_cost())) {
-        best_rounded_result = rounded_result;
-      } else {
-        // In the event that all rounded results are infeasible, we still want
-        // to propagate the solver id for logging.
-        best_rounded_result.set_solver_id(rounded_result.get_solver_id());
-      }
-    }
-    if (best_rounded_result.is_success()) {
-      result = best_rounded_result;
-      found_rounded_result = true;
-    } else {
-      result.set_solution_result(SolutionResult::kIterationLimit);
-      result.set_solver_id(best_rounded_result.get_solver_id());
-    }
-    log()->info("Finished {} rounding trials with {}.", num_trials,
-                result.get_solver_id().name());
-  }
-  if (!found_rounded_result) {
-    // Push the placeholder variables and excluded edge variables into the
+  {  // Push the placeholder variables and excluded edge variables into the
     // result, so that they can be accessed as if they were variables included
     // in the optimization.
     int num_placeholder_vars = relaxed_phi.size();
@@ -1354,10 +1255,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         decision_variable_index.emplace(v->x()[i].get_id(), count);
         x_val[count++] = x_v[i];
       }
-      for (int ii = 0; ii < v->ell_.size(); ++ii) {
-        decision_variable_index.emplace(v->ell_[ii].get_id(), count);
+      for (int i = 0; i < v->ell_.size(); ++i) {
+        decision_variable_index.emplace(v->ell_[i].get_id(), count);
         x_val[count++] =
-            result.GetSolution(vertex_edge_ell.at(v->id()).col(ii)).sum();
+            result.GetSolution(vertex_edge_ell.at(v->id()).col(i)).sum();
       }
     }
     if (*options.convex_relaxation) {
@@ -1370,6 +1271,107 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
     result.set_decision_variable_index(decision_variable_index);
     result.set_x_val(x_val);
+  }
+
+  // Implements the rounding scheme put forth in Section 4.2 of
+  // "Motion Planning around Obstacles with Convex Optimization":
+  // https://arxiv.org/abs/2205.04422
+  if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
+      result.is_success()) {
+    DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
+
+    RandomGenerator generator(options.rounding_seed);
+    std::uniform_real_distribution<double> uniform;
+    std::vector<std::vector<const Edge*>> paths;
+    std::map<EdgeId, double> flows;
+    for (const auto& [edge_id, e] : edges_) {
+      if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
+        flows.emplace(edge_id, 0);
+      } else {
+        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
+      }
+    }
+    int num_trials = 0;
+    int num_solves = 0;
+    MathematicalProgramResult best_rounded_result;
+    while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
+           num_trials < options.max_rounding_trials) {
+      ++num_trials;
+
+      // Find candidate path by traversing the graph with a depth first search
+      // where edges are taken with probability proportional to their flow.
+      std::vector<VertexId> visited_vertex_ids{source_id};
+      std::vector<VertexId> path_vertex_ids{source_id};
+      std::vector<const Edge*> new_path;
+      while (path_vertex_ids.back() != target_id) {
+        std::vector<const Edge*> candidate_edges;
+        for (const Edge* e : outgoing_edges[path_vertex_ids.back()]) {
+          if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
+                        e->v().id()) == visited_vertex_ids.end() &&
+              flows[e->id()] > options.flow_tolerance) {
+            candidate_edges.emplace_back(e);
+          }
+        }
+        // If the depth first search finds itself at a node with no candidate
+        // outbound edges, backtrack to the previous node and continue the
+        // search.
+        if (candidate_edges.size() == 0) {
+          path_vertex_ids.pop_back();
+          new_path.pop_back();
+          // Since this code requires result.is_success() to be true, we should
+          // always have a path. We assert that..
+          DRAKE_ASSERT(path_vertex_ids.size() > 0);
+          continue;
+        }
+        Eigen::VectorXd candidate_flows(candidate_edges.size());
+        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+          candidate_flows(ii) = flows[candidate_edges[ii]->id()];
+        }
+        double edge_sample = uniform(generator) * candidate_flows.sum();
+        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+          if (edge_sample >= candidate_flows(ii)) {
+            edge_sample -= candidate_flows(ii);
+          } else {
+            visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
+            path_vertex_ids.push_back(candidate_edges[ii]->v().id());
+            new_path.emplace_back(candidate_edges[ii]);
+            break;
+          }
+        }
+      }
+
+      if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
+        continue;
+      }
+      paths.push_back(new_path);
+
+      // Optimize path
+      MathematicalProgramResult rounded_result =
+          SolveConvexRestriction(new_path, options, &result);
+      ++num_solves;
+
+      // Check path quality.
+      if (rounded_result.is_success() &&
+          (!best_rounded_result.is_success() ||
+           rounded_result.get_optimal_cost() <
+               best_rounded_result.get_optimal_cost())) {
+        best_rounded_result = rounded_result;
+      } else {
+        // In the event that all rounded results are infeasible, we still want
+        // to propagate the solver id for logging.
+        best_rounded_result.set_solver_id(rounded_result.get_solver_id());
+      }
+    }
+    if (best_rounded_result.is_success()) {
+      result = best_rounded_result;
+    } else {
+      result.set_solution_result(SolutionResult::kIterationLimit);
+      result.set_solver_id(best_rounded_result.get_solver_id());
+    }
+    log()->info(
+        "Finished {} rounding solutions with {}, discarding {} duplicate "
+        "paths.",
+        num_solves, result.get_solver_id().name(), num_trials - num_solves);
   }
 
   return result;
@@ -1532,7 +1534,8 @@ void RewriteForConvexSolver(MathematicalProgram* prog) {
 
 MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
     const std::vector<const Edge*>& active_edges,
-    const GraphOfConvexSetsOptions& options) const {
+    const GraphOfConvexSetsOptions& options,
+    const MathematicalProgramResult* initial_guess) const {
   // Use the restriction solver and options if they are provided.
   GraphOfConvexSetsOptions restriction_options = options;
   if (restriction_options.restriction_solver) {
@@ -1559,6 +1562,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       continue;
     }
     prog.AddDecisionVariables(v->x());
+    if (initial_guess) {
+      prog.SetInitialGuess(v->x(), initial_guess->GetSolution(v->x()));
+    }
     v->set().AddPointInSetConstraints(&prog, v->x());
 
     // Vertex costs.

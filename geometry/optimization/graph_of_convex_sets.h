@@ -638,11 +638,19 @@ class GraphOfConvexSets {
 
   Note that one can specify additional non-convex constraints, which may be
   not supported by all solvers. In this case, the provided solver will throw
-  an exception.*/
+  an exception.
+
+  If a @p initial_guess is provided, the solution inside this result will be
+  used to set the initial guess for the convex restriction. Typically, this will
+  be the result obtained by solving the convex relaxation.
+
+  @throws std::exception if the @p initial_guess does not contain solutions for
+  the decision variables required in this convex restriction.
+  */
   solvers::MathematicalProgramResult SolveConvexRestriction(
       const std::vector<const Edge*>& active_edges,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
+      const GraphOfConvexSetsOptions& options = GraphOfConvexSetsOptions(),
+      const solvers::MathematicalProgramResult* initial_guess = nullptr) const;
 
  private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
