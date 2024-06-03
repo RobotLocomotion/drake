@@ -76,13 +76,13 @@ GCC_CC_TEST_FLAGS = [
 ]
 
 GCC_VERSION_SPECIFIC_FLAGS = {
-    # TODO(#21337) Investigate and resolve what to do about these warnings
-    # long-term. Some of them seem like true positives (i.e., bugs in Drake).
     13: [
+        "-Werror=pessimizing-move",
+        # TODO(#21337) Investigate and resolve what to do about these warnings
+        # long-term. Some seem like true positives (i.e., bugs in Drake).
         "-Wno-array-bounds",
         "-Wno-dangling-reference",
         "-Wno-maybe-uninitialized",
-        "-Wno-pessimizing-move",
         "-Wno-stringop-overflow",
         "-Wno-stringop-overread",
         "-Wno-uninitialized",
