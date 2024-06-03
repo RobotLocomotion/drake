@@ -48,5 +48,10 @@ try-import @PROJECT_SOURCE_DIR@/user.bazelrc
 # Use build-specific bazel options (if present).
 try-import @PROJECT_BINARY_DIR@/drake.bazelrc
 
+# Provide the contents of VERSION.TXT in Bazel's stable-status.txt file for use
+# by the stamping rules in tools/install/libdrake/BUILD.bazel.
+build --stamp
+build --workspace_status_command="sed 's/^/STABLE_VERSION /' '@PROJECT_BINARY_DIR@/VERSION.TXT'"
+
 # TODO(jwnimmer-tri) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also, and
 # specifically make sure the user's -std=c++NN is respected.
