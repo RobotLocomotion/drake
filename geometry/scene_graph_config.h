@@ -85,7 +85,7 @@ struct DefaultProximityProperties {
   /** @name Point Contact Properties
 
   These properties affect point contact only. For complete descriptions of
-  the numeric parameters, @see
+  the numeric parameters, See
   @ref point_forces_modeling "Compliant Point Contact Forces",
   geometry::AddContactMaterial. */
   /// @{

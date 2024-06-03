@@ -365,12 +365,12 @@ the shortcomings of point contact (such as using lots of points) push it closer
 and closer to hydroelastic contact.
 
 Hydroelastic Contact was originally introduced by
-@ref Elandt2019 "[Elandt 2019]". Modifications and further development of the
-model can be found in @ref Masterjohn2022 "[Masterjohn 2022]". In Drake, we
-refer to this model as the “hydroelastic” model. It differs from point contact
-in how it characterizes the contact. Rather than a single point, it imagines an
-entire contact surface. This surface is an approximation of the contact surface
-as visualized in Figure 2(b).
+@ref Elandt2019 "[Elandt et al., 2019]". Modifications and further development
+of the model can be found in @ref Masterjohn2022 "[Masterjohn et al., 2022]". In
+Drake, we refer to this model as the “hydroelastic” model. It differs from point
+contact in how it characterizes the contact. Rather than a single point, it
+imagines an entire contact surface. This surface is an approximation of the
+contact surface as visualized in Figure 2(b).
 
 When two objects come into contact, forces are produced due to deformation
 ("strain") of the objects at the contact interface. At first touch, there are no
@@ -423,17 +423,17 @@ This equilibrium surface has important properties:
 The hydroelastic modulus has units of pressure, i.e. `Pa (N/m²)`. The
 hydroelastic modulus is often estimated based on the Young's modulus of the
 material though in the hydroelastic model it represents an effective elastic
-property. For instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the
-P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson ratio,
-consistent with the theory of layered solids in which plane sections remain
-planar after compression. Another possibility is to specify `E = E*`, with `E*`
-the effective elastic modulus given by the Hertz theory of contact, `E* =
-E/(1-ν²)`. In all of these cases a sound estimation of `hydroelastic_modulus`
-starts with the Young's modulus of the material. However, due to numerical
-conditioning, much smaller values are used in practice for hard materials such
-as steel. While Young's modulus of steel is about 200 GPa (2×10¹¹ Pa),
-hydroelastic modulus values of about 10⁵−10⁷ Pa lead to good approximations of
-rigid contact, with no practical reason to use higher values.
+property. For instance, @ref Elandt2019 "[Elandt et al., 2019]" chooses to use
+`E = G`, with `G` the P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν
+the Poisson ratio, consistent with the theory of layered solids in which plane
+sections remain planar after compression. Another possibility is to specify `E =
+E*`, with `E*` the effective elastic modulus given by the Hertz theory of
+contact, `E* = E/(1-ν²)`. In all of these cases a sound estimation of
+`hydroelastic_modulus` starts with the Young's modulus of the material. However,
+due to numerical conditioning, much smaller values are used in practice for hard
+materials such as steel. While Young's modulus of steel is about 200 GPa (2×10¹¹
+Pa), hydroelastic modulus values of about 10⁵−10⁷ Pa lead to good approximations
+of rigid contact, with no practical reason to use higher values.
 
 @note Although the hydroelastic modulus carries the same units as the more
 familiar elastic moduli mentioned above, it is qualitatively different. Do not
