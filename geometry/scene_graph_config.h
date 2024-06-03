@@ -8,11 +8,10 @@
 namespace drake {
 namespace geometry {
 
-
 /** These properties will be used as defaults when the geometry as
 added via API calls or parsed from model files doesn't say anything more
-specific.  @see @ref hug_title, @ref hug_quick_hydro, @ref hug_properties,
-@ref stribeck_approximation. */
+specific.  @see @ref compliant_contact, @ref hydroelastic_user_guide,
+@ref friction_model and subsections therein. */
 struct DefaultProximityProperties {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -86,7 +85,9 @@ struct DefaultProximityProperties {
   /** @name Point Contact Properties
 
   These properties affect point contact only. For complete descriptions of
-  the numeric parameters, @see geometry::AddContactMaterial. */
+  the numeric parameters, See
+  @ref point_forces_modeling "Compliant Point Contact Forces",
+  geometry::AddContactMaterial. */
   /// @{
   /** A measure of material stiffness, in units of Newtons per meter. */
   std::optional<double> point_stiffness;
