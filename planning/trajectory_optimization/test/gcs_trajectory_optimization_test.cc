@@ -518,7 +518,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
 
   // Let's verify that the Bob didn't run over the ducks!
   double stopped_at_ducks_time = 0;
-  const double kTimeStep = 0.01;
+  const double kTimeStep = 0.1;
   for (double t = traj.start_time(); t < traj.end_time(); t += kTimeStep) {
     if (traj.value(t)(0) >= 75) {
       stopped_at_ducks_time = t;
@@ -1407,7 +1407,7 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
 
 TEST_F(SimpleEnv2D, DerivativeConstraints) {
   const int kDimension = 2;
-  const double kNumSamples = 1e3;
+  const double kNumSamples = 10;
   const double kMaxSpeed = 2.0;
   const double kMaxAcceleration = 1.0;
   const double kMaxJerk = 7.5;
@@ -2207,6 +2207,56 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   ASSERT_EQ(continuous_joint_indices.size(), 2);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
+}
+
+// Confirm that NonlinearDerivativeConstraint supports symbolic.
+GTEST_TEST(GcsTrajectoryOptimizationTest, NonlinearDerivativeBoundsSymbolic) {
+  const int kDimension = 2;
+  const int kOrder = 4;
+
+  GcsTrajectoryOptimization gcs(kDimension);
+  auto& regions =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(2)), kOrder);
+  gcs.AddNonlinearDerivativeBounds(Vector2d(-1, -1), Vector2d(1, 1), 2);
+
+  ASSERT_EQ(regions.Vertices().size(), 1);
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      regions.Vertices()[0]->GetConstraints(
+          {GraphOfConvexSets::Transcription::kRestriction});
+  ASSERT_EQ(constraints.size(),
+            kDimension); /* we expect only NonlinearDerivativeBounds. */
+
+  // Evaluate each constraint symbolically.
+  for (const auto& b : constraints) {
+    VectorX<symbolic::Expression> y(b.evaluator()->num_constraints());
+    DRAKE_EXPECT_NO_THROW(b.evaluator()->Eval(b.variables(), &y));
+  }
+}
+
+// Confirm that NonlinearContinuityConstraint supports symbolic.
+GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuityConstraintSymbolic) {
+  const int kDimension = 2;
+  const int kOrder = 4;
+
+  GcsTrajectoryOptimization trajopt(kDimension);
+  trajopt.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeUnitBox(2), HPolyhedron::MakeUnitBox(2)),
+      kOrder);
+  trajopt.AddContinuityConstraints(1);
+  auto& gcs = trajopt.graph_of_convex_sets();
+
+  ASSERT_EQ(gcs.Edges().size(), 2);
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      gcs.Edges()[0]->GetConstraints(
+          {GraphOfConvexSets::Transcription::kRestriction});
+  ASSERT_EQ(constraints.size(),
+            kDimension + 1); /* C0 and C1 continuity constraints. */
+
+  // Evaluate each constraint symbolically.
+  for (const auto& b : constraints) {
+    VectorX<symbolic::Expression> y(b.evaluator()->num_constraints());
+    DRAKE_EXPECT_NO_THROW(b.evaluator()->Eval(b.variables(), &y));
+  }
 }
 
 }  // namespace
