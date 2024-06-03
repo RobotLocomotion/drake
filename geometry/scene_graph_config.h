@@ -51,8 +51,15 @@ struct DefaultProximityProperties {
   std::optional<double> hydroelastic_modulus{1e7};
 
   /** Controls how finely primitive geometries are tessellated, units of
-  meters. */
-  std::optional<double> resolution_hint{0.5};
+  meters.
+
+  While no single value is universally appropriate, this value was selected
+  based on the following idea. We're attempting to make introducing novel
+  manipulands as easy as possible. Considering a simple soup can as a
+  representative manipuland, we've picked a value that would result in a
+  tessellated cylinder with enough faces to be appropriate for contact with
+  a compliant gripper. */
+  std::optional<double> resolution_hint{0.02};
 
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
