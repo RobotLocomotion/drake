@@ -78,7 +78,7 @@ using Transcription = GraphOfConvexSets::Transcription;
 const double kInf = std::numeric_limits<double>::infinity();
 
 /* Implements a constraint of the form
-  0 <= - dᴺr(s) / dsᴺ - hᴺ * lb <= inf,
+  0 <= dᴺr(s) / dsᴺ - hᴺ * lb <= inf,
   0 <= - dᴺr(s) / dsᴺ + hᴺ * ub <= inf,
   where
   N := derivative order,
@@ -97,43 +97,46 @@ class NonlinearDerivativeConstraint : public solvers::Constraint {
                    Eigen::VectorXd::Constant(
                        2 * M.rows(), std::numeric_limits<double>::infinity())),
         M_(M),
-        lb_(Eigen::VectorXd::Constant(M.rows(), lb)),
-        ub_(Eigen::VectorXd::Constant(M.rows(), ub)),
+        lb_(lb),
+        ub_(ub),
         derivative_order_(derivative_order),
         num_control_points_(M.cols()) {
     DRAKE_DEMAND(derivative_order > 1);
   }
 
+  template <typename T, typename U>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<U>>& x,
+                     VectorX<T>* y) const {
+    // x is the stack [r_control.row(i); h].
+    using std::pow;
+    T pow_h = pow(x[num_control_points_], derivative_order_);
+
+    // Precompute Matrix Product.
+    VectorX<T> Mx = M_ * x.head(num_control_points_);
+
+    y->head(M_.rows()) = Mx.array() - pow_h * lb_;
+    y->tail(M_.rows()) = -Mx.array() + pow_h * ub_;
+  }
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const {
-    AutoDiffVecXd y_t;
-    Eval(InitializeAutoDiff(x), &y_t);
-    *y = ExtractValue(y_t);
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const {
-    // x is the stack [r_control.row(i); h].
-    AutoDiffXd pow_h = pow(x[num_control_points_], derivative_order_);
-
-    // Precompute Matrix Product.
-    AutoDiffVecXd Mx = M_ * x.head(num_control_points_);
-
-    y->head(M_.rows()) = Mx - pow_h * lb_;
-    y->tail(M_.rows()) = -Mx + pow_h * ub_;
+    DoEvalGeneric(x, y);
   }
 
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>*) const {
-    throw std::runtime_error(
-        "NonlinearDerivativeConstraint does not support evaluation with "
-        "Expression.");
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const {
+    DoEvalGeneric(x, y);
   }
 
  private:
   const Eigen::SparseMatrix<double> M_;
-  const Eigen::VectorXd lb_;
-  const Eigen::VectorXd ub_;
+  const double lb_;
+  const double ub_;
   const int derivative_order_;
   const int num_control_points_;
 };
@@ -167,34 +170,37 @@ class NonlinearContinuityConstraint : public solvers::Constraint {
     DRAKE_DEMAND(continuity_order >= 1);
   }
 
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const {
-    AutoDiffVecXd y_t;
-    Eval(InitializeAutoDiff(x), &y_t);
-    *y = ExtractValue(y_t);
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const {
+  template <typename T, typename U>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<U>>& x,
+                     VectorX<T>* y) const {
     // x is the stack [r_control_u.row(i); h_u; r_control_v.row(i); h_v;].
-    AutoDiffXd pow_h_u = pow(x[num_control_points_u_], continuity_order_);
-    AutoDiffXd pow_h_v =
-        pow(x[num_control_points_u_ + num_control_points_v_ + 1],
-            continuity_order_);
+
+    using std::pow;
+    T pow_h_u = pow(x[num_control_points_u_], continuity_order_);
+    T pow_h_v = pow(x[num_control_points_u_ + num_control_points_v_ + 1],
+                    continuity_order_);
 
     // Precompute Matrix Products.
-    AutoDiffXd Mu_x = Mu_.row(0) * x.head(num_control_points_u_);
-    AutoDiffXd Mv_x = Mv_.row(0) * x.segment(num_control_points_u_ + 1,
-                                             num_control_points_v_);
+    T Mu_x = Mu_.row(0) * x.head(num_control_points_u_);
+    T Mv_x = Mv_.row(0) *
+             x.segment(num_control_points_u_ + 1, num_control_points_v_);
 
     (*y)[0] = Mu_x * pow_h_v - Mv_x * pow_h_u;
   }
 
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>*) const {
-    throw std::runtime_error(
-        "NonlinearContinuityConstraint does not support evaluation with "
-        "Expression.");
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const {
+    DoEvalGeneric(x, y);
   }
 
  private:
@@ -1493,6 +1499,15 @@ void GcsTrajectoryOptimization::AddNonlinearDerivativeBounds(
     const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order) {
   DRAKE_THROW_UNLESS(lb.size() == num_positions());
   DRAKE_THROW_UNLESS(ub.size() == num_positions());
+  if (derivative_order == 1) {
+    throw std::runtime_error(
+        "Use AddVelocityBounds instead of AddNonlinearDerivativeBounds with "
+        "derivative_order=1; velocity bounds are linear.");
+  }
+  if (derivative_order < 1) {
+    throw std::runtime_error("Derivative order must be greater than 1.");
+  }
+
   // Add nonlinear derivative bounds to each subgraph.
   for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
     if (subgraph->order() >= derivative_order) {
