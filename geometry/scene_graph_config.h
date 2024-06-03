@@ -53,7 +53,7 @@ struct DefaultProximityProperties {
 
   /** Controls how finely primitive geometries are tessellated, units of
   meters. */
-  std::optional<double> resolution_hint{0.5};
+  std::optional<double> resolution_hint{0.05};
 
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
