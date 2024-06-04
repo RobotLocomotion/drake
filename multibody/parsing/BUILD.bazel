@@ -815,6 +815,14 @@ drake_cc_googletest(
     copts = [
         "-w",
     ],
+    defines = select({
+        "//tools:with_usd": [
+            "WITH_USD=1",
+        ],
+        "//conditions:default": [
+            "WITH_USD=0",
+        ],
+    }),
     deps = [
         ":detail_usd_parser",
         "//common:is_approx_equal_abstol",
