@@ -471,7 +471,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "module_test",
     data = ["//examples/acrobot:models"],
-    num_threads = 2,
+    num_threads = 3,
     deps = [
         ":common",
     ],

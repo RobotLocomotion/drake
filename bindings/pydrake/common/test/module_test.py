@@ -33,8 +33,8 @@ class TestCommon(unittest.TestCase):
 
     def test_parallelism(self):
         # This matches the BUILD.bazel rule for this test program.
-        self.assertEqual(os.environ.get("DRAKE_NUM_THREADS"), "2")
-        max_num_threads = 2
+        self.assertEqual(os.environ.get("DRAKE_NUM_THREADS"), "3")
+        max_num_threads = 3
 
         # Construction.
         mut.Parallelism()
@@ -54,7 +54,14 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(mut.Parallelism(False).num_threads(), 1)
         self.assertEqual(mut.Parallelism(True).num_threads(), max_num_threads)
         self.assertEqual(mut.Parallelism(1).num_threads(), 1)
-        self.assertEqual(mut.Parallelism(3).num_threads(), 3)
+        self.assertEqual(mut.Parallelism(4).num_threads(), 4)
+
+        # Round-trip repr.
+        for rep in ["Parallelism(parallelize=False)",
+                    "Parallelism(num_threads=2)",
+                    "Parallelism(parallelize=True)"]:
+            x = eval(rep, {"Parallelism": mut.Parallelism}, {})
+            self.assertEqual(repr(x), rep)
 
         # Floats are right out.
         with self.assertRaisesRegex(Exception, "types"):
