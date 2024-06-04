@@ -3356,6 +3356,43 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances);
   }
 
+  /// Calculates the system's center of mass translational acceleration in the
+  /// world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval a_WScm_W Scm's translational acceleration in frame W, expressed in
+  /// W, where Scm is the center of mass of the system S stored by `this` plant.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and aᵢ is Bcm's translational
+  /// acceleration in world W (Bcm is the center of mass of the iᵗʰ body).
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassTranslationalAccelerationInWorld(
+        context);
+  }
+
+  /// Calculates a system's center of mass translational acceleration in the
+  /// world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @retval a_WScm_W Scm's translational acceleration in frame W, expressed in
+  /// W, where Scm is the center of mass of the system S of non-world bodies
+  /// contained in model_instances.
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
+  /// and aᵢ is Bcm's translational acceleration in world W expressed in frame W
+  /// (Bcm is the center of mass of the iᵗʰ body).
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    return internal_tree().CalcCenterOfMassTranslationalAccelerationInWorld(
+        context, model_instances);
+  }
+
   /// This method returns the spatial momentum of `this` MultibodyPlant in the
   /// world frame W, about a designated point P, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
