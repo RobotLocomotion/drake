@@ -37,32 +37,32 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
 std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
 
-// Creates a geometry::Box with a dimension specified by the UsdGeomCube prim,
-// or nullptr if an error occurs.
+// Creates a geometry::Box with a dimension specified by the UsdGeomCube prim.
+// Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
 // Creates a geometry::Sphere or a drake::geometry::Ellipsoid with a dimension
-// specified by the UsdGeomSphere prim, or nullptr if an error occurs.
+// specified by the UsdGeomSphere prim. Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
 // Creates a geometry::Cylinder with a dimension specified by the
-// UsdGeomCylinder prim, or nullptr is an error occurs.
+// UsdGeomCylinder prim. Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
 // Creates a geometry::Capsule with a dimension specified by the
-// UsdGeomCapsule prim, or nullptr if an error occurs.
+// UsdGeomCapsule prim. Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
-// Creates a geometry::Mesh with a dimension specified by the UsdGeomMesh prim,
-// or nullptr if an error occurs.
+// Creates a geometry::Mesh with a dimension specified by the UsdGeomMesh prim.
+// Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryMesh(
   const std::string obj_filename, const pxr::UsdPrim& prim,
   double meters_per_unit, const DiagnosticPolicy& diagnostic);
@@ -93,13 +93,14 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
 
 // Returns the axis (the orientation of the geometry) of a UsdGeomCylinder or
 // a UsdGeomCapsule as a pxr::TfToken, which could be one of `"X"`, `"Y"`, or
-// `"Z"`, or nullopt if an error occurs.
+// `"Z"`. Returns nullopt if an error occurs.
 std::optional<pxr::TfToken> GetUsdGeomAxis(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
 
 // Returns the axis (the orientation of the geometry) of a UsdGeomCylinder or
 // a UsdGeomCapsule as a Vector3d, which could be one of `Vector3d(1,0,0)`,
-// `Vector3d(0,1,0)`, or `Vector3d(0,0,1)`, or nullopt if an error occurs.
+// `Vector3d(0,1,0)`, or `Vector3d(0,0,1)`. Rerturns nullopt if an error
+// occurs.
 std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
 
