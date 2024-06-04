@@ -56,6 +56,12 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(mut.Parallelism(1).num_threads(), 1)
         self.assertEqual(mut.Parallelism(3).num_threads(), 3)
 
+        # Printing.
+        x = mut.Parallelism()
+        self.assertEqual(repr(x), "Parallelism(num_threads=1)")
+        x = mut.Parallelism.Max()
+        self.assertEqual(repr(x), "Parallelism.Max()")
+
         # Floats are right out.
         with self.assertRaisesRegex(Exception, "types"):
             mut.Parallelism(0.5)

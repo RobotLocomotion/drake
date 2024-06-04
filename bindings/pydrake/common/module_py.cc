@@ -132,7 +132,13 @@ void InitLowLevelModules(py::module m) {
         // Note that we can't bind Parallelism::None(), because `None`
         // is a reserved word in Python.
         .def_static("Max", &Class::Max, cls_doc.Max.doc)
-        .def("num_threads", &Class::num_threads, cls_doc.num_threads.doc);
+        .def("num_threads", &Class::num_threads, cls_doc.num_threads.doc)
+        .def("__repr__", [](const Class& self) -> std::string {
+          if (self.num_threads() == Parallelism::Max().num_threads()) {
+            return "Parallelism.Max()";
+          }
+          return fmt::format("Parallelism(num_threads={})", self.num_threads());
+        });
     DefCopyAndDeepCopy(&cls);
   }
 

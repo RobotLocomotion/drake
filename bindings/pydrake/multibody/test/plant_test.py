@@ -763,6 +763,8 @@ class TestPlant(unittest.TestCase):
             Class)
         # Test operators.
         zero = Class(Ixx=0.0, Iyy=0.0, Izz=0.0)
+        if T != Expression:
+            self.assertTrue(zero.IsZero())
         self.assertIsInstance(dut + zero, Class)
         self.assertIsInstance(dut - zero, Class)
         self.assertIsInstance(dut * T(1.0), Class)
@@ -852,7 +854,9 @@ class TestPlant(unittest.TestCase):
         SpatialForce = SpatialForce_[T]
         SpatialVelocity = SpatialVelocity_[T]
         SpatialMomentum = SpatialMomentum_[T]
-        SpatialInertia.Zero()
+        zero = SpatialInertia.Zero()
+        if T != Expression:
+            self.assertTrue(zero.IsZero())
         SpatialInertia.NaN()
         with catch_drake_warnings(expected_count=1) as w:
             SpatialInertia()
@@ -921,6 +925,12 @@ class TestPlant(unittest.TestCase):
             spatial_inertia * SpatialAcceleration(), SpatialForce)
         self.assertIsInstance(
             spatial_inertia * SpatialVelocity(), SpatialMomentum)
+        self.assertEqual(repr(spatial_inertia), "<SpatialInertia>")
+        if T == float:
+            # This one is used as a default argument, so it's important that we
+            # print it out in full.
+            self.assertEqual(repr(SpatialInertia.Zero()),
+                             "SpatialInertia.Zero()")
         assert_pickle(
             self, spatial_inertia, SpatialInertia.CopyToFullMatrix6, T=T)
         spatial_inertia.SetNaN()
