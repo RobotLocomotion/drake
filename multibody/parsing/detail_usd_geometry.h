@@ -1,3 +1,5 @@
+#pragma once
+
 #include "drake/common/diagnostic_policy.h"
 #include "drake/multibody/parsing/detail_common.h"
 
