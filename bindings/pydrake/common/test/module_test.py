@@ -54,7 +54,13 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(mut.Parallelism(False).num_threads(), 1)
         self.assertEqual(mut.Parallelism(True).num_threads(), max_num_threads)
         self.assertEqual(mut.Parallelism(1).num_threads(), 1)
-        self.assertEqual(mut.Parallelism(3).num_threads(), 3)
+        self.assertEqual(mut.Parallelism(4).num_threads(), 4)
+
+        # Round-trip repr.
+        for rep in ["Parallelism(num_threads=1)",
+                    "Parallelism(num_threads=2)"]:
+            x = eval(rep, {"Parallelism": mut.Parallelism}, {})
+            self.assertEqual(repr(x), rep)
 
         # Floats are right out.
         with self.assertRaisesRegex(Exception, "types"):
