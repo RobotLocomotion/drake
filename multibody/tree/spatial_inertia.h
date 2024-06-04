@@ -572,7 +572,18 @@ class SpatialInertia {
   boolean<T> IsNaN() const {
     using std::isnan;
     return isnan(mass_) || G_SP_E_.IsNaN() ||
-        any_of(p_PScm_E_, [](auto x){ return isnan(x); });
+           any_of(p_PScm_E_, [](const auto& x) {
+             return isnan(x);
+           });
+  }
+
+  /// Returns `true` if all of the elements in this spatial inertia are zero
+  /// and `false` otherwise.
+  boolean<T> IsZero() const {
+    return (mass_ == 0.0) && G_SP_E_.IsZero() &&
+           all_of(p_PScm_E_, [](const auto& x) {
+             return (x == 0.0);
+           });
   }
 
   /// Performs a number of checks to verify that this is a physically valid
