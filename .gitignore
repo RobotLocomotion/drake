@@ -7,7 +7,6 @@
 *~
 .#*
 *.bak
-
 # - Directories (at top level)
 /xcode/
 /.cproject/
@@ -29,6 +28,3 @@
 
 # User-specified configuration
 /user.bazelrc
-
-# Jupyter notebook configuration
-**/.ipynb_checkpoints/
