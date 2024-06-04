@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
+#include <Eigen/Core>
 
 namespace drake {
 namespace geometry {

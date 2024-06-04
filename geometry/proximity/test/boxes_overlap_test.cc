@@ -45,8 +45,11 @@ class BoxesOverlapTest : public ::testing::Test {
   static bool InvokeBoxesOverlap(const Vector3d& a_half, const Vector3d& b_half,
                                  const RigidTransformd& X_AB,
                                  const std::string& label) {
-    const bool a_to_b = BoxesOverlap(a_half, b_half, X_AB);
-    const bool b_to_a = BoxesOverlap(b_half, a_half, X_AB.inverse());
+    const bool a_to_b = BoxesOverlap(a_half, b_half, X_AB.translation(),
+                                     X_AB.rotation().matrix());
+    const RigidTransformd& X_BA = X_AB.inverse();
+    const bool b_to_a = BoxesOverlap(b_half, a_half,  X_BA.translation(),
+                                     X_BA.rotation().matrix());
     DrawCase(a_half, b_half, X_AB, "BoxesOverlapTest/" + label);
     DRAKE_DEMAND(a_to_b == b_to_a);
     return a_to_b;

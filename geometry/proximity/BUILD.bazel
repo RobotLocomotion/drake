@@ -69,11 +69,16 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "boxes_overlap",
-    srcs = ["boxes_overlap.cc"],
-    hdrs = ["boxes_overlap.h"],
+    srcs = [
+        "boxes_overlap.cc",
+    ],
+    copts = ["-march=broadwell"],
+    hdrs = [
+        "boxes_overlap.h",
+    ],
     deps = [
-        "//common:essential",
         "//math:geometric_transform",
+        "@eigen",
     ],
 )
 
