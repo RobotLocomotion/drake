@@ -25,6 +25,7 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(static_friction));
     a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(relaxation_time));
+    a->Visit(DRAKE_NVP(margin));
     a->Visit(DRAKE_NVP(point_stiffness));
     ValidateOrThrow();
   }
@@ -87,6 +88,28 @@ struct DefaultProximityProperties {
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
   std::optional<double> relaxation_time;
+
+  /** Specifies a thin layer of thickness "margin" (in meters) around each
+   geometry.
+
+   @note In Drake, margin effectively "shrinks" the geometry of an objects
+   inwards by a magnitude equal to the margin. This is as we had "shaved-off" a
+   thin layer of thickness `margin` all around the surface of the object. Since
+   the margin is meant to be small, this is usually negligible in most cases.
+   Recall you can still overwrite this default value of margin for each geometry
+   through its ProximityProperties. The margin can be zero, effectively removing
+   its effect.
+
+   If the thin margin layer of two objects overlaps, there will be no contact
+   nor contact forces. However, contact constraints will be added allowing our
+   discrete contact solvers to predict if a contact "will" occur at the next
+   time step. This leads to additional time coherence and stability.
+   Typically, a thin layer of 0.1 mm to 1.0 mm is more than enough for
+   most robotics applications. This is not an "action-at-a-distance" trick,
+   there is no contact when the thin margin layers of two objects overlap. The
+   margin is simply a "cheap" mechanism to avoid significantly more complex and
+   costly strategies such as Continuous Collision Detection. **/
+  std::optional<double> margin{0.0};
   /// @}
 
   /** @name Point Contact Properties

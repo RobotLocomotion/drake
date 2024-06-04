@@ -227,7 +227,7 @@ class Validator {
   const char* compliance_{};
 };
 
-// Validator that extracts *positive doubles*.
+// Validator that extracts *strictly positive doubles*.
 class PositiveDouble : public Validator<double> {
  public:
   // Inherit the constructor from the base class.
@@ -240,6 +240,34 @@ class PositiveDouble : public Validator<double> {
       throw std::logic_error(
           fmt::format("Cannot create {} {}; the {} property must be positive",
                       compliance(), shape_name(), property));
+    }
+  }
+};
+
+// Validator that extracts *non-negative doubles*, where a zero value is valid.
+class NonNegativeDouble : public Validator<double> {
+ public:
+  // Inherit the constructor from the base class.
+  using Validator<double>::Validator;
+
+  double Extract(const ProximityProperties& props, const char* group_name,
+                 const char* property_name, double default_value) {
+    DRAKE_DEMAND(default_value >= 0);  // Default must also be non-negative.
+    const double value = props.GetPropertyOrDefault<double>(
+        group_name, property_name, default_value);
+    const std::string full_property_name =
+        fmt::format("('{}', '{}')", group_name, property_name);
+    ValidateValue(value, full_property_name);
+    return value;
+  }
+
+ protected:
+  void ValidateValue(const double& value,
+                     const std::string& property) const override {
+    if (value < 0) {
+      throw std::logic_error(fmt::format(
+          "Cannot create {} {}; the {} property must be non-negative",
+          compliance(), shape_name(), property));
     }
   }
 };
@@ -361,8 +389,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double hydroelastic_modulus =
       validator.Extract(props, kHydroGroup, kElastic);
 
+  const double margin = NonNegativeDouble("Box", "soft")
+                            .Extract(props, kMaterialGroup, kMargin, 0.0);
+
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeBoxPressureField(box, mesh.get(), hydroelastic_modulus));
+      MakeBoxPressureField(box, mesh.get(), hydroelastic_modulus, margin));
 
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
@@ -415,9 +446,20 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   const double hydroelastic_modulus =
       validator.Extract(props, kHydroGroup, kElastic);
+  const double margin = NonNegativeDouble("Ellipsoid", "soft")
+                            .Extract(props, kMaterialGroup, kMargin, 0.0);
+  if (!(ellipsoid.a() > margin && ellipsoid.b() > margin &&
+        ellipsoid.c() > margin)) {
+    throw std::logic_error(
+        fmt::format("Cannot create soft Ellipsoid; the margin must be strictly "
+                    "smaller than all three ellipsoid dimensions. a = {}, b = "
+                    "{}, c = {}, margin = {}.",
+                    ellipsoid.a(), ellipsoid.b(), ellipsoid.c(), margin));
+  }
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeEllipsoidPressureField(ellipsoid, mesh.get(), hydroelastic_modulus));
+      MakeEllipsoidPressureField(ellipsoid, mesh.get(), hydroelastic_modulus,
+                                 margin));
 
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }

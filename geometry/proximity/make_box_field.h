@@ -31,7 +31,8 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeBoxPressureField(const Box& box,
                                                  const VolumeMesh<T>* mesh_B,
-                                                 const T hydroelastic_modulus);
+                                                 const T hydroelastic_modulus,
+                                                 double margin = 0.0);
 
 }  // namespace internal
 }  // namespace geometry
