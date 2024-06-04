@@ -109,13 +109,6 @@ TEST_F(ScrewJointTest, GetJointLimits) {
 TEST_F(ScrewJointTest, Damping) {
   EXPECT_EQ(joint_->default_damping(), kDamping);
   EXPECT_EQ(joint_->default_damping_vector(), Vector1d(kDamping));
-
-  // Ensure the deprecated versions are correct until removal.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(joint_->damping(), kDamping);
-  EXPECT_EQ(joint_->damping_vector(), Vector1d(kDamping));
-#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.

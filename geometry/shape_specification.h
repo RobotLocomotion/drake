@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -648,35 +647,6 @@ class ShapeReifier {
   virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
-class DRAKE_DEPRECATED("2024-06-01",
-                       "Use the Shape::type_name() member function instead")
-    ShapeName final : public ShapeReifier {
- public:
-  ShapeName() = default;
-
-  /** Constructs a %ShapeName from the given `shape` such that `string()`
-   already contains the string representation of `shape`.  */
-  explicit ShapeName(const Shape& shape);
-
-  ~ShapeName() final;
-
-  /** Returns the name of the last shape reified. Empty if no shape has been
-   reified yet.  */
-  std::string name() const { return string_; }
-
- private:
-  void DefaultImplementGeometry(const Shape& shape) final;
-
-  std::string string_;
-};
-
-#ifndef DRAKE_DOXYGEN_CXX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-std::ostream& operator<<(std::ostream& out, const ShapeName& name);
-#pragma GCC diagnostic pop
-#endif
-
 /** Calculates the volume (in meters^3) for the Shape. For convex and mesh
  geometries, the algorithm only supports ".obj" files and only produces
  meaningful results for "closed" shapes.
@@ -689,16 +659,6 @@ double CalcVolume(const Shape& shape);
 
 }  // namespace geometry
 }  // namespace drake
-
-#ifndef DRAKE_DOXYGEN_CXX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-namespace fmt {
-template <>
-struct formatter<drake::geometry::ShapeName> : drake::ostream_formatter {};
-}  // namespace fmt
-#pragma GCC diagnostic pop
-#endif
 
 DRAKE_FORMATTER_AS(, drake::geometry, Box, x, x.to_string())
 DRAKE_FORMATTER_AS(, drake::geometry, Capsule, x, x.to_string())

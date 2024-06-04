@@ -84,10 +84,6 @@ class PrismaticJoint final : public Joint<T> {
   /// Returns `this` joint's default damping constant in N⋅s/m.
   double default_damping() const { return this->default_damping_vector()[0]; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const { return this->default_damping_vector()[0]; }
-
-
   /// Sets the default value of viscous damping for this joint, in N⋅s/m.
   /// @throws std::exception if damping is negative.
   /// @pre the MultibodyPlant must not be finalized.

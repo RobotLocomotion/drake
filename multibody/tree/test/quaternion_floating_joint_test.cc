@@ -128,18 +128,6 @@ TEST_F(QuaternionFloatingJointTest, Damping) {
       (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
        kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
           .finished());
-
-  // Ensure the deprecated versions are correct until removal.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(joint_->angular_damping(), kAngularDamping);
-  EXPECT_EQ(joint_->translational_damping(), kTranslationalDamping);
-  EXPECT_EQ(
-      joint_->damping_vector(),
-      (Vector6d() << kAngularDamping, kAngularDamping, kAngularDamping,
-       kTranslationalDamping, kTranslationalDamping, kTranslationalDamping)
-          .finished());
-#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.

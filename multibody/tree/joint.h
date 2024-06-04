@@ -535,9 +535,6 @@ class Joint : public MultibodyElement<T> {
   /// N⋅m⋅s. Refer to each joint's documentation for further details.
   const VectorX<double>& default_damping_vector() const { return damping_; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping_vector() instead.")
-  const VectorX<double>& damping_vector() const { return damping_; }
-
   /// Returns the Context dependent damping coefficients stored as parameters in
   /// `context`. Refer to default_damping_vector() for details.
   /// @param[in] context The context storing the state and parameters for the

@@ -82,12 +82,6 @@ class BallRpyJoint final : public Joint<T> {
     return this->default_damping_vector()[0];
   }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const {
-    // N.B. All damping coefficients are set to the same value for this joint.
-    return this->default_damping_vector()[0];
-  }
-
   /// @name Context-dependent value access
   /// @{
 

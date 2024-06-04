@@ -701,59 +701,6 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(fmt::to_string(base), "Box(width=1.5, depth=2.5, height=3.5)");
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(ShapeName, SimpleReification) {
-  ShapeName name;
-
-  EXPECT_EQ(name.name(), "");
-
-  Box(1, 2, 3).Reify(&name);
-  EXPECT_EQ(name.name(), "Box");
-
-  Capsule(1, 2).Reify(&name);
-  EXPECT_EQ(name.name(), "Capsule");
-
-  Convex("filepath", 1.0).Reify(&name);
-  EXPECT_EQ(name.name(), "Convex");
-
-  Cylinder(1, 2).Reify(&name);
-  EXPECT_EQ(name.name(), "Cylinder");
-
-  Ellipsoid(1, 2, 3).Reify(&name);
-  EXPECT_EQ(name.name(), "Ellipsoid");
-
-  HalfSpace().Reify(&name);
-  EXPECT_EQ(name.name(), "HalfSpace");
-
-  Mesh("filepath", 1.0).Reify(&name);
-  EXPECT_EQ(name.name(), "Mesh");
-
-  MeshcatCone(1.0, 0.25, 0.5).Reify(&name);
-  EXPECT_EQ(name.name(), "MeshcatCone");
-
-  Sphere(0.5).Reify(&name);
-  EXPECT_EQ(name.name(), "Sphere");
-}
-GTEST_TEST(ShapeName, ReifyOnConstruction) {
-  EXPECT_EQ(ShapeName(Box(1, 2, 3)).name(), "Box");
-  EXPECT_EQ(ShapeName(Capsule(1, 2)).name(), "Capsule");
-  EXPECT_EQ(ShapeName(Convex("filepath", 1.0)).name(), "Convex");
-  EXPECT_EQ(ShapeName(Cylinder(1, 2)).name(), "Cylinder");
-  EXPECT_EQ(ShapeName(Ellipsoid(1, 2, 3)).name(), "Ellipsoid");
-  EXPECT_EQ(ShapeName(HalfSpace()).name(), "HalfSpace");
-  EXPECT_EQ(ShapeName(Mesh("filepath", 1.0)).name(), "Mesh");
-  EXPECT_EQ(ShapeName(Sphere(0.5)).name(), "Sphere");
-}
-GTEST_TEST(ShapeName, Streaming) {
-  ShapeName name(Sphere(0.5));
-  std::stringstream ss;
-  ss << name;
-  EXPECT_EQ(name.name(), "Sphere");
-  EXPECT_EQ(ss.str(), name.name());
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Box(1, 2, 3)), 6.0, 1e-14);
   EXPECT_NEAR(CalcVolume(Capsule(1.23, 2.4)),
