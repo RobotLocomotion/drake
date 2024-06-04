@@ -1452,6 +1452,28 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ipopt_solver_internal_test",
+    copts = select({
+        "//conditions:default": [
+            "-DDRAKE_IPOPT_SOLVER_INTERNAL_TEST_HAS_IPOPT=1",
+        ],
+        "//tools:no_ipopt": [
+        ],
+    }),
+    deps = [
+        ":mathematical_program",
+        "//common/test_utilities:eigen_matrix_compare",
+    ] + select({
+        "//conditions:default": [
+            ":ipopt_solver_internal",
+            "@ipopt",
+        ],
+        "//tools:no_ipopt": [
+        ],
+    }),
+)
+
+drake_cc_googletest(
     name = "ipopt_solver_test",
     copts = select({
         "//conditions:default": [

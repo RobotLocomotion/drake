@@ -51,13 +51,13 @@ struct AccelerationsDueNonConstraintForcesCache {
 // in the MultibodyPlant model is compliant without introducing state. Supported
 // models include point contact with a linear model of compliance, see
 // GetPointContactStiffness() and the hydroelastic contact model, see @ref
-// mbp_hydroelastic_materials_properties in MultibodyPlant's Doxygen
-// documentation. Dynamics of deformable bodies (if any exists) are calculated
-// in DeformableDriver. Deformable body contacts are modeled as near-rigid point
-// contacts where compliance is added as a means of stabilization without
-// introducing additional states (i.e. the penetration distance x and its time
-// derivative ẋ are not states). Dissipation is modeled using a linear model.
-// For point contact, the normal contact force (in Newtons) is modeled as:
+// hydro_model_parameters. Dynamics of deformable bodies (if any exists) are
+// calculated in DeformableDriver. Deformable body contacts are modeled as
+// near-rigid point contacts where compliance is added as a means of
+// stabilization without introducing additional states (i.e. the penetration
+// distance x and its time derivative ẋ are not states). Dissipation is modeled
+// using a linear model. For point contact, the normal contact force (in
+// Newtons) is modeled as:
 //   fₙ = k⋅(x + τ⋅ẋ)₊
 // where k is the point contact stiffness, see GetPointContactStiffness(), τ is
 // the dissipation timescale, and ()₊ corresponds to the "positive part"

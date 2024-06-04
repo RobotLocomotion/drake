@@ -603,7 +603,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
-                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
+                .doc_4args_name_alloc_calc_prerequisites_of_calc)
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,

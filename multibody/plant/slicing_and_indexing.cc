@@ -144,7 +144,7 @@ contact_solvers::internal::MatrixBlock<T> ExcludeCols(
   }
 
   return contact_solvers::internal::MatrixBlock<T>(
-      std::move(ExcludeCols(M.MakeDenseMatrix(), indices)));
+      ExcludeCols(M.MakeDenseMatrix(), indices));
 }
 
 template <typename T>
