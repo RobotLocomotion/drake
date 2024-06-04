@@ -1,3 +1,6 @@
+// TODO(#20898) Remove this #if wrapper when USD is a first-class dependency.
+#if WITH_USD
+
 #include "drake/multibody/parsing/detail_usd_geometry.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -241,3 +244,5 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+#endif  // WITH_USD
