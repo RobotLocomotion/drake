@@ -1,3 +1,5 @@
+#include "pybind11/eval.h"
+
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -95,6 +97,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetToNaN", &Class::SetToNaN, cls_doc.SetToNaN.doc)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
         .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
+        .def("IsZero", &Class::IsZero, cls_doc.IsZero.doc)
         // TODO(jwnimmer-tri) Need to bind cast<>.
         .def("CalcPrincipalMomentsOfInertia",
             &Class::CalcPrincipalMomentsOfInertia,
@@ -281,6 +284,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CopyToFullMatrix6", &Class::CopyToFullMatrix6,
             cls_doc.CopyToFullMatrix6.doc)
         .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
+        .def("IsZero", &Class::IsZero, cls_doc.IsZero.doc)
         .def("SetNaN", &Class::SetNaN, cls_doc.SetNaN.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
             cls_doc.ReExpress.doc)
@@ -288,6 +292,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::self += py::self)
         .def(py::self * SpatialAcceleration<T>())
         .def(py::self * SpatialVelocity<T>())
+        .def("__repr__",
+            [](const Class& self) -> py::object {
+              if constexpr (std::is_same_v<T, double>) {
+                if (self.IsZero()) {
+                  return py::str("SpatialInertia.Zero()");
+                }
+              }
+              return py::eval("object.__repr__")(self);
+            })
         .def(py::pickle(
             [](const Class& self) {
               return py::make_tuple(
