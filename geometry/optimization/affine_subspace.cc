@@ -114,6 +114,8 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
                  basis.leftCols(affine_dimension).transpose());
     int ii = 0;
     VectorXd next_direction = basis_unknown.col(0);
+    // We can use a generous check for 0 here since the basis_unknown vectors
+    // are all approximately unit norm.
     while (next_direction.norm() < 1e-8) {
       ++ii;
       DRAKE_THROW_UNLESS(ii < basis_unknown.cols());
