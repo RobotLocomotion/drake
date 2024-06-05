@@ -405,6 +405,9 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
     bool show_slacks, int precision, bool scientific) const {
+  // TODO(bernhardpg): Make only_flows an argument
+  const bool only_flows = true;
+
   // Note: We use stringstream instead of fmt in order to control the
   // formatting of the Eigen output and double output in a consistent way.
   std::stringstream graphviz;
@@ -414,9 +417,12 @@ std::string GraphOfConvexSets::GetGraphvizString(
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
-    if (result) {
+    if (result && !only_flows) {
       graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
     }
+    // TODO(bernhardpg): This next line must be moved/cleaned up for
+    // a Drake PR
+    graphviz << "\ncost = " << v->GetSolutionCost(*result);
     graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
