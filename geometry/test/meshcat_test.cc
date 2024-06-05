@@ -13,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_types_internal.h"
 
 namespace drake {
@@ -1351,6 +1352,111 @@ GTEST_TEST(MeshcatTest, ShowStatsPlot) {
     })""");
 }
 
+void Sleep(double seconds) {
+  auto millis = static_cast<int64_t>(seconds * 1000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+}
+
+// Tests the logic of time advancement. The challenge of this test is that we
+// have to measure wall clock time to predict what Meshcat does.
+//
+// Also, we don't test for the realtime rate message broadcast directly. As
+// part of the broadcast, the stored realtime rate gets updated and can be
+// read from Meshcat::GetRealtimeRate(). We'll assume if the expected value
+// is available there, then it got broadcast correctly.
+//
+// Most of the compuation logic is contained (and tested) in
+// realtime_rate_calculator.*. This test just needs to confirm that things are
+// correct:
+//
+//   1. Initialization doesn't broadcast a rate.
+//      - In fact, initialization clears previously broadcast rate.
+//   2. One message is broadcast for each period boundary passed.
+//      Without explicitly consuming the messages, this is impossible to test.
+//      Instead, we rely on inspection of behavior during code review to
+//      validate. To test it, try running a simulation with a significantly
+//      slowed realtime rate such that the visualizer's publish period is
+//      longer than Meshcat's realtime_rate_period.
+GTEST_TEST(MeshcatTest, SetSimulationTime) {
+  // Arbitrary, non-default parameter value to confirm that it's getting used.
+  MeshcatParams params{.realtime_rate_period = 0.625};
+  Meshcat meshcat(params);
+
+  // Initial realtime rate is always zero.
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0.0);
+
+  // RealtimeRate doesn't get updated until the wall clock has passed the
+  // specified period boundary.
+  SteadyTimer timer;
+  double t = 0.0;
+  int count = 0;
+  while (timer.Tick() < params.realtime_rate_period * 0.9) {
+    ++count;
+    meshcat.SetSimulationTime(++t);
+  }
+  // The test is pointless if we didn't actually call SetSimulationTime().
+  ASSERT_GT(count, 0);
+  // Definitely get past the wall clock boundary.
+  Sleep(params.realtime_rate_period * 0.15);
+  meshcat.SetSimulationTime(++t);
+  // The reported real time should be bound by the highest possible rate
+  // reported if we report rate exactly at params.realtime_rate_period and the
+  // lower rate if we were to calculate it right *now*.
+  const double upper_bound = t / params.realtime_rate_period;
+  const double lower_bound = t / timer.Tick();
+  EXPECT_GT(meshcat.GetRealtimeRate(), lower_bound);
+  EXPECT_LT(meshcat.GetRealtimeRate(), upper_bound);
+
+  // Confirm the documented reset behavior; we re-initialize the throttled
+  // real time rate.
+
+  // Sleeping an amount of time equal to the period would normally be enough to
+  // trigger a new broadcast. However, a reset will initialize instead; no rate
+  // will be broadcast, but the reported realtime rate will get zeroed out.
+  double last_broadcast_rate = meshcat.GetRealtimeRate();
+  Sleep(params.realtime_rate_period + 0.01);
+
+  // Reset back to a smaller value of t. This counts as the *first* invocation.
+  t /= 2;  // Half of t is trivially less than t (for positive t).
+  meshcat.SetSimulationTime(t);
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0);
+
+  // The very next call (after a period's duration) reports a rate.
+  Sleep(params.realtime_rate_period + 0.01);
+  meshcat.SetSimulationTime(++t);
+  last_broadcast_rate = meshcat.GetRealtimeRate();
+  EXPECT_NE(last_broadcast_rate, 0);
+}
+
+// Test that if the realtime rate period is shorter than the actual time to
+// advance time step, we don't perpetually report zeros.
+GTEST_TEST(MeshcatTest, ShortRealtimeRatePeriod) {
+  MeshcatParams params{.realtime_rate_period = 1e-10};
+  Meshcat meshcat(params);
+
+  // Initialized to zero.
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0.0);
+
+  SteadyTimer timer;
+  timer.Start();
+  meshcat.SetSimulationTime(1.0);
+  // It's still zero, but only because we broadcast a zero.
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0.0);
+  meshcat.SetSimulationTime(2.0);
+  const double duration_bound = timer.Tick();
+  // We don't report a zero for the next one.
+  ASSERT_GT(meshcat.GetRealtimeRate(), 0.0);
+  // The `duration_bound` should be greater than the elapsed time tracked by
+  // Meshcat's realtime rate calculator. Simulation time has advanced one
+  // second. Therefore, 1.0 / duration_bound serves as a lower bound of the
+  // actual realtime rate reported by SetSimulationTime().
+  ASSERT_GT(meshcat.GetRealtimeRate(), 1.0 / duration_bound);
+}
+
+// Tests that the call to immediately broadcast a provided realtime rate value
+// works. We're not actually testing that the message got sent (we'll rely on
+// reviewer inspection). When we broadcast the rate, we also store the rate.
+// We look at the stored value as proxy.
 GTEST_TEST(MeshcatTest, RealtimeRate) {
   Meshcat meshcat;
   meshcat.SetRealtimeRate(2.2);
