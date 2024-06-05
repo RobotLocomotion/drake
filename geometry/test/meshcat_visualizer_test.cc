@@ -7,6 +7,7 @@
 #include <msgpack.hpp>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/multibody/parsing/parser.h"
@@ -677,42 +678,58 @@ void Sleep(double seconds) {
 }
 
 GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
-  // Set up a simulation with a visualizer. To avoid any potential ambiguity
-  // around publish event timing, we'll configure the visualizer to publish at
-  // 1024 Hz but we'll manually step time at 1000 Hz. This guarantees that
-  // exactly one publish event has been triggered after each one of our steps
-  // (as long as we don't advance past 42 ms).
+  // MeshcatVisualizer doesn't compute realtime rate, but it is responsible for
+  // calling Meshcat::SetSimulationTime() (which has been tested elsewhere).
+  // Here we just need proof that we're doing so when we publish.
+  //
+  // To that end, we'll change the times in the context and force publish. We'll
+  // peek in the published meshcat realtime rate to infer correct behavior.
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  auto meshcat = std::make_shared<Meshcat>();
-  MeshcatVisualizerParams params;
-  params.publish_period = 1.0 / 1024;
-  auto* meshcat_visualizer = &MeshcatVisualizer<double>::AddToBuilder(
-      &builder, scene_graph, meshcat, params);
-  systems::Simulator<double> simulator(builder.Build());
+  MeshcatParams meshcat_params{.realtime_rate_period = 0.125 /*seconds*/};
+  auto meshcat = std::make_shared<Meshcat>(meshcat_params);
+  auto& visualizer = MeshcatVisualizer<double>::AddToBuilder(
+      &builder, scene_graph, meshcat);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  auto& vis_context = visualizer.GetMyContextFromRoot(*context);
 
-  // Bootstrap the realtime rate calculator.
-  simulator.AdvanceTo(0.002);
-  EXPECT_GT(meshcat->GetRealtimeRate(), 0.0);
+  const double kDt = 0.2;
+  SteadyTimer timer;
+  int step = -1;
+  while (timer.Tick() < meshcat_params.realtime_rate_period / 2 && step < 3) {
+    context->SetTime(++step * kDt);
+    visualizer.ForcedPublish(vis_context);
+    // Until wall clock crosses the realtime_rate_period, we'll continue
+    // reporting zero.
+    ASSERT_EQ(meshcat->GetRealtimeRate(), 0.0);
+    Sleep(meshcat_params.realtime_rate_period * 0.1);
+  }
+  // We should have run the previous loop multiple times.
+  ASSERT_GT(step, 1);
+  // Now have the wall clock cross the realtime rate period boundary.
+  Sleep(meshcat_params.realtime_rate_period - timer.Tick() + 0.01);
 
-  // After sleeping for much more wall time (>= 0.500) than sim time (0.001) and
-  // then taking exactly one more step, the rate should be quite slow (< 1/500).
-  Sleep(0.5);
-  simulator.AdvanceTo(0.003);
-  const double slow_rate = meshcat->GetRealtimeRate();
-  EXPECT_LE(slow_rate, 0.002);
+  context->SetTime(++step * kDt);
+  visualizer.ForcedPublish(vis_context);
+  {
+    // The rate should lie between these two values. The largest possible rate
+    // if we advance to sim_time in *exactly* realtime_rate_period seconds and
+    // the lower rate if we reported the rate *right now*.
+    const double upper_bound =
+        context->get_time() / meshcat_params.realtime_rate_period;
+    const double lower_bound = context->get_time() / timer.Tick();
+    ASSERT_LT(meshcat->GetRealtimeRate(), upper_bound);
+    ASSERT_GT(meshcat->GetRealtimeRate(), lower_bound);
+  }
 
-  // When we reset the calculator before stepping, the rate does not update.
-  meshcat_visualizer->ResetRealtimeRateCalculator();
-  simulator.AdvanceTo(0.004);
-  EXPECT_EQ(meshcat->GetRealtimeRate(), slow_rate);
-
-  // One more step causes an update. (The new reported rate will almost
-  // certainly be faster than slow_rate, but we don't want to rely on the
-  // kernel's details of process scheduling, or else we could be flaky.)
-  simulator.AdvanceTo(0.005);
-  EXPECT_NE(meshcat->GetRealtimeRate(), slow_rate);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // ResetRealtimeRateCalculator() re-initializes the last broadcast value.
+  visualizer.ResetRealtimeRateCalculator();
+  ASSERT_EQ(meshcat->GetRealtimeRate(), 0.0);
+#pragma GCC diagnostic pop
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {

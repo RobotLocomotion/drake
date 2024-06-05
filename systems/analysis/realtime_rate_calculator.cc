@@ -1,25 +1,69 @@
 #include "drake/systems/analysis/realtime_rate_calculator.h"
 
+#include <cmath>
 #include <utility>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
 namespace internal {
 
-std::optional<double>
-RealtimeRateCalculator::UpdateAndRecalculate(double current_sim_time) {
-  std::optional<double> realtime_rate;
-  if (prev_sim_time_.has_value()) {
-    const double wall_delta{timer_->Tick()};
-    const double sim_time_delta{current_sim_time - prev_sim_time_.value()};
-    // Avoid divide by zero and negative rate.
-    if (wall_delta > 0 && sim_time_delta >= 0) {
-      realtime_rate = sim_time_delta / wall_delta;
-    }
+RealtimeRateCalculator::RealtimeRateCalculator(double report_period)
+    : period_(report_period) {
+  DRAKE_DEMAND(report_period > 0);
+}
+
+RealtimeRateCalculator::RateReport RealtimeRateCalculator::UpdateAndRecalculate(
+    double current_sim_time) {
+  if (!initialized_) {
+    prev_sim_time_ = 0.0;
+    prev_wall_time_ = 0.0;
+    timer_->Start();
+    initialized_ = true;
+    return {0, 0, true};
   }
-  timer_->Start();  // Restarts the wall timer
-  prev_sim_time_ = current_sim_time;
-  return realtime_rate;
+
+
+  const double sim_delta = current_sim_time - prev_sim_time_;
+  if (sim_delta <= 0) {
+    bool initialized = false;
+    if (sim_delta < 0) {
+      // Moving backwards resets the calculation.
+      prev_sim_time_ = current_sim_time;
+      prev_wall_time_ = 0.0;
+      timer_->Start();
+      initialized = true;
+    }
+    // Whether re-initializing or simply not advancing, we report no rate.
+    return {0, 0, initialized};
+  }
+
+  const double wall_delta = timer_->Tick() - prev_wall_time_;
+  if (wall_delta < period_) {
+    return {0, 0};
+  }
+
+  // Note: we store previous *wall* time at the largest period boundary less
+  // than the current time. We store previous *sim* time based on the
+  // interpolated simulation time that would'v been reached at that boundary.
+  const double rate = sim_delta / wall_delta;
+  const int period_count = std::floor(wall_delta / period_);
+  const double time_advance = period_ * period_count;
+  prev_wall_time_ += time_advance;
+  // Note: we only accumulate fractional simulation time if both previous and
+  // current sim times are *finite*. Otherwise, we assume that all of the
+  // advances to simulation time belonged to the previous rate calculation.
+  // (This comes from setting simulation time to negative infinity as a means
+  // to do a hard reset knowing that almost any other double value for
+  // simulation time represents an advancement in time.)
+  if (std::isfinite(prev_sim_time_) && std::isfinite(sim_delta)) {
+    const double fraction = time_advance / wall_delta;
+    prev_sim_time_ += fraction * sim_delta;
+  } else {
+    prev_sim_time_ = current_sim_time;
+  }
+  return {rate, period_count, false};
 }
 
 void RealtimeRateCalculator::InjectMockTimer(
