@@ -431,7 +431,7 @@ GTEST_TEST(VPolytopeTest, FromUnboundedHPolytopeTest) {
 GTEST_TEST(VPolytopeTest, FromDegenerateHPolytope) {
   // The L1 ball in three dimensions always has 4 hyperplanes actives at every
   // vertex, but no hyperplane is degenerate in our implementation. This leads
-  // to QHull constructing an overdetermined linear systems when solving for the
+  // to QHull constructing an overdetermined linear system when solving for the
   // vertices.
   HPolyhedron H = HPolyhedron::MakeL1Ball(3);
   VPolytope V(H);
