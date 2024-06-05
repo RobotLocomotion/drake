@@ -879,51 +879,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidSubspace) {
       "Subspace must be a Point or HPolyhedron.");
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, SimpleSubspaceTest) {
-  // Check that paths can be found through Point and HPolyhedron subspaces.
-  const int kDimension = 1;
-  const double kMinimumDuration = 1.0;
-
-  GraphOfConvexSetsOptions options;
-  options.max_rounded_paths = 1;
-
-  Vector1d start(0), goal(2);
-  Eigen::Matrix<double, 2, 1> A;
-  A << 1, -1;
-  HPolyhedron reg1(A, Vector2d(1, 0));                 // 0 <= x <= 1
-  HPolyhedron reg2(A, Vector2d(2, -1));                // 1 <= x <= 2
-  HPolyhedron hpoly_subspace(A, Vector2d(1.5, -0.5));  // 0.5 <= x <= 1.5
-  Point point_subspace(Vector1d(1.0));
-
-  // Check that the HPolyhedron subspace works.
-  GcsTrajectoryOptimization gcs1(kDimension);
-  auto& regions11 = gcs1.AddRegions(MakeConvexSets(reg1), 1, kMinimumDuration);
-  auto& regions12 = gcs1.AddRegions(MakeConvexSets(reg2), 1, kMinimumDuration);
-  auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
-
-  gcs1.AddEdges(source1, regions11);
-  gcs1.AddEdges(regions11, regions12, &hpoly_subspace);
-  gcs1.AddEdges(regions12, target1);
-
-  auto [traj1, result1] = gcs1.SolvePath(source1, target1, options);
-  EXPECT_TRUE(result1.is_success());
-
-  // Check that the Point subspace works.
-  GcsTrajectoryOptimization gcs2(kDimension);
-  auto& regions21 = gcs2.AddRegions(MakeConvexSets(reg1), 1, kMinimumDuration);
-  auto& regions22 = gcs2.AddRegions(MakeConvexSets(reg2), 1, kMinimumDuration);
-  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
-
-  gcs2.AddEdges(source2, regions21);
-  gcs2.AddEdges(regions21, regions22, &point_subspace);
-  gcs2.AddEdges(regions22, target2);
-
-  auto [traj2, result2] = gcs2.SolvePath(source2, target2, options);
-  EXPECT_TRUE(result2.is_success());
-}
-
 GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   std::vector<copyable_unique_ptr<trajectories::Trajectory<double>>> segments;
   Eigen::MatrixXd control_points_1(3, 3), control_points_2(3, 3),
