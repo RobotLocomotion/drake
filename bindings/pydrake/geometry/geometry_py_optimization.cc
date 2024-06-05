@@ -467,8 +467,8 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
             py::arg("vertices"), cls_doc.ctor.doc_vertices)
-        .def(py::init<const HPolyhedron&>(), py::arg("H"),
-            cls_doc.ctor.doc_hpolyhedron)
+        .def(py::init<const HPolyhedron&, const double>(), py::arg("H"),
+            py::arg("tol") = 1e-9, cls_doc.ctor.doc_hpolyhedron)
         .def(py::init<const QueryObject<double>&, GeometryId,
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
