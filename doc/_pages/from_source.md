@@ -154,6 +154,13 @@ cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
 ```
 
+*Ubuntu 24.04 (Jammy):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
+```
+
 *macOS:*
 
 ```bash
