@@ -26,7 +26,7 @@ Gurobi, you will need to build Drake from source following the instructions in
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy) and
+Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and
 Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
@@ -34,6 +34,7 @@ The most recent release is
 [v1.30.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.30.0):
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.30.0/drake-1.30.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.30.0/drake-1.30.0-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.30.0/drake-1.30.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.30.0/drake-1.30.0-noble.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.30.0/drake-1.30.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
