@@ -59,9 +59,6 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   // The basis of the orthogonal complement. We preallocate the maximum
   // dimension this basis could assume.
   MatrixXd basis_orth(set.ambient_dimension(), set.ambient_dimension());
-  // A basis of remaining directions along which we have not searched.
-  MatrixXd basis_unknown =
-      MatrixXd::Identity(set.ambient_dimension(), set.ambient_dimension());
   const MatrixXd I =
       MatrixXd::Identity(set.ambient_dimension(), set.ambient_dimension());
   int affine_dimension = 0;
@@ -98,22 +95,32 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   // orthogonal to all vectors known to be in the affine hull and known to be in
   // the orthogonal complement. We then attempt to minimize <x,v>. We maintain
   // the invariant that at the start of each iteration, any two column vectors
-  // taken from distinct matrices {basis, basis_orth, basis_unknown} are
-  // orthogonal, and that each of {basis, basis_orth, basis_unknown} are
-  // orthonormal bases.
-
+  // taken from distinct matrices {basis.leftCols(affine_dimension),
+  // basis_unknown.leftCols(complement_dimension)} are orthogonal, and that each
+  // of {basis, basis_unknown} are orthonormal bases.
+  //
   // If the inner product is less than -tol, we add x to the basis vectors and
   // increment affine_dimension. Otherwise, we add x to the complement basis and
-  // increment complement_dimension. We then recompute basis_unknown to be the
-  // orthogonal complement of basis ⊕ basis_orth. The loop terminates when the
-  // sum of affine_dimension and complement_dimension is equal to the ambient
+  // increment complement_dimension. The loop terminates when the sum of
+  // affine_dimension and complement_dimension is equal to the ambient
   // dimension.
   while (affine_dimension + complement_dimension < set.ambient_dimension()) {
-    // If the sum of affine_dimension and complement_dimension is less than the
-    // ambient dimension, it means there is at least one column of basis_unkonwn
-    // remaining to try.
-    DRAKE_THROW_UNLESS(basis_unknown.cols() > 0);
-    objective.evaluator()->UpdateCoefficients(basis_unknown.col(0));
+    // Compute a basis for the unchecked directions by constructing a matrix
+    // who's columns are orthogonal to basis ⊕ basis_orth
+    const MatrixXd basis_unknown =
+        (I - basis_orth.leftCols(complement_dimension) *
+                 basis_orth.leftCols(complement_dimension).transpose()) *
+        (I - basis.leftCols(affine_dimension) *
+                 basis.leftCols(affine_dimension).transpose());
+    int ii = 0;
+    VectorXd next_direction = basis_unknown.col(0);
+    while (next_direction.norm() < 1e-8) {
+      ++ii;
+      DRAKE_THROW_UNLESS(ii < basis_unknown.cols());
+      next_direction = basis_unknown.col(ii);
+    }
+    next_direction.normalize();
+    objective.evaluator()->UpdateCoefficients(next_direction);
     // Minimize <x, objective>.
     auto result = solvers::Solve(prog);
     if (!result.is_success()) {
@@ -133,20 +140,8 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
       // The objective vector is orthogonal to the affine hull. We can then add
       // it to the complement basis. By construction, this vector is already a
       // unit vector and orthogonal to the orthogonal complement basis.
-      basis_orth.col(complement_dimension++) = basis_unknown.col(0);
+      basis_orth.col(complement_dimension++) = next_direction;
     }
-
-    // Recompute basis_unknown to be the orthogonal complement of
-    // basis ⊕ basis_orth. We construct a dummy affine subspace whose span is
-    // basis ⊕ basis_orth, and then extract its orthogonal complement.
-    MatrixXd dummy_basis(set.ambient_dimension(),
-                         affine_dimension + complement_dimension);
-    dummy_basis.leftCols(affine_dimension) = basis.leftCols(affine_dimension);
-    dummy_basis.rightCols(complement_dimension) =
-        basis_orth.leftCols(complement_dimension);
-    AffineSubspace dummy_subspace(
-        dummy_basis, Eigen::VectorXd::Zero(set.ambient_dimension()));
-    basis_unknown = dummy_subspace.OrthogonalComplementBasis();
   }
 
   // By construction, basis_vectors is linearly independent. Because we have
