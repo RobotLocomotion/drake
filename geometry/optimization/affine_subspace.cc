@@ -92,12 +92,12 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
 
   // We incrementally build up a basis of the affine hull and its orthogonal
   // complement. At each iteration, we take in a direction vector v which is
-  // orthogonal to all vectors known to be in the affine hull and known to be in
-  // the orthogonal complement. We then attempt to minimize <x,v>. We maintain
-  // the invariant that at the start of each iteration, any two column vectors
-  // taken from distinct matrices {basis.leftCols(affine_dimension),
-  // spanning_unknown.leftCols(complement_dimension)} are orthogonal, and that each
-  // of {basis, spanning_unknown} are orthonormal bases.
+  // orthogonal to all vectors known to be in the affine hull or in the
+  // orthogonal complement. We then attempt to minimize <x,v>. We maintain the
+  // invariant that at the start of each iteration, any two column vectors taken
+  // from distinct matrices {basis.leftCols(affine_dimension),
+  // spanning_unknown.leftCols(complement_dimension)} are orthogonal, and that
+  // each of {basis, spanning_unknown} are orthonormal bases.
   //
   // If the inner product is less than -tol, we add x to the basis vectors and
   // increment affine_dimension. Otherwise, we add x to the complement basis and
