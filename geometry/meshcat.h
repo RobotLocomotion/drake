@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_params.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -551,21 +552,90 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  // TODO(#16486): add low-pass filter to smooth the Realtime plot
-  /** Sets the realtime rate that is displayed in the meshcat visualizer stats
-   strip chart. This rate is the ratio between sim time and real
-   world time. 1 indicates the simulator is the same speed as real time. 2
-   indicates running twice as fast as real time, 0.5 is half speed, etc.
-  @see drake::systems::Simulator::set_target_realtime_rate()
-  @param rate the realtime rate value to be displayed, will be converted to a
+  /** @group Realtime Rate Reporting
+
+   %Meshcat can be used to visualize the realtime rate of a simulation's
+   computation in the meshcat visualizer webpage. Meshcat broadcasts a realtime
+   rate message that is received and displayed by the browser in a
+   <a href="https://github.com/mrdoob/stats.js">stats strip chart</a>
+
+   Advancing the simulation's time requires a certain amount of real world
+   compute time. The realtime rate, a non-negative real value, is the ratio of
+   the sim time to real world time. A value of one indicates that the simulation
+   is advancing at the same rate as the real world clock. Higher values indicate
+   faster simulations. Lower values indicate slower simulations.
+
+   The realtime rate value can be broadcast to the visualizer in one of two
+   ways:
+
+     - Throttled - Meshcat is configured to broadcast realtime rate data
+       in a "smoothed" manner, meaning the visualization doesn't fluctuate at
+       arbitrarily high rates, frequently making the value difficult to read.
+       See SetSimulationTime(). This is the preferred means of reporting real
+       time rate.
+     - Immediate - a %Meshcat user _can_ compute realtime rate themselves and
+       simply ask %Meshcat to dispatch a message with that computed value.
+       See SetRealtimeRate(). This is not recommended and the user is
+       responsible for computing the value and controlling the frequency at
+       which this is done.
+   */
+  //@{
+
+  /** Updates %Meshcat's knowledge of simulation time. Changes to simulation
+   time *may* trigger a realtime rate message to the meshcat visualizer client
+   based on the configured value in MeshcatParams::realtime_rate_period value.
+
+   Invoking this method _may_ dispatch a message to clients. The following rules
+   apply to invocations and messages:
+
+     - The first invocation is necessary to _initialize_ the calculation; it
+       defines the the starting point from which all calculations are performed
+       (for both wall clock time as well as simulation time). As no interval can
+       be measured from a single invocation, no rate can be computed. Therefore,
+       the first invocation will *never* broadcast the message.
+     - Wall clock time must advance at least MeshcatParams::realtime_rate_period
+       seconds for a message to be sent.
+     - For every elapsed period of MeshcatParams::realtime_rate_period wall
+       clock seconds spanned by invocations of this method, %Meshcat promises to
+       send one realtime rate message to clients. Those messages may be sent in
+       bursts depending on the period between invocations relative to the
+       requested `realtime_rate_period`.
+       - This implies that each column of pixels in the realtime rate chart in
+         the client visualizer represents a fixed amount of wall clock time.
+
+   When the realtime rate is broadcast, that value will be reported by
+   GetRealtimeRate().
+
+   The realtime rate calculation can be "reset" by passing a simulation time
+   value that is *strictly less* than the value of the previous invocation. This
+   has the effect of re-initializing the calculation with the passed time and
+   the wall clock time of the invocation. So, if the simulation's context gets
+   reset to `time = 0`, calls to this method passing the context time will
+   implicitly reset realtime rate calculations accordingly. Resetting the
+   calculator will reset the value reported by GetRealtimeRate() to zero.
+
+   This function is safe to be called redundantly with the same simulation time.
+   Redundant calls are a no-op.
+
+   @param sim_time  The *absolute* sim time being visualized.
+
+   @see drake::systems::Simulator::set_target_realtime_rate() */
+  void SetSimulationTime(double sim_time);
+
+  /** Gets the last time value passed to SetSimulationTime(). */
+  double GetSimulationTime() const;
+
+  /** Immediately broadcasts the given realtime rate to all connected clients.
+  @param rate the realtime rate value to broadcast, will be converted to a
   percentage (multiplied by 100) */
   void SetRealtimeRate(double rate);
 
-  /** Gets the realtime rate that is displayed in the meshcat visualizer stats
-   strip chart. See SetRealtimeRate(). Note that this value might be a smoothing
-   function across multiple calls to SetRealtimeRate() rather than the most
-   recent argument value, in case this class ever adds smoothing capability. */
+  /** Gets the realtime rate that was last broadcast by this instance
+   (typically, the value displayed in the meshcat visualizer stats chart).
+   See SetRealtimeRate(). */
   double GetRealtimeRate() const;
+
+  //@}
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -919,6 +989,10 @@ class Meshcat {
   /* (Internal use for unit testing only) The max value (inclusive) for
   fault_number, above. */
   static constexpr int kMaxFaultNumber = 3;
+
+  /* (Internal use for unit testing only) Used to mock the monotonic wall time
+   source to control time during unit testing.  */
+  void InjectMockTimer(std::unique_ptr<Timer>);
 #endif
 
  private:

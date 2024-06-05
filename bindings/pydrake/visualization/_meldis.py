@@ -63,7 +63,7 @@ _logger = logging.getLogger("drake")
 
 _DEFAULT_MESHCAT_PARAMS = MeshcatParams(
     host="localhost",
-    show_stats_plot=False,
+    show_stats_plot=True,
 )
 
 
@@ -291,6 +291,7 @@ class _ViewerApplet:
             link_path = f"{self._path}/{robot_num}/{link_name}"
             pose = _to_pose(message.position[i], message.quaternion[i])
             self._meshcat.SetTransform(path=link_path, X_ParentPath=pose)
+        self._meshcat.SetSimulationTime(sim_time=message.timestamp * 1e-3)
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
             self._build_links()
