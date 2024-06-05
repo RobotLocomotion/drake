@@ -408,6 +408,14 @@ std::string GraphOfConvexSets::GetGraphvizString(
   // TODO(bernhardpg): Make only_flows an argument
   const bool only_flows = true;
 
+  auto floatToHex = [](float value) -> std::string {
+    if (value < 0.0f || value > 1.0f) return "Out of range";
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+       << static_cast<int>(value * 255);
+    return ss.str();
+  };
+
   // Note: We use stringstream instead of fmt in order to control the
   // formatting of the Eigen output and double output in a consistent way.
   std::stringstream graphviz;
@@ -452,7 +460,12 @@ std::string GraphOfConvexSets::GetGraphvizString(
         }
       }
     }
-    graphviz << "\"];\n";
+    graphviz << ",\n";
+    graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+    graphviz << "\"";
+    graphviz << ", color=" << "\"#000000"
+             << floatToHex(result->GetSolution(e->phi())) << "\"";
+    graphviz << "];\n";
   }
   graphviz << "}\n";
   return graphviz.str();
