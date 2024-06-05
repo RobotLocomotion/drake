@@ -96,8 +96,8 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   // the orthogonal complement. We then attempt to minimize <x,v>. We maintain
   // the invariant that at the start of each iteration, any two column vectors
   // taken from distinct matrices {basis.leftCols(affine_dimension),
-  // basis_unknown.leftCols(complement_dimension)} are orthogonal, and that each
-  // of {basis, basis_unknown} are orthonormal bases.
+  // spanning_unknown.leftCols(complement_dimension)} are orthogonal, and that each
+  // of {basis, spanning_unknown} are orthonormal bases.
   //
   // If the inner product is less than -tol, we add x to the basis vectors and
   // increment affine_dimension. Otherwise, we add x to the complement basis and
@@ -105,21 +105,25 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   // affine_dimension and complement_dimension is equal to the ambient
   // dimension.
   while (affine_dimension + complement_dimension < set.ambient_dimension()) {
-    // Compute a basis for the unchecked directions by constructing a matrix
-    // who's columns are orthogonal to basis ⊕ basis_orth
-    const MatrixXd basis_unknown =
+    // Compute a spanning set for the unchecked directions by constructing a
+    // matrix whose columns are orthogonal to basis ⊕ basis_orth. Because this
+    // is not a basis, some of the columns could be all zero, so we have to find
+    // a nonzero column to use as the direction. Because the set spans the
+    // orthogonal complement of basis ⊕ basis_orth, which has dimension at least
+    // one, at least one of the columns of spanning_unknown must be nonzero.
+    const MatrixXd spanning_unknown =
         (I - basis_orth.leftCols(complement_dimension) *
                  basis_orth.leftCols(complement_dimension).transpose()) *
         (I - basis.leftCols(affine_dimension) *
                  basis.leftCols(affine_dimension).transpose());
     int ii = 0;
-    VectorXd next_direction = basis_unknown.col(0);
-    // We can use a generous check for 0 here since the basis_unknown vectors
+    VectorXd next_direction = spanning_unknown.col(0);
+    // We can use a generous check for 0 here since the spanning_unknown vectors
     // are all approximately unit norm.
     while (next_direction.norm() < 1e-8) {
       ++ii;
-      DRAKE_THROW_UNLESS(ii < basis_unknown.cols());
-      next_direction = basis_unknown.col(ii);
+      DRAKE_THROW_UNLESS(ii < spanning_unknown.cols());
+      next_direction = spanning_unknown.col(ii);
     }
     next_direction.normalize();
     objective.evaluator()->UpdateCoefficients(next_direction);
