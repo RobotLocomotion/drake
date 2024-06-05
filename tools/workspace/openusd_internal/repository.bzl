@@ -22,6 +22,7 @@ def openusd_internal_repository(
             ":patches/namespace.patch",
             ":patches/no_gnu_ext.patch",
             ":patches/onetbb.patch",
+            ":patches/pegtl_namespace.patch",
             ":patches/usd_sdf_noboost.patch",
             ":patches/weakptrfacade_cxx20.patch",
         ],
