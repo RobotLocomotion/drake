@@ -35,6 +35,7 @@
 #include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -685,7 +686,8 @@ class Meshcat::Impl {
   explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
-        params_(params) {
+        params_(params),
+        rate_calculator_(params_.realtime_rate_period) {
     DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
                        *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
@@ -785,8 +787,29 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
+  void SetSimulationTime(std::optional<double> sim_time) {
+    if (!sim_time.has_value()) {
+      rate_calculator_.Reset();
+      realtime_rate_ = 0.0;
+      return;
+    }
+    const auto report = rate_calculator_.UpdateAndRecalculate(*sim_time);
+    if (report.initialized) {
+      // We won't broadcast it, but we do return to the initialized state.
+      realtime_rate_ = 0.0;
+      return;
+    }
+    // This last invocation may have spanned zero or more report periods;
+    // dispatch one realtime rate message for each period.
+    for (int i = 0; i < report.period_count; ++i) {
+      SetRealtimeRate(report.rate);
+    }
+  }
+
+  // This function is public via the PIMPL.
   void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
+    if (rate == realtime_rate_) return;
     realtime_rate_ = rate;
     internal::RealtimeRateData data;
     data.rate = rate;
@@ -2281,6 +2304,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   internal::UuidGenerator uuid_generator_{};
+  systems::internal::RealtimeRateCalculator rate_calculator_;
   double realtime_rate_{0.0};
   bool is_orthographic_{false};
 
@@ -2566,6 +2590,10 @@ void Meshcat::SetTransform(std::string_view path,
 
 void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
+}
+
+void Meshcat::SetSimulationTime(std::optional<double> sim_time) {
+  impl().SetSimulationTime(sim_time);
 }
 
 void Meshcat::SetRealtimeRate(double rate) {
