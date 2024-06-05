@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/query_results/contact_summary.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -43,6 +44,7 @@ class QueryObject;
  - <em style="color:gray">(source name)</em>_configuration
  output_ports:
  - query
+ - contact_summary
  @endsystem
 
  For each registered "geometry source", there is an input port whose name begins
@@ -407,8 +409,18 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Returns the output port which produces the QueryObject for performing
    geometric queries.  */
-  const systems::OutputPort<T>& get_query_output_port() const {
-    return systems::System<T>::get_output_port(query_port_index_);
+  const systems::OutputPort<T>& get_query_output_port() const;
+
+  /** Returns the "contact_sumary" output port, which produces a ContactSummary
+   object.
+   @experimental We anticipate stabilizing it around 2025-01-01. */
+  const systems::OutputPort<T>& get_contact_summary_output_port() const;
+
+  /** (Internal use only) Sets the hydroelastic surface type used for the
+   contact_summary output port. When null, uses point contact. */
+  void set_contact_summary_representation(
+      std::optional<HydroelasticContactRepresentation> representation) {
+    contact_summary_representation_ = representation;
   }
 
   //@}
@@ -1091,6 +1103,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcQueryObject(const systems::Context<T>& context,
                        QueryObject<T>* output) const;
 
+  // Calc function for the like-named output port.
+  void CalcContactSummary(const systems::Context<T>& context,
+                          ContactSummary<T>* output) const;
+
   // Collects all of the *dynamic* frames that have geometries with the given
   // role.
   std::vector<FrameId> GetDynamicFrames(const GeometryState<T>& g_state,
@@ -1144,8 +1160,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // that id.
   std::unordered_map<SourceId, SourcePorts> input_source_ids_;
 
-  // The index of the output port with the QueryObject abstract value.
+  // The index of the "query" output port.
   int query_port_index_{-1};
+  // The index of the "contact_summary" output port.
+  int contact_summary_port_index_{-1};
 
   // Encapsulate some model detail to help enforce internal invariants.
   class Hub;
@@ -1165,6 +1183,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
   systems::CacheIndex configuration_update_index_{};
+
+  // The hydroelastic surface type used for the "contact_summary" output port.
+  std::optional<HydroelasticContactRepresentation>
+      contact_summary_representation_;
 };
 
 }  // namespace geometry

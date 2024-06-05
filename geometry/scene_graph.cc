@@ -22,6 +22,7 @@ using std::vector;
 using systems::Context;
 using systems::InputPort;
 using systems::LeafSystem;
+using systems::OutputPort;
 using systems::Parameters;
 using systems::State;
 using systems::SystemTypeTag;
@@ -178,6 +179,10 @@ SceneGraph<T>::SceneGraph()
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
           .get_index();
+  contact_summary_port_index_ =
+      this->DeclareAbstractOutputPort("contact_summary",
+                                      &SceneGraph::CalcContactSummary)
+          .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
@@ -204,6 +209,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
   hub_.mutable_config() = other.hub_.config();
   hub_.mutable_model() =
       GeometryState<T>(other.hub_.model());
+  contact_summary_representation_ = other.contact_summary_representation_;
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -270,6 +276,16 @@ const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
   ThrowUnlessRegistered(
       id, "Can't acquire configuration port for unknown source id: ");
   return this->get_input_port(input_source_ids_.at(id).configuration_port);
+}
+
+template <typename T>
+const OutputPort<T>& SceneGraph<T>::get_query_output_port() const {
+  return this->get_output_port(query_port_index_);
+}
+
+template <typename T>
+const OutputPort<T>& SceneGraph<T>::get_contact_summary_output_port() const {
+  return this->get_output_port(contact_summary_port_index_);
 }
 
 template <typename T>
@@ -603,6 +619,45 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   //
   // See the todo in the header for an alternate formulation.
   output->set(&context, this);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcContactSummary(const systems::Context<T>& context,
+                                       ContactSummary<T>* output) const {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    // Prepare new output storage.
+    auto surfaces = std::make_shared<std::vector<ContactSurface<T>>>();
+    auto point_pairs =
+        std::make_shared<std::vector<PenetrationAsPointPair<T>>>();
+    auto deformable_contact =
+        std::make_shared<internal::DeformableContact<T>>();
+
+    // Compute all of the the results.
+    // TODO(jwnimmer-tri) Ideally, we would not use QueryObject here so that we
+    // could depend on only the fraction of GeometryState that is relevant.
+    const auto& query =
+        get_query_output_port().template Eval<QueryObject<T>>(context);
+    if (contact_summary_representation_.has_value()) {
+      query.ComputeContactSurfacesWithFallback(
+          *contact_summary_representation_, surfaces.get(), point_pairs.get());
+    } else {
+      *point_pairs = query.ComputePointPairPenetration();
+    }
+    if constexpr (std::is_same_v<T, double>) {
+      query.ComputeDeformableContact(deformable_contact.get());
+    }
+
+    // Move the stoarge into place (converting to the shared_ptr to `const`).
+    output->surfaces = std::move(surfaces);
+    output->point_pairs = std::move(point_pairs);
+    output->deformable_contact = std::move(deformable_contact);
+  } else {
+    // TODO(jwnimmer-tri) Conceivably we could only throw in case any proximity
+    // geometry was registered. That would probably simplify the MbP logic.
+    throw std::logic_error(
+        "SceneGraph's contact_summary output port does not support "
+        "T = Expression");
+  }
 }
 
 template <typename T>

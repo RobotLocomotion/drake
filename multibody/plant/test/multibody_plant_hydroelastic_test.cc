@@ -726,7 +726,7 @@ TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(),
-                              "Requested contact between two rigid objects .+");
+                              ".*sphere1.*sphere2.*consider.*fallback.*");
 }
 
 TEST_F(ContactModelTest, HydroelasticWithFallback) {

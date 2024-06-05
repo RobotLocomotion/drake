@@ -50,6 +50,7 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySet;
+using geometry::HydroelasticContactRepresentation;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
@@ -719,6 +720,7 @@ template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
+  UpdateSceneGraphContactSummaryRepresentation();
 }
 
 template <typename T>
@@ -786,6 +788,14 @@ void MultibodyPlant<T>::set_sap_near_rigid_threshold(
 template <typename T>
 double MultibodyPlant<T>::get_sap_near_rigid_threshold() const {
   return sap_near_rigid_threshold_;
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_contact_surface_representation(
+    HydroelasticContactRepresentation representation) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  contact_surface_representation_ = representation;
+  UpdateSceneGraphContactSummaryRepresentation();
 }
 
 template <typename T>
@@ -891,6 +901,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // In case any bodies were added before registering scene graph, make sure the
   // bodies get their corresponding geometry frame ids.
   RegisterGeometryFramesForAllBodies();
+  UpdateSceneGraphContactSummaryRepresentation();
   return source_id_.value();
 }
 
@@ -1020,16 +1031,6 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
     }
   }
   return geometry_set;
-}
-
-template <typename T>
-const SceneGraphInspector<T>& MultibodyPlant<T>::EvalSceneGraphInspector(
-    const systems::Context<T>& context) const {
-  // TODO(jwnimmer-tri) The "geometry_query" input port is invalidated anytime
-  // the configuration_ticket changes, but really we only need to invalidate the
-  // inspector when the scene graph topology or properties change. If we find
-  // this is a performance bottleneck, this is something we could clean up.
-  return EvalGeometryQueryInput(context, __func__).inspector();
 }
 
 template <typename T>
@@ -1397,7 +1398,8 @@ MultibodyPlant<T>::MakeActuationMatrixPseudoinverse() const {
 
 namespace {
 
-void ThrowForDisconnectedGeometryPort(std::string_view explanation) {
+[[noreturn]] void ThrowForDisconnectedGeometryPort(
+    std::string_view explanation) {
   throw std::logic_error(
       std::string(explanation) +
       "\n\nThe provided context doesn't show a connection for the plant's "
@@ -1406,32 +1408,35 @@ void ThrowForDisconnectedGeometryPort(std::string_view explanation) {
       "#mbp-unconnected-query-object-port for help.");
 }
 
+template <typename Result, typename T>
+const Result& EvalGeometryInputPort(const InputPort<T>& input_port,
+                                    const systems::Context<T>& context) {
+  if (input_port.HasValue(context)) {
+    return input_port.template Eval<Result>(context);
+  }
+  throw std::logic_error(fmt::format(
+      "The provided Context is missing a connection for MultibodyPlant's "
+      "input port named \"{}\", which must be connected to a SceneGraph. "
+      "See https://drake.mit.edu/troubleshooting.html"
+      "#mbp-unconnected-query-object-port for help.",
+      input_port.get_name()));
+}
+
 }  // namespace
 
 template <typename T>
-const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
+void MultibodyPlant<T>::ValidateGeometryQueryInput(
     const systems::Context<T>& context, std::string_view explanation) const {
-  this->ValidateContext(context);
-  if (!get_geometry_query_input_port().HasValue(context)) {
-    ThrowForDisconnectedGeometryPort(explanation);
-  }
-  return get_geometry_query_input_port()
-      .template Eval<geometry::QueryObject<T>>(context);
-}
-
-template <typename T>
-void MultibodyPlant<T>::ValidateGeometryInput(
-    const systems::Context<T>& context, std::string_view explanation) const {
-  if (!IsValidGeometryInput(context)) {
+  if (!IsValidGeometryQueryInput(context)) {
     ThrowForDisconnectedGeometryPort(explanation);
   }
 }
 
 template <typename T>
-void MultibodyPlant<T>::ValidateGeometryInput(
+void MultibodyPlant<T>::ValidateGeometryQueryInput(
     const systems::Context<T>& context,
     const systems::OutputPort<T>& output_port) const {
-  if (!IsValidGeometryInput(context)) {
+  if (!IsValidGeometryQueryInput(context)) {
     ThrowForDisconnectedGeometryPort(fmt::format(
         "You've tried evaluating MultibodyPlant's '{}' output port.",
         output_port.get_name()));
@@ -1439,10 +1444,22 @@ void MultibodyPlant<T>::ValidateGeometryInput(
 }
 
 template <typename T>
-bool MultibodyPlant<T>::IsValidGeometryInput(
+bool MultibodyPlant<T>::IsValidGeometryQueryInput(
     const systems::Context<T>& context) const {
   return num_collision_geometries() == 0 ||
          get_geometry_query_input_port().HasValue(context);
+}
+
+template <typename T>
+const SceneGraphInspector<T>& MultibodyPlant<T>::EvalSceneGraphInspector(
+    const systems::Context<T>& context) const {
+  // TODO(jwnimmer-tri) The "geometry_query" input port is invalidated anytime
+  // the configuration_ticket changes, but really we only need to invalidate the
+  // inspector when the scene graph topology or properties change. If we find
+  // this is a performance bottleneck, this is something we could clean up.
+  const auto& query = EvalGeometryInputPort<geometry::QueryObject<T>>(
+      get_geometry_query_input_port(), context);
+  return query.inspector();
 }
 
 template <typename T>
@@ -1949,15 +1966,15 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>& context,
-    std::vector<PenetrationAsPointPair<T>>* output) const {
-  this->ValidateContext(context);
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context, __func__);
-    *output = query_object.ComputePointPairPenetration();
-  } else {
-    output->clear();
+void MultibodyPlant<T>::UpdateSceneGraphContactSummaryRepresentation() {
+  if (scene_graph_ != nullptr) {
+    std::optional<HydroelasticContactRepresentation> scene_graph_desire;
+    if (contact_model_ == ContactModel::kPoint) {
+      scene_graph_desire = std::nullopt;
+    } else {
+      scene_graph_desire = contact_surface_representation_;
+    }
+    scene_graph_->set_contact_summary_representation(scene_graph_desire);
   }
 }
 
@@ -1968,7 +1985,7 @@ void MultibodyPlant<T>::CopyContactResultsOutput(
   this->ValidateContext(context);
 
   // Guard against failure to acquire the geometry input deep in the call graph.
-  ValidateGeometryInput(context, get_contact_results_output_port());
+  ValidateGeometryQueryInput(context, get_contact_results_output_port());
 
   DRAKE_DEMAND(contact_results != nullptr);
   *contact_results = EvalContactResults(context);
@@ -2623,53 +2640,30 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactSurfaces(
-    const drake::systems::Context<T>& context,
-    std::vector<ContactSurface<T>>* contact_surfaces) const {
+const std::vector<ContactSurface<T>>& MultibodyPlant<T>::EvalContactSurfaces(
+    const systems::Context<T>& context) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_surfaces != nullptr);
-
-  const auto& query_object = EvalGeometryQueryInput(context, __func__);
-
-  *contact_surfaces =
-      query_object.ComputeContactSurfaces(get_contact_surface_representation());
-}
-
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
-    const Context<symbolic::Expression>&,
-    std::vector<geometry::ContactSurface<symbolic::Expression>>*) const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>& context,
-    internal::HydroelasticWithFallbackCacheData<T>* data) const {
-  this->ValidateContext(context);
-  DRAKE_DEMAND(data != nullptr);
-
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context, __func__);
-    data->contact_surfaces.clear();
-    data->point_pairs.clear();
-
-    query_object.ComputeContactSurfacesWithFallback(
-        get_contact_surface_representation(), &data->contact_surfaces,
-        &data->point_pairs);
+  if (num_collision_geometries() == 0) {
+    static const never_destroyed<std::vector<ContactSurface<T>>> empty;
+    return empty.access();
   }
-}
-
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<symbolic::Expression>&,
-    internal::HydroelasticWithFallbackCacheData<symbolic::Expression>*) const {
-  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
-  //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
-  throw std::domain_error(
-      "MultibodyPlant<T>::CalcHydroelasticWithFallback(): This method doesn't "
-      "support T = drake::symbolic::Expression.");
+  const auto& contacts = EvalGeometryInputPort<geometry::ContactSummary<T>>(
+      get_contact_summary_input_port(), context);
+  DRAKE_DEMAND(contacts.surfaces != nullptr);
+  DRAKE_DEMAND(contacts.point_pairs != nullptr);
+  if (contact_model_ == ContactModel::kHydroelastic &&
+      contacts.point_pairs->size() > 0) {
+    const PenetrationAsPointPair<T>& bad = contacts.point_pairs->front();
+    const Body<T>& bodyA = get_body(FindBodyByGeometryId(bad.id_A));
+    const Body<T>& bodyB = get_body(FindBodyByGeometryId(bad.id_B));
+    throw std::logic_error(fmt::format(
+        "Two rigid geometries (associated with bodies {} and {}) experienced "
+        "contact with MultibodyPlant's contact model was set to kHydroelastic. "
+        "Please consider using point-contact fallback instead, i.e., "
+        "plant.set_contact_model(kHydroelasticWithFallback).",
+        bodyA.scoped_name(), bodyB.scoped_name()));
+  }
+  return *contacts.surfaces;
 }
 
 template <typename T>
@@ -2887,7 +2881,7 @@ void MultibodyPlant<T>::AddInForcesContinuous(
   DRAKE_DEMAND(!is_discrete());
 
   // Guard against failure to acquire the geometry input deep in the call graph.
-  ValidateGeometryInput(
+  ValidateGeometryQueryInput(
       context, "You've tried evaluating time derivatives or their residuals.");
 
   // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
@@ -2912,8 +2906,8 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   DRAKE_DEMAND(is_discrete());
 
   // Guard against failure to acquire the geometry input deep in the call graph.
-  ValidateGeometryInput(context0,
-                        "You've tried evaluating discrete forward dynamics.");
+  ValidateGeometryQueryInput(
+      context0, "You've tried evaluating discrete forward dynamics.");
 
   DRAKE_DEMAND(discrete_update_manager_ != nullptr);
   discrete_update_manager_->CalcAccelerationKinematicsCache(context0, ac);
@@ -3155,7 +3149,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                       systems::BasicVector<T>* result) {
         // Guard against failure to acquire the geometry input deep in the call
         // graph.
-        ValidateGeometryInput(
+        ValidateGeometryQueryInput(
             context,
             get_generalized_contact_forces_output_port(model_instance_index));
 
@@ -3183,7 +3177,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                       systems::BasicVector<T>* result) {
         // Guard against failure to acquire the geometry input deep in the call
         // graph.
-        ValidateGeometryInput(
+        ValidateGeometryQueryInput(
             context,
             get_generalized_contact_forces_output_port(model_instance_index));
 
@@ -3238,29 +3232,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // control over cache dependencies on parameters. For example,
   // all_rigid_body_parameters, etc.
 
-  // TODO(SeanCurtis-TRI): When SG caches the results of these queries itself,
-  //  (https://github.com/RobotLocomotion/drake/issues/12767), remove these
-  //  cache entries.
-  auto& hydroelastic_with_fallback_cache_entry = this->DeclareCacheEntry(
-      std::string("Hydroelastic contact with point-pair fallback"),
-      &MultibodyPlant::CalcHydroelasticWithFallback,
-      {this->configuration_ticket()});
-  cache_indices_.hydroelastic_with_fallback =
-      hydroelastic_with_fallback_cache_entry.cache_index();
-
-  // Cache entry for point contact queries.
-  auto& point_pairs_cache_entry =
-      this->DeclareCacheEntry(std::string("Point pair penetrations."),
-                              &MultibodyPlant<T>::CalcPointPairPenetrations,
-                              {this->configuration_ticket()});
-  cache_indices_.point_pairs = point_pairs_cache_entry.cache_index();
-
-  // Cache entry for hydroelastic contact surfaces.
-  auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
-      std::string("Hydroelastic contact surfaces."),
-      &MultibodyPlant<T>::CalcContactSurfaces, {this->configuration_ticket()});
-  cache_indices_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
-
   // Cache entry for HydroelasticContactForcesContinuous.
   const bool use_hydroelastic =
       contact_model_ == ContactModel::kHydroelastic ||
@@ -3272,9 +3243,12 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             internal::HydroelasticContactForcesContinuousCacheData<T>(
                 this->num_bodies()),
             &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
-            // Compliant contact forces due to hydroelastics with Hunt &
-            // Crosseley are function of the kinematic variables q & v only.
-            {this->kinematics_ticket(), this->all_parameters_ticket()});
+            {// Compliant contact forces due to hydroelastics with Hunt &
+             // Crosseley are function of the kinematic variables q & v only.
+             this->kinematics_ticket(),
+             // Obviously, forces also depend on the geometry contacts.
+             this->input_port_ticket(
+                 get_contact_summary_input_port().get_index())});
     cache_indices_.hydroelastic_contact_forces_continuous =
         hydroelastic_contact_forces_continuous_cache_entry.cache_index();
   }
@@ -3518,6 +3492,10 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
       this->DeclareAbstractInputPort("geometry_query",
                                      Value<geometry::QueryObject<T>>{})
           .get_index();
+  contact_summary_port_ =
+      this->DeclareAbstractInputPort("contact_summary",
+                                     Value<geometry::ContactSummary<T>>{})
+          .get_index();
   geometry_pose_port_ =
       this->DeclareAbstractOutputPort("geometry_pose",
                                       &MultibodyPlant<T>::CalcFramePoseOutput,
@@ -3578,6 +3556,27 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
 }
 
 template <typename T>
+const std::vector<PenetrationAsPointPair<T>>&
+MultibodyPlant<T>::EvalPointPairPenetrations(
+    const systems::Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
+  if (contact_model_ == ContactModel::kHydroelastic) {
+    throw std::logic_error(
+        "Attempting to evaluate point pair contact for contact model that "
+        "doesn't use it");
+  }
+  if (num_collision_geometries() == 0) {
+    static never_destroyed<std::vector<PenetrationAsPointPair<T>>> empty;
+    return empty.access();
+  }
+  const auto& contacts = EvalGeometryInputPort<geometry::ContactSummary<T>>(
+      get_contact_summary_input_port(), context);
+  DRAKE_DEMAND(contacts.point_pairs != nullptr);
+  return *contacts.point_pairs;
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(const Context<T>& context,
                                             FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -3612,7 +3611,7 @@ void MultibodyPlant<T>::CalcReactionForces(
   DRAKE_DEMAND(ssize(*F_CJc_Jc_array) == num_joints());
 
   // Guard against failure to acquire the geometry input deep in the call graph.
-  ValidateGeometryInput(context, get_reaction_forces_output_port());
+  ValidateGeometryQueryInput(context, get_reaction_forces_output_port());
 
   // Compute the multibody forces applied during the computation of forward
   // dynamics, consistent with the value of vdot obtained below.
@@ -3748,6 +3747,12 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
 }
 
 template <typename T>
+const systems::InputPort<T>& MultibodyPlant<T>::get_contact_summary_input_port()
+    const {
+  return systems::System<T>::get_input_port(contact_summary_port_);
+}
+
+template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
   // TODO(xuchenhan-tri): enforce that there's only ever going to be one
@@ -3871,6 +3876,8 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                        plant_ptr->get_source_id().value()));
   builder->Connect(scene_graph_ptr->get_query_output_port(),
                    plant_ptr->get_geometry_query_input_port());
+  builder->Connect(scene_graph_ptr->get_contact_summary_output_port(),
+                   plant_ptr->get_contact_summary_input_port());
   return {plant_ptr, scene_graph_ptr};
 }
 

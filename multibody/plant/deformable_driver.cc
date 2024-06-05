@@ -11,6 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/query_results/contact_summary.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
@@ -967,12 +968,12 @@ const FemState<T>& DeformableDriver<T>::EvalNextFemState(
 template <typename T>
 void DeformableDriver<T>::CalcDeformableContact(
     const Context<T>& context, DeformableContact<T>* result) const {
-  const geometry::QueryObject<T>& query_object =
+  /* Copy the incomplete (contact-only) result computed from scene graph. */
+  const geometry::ContactSummary<T>& contact_summary =
       manager_->plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-  /* Compute the DeformableContact from the geometry engine. */
-  query_object.ComputeDeformableContact(result);
+          .get_contact_summary_input_port()
+          .template Eval<geometry::ContactSummary<T>>(context);
+  *result = *contact_summary.deformable_contact;
 
   /* Complete the result with information on constraints other than contact. */
   for (DeformableBodyIndex body_index(0);

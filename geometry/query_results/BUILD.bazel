@@ -12,11 +12,22 @@ drake_cc_package_library(
     name = "query_results",
     visibility = ["//visibility:public"],
     deps = [
+        ":contact_summary",
         ":contact_surface",
         ":deformable_contact",
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_summary",
+    hdrs = ["contact_summary.h"],
+    deps = [
+        ":contact_surface",
+        ":deformable_contact",
+        ":penetration_as_point_pair",
     ],
 )
 

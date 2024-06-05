@@ -41,14 +41,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Data stored in the cache entry for the hydroelastic with fallback contact
-// model.
-template <typename T>
-struct HydroelasticWithFallbackCacheData {
-  std::vector<geometry::ContactSurface<T>> contact_surfaces;
-  std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
-};
-
 // Structure used in the calculation of hydroelastic contact forces.
 template <typename T>
 struct HydroelasticContactForcesContinuousCacheData {
@@ -263,6 +255,7 @@ input_ports:
 - <em style="color:gray">model_instance_name[i]</em>_actuation
 - <em style="color:gray">model_instance_name[i]</em>_desired_state
 - <span style="color:green">geometry_query</span>
+- <span style="color:green">contact_summary</span>
 output_ports:
 - state
 - body_poses
@@ -290,9 +283,10 @@ indicated type the port will still be present but its value will be a
 zero-length vector. (Model instances `world_model_instance()` and
 `default_model_instance()` always exist.)
 
-The ports shown in <span style="color:green">
-green</span> are for communication with Drake's
-@ref geometry::SceneGraph "SceneGraph" system for dealing with geometry.
+The ports shown in <span style="color:green">green</span> are for communication
+with Drake's @ref geometry::SceneGraph "SceneGraph" system for interacting with
+geometry. The ports are automatically connected by the AddMultibodyPlant() and
+AddMultibodyPlantSceneGraph() functions so can generally be ignored by users.
 
 %MultibodyPlant provides a user-facing API for:
 
@@ -603,35 +597,15 @@ essentially two purposes; a) visualization and, b) contact modeling.
 <!--TODO(SeanCurtis-TRI): update this comment as the number of SceneGraph
     roles changes. -->
 
-Before any geometry registration takes place, a user **must** first make a
-call to RegisterAsSourceForSceneGraph() in order to register the
-%MultibodyPlant as a client of a SceneGraph instance, point at which the
-plant will have assigned a valid geometry::SourceId.
-At Finalize(), %MultibodyPlant will declare input/output ports as
-appropriate to communicate with the SceneGraph instance on which
-registrations took place. All geometry registration **must** be performed
-pre-finalize.
+All geometry registration **must** be performed pre-finalize, and the
+%MultibodyPlant and SceneGraph must already be connected via either
+AddMultibodyPlant() or AddMultibodyPlantSceneGraph().
 
-%Multibodyplant declares an input port for geometric queries, see
+%MultibodyPlant declares an input port for geometric queries, see
 get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
 a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
 port for geometric queries. The port must be connected to the same SceneGraph
-used for registration. The preferred mechanism is to use
-AddMultibodyPlantSceneGraph() as documented above.
-
-In extraordinary circumstances, this can be done by hand and the setup process
-will include:
-
-1. Call to RegisterAsSourceForSceneGraph().
-2. Calls to RegisterCollisionGeometry(), as many as needed.
-3. Call to Finalize(), user is done specifying the model.
-4. Connect geometry::SceneGraph::get_query_output_port() to
-   get_geometry_query_input_port().
-5. Connect get_geometry_poses_output_port() to
-   geometry::SceneGraph::get_source_pose_port()
-
-Refer to the documentation provided in each of the methods above for further
-details.
+used for registration.
 
 @anchor accessing_contact_properties
               #### Accessing point contact parameters
@@ -1008,8 +982,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// queries on a SceneGraph. See SceneGraph::get_query_output_port().
   /// Refer to section @ref mbp_geometry "Geometry" of this class's
   /// documentation for further details on collision geometry registration and
-  /// connection with a SceneGraph.
+  /// connection with a SceneGraph. In most cases, users will not need to
+  /// interact with this port.
   const systems::InputPort<T>& get_geometry_query_input_port() const;
+
+  /// Returns a constant reference to the input port used to obtain contacts
+  /// from a SceneGraph. See SceneGraph::get_contact_summary_output_port().
+  /// Refer to section @ref mbp_geometry "Geometry" of this class's
+  /// documentation for further details on collision geometry registration and
+  /// connection with a SceneGraph. In most cases, users will not need to
+  /// interact with this port.
+  const systems::InputPort<T>& get_contact_summary_input_port() const;
 
   /// Returns a constant reference to the output port for the multibody state
   /// x = [q, v] of the model.
@@ -1851,8 +1834,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// GetModelInstanceName() for those values.)
   /// @{
 
-  /// Registers `this` plant to serve as a source for an instance of
-  /// SceneGraph. This registration allows %MultibodyPlant to
+  /// (Advanced) Registers `this` plant to serve as a source for an instance of
+  /// SceneGraph. Users should generally not need to call this function, since
+  /// AddMultibodyPlant() and AddMultibodyPlantSceneGraph() will have already
+  /// done so. This registration allows %MultibodyPlant to
   /// register geometry with `scene_graph` for visualization and/or
   /// collision queries.  The string returned by `this->get_name()` is passed
   /// to SceneGraph's RegisterSource, so it is highly recommended that you give
@@ -2146,10 +2131,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// explanation of default values.
   /// @throws std::exception if called post-finalize.
   void set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation representation) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    contact_surface_representation_ = representation;
-  }
+      geometry::HydroelasticContactRepresentation representation);
 
   /// Gets the current representation of contact surfaces used by `this`
   /// %MultibodyPlant.
@@ -3138,29 +3120,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see PenetrationAsPointPair for further details on the returned data.
   /// @throws std::exception if called pre-finalize. See Finalize().
   const std::vector<geometry::PenetrationAsPointPair<T>>&
-  EvalPointPairPenetrations(const systems::Context<T>& context) const {
-    // TODO(jwnimmer-tri) This function is too large to be inline.
-    // Move its definition to the cc file.
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    this->ValidateContext(context);
-    switch (contact_model_) {
-      case ContactModel::kPoint:
-        return this->get_cache_entry(cache_indices_.point_pairs)
-            .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
-                context);
-      case ContactModel::kHydroelasticWithFallback: {
-        const auto& data =
-            this->get_cache_entry(cache_indices_.hydroelastic_with_fallback)
-                .template Eval<internal::HydroelasticWithFallbackCacheData<T>>(
-                    context);
-        return data.point_pairs;
-      }
-      default:
-        throw std::logic_error(
-            "Attempting to evaluate point pair contact for contact model that "
-            "doesn't use it");
-    }
-  }
+  EvalPointPairPenetrations(const systems::Context<T>& context) const;
 
   /// Calculates the rigid transform (pose) `X_AB` relating frame A and frame B.
   /// @param[in] context
@@ -4997,9 +4957,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndices {
-    systems::CacheIndex contact_surfaces;
-    systems::CacheIndex hydroelastic_with_fallback;
-    systems::CacheIndex point_pairs;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking;
 
@@ -5040,19 +4997,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
-  // Consolidates calls to Eval on the geometry query input port to have a
-  // consistent and helpful error message in the situation where the
-  // geometry_query_input_port is not connected, but is expected to be.
-  //
-  // Public APIs that ultimately depend on the query object input port should
-  // invoke ValidateGeometryInput() to guard against failed access in the depths
-  // of the code. As a safety net, all invocations of *this* method should
-  // pass the function that invoked it (via __func__), so that if any usage
-  // slips through the curated net, some insight will be provided as to what was
-  // attempting to access the disconnected port.
-  const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context, std::string_view caller) const;
-
   // These functions provide a mechanism to provide early warning when a
   // calculation depends on the QueryObject input port. The goal is to provide
   // as much feedback to the caller as to *why* the input port is required.
@@ -5062,17 +5006,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Note: the connection is only tested if MbP knows about collision
   // geometries. This is correlated with the fact that the operations that
   // depend on the geometry input port only do so based on that same condition.
-  void ValidateGeometryInput(const systems::Context<T>& context,
-                             std::string_view explanation) const;
+  void ValidateGeometryQueryInput(const systems::Context<T>& context,
+                                  std::string_view explanation) const;
 
   // A validation overload that automatically constructs an explanation when
   // the reason is due to evaluating an output port.
-  void ValidateGeometryInput(const systems::Context<T>& context,
-                             const systems::OutputPort<T>& output_port) const;
+  void ValidateGeometryQueryInput(
+      const systems::Context<T>& context,
+      const systems::OutputPort<T>& output_port) const;
 
-  // Reports if the geometry input is "valid", i.e., either unnecessary or
-  // connected.
-  bool IsValidGeometryInput(const systems::Context<T>& context) const;
+  // Reports if the geometry_query input is "valid", i.e., either unnecessary
+  // or connected.
+  bool IsValidGeometryQueryInput(const systems::Context<T>& context) const;
 
   // Helper to acquire per-geometry contact parameters from SG.
   // Returns the pair (stiffness, dissipation)
@@ -5137,6 +5082,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // We will document the heuristics used by this method thoroughly so that we
   // have a place we can refer users to for details.
   void EstimatePointContactParameters(double penetration_allowance);
+
+  // Configure our SceneGraph's contact_summary output port the way we want it.
+  // @pre This function must only be called pre-Finalize().
+  void UpdateSceneGraphContactSummaryRepresentation();
 
   // Helper method to assemble actuation input vector from the appropriate
   // ports. The actuation value for a particular actuator can be found at offset
@@ -5219,39 +5168,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
-  void CalcContactSurfaces(
-      const drake::systems::Context<T>& context,
-      std::vector<geometry::ContactSurface<T>>* contact_surfaces) const;
-
-  // Eval version of the method CalcContactSurfaces().
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
-      const systems::Context<T>& context) const {
-    // TODO(jwnimmer-tri) This function is too large to be inline.
-    // Move its definition to the cc file.
-    this->ValidateContext(context);
-    switch (contact_model_) {
-      case ContactModel::kHydroelasticWithFallback: {
-        const auto& data =
-            this->get_cache_entry(cache_indices_.hydroelastic_with_fallback)
-                .template Eval<internal::HydroelasticWithFallbackCacheData<T>>(
-                    context);
-        return data.contact_surfaces;
-      }
-      case ContactModel::kHydroelastic:
-        return this->get_cache_entry(cache_indices_.contact_surfaces)
-            .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
-      default:
-        throw std::logic_error(
-            "Attempting to evaluate contact surface for contact model that "
-            "doesn't use it");
-    }
-  }
-
-  // Computes the hydroelastic fallback method -- all contacts are partitioned
-  // between ContactSurfaces and point pair contacts.
-  void CalcHydroelasticWithFallback(
-      const drake::systems::Context<T>& context,
-      internal::HydroelasticWithFallbackCacheData<T>* data) const;
+      const systems::Context<T>& context) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
@@ -5411,13 +5329,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   void CopyContactResultsOutput(const systems::Context<T>& context,
                                 ContactResults<T>* contact_results) const;
-
-  // Helper method to compute penetration point pairs for a given `context`.
-  // Having this as a separate method allows us to control specializations for
-  // different scalar types.
-  void CalcPointPairPenetrations(
-      const systems::Context<T>& context,
-      std::vector<geometry::PenetrationAsPointPair<T>>*) const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
@@ -5606,6 +5517,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;
+  systems::InputPortIndex contact_summary_port_;
   systems::OutputPortIndex geometry_pose_port_;
 
   // For geometry registration with a GS, we save a pointer to the GS instance
@@ -5870,14 +5782,6 @@ void MultibodyPlant<symbolic::Expression>::
     AppendContactResultsHydroelasticContinuous(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
-    const systems::Context<symbolic::Expression>&,
-    std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
-    const systems::Context<symbolic::Expression>&,
-    internal::HydroelasticWithFallbackCacheData<symbolic::Expression>*) const;
 #endif
 
 }  // namespace multibody
