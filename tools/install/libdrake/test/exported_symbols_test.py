@@ -158,7 +158,7 @@ class ExportedSymbolsTest(unittest.TestCase):
         bad_rows = sorted(bad_rows, key=lambda x: (x.Type, x.Name))
 
         # Report the first few errors.
-        for row in bad_rows[:25]:
+        for row in bad_rows[:25000]:
             print(f"{row.Type} {row.Bind} {row.Vis}")
             print(f" {self._demangle(row.Name)}")
             print(f" {row.Name}")
