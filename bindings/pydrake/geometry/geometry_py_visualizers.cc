@@ -299,6 +299,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const Eigen::Ref<const Eigen::Matrix4d>&>(&Class::SetTransform),
             py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetSimulationTime", &Class::SetSimulationTime,
+            py::arg("sim_time"), cls_doc.SetSimulationTime.doc)
         .def("SetRealtimeRate", &Class::SetRealtimeRate, py::arg("rate"),
             cls_doc.SetRealtimeRate.doc)
         .def("GetRealtimeRate", &Class::GetRealtimeRate,
