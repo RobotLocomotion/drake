@@ -231,8 +231,10 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsNone(gamepad.index)
         self.assertEqual(len(gamepad.button_values), 0)
         self.assertEqual(len(gamepad.axes), 0)
-        meshcat.SetRealtimeRate(1.0)
+        meshcat.SetRealtimeRate(rate=1.0)
         meshcat.GetRealtimeRate()
+        meshcat.NoteTimeAdvancement(sim_time=1.0)
+        meshcat.ResetTimeAdvancementRecord()
         meshcat.Flush()
 
         meshcat.StartRecording(frames_per_second=64.0,
